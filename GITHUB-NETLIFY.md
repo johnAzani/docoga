@@ -69,10 +69,10 @@ git push -u origin main
 6. In under a minute you're live at something like
    `https://docoga.netlify.app` — open it on your phone and test all 4 tools.
 
-## Step 4 — Connect your domain (after you buy docoga.top)
+## Step 4 — Connect your domain (after you buy docoga.com.ng)
 
 1. Netlify → your site → **Domain management** → **Add a domain** →
-   enter `docoga.top`
+   enter `docoga.com.ng`
 2. Netlify shows you the exact DNS records to set (usually an **A record**
    for `@` and a **CNAME** for `www`)
 3. Go to wherever you bought the domain (Truehost/Whogohost/Namecheap) →

@@ -22,8 +22,8 @@
  *   PAYSTACK_SECRET_KEY Paystack secret key (Path C — after CAC)
  *   PROVIDER            "flw" (default) or "paystack" — which API /verify should call
  *   RESEND_API_KEY      free key from resend.com (email delivery — optional)
- *   MAIL_FROM           e.g. "DocOga <passes@docoga.top>" (requires verified domain in Resend)
- *   SITE_URL            e.g. https://docoga.top (used inside the email)
+ *   MAIL_FROM           e.g. "DocOga <passes@docoga.com.ng>" (requires verified domain in Resend)
+ *   SITE_URL            e.g. https://docoga.com.ng (used inside the email)
  * KV binding: must be named KV (see wrangler.toml)
  */
 
@@ -48,7 +48,7 @@ function json(obj, cors, status = 200) {
 async function emailCode(env, to, code) {
   if (!env.RESEND_API_KEY || !to) return;
   const from = env.MAIL_FROM || "DocOga <onboarding@resend.dev>";
-  const site = env.SITE_URL || "https://docoga.top";
+  const site = env.SITE_URL || "https://docoga.com.ng";
   await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {

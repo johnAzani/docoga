@@ -8,7 +8,7 @@ No coding knowledge required — the app is already built (`index.html`).
 ## Step 1 — Buy the domain (~₦1,500–3,000)
 
 Cheapest first-year options (fits the ₦10,000 budget):
-- **docoga.top** or **docoga.xyz** — usually ₦1,500–3,000 first year at
+- **docoga.com.ng** or **docoga.xyz** — usually ₦1,500–3,000 first year at
   Truehost.ng, Whogohost.com, or Namecheap.com *(docoga.com is also available
   but costs ~₦13,000–16,000 — upgrade later from revenue).*
 - Create an account → search the domain → pay via card/transfer/USSD.
@@ -40,7 +40,7 @@ Create → Pages → Upload assets → drag the folder. Connect your domain in
 Settings → Custom domains (free SSL).
 
 Then in your domain registrar's DNS panel, add the CNAME/A records Netlify or
-Cloudflare shows you. Done — `https://docoga.top` is live with a padlock.
+Cloudflare shows you. Done — `https://docoga.com.ng` is live with a padlock.
 
 ## Step 3 — Set up Selar (30 minutes)
 
@@ -65,7 +65,7 @@ CONFIG block and edit four lines:
 ```
 const PAYMENT_URL = "https://your-flutterwave-payment-link";
 const SUPPORT_WHATSAPP = "2340000000000";  ← your number, e.g. 2348012345678
-const SITE_URL = "https://docoga.top";     ← your real domain
+const SITE_URL = "https://docoga.com.ng";     ← your real domain
 const WORKER_URL = "https://docoga-pass.yourname.workers.dev"; ← after AUTOMATE.md Part 1
 ```
 
@@ -91,14 +91,14 @@ their code in seconds, 24/7, without you touching anything.
 
 **Customer-service script (copy-paste):**
 > "You're welcome oga! 🙏 Your DocOga Pass code is **OGA-XXXX-XXXX-XXXX**.
-> Open docoga.top → tap 'FREE PLAN' at the top → paste the code → Activate.
+> Open docoga.com.ng → tap 'FREE PLAN' at the top → paste the code → Activate.
 > Clean documents unlocked for 30 days. Tell your friends!"
 
 ## Step 6 — Get found by Google (same day)
 
 1. Google Search Console (`search.google.com/search-console`) → add your
    domain → verify (Cloudflare makes this one click).
-2. Submit the sitemap: `https://docoga.top/sitemap.xml` (already included in
+2. Submit the sitemap: `https://docoga.com.ng/sitemap.xml` (already included in
    the folder — it uploads automatically with the site).
 3. Repeat for Bing Webmaster Tools.
 4. **Analytics:** create a free Google Analytics 4 property
@@ -131,3 +131,7 @@ their code in seconds, 24/7, without you touching anything.
 - **Print button does nothing in preview** → printing is blocked in sandboxed
   previews; it works on the live site.
 - **"Invalid code"** → check for typos; code is case-insensitive; dashes optional.
+
+### Domain — docoga.com.ng (decision 18 Sep 2026)
+- Registrar: GO54/WhoGoHost (panel.whogohost.com) — NGN3,000 year 1, NGN7,200/yr renewal (due Sep 2027) — keep account funded / auto-renew ON.
+- DNS records at GO54: A @ -> 75.2.60.5 ; CNAME www -> docoga.netlify.app. HTTPS auto-provisioned by Netlify.

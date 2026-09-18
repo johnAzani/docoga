@@ -22,5 +22,5 @@ id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
 #   wrangler secret put RESEND_API_KEY          (email delivery)
 # Plain (non-secret) variables can also be set in the dashboard:
 #   PROVIDER = "flw" or "paystack"
-#   MAIL_FROM = "DocOga <passes@docoga.top>"
-#   SITE_URL = "https://docoga.top"
+#   MAIL_FROM = "DocOga <passes@docoga.com.ng>"
+#   SITE_URL = "https://docoga.com.ng"

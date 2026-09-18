@@ -44,8 +44,8 @@ You can run A now and switch to B/C later — the same Worker serves all three.
      - `RESEND_API_KEY` = free key from **resend.com** (email delivery)
    - Add plain variables:
      - `PROVIDER` = `flw` (or `paystack` on CAC day)
-     - `SITE_URL` = `https://docoga.top`
-     - `MAIL_FROM` = `DocOga <passes@docoga.top>` (after verifying your domain in Resend — free)
+     - `SITE_URL` = `https://docoga.com.ng`
+     - `MAIL_FROM` = `DocOga <passes@docoga.com.ng>` (after verifying your domain in Resend — free)
 5. Copy your Worker URL, e.g. `https://docoga-pass.yourname.workers.dev`
 6. Test it: open `https://your-worker.workers.dev/` in a browser →
    you should see `{"ok":true,"service":"docoga-pass"}`.
@@ -85,7 +85,7 @@ temporarily price a test product at ₦100 and watch the Zap fire.
 2. Dashboard → **Settings → API** → copy your **Secret key** → put it in the
    Worker as `FLW_SECRET_KEY`. Copy the **Webhook hash** → `FLW_WEBHOOK_HASH`.
 3. Dashboard → **Payment Links** → create: name "DocOga Oga Pass — 30 Days",
-   amount ₦2,000, currency NGN, **Redirect URL:** `https://docoga.top/success.html`
+   amount ₦2,000, currency NGN, **Redirect URL:** `https://docoga.com.ng/success.html`
 4. (Optional) Set the webhook URL to `https://your-worker.workers.dev/flw-webhook`
    — belt and braces; redirect+verify alone is enough.
 5. Update the app: set `SELAR_URL` in `index.html` CONFIG to your Flutterwave
@@ -100,7 +100,7 @@ screen AND is auto-activated AND emailed. Zero seconds, zero humans.
 
 Same as 2B but with Paystack: set `PROVIDER`=`paystack`,
 `PAYSTACK_SECRET_KEY` secret key; Paystack Page's callback URL =
-`https://docoga.top/success.html`. On-site checkout integration (embed
+`https://docoga.com.ng/success.html`. On-site checkout integration (embed
 Paystack's inline popup directly in DocOga) is the next upgrade after that —
 ask me and I'll build it.
 

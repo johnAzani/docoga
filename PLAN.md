@@ -20,7 +20,7 @@ Oga Pass** (30 days, sold via Selar) delivers clean, banner-free documents.
 | Search demand exists with weak local competition | "tenancy agreement Nigeria", "rent receipt format" etc. are actively searched; most results are jumbled PDF blogs | A clean, fast, mobile-first tool can rank and convert |
 | Name collisions avoided | "NaijaDocs" (US medical app), "OgaDoc" (Nigerian telehealth) already exist; **DocOga is clear** | Brand is defensible & searchable |
 
-**Domain status (checked 18 Sep 2026):** docoga.com ✅ available · docoga.top ✅ · docoga.xyz ✅
+**Domain status (checked 18 Sep 2026):** docoga.com ✅ available · docoga.com.ng ✅ · docoga.xyz ✅
 
 ## 2. Business model
 
@@ -67,7 +67,7 @@ Copycats can clone a form in a weekend. They cannot clone:
 ## 4. 90-day execution plan
 
 **Week 1 — Ship (₦ spend ≤ ₦3,000)**
-- [ ] Buy docoga.top (or .xyz) ~₦1,500–3,000 (Truehost/Whogohost/Namecheap)
+- [ ] Buy docoga.com.ng (or .xyz) ~₦1,500–3,000 (Truehost/Whogohost/Namecheap)
 - [ ] Deploy index.html free on Netlify or Cloudflare Pages (see DEPLOY.md)
 - [ ] Create Selar account → "Oga Pass" product @ ₦2,000 → paste link into the app
 - [ ] Set your WhatsApp number in the app config
