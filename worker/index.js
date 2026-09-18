@@ -164,9 +164,14 @@ async function handleVerify(url, env, cors) {
 
 /* ---------- Online activation for server-issued codes ---------- */
 async function handleActivate(url, env, cors) {
-  const code = (url.searchParams.get("code") || "").toUpperCase().replace(/[\s-]/g, "");
-  if (!code) return json({ ok: false, error: "code required" }, cors, 400);
-  const rec = await env.KV.get("code:" + code);
+  const raw = (url.searchParams.get("code") || "").toUpperCase().replace(/[\s-]/g, "");
+  if (!raw) return json({ ok: false, error: "code required" }, cors, 400);
+  // KV stores codes in dashed form (OGA-XXXX-XXXX-XXXX) — rebuild from the stripped form.
+  let key = raw;
+  const m = raw.match(/^(OGA)([A-Z2-9]{4})([A-Z2-9]{4})([A-Z2-9]{4})$/);
+  if (m) key = m[1] + "-" + m[2] + "-" + m[3] + "-" + m[4];
+  let rec = await env.KV.get("code:" + key);
+  if (!rec && key !== raw) rec = await env.KV.get("code:" + raw);
   if (!rec) return json({ ok: false, error: "invalid code" }, cors, 404);
   // Re-activation allowed (buyer may switch device) — we just track usage stats.
   try {
