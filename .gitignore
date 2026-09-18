@@ -1,0 +1,10 @@
+# NEVER commit — this is paid-product inventory
+unlock-codes.txt
+.code_hashes.js
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+*.log
+node_modules/
+docoga-github-repo.zip

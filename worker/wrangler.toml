@@ -1,0 +1,26 @@
+# DocOga Pass Worker — Cloudflare config
+# Deploy options (pick ONE):
+#   A) Easiest: Cloudflare dashboard → Workers & Pages → Create → paste worker/index.js
+#      (then bind KV + add secrets in the worker's Settings → Variables)
+#   B) CLI: npm i -g wrangler && wrangler deploy
+#
+# If using the CLI, fill in your KV namespace id below (dashboard → Storage & Databases → KV).
+
+name = "docoga-pass"
+main = "index.js"
+compatibility_date = "2026-09-18"
+
+[[kv_namespaces]]
+binding = "KV"
+id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
+
+# Secrets — do NOT put these in this file. Set them with:
+#   wrangler secret put ISSUE_SECRET
+#   wrangler secret put FLW_SECRET_KEY          (Path B)
+#   wrangler secret put FLW_WEBHOOK_HASH        (optional)
+#   wrangler secret put PAYSTACK_SECRET_KEY     (Path C — after CAC)
+#   wrangler secret put RESEND_API_KEY          (email delivery)
+# Plain (non-secret) variables can also be set in the dashboard:
+#   PROVIDER = "flw" or "paystack"
+#   MAIL_FROM = "DocOga <passes@docoga.top>"
+#   SITE_URL = "https://docoga.top"

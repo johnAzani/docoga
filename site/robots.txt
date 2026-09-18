@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://docoga.top/sitemap.xml

@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DocOga — Free Tenancy Agreement, Notice to Quit, Rent Receipt & Invoice Maker | Nigeria</title>
+<meta name="description" content="Create a tenancy agreement, notice to quit, rent receipt or invoice for any Nigerian state in 2 minutes. Free, no signup, works on your phone — print or save as PDF.">
+<meta name="keywords" content="tenancy agreement Nigeria, notice to quit Nigeria, rent receipt Nigeria, invoice generator Nigeria, caution fee, landlord documents, tenant rights">
+<meta property="og:title" content="DocOga — The Oga of Documents">
+<meta property="og:description" content="Free tenancy agreement, notice to quit, rent receipt & invoice generator for Nigeria. 2 minutes, no signup.">
+<meta property="og:type" content="website">
+<link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="5" fill="%23046A38"/><path d="M6 3h9l4 4v14H6z" fill="white"/><path d="M15 3l4 4h-4z" fill="%23B8F0CC"/><path d="M8.8 13.6l2.6 2.6 4.6-4.9" stroke="%23046A38" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>'>
+<meta name="theme-color" content="#046A38">
+<link rel="canonical" href="https://docoga.top/">
+<meta property="og:url" content="https://docoga.top/">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebApplication","name":"DocOga","applicationCategory":"BusinessApplication","operatingSystem":"Web Browser","inLanguage":"en-NG","offers":{"@type":"Offer","price":"0","priceCurrency":"NGN"},"description":"Free tenancy agreement, notice to quit, rent receipt and invoice generator for every Nigerian state."}
+</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+{"@type":"Question","name":"Is a DocOga tenancy agreement valid in Nigeria?","acceptedAnswer":{"@type":"Answer","text":"A tenancy agreement becomes binding when properly filled, signed by both landlord and tenant, and witnessed. DocOga drafts follow standard Nigerian practice. DocOga is not a law firm and does not give legal advice."}},
+{"@type":"Question","name":"How much does a lawyer charge for a tenancy agreement in Nigeria?","acceptedAnswer":{"@type":"Answer","text":"Typically ₦20,000 to ₦50,000 or more depending on the state and property. DocOga provides the standard document free, or clean unlimited copies with the ₦2,000 Oga Pass."}},
+{"@type":"Question","name":"What is a caution fee or security deposit?","acceptedAnswer":{"@type":"Answer","text":"A refundable deposit, often 5 to 10 percent of rent, protecting the landlord against damage beyond normal wear and tear. It must be refunded at the end of the tenancy if the property is returned in good condition."}},
+{"@type":"Question","name":"How many months notice to quit in Nigeria?","acceptedAnswer":{"@type":"Answer","text":"It depends on the tenancy type and state law. In Lagos, yearly tenants get 3 months notice and monthly tenants 1 month under the Tenancy Law 2011."}},
+{"@type":"Question","name":"Is DocOga really free?","acceptedAnswer":{"@type":"Answer","text":"Yes. Every tool is free with no signup. Free documents carry a small DocOga banner; the ₦2,000 Oga Pass removes it for 30 days of unlimited clean documents."}}
+]}
+</script>
+<style>
+:root{
+  --green:#046A38; --green-dark:#03502B; --green-soft:#E7F2EB;
+  --ink:#14211A; --muted:#5C6B61; --bg:#F6F7F5; --card:#FFFFFF;
+  --line:#E2E7E1; --amber:#F2A93B; --amber-dark:#B97514; --red:#C0392B;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);line-height:1.55}
+img,svg{vertical-align:middle}
+a{color:var(--green-dark)}
+
+/* ---------- Header ---------- */
+header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.95);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+.nav{max-width:1120px;margin:0 auto;padding:10px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:20px;color:var(--ink);text-decoration:none}
+.brand .logo{width:34px;height:34px;border-radius:9px;background:var(--green);display:grid;place-items:center}
+.brand small{font-weight:600;color:var(--muted);font-size:11px;display:block;margin-top:-3px}
+nav{margin-left:auto;display:flex;gap:4px;flex-wrap:wrap}
+nav a{text-decoration:none;color:var(--muted);font-size:14px;font-weight:600;padding:7px 11px;border-radius:8px}
+nav a:hover{background:var(--green-soft);color:var(--green-dark)}
+nav a.active{background:var(--green);color:#fff}
+.pass-chip{font-size:12px;font-weight:700;padding:6px 12px;border-radius:999px;border:1.5px solid var(--line);color:var(--muted);cursor:pointer;background:#fff}
+.pass-chip.pro{border-color:var(--amber);color:var(--amber-dark);background:#FEF6E8}
+
+/* ---------- Layout ---------- */
+main{max-width:1120px;margin:0 auto;padding:26px 18px 60px}
+section[id^="page-"]{display:none}
+.hero{background:linear-gradient(135deg,var(--green-dark) 0%,var(--green) 60%,#0B8A4C 100%);color:#fff;border-radius:20px;padding:46px 30px;margin-bottom:30px;position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;right:-70px;top:-70px;width:260px;height:260px;border-radius:50%;background:rgba(255,255,255,.07)}
+.hero h1{font-size:clamp(26px,4.5vw,42px);line-height:1.15;max-width:640px}
+.hero h1 em{font-style:normal;color:#B8F0CC}
+.hero p{margin:14px 0 22px;max-width:560px;color:#E4F3E9;font-size:16px}
+.hero .stats{display:flex;gap:18px;flex-wrap:wrap;margin-top:26px;font-size:13.5px;color:#D9EFDF}
+.hero .stats b{color:#fff}
+.btn{display:inline-flex;align-items:center;gap:8px;border:none;cursor:pointer;font-family:inherit;font-weight:700;text-decoration:none;border-radius:10px;padding:12px 20px;font-size:15px;transition:.15s}
+.btn.primary{background:var(--amber);color:#231400}
+.btn.primary:hover{filter:brightness(.95)}
+.btn.green{background:var(--green);color:#fff}
+.btn.green:hover{background:var(--green-dark)}
+.btn.ghost{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.5)}
+.btn.ghost:hover{background:rgba(255,255,255,.12)}
+.btn.sm{padding:8px 14px;font-size:13.5px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;margin:26px 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px}
+.card h3{font-size:18px;margin:10px 0 6px}
+.card p{color:var(--muted);font-size:14.5px}
+.card .ico{width:44px;height:44px;border-radius:11px;background:var(--green-soft);display:grid;place-items:center;font-size:22px}
+.card a{display:inline-block;margin-top:14px;color:var(--green-dark);font-weight:700}
+.seo-block,.faq{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:26px;margin:20px 0}
+.seo-block h2,.faq h2{font-size:22px;margin-bottom:12px}
+.seo-block p{color:var(--muted);font-size:14.5px;margin-bottom:10px}
+.faq details{border-bottom:1px solid var(--line);padding:12px 2px}
+.faq summary{font-weight:700;cursor:pointer;font-size:15px}
+.faq p{color:var(--muted);font-size:14px;margin-top:8px}
+
+h2.page-title{font-size:26px;margin:6px 0 4px}
+p.page-sub{color:var(--muted);margin-bottom:22px;max-width:640px}
+
+/* ---------- Tool layout ---------- */
+.tool-grid{display:grid;grid-template-columns:1fr;gap:24px;align-items:start}
+@media(min-width:980px){.tool-grid{grid-template-columns:minmax(400px,460px) 1fr}}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px}
+.panel h3{font-size:16px;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px}
+.form-grid .full{grid-column:1/-1}
+@media(max-width:560px){.form-grid{grid-template-columns:1fr}}
+label{font-size:12.5px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px}
+input,select,textarea{width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:9px;font-family:inherit;font-size:15px;background:#FBFCFB;color:var(--ink)}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--green);outline-offset:1px;border-color:var(--green)}
+textarea{resize:vertical;min-height:70px}
+.fieldset{border:1px dashed var(--line);border-radius:12px;padding:14px;margin:14px 0;position:relative}
+.fieldset legend{font-size:12px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--green-dark);padding:0 6px}
+.hint{font-size:11.5px;color:var(--muted);margin-top:3px}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+
+/* items table (invoice) */
+.items-table{width:100%;border-collapse:collapse;font-size:13.5px}
+.items-table th{text-align:left;color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.4px;padding:6px 4px;border-bottom:1.5px solid var(--line)}
+.items-table td{padding:6px 4px;border-bottom:1px solid var(--line)}
+.items-table input{padding:7px 8px;font-size:14px}
+.items-table .qty,.items-table .price{max-width:90px}
+.items-table .desc{min-width:140px}
+.x-btn{background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;font-weight:800;padding:4px 6px}
+
+/* preview */
+.preview-wrap{position:sticky;top:70px}
+.preview-label{font-size:12px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.badge{font-size:10.5px;font-weight:800;padding:3px 9px;border-radius:999px;letter-spacing:.4px}
+.badge.free{background:#FEF6E8;color:var(--amber-dark)}
+.badge.pro{background:var(--green-soft);color:var(--green-dark)}
+.preview-scroll{max-height:calc(100vh - 150px);overflow:auto;border:1px solid var(--line);border-radius:14px;background:#EAEEE9;padding:14px}
+
+/* ---------- Document sheet ---------- */
+.sheet{background:#fff;max-width:800px;margin:0 auto;padding:30px 34px;font-family:Georgia,'Times New Roman',serif;color:#151515;font-size:14px;line-height:1.7;position:relative}
+.sheet h1{font-size:17px;text-align:center;letter-spacing:1.5px;margin-bottom:4px;font-family:Georgia,serif}
+.sheet .doc-meta{text-align:center;font-size:12px;color:#444;margin-bottom:18px}
+.sheet .parties{margin:14px 0}
+.sheet p{margin:8px 0}
+.sheet .clause{margin:11px 0}
+.sheet .clause b{display:block}
+.sheet .right{text-align:right}
+.sheet table.doc-table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px}
+.sheet table.doc-table th{border:1px solid #999;padding:7px 9px;background:#F2F4F1;text-align:left;font-size:12.5px}
+.sheet table.doc-table td{border:1px solid #999;padding:7px 9px}
+.sheet .tot-row td{font-weight:bold;background:#F7F9F5}
+.sheet .sig-grid{display:grid;grid-template-columns:1fr 1fr;gap:26px;margin-top:34px;font-size:13px}
+.sheet .sig-grid .sig-line{border-bottom:1px solid #333;height:30px;margin-bottom:6px}
+.sheet .receipt-box{border:2px solid #333;border-radius:8px;padding:22px 26px;max-width:640px;margin:0 auto}
+.sheet .receipt-box hr{border:none;border-top:1.5px dashed #888;margin:14px 0}
+.sheet .free-banner{margin-top:30px;border-top:1px dashed #999;padding-top:10px;font-size:10.5px;color:#8a8a8a;text-align:center;font-family:Arial,sans-serif;letter-spacing:.3px}
+.sheet.free::before{content:"DOCOGA · FREE";position:absolute;top:44%;left:50%;transform:translate(-50%,-50%) rotate(-28deg);font-size:52px;font-weight:900;color:rgba(4,106,56,.07);font-family:Arial,sans-serif;pointer-events:none;white-space:nowrap}
+
+/* ---------- docs list ---------- */
+.doc-item{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px}
+.doc-item .t{font-weight:700;font-size:15px}
+.doc-item .m{font-size:12px;color:var(--muted)}
+.doc-item .grow{flex:1}
+.link-btn{background:none;border:none;color:var(--green-dark);font-weight:700;cursor:pointer;font-size:13.5px;font-family:inherit}
+.link-btn.danger{color:var(--red)}
+
+/* ---------- pricing ---------- */
+.price-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;max-width:760px;margin:10px auto}
+.price-card{background:var(--card);border:1.5px solid var(--line);border-radius:18px;padding:28px;position:relative}
+.price-card.hot{border-color:var(--green);box-shadow:0 10px 30px rgba(4,106,56,.12)}
+.price-card .plan{font-size:12px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+.price-card .amount{font-size:34px;font-weight:900;margin:8px 0 2px}
+.price-card .per{font-size:13px;color:var(--muted);margin-bottom:16px}
+.price-card ul{list-style:none;margin:12px 0 20px}
+.price-card li{font-size:14px;padding:6px 0 6px 26px;position:relative}
+.price-card li::before{content:"✓";position:absolute;left:2px;color:var(--green);font-weight:900}
+.tag{position:absolute;top:-11px;right:18px;background:var(--amber);color:#231400;font-size:11px;font-weight:800;padding:4px 12px;border-radius:999px}
+
+/* ---------- modal & toast ---------- */
+#modal-overlay{position:fixed;inset:0;background:rgba(10,20,14,.55);display:none;place-items:center;z-index:100;padding:18px}
+#modal-overlay.open{display:grid}
+.modal{background:#fff;border-radius:18px;max-width:430px;width:100%;padding:28px;position:relative}
+.modal h3{font-size:20px;margin-bottom:6px}
+.modal p{color:var(--muted);font-size:14px;margin-bottom:16px}
+.modal input{margin-bottom:12px}
+.close-x{position:absolute;top:12px;right:16px;background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)}
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(120%);background:var(--ink);color:#fff;padding:12px 20px;border-radius:12px;font-size:14px;font-weight:600;z-index:200;transition:.3s;max-width:90vw;text-align:center}
+#toast.show{transform:translateX(-50%) translateY(0)}
+
+footer{border-top:1px solid var(--line);background:#fff;margin-top:40px}
+.foot{max-width:1120px;margin:0 auto;padding:30px 18px;font-size:13px;color:var(--muted)}
+.foot .disc{background:#FBF9F0;border:1px solid #EFE6C8;border-radius:10px;padding:12px 14px;font-size:12px;margin:14px 0}
+
+/* ---------- quality v1.2: motion, a11y, dark mode ---------- */
+section[id^="page-"]{animation:fadeIn .28s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+a:focus-visible,button:focus-visible{outline:3px solid var(--amber);outline-offset:2px;border-radius:6px}
+.amount-hint{font-size:11.5px;color:var(--green-dark);font-weight:600;margin-top:3px;min-height:15px}
+@media(max-width:720px){
+  nav{order:3;width:100%;overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;scrollbar-width:none;margin-left:0;padding-bottom:2px}
+  nav::-webkit-scrollbar{display:none}
+  nav a{white-space:nowrap;flex:0 0 auto}
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#0F1512;--card:#182019;--ink:#E9EFEA;--muted:#94A499;--line:#2A362E;--green-soft:#1D2F24}
+  header{background:rgba(15,21,18,.94)}
+  footer{background:var(--card)}
+  .pass-chip{background:var(--card)}
+  input,select,textarea{background:#131A16;color:var(--ink)}
+  .preview-scroll{background:#0C110E}
+  #toast{background:#0B0F0C;color:#E9EFEA}
+  .modal{background:var(--card)}
+  .amount-hint{color:#7ED9A4}
+}
+@media (prefers-reduced-motion:reduce){
+  section[id^="page-"]{animation:none}
+  html{scroll-behavior:auto}
+}
+/* ---------- print ---------- */
+#print-root{display:none}
+@media print{
+  @page{size:A4;margin:14mm}
+  body{background:#fff}
+  header,main,footer,#modal-overlay,#toast,.no-print{display:none !important}
+  body.printing #print-root{display:block}
+  #print-root .sheet{max-width:none;border:none;padding:0}
+  #print-root .sheet.free::before{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav">
+    <a class="brand" href="#home">
+      <span class="logo">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M6 2h9l5 5v15H6z" fill="#fff" opacity=".9"/><path d="M15 2l5 5h-5z" fill="#B8F0CC"/><path d="M8.8 13.6l2.6 2.6 4.6-4.9" stroke="#046A38" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+      </span>
+      <span>DocOga<small>The Oga of Documents</small></span>
+    </a>
+    <nav>
+      <a href="#home" class="active">Home</a>
+      <a href="#agreement">Tenancy Agreement</a>
+      <a href="#notice">Notice to Quit</a>
+      <a href="#receipt">Rent Receipt</a>
+      <a href="#invoice">Invoice</a>
+      <a href="#docs">My Documents</a>
+      <a href="#pricing">Pricing</a>
+    </nav>
+    <span class="pass-chip" id="pass-chip" onclick="openModal()">FREE PLAN</span>
+  </div>
+</header>
+
+<main>
+
+<!-- ======================= HOME ======================= -->
+<section id="page-home">
+  <div class="hero">
+    <h1>Documents wey <em>correct.</em><br>Agreements, notices, receipts &amp; invoices — free.</h1>
+    <p>DocOga creates lawyer-grade Nigerian documents in about 2 minutes. No signup. No wahala. Works on your phone — print or save as PDF.</p>
+    <a class="btn primary" href="#agreement">📄 Create a Tenancy Agreement</a>&nbsp;
+    <a class="btn ghost" href="#notice">📮 Serve a Notice to Quit</a>
+    <div class="stats">
+      <span><b>₦0</b> to start</span><span><b>2 minutes</b> average</span><span><b>All 36 states + FCT</b></span><span><b>Private</b> — data stays on your phone</span>
+    </div>
+  </div>
+
+  <div class="cards">
+    <div class="card">
+      <div class="ico">🏠</div>
+      <h3>Tenancy Agreement</h3>
+      <p>A complete residential tenancy agreement — parties, rent, caution fee, covenants, notice periods — drafted to standard Nigerian practice for your state.</p>
+      <a href="#agreement">Create agreement →</a>
+    </div>
+    <div class="card">
+      <div class="ico">📮</div>
+      <h3>Notice to Quit</h3>
+      <p>Serve a formal, properly-dated notice to quit — correct notice period, computed vacation date, done in one minute.</p>
+      <a href="#notice">Create notice →</a>
+    </div>
+    <div class="card">
+      <div class="ico">🧾</div>
+      <h3>Rent Receipt</h3>
+      <p>Acknowledge rent like a professional. Amount in words, payment method, period covered, outstanding balance — issued in seconds.</p>
+      <a href="#receipt">Create receipt →</a>
+    </div>
+    <div class="card">
+      <div class="ico">💼</div>
+      <h3>Invoice</h3>
+      <p>Naira invoices with automatic 7.5% VAT, saved business details and WhatsApp sharing — built for Nigerian freelancers and vendors.</p>
+      <a href="#invoice">Create invoice →</a>
+    </div>
+  </div>
+
+  <div class="seo-block">
+    <h2>Why Nigerians use DocOga</h2>
+    <p>Rent in Nigeria is paid in advance — commonly one full year — and every payment cycle needs paperwork: the <b>tenancy agreement</b> that protects both landlord and tenant, the <b>notice to quit</b> that lawfully ends a tenancy, the <b>rent receipt</b> that proves payment, and the <b>caution fee record</b> that secures the tenant's deposit. Traditionally, a lawyer charges anywhere from ₦20,000 to ₦50,000 to draft a tenancy agreement, and many landlords and tenants simply go without proper documents.</p>
+    <p>DocOga puts a standard, fill-in-the-blanks document generator in every pocket — from Lagos to Kano to Port Harcourt. Answer simple questions, and your document is ready to print, save as PDF, or share on WhatsApp. The free version carries a small DocOga banner; the <b>Oga Pass (₦2,000)</b> removes it and unlocks unlimited clean copies for 30 days.</p>
+  </div>
+
+  <div class="faq">
+    <h2>Frequently asked questions</h2>
+    <details open>
+      <summary>Is a DocOga tenancy agreement valid in Nigeria?</summary>
+      <p>A tenancy agreement becomes legally binding when it is properly filled, signed by both landlord and tenant, and witnessed. DocOga drafts follow standard Nigerian practice. DocOga is not a law firm and does not give legal advice — for unusual or high-value deals, have a lawyer review before signing.</p>
+    </details>
+    <details>
+      <summary>How much does a lawyer charge for a tenancy agreement?</summary>
+      <p>Depending on the state and property, typically ₦20,000–₦50,000 or more. DocOga gives you the standard document free (with a small banner), or clean unlimited copies with the Oga Pass.</p>
+    </details>
+    <details>
+      <summary>What is a caution fee / security deposit?</summary>
+      <p>A caution fee is a refundable deposit (often 5–10% of rent) that protects the landlord against damage beyond normal wear and tear. It must be refunded at the end of the tenancy if the property is returned in good condition. DocOga documents it inside the agreement.</p>
+    </details>
+    <details>
+      <summary>How many months' notice to quit?</summary>
+      <p>It depends on the tenancy type and the state. In Lagos, the Tenancy Law 2011 provides 3 months' notice for yearly tenants and 1 month for monthly tenants. DocOga's notice tool computes the vacation date for you.</p>
+    </details>
+    <details>
+      <summary>Is DocOga really free?</summary>
+      <p>Yes. Every tool is free to use with no signup, forever. Free documents carry a small DocOga banner at the bottom. The ₦2,000 Oga Pass removes the banner for 30 days of unlimited documents.</p>
+    </details>
+    <details>
+      <summary>Where is my information stored?</summary>
+      <p>On your own device — nothing is uploaded to any server. Your documents print straight from your browser and the copies are yours.</p>
+    </details>
+  </div>
+</section>
+
+<!-- ======================= TENANCY AGREEMENT ======================= -->
+<section id="page-agreement">
+  <h2 class="page-title">Residential Tenancy Agreement</h2>
+  <p class="page-sub">Fill the form — the agreement builds itself as you type. Standard Nigerian terms: rent, caution fee, covenants, notice to quit, jurisdiction.</p>
+  <div class="tool-grid">
+    <div class="panel">
+      <h3>📝 Agreement details</h3>
+      <form id="form-agreement" oninput="renderAgreement()">
+        <div class="fieldset"><legend>Landlord</legend>
+          <div class="form-grid">
+            <div class="full"><label>Landlord full name</label><input id="ll_name" placeholder="e.g. Chief Adewale Okonkwo"></div>
+            <div class="full"><label>Address</label><input id="ll_addr" placeholder="Street, city, state"></div>
+            <div><label>Phone</label><input id="ll_phone" placeholder="080..."></div>
+          </div>
+        </div>
+        <div class="fieldset"><legend>Tenant</legend>
+          <div class="form-grid">
+            <div class="full"><label>Tenant full name</label><input id="tt_name" placeholder="e.g. Miss Amina Bello"></div>
+            <div class="full"><label>Address</label><input id="tt_addr" placeholder="Street, city, state"></div>
+            <div><label>Phone</label><input id="tt_phone" placeholder="080..."></div>
+          </div>
+        </div>
+        <div class="fieldset"><legend>Property</legend>
+          <div class="form-grid">
+            <div><label>Property type / description</label><input id="prop_desc" placeholder="e.g. 2-bedroom flat"></div>
+            <div><label>State</label><select id="prop_state"></select></div>
+            <div class="full"><label>Full property address</label><input id="prop_addr" placeholder="House no, street, area, town"></div>
+          </div>
+        </div>
+        <div class="fieldset"><legend>Rent &amp; term</legend>
+          <div class="form-grid">
+            <div><label>Rent amount (₦)</label><input id="rent_amt" type="number" inputmode="numeric" min="0" placeholder="e.g. 1500000"><div class="amount-hint" id="hint-rent_amt"></div></div>
+            <div><label>Payment period</label><select id="rent_period"><option value="annum">Per annum (yearly)</option><option value="quarter">Per quarter</option><option value="month">Per month</option><option value="week">Per week</option></select></div>
+            <div><label>Caution fee / deposit (₦, optional)</label><input id="deposit_amt" type="number" inputmode="numeric" min="0" placeholder="e.g. 75000"><div class="amount-hint" id="hint-deposit_amt"></div></div>
+            <div><label>Commencement date</label><input id="start_date" type="date"></div>
+            <div><label>Term length (months)</label><input id="term_months" type="number" inputmode="numeric" min="1" value="12"></div>
+            <div><label>Notice to quit</label><select id="notice"><option value="as required by the Tenancy Law applicable in the state">As required by state tenancy law</option><option value="one (1) month">One (1) month</option><option value="three (3) months">Three (3) months</option><option value="six (6) months">Six (6) months</option><option value="one (1) week">One (1) week</option></select></div>
+          </div>
+          <div class="hint">Tip: in Lagos, the Tenancy Law 2011 provides 3 months' notice for yearly tenants and 1 month for monthly tenants.</div>
+        </div>
+        <div class="fieldset"><legend>Optional</legend>
+          <div class="form-grid">
+            <div class="full"><label>Prepared by (agent / lawyer, optional)</label><input id="prepared_by" placeholder="Name &amp; firm"></div>
+            <div class="full"><label>Extra clauses — one per line (optional)</label><textarea id="custom_clauses" placeholder="e.g. The Tenant shall not keep pets on the Premises.&#10;Generator fuel shall be borne by the Tenant."></textarea></div>
+          </div>
+        </div>
+        <div class="actions">
+          <button type="button" class="btn green" onclick="printCurrent('agreement')">🖨️ Print / Save PDF</button>
+          <button type="button" class="btn sm" style="background:var(--green-soft);color:var(--green-dark)" onclick="saveDoc('agreement')">💾 Save</button>
+          <button type="button" class="btn sm" style="background:var(--green-soft);color:var(--green-dark)" onclick="shareDoc('agreement')">💬 Share</button>
+        </div>
+      </form>
+    </div>
+    <div class="preview-wrap">
+      <div class="preview-label"><span>Live preview</span><span id="badge-agreement"></span></div>
+      <div class="preview-scroll"><div id="preview-agreement"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= NOTICE TO QUIT ======================= -->
+<section id="page-notice">
+  <h2 class="page-title">Notice to Quit</h2>
+  <p class="page-sub">A formal notice ending a tenancy — with the correct period and the vacation date computed for you. Serve it, print it, keep a copy.</p>
+  <div class="tool-grid">
+    <div class="panel">
+      <h3>📮 Notice details</h3>
+      <form id="form-notice" oninput="renderNotice()">
+        <div class="form-grid">
+          <div class="full"><label>From (landlord / agent)</label><input id="n_from" placeholder="Full name"></div>
+          <div class="full"><label>Landlord / agent address</label><input id="n_fromaddr" placeholder="Street, city, state"></div>
+          <div class="full"><label>To (tenant)</label><input id="n_to" placeholder="Tenant full name"></div>
+          <div class="full"><label>Tenant address</label><input id="n_toaddr" placeholder="Street, city, state"></div>
+          <div class="full"><label>Property address</label><input id="n_prop" placeholder="Property the notice relates to"></div>
+          <div><label>Notice period</label><select id="n_period">
+            <option value="7">One (1) week</option>
+            <option value="30">One (1) month</option>
+            <option value="90" selected>Three (3) months</option>
+            <option value="180">Six (6) months</option>
+            <option value="law">As required by the applicable Tenancy Law</option>
+          </select></div>
+          <div><label>Date of service</label><input id="n_date" type="date"></div>
+          <div class="full"><label>Reason (optional)</label><input id="n_reason" placeholder="e.g. Rent arrears, landlord's personal use, renovation"></div>
+        </div>
+        <div class="hint" style="margin-top:10px">Tip: in Lagos, yearly tenants are entitled to 3 months' notice and monthly tenants 1 month (Tenancy Law 2011).</div>
+        <div class="actions">
+          <button type="button" class="btn green" onclick="printCurrent('notice')">🖨️ Print / Save PDF</button>
+          <button type="button" class="btn sm" style="background:var(--green-soft);color:var(--green-dark)" onclick="saveDoc('notice')">💾 Save</button>
+          <button type="button" class="btn sm" style="background:var(--green-soft);color:var(--green-dark)" onclick="shareDoc('notice')">💬 Share</button>
+        </div>
+      </form>
+    </div>
+    <div class="preview-wrap">
+      <div class="preview-label"><span>Live preview</span><span id="badge-notice"></span></div>
+      <div class="preview-scroll"><div id="preview-notice"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= RENT RECEIPT ======================= -->
+<section id="page-receipt">
+  <h2 class="page-title">Rent Receipt</h2>
+  <p class="page-sub">Issue a professional receipt for rent (or any payment). Amount auto-converts to words — no mistakes.</p>
+  <div class="tool-grid">
+    <div class="panel">
+      <h3>🧾 Receipt details</h3>
+      <form id="form-receipt" oninput="renderReceipt()">
+        <div class="form-grid">
+          <div><label>Receipt number</label><input id="r_no" placeholder="e.g. RCP-014"></div>
+          <div><label>Date</label><input id="r_date" type="date"></div>
+          <div class="full"><label>Received from</label><input id="r_from" placeholder="Tenant / payer name"></div>
+          <div><label>Amount (₦)</label><input id="r_amt" type="number" inputmode="numeric" min="0" placeholder="e.g. 1500000"><div class="amount-hint" id="hint-r_amt"></div></div>
+          <div><label>Payment method</label><select id="r_method"><option>Bank transfer</option><option>Cash</option><option>POS</option><option>USSD</option><option>Cheque</option><option>Other</option></select></div>
+          <div class="full"><label>Being payment for</label><input id="r_purpose" placeholder="e.g. Annual rent 2026/2027"></div>
+          <div class="full"><label>Property address</label><input id="r_prop" placeholder="Property the payment relates to"></div>
+          <div><label>Period covered (optional)</label><input id="r_period" placeholder="e.g. Oct 2026 – Sep 2027"></div>
+          <div><label>Balance outstanding (₦, optional)</label><input id="r_bal" type="number" inputmode="numeric" min="0" placeholder="0"></div>
+          <div class="full"><label>Issued by (landlord / business)</label><input id="r_issuer" placeholder="Name as it should appear"></div>
+          <div><label>Phone</label><input id="r_phone" placeholder="080..."></div>
+        </div>
+        <div class="actions">
+          <button type="button" class="btn green" onclick="printCurrent('receipt')">🖨️ Print / Save PDF</button>
+          <button type="button" class="btn sm" style="background:var(--green-soft);color:var(--green-dark)" onclick="saveDoc('receipt')">💾 Save</button>
+          <button type="button" class="btn sm" style="background:var(--green-soft);color:var(--green-dark)" onclick="shareDoc('receipt')">💬 Share</button>
+        </div>
+      </form>
+    </div>
+    <div class="preview-wrap">
+      <div class="preview-label"><span>Live preview</span><span id="badge-receipt"></span></div>
+      <div class="preview-scroll"><div id="preview-receipt"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= INVOICE ======================= -->
+<section id="page-invoice">
+  <h2 class="page-title">Invoice</h2>
+  <p class="page-sub">Naira invoices for freelancers, vendors and small businesses. Automatic VAT, saved details, WhatsApp sharing.</p>
+  <div class="tool-grid">
+    <div class="panel">
+      <h3>💼 Invoice details</h3>
+      <form id="form-invoice" oninput="renderInvoice()">
+        <div class="form-grid">
+          <div class="full"><label>Your business / name</label><input id="i_biz" placeholder="e.g. Ada Ventures"></div>
+          <div><label>Phone</label><input id="i_bizphone" placeholder="080..."></div>
+          <div><label>Invoice number</label><input id="i_no" placeholder="e.g. INV-001"></div>
+          <div><label>Date</label><input id="i_date" type="date"></div>
+          <div><label>Due date</label><input id="i_due" type="date"></div>
+          <div class="full"><label>Bill to (client)</label><input id="i_client" placeholder="Client name &amp; address"></div>
+        </div>
+        <div style="margin:14px 0 6px"><label>Items</label></div>
+        <table class="items-table">
+          <thead><tr><th>Description</th><th>Qty</th><th>Price (₦)</th><th></th></tr></thead>
+          <tbody id="inv-items"></tbody>
+        </table>
+        <button type="button" class="link-btn" onclick="addInvItem()">+ Add item</button>
+        <div class="form-grid" style="margin-top:14px">
+          <div><label>VAT</label><select id="i_vat"><option value="0">No VAT</option><option value="7.5" selected>7.5% (Nigeria standard)</option></select></div>
+          <div><label>Discount (₦)</label><input id="i_disc" type="number" inputmode="numeric" min="0" placeholder="0"></div>
+          <div class="full"><label>Notes (e.g. payment details)</label><input id="i_notes" placeholder="e.g. Pay to 0123456789 — Ada Ventures, GTBank"></div>
+        </div>
+        <div class="actions">
+          <button type="button" class="btn green" onclick="printCurrent('invoice')">🖨️ Print / Save PDF</button>
+          <button type="button" class="btn sm" style="background:var(--green-soft);color:var(--green-dark)" onclick="saveDoc('invoice')">💾 Save</button>
+          <button type="button" class="btn sm" style="background:var(--green-soft);color:var(--green-dark)" onclick="shareDoc('invoice')">💬 Share</button>
+        </div>
+      </form>
+    </div>
+    <div class="preview-wrap">
+      <div class="preview-label"><span>Live preview</span><span id="badge-invoice"></span></div>
+      <div class="preview-scroll"><div id="preview-invoice"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= MY DOCUMENTS ======================= -->
+<section id="page-docs">
+  <h2 class="page-title">My Documents</h2>
+  <p class="page-sub">Your saved documents live on this device only. Clearing your browser data will delete them — print or save anything important.</p>
+  <div id="docs-list"></div>
+</section>
+
+<!-- ======================= PRICING ======================= -->
+<section id="page-pricing">
+  <h2 class="page-title">Simple pricing</h2>
+  <p class="page-sub">Free forever for real. Upgrade only when you want clean, banner-free documents.</p>
+  <div class="price-grid">
+    <div class="price-card">
+      <div class="plan">Free</div>
+      <div class="amount">₦0</div>
+      <div class="per">forever</div>
+      <ul>
+        <li>All four tools — agreement, notice, receipt, invoice</li>
+        <li>Unlimited documents</li>
+        <li>Print &amp; save as PDF</li>
+        <li>No signup, data stays on your phone</li>
+        <li>Small DocOga banner on documents</li>
+      </ul>
+      <a class="btn green" style="width:100%;justify-content:center" href="#agreement">Start free</a>
+    </div>
+    <div class="price-card hot">
+      <span class="tag">MOST POPULAR</span>
+      <div class="plan">Oga Pass</div>
+      <div class="amount">₦2,000</div>
+      <div class="per">30 days, unlimited clean documents</div>
+      <ul>
+        <li>Everything in Free</li>
+        <li><b>No DocOga banner or watermark</b></li>
+        <li>Unlimited clean PDFs &amp; prints</li>
+        <li>Priority WhatsApp support</li>
+        <li>Early access to new document types (employment contract, caution fee receipt…)</li>
+      </ul>
+      <button class="btn primary" style="width:100%;justify-content:center" onclick="buyPass()">Get Oga Pass — ₦2,000</button>
+      <p style="text-align:center;font-size:12.5px;color:var(--muted);margin-top:10px">Pay with card, transfer or USSD — your pass code arrives <b>instantly</b> the moment payment completes.</p>
+      <p style="text-align:center;margin-top:8px"><button class="link-btn" onclick="openModal()">Already have a code? Activate →</button></p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="foot">
+    <b style="color:var(--ink)">DocOga</b> — the Oga of Documents. Made in Abuja, Nigeria 🇳🇬
+    <div class="disc"><b>Disclaimer:</b> DocOga provides self-help document templates based on standard Nigerian practice. It is not a law firm and does not provide legal advice. For complex or high-value transactions, consult a qualified Nigerian lawyer. Documents remain binding only when properly completed, signed and witnessed.</div>
+    <div>© 2026 DocOga. All rights reserved. · <a href="#pricing">Oga Pass</a> · <a href="privacy.html">Privacy Policy</a> · <a href="terms.html">Terms of Use</a> · Support: <a id="foot-wa" href="#" onclick="return false">WhatsApp</a></div>
+  </div>
+</footer>
+
+<div class="no-print" style="position:fixed;bottom:18px;right:18px;z-index:90">
+  <a id="wa-float" href="#" target="_blank" rel="noopener" title="Chat with DocOga on WhatsApp" aria-label="Chat with DocOga on WhatsApp" style="display:grid;place-items:center;width:54px;height:54px;border-radius:50%;background:#25D366;color:#fff;text-decoration:none;font-size:24px;box-shadow:0 6px 18px rgba(0,0,0,.28)">💬</a>
+</div>
+
+<!-- modal -->
+<div id="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <button class="close-x" onclick="closeModal()">✕</button>
+    <h3>Activate Oga Pass</h3>
+    <p>Enter the code you received after payment to unlock 30 days of clean, watermark-free documents.</p>
+    <input id="pass-input" placeholder="OGA-XXXX-XXXX-XXXX" style="text-transform:uppercase;letter-spacing:1px;font-weight:700" onkeydown="if(event.key==='Enter')submitCode()">
+    <button class="btn green" style="width:100%;justify-content:center" onclick="submitCode()">Activate</button>
+    <p style="margin:14px 0 0;font-size:13px">No code yet? <a href="#" onclick="buyPass();return false">Get the ₦2,000 pass</a></p>
+  </div>
+</div>
+
+<div id="toast"></div>
+<div id="print-root"></div>
+
+<script>
+/* ================= CONFIG (edit after setup — see DEPLOY.md) ================= */
+const PAYMENT_URL = "https://REPLACE-WITH-YOUR-FLUTTERWAVE-PAYMENT-LINK"; // Flutterwave payment link (DEPLOY.md Step 3)
+const SUPPORT_WHATSAPP = "2340000000000"; // your WhatsApp number, international format, no +
+const SITE_URL = "https://docoga.top";
+const WORKER_URL = ""; // e.g. https://docoga-pass.yourname.workers.dev — enables AUTOMATIC instant code delivery (see AUTOMATE.md)
+const ANALYTICS_ID = ""; // Google Analytics 4 Measurement ID, e.g. G-XXXXXXXXXX — see DEPLOY.md Step 6 (leave empty until you have it)
+/* ============================================================================== */
+
+const CODE_HASHES = new Set(["3d260bec","5422f3c7","3a5998f8","ed11779f","e07ad87a","28eda4d9","3b63966c","f142046e","8ce76209","b5044f89","01b7f119","591a90df","26f269f7","36fc62a2","d4c47cd8","9abd96b9","0094f361","86f21bd1","ed7d4b21","a1c06dd0","de00c669","d016062b","6d89dde0","71fe6e22","661d7c71","292aa934","6204dcc6","59dd44c9","56c4611d","251358c8","1b68b33b","437d11f4","50c7559e","7994e7db","e50fe950","6c87a93b","16f39498","27152284","26c064be","e5eb020e","aca6a617","a630bb83","6836e3c8","4858f309","98db7450","65a24cb7","bbd9728b","0f2522db","55804e40","6047fa66","16852ff2","87a400f3","734c51aa","57138c81","ddb2c042","b7b3e327","7b6ddea6","849a0ba6","eeccb007","fa03d49c","3f32e37f","72008561","70bd37d6","85874b8d","2bf8afff","d53f23d6","e2ea1e71","0637fea7","d657db78","faea3363","908ff0c0","06a80064","9286ab5e","d8f43c51","6b6a48f4","09aaab48","9e8b4f1d","1a45deca","24d7963e","bac6b3d9","12350627","494a8fb0","7c4ce14f","fcf87c21","7d6e8e1f","b2c5de33","95b7e3d7","db28e5bb","d7b748f2","9ca426f5","daeb9d6c","ae6bb231","94506965","d9a00c33","94c1b9a1","a25b705d","fe008395","37a2c744","31948af4","16fbd583","6d83b92d","b248e856","1eda74b3","16d32ca4","e1658ff0","079ab2e1","f95f3542","c4760957","3994bbad","11598317","ea8bb709","4da99fc8","a52aba3e","0380b946","693ed896","97f5ddbd","9d61b62b","08439e56","eb10cb71","b2ffafaa","ae374839","1305e3cf","c60ff85b","06d10b00","8c69a2b5","4f360266","807152b7","43c7f7b9","94ac6215","00e1018c","65062983","d93e5b52","2a9f55fe","6f5acddd","394c2517","3c3b89e0","398c78af","0223d98f","8a59787c","a8cc69be","44b06563","e3a0c804","53723b64","a7ee170c","37263ab1","bf348816","b8dac4e2","ed06edee","41029d44","d64cc342","e45bdc89","d93e457c","b50cf207","02774534","e1bb8ce2","d05aee1b","93af2bd3","b864c47b","753ab5c8","9cb513f7","516b42ef","27874e42","98875df4","0fc39c84","2045fc75","a9136bb3","66aed5da","0332d980","6d3c9326","6a4db4b6","b61e8046","18a733f7","40851103","a381429b","b91326e9","111c54ed","3d87395f","b6150aea","c2354a29","febc17d6","62093159","b5fc0ecb","abd4ab73","a5d98a23","fd1c84fd","82706c2d","95fd1880","6f44e916","d5b3063f","71d97827","e2971566","4185e412","58f8bb07","f146b7da","baf98c07","82627517","c279ac37","87486faf","f1804bfc","d3fe4ec0"]);
+
+/* ---------- safe storage (works even in restricted previews) ---------- */
+const store = (()=>{ try{ localStorage.setItem('_t','1'); localStorage.removeItem('_t'); return localStorage; }
+  catch(e){ const m={}; return {getItem:k=>(k in m?m[k]:null),setItem:(k,v)=>{m[k]=String(v)},removeItem:k=>{delete m[k]}}; } })();
+
+/* ---------- utils ---------- */
+function $(id){ return document.getElementById(id); }
+function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),3200); }
+function esc(s){ return String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function fnv1a(str){ let h=0x811c9dc5; for(let i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=Math.imul(h,0x01000193)>>>0; } return h>>>0; }
+function fmtN(n){ n=Number(n)||0; return '₦'+n.toLocaleString('en-NG'); }
+function fmtDateLong(d){ if(!d) return '________________'; const dt=new Date(String(d)+'T00:00:00'); if(isNaN(dt)) return '________________'; return dt.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}); }
+function todayISO(){ const n=new Date(); return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0'); }
+function isoOf(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function addMonthsISO(iso,m){ const dt=new Date(String(iso)+'T00:00:00'); if(isNaN(dt)) return ''; const d=new Date(dt.getFullYear(),dt.getMonth()+Number(m||0),dt.getDate()-1); return isoOf(d); }
+function addDaysISO(iso,days){ const dt=new Date(String(iso)+'T00:00:00'); if(isNaN(dt)) return ''; const d=new Date(dt.getFullYear(),dt.getMonth(),dt.getDate()+Number(days||0)); return isoOf(d); }
+function numWords(n){
+  n=Math.floor(Number(n)||0); if(n<0) return '';
+  if(n===0) return 'Zero';
+  const u=['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+  const t=['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+  const cap=x=>{ if(!x) return ''; if(x<20) return u[x]; if(x<100) return t[Math.floor(x/10)]+(x%10?'-'+u[x%10]:''); return u[Math.floor(x/100)]+' Hundred'+(x%100?' and '+cap(x%100):''); };
+  const out=[];
+  [[1e9,'Billion'],[1e6,'Million'],[1e3,'Thousand']].forEach(([v,name])=>{ if(n>=v){ out.push(cap(Math.floor(n/v))+' '+name); n%=v; } });
+  if(n) out.push(cap(n));
+  return out.join(', ');
+}
+function nairaWords(n){ return numWords(n)+' ('+fmtN(n)+') Naira Only'; }
+
+/* ---------- pass management ---------- */
+let pass=null; try{ pass=JSON.parse(store.getItem('docoga_pass')||'null'); }catch(e){}
+function passActive(){ return !!(pass && Date.now()<pass.exp); }
+function updatePassUI(){
+  const chip=$('pass-chip');
+  if(passActive()){ const days=Math.ceil((pass.exp-Date.now())/864e5); chip.textContent='OGA PASS ✓ '+days+'d'; chip.classList.add('pro'); }
+  else { chip.textContent='FREE PLAN'; chip.classList.remove('pro'); }
+  ['agreement','notice','receipt','invoice'].forEach(renderBadge);
+}
+function openModal(){ $('modal-overlay').classList.add('open'); $('pass-input').focus(); }
+function closeModal(){ $('modal-overlay').classList.remove('open'); }
+async function submitCode(){
+  const code=$('pass-input').value.trim();
+  if(!code){ toast('Enter your code first.'); return; }
+  const norm=code.toUpperCase().replace(/[\s-]/g,'');
+  const h=fnv1a(norm).toString(16).padStart(8,'0');
+  const activate=()=>{ pass={exp:Date.now()+30*864e5}; store.setItem('docoga_pass',JSON.stringify(pass)); updatePassUI(); renderAll(); closeModal(); $('pass-input').value=''; toast('✅ Oga Pass active for 30 days. Oga level unlocked!'); };
+  // 1) offline codes (unlock-codes.txt)
+  if(CODE_HASHES.has(h)){ activate(); return; }
+  // 2) server-issued codes (Worker — see AUTOMATE.md)
+  if(WORKER_URL){
+    try{
+      const r=await fetch(WORKER_URL+'/activate?code='+encodeURIComponent(norm));
+      const j=await r.json();
+      if(j.ok){ activate(); return; }
+    }catch(e){ /* offline or worker not set */ }
+  }
+  toast('❌ Invalid code. Please check and try again.');
+}
+function buyPass(){ window.open(PAYMENT_URL,'_blank'); toast('Complete payment — you\'ll be returned here and your pass activates automatically.'); }
+
+/* ---------- shared sheet helpers ---------- */
+function sheetClass(){ return passActive()?'sheet':'sheet free'; }
+function freeBanner(){ return passActive()?'':'<div class="free-banner">Created free with <b>DocOga</b> — '+esc(SITE_URL)+' — Get the Oga Pass to remove this banner.</div>'; }
+function renderBadge(type){ const b=$('badge-'+type); if(!b) return; b.innerHTML = passActive() ? '<span class="badge pro">OGA PASS</span>' : '<span class="badge free">FREE · banner on doc</span>'; }
+
+/* ---------- states ---------- */
+const STATES=["Abia","Adamawa","Akwa Ibom","Anambra","Bauchi","Bayelsa","Benue","Borno","Cross River","Delta","Ebonyi","Edo","Ekiti","Enugu","FCT (Abuja)","Gombe","Imo","Jigawa","Kaduna","Kano","Katsina","Kebbi","Kogi","Kwara","Lagos","Nasarawa","Niger","Ogun","Ondo","Osun","Oyo","Plateau","Rivers","Sokoto","Taraba","Yobe","Zamfara"];
+
+/* ================= TENANCY AGREEMENT ================= */
+function collectAgreement(){
+  return {
+    ll_name:$('ll_name').value, ll_addr:$('ll_addr').value, ll_phone:$('ll_phone').value,
+    tt_name:$('tt_name').value, tt_addr:$('tt_addr').value, tt_phone:$('tt_phone').value,
+    prop_desc:$('prop_desc').value, prop_addr:$('prop_addr').value, prop_state:$('prop_state').value,
+    rent_amt:$('rent_amt').value, rent_period:$('rent_period').value, deposit_amt:$('deposit_amt').value,
+    start_date:$('start_date').value, term_months:$('term_months').value, notice:$('notice').value,
+    prepared_by:$('prepared_by').value, custom_clauses:$('custom_clauses').value
+  };
+}
+function applyAgreement(p){
+  [['ll_name','ll_name'],['ll_addr','ll_addr'],['ll_phone','ll_phone'],['tt_name','tt_name'],['tt_addr','tt_addr'],['tt_phone','tt_phone'],
+   ['prop_desc','prop_desc'],['prop_addr','prop_addr'],['rent_amt','rent_amt'],['deposit_amt','deposit_amt'],
+   ['start_date','start_date'],['term_months','term_months'],['prepared_by','prepared_by'],['custom_clauses','custom_clauses']].forEach(([k,id])=>{ $(id).value=p[k]||''; });
+  if(p.prop_state) $('prop_state').value=p.prop_state;
+  if(p.rent_period) $('rent_period').value=p.rent_period;
+  if(p.notice) $('notice').value=p.notice;
+}
+function renderAgreement(){
+  const d=collectAgreement();
+  const periodWord={annum:'annum',quarter:'quarter',month:'month',week:'week'}[d.rent_period]||'annum';
+  const end=addMonthsISO(d.start_date,d.term_months);
+  $('hint-rent_amt').textContent=(d.rent_amt? '= '+numWords(d.rent_amt)+' Naira':'');
+  $('hint-deposit_amt').textContent=(Number(d.deposit_amt)>0? '= '+numWords(d.deposit_amt)+' Naira':'');
+  const c=[];
+  c.push(['TERM','The Landlord agrees to let and the Tenant agrees to take the Demised Premises for a term of <b>'+(esc(d.term_months)||'____')+' month'+((Number(d.term_months)||1)>1?'s':'')+'</b> certain, commencing on <b>'+fmtDateLong(d.start_date)+'</b> and ending on <b>'+fmtDateLong(end)+'</b>, renewable by mutual agreement of the parties.']);
+  c.push(['RENT','The Tenant shall pay to the Landlord a rent of <b>'+ (d.rent_amt?nairaWords(d.rent_amt):'₦____________') +'</b> per '+periodWord+', payable in advance, without deduction except as may be permitted by law.']);
+  if(Number(d.deposit_amt)>0) c.push(['CAUTION FEE / DEPOSIT','The Tenant has paid a caution fee (security deposit) of <b>'+nairaWords(d.deposit_amt)+'</b>, refundable at the expiration or earlier termination of the tenancy, subject to deductions for any damage to the Demised Premises beyond normal wear and tear.']);
+  c.push(['USE OF PREMISES','The Tenant shall use the Demised Premises for residential purposes only and shall not use the Premises or permit it to be used for any illegal, immoral or hazardous purpose.']);
+  c.push(['NO ASSIGNMENT OR SUBLETTING','The Tenant shall not assign, sublet, or part with possession of the Demised Premises or any part thereof without the prior written consent of the Landlord.']);
+  c.push(['REPAIRS AND MAINTENANCE','The Landlord shall keep the roof and external walls of the Demised Premises in good structural repair. The Tenant shall keep the interior, sanitary fittings and installations in good and tenantable condition, and shall be liable for any damage caused by the negligence of the Tenant, his guests or invitees.']);
+  c.push(['UTILITIES','The Tenant shall pay all charges for electricity, water, waste disposal and other utilities consumed on the Demised Premises during the tenancy.']);
+  c.push(['QUIET ENJOYMENT','The Landlord covenants that the Tenant, upon paying the rent and observing the covenants herein, shall peacefully hold and enjoy the Demised Premises during the tenancy without any interruption by the Landlord or any person lawfully claiming under him.']);
+  c.push(['ALTERATIONS','The Tenant shall not make any structural alteration or addition to the Demised Premises without the prior written consent of the Landlord.']);
+  c.push(['INSPECTION','The Landlord or his authorised agent may enter the Demised Premises to inspect its condition upon giving the Tenant reasonable prior notice.']);
+  c.push(['NOTICE TO QUIT','Either party may terminate this tenancy by serving on the other party written notice to quit of <b>'+(esc(d.notice)||'as required by the Tenancy Law applicable in the state')+'</b>, in accordance with the Tenancy Law applicable in '+ (esc(d.prop_state)||'the state where the Premises is situate') +'.']);
+  c.push(['RENEWAL AND RENT REVIEW','The parties may renew this tenancy upon terms to be agreed, and the rent may be reviewed upon renewal by mutual agreement.']);
+  c.push(['GOVERNING LAW AND JURISDICTION','This agreement shall be governed by the laws of the Federal Republic of Nigeria and the tenancy law applicable in '+(esc(d.prop_state)||'the state where the Premises is situate')+', and the parties submit to the jurisdiction of the courts of that state.']);
+  (d.custom_clauses||'').split('\n').map(s=>s.trim()).filter(Boolean).forEach(line=>c.push(['ADDITIONAL COVENANT',esc(line)]));
+  const now=new Date();
+  const html =
+  '<div class="'+sheetClass()+'">'+
+  '<h1>RESIDENTIAL TENANCY AGREEMENT</h1>'+
+  '<div class="doc-meta">Made this '+now.getDate()+' day of '+now.toLocaleDateString('en-GB',{month:'long',year:'numeric'})+'</div>'+
+  '<p><b>THIS TENANCY AGREEMENT</b> is made between</p>'+
+  '<div class="parties">'+
+  '<p><b>'+(esc(d.ll_name)||'________________')+'</b> of '+(esc(d.ll_addr)||'________________')+(d.ll_phone?' (Tel: '+esc(d.ll_phone)+')':'')+' (hereinafter called <b>"the Landlord"</b>, which expression shall where the context so admits include the Landlord\'s heirs, successors-in-title and assigns)</p>'+
+  '<p>AND</p>'+
+  '<p><b>'+(esc(d.tt_name)||'________________')+'</b> of '+(esc(d.tt_addr)||'________________')+(d.tt_phone?' (Tel: '+esc(d.tt_phone)+')':'')+' (hereinafter called <b>"the Tenant"</b>).</p>'+
+  '</div>'+
+  '<p><b>WHEREAS</b> the Landlord is the owner or is lawfully entitled to grant a tenancy of all that property known, described and situate at <b>'+(esc(d.prop_desc)||'____________')+', '+(esc(d.prop_addr)||'____________')+((d.prop_state)?', '+esc(d.prop_state)+' State':'')+'</b> (hereinafter called <b>"the Demised Premises"</b>).</p>'+
+  '<p><b>NOW THIS AGREEMENT WITNESSES</b> as follows:</p>'+
+  c.map((cl,i)=>'<div class="clause"><b>'+ (i+1) +'. '+cl[0]+'</b>'+cl[1]+'</div>').join('')+
+  '<p style="margin-top:18px"><b>IN WITNESS WHEREOF</b> the parties have executed this agreement on the date first above written.</p>'+
+  '<div class="sig-grid">'+
+  '<div><div class="sig-line"></div>LANDLORD: '+(esc(d.ll_name)||'________________')+'<div style="color:#555;font-size:11.5px">Signature / Date</div></div>'+
+  '<div><div class="sig-line"></div>TENANT: '+(esc(d.tt_name)||'________________')+'<div style="color:#555;font-size:11.5px">Signature / Date</div></div>'+
+  '<div><div class="sig-line"></div>WITNESS 1<div style="color:#555;font-size:11.5px">Name / Signature / Date</div></div>'+
+  '<div><div class="sig-line"></div>WITNESS 2<div style="color:#555;font-size:11.5px">Name / Signature / Date</div></div>'+
+  '</div>'+
+  (d.prepared_by?'<p style="margin-top:22px;font-size:12px;color:#444">Prepared by: '+esc(d.prepared_by)+'</p>':'')+
+  freeBanner()+
+  '</div>';
+  $('preview-agreement').innerHTML=html;
+  return html;
+}
+
+/* ================= NOTICE TO QUIT ================= */
+function collectNotice(){
+  return { n_from:$('n_from').value, n_fromaddr:$('n_fromaddr').value, n_to:$('n_to').value, n_toaddr:$('n_toaddr').value,
+    n_prop:$('n_prop').value, n_period:$('n_period').value, n_date:$('n_date').value, n_reason:$('n_reason').value };
+}
+function applyNotice(p){
+  [['n_from','n_from'],['n_fromaddr','n_fromaddr'],['n_to','n_to'],['n_toaddr','n_toaddr'],['n_prop','n_prop'],['n_date','n_date'],['n_reason','n_reason']].forEach(([k,id])=>{ $(id).value=p[k]||''; });
+  if(p.n_period) $('n_period').value=p.n_period;
+}
+function renderNotice(){
+  const d=collectNotice();
+  const isLaw=(d.n_period==='law');
+  const periodText=isLaw?'the period of notice':({7:'seven (7) days',30:'one (1) month',90:'three (3) months',180:'six (6) months'}[d.n_period]||'the stipulated period of notice');
+  const vacate=isLaw?null:addDaysISO(d.n_date,Number(d.n_period)||0);
+  const html =
+  '<div class="'+sheetClass()+'">'+
+  '<div style="text-align:right;font-size:12.5px;color:#333">'+fmtDateLong(d.n_date)+'</div>'+
+  '<h1 style="text-align:left;margin-top:12px">NOTICE TO QUIT</h1>'+
+  '<p><b>TO:</b> '+(esc(d.n_to)||'________________')+(d.n_toaddr?', of '+esc(d.n_toaddr):'')+'</p>'+
+  '<p><b>FROM:</b> '+(esc(d.n_from)||'________________')+(d.n_fromaddr?', of '+esc(d.n_fromaddr):'')+'</p>'+
+  '<p><b>PROPERTY:</b> '+(esc(d.n_prop)||'________________')+'</p>'+
+  '<hr style="border:none;border-top:1px solid #333;margin:14px 0">'+
+  '<p>TAKE NOTICE that pursuant to the tenancy existing between you and the undersigned in respect of the above-described property, and in accordance with the Tenancy Law applicable in the state where the property is situate, <b>you are hereby required to quit and deliver up possession of the said premises on or before '+(vacate?'<u>'+fmtDateLong(vacate)+'</u>':'<u>________________</u>')+'</b>, being the expiration of '+periodText+' notice from the date of service of this notice upon you.</p>'+
+  (d.n_reason?'<p>This notice is given on the following ground(s): <b>'+esc(d.n_reason)+'</b>.</p>':'')+
+  '<p>Any rent paid by you in advance in respect of any period beyond the date stated above shall be refunded or appropriately applied at the time you deliver up possession of the premises.</p>'+
+  '<p>TAKE FURTHER NOTICE that should you fail, refuse or neglect to comply with this notice, the undersigned shall be entitled to commence proceedings for the recovery of possession of the premises in accordance with the applicable law, at your own risk as to costs and consequences.</p>'+
+  '<p style="margin-top:28px">Yours faithfully,</p>'+
+  '<div style="margin-top:46px;border-bottom:1px solid #333;width:240px"></div>'+
+  '<p style="margin-bottom:0"><b>'+(esc(d.n_from)||'________________')+'</b><br><span style="font-size:12px;color:#444">For and on behalf of the Landlord</span></p>'+
+  freeBanner()+
+  '</div>';
+  $('preview-notice').innerHTML=html;
+  return html;
+}
+
+/* ================= RENT RECEIPT ================= */
+function collectReceipt(){
+  return { r_no:$('r_no').value, r_date:$('r_date').value, r_from:$('r_from').value, r_amt:$('r_amt').value,
+    r_method:$('r_method').value, r_purpose:$('r_purpose').value, r_prop:$('r_prop').value, r_period:$('r_period').value,
+    r_bal:$('r_bal').value, r_issuer:$('r_issuer').value, r_phone:$('r_phone').value };
+}
+function applyReceipt(p){
+  [['r_no','r_no'],['r_date','r_date'],['r_from','r_from'],['r_amt','r_amt'],['r_purpose','r_purpose'],['r_prop','r_prop'],['r_period','r_period'],['r_bal','r_bal'],['r_issuer','r_issuer'],['r_phone','r_phone']].forEach(([k,id])=>{ $(id).value=p[k]||''; });
+  if(p.r_method) $('r_method').value=p.r_method;
+}
+function renderReceipt(){
+  const d=collectReceipt();
+  $('hint-r_amt').textContent=(d.r_amt? '= '+numWords(d.r_amt)+' Naira':'');
+  const html =
+  '<div class="'+sheetClass()+'">'+
+  '<div class="receipt-box">'+
+  '<h1>RECEIPT</h1>'+
+  '<div class="doc-meta">No: '+(esc(d.r_no)||'____')+' &nbsp;·&nbsp; Date: '+fmtDateLong(d.r_date)+'</div>'+
+  '<p><b>RECEIVED</b> with thanks from <b>'+(esc(d.r_from)||'________________')+'</b> the sum of <b>'+(d.r_amt?nairaWords(d.r_amt):'₦______________')+'</b></p>'+
+  '<p>by <b>'+(esc(d.r_method)||'____')+'</b>, being payment for <b>'+(esc(d.r_purpose)||'________________')+'</b>'+(d.r_period?' covering <b>'+esc(d.r_period)+'</b>':'')+'.</p>'+
+  (d.r_prop?'<p>In respect of the property at: <b>'+esc(d.r_prop)+'</b></p>':'')+
+  '<p>Balance outstanding: <b>'+((d.r_bal!==''&&d.r_bal!=null)?fmtN(d.r_bal):'NIL')+'</b></p>'+
+  '<hr>'+
+  '<div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px">'+
+  '<div><div style="border-bottom:1px solid #333;width:200px;height:34px"></div><b>'+(esc(d.r_issuer)||'________________')+'</b><div style="font-size:12px;color:#444">'+(d.r_phone?'Tel: '+esc(d.r_phone):'')+'</div></div>'+
+  '<div style="font-size:11.5px;color:#444;text-align:right">Keep this receipt safe.<br>It is your proof of payment.</div>'+
+  '</div>'+
+  '</div>'+
+  freeBanner()+
+  '</div>';
+  $('preview-receipt').innerHTML=html;
+  return html;
+}
+
+/* ================= INVOICE ================= */
+let invItems=[{desc:'',qty:1,price:null}];
+function addInvItem(){ invItems.push({desc:'',qty:1,price:null}); renderInvItems(); renderInvoice(); }
+function removeInvItem(i){ invItems.splice(i,1); if(!invItems.length) invItems.push({desc:'',qty:1,price:null}); renderInvItems(); renderInvoice(); }
+function renderInvItems(){
+  $('inv-items').innerHTML=invItems.map((it,i)=>
+    '<tr><td class="desc"><input data-i="'+i+'" data-f="desc" value="'+esc(it.desc||'')+'" placeholder="Description of work / goods"></td>'+
+    '<td><input class="qty" type="number" inputmode="numeric" min="1" data-i="'+i+'" data-f="qty" value="'+(it.qty||1)+'"></td>'+
+    '<td><input class="price" type="number" inputmode="numeric" min="0" data-i="'+i+'" data-f="price" value="'+(it.price!=null?esc(String(it.price)):'')+'" placeholder="0"></td>'+
+    '<td><button type="button" class="x-btn" onclick="removeInvItem('+i+')">✕</button></td></tr>').join('');
+}
+function collectInvoice(){
+  document.querySelectorAll('#inv-items input').forEach(inp=>{ invItems[+inp.dataset.i][inp.dataset.f]=inp.value; });
+  return { i_biz:$('i_biz').value, i_bizphone:$('i_bizphone').value, i_no:$('i_no').value, i_date:$('i_date').value,
+    i_due:$('i_due').value, i_client:$('i_client').value, i_vat:$('i_vat').value, i_disc:$('i_disc').value, i_notes:$('i_notes').value,
+    items:invItems.map(x=>({...x})) };
+}
+function applyInvoice(p){
+  [['i_biz','i_biz'],['i_bizphone','i_bizphone'],['i_no','i_no'],['i_date','i_date'],['i_due','i_due'],['i_client','i_client'],['i_disc','i_disc'],['i_notes','i_notes']].forEach(([k,id])=>{ $(id).value=p[k]||''; });
+  if(p.i_vat!=null) $('i_vat').value=p.i_vat;
+  if(p.items&&p.items.length){ invItems=p.items.map(x=>({...x})); renderInvItems(); }
+}
+function renderInvoice(){
+  const d=collectInvoice();
+  const rows=invItems.map(it=>{ const amt=(Number(it.qty)||0)*(Number(it.price)||0); return '<tr><td>'+esc(it.desc||'—')+'</td><td>'+esc(it.qty||1)+'</td><td>'+fmtN(Number(it.price)||0)+'</td><td>'+fmtN(amt)+'</td></tr>'; });
+  const sub=invItems.reduce((s,it)=>s+(Number(it.qty)||0)*(Number(it.price)||0),0);
+  const disc=Number(d.i_disc)||0;
+  const vatRate=Number(d.i_vat)||0;
+  const vatAmt=(sub-disc)*vatRate/100;
+  const total=(sub-disc)+vatAmt;
+  const html =
+  '<div class="'+sheetClass()+'">'+
+  '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px">'+
+  '<div><h1 style="text-align:left;margin:0">'+esc(d.i_biz||'Your Business')+'</h1>'+(d.i_bizphone?'<div style="font-size:12.5px;color:#444">Tel: '+esc(d.i_bizphone)+'</div>':'')+'</div>'+
+  '<div class="right"><h1 style="text-align:left;margin:0">INVOICE</h1><div style="font-size:12.5px;color:#444">#'+(esc(d.i_no)||'____')+'<br>Date: '+fmtDateLong(d.i_date)+'<br>Due: '+fmtDateLong(d.i_due)+'</div></div>'+
+  '</div>'+
+  '<p style="margin-top:14px"><b>BILL TO:</b><br>'+esc(d.i_client||'________________')+'</p>'+
+  '<table class="doc-table"><thead><tr><th>Description</th><th>Qty</th><th>Unit Price</th><th>Amount</th></tr></thead><tbody>'+rows.join('')+
+  '<tr><td colspan="3" style="text-align:right">Subtotal</td><td>'+fmtN(sub)+'</td></tr>'+
+  (disc?'<tr><td colspan="3" style="text-align:right">Discount</td><td>-'+fmtN(disc)+'</td></tr>':'')+
+  (vatRate?'<tr><td colspan="3" style="text-align:right">VAT '+vatRate+'%</td><td>'+fmtN(vatAmt)+'</td></tr>':'')+
+  '<tr class="tot-row"><td colspan="3" style="text-align:right">TOTAL DUE</td><td>'+fmtN(total)+'</td></tr>'+
+  '</tbody></table>'+
+  (d.i_notes?'<p><b>Notes:</b> '+esc(d.i_notes)+'</p>':'')+
+  '<p style="margin-top:20px;font-size:12.5px;color:#444">Thank you for your business.</p>'+
+  freeBanner()+
+  '</div>';
+  $('preview-invoice').innerHTML=html;
+  return html;
+}
+
+/* ================= print / share / save ================= */
+function printCurrent(type){
+  const html={agreement:renderAgreement,notice:renderNotice,receipt:renderReceipt,invoice:renderInvoice}[type]();
+  const pr=$('print-root');
+  pr.innerHTML=html;
+  document.body.classList.add('printing');
+  try{ window.print(); toast(passActive()?'Sending to printer — choose "Save as PDF" for a digital copy.':'Printing free copy — Oga Pass removes the banner.'); }
+  catch(e){ toast('Printing is blocked in this preview. Open the live site to print or save as PDF.'); }
+  setTimeout(()=>{ document.body.classList.remove('printing'); pr.innerHTML=''; }, 2500);
+}
+function shareDoc(type){
+  const msgs={
+    agreement:'I just drafted a tenancy agreement in 2 minutes with DocOga — free Nigerian document maker 📄',
+    notice:'Served a proper notice to quit in 1 minute with DocOga 📮 — free Nigerian document maker',
+    receipt:'Issuing rent receipts in seconds with DocOga 🧾 — free Nigerian document maker',
+    invoice:'Creating clean naira invoices with DocOga 💼 — free Nigerian document maker'
+  };
+  const url='https://wa.me/?text='+encodeURIComponent(msgs[type]+' → '+SITE_URL);
+  try{ window.open(url,'_blank'); }catch(e){ toast('Open the live site to share on WhatsApp.'); }
+}
+const DOC_TITLES={agreement:'Tenancy Agreement',notice:'Notice to Quit',receipt:'Rent Receipt',invoice:'Invoice'};
+const RENDERERS={agreement:renderAgreement,notice:renderNotice,receipt:renderReceipt,invoice:renderInvoice};
+const COLLECTORS={agreement:collectAgreement,notice:collectNotice,receipt:collectReceipt,invoice:collectInvoice};
+const APPLIERS={agreement:applyAgreement,notice:applyNotice,receipt:applyReceipt,invoice:applyInvoice};
+function getDocs(){ try{ return JSON.parse(store.getItem('docoga_docs')||'[]'); }catch(e){ return []; } }
+function saveDoc(type){
+  const payload=COLLECTORS[type]();
+  let title=DOC_TITLES[type];
+  if(type==='agreement'&&payload.ll_name) title='Agreement — '+payload.ll_name+(payload.tt_name?' × '+payload.tt_name:'');
+  if(type==='notice'&&payload.n_to) title='Notice — '+payload.n_to;
+  if(type==='receipt'&&payload.r_from) title='Receipt — '+payload.r_from;
+  if(type==='invoice'&&payload.i_client) title='Invoice — '+payload.i_client;
+  const docs=getDocs(); docs.unshift({id:Date.now(),type,title,ts:Date.now(),payload});
+  store.setItem('docoga_docs',JSON.stringify(docs.slice(0,60)));
+  try{ store.removeItem(DRAFT_KEY(type)); }catch(e){}
+  renderDocs(); toast('💾 Saved to My Documents (on this device).');
+}
+function openDoc(id){
+  const doc=getDocs().find(d=>d.id===id); if(!doc) return;
+  location.hash='#'+doc.type;
+  setTimeout(()=>{ APPLIERS[doc.type](doc.payload); RENDERERS[doc.type](); toast('Loaded "'+doc.title+'".'); }, 60);
+}
+function delDoc(id){
+  store.setItem('docoga_docs',JSON.stringify(getDocs().filter(d=>d.id!==id)));
+  renderDocs(); toast('Deleted.');
+}
+function renderDocs(){
+  const docs=getDocs();
+  $('docs-list').innerHTML = docs.length ? docs.map(d=>
+    '<div class="doc-item"><div class="grow"><div class="t">📄 '+esc(d.title)+'</div><div class="m">'+new Date(d.ts).toLocaleString('en-NG')+'</div></div>'+
+    '<button class="link-btn" onclick="openDoc('+d.id+')">Open</button>'+
+    '<button class="link-btn" onclick="RENDERERS.'+d.type+'();printCurrent(\''+d.type+'\')">Print</button>'+
+    '<button class="link-btn danger" onclick="delDoc('+d.id+')">Delete</button></div>').join('')
+    : '<div class="panel" style="text-align:center;color:var(--muted)">No saved documents yet. Create one and tap <b>Save</b>.</div>';
+}
+
+/* ---------- v1.2: auto-save drafts & business profile ---------- */
+const DRAFT_KEY=t=>'docoga_draft_'+t;
+function saveDraft(type){ try{ store.setItem(DRAFT_KEY(type), JSON.stringify(COLLECTORS[type]())); }catch(e){} }
+function loadDrafts(){
+  let restored=false;
+  ['agreement','notice','receipt','invoice'].forEach(t=>{
+    try{
+      const raw=store.getItem(DRAFT_KEY(t)); if(!raw) return;
+      const p=JSON.parse(raw);
+      const has=Object.values(p||{}).some(v=>v!==''&&v!=null&&!(Array.isArray(v)&&!v.length));
+      if(!has) return;
+      APPLIERS[t](p); restored=true;
+    }catch(e){}
+  });
+  if(restored) toast('Your unfinished drafts were restored. 📝');
+}
+function saveProfile(){ try{ store.setItem('docoga_profile', JSON.stringify({i_biz:$('i_biz').value,i_bizphone:$('i_bizphone').value})); }catch(e){} }
+function loadProfile(){ try{ const p=JSON.parse(store.getItem('docoga_profile')||'null'); if(p){ if(p.i_biz&&!$('i_biz').value) $('i_biz').value=p.i_biz; if(p.i_bizphone&&!$('i_bizphone').value) $('i_bizphone').value=p.i_bizphone; } }catch(e){} }
+
+/* ================= router & init ================= */
+const PAGES=['home','agreement','notice','receipt','invoice','docs','pricing'];
+function route(){
+  let h=(location.hash||'#home').slice(1).split('?')[0];
+  if(!PAGES.includes(h)) h='home';
+  PAGES.forEach(p=>{ $('page-'+p).style.display=(p===h?'block':'none'); });
+  document.querySelectorAll('header nav a').forEach(a=>a.classList.toggle('active',a.getAttribute('href')==='#'+h));
+  window.scrollTo(0,0);
+}
+function renderAll(){ renderAgreement(); renderNotice(); renderReceipt(); renderInvoice(); renderDocs(); updatePassUI(); }
+
+(function init(){
+  // states select
+  $('prop_state').innerHTML='<option value="">Select state…</option>'+STATES.map(s=>'<option>'+s+'</option>').join('');
+  // defaults
+  if(!$('r_date').value) $('r_date').value=todayISO();
+  if(!$('r_no').value) $('r_no').value='RCP-'+String(Math.floor(100+Math.random()*900));
+  if(!$('i_date').value) $('i_date').value=todayISO();
+  if(!$('i_no').value) $('i_no').value='INV-'+String(getDocs().filter(x=>x.type==='invoice').length+1).padStart(3,'0');
+  if(!$('start_date').value) $('start_date').value=todayISO();
+  if(!$('n_date').value) $('n_date').value=todayISO();
+  loadDrafts();
+  loadProfile();
+  renderInvItems();
+  const debounce_=(fn,ms)=>{ let h; return ()=>{ clearTimeout(h); h=setTimeout(fn,ms); }; };
+  const autoA=debounce_(()=>saveDraft('agreement'),700);
+  const autoN=debounce_(()=>saveDraft('notice'),700);
+  const autoR=debounce_(()=>saveDraft('receipt'),700);
+  const autoI=debounce_(()=>{ saveDraft('invoice'); saveProfile(); },700);
+  $('form-agreement').addEventListener('input',autoA);
+  $('form-notice').addEventListener('input',autoN);
+  $('form-receipt').addEventListener('input',autoR);
+  $('form-invoice').addEventListener('input',autoI);
+  window.addEventListener('hashchange',route);
+  $('foot-wa').href='https://wa.me/'+SUPPORT_WHATSAPP;
+  $('wa-float').href='https://wa.me/'+SUPPORT_WHATSAPP;
+  // Google Analytics 4 — loads only when configured AND served over http(s)
+  if(ANALYTICS_ID && /^https?:/.test(location.protocol)){
+    try{
+      const s=document.createElement('script'); s.async=true;
+      s.src='https://www.googletagmanager.com/gtag/js?id='+ANALYTICS_ID;
+      document.head.appendChild(s);
+      window.dataLayer=window.dataLayer||[]; window.gtag=function(){window.dataLayer.push(arguments);};
+      window.gtag('js',new Date()); window.gtag('config',ANALYTICS_ID);
+    }catch(e){}
+  }
+  route(); renderAll();
+})();
+</script>
+</body>
+</html>
