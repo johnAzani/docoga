@@ -126,6 +126,7 @@ async function handleFlwWebhook(request, env, cors) {
   const v3ok = !!(env.FLW_WEBHOOK_HASH && request.headers.get("verif-hash") === env.FLW_WEBHOOK_HASH);
   const v4ok = await flwHmacMatches(raw, request.headers.get("flutterwave-signature"), env.FLW_WEBHOOK_HASH || "");
   if (!v3ok && !v4ok) return new Response("forbidden", { status: 403 });
+  try { await env.KV.put("debug:last-webhook", raw); } catch (e) {} // TODO: remove after launch validation
   let body = null;
   try { body = JSON.parse(raw); } catch (e) {}
   if (!body) return new Response("bad request", { status: 400 });
@@ -211,6 +212,7 @@ async function handleVerify(url, env, cors) {
   if (!idsParam) return json({ ok: false, error: "ref required" }, cors, 400);
   const ids = [...new Set(idsParam.split(",").map((s) => s.trim()).filter(Boolean))].slice(0, 8);
   if (!ids.length) return json({ ok: false, error: "ref required" }, cors, 400);
+  try { await env.KV.put("debug:last-verify", JSON.stringify({ ids: idsParam, t: Date.now() })); } catch (e) {} // TODO: remove after launch validation
 
   // Idempotency: any known id returns the already-issued code.
   for (const id of ids) {
