@@ -92,6 +92,9 @@ check("sitemap.xml: 3+ locs on our domain", len(re.findall(r"<loc>https://docoga
 check("sitemap.xml: zero docoga.top leftovers", "docoga.top" not in smap)
 
 print("── 5. JS-referenced ids exist ──")
+check("pass-state CTAs wired (buy-btn id + has-pass toggle + sticky-cta)",
+      ('id="buy-btn"' in idx) and ("classList.toggle('has-pass'" in idx) and ('id="sticky-cta"' in idx) and ('buy-btn' in idx[idx.find("updatePassUI"):idx.find("function openModal")]),
+      "pricing/sticky CTAs must react to pass state")
 used = set(re.findall(r"\$\('([A-Za-z0-9_-]+)'\)", idx)) | set(re.findall(r"getElementById\('([^']+)'\)", idx))
 defined = set(re.findall(r'id="([^"]+)"', idx))
 missing = sorted(used - defined)

@@ -278,6 +278,12 @@ textarea{min-height:84px}
 }
 @media(prefers-reduced-motion:reduce){.card:hover{transform:none}.btn{transition:none}}
 @media print{.sticky-cta,.trust-strip,.steps,.hero-mock{display:none !important}}
+
+/* pass-aware CTAs — never sell to a customer who already owns the pass */
+body.has-pass .sticky-cta{display:none !important}
+body.has-pass .buy-only{display:none !important}
+#buy-btn:disabled{opacity:.8;cursor:default;box-shadow:none}
+@media(max-width:720px){ body.has-pass .wa-wrap{bottom:18px !important} body.has-pass main{padding-bottom:60px} }
 </style>
 </head>
 <body>
@@ -620,15 +626,15 @@ textarea{min-height:84px}
         <li>Priority WhatsApp support</li>
         <li>Early access to new document types</li>
       </ul>
-      <button class="btn primary" style="width:100%;justify-content:center" onclick="buyPass()">Get Oga Pass — ₦2,000</button>
-      <div class="flw-badge"><span class="dot"></span>Secured by Flutterwave · Card · Transfer · USSD</div>
-      <p class="guarantee">Your code appears on screen in ~30 seconds — or WhatsApp us and a human sorts it out.</p>
-      <p style="text-align:center;margin-top:8px"><button class="link-btn" onclick="openModal()">Already have a code? Activate →</button></p>
+      <button class="btn primary" id="buy-btn" style="width:100%;justify-content:center" onclick="buyPass()">Get Oga Pass — ₦2,000</button>
+      <div class="flw-badge buy-only"><span class="dot"></span>Secured by Flutterwave · Card · Transfer · USSD</div>
+      <p class="guarantee buy-only">Your code appears on screen in ~30 seconds — or WhatsApp us and a human sorts it out.</p>
+      <p style="text-align:center;margin-top:8px"><button class="link-btn" onclick="openModal()">Have a code? Activate / extend →</button></p>
     </div>
   </div>
 </section>
 
-<div class="sticky-cta no-print"><span><b>Oga Pass</b> — ₦2,000 · 30 days unlimited</span><a class="btn primary sm" href="#pricing">Get the Pass</a></div>
+<div class="sticky-cta no-print" id="sticky-cta"><span><b>Oga Pass</b> — ₦2,000 · 30 days unlimited</span><a class="btn primary sm" href="#pricing">Get the Pass</a></div>
 </main>
 
 <footer>
@@ -648,7 +654,7 @@ textarea{min-height:84px}
   <div class="modal">
     <button class="close-x" onclick="closeModal()">✕</button>
     <h3>Activate Oga Pass</h3>
-    <p>Enter the code you received after payment to unlock 30 days of clean, watermark-free documents.</p>
+    <p id="modal-sub">Enter the code you received after payment to unlock 30 days of clean, watermark-free documents.</p>
     <input id="pass-input" placeholder="OGA-XXXX-XXXX-XXXX" style="text-transform:uppercase;letter-spacing:1px;font-weight:700" onkeydown="if(event.key==='Enter')submitCode()">
     <button class="btn green" style="width:100%;justify-content:center" onclick="submitCode()">Activate</button>
     <p style="margin:14px 0 0;font-size:13px">No code yet? <a href="#" onclick="buyPass();return false">Get the ₦2,000 pass</a></p>
@@ -702,8 +708,13 @@ let pass=null; try{ pass=JSON.parse(store.getItem('docoga_pass')||'null'); }catc
 function passActive(){ return !!(pass && Date.now()<pass.exp); }
 function updatePassUI(){
   const chip=$('pass-chip');
-  if(passActive()){ const days=Math.ceil((pass.exp-Date.now())/864e5); chip.textContent='OGA PASS ✓ '+days+'d'; chip.classList.add('pro'); }
+  const active=passActive();
+  const days=active?Math.ceil((pass.exp-Date.now())/864e5):0;
+  document.body.classList.toggle('has-pass', active);
+  if(active){ chip.textContent='OGA PASS ✓ '+days+'d'; chip.classList.add('pro'); }
   else { chip.textContent='FREE PLAN'; chip.classList.remove('pro'); }
+  const bb=$('buy-btn'); if(bb){ bb.disabled=active; bb.textContent=active?('✓ Pass active — '+days+' day'+(days>1?'s':'')+' of clean documents left'):'Get Oga Pass — ₦2,000'; }
+  const ms=$('modal-sub'); if(ms){ ms.textContent=active?('Your pass is active — '+days+'d left. Entering a new code ADDS 30 days on top.'):'Enter the code you received after payment to unlock 30 days of clean, watermark-free documents.'; }
   ['agreement','notice','receipt','invoice'].forEach(renderBadge);
 }
 function openModal(){ $('modal-overlay').classList.add('open'); $('pass-input').focus(); }
@@ -713,7 +724,7 @@ async function submitCode(){
   if(!code){ toast('Enter your code first.'); return; }
   const norm=code.toUpperCase().replace(/[\s-]/g,'');
   const h=fnv1a(norm).toString(16).padStart(8,'0');
-  const activate=()=>{ pass={exp:Date.now()+30*864e5}; store.setItem('docoga_pass',JSON.stringify(pass)); updatePassUI(); renderAll(); closeModal(); $('pass-input').value=''; toast('✅ Oga Pass active for 30 days. Oga level unlocked!'); };
+  const activate=()=>{ const base=Math.max((pass&&pass.exp)||0, Date.now()); pass={exp:base+30*864e5}; store.setItem('docoga_pass',JSON.stringify(pass)); updatePassUI(); renderAll(); closeModal(); $('pass-input').value=''; toast('✅ Oga Pass active for 30 days. Oga level unlocked!'); };
   // 1) offline codes (unlock-codes.txt)
   if(CODE_HASHES.has(h)){ activate(); return; }
   // 2) server-issued codes (Worker — see AUTOMATE.md)
