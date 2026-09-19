@@ -6,15 +6,15 @@
 <title>Payment successful — DocOga</title>
 <meta name="robots" content="noindex">
 <style>
-:root{--green:#046A38;--green-dark:#03502B;--ink:#14211A;--muted:#5C6B61;--line:#E2E7E1;--amber:#F2A93B}
+:root{--green:#0047E1;--green-dark:#0035A8;--ink:#141F33;--muted:#5B6B85;--line:#E2E8F2;--amber:#F2A93B}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:#F6F7F5;color:var(--ink);min-height:100vh;display:grid;place-items:center;padding:20px;line-height:1.55}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:#F5F7FB;color:var(--ink);min-height:100vh;display:grid;place-items:center;padding:20px;line-height:1.55}
 .card{background:#fff;border:1px solid var(--line);border-radius:20px;max-width:460px;width:100%;padding:34px 30px;text-align:center}
 .spinner{width:34px;height:34px;border:4px solid var(--line);border-top-color:var(--green);border-radius:50%;margin:0 auto 16px;animation:spin 1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 h1{font-size:22px;margin-bottom:8px}
 p{color:var(--muted);font-size:14.5px;margin-bottom:8px}
-.code-box{font-size:22px;font-weight:900;letter-spacing:2px;background:#F0F6F1;border:2px dashed var(--green);border-radius:12px;padding:16px;margin:18px 0;color:var(--green-dark)}
+.code-box{font-size:22px;font-weight:900;letter-spacing:2px;background:#EBF3FD;border:2px dashed var(--green);border-radius:12px;padding:16px;margin:18px 0;color:var(--green-dark)}
 .big{font-size:42px;margin-bottom:10px}
 .btn{display:inline-block;background:var(--green);color:#fff;font-weight:700;text-decoration:none;border-radius:10px;padding:12px 22px;font-size:15px;margin-top:10px}
 .small{font-size:12.5px;margin-top:14px}
@@ -30,7 +30,7 @@ p{color:var(--muted);font-size:14.5px;margin-bottom:8px}
     <h1>Payment confirmed!</h1>
     <p>Your Oga Pass code (screenshot it for safekeeping):</p>
     <div class="code-box" id="code"></div>
-    <button id="copy-btn" onclick="(function(b){var t=document.getElementById('code').textContent;try{navigator.clipboard.writeText(t)}catch(e){var x=document.createElement('textarea');x.value=t;document.body.appendChild(x);x.select();document.execCommand('copy');document.body.removeChild(x)}b.textContent='\u2705 Copied!';setTimeout(function(){b.textContent='\uD83D\uDCCB Copy code'},1600)})(this)" style="background:#046A38;color:#fff;border:none;border-radius:10px;padding:10px 20px;font-weight:700;font-size:14px;cursor:pointer;margin-top:2px">📋 Copy code</button>
+    <button id="copy-btn" onclick="(function(b){var t=document.getElementById('code').textContent;try{navigator.clipboard.writeText(t)}catch(e){var x=document.createElement('textarea');x.value=t;document.body.appendChild(x);x.select();document.execCommand('copy');document.body.removeChild(x)}b.textContent='\u2705 Copied!';setTimeout(function(){b.textContent='\uD83D\uDCCB Copy code'},1600)})(this)" style="background:#0047E1;color:#fff;border:none;border-radius:10px;padding:10px 20px;font-weight:700;font-size:14px;cursor:pointer;margin-top:2px">📋 Copy code</button>
     <p id="auto-msg">It has also been <b>auto-activated on this device</b> for 30 days.</p>
     <a class="btn" href="index.html#agreement">Start creating clean documents →</a>
   </div>

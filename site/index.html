@@ -9,8 +9,8 @@
 <meta property="og:title" content="DocOga — The Oga of Documents">
 <meta property="og:description" content="Free tenancy agreement, notice to quit, rent receipt & invoice generator for Nigeria. 2 minutes, no signup.">
 <meta property="og:type" content="website">
-<link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="5" fill="%23046A38"/><path d="M6 3h9l4 4v14H6z" fill="white"/><path d="M15 3l4 4h-4z" fill="%23B8F0CC"/><path d="M8.8 13.6l2.6 2.6 4.6-4.9" stroke="%23046A38" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>'>
-<meta name="theme-color" content="#046A38">
+<link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="5" fill="%230047E1"/><path d="M6 3h9l4 4v14H6z" fill="white"/><path d="M15 3l4 4h-4z" fill="%23CCE0FF"/><path d="M8.8 13.6l2.6 2.6 4.6-4.9" stroke="%230047E1" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>'>
+<meta name="theme-color" content="#0047E1">
 <meta name="google-site-verification" content="RzYMqPgOMZjITsmF5cY3e7zrQ9EjQb6BlSp7CNMKZQE" />
 <link rel="canonical" href="https://docoga.com.ng/">
 <meta property="og:url" content="https://docoga.com.ng/">
@@ -28,9 +28,9 @@
 </script>
 <style>
 :root{
-  --green:#046A38; --green-dark:#03502B; --green-soft:#E7F2EB;
-  --ink:#14211A; --muted:#5C6B61; --bg:#F6F7F5; --card:#FFFFFF;
-  --line:#E2E7E1; --amber:#F2A93B; --amber-dark:#B97514; --red:#C0392B;
+  --green:#0047E1; --green-dark:#0035A8; --green-soft:#E3EEFC;
+  --ink:#141F33; --muted:#5B6B85; --bg:#F5F7FB; --card:#FFFFFF;
+  --line:#E2E8F2; --amber:#F2A93B; --amber-dark:#B97514; --red:#C0392B;
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -49,20 +49,20 @@ nav a{text-decoration:none;color:var(--muted);font-size:14px;font-weight:600;pad
 nav a:hover{background:var(--green-soft);color:var(--green-dark)}
 nav a.active{background:var(--green);color:#fff}
 .pass-chip{font-size:12px;font-weight:700;padding:6px 12px;border-radius:999px;border:1.5px solid var(--line);color:var(--muted);cursor:pointer;background:#fff}
-.pass-chip.pro{border-color:var(--amber);color:var(--amber-dark);background:#FEF6E8}
+.pass-chip.pro{border-color:var(--amber);color:var(--amber-dark);background:#F4F7FE}
 
 /* ---------- Layout ---------- */
 main{max-width:1120px;margin:0 auto;padding:26px 18px 60px}
 section[id^="page-"]{display:none}
-.hero{background:linear-gradient(135deg,var(--green-dark) 0%,var(--green) 60%,#0B8A4C 100%);color:#fff;border-radius:20px;padding:46px 30px;margin-bottom:30px;position:relative;overflow:hidden}
+.hero{background:linear-gradient(135deg,var(--green-dark) 0%,var(--green) 60%,#3B7BFF 100%);color:#fff;border-radius:20px;padding:46px 30px;margin-bottom:30px;position:relative;overflow:hidden}
 .hero::after{content:"";position:absolute;right:-70px;top:-70px;width:260px;height:260px;border-radius:50%;background:rgba(255,255,255,.07)}
 .hero h1{font-size:clamp(26px,4.5vw,42px);line-height:1.15;max-width:640px}
-.hero h1 em{font-style:normal;color:#B8F0CC}
-.hero p{margin:14px 0 22px;max-width:560px;color:#E4F3E9;font-size:16px}
-.hero .stats{display:flex;gap:18px;flex-wrap:wrap;margin-top:26px;font-size:13.5px;color:#D9EFDF}
+.hero h1 em{font-style:normal;color:#CCE0FF}
+.hero p{margin:14px 0 22px;max-width:560px;color:#E0ECFB;font-size:16px}
+.hero .stats{display:flex;gap:18px;flex-wrap:wrap;margin-top:26px;font-size:13.5px;color:#DCE8FA}
 .hero .stats b{color:#fff}
 .btn{display:inline-flex;align-items:center;gap:8px;border:none;cursor:pointer;font-family:inherit;font-weight:700;text-decoration:none;border-radius:10px;padding:12px 20px;font-size:15px;transition:.15s}
-.btn.primary{background:var(--amber);color:#231400}
+.btn.primary{background:var(--amber);color:#0A2540}
 .btn.primary:hover{filter:brightness(.95)}
 .btn.green{background:var(--green);color:#fff}
 .btn.green:hover{background:var(--green-dark)}
@@ -96,7 +96,7 @@ p.page-sub{color:var(--muted);margin-bottom:22px;max-width:640px}
 .form-grid .full{grid-column:1/-1}
 @media(max-width:560px){.form-grid{grid-template-columns:1fr}}
 label{font-size:12.5px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px}
-input,select,textarea{width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:9px;font-family:inherit;font-size:15px;background:#FBFCFB;color:var(--ink)}
+input,select,textarea{width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:9px;font-family:inherit;font-size:15px;background:#FBFCFE;color:var(--ink)}
 input:focus,select:focus,textarea:focus{outline:2px solid var(--green);outline-offset:1px;border-color:var(--green)}
 textarea{resize:vertical;min-height:70px}
 .fieldset{border:1px dashed var(--line);border-radius:12px;padding:14px;margin:14px 0;position:relative}
@@ -117,9 +117,9 @@ textarea{resize:vertical;min-height:70px}
 .preview-wrap{position:sticky;top:70px}
 .preview-label{font-size:12px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
 .badge{font-size:10.5px;font-weight:800;padding:3px 9px;border-radius:999px;letter-spacing:.4px}
-.badge.free{background:#FEF6E8;color:var(--amber-dark)}
+.badge.free{background:#F4F7FE;color:var(--amber-dark)}
 .badge.pro{background:var(--green-soft);color:var(--green-dark)}
-.preview-scroll{max-height:calc(100vh - 150px);overflow:auto;border:1px solid var(--line);border-radius:14px;background:#EAEEE9;padding:14px}
+.preview-scroll{max-height:calc(100vh - 150px);overflow:auto;border:1px solid var(--line);border-radius:14px;background:#EAEFF9;padding:14px}
 
 /* ---------- Document sheet ---------- */
 .sheet{background:#fff;max-width:800px;margin:0 auto;padding:30px 34px;font-family:Georgia,'Times New Roman',serif;color:#151515;font-size:14px;line-height:1.7;position:relative}
@@ -131,9 +131,9 @@ textarea{resize:vertical;min-height:70px}
 .sheet .clause b{display:block}
 .sheet .right{text-align:right}
 .sheet table.doc-table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px}
-.sheet table.doc-table th{border:1px solid #999;padding:7px 9px;background:#F2F4F1;text-align:left;font-size:12.5px}
+.sheet table.doc-table th{border:1px solid #999;padding:7px 9px;background:#F2F5FA;text-align:left;font-size:12.5px}
 .sheet table.doc-table td{border:1px solid #999;padding:7px 9px}
-.sheet .tot-row td{font-weight:bold;background:#F7F9F5}
+.sheet .tot-row td{font-weight:bold;background:#F6F8FC}
 .sheet .sig-grid{display:grid;grid-template-columns:1fr 1fr;gap:26px;margin-top:34px;font-size:13px}
 .sheet .sig-grid .sig-line{border-bottom:1px solid #333;height:30px;margin-bottom:6px}
 .sheet .receipt-box{border:2px solid #333;border-radius:8px;padding:22px 26px;max-width:640px;margin:0 auto}
@@ -159,7 +159,7 @@ textarea{resize:vertical;min-height:70px}
 .price-card ul{list-style:none;margin:12px 0 20px}
 .price-card li{font-size:14px;padding:6px 0 6px 26px;position:relative}
 .price-card li::before{content:"✓";position:absolute;left:2px;color:var(--green);font-weight:900}
-.tag{position:absolute;top:-11px;right:18px;background:var(--amber);color:#231400;font-size:11px;font-weight:800;padding:4px 12px;border-radius:999px}
+.tag{position:absolute;top:-11px;right:18px;background:var(--amber);color:#0A2540;font-size:11px;font-weight:800;padding:4px 12px;border-radius:999px}
 
 /* ---------- modal & toast ---------- */
 #modal-overlay{position:fixed;inset:0;background:rgba(10,20,14,.55);display:none;place-items:center;z-index:100;padding:18px}
@@ -174,7 +174,7 @@ textarea{resize:vertical;min-height:70px}
 
 footer{border-top:1px solid var(--line);background:#fff;margin-top:40px}
 .foot{max-width:1120px;margin:0 auto;padding:30px 18px;font-size:13px;color:var(--muted)}
-.foot .disc{background:#FBF9F0;border:1px solid #EFE6C8;border-radius:10px;padding:12px 14px;font-size:12px;margin:14px 0}
+.foot .disc{background:#F7FAFE;border:1px solid #E6EBFA;border-radius:10px;padding:12px 14px;font-size:12px;margin:14px 0}
 
 /* ---------- quality v1.2: motion, a11y, dark mode ---------- */
 section[id^="page-"]{animation:fadeIn .28s ease}
@@ -187,15 +187,15 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--amber);outline-offs
   nav a{white-space:nowrap;flex:0 0 auto}
 }
 @media (prefers-color-scheme:dark){
-  :root{--bg:#0F1512;--card:#182019;--ink:#E9EFEA;--muted:#94A499;--line:#2A362E;--green-soft:#1D2F24}
+  :root{--bg:#0F151C;--card:#182028;--ink:#E9EEFA;--muted:#94A4B8;--line:#2A3648;--green-soft:#1B2A44}
   header{background:rgba(15,21,18,.94)}
   footer{background:var(--card)}
   .pass-chip{background:var(--card)}
-  input,select,textarea{background:#131A16;color:var(--ink)}
-  .preview-scroll{background:#0C110E}
-  #toast{background:#0B0F0C;color:#E9EFEA}
+  input,select,textarea{background:#131A22;color:var(--ink)}
+  .preview-scroll{background:#0C1118}
+  #toast{background:#0B0F16;color:#E9EEFA}
   .modal{background:var(--card)}
-  .amount-hint{color:#7ED9A4}
+  .amount-hint{color:#7CB9FF}
 }
 @media (prefers-reduced-motion:reduce){
   section[id^="page-"]{animation:none}
@@ -219,7 +219,7 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--amber);outline-offs
   <div class="nav">
     <a class="brand" href="#home">
       <span class="logo">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M6 2h9l5 5v15H6z" fill="#fff" opacity=".9"/><path d="M15 2l5 5h-5z" fill="#B8F0CC"/><path d="M8.8 13.6l2.6 2.6 4.6-4.9" stroke="#046A38" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M6 2h9l5 5v15H6z" fill="#fff" opacity=".9"/><path d="M15 2l5 5h-5z" fill="#CCE0FF"/><path d="M8.8 13.6l2.6 2.6 4.6-4.9" stroke="#0047E1" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
       </span>
       <span>DocOga<small>The Oga of Documents</small></span>
     </a>
