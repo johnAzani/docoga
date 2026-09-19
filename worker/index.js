@@ -123,19 +123,10 @@ async function flwHmacMatches(raw, signature, secret) {
 
 async function handleFlwWebhook(request, env, cors) {
   const raw = await request.text();
-  // FLIGHT RECORDER v2: capture EVERY attempt BEFORE signature check — even rejected/malformed
-  // webhooks — so we can see what Flutterwave actually sends. TODO: remove after launch validation.
-  try { await env.KV.put("debug:last-webhook-any", JSON.stringify({
-    t: Date.now(),
-    sig: request.headers.get("flutterwave-signature") || "",
-    verifHash: request.headers.get("verif-hash") || "",
-    ua: request.headers.get("user-agent") || "",
-    body: raw.slice(0, 2000)
-  })); } catch (e) {}
   const v3ok = !!(env.FLW_WEBHOOK_HASH && request.headers.get("verif-hash") === env.FLW_WEBHOOK_HASH);
   const v4ok = await flwHmacMatches(raw, request.headers.get("flutterwave-signature"), env.FLW_WEBHOOK_HASH || "");
   if (!v3ok && !v4ok) return new Response("forbidden", { status: 403 });
-  try { await env.KV.put("debug:last-webhook", raw); } catch (e) {} // TODO: remove after launch validation
+  try { await env.KV.put("debug:last-webhook", raw); await env.KV.put("debug:last-webhook-ts", String(Date.now())); } catch (e) {} // vitals for /health — safe: only valid-signed webhooks reach this
   let body = null;
   try { body = JSON.parse(raw); } catch (e) {}
   if (!body) return new Response("bad request", { status: 400 });
@@ -318,7 +309,11 @@ export default {
     if (request.method === "OPTIONS") return new Response(null, { headers: cors });
 
     try {
-      if (url.pathname === "/") return json({ ok: true, service: "docoga-pass" }, cors);
+      if (url.pathname === "/") {
+      let lw = null;
+      try { const ts = await env.KV.get("debug:last-webhook-ts", { cacheTtl: 60 }); if (ts) lw = Math.round((Date.now() - Number(ts)) / 60000); } catch (e) {}
+      return json({ ok: true, service: "docoga-pass", lastWebhookMinutesAgo: lw, priceNGN: PRICE_NGN }, cors);
+    }
       if (url.pathname === "/issue" && request.method === "POST") return await handleIssue(request, env, cors);
       if (url.pathname === "/flw-webhook" && request.method === "POST") return await handleFlwWebhook(request, env, cors);
       if (url.pathname === "/verify" && request.method === "GET") return await handleVerify(url, env, cors);
