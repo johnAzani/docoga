@@ -211,6 +211,73 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--amber);outline-offs
   #print-root .sheet{max-width:none;border:none;padding:0}
   #print-root .sheet.free::before{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
+
+/* ════════ v2 DESIGN OVERLAY — research-driven polish ════════ */
+:root{--r-md:12px;--sh-1:0 1px 2px rgba(16,31,51,.06),0 8px 24px rgba(16,31,51,.08)}
+body{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+.btn{transition:transform .12s ease,filter .15s,background .15s,box-shadow .15s}
+.btn:active{transform:scale(.97)}
+.btn.primary{box-shadow:0 6px 18px rgba(0,71,225,.22)}
+.btn.lg{padding:15px 26px;font-size:16px;border-radius:12px}
+.hero{display:grid;grid-template-columns:1.15fr .85fr;gap:8px;align-items:center;padding:42px 34px;background:radial-gradient(1100px 480px at -10% -30%,rgba(59,123,255,.5),transparent 60%),linear-gradient(135deg,#00306B 0%,#0047E1 55%,#3B7BFF 100%)}
+.hero-copy{position:relative;z-index:2}
+.hero-eyebrow{display:inline-block;font-size:11px;font-weight:800;letter-spacing:1.2px;color:#CCE0FF;border:1px solid rgba(204,224,255,.35);padding:5px 12px;border-radius:999px;margin-bottom:14px}
+.hero h1{letter-spacing:-.5px}
+.hero p{font-size:16.5px}
+.hero-cta{display:flex;gap:12px;flex-wrap:wrap;margin-top:4px}
+.trust-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:22px;font-size:13px;color:#DCE8FA}
+.trust-chips span{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);padding:5px 11px;border-radius:999px}
+.hero-mock{position:relative;z-index:1;display:none}
+.mock-doc{background:#fff;color:#141F33;border-radius:12px;padding:20px 22px;transform:rotate(2deg);box-shadow:0 24px 60px rgba(0,22,80,.45);font-family:Georgia,serif}
+.mock-title{text-align:center;font-size:13px;font-weight:700;letter-spacing:2px;margin-bottom:6px}
+.mock-meta{font-size:10px;color:#5B6B85;text-align:center;margin-bottom:12px}
+.mock-line{height:6px;border-radius:3px;background:#E2E8F2;margin:7px 0}
+.w80{width:80%}.w60{width:60%}.w70{width:70%}.w90{width:90%}.w50{width:50%}
+.mock-row{display:flex;justify-content:space-between;font-size:11px;padding:7px 0;border-bottom:1px dashed #E2E8F2}
+.mock-row b{color:#0047E1}
+.mock-check{margin-top:12px;font-size:10.5px;font-weight:700;color:#0035A8;font-family:system-ui,sans-serif}
+.mock-stamp{position:absolute;top:-14px;right:-10px;transform:rotate(8deg);background:#0047E1;color:#fff;font-weight:900;font-size:11px;letter-spacing:1.5px;padding:7px 13px;border-radius:8px;box-shadow:0 8px 20px rgba(0,71,225,.4)}
+@media(min-width:900px){.hero-mock{display:block}}
+@media(max-width:899px){.hero{grid-template-columns:1fr;padding:34px 22px}}
+.trust-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:14px 16px;margin:-18px auto 26px;max-width:920px;position:relative;z-index:5;box-shadow:var(--sh-1);font-size:13px;font-weight:600;color:var(--muted);text-align:center}
+.steps{margin:6px 0 8px}
+.steps h2{font-size:22px;margin-bottom:14px}
+.steps-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.step{background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:18px;box-shadow:var(--sh-1)}
+.step .n{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:9px;background:var(--green);color:#fff;font-weight:800;font-size:14px;margin-bottom:10px}
+.step h3{font-size:15.5px;margin-bottom:4px}
+.step p{font-size:13.5px;color:var(--muted)}
+.card{transition:transform .18s ease,box-shadow .18s ease;border-radius:var(--r-md)}
+.card:hover{transform:translateY(-3px);box-shadow:var(--sh-1)}
+.card .ico{border-radius:12px;background:linear-gradient(135deg,#0047E1,#3B7BFF);color:#fff;font-size:21px}
+.chip{float:right;font-size:10px;font-weight:800;letter-spacing:.6px;color:#0035A8;background:#E3EEFC;padding:3px 9px;border-radius:999px}
+input,select,textarea{font-size:16px;padding:12px 13px;min-height:48px}
+textarea{min-height:84px}
+.best-for{font-size:13px;color:var(--muted);margin:2px 0 10px;font-weight:600}
+.price-card.hot{box-shadow:0 12px 34px rgba(0,71,225,.16);border-width:2px}
+.price-card .amount{font-size:42px;letter-spacing:-1px}
+.price-card .amount small{font-size:15px;font-weight:600;color:var(--muted);letter-spacing:0}
+.anchor{background:#F4F7FE;border:1px dashed #94A4B8;border-radius:10px;padding:9px 12px;font-size:12.5px;color:var(--muted);margin:0 0 12px;line-height:1.45}
+.anchor b{color:var(--ink)}
+.flw-badge{display:flex;align-items:center;justify-content:center;gap:7px;margin-top:12px;font-size:12px;color:var(--muted);font-weight:600}
+.flw-badge .dot{width:7px;height:7px;border-radius:50%;background:#F2A93B;box-shadow:0 0 0 3px rgba(242,169,59,.2)}
+.guarantee{margin-top:10px;text-align:center;font-size:12.5px;color:var(--muted)}
+.sticky-cta{display:none}
+@media(max-width:720px){
+  .sticky-cta{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:80;align-items:center;justify-content:space-between;gap:10px;background:rgba(255,255,255,.97);backdrop-filter:blur(8px);border-top:1px solid var(--line);padding:10px 14px calc(10px + env(safe-area-inset-bottom));box-shadow:0 -6px 24px rgba(16,31,51,.1)}
+  .sticky-cta span{font-size:13px;color:var(--muted);font-weight:600}
+  .sticky-cta b{color:var(--ink)}
+  .wa-wrap{bottom:86px !important}
+  main{padding-bottom:86px}
+}
+@media(prefers-color-scheme:dark){
+  .trust-strip,.step{box-shadow:none}
+  .mock-doc{background:#F5F7FB}
+  .anchor{background:#1B2A44;border-color:#2A3648}
+  .sticky-cta{background:rgba(15,21,28,.97)}
+}
+@media(prefers-reduced-motion:reduce){.card:hover{transform:none}.btn{transition:none}}
+@media print{.sticky-cta,.trust-strip,.steps,.hero-mock{display:none !important}}
 </style>
 </head>
 <body>
@@ -241,36 +308,63 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--amber);outline-offs
 <!-- ======================= HOME ======================= -->
 <section id="page-home">
   <div class="hero">
-    <h1>Documents wey <em>correct.</em><br>Agreements, notices, receipts &amp; invoices — free.</h1>
-    <p>DocOga creates lawyer-grade Nigerian documents in about 2 minutes. No signup. No wahala. Works on your phone — print or save as PDF.</p>
-    <a class="btn primary" href="#agreement">📄 Create a Tenancy Agreement</a>&nbsp;
-    <a class="btn ghost" href="#notice">📮 Serve a Notice to Quit</a>
-    <div class="stats">
-      <span><b>₦0</b> to start</span><span><b>2 minutes</b> average</span><span><b>All 36 states + FCT</b></span><span><b>Private</b> — data stays on your phone</span>
+    <div class="hero-copy">
+      <span class="hero-eyebrow">DOCUMENTS WEY CORRECT · MADE IN ABUJA 🇳🇬</span>
+      <h1>Lawyer-grade documents, <em>ready in 2 minutes.</em></h1>
+      <p>Tenancy agreements, notices to quit, rent receipts &amp; invoices — drafted to Nigerian standard, right on your phone. Free to start. No signup.</p>
+      <div class="hero-cta">
+        <a class="btn primary lg" href="#agreement">Create a document — free</a>
+        <a class="btn ghost" href="#pricing">See the Oga Pass</a>
+      </div>
+      <div class="trust-chips"><span>✓ ₦0 to start</span><span>✓ No signup</span><span>✓ Data stays on your phone</span></div>
+    </div>
+    <div class="hero-mock" aria-hidden="true">
+      <div class="mock-stamp">OGA PASS</div>
+      <div class="mock-doc">
+        <div class="mock-title">TENANCY AGREEMENT</div>
+        <div class="mock-meta">Made this day ____ between the Landlord and the Tenant</div>
+        <div class="mock-line w80"></div><div class="mock-line w60"></div><div class="mock-line w70"></div>
+        <div class="mock-row"><span>Yearly rent</span><b>₦850,000</b></div>
+        <div class="mock-row"><span>Caution fee</span><b>Refundable</b></div>
+        <div class="mock-row"><span>Notice period</span><b>3 months</b></div>
+        <div class="mock-line w90"></div><div class="mock-line w50"></div>
+        <div class="mock-check">✓ Standard Nigerian clauses · your state</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="trust-strip"><div>⚡ Code arrives in seconds</div><div>💬 WhatsApp support</div><div>🔒 Nothing stored on servers</div><div>🇳🇬 Nigerian formats &amp; 7.5% VAT</div></div>
+
+  <div class="steps">
+    <h2>How DocOga works</h2>
+    <div class="steps-grid">
+      <div class="step"><span class="n">1</span><h3>Pick your document</h3><p>Agreement, notice, receipt or invoice — all free, no signup.</p></div>
+      <div class="step"><span class="n">2</span><h3>Answer simple questions</h3><p>Plain-English fields. Nigerian-standard clauses, your state's rules.</p></div>
+      <div class="step"><span class="n">3</span><h3>Print, save or share</h3><p>Print, save as PDF, or share on WhatsApp — the document is yours.</p></div>
     </div>
   </div>
 
   <div class="cards">
     <div class="card">
-      <div class="ico">🏠</div>
+      <div class="ico">🏠</div><span class="chip">FREE</span>
       <h3>Tenancy Agreement</h3>
       <p>A complete residential tenancy agreement — parties, rent, caution fee, covenants, notice periods — drafted to standard Nigerian practice for your state.</p>
       <a href="#agreement">Create agreement →</a>
     </div>
     <div class="card">
-      <div class="ico">📮</div>
+      <div class="ico">📮</div><span class="chip">FREE</span>
       <h3>Notice to Quit</h3>
       <p>Serve a formal, properly-dated notice to quit — correct notice period, computed vacation date, done in one minute.</p>
       <a href="#notice">Create notice →</a>
     </div>
     <div class="card">
-      <div class="ico">🧾</div>
+      <div class="ico">🧾</div><span class="chip">FREE</span>
       <h3>Rent Receipt</h3>
       <p>Acknowledge rent like a professional. Amount in words, payment method, period covered, outstanding balance — issued in seconds.</p>
       <a href="#receipt">Create receipt →</a>
     </div>
     <div class="card">
-      <div class="ico">💼</div>
+      <div class="ico">💼</div><span class="chip">FREE</span>
       <h3>Invoice</h3>
       <p>Naira invoices with automatic 7.5% VAT, saved business details and WhatsApp sharing — built for Nigerian freelancers and vendors.</p>
       <a href="#invoice">Create invoice →</a>
@@ -503,6 +597,7 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--amber);outline-offs
       <div class="plan">Free</div>
       <div class="amount">₦0</div>
       <div class="per">forever</div>
+      <div class="best-for">Best for one-off, personal needs</div>
       <ul>
         <li>All four tools — agreement, notice, receipt, invoice</li>
         <li>Unlimited documents</li>
@@ -515,22 +610,25 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--amber);outline-offs
     <div class="price-card hot">
       <span class="tag">MOST POPULAR</span>
       <div class="plan">Oga Pass</div>
-      <div class="amount">₦2,000</div>
-      <div class="per">30 days, unlimited clean documents</div>
+      <div class="amount">₦2,000<small> / 30 days</small></div>
+      <div class="best-for">Best for landlords, agents &amp; small businesses</div>
+      <div class="anchor">A lawyer charges <b>₦20,000–₦50,000</b> for one agreement. One Oga Pass = <b>unlimited clean documents</b> for 30 days.</div>
       <ul>
         <li>Everything in Free</li>
         <li><b>No DocOga banner or watermark</b></li>
         <li>Unlimited clean PDFs &amp; prints</li>
         <li>Priority WhatsApp support</li>
-        <li>Early access to new document types (employment contract, caution fee receipt…)</li>
+        <li>Early access to new document types</li>
       </ul>
       <button class="btn primary" style="width:100%;justify-content:center" onclick="buyPass()">Get Oga Pass — ₦2,000</button>
-      <p style="text-align:center;font-size:12.5px;color:var(--muted);margin-top:10px">Pay with card, transfer or USSD — your pass code arrives <b>instantly</b> the moment payment completes.</p>
+      <div class="flw-badge"><span class="dot"></span>Secured by Flutterwave · Card · Transfer · USSD</div>
+      <p class="guarantee">Your code appears on screen in ~30 seconds — or WhatsApp us and a human sorts it out.</p>
       <p style="text-align:center;margin-top:8px"><button class="link-btn" onclick="openModal()">Already have a code? Activate →</button></p>
     </div>
   </div>
 </section>
 
+<div class="sticky-cta no-print"><span><b>Oga Pass</b> — ₦2,000 · 30 days unlimited</span><a class="btn primary sm" href="#pricing">Get the Pass</a></div>
 </main>
 
 <footer>
@@ -541,7 +639,7 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--amber);outline-offs
   </div>
 </footer>
 
-<div class="no-print" style="position:fixed;bottom:18px;right:18px;z-index:90">
+<div class="no-print wa-wrap" style="position:fixed;bottom:18px;right:18px;z-index:90">
   <a id="wa-float" href="#" target="_blank" rel="noopener" title="Chat with DocOga on WhatsApp" aria-label="Chat with DocOga on WhatsApp" style="display:grid;place-items:center;width:54px;height:54px;border-radius:50%;background:#25D366;color:#fff;text-decoration:none;font-size:24px;box-shadow:0 6px 18px rgba(0,0,0,.28)">💬</a>
 </div>
 
