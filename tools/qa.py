@@ -106,7 +106,10 @@ for f, html in [("index.html", idx), ("success.html", suc)]:
     closes = html.count("</script>")
     check(f"{f}: balanced <script> tags ({opens}/{closes})", opens == closes)
     warn(f"{f}: no duplicate static ids", len(re.findall(r'id="', html)) == len(set(re.findall(r'id="([^"]+)"', html))))
-check("index.html size in sane range (60–80 KB)", 60000 <= len(idx.encode()) <= 80000, f"{len(idx.encode())} bytes")
+# 60–85KB sanity window: catches bloat/corruption while leaving headroom for the icon
+# sprite + design system. Netlify serves this gzipped (~20KB over the wire) — far under
+# the 500KB Nigerian-mobile page-weight guidance. Do NOT raise past 85k without gzip math.
+check("index.html size in sane range (60–85 KB)", 60000 <= len(idx.encode()) <= 85000, f"{len(idx.encode())} bytes")
 
 import json as _json
 ld_blocks = re.findall(r'<script type="application/ld\+json">(.*?)</script>', idx, re.DOTALL)
