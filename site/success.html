@@ -93,7 +93,9 @@ const SUPPORT_WHATSAPP = "2349021852845"; // your WhatsApp number, intl format, 
     document.getElementById("code").textContent = j.code;
     // Auto-activate on this device (same domain as the app → shared localStorage)
     try {
-      localStorage.setItem("docoga_pass", JSON.stringify({ exp: Date.now() + 30 * 864e5 }));
+      const fnv1a = (s) => { let h = 0x811c9dc5; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return h >>> 0; };
+      const hc = fnv1a(String(j.code).toUpperCase().replace(/[\s-]/g, ""));
+      localStorage.setItem("docoga_pass", JSON.stringify({ exp: Date.now() + 30 * 864e5, h: hc }));
     } catch (e) {
       document.getElementById("auto-msg").innerHTML =
         "Copy this code, then tap <b>FREE PLAN</b> at the top of the site to activate it.";

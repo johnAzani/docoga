@@ -55,3 +55,22 @@ seconds via `/issue`. Refund is always an option after KYC unlocks withdrawals.
 
 *Test keys/debug keys: `debug:last-webhook` + `debug:last-webhook-ts` remain (valid-signature
 only, safe from flooding). Delete them after the first ~10 real customers for privacy hygiene.*
+
+---
+
+## Update — 19 Sep evening: cross-browser pass report → 2 bugs found & fixed
+
+**Trigger:** Owner reported: paid on Chrome, but FREE plan on Opera Mini / Firefox; Chrome still paid.
+
+**Explanation (by design, not a bug):** The pass is stored in each browser's local storage. Chrome's memory ≠ Firefox's memory. **The code is the license key** — entering it on any browser activates that browser. Steps for a buyer: Pricing → "Have a code? Activate / extend" → enter code.
+
+| # | Scenario | Status |
+|---|---|---|
+| 1 | **Same code re-entered on an active browser = +30 days free, forever stackable.** Modal even invited it ("entering a new code ADDS 30 days"). Both site AND success-page auto-activation forgot which code was used. | 🔴 → ✅ **FIXED.** Pass now stores the code's hash. Same code on active browser → "already active" toast, 0 days added. A NEW code still correctly adds 30 days (paid renewal). Browser-tested: 5/5 pass, 0 page errors. |
+| 2 | **Worker /activate wrote to an undefined variable** (`code` instead of `key`) → used-tracking silently dead (ReferenceError swallowed). No data harm: webhook mints fresh random codes, never re-issues from a pool. | 🟡 → ✅ **FIXED** (worker 6a031928). |
+| 3 | **Server-issued codes were valid forever** (no expiry check). | ✅ **FIXED.** New policy: a code is valid **30 days from its FIRST activation**; device switches allowed inside the window. One KV write per code lifetime. Live-proven: first activate 200, re-activate 200, backdated 31 days → 403 "This code has expired — buy a new Oga Pass (₦2,000).", garbage → 404. |
+| 4 | Offline-batch codes (unlock-codes.txt, 200) never expire & validate locally (no server). | 🔵 **ACCEPTED** — manual/WhatsApp sales only; batch capped at 200; FNV-1a collision attack is theoretical at ₦2,000 scale. Retire the offline path once sales are online-only. |
+| 5 | Opera Mini (data-savings/extreme mode) may not run JS or persist storage → site may look FREE every visit, tools may not work. | 🔵 **ACCEPTED** — support playbook: tell buyers to use Chrome, Firefox, or full Opera. Opera Mini is best-effort, not supported. |
+
+**Support line for "I paid but it shows FREE":** "Your pass is saved per browser — go to Pricing → 'Have a code? Activate / extend' and enter your code (works on any browser/device, valid 30 days from first activation)."
+

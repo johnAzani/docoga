@@ -877,7 +877,7 @@ function updatePassUI(){
   if(active){ chip.textContent='OGA PASS ✓ '+days+'d'; chip.classList.add('pro'); }
   else { chip.textContent='FREE PLAN'; chip.classList.remove('pro'); }
   const bb=$('buy-btn'); if(bb){ bb.disabled=active; bb.textContent=active?('✓ Pass active — '+days+' day'+(days>1?'s':'')+' of clean documents left'):'Get Oga Pass — ₦2,000'; }
-  const ms=$('modal-sub'); if(ms){ ms.textContent=active?('Your pass is active — '+days+'d left. Entering a new code ADDS 30 days on top.'):'Enter the code you received after payment to unlock 30 days of clean, watermark-free documents.'; }
+  const ms=$('modal-sub'); if(ms){ ms.textContent=active?('Your pass is active — '+days+'d left. A NEW code adds 30 more days on top.'):'Enter the code you received after payment to unlock 30 days of clean, watermark-free documents.'; }
   ['agreement','notice','receipt','invoice','employment','caution','demand'].forEach(renderBadge);
 }
 function openModal(){ $('modal-overlay').classList.add('open'); $('pass-input').focus(); }
@@ -887,7 +887,8 @@ async function submitCode(){
   if(!code){ toast('Enter your code first.'); return; }
   const norm=code.toUpperCase().replace(/[\s-]/g,'');
   const h=fnv1a(norm).toString(16).padStart(8,'0');
-  const activate=()=>{ const base=Math.max((pass&&pass.exp)||0, Date.now()); pass={exp:base+30*864e5}; store.setItem('docoga_pass',JSON.stringify(pass)); updatePassUI(); renderAll(); closeModal(); $('pass-input').value=''; toast('✅ Oga Pass active for 30 days. Oga level unlocked!'); };
+  if(pass&&pass.h===h&&pass.exp>Date.now()){ closeModal(); $('pass-input').value=''; toast('✓ This code is already active on this device — '+Math.ceil((pass.exp-Date.now())/864e5)+'d left. A NEW code adds 30 more days.'); return; }
+  const activate=()=>{ const base=Math.max((pass&&pass.exp)||0, Date.now()); pass={exp:base+30*864e5,h}; store.setItem('docoga_pass',JSON.stringify(pass)); updatePassUI(); renderAll(); closeModal(); $('pass-input').value=''; toast('✅ Oga Pass active for 30 days. Oga level unlocked!'); };
   // 1) offline codes (unlock-codes.txt)
   if(CODE_HASHES.has(h)){ activate(); return; }
   // 2) server-issued codes (Worker — see AUTOMATE.md)
@@ -896,6 +897,7 @@ async function submitCode(){
       const r=await fetch(WORKER_URL+'/activate?code='+encodeURIComponent(norm));
       const j=await r.json();
       if(j.ok){ activate(); return; }
+      if(j&&j.error){ toast('❌ '+j.error); return; }
     }catch(e){ /* offline or worker not set */ }
   }
   toast('❌ Invalid code. Please check and try again.');

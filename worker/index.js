@@ -287,13 +287,19 @@ async function handleActivate(url, env, cors) {
   let rec = await env.KV.get("code:" + key);
   if (!rec && key !== raw) rec = await env.KV.get("code:" + raw);
   if (!rec) return json({ ok: false, error: "invalid code" }, cors, 404);
-  // Re-activation allowed (buyer may switch device) — we just track usage stats.
+  // Policy: a code is valid for 30 days from its FIRST activation (device
+  // switches allowed inside that window). One KV write per code lifetime.
   try {
     const data = JSON.parse(rec);
-    data.used = true;
-    data.usedAt = Date.now();
-    await env.KV.put("code:" + code, JSON.stringify(data));
-  } catch (e) {}
+    const now = Date.now();
+    if (data.firstUsed && now > data.firstUsed + 30 * 864e5) {
+      return json({ ok: false, error: "This code has expired — buy a new Oga Pass (₦2,000)." }, cors, 403);
+    }
+    if (!data.firstUsed) {
+      data.firstUsed = now;
+      await env.KV.put("code:" + key, JSON.stringify(data));
+    }
+  } catch (e) { /* malformed record must never block a legitimate buyer */ }
   return json({ ok: true }, cors);
 }
 
