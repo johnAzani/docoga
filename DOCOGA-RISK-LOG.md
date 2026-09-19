@@ -74,3 +74,22 @@ only, safe from flooding). Delete them after the first ~10 real customers for pr
 
 **Support line for "I paid but it shows FREE":** "Your pass is saved per browser — go to Pricing → 'Have a code? Activate / extend' and enter your code (works on any browser/device, valid 30 days from first activation)."
 
+
+---
+
+## Update — 19 Sep night: OWNER'S PASS MODEL v2 shipped (worker LIVE, site staged)
+
+**Owner spec (verbatim intent):** a code dies 30 days from PURCHASE · entering it on any browser continues from the SAME remaining days (day 7 on Chrome = day 7 on Firefox) · topping up makes the NEW code the source of truth — old code dies instantly, remaining days roll into the new code's 30.
+
+**Architecture:** the Worker now owns the expiry. `/activate?code=X[&prev=OLD]` returns the server expiry; every browser stores and displays that one date (synced on every page load). Top-ups link code records: `prev.succ = new`, `new.exp = old.exp + 30d`. Renewed (dead) codes answer 410 with `renewedCode` + the new expiry — so any device holding an old code automatically adopts the newest one. All 200 offline-batch codes validate server-side via embedded FNV-1a hashes (clock starts at first activation — WhatsApp sale date is unknowable). Legacy records auto-migrate on first touch (exp = issuedAt + 30d — verified: QCK4 = exactly purchase + 30.0000 days).
+
+**Test evidence:** 17/17 mock-KV unit tests (issuance, sync, carry math, old-code death, idempotent re-links, expiry, offline batch, legacy migration, /verify+prev); live production lifecycle (issue → activate ×2 sync → top-up carry exact → old code 410 → backdated 403 → garbage 404 → cleanup verified); 11/11 two-browser end-to-end tests on the real site incl. fresh-device old-code adoption and zero page errors. Storage isolation between profiles verified separately.
+
+**Known window:** the LIVE site still runs the previous build (Netlify pipeline stalled — pending owner's Deploys screenshot). Until it deploys, the OLD site's local stacking quirk remains (server can't see browser-local state). Exposure: zero external customers so far. The new site build is committed, QA-green, and deploys automatically the moment Netlify wakes.
+
+**Support lines (v2 model):**
+- "I paid but it shows FREE" → enter your code on that browser (Pricing → Have a code?) — it continues from your same remaining days.
+- "I topped up but old browser shows old code" → it self-heals on next page load (or re-enter any of your codes — it adopts the newest).
+- "Code says renewed/expired" → renewed: use the newest code you received; expired: buy a new pass (₦2,000).
+
+**KV budget per sale: 2 writes** (code + ref at issue) — reads only thereafter; top-up adds 2. Well within the 1,000/day free tier (~450 sales/day ceiling; act if daily sales pass ~300).

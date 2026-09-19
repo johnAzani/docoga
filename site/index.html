@@ -868,6 +868,21 @@ function nairaWords(n){ return numWords(n)+' ('+fmtN(n)+') Naira Only'; }
 
 /* pass management */
 let pass=null; try{ pass=JSON.parse(store.getItem('docoga_pass')||'null'); }catch(e){}
+/* Server owns the expiry — sync on every visit: same countdown on every device,
+   adopts renewals made elsewhere, clears expired passes. Silent + fail-safe. */
+if(pass&&pass.c&&WORKER_URL){
+  fetch(WORKER_URL+'/activate?code='+encodeURIComponent(String(pass.c).replace(/[\s-]/g,''))).then(r=>r.json()).then(j=>{
+    if(j&&(j.ok||(j.renewedCode&&j.exp))){
+      const c=j.code||j.renewedCode;
+      if(c&&j.exp&&(!pass||pass.c!==c||pass.exp!==j.exp)){
+        pass={exp:j.exp,c,h:fnv1a(String(c).replace(/[\s-]/g,'')).toString(16).padStart(8,'0')};
+        store.setItem('docoga_pass',JSON.stringify(pass)); updatePassUI();
+      }
+    } else if(j&&j.error&&/expired/i.test(j.error)&&pass&&pass.exp>Date.now()){
+      store.removeItem('docoga_pass'); pass=null; updatePassUI(); renderAll(); toast('Your Oga Pass has expired.');
+    }
+  }).catch(()=>{});
+}
 function passActive(){ return !!(pass && Date.now()<pass.exp); }
 function updatePassUI(){
   const chip=$('pass-chip');
@@ -877,7 +892,7 @@ function updatePassUI(){
   if(active){ chip.textContent='OGA PASS ✓ '+days+'d'; chip.classList.add('pro'); }
   else { chip.textContent='FREE PLAN'; chip.classList.remove('pro'); }
   const bb=$('buy-btn'); if(bb){ bb.disabled=active; bb.textContent=active?('✓ Pass active — '+days+' day'+(days>1?'s':'')+' of clean documents left'):'Get Oga Pass — ₦2,000'; }
-  const ms=$('modal-sub'); if(ms){ ms.textContent=active?('Your pass is active — '+days+'d left. A NEW code adds 30 more days on top.'):'Enter the code you received after payment to unlock 30 days of clean, watermark-free documents.'; }
+  const ms=$('modal-sub'); if(ms){ ms.textContent=active?('Your pass is active — '+days+'d left. A NEW code adds 30 days on top of your remaining days.'):'Enter the code you received after payment to unlock 30 days of clean, watermark-free documents.'; }
   ['agreement','notice','receipt','invoice','employment','caution','demand'].forEach(renderBadge);
 }
 function openModal(){ $('modal-overlay').classList.add('open'); $('pass-input').focus(); }
@@ -887,19 +902,21 @@ async function submitCode(){
   if(!code){ toast('Enter your code first.'); return; }
   const norm=code.toUpperCase().replace(/[\s-]/g,'');
   const h=fnv1a(norm).toString(16).padStart(8,'0');
-  if(pass&&pass.h===h&&pass.exp>Date.now()){ closeModal(); $('pass-input').value=''; toast('✓ This code is already active on this device — '+Math.ceil((pass.exp-Date.now())/864e5)+'d left. A NEW code adds 30 more days.'); return; }
-  const activate=()=>{ const base=Math.max((pass&&pass.exp)||0, Date.now()); pass={exp:base+30*864e5,h}; store.setItem('docoga_pass',JSON.stringify(pass)); updatePassUI(); renderAll(); closeModal(); $('pass-input').value=''; toast('✅ Oga Pass active for 30 days. Oga level unlocked!'); };
-  // 1) offline codes (unlock-codes.txt)
-  if(CODE_HASHES.has(h)){ activate(); return; }
-  // 2) server-issued codes (Worker — see AUTOMATE.md)
+  if(pass&&pass.h===h&&pass.exp>Date.now()){ closeModal(); $('pass-input').value=''; toast('✓ This code is already active on this device — '+Math.ceil((pass.exp-Date.now())/864e5)+'d left. Topping up adds 30 days to your remaining time.'); return; }
+  const save=(exp,c)=>{ pass={exp,c,h}; store.setItem('docoga_pass',JSON.stringify(pass)); updatePassUI(); renderAll(); closeModal(); $('pass-input').value=''; const d=Math.max(1,Math.ceil((pass.exp-Date.now())/864e5)); toast('✅ Oga Pass active — '+d+' day'+(d>1?'s':'')+' of clean documents left.'); };
+  // 1) ask the Worker first — it owns the synced expiry and links top-ups (?prev)
   if(WORKER_URL){
     try{
-      const r=await fetch(WORKER_URL+'/activate?code='+encodeURIComponent(norm));
+      const prev=(pass&&pass.c)?'&prev='+encodeURIComponent(String(pass.c).replace(/[\s-]/g,'')):'';
+      const r=await fetch(WORKER_URL+'/activate?code='+encodeURIComponent(norm)+prev);
       const j=await r.json();
-      if(j.ok){ activate(); return; }
+      if(j.ok&&j.exp){ save(j.exp, j.code||norm); return; }
+      if(j.renewedCode&&j.exp){ save(j.exp, j.renewedCode); return; } // adopt the newest code
       if(j&&j.error){ toast('❌ '+j.error); return; }
-    }catch(e){ /* offline or worker not set */ }
+    }catch(e){ /* worker unreachable — fall back to offline validation */ }
   }
+  // 2) fallback: offline codes (unlock-codes.txt) when the Worker is unreachable
+  if(CODE_HASHES.has(h)){ save(Math.max((pass&&pass.exp)||0, Date.now())+30*864e5, norm); return; }
   toast('❌ Invalid code. Please check and try again.');
 }
 function buyPass(){ window.open(PAYMENT_URL,'_blank'); toast('Complete payment — you\'ll be returned here and your pass activates automatically.'); }

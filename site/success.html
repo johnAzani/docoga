@@ -77,7 +77,9 @@ const SUPPORT_WHATSAPP = "2349021852845"; // your WhatsApp number, intl format, 
   const ref = candidates[0];
   if (!WORKER_URL || !ref) { show("state-manual"); return; }
 
-  const verifyUrl = WORKER_URL + "/verify?ids=" + encodeURIComponent(candidates.join(",")) + "&ref=" + encodeURIComponent(ref);
+  let prevCode = "";
+  try { const p = JSON.parse(localStorage.getItem("docoga_pass") || "null"); if (p && p.c) prevCode = String(p.c).replace(/[\s-]/g, ""); } catch (e) {}
+  const verifyUrl = WORKER_URL + "/verify?ids=" + encodeURIComponent(candidates.join(",")) + "&ref=" + encodeURIComponent(ref) + (prevCode ? "&prev=" + encodeURIComponent(prevCode) : "");
   // Retry loop: the payment webhook can land moments AFTER the browser redirect —
   // keep checking for up to ~24s before falling back to manual support.
   let j = null;
@@ -94,8 +96,11 @@ const SUPPORT_WHATSAPP = "2349021852845"; // your WhatsApp number, intl format, 
     // Auto-activate on this device (same domain as the app → shared localStorage)
     try {
       const fnv1a = (s) => { let h = 0x811c9dc5; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return h >>> 0; };
-      const hc = fnv1a(String(j.code).toUpperCase().replace(/[\s-]/g, ""));
-      localStorage.setItem("docoga_pass", JSON.stringify({ exp: Date.now() + 30 * 864e5, h: hc }));
+      const exp = j.exp || (Date.now() + 30 * 864e5); // the server owns the expiry (remaining days carry over on top-ups)
+      const c = String(j.code).toUpperCase();
+      localStorage.setItem("docoga_pass", JSON.stringify({ exp, c, h: fnv1a(c.replace(/[\s-]/g, "")) }));
+      const d = Math.max(1, Math.ceil((exp - Date.now()) / 864e5));
+      document.getElementById("auto-msg").innerHTML = "It has also been <b>auto-activated on this device</b> — <b>" + d + " day" + (d > 1 ? "s" : "") + "</b> of Oga Pass" + (prevCode ? " (your remaining days were carried over)." : ".");
     } catch (e) {
       document.getElementById("auto-msg").innerHTML =
         "Copy this code, then tap <b>FREE PLAN</b> at the top of the site to activate it.";
