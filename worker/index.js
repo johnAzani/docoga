@@ -6,8 +6,9 @@
  *   POST /issue         Bridge for Selar→Zapier/Make (auth: X-DocOga-Key header)
  *                       Body: {"email":"buyer@mail.com","ref":"optional-sale-id"}
  *                       → generates a unique code, stores it in KV, emails the buyer.
- *   POST /flw-webhook   Flutterwave webhook (auth: verif-hash header, set in FLW dashboard)
- *                       → verifies amount & status, issues + emails code. Idempotent.
+ *   POST /flw-webhook   Flutterwave webhook (auth: v3 verif-hash OR v4 flutterwave-signature HMAC)
+ *                       → verifies amount & status, issues + emails code, aliases it under
+ *                       every id (reference/tx_ref/id) so /verify matches. Idempotent.
  *   GET  /verify?ids=a,b,c (or ?ref=X)
  *                       Verifies payment identifiers (charge id / reference / tx_ref)
  *                       via Flutterwave v4 (OAuth) or Paystack API and returns the code.
@@ -100,23 +101,48 @@ async function handleIssue(request, env, cors) {
   return json({ ok: true, code, alreadyIssued: !!existing }, cors);
 }
 
-/* ---------- Flutterwave webhook (optional — redirect+verify also works) ---------- */
+/* ---------- Flutterwave webhook — PRIMARY instant-delivery path for payment links ---------- */
+/* Accepts BOTH shapes: classic v3 (event + verif-hash header) and v4
+ * (type + flutterwave-signature = HMAC-SHA256(rawBody, secretHash) base64).
+ * Stores the issued code under EVERY identifier (reference / tx_ref / id)
+ * so the success page's /verify matches whichever the redirect carries. */
+async function flwHmacMatches(raw, signature, secret) {
+  if (!signature || !secret) return false;
+  try {
+    const enc = new TextEncoder();
+    const key = await crypto.subtle.importKey("raw", enc.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+    const mac = await crypto.subtle.sign("HMAC", key, enc.encode(raw));
+    let bin = "";
+    const bytes = new Uint8Array(mac);
+    for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+    return btoa(bin) === signature;
+  } catch (e) {
+    return false;
+  }
+}
+
 async function handleFlwWebhook(request, env, cors) {
-  if (!env.FLW_WEBHOOK_HASH || request.headers.get("verif-hash") !== env.FLW_WEBHOOK_HASH)
-    return new Response("forbidden", { status: 403 });
-  const body = await request.json().catch(() => null);
+  const raw = await request.text();
+  const v3ok = !!(env.FLW_WEBHOOK_HASH && request.headers.get("verif-hash") === env.FLW_WEBHOOK_HASH);
+  const v4ok = await flwHmacMatches(raw, request.headers.get("flutterwave-signature"), env.FLW_WEBHOOK_HASH || "");
+  if (!v3ok && !v4ok) return new Response("forbidden", { status: 403 });
+  let body = null;
+  try { body = JSON.parse(raw); } catch (e) {}
   if (!body) return new Response("bad request", { status: 400 });
   const d = body.data || {};
-  const paid =
-    (body.event === "charge.completed" || d.status === "successful") &&
-    d.status === "successful" &&
-    d.currency === "NGN" &&
-    Number(d.amount) >= PRICE_NGN;
+  const isCompleted = body.type === "charge.completed" || body.event === "charge.completed";
+  const succeeded = d.status === "succeeded" || d.status === "successful";
+  const amt = d.amount && typeof d.amount === "object" ? Number(d.amount.value) : Number(d.amount);
+  const paid = isCompleted && succeeded && d.currency === "NGN" && amt >= PRICE_NGN;
   if (!paid) return new Response("ignored", { status: 200 });
-  const ref = d.tx_ref || String(d.id || Date.now());
+  const ids = [d.reference, d.tx_ref, d.id].filter((x) => x !== undefined && x !== null && String(x).length > 0).map(String);
+  const ref = ids[0] || String(Date.now());
   const existing = await env.KV.get("ref:" + ref);
-  if (!existing)
-    await issueCode(env, { email: (d.customer && d.customer.email) || "", ref });
+  if (existing) return new Response("ok", { status: 200 });
+  const code = await issueCode(env, { email: (d.customer && d.customer.email) || "", ref });
+  for (const id of ids.slice(1)) {
+    if (id !== ref) await env.KV.put("ref:" + id, code);
+  }
   return new Response("ok", { status: 200 });
 }
 
