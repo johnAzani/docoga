@@ -31,7 +31,7 @@
  * KV binding: must be named KV (see wrangler.toml)
  */
 
-const PRICE_NGN = 2000; // change if you change the pass price
+const PRICE_NGN = 2000; // Oga Pass price — proven end-to-end with real ₦100 rehearsal 19 Sep (logs/)
 const ALPHA = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
 function makeCode() {
@@ -123,6 +123,15 @@ async function flwHmacMatches(raw, signature, secret) {
 
 async function handleFlwWebhook(request, env, cors) {
   const raw = await request.text();
+  // FLIGHT RECORDER v2: capture EVERY attempt BEFORE signature check — even rejected/malformed
+  // webhooks — so we can see what Flutterwave actually sends. TODO: remove after launch validation.
+  try { await env.KV.put("debug:last-webhook-any", JSON.stringify({
+    t: Date.now(),
+    sig: request.headers.get("flutterwave-signature") || "",
+    verifHash: request.headers.get("verif-hash") || "",
+    ua: request.headers.get("user-agent") || "",
+    body: raw.slice(0, 2000)
+  })); } catch (e) {}
   const v3ok = !!(env.FLW_WEBHOOK_HASH && request.headers.get("verif-hash") === env.FLW_WEBHOOK_HASH);
   const v4ok = await flwHmacMatches(raw, request.headers.get("flutterwave-signature"), env.FLW_WEBHOOK_HASH || "");
   if (!v3ok && !v4ok) return new Response("forbidden", { status: 403 });
