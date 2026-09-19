@@ -93,3 +93,22 @@ only, safe from flooding). Delete them after the first ~10 real customers for pr
 - "Code says renewed/expired" → renewed: use the newest code you received; expired: buy a new pass (₦2,000).
 
 **KV budget per sale: 2 writes** (code + ref at issue) — reads only thereafter; top-up adds 2. Well within the 1,000/day free tier (~450 sales/day ceiling; act if daily sales pass ~300).
+
+## Device Fence (built 19 Sep 2026 — live, 16/16 unit + 6/6 e2e)
+- **Risk:** one shared pass code = unlimited freeloaders.
+- **Control:** 1 pass = 3 devices (did = docoga_did fingerprint, set by worker on first activate). 4th device → friendly 403 block + ₦2,000 renew hint. Devices inherited on top-up. No-did clients never blocked. MAX_DEVICES=3 single constant.
+- **Owner override:** buyer WhatsApps receipt to 2349021852845 → fresh offline code (199 left).
+- **Failure modes covered:** device clear/reinstall (new did = counts as new device — acceptable, override exists); shared cookie unlikely.
+
+## Magic Pass Link (built 19 Sep 2026 — 6/6 e2e live)
+- **Risk:** retyping OGA-XXXX codes cross-browser = friction; browsers cannot read each other's storage (security by design).
+- **Control:** success.html green "Save to WhatsApp" button → wa.me prefilled text with https://docoga.com.ng/#code=OGA-… (hash fragment never sent to server/logs; ?code= also supported). Loader IIFE on index: regex [A-Za-z0-9-]{8,24} → history.replaceState strips URL → same-code guard toast → submitCode(c). Security = the code itself; 3-device fence caps sharing.
+- **Failure modes covered:** invalid link → nothing stored, stays FREE; same link twice → "already active", no double-count; hash navigation doesn't reload → loader runs on load only (tested).
+
+## Tools 8+9: Payslip + Warning Letter (built 19 Sep 2026 — 15/15 e2e)
+- **Deliberate: NO auto-PAYE computation** (Nigeria Tax Act 2026 band changes = accuracy risk). Employer enters amounts; hint text states DocOga does not compute tax.
+- Payslip computes gross/deductions/net + nairaWords(net); negative net flagged. XSS re-proven on all 16 new text fields (0 executions).
+
+## State SEO pages (built 19 Sep 2026 — 24 pages)
+- Facts verified before publishing: Lagos Tenancy Law 2011 s.13(1) notice table, s.4 advance cap, s.13(2)-(3) arrears; Recovery of Premises Act s.8 (FCT). Rivers/Oyo/Kano/Enugu pages use honest general framing + "confirm with a lawyer" wording — no invented specifics.
+- All pages: "general information, not legal advice" footer; sitemap +24; home state-guides block.
