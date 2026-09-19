@@ -12,7 +12,7 @@ compatibility_date = "2026-09-18"
 
 [[kv_namespaces]]
 binding = "KV"
-id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
+id = "f3a5afebe7d04bb0a6018c0d7d355253"
 
 # Secrets — do NOT put these in this file. Set them with:
 #   wrangler secret put ISSUE_SECRET

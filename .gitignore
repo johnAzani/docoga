@@ -8,3 +8,4 @@ Thumbs.db
 *.log
 node_modules/
 docoga-github-repo.zip
+.worker-secrets.env
