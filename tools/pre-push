@@ -1,0 +1,3 @@
+#!/bin/sh
+# DocOga pre-push gate — refuses to push if QA fails
+exec python3 "$(dirname "$0")/../../tools/qa.py"
