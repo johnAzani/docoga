@@ -15,7 +15,7 @@
 <link rel="canonical" href="https://docoga.com.ng/">
 <meta property="og:url" content="https://docoga.com.ng/">
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"WebApplication","name":"DocOga","applicationCategory":"BusinessApplication","operatingSystem":"Web Browser","inLanguage":"en-NG","offers":{"@type":"Offer","price":"0","priceCurrency":"NGN"},"description":"Free tenancy agreement, notice to quit, rent receipt and invoice generator for every Nigerian state."}
+{"@context":"https://schema.org","@type":"WebApplication","name":"DocOga","applicationCategory":"BusinessApplication","operatingSystem":"Web Browser","inLanguage":"en-NG","offers":{"@type":"Offer","price":"0","priceCurrency":"NGN"},"description":"Free tenancy agreement, notice to quit, rent receipt, invoice, employment contract, caution fee receipt and letter of demand generator for every Nigerian state."}
 </script>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
@@ -303,6 +303,9 @@ body.has-pass .buy-only{display:none !important}
 <symbol id="i-print" viewBox="0 0 24 24"><path d="M6 9V3h12v6"/><rect x="4" y="9" width="16" height="8" rx="2"/><path d="M7 14h10v7H7z"/></symbol>
 <symbol id="i-save" viewBox="0 0 24 24"><path d="M12 3v11m0 0 4-4m-4 4-4-4"/><path d="M4 17v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></symbol>
 <symbol id="i-share" viewBox="0 0 24 24"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.9 7.6-4.3m0 8.8-7.6-4.3"/></symbol>
+<symbol id="i-brief" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M9 8V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><path d="M3 13h18"/></symbol>
+<symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 4.5 6v5c0 5 3.2 8.4 7.5 10 4.3-1.6 7.5-5 7.5-10V6z"/><path d="m9 12 2.2 2.2L15.5 10"/></symbol>
+<symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></symbol>
 </svg>
 
 <header>
@@ -319,6 +322,9 @@ body.has-pass .buy-only{display:none !important}
       <a href="#notice">Notice to Quit</a>
       <a href="#receipt">Rent Receipt</a>
       <a href="#invoice">Invoice</a>
+      <a href="#employment">Employment</a>
+      <a href="#caution">Caution Fee</a>
+      <a href="#demand">Demand Letter</a>
       <a href="#docs">My Documents</a>
       <a href="#pricing">Pricing</a>
     </nav>
@@ -391,6 +397,24 @@ body.has-pass .buy-only{display:none !important}
       <h3>Invoice</h3>
       <p>Naira invoices with automatic 7.5% VAT, saved business details and WhatsApp sharing — built for Nigerian freelancers and vendors.</p>
       <a href="#invoice">Create invoice →</a>
+    </div>
+    <div class="card">
+      <div class="ico"><svg aria-hidden="true"><use href="#i-brief"/></svg></div><span class="chip">FREE</span>
+      <h3>Employment Contract</h3>
+      <p>Hire properly — position, probation, salary, leave, notice and confidentiality, wrapped in a clean Nigerian employment contract.</p>
+      <a href="#employment">Create contract →</a>
+    </div>
+    <div class="card">
+      <div class="ico"><svg aria-hidden="true"><use href="#i-shield"/></svg></div><span class="chip">FREE</span>
+      <h3>Caution Fee Receipt</h3>
+      <p>Protect the deposit. A proper refundable caution-fee receipt with amount in words and clear refund terms.</p>
+      <a href="#caution">Create receipt →</a>
+    </div>
+    <div class="card">
+      <div class="ico"><svg aria-hidden="true"><use href="#i-mail"/></svg></div><span class="chip">FREE</span>
+      <h3>Letter of Demand</h3>
+      <p>Owed money? A firm, properly-formatted demand letter that gets debtors to pay before things get legal.</p>
+      <a href="#demand">Create letter →</a>
     </div>
   </div>
 
@@ -605,6 +629,129 @@ body.has-pass .buy-only{display:none !important}
 </section>
 
 <!-- ======================= MY DOCUMENTS ======================= -->
+
+<!-- ======================= EMPLOYMENT CONTRACT ======================= -->
+<section id="page-employment">
+  <h2 class="page-title">Employment Contract</h2>
+  <p class="page-sub">A clean Nigerian employment contract — position, probation, pay, leave, notice and confidentiality — ready in 2 minutes.</p>
+  <div class="tool-grid">
+    <div class="panel">
+      <h3>📝 Contract details</h3>
+      <form id="form-employment" oninput="renderEmployment()">
+        <div class="fieldset"><legend>Employer</legend>
+          <div class="form-grid">
+            <div class="full"><label>Company / employer name</label><input id="e_biz" placeholder="e.g. Kola Ventures Ltd"></div>
+            <div class="full"><label>Employer address</label><input id="e_addr" placeholder="Street, city, state"></div>
+          </div>
+        </div>
+        <div class="fieldset"><legend>Employee</legend>
+          <div class="form-grid">
+            <div class="full"><label>Employee full name</label><input id="e_emp" placeholder="e.g. Mr. Chidi Eze"></div>
+            <div><label>Job title</label><input id="e_role" placeholder="e.g. Sales Officer"></div>
+            <div><label>Start date</label><input id="e_start" type="date"></div>
+          </div>
+        </div>
+        <div class="fieldset"><legend>Terms</legend>
+          <div class="form-grid">
+            <div><label>Monthly salary (₦)</label><input id="e_sal" inputmode="numeric" placeholder="e.g. 150000"><div class="amount-hint" id="hint-e_sal"></div></div>
+            <div><label>Probation (months)</label><input id="e_prob" inputmode="numeric" placeholder="3" value="3"></div>
+            <div><label>Annual leave (working days)</label><input id="e_leave" inputmode="numeric" placeholder="15" value="15"></div>
+            <div><label>Notice period</label><select id="e_notice"><option>One month</option><option>Two weeks</option><option>One week</option><option>One day</option></select></div>
+            <div class="full"><label>Working hours</label><input id="e_hours" placeholder="8:00am – 5:00pm, Monday – Friday"></div>
+            <div class="full"><label>Place of work</label><input id="e_loc" placeholder="e.g. No 12 Ahmadu Bello Way, Abuja"></div>
+            <div class="full"><label>Key duties (optional)</label><textarea id="e_duties" placeholder="e.g. Manage sales to retail customers, prepare weekly reports…"></textarea></div>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div>
+      <div class="preview-label">LIVE PREVIEW <span id="badge-employment"></span></div>
+      <div class="preview-scroll"><div id="preview-employment"></div></div>
+      <div class="actions">
+        <button class="btn primary" onclick="printCurrent('employment')"><svg class="bi" aria-hidden="true"><use href="#i-print"/></svg>Print / Save PDF</button>
+        <button class="btn green" onclick="saveDoc('employment')"><svg class="bi" aria-hidden="true"><use href="#i-save"/></svg>Save</button>
+        <button class="btn green" onclick="shareDoc('employment')"><svg class="bi" aria-hidden="true"><use href="#i-chat"/></svg>Share</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= CAUTION FEE RECEIPT ======================= -->
+<section id="page-caution">
+  <h2 class="page-title">Caution Fee Receipt</h2>
+  <p class="page-sub">Evidence the deposit properly — a refundable caution-fee receipt with amount in words and clear refund terms.</p>
+  <div class="tool-grid">
+    <div class="panel">
+      <h3>📝 Receipt details</h3>
+      <form id="form-caution" oninput="renderCaution()">
+        <div class="form-grid">
+          <div><label>Receipt no.</label><input id="c_no" placeholder="e.g. CF-001"></div>
+          <div><label>Date</label><input id="c_date" type="date"></div>
+          <div class="full"><label>Received from (tenant)</label><input id="c_from" placeholder="Tenant full name"></div>
+          <div><label>Caution fee (₦)</label><input id="c_amt" inputmode="numeric" placeholder="e.g. 50000"><div class="amount-hint" id="hint-c_amt"></div></div>
+          <div><label>Payment method</label><select id="c_method"><option>Bank transfer</option><option>Cash</option><option>POS</option><option>Cheque</option><option>USSD</option></select></div>
+          <div class="full"><label>Property</label><input id="c_prop" placeholder="Property address"></div>
+          <div class="full"><label>Tenancy period covered</label><input id="c_period" placeholder="e.g. 1 year from 1 Oct 2026"></div>
+          <div class="full"><label>Issued by (landlord / agent)</label><input id="c_issuer" placeholder="Name and signature"></div>
+          <div><label>Phone</label><input id="c_phone" placeholder="080..."></div>
+        </div>
+      </form>
+    </div>
+    <div>
+      <div class="preview-label">LIVE PREVIEW <span id="badge-caution"></span></div>
+      <div class="preview-scroll"><div id="preview-caution"></div></div>
+      <div class="actions">
+        <button class="btn primary" onclick="printCurrent('caution')"><svg class="bi" aria-hidden="true"><use href="#i-print"/></svg>Print / Save PDF</button>
+        <button class="btn green" onclick="saveDoc('caution')"><svg class="bi" aria-hidden="true"><use href="#i-save"/></svg>Save</button>
+        <button class="btn green" onclick="shareDoc('caution')"><svg class="bi" aria-hidden="true"><use href="#i-chat"/></svg>Share</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= LETTER OF DEMAND ======================= -->
+<section id="page-demand">
+  <h2 class="page-title">Letter of Demand</h2>
+  <p class="page-sub">Owed money? A firm, properly formatted demand letter — often all it takes before things get legal.</p>
+  <div class="tool-grid">
+    <div class="panel">
+      <h3>📝 Letter details</h3>
+      <form id="form-demand" oninput="renderDemand()">
+        <div class="fieldset"><legend>From (creditor)</legend>
+          <div class="form-grid">
+            <div class="full"><label>Your name / company</label><input id="d_from" placeholder="e.g. Mrs. Funke Adeyemi"></div>
+            <div class="full"><label>Your address</label><input id="d_addr" placeholder="Street, city, state"></div>
+          </div>
+        </div>
+        <div class="fieldset"><legend>To (debtor)</legend>
+          <div class="form-grid">
+            <div class="full"><label>Debtor name</label><input id="d_to" placeholder="Person or company owing you"></div>
+            <div class="full"><label>Debtor address</label><input id="d_toaddr" placeholder="Street, city, state"></div>
+          </div>
+        </div>
+        <div class="fieldset"><legend>The debt</legend>
+          <div class="form-grid">
+            <div><label>Date</label><input id="d_date" type="date"></div>
+            <div><label>Amount owed (₦)</label><input id="d_amt" inputmode="numeric" placeholder="e.g. 450000"><div class="amount-hint" id="hint-d_amt"></div></div>
+            <div class="full"><label>What is the money for?</label><input id="d_debt" placeholder="e.g. unpaid rent for Jan–Jun 2026"></div>
+            <div><label>Payment was due on</label><input id="d_due" type="date"></div>
+            <div><label>Pay within (days)</label><input id="d_days" inputmode="numeric" placeholder="14" value="14"></div>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div>
+      <div class="preview-label">LIVE PREVIEW <span id="badge-demand"></span></div>
+      <div class="preview-scroll"><div id="preview-demand"></div></div>
+      <div class="actions">
+        <button class="btn primary" onclick="printCurrent('demand')"><svg class="bi" aria-hidden="true"><use href="#i-print"/></svg>Print / Save PDF</button>
+        <button class="btn green" onclick="saveDoc('demand')"><svg class="bi" aria-hidden="true"><use href="#i-save"/></svg>Save</button>
+        <button class="btn green" onclick="shareDoc('demand')"><svg class="bi" aria-hidden="true"><use href="#i-chat"/></svg>Share</button>
+      </div>
+    </div>
+  </div>
+</section>
+
 <section id="page-docs">
   <h2 class="page-title">My Documents</h2>
   <p class="page-sub">Your saved documents live on this device only. Clearing your browser data will delete them — print or save anything important.</p>
@@ -641,7 +788,7 @@ body.has-pass .buy-only{display:none !important}
         <li><b>No DocOga banner or watermark</b></li>
         <li>Unlimited clean PDFs &amp; prints</li>
         <li>Priority WhatsApp support</li>
-        <li>Early access to new document types</li>
+        <li>All 7 tools — incl. employment contracts, caution-fee receipts &amp; demand letters</li>
       </ul>
       <button class="btn primary" id="buy-btn" style="width:100%;justify-content:center" onclick="buyPass()">Get Oga Pass — ₦2,000</button>
       <div class="flw-badge buy-only"><span class="dot"></span>Secured by Flutterwave · Card · Transfer · USSD</div>
@@ -732,7 +879,7 @@ function updatePassUI(){
   else { chip.textContent='FREE PLAN'; chip.classList.remove('pro'); }
   const bb=$('buy-btn'); if(bb){ bb.disabled=active; bb.textContent=active?('✓ Pass active — '+days+' day'+(days>1?'s':'')+' of clean documents left'):'Get Oga Pass — ₦2,000'; }
   const ms=$('modal-sub'); if(ms){ ms.textContent=active?('Your pass is active — '+days+'d left. Entering a new code ADDS 30 days on top.'):'Enter the code you received after payment to unlock 30 days of clean, watermark-free documents.'; }
-  ['agreement','notice','receipt','invoice'].forEach(renderBadge);
+  ['agreement','notice','receipt','invoice','employment','caution','demand'].forEach(renderBadge);
 }
 function openModal(){ $('modal-overlay').classList.add('open'); $('pass-input').focus(); }
 function closeModal(){ $('modal-overlay').classList.remove('open'); }
@@ -952,9 +1099,112 @@ function renderInvoice(){
   return html;
 }
 
+
+/* ================= EMPLOYMENT CONTRACT ================= */
+function collectEmployment(){
+  return { e_biz:$('e_biz').value, e_addr:$('e_addr').value, e_emp:$('e_emp').value, e_role:$('e_role').value,
+    e_start:$('e_start').value, e_sal:$('e_sal').value, e_prob:$('e_prob').value, e_leave:$('e_leave').value,
+    e_notice:$('e_notice').value, e_hours:$('e_hours').value, e_loc:$('e_loc').value, e_duties:$('e_duties').value };
+}
+function applyEmployment(p){
+  [['e_biz','e_biz'],['e_addr','e_addr'],['e_emp','e_emp'],['e_role','e_role'],['e_start','e_start'],['e_sal','e_sal'],
+   ['e_prob','e_prob'],['e_leave','e_leave'],['e_hours','e_hours'],['e_loc','e_loc'],['e_duties','e_duties']].forEach(([k,id])=>{ $(id).value=p[k]||''; });
+  if(p.e_notice) $('e_notice').value=p.e_notice;
+}
+function renderEmployment(){
+  const d=collectEmployment();
+  $('hint-e_sal').textContent=(Number(d.e_sal)>0? '= '+numWords(d.e_sal)+' Naira monthly':'');
+  const html =
+  '<div class="'+sheetClass()+'">'+
+  '<h1>EMPLOYMENT CONTRACT</h1>'+
+  '<div class="doc-meta">Private &amp; Confidential</div>'+
+  '<div class="parties">'+
+  '<p><b>BETWEEN:</b> '+esc(d.e_biz||'________________')+' of '+esc(d.e_addr||'________________')+' ("<b>the Employer</b>") of the one part;</p>'+
+  '<p><b>AND:</b> '+esc(d.e_emp||'________________')+' ("<b>the Employee</b>") of the other part.</p>'+
+  '</div>'+
+  '<div class="clause"><b>1. POSITION AND DUTIES</b>The Employer hereby employs the Employee as <b>'+esc(d.e_role||'________________')+'</b>, and the Employee accepts such employment. '+(d.e_duties?'The Employee shall: '+esc(d.e_duties)+'. ':'The Employee shall perform such duties as are reasonably assigned in connection with the position.')+'</div>'+
+  '<div class="clause"><b>2. COMMENCEMENT AND PROBATION</b>Employment commences on <b>'+fmtDateLong(d.e_start)+'</b>. The first '+(esc(d.e_prob)||'3')+' months constitute a period of probation, during which either party may terminate this contract with '+(Number(d.e_prob)<=1?'one (1) day':'seven (7) days')+' written notice. Confirmation of employment shall be issued in writing upon satisfactory completion of probation.</div>'+
+  '<div class="clause"><b>3. REMUNERATION</b>The Employer shall pay the Employee a salary of <b>'+nairaWords(d.e_sal||0)+'</b> per month, payable not later than the '+(Number(d.e_sal)>0?'28th':'____')+' day of each month, subject to statutory deductions (including PAYE tax and pension contributions where applicable).</div>'+
+  '<div class="clause"><b>4. HOURS AND PLACE OF WORK</b>The normal working hours shall be '+esc(d.e_hours||'as reasonably required by the Employer')+'. The principal place of work shall be '+esc(d.e_loc||'________________')+', and the Employee may be required to work at such other locations as the business of the Employer may reasonably require.</div>'+
+  '<div class="clause"><b>5. ANNUAL LEAVE</b>The Employee shall be entitled to '+(esc(d.e_leave)||'15')+' working days of annual leave for each completed year of service, to be taken at times approved by the Employer.</div>'+
+  '<div class="clause"><b>6. CONFIDENTIALITY</b>The Employee shall not, during or after the termination of this employment, disclose to any person any confidential information relating to the business, affairs, customers or finances of the Employer, except as required by law.</div>'+
+  '<div class="clause"><b>7. TERMINATION AND NOTICE</b>After probation, either party may terminate this employment by giving '+(esc(d.e_notice)||'one month')+"'s written notice (or payment in lieu). The Employer may terminate summarily for gross misconduct. All Employer property shall be returned upon termination.</div>"+
+  '<div class="clause"><b>8. GOVERNING LAW</b>This contract shall be governed by the laws of the Federal Republic of Nigeria.</div>'+
+  '<p style="margin-top:10px;font-size:12.5px;color:#444">IN WITNESS WHEREOF the parties have executed this contract on the date first written above.</p>'+
+  '<div class="sig-grid"><div><div class="sig-line"></div>For: '+esc(d.e_biz||'the Employer')+'<br><small>Employer — signature &amp; date</small></div><div><div class="sig-line"></div>'+esc(d.e_emp||'the Employee')+'<br><small>Employee — signature &amp; date</small></div></div>'+
+  freeBanner()+
+  '</div>';
+  $('preview-employment').innerHTML=html;
+  return html;
+}
+
+/* ================= CAUTION FEE RECEIPT ================= */
+function collectCaution(){
+  return { c_no:$('c_no').value, c_date:$('c_date').value, c_from:$('c_from').value, c_amt:$('c_amt').value,
+    c_method:$('c_method').value, c_prop:$('c_prop').value, c_period:$('c_period').value, c_issuer:$('c_issuer').value, c_phone:$('c_phone').value };
+}
+function applyCaution(p){
+  [['c_no','c_no'],['c_date','c_date'],['c_from','c_from'],['c_amt','c_amt'],['c_prop','c_prop'],['c_period','c_period'],['c_issuer','c_issuer'],['c_phone','c_phone']].forEach(([k,id])=>{ $(id).value=p[k]||''; });
+  if(p.c_method) $('c_method').value=p.c_method;
+}
+function renderCaution(){
+  const d=collectCaution();
+  $('hint-c_amt').textContent=(Number(d.c_amt)>0? '= '+numWords(d.c_amt)+' Naira':'');
+  const html =
+  '<div class="'+sheetClass()+'">'+
+  '<div class="receipt-box">'+
+  '<h1 style="margin-bottom:2px">CAUTION FEE RECEIPT</h1>'+
+  '<div class="doc-meta">No. '+esc(d.c_no||'____')+' · '+fmtDateLong(d.c_date)+'</div>'+
+  '<p><b>Received from:</b> '+esc(d.c_from||'________________')+'</p>'+
+  '<p><b>The sum of:</b> '+nairaWords(d.c_amt||0)+'</p>'+
+  '<p><b>Being:</b> a refundable caution fee / security deposit in respect of <b>'+esc(d.c_prop||'________________')+'</b>'+(d.c_period?', tenancy period: '+esc(d.c_period):'')+'.</p>'+
+  '<p><b>Payment method:</b> '+esc(d.c_method||'____')+'</p>'+
+  '<hr>'+
+  '<p style="font-size:12.5px"><b>REFUND TERMS:</b> This deposit is refundable at the end of the tenancy, provided the property is returned in good condition (fair wear and tear excepted) and all rent and lawful charges have been fully paid. Any deduction shall be itemised in writing with evidence.</p>'+
+  '<hr>'+
+  '<div class="sig-grid" style="margin-top:18px"><div><div class="sig-line"></div>'+esc(d.c_issuer||'Issued by')+'<br><small>Landlord / Agent — signature</small></div><div><div class="sig-line"></div>'+esc(d.c_from||'Tenant')+'<br><small>Tenant — acknowledgement</small></div></div>'+
+  (d.c_phone?'<p style="font-size:12px;color:#444;margin-top:8px">Contact: '+esc(d.c_phone)+'</p>':'')+
+  '</div>'+
+  freeBanner()+
+  '</div>';
+  $('preview-caution').innerHTML=html;
+  return html;
+}
+
+/* ================= LETTER OF DEMAND ================= */
+function collectDemand(){
+  return { d_from:$('d_from').value, d_addr:$('d_addr').value, d_to:$('d_to').value, d_toaddr:$('d_toaddr').value,
+    d_date:$('d_date').value, d_amt:$('d_amt').value, d_debt:$('d_debt').value, d_due:$('d_due').value, d_days:$('d_days').value };
+}
+function applyDemand(p){
+  [['d_from','d_from'],['d_addr','d_addr'],['d_to','d_to'],['d_toaddr','d_toaddr'],['d_date','d_date'],['d_amt','d_amt'],['d_debt','d_debt'],['d_due','d_due'],['d_days','d_days']].forEach(([k,id])=>{ $(id).value=p[k]||''; });
+}
+function renderDemand(){
+  const d=collectDemand();
+  $('hint-d_amt').textContent=(Number(d.d_amt)>0? '= '+numWords(d.d_amt)+' Naira':'');
+  const html =
+  '<div class="'+sheetClass()+'">'+
+  '<p style="margin:0"><b>'+esc(d.d_from||'________________')+'</b><br>'+esc(d.d_addr||'')+'</p>'+
+  '<p class="right" style="margin:8px 0">'+fmtDateLong(d.date||d.d_date)+'</p>'+
+  '<p style="margin:8px 0"><b>'+esc(d.d_to||'________________')+'</b><br>'+esc(d.d_toaddr||'')+'</p>'+
+  '<p style="margin:14px 0 4px"><b>Dear Sir/Madam,</b></p>'+
+  '<p style="margin:10px 0"><u><b>RE: DEMAND FOR PAYMENT OF '+nairaWords(d.d_amt||0)+'</u></b></p>'+
+  '<p style="margin:10px 0">We refer to '+esc(d.d_debt||'the outstanding sum stated above')+', which fell due on <b>'+fmtDateLong(d.d_due)+'</b>. Despite the passage of time, the said sum remains wholly unpaid.</p>'+
+  '<p style="margin:10px 0"><b>DEMAND is hereby made</b> for the immediate payment of the sum of <b>'+nairaWords(d.d_amt||0)+'</b>, being the amount outstanding and owed to us.</p>'+
+  '<p style="margin:10px 0"><b>TAKE NOTICE</b> that if the said sum is not paid within <b>'+(esc(d.d_days)||'14')+' days</b> of the date of this letter, we shall, without further reference to you, instruct our solicitors to commence legal proceedings for the recovery of the debt, plus interest and costs, to the full extent permitted by law.</p>'+
+  '<p style="margin:10px 0">We look forward to your prompt settlement.</p>'+
+  '<p style="margin:22px 0 4px">Yours faithfully,</p>'+
+  '<div class="sig-line" style="max-width:280px"></div>'+
+  '<p style="margin:0"><b>'+esc(d.d_from||'________________')+'</b></p>'+
+  freeBanner()+
+  '</div>';
+  $('preview-demand').innerHTML=html;
+  return html;
+}
+
 /* ================= print / share / save ================= */
 function printCurrent(type){
-  const html={agreement:renderAgreement,notice:renderNotice,receipt:renderReceipt,invoice:renderInvoice}[type]();
+  const html={agreement:renderAgreement,notice:renderNotice,receipt:renderReceipt,invoice:renderInvoice,employment:renderEmployment,caution:renderCaution,demand:renderDemand}[type]();
   const pr=$('print-root');
   pr.innerHTML=html;
   document.body.classList.add('printing');
@@ -967,15 +1217,18 @@ function shareDoc(type){
     agreement:'I just drafted a tenancy agreement in 2 minutes with DocOga — free Nigerian document maker 📄',
     notice:'Served a proper notice to quit in 1 minute with DocOga 📮 — free Nigerian document maker',
     receipt:'Issuing rent receipts in seconds with DocOga 🧾 — free Nigerian document maker',
-    invoice:'Creating clean naira invoices with DocOga 💼 — free Nigerian document maker'
+    invoice:'Creating clean naira invoices with DocOga 💼 — free Nigerian document maker',
+    employment:'Hiring properly with a clean employment contract from DocOga 💼 — free Nigerian document maker',
+    caution:'Documenting caution fees properly with DocOga 🇳🇬 — free Nigerian document maker',
+    demand:'Sent a firm letter of demand with DocOga ⚖ — free Nigerian document maker'
   };
   const url='https://wa.me/?text='+encodeURIComponent(msgs[type]+' → '+SITE_URL);
   try{ window.open(url,'_blank'); }catch(e){ toast('Open the live site to share on WhatsApp.'); }
 }
-const DOC_TITLES={agreement:'Tenancy Agreement',notice:'Notice to Quit',receipt:'Rent Receipt',invoice:'Invoice'};
-const RENDERERS={agreement:renderAgreement,notice:renderNotice,receipt:renderReceipt,invoice:renderInvoice};
-const COLLECTORS={agreement:collectAgreement,notice:collectNotice,receipt:collectReceipt,invoice:collectInvoice};
-const APPLIERS={agreement:applyAgreement,notice:applyNotice,receipt:applyReceipt,invoice:applyInvoice};
+const DOC_TITLES={agreement:'Tenancy Agreement',notice:'Notice to Quit',receipt:'Rent Receipt',invoice:'Invoice',employment:'Employment Contract',caution:'Caution Fee Receipt',demand:'Letter of Demand'};
+const RENDERERS={agreement:renderAgreement,notice:renderNotice,receipt:renderReceipt,invoice:renderInvoice,employment:renderEmployment,caution:renderCaution,demand:renderDemand};
+const COLLECTORS={agreement:collectAgreement,notice:collectNotice,receipt:collectReceipt,invoice:collectInvoice,employment:collectEmployment,caution:collectCaution,demand:collectDemand};
+const APPLIERS={agreement:applyAgreement,notice:applyNotice,receipt:applyReceipt,invoice:applyInvoice,employment:applyEmployment,caution:applyCaution,demand:applyDemand};
 function getDocs(){ try{ return JSON.parse(store.getItem('docoga_docs')||'[]'); }catch(e){ return []; } }
 function saveDoc(type){
   const payload=COLLECTORS[type]();
@@ -984,6 +1237,9 @@ function saveDoc(type){
   if(type==='notice'&&payload.n_to) title='Notice — '+payload.n_to;
   if(type==='receipt'&&payload.r_from) title='Receipt — '+payload.r_from;
   if(type==='invoice'&&payload.i_client) title='Invoice — '+payload.i_client;
+  if(type==='employment'&&payload.e_emp) title='Contract — '+payload.e_emp;
+  if(type==='caution'&&payload.c_from) title='Caution Fee — '+payload.c_from;
+  if(type==='demand'&&payload.d_to) title='Demand — '+payload.d_to;
   const docs=getDocs(); docs.unshift({id:Date.now(),type,title,ts:Date.now(),payload});
   store.setItem('docoga_docs',JSON.stringify(docs.slice(0,60)));
   try{ store.removeItem(DRAFT_KEY(type)); }catch(e){}
@@ -1013,7 +1269,7 @@ const DRAFT_KEY=t=>'docoga_draft_'+t;
 function saveDraft(type){ try{ store.setItem(DRAFT_KEY(type), JSON.stringify(COLLECTORS[type]())); }catch(e){} }
 function loadDrafts(){
   let restored=false;
-  ['agreement','notice','receipt','invoice'].forEach(t=>{
+  ['agreement','notice','receipt','invoice','employment','caution','demand'].forEach(t=>{
     try{
       const raw=store.getItem(DRAFT_KEY(t)); if(!raw) return;
       const p=JSON.parse(raw);
@@ -1028,7 +1284,7 @@ function saveProfile(){ try{ store.setItem('docoga_profile', JSON.stringify({i_b
 function loadProfile(){ try{ const p=JSON.parse(store.getItem('docoga_profile')||'null'); if(p){ if(p.i_biz&&!$('i_biz').value) $('i_biz').value=p.i_biz; if(p.i_bizphone&&!$('i_bizphone').value) $('i_bizphone').value=p.i_bizphone; } }catch(e){} }
 
 /* ================= router & init ================= */
-const PAGES=['home','agreement','notice','receipt','invoice','docs','pricing'];
+const PAGES=['home','agreement','notice','receipt','invoice','employment','caution','demand','docs','pricing'];
 function route(){
   let h=(location.hash||'#home').slice(1).split('?')[0];
   if(!PAGES.includes(h)) h='home';
@@ -1036,7 +1292,7 @@ function route(){
   document.querySelectorAll('header nav a').forEach(a=>a.classList.toggle('active',a.getAttribute('href')==='#'+h));
   window.scrollTo(0,0);
 }
-function renderAll(){ renderAgreement(); renderNotice(); renderReceipt(); renderInvoice(); renderDocs(); updatePassUI(); }
+function renderAll(){ renderAgreement(); renderNotice(); renderReceipt(); renderInvoice(); renderEmployment(); renderCaution(); renderDemand(); renderDocs(); updatePassUI(); }
 
 (function init(){
   // states select
