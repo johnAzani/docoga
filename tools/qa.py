@@ -106,10 +106,11 @@ for f, html in [("index.html", idx), ("success.html", suc)]:
     closes = html.count("</script>")
     check(f"{f}: balanced <script> tags ({opens}/{closes})", opens == closes)
     warn(f"{f}: no duplicate static ids", len(re.findall(r'id="', html)) == len(set(re.findall(r'id="([^"]+)"', html))))
-# 60–105KB sanity window (measured Sep 2026: 101.7KB raw = 28KB gzipped over the wire —
-# 5.6% of the 500KB Nigerian-mobile page-weight guidance; single-file by design, no build
-# step). The window catches bloat/corruption. Do NOT raise past 105k without new gzip math.
-check("index.html size in sane range (60–105 KB)", 60000 <= len(idx.encode()) <= 105000, f"{len(idx.encode())} bytes")
+# 60–135KB sanity window (measured Sep 2026: 120.0KB raw with 9 tools = 33.3KB gzipped
+# over the wire — 6.7% of the 500KB Nigerian-mobile page-weight guidance; single-file by
+# design, no build step). The window catches bloat/corruption. Do NOT raise past 135k
+# without new gzip math.
+check("index.html size in sane range (60–135 KB)", 60000 <= len(idx.encode()) <= 135000, f"{len(idx.encode())} bytes")
 
 import json as _json
 ld_blocks = re.findall(r'<script type="application/ld\+json">(.*?)</script>', idx, re.DOTALL)

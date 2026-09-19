@@ -31,6 +31,7 @@ p{color:var(--muted);font-size:14.5px;margin-bottom:8px}
     <p>Your Oga Pass code (screenshot it for safekeeping):</p>
     <div class="code-box" id="code"></div>
     <button id="copy-btn" onclick="(function(b){var t=document.getElementById('code').textContent;try{navigator.clipboard.writeText(t)}catch(e){var x=document.createElement('textarea');x.value=t;document.body.appendChild(x);x.select();document.execCommand('copy');document.body.removeChild(x)}b.textContent='\u2705 Copied!';setTimeout(function(){b.textContent='\uD83D\uDCCB Copy code'},1600)})(this)" style="background:#0047E1;color:#fff;border:none;border-radius:10px;padding:10px 20px;font-weight:700;font-size:14px;cursor:pointer;margin-top:2px">📋 Copy code</button>
+    <a id="wa-save" href="#" rel="noopener" style="display:inline-block;background:#25D366;color:#fff;font-weight:700;text-decoration:none;border-radius:10px;padding:10px 20px;font-size:14px;margin-top:12px">📲 Save my pass to WhatsApp</a>
     <p id="auto-msg">It has also been <b>auto-activated on this device</b> for 30 days.</p>
     <a class="btn" href="index.html#agreement">Start creating clean documents →</a>
   </div>
@@ -81,9 +82,9 @@ const SUPPORT_WHATSAPP = "2349021852845"; // your WhatsApp number, intl format, 
   try { const p = JSON.parse(localStorage.getItem("docoga_pass") || "null"); if (p && p.c) prevCode = String(p.c).replace(/[\s-]/g, ""); } catch (e) {}
   const verifyUrl = WORKER_URL + "/verify?ids=" + encodeURIComponent(candidates.join(",")) + "&ref=" + encodeURIComponent(ref) + (prevCode ? "&prev=" + encodeURIComponent(prevCode) : "");
   // Retry loop: the payment webhook can land moments AFTER the browser redirect —
-  // keep checking for up to ~24s before falling back to manual support.
+  // keep checking for up to ~60s before falling back to manual support.
   let j = null;
-  for (let attempt = 0; attempt < 6; attempt++) {
+  for (let attempt = 0; attempt < 15; attempt++) {
     try {
       const r = await fetch(verifyUrl);
       j = await r.json();
@@ -93,6 +94,8 @@ const SUPPORT_WHATSAPP = "2349021852845"; // your WhatsApp number, intl format, 
   }
   if (j && j.ok && j.code) {
     document.getElementById("code").textContent = j.code;
+    const wasave = document.getElementById("wa-save");
+    if (wasave) wasave.href = "https://wa.me/?text=" + encodeURIComponent("My DocOga Pass — tap to activate it on any of my devices: https://docoga.com.ng/#code=" + j.code);
     // Auto-activate on this device (same domain as the app → shared localStorage)
     try {
       const fnv1a = (s) => { let h = 0x811c9dc5; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return h >>> 0; };

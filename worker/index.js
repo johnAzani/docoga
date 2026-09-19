@@ -218,7 +218,6 @@ async function handleVerify(url, env, cors) {
   if (!idsParam) return json({ ok: false, error: "ref required" }, cors, 400);
   const ids = [...new Set(idsParam.split(",").map((s) => s.trim()).filter(Boolean))].slice(0, 8);
   if (!ids.length) return json({ ok: false, error: "ref required" }, cors, 400);
-  try { await env.KV.put("debug:last-verify", JSON.stringify({ ids: idsParam, t: Date.now() })); } catch (e) {} // TODO: remove after launch validation
 
   // Idempotency: any known id returns the already-issued code.
   for (const id of ids) {
@@ -308,6 +307,7 @@ async function linkPrev(env, rec, prevRaw) {
   const prev = await readCode(env, pKey); // read-only: never auto-create when linking
   if (!prev || prev.succ || !prev.exp) return rec;
   if (prev.exp > Date.now()) rec.exp = prev.exp + 30 * 864e5; // remaining days roll over
+  if (Array.isArray(prev.devices) && prev.devices.length) rec.devices = prev.devices.slice(); // the fence survives renewals
   rec.prev = prev.code;
   prev.succ = rec.code;
   try {
@@ -355,6 +355,20 @@ async function handleActivate(url, env, cors) {
   }
   if (Date.now() > rec.exp)
     return json({ ok: false, error: "This code has expired — buy a new Oga Pass (₦2,000)." }, cors, 403);
+  // Device fairness gate: one pass, up to 3 devices (phone + laptop + spare).
+  // A 4th device gets a friendly wall instead of a free ride. Missing/invalid
+  // did is never blocked (backward compatible). One KV write per NEW device.
+  const did = (url.searchParams.get("did") || "").trim().slice(0, 32);
+  if (did && /^[A-Za-z0-9_-]+$/.test(did)) {
+    if (!Array.isArray(rec.devices)) rec.devices = [];
+    if (!rec.devices.includes(did)) {
+      if (rec.devices.length >= 3)
+        return json({ ok: false, error: "This pass is already active on 3 devices. Oga Pass is one-person — your own is just ₦2,000 at docoga.com.ng, or tap WhatsApp support if this is your own new device." }, cors, 403);
+      rec.devices.push(did);
+      if (rec.devices.length > 8) rec.devices = rec.devices.slice(-8);
+      try { await env.KV.put("code:" + rec.code, JSON.stringify(rec)); } catch (e) {}
+    }
+  }
   rec = await linkPrev(env, rec, url.searchParams.get("prev"));
   return json({ ok: true, code: rec.code, exp: rec.exp }, cors);
 }

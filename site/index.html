@@ -324,6 +324,8 @@ body.has-pass .buy-only{display:none !important}
       <a href="#employment">Employment</a>
       <a href="#caution">Caution Fee</a>
       <a href="#demand">Demand Letter</a>
+      <a href="#payslip">Payslip</a>
+      <a href="#warning">Warning Letter</a>
       <a href="#docs">My Documents</a>
       <a href="#pricing">Pricing</a>
     </nav>
@@ -414,6 +416,18 @@ body.has-pass .buy-only{display:none !important}
       <h3>Letter of Demand</h3>
       <p>Owed money? A firm, properly-formatted demand letter that gets debtors to pay before things get legal.</p>
       <a href="#demand">Create letter →</a>
+    </div>
+    <div class="card">
+      <div class="ico"><svg aria-hidden="true"><use href="#i-receipt"/></svg></div><span class="chip">FREE</span>
+      <h3>Payslip</h3>
+      <p>Pay your staff like a proper company — a clean monthly payslip with earnings, deductions and net pay in words. Pairs with the employment contract.</p>
+      <a href="#payslip">Create payslip →</a>
+    </div>
+    <div class="card">
+      <div class="ico"><svg aria-hidden="true"><use href="#i-shield"/></svg></div><span class="chip">FREE</span>
+      <h3>Warning Letter</h3>
+      <p>Handle staff misconduct the lawful way — a formal first, second or final written warning with a clear paper trail and an improvement deadline.</p>
+      <a href="#warning">Create warning →</a>
     </div>
   </div>
 
@@ -751,6 +765,111 @@ body.has-pass .buy-only{display:none !important}
   </div>
 </section>
 
+<!-- ======================= PAYSLIP ======================= -->
+<section id="page-payslip">
+  <h2 class="page-title">Payslip</h2>
+  <p class="page-sub">A clean monthly payslip — earnings, deductions, net pay in words — ready in 2 minutes. Pairs with the Employment Contract tool.</p>
+  <div class="tool-grid">
+    <div class="panel">
+      <h3>📝 Payslip details</h3>
+      <form id="form-payslip" oninput="renderPayslip()">
+        <div class="fieldset"><legend>Employer</legend>
+          <div class="form-grid">
+            <div class="full"><label>Company name</label><input id="p_biz" placeholder="e.g. Kola Ventures Ltd"></div>
+            <div class="full"><label>Company address</label><input id="p_addr" placeholder="Street, city, state"></div>
+          </div>
+        </div>
+        <div class="fieldset"><legend>Employee &amp; period</legend>
+          <div class="form-grid">
+            <div class="full"><label>Employee full name</label><input id="p_emp" placeholder="e.g. Mr. Chidi Eze"></div>
+            <div><label>Job title</label><input id="p_role" placeholder="e.g. Sales Officer"></div>
+            <div><label>Employee ID (optional)</label><input id="p_id" placeholder="e.g. ST-014"></div>
+            <div><label>Pay period</label><input id="p_period" placeholder="e.g. September 2026"></div>
+            <div><label>Pay date</label><input id="p_date" type="date"></div>
+          </div>
+        </div>
+        <div class="fieldset"><legend>Earnings (₦ / month)</legend>
+          <div class="form-grid">
+            <div><label>Basic salary</label><input id="p_basic" inputmode="numeric" placeholder="e.g. 150000"><div class="amount-hint" id="hint-p_basic"></div></div>
+            <div><label>Housing allowance</label><input id="p_house" inputmode="numeric" placeholder="0"></div>
+            <div><label>Transport allowance</label><input id="p_trans" inputmode="numeric" placeholder="0"></div>
+            <div><label>Other allowances</label><input id="p_other" inputmode="numeric" placeholder="0"></div>
+          </div>
+        </div>
+        <div class="fieldset"><legend>Deductions (₦)</legend>
+          <div class="form-grid">
+            <div><label>PAYE tax</label><input id="p_paye" inputmode="numeric" placeholder="0"><div class="amount-hint">Enter the PAYE from your payroll — DocOga does not compute tax.</div></div>
+            <div><label>Pension (employee)</label><input id="p_pen" inputmode="numeric" placeholder="0"></div>
+            <div><label>Housing fund (NHF)</label><input id="p_nhf" inputmode="numeric" placeholder="0"></div>
+            <div><label>Other deductions</label><input id="p_ded" inputmode="numeric" placeholder="0"></div>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div><label>Bank paid from (optional)</label><input id="p_bank" placeholder="e.g. GTBank"></div>
+          <div><label>Account no. (optional)</label><input id="p_acct" placeholder="0123…"></div>
+          <div class="full"><label>Note (optional)</label><input id="p_note" placeholder="e.g. Paid via bank transfer"></div>
+        </div>
+        <div class="amount-hint" id="hint-p_net" style="font-weight:800"></div>
+      </form>
+    </div>
+    <div>
+      <div class="preview-label">LIVE PREVIEW <span id="badge-payslip"></span></div>
+      <div class="preview-scroll"><div id="preview-payslip"></div></div>
+      <div class="actions">
+        <button class="btn primary" onclick="printCurrent('payslip')"><svg class="bi" aria-hidden="true"><use href="#i-print"/></svg>Print / Save PDF</button>
+        <button class="btn green" onclick="saveDoc('payslip')"><svg class="bi" aria-hidden="true"><use href="#i-save"/></svg>Save</button>
+        <button class="btn green" onclick="shareDoc('payslip')"><svg class="bi" aria-hidden="true"><use href="#i-chat"/></svg>Share</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= WARNING LETTER ======================= -->
+<section id="page-warning">
+  <h2 class="page-title">Warning Letter</h2>
+  <p class="page-sub">A formal written warning — first, second or final — with a clear paper trail, expected improvement and deadline.</p>
+  <div class="tool-grid">
+    <div class="panel">
+      <h3>📝 Warning details</h3>
+      <form id="form-warning" oninput="renderWarning()">
+        <div class="fieldset"><legend>Company</legend>
+          <div class="form-grid">
+            <div class="full"><label>Company name</label><input id="w_biz" placeholder="e.g. Kola Ventures Ltd"></div>
+            <div class="full"><label>Company address (optional)</label><input id="w_addr" placeholder="Street, city, state"></div>
+          </div>
+        </div>
+        <div class="fieldset"><legend>Employee</legend>
+          <div class="form-grid">
+            <div class="full"><label>Employee full name</label><input id="w_emp" placeholder="e.g. Mr. Chidi Eze"></div>
+            <div><label>Position</label><input id="w_role" placeholder="e.g. Sales Officer"></div>
+            <div><label>Letter date</label><input id="w_date" type="date"></div>
+          </div>
+        </div>
+        <div class="fieldset"><legend>The warning</legend>
+          <div class="form-grid">
+            <div><label>Warning stage</label><select id="w_count"><option>First written warning</option><option>Second written warning</option><option>Final written warning</option></select></div>
+            <div><label>Incident date(s)</label><input id="w_incident" placeholder="e.g. 12 & 15 Sep 2026"></div>
+            <div class="full"><label>Misconduct / policy violated</label><textarea id="w_offence" placeholder="e.g. Repeated lateness to work despite verbal reminders on two occasions…"></textarea></div>
+            <div class="full"><label>Prior warnings reference (optional)</label><input id="w_prior" placeholder="e.g. verbal warning dated 2 Aug 2026"></div>
+            <div class="full"><label>Expected improvement</label><textarea id="w_expect" placeholder="e.g. Resume work no later than 8:00am daily and submit a daily log…"></textarea></div>
+            <div><label>Improvement deadline</label><input id="w_deadline" type="date"></div>
+            <div class="full"><label>Issued by (name &amp; title)</label><input id="w_signer" placeholder="e.g. Mrs. Bisi Ade — HR Manager"></div>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div>
+      <div class="preview-label">LIVE PREVIEW <span id="badge-warning"></span></div>
+      <div class="preview-scroll"><div id="preview-warning"></div></div>
+      <div class="actions">
+        <button class="btn primary" onclick="printCurrent('warning')"><svg class="bi" aria-hidden="true"><use href="#i-print"/></svg>Print / Save PDF</button>
+        <button class="btn green" onclick="saveDoc('warning')"><svg class="bi" aria-hidden="true"><use href="#i-save"/></svg>Save</button>
+        <button class="btn green" onclick="shareDoc('warning')"><svg class="bi" aria-hidden="true"><use href="#i-chat"/></svg>Share</button>
+      </div>
+    </div>
+  </div>
+</section>
+
 <section id="page-docs">
   <h2 class="page-title">My Documents</h2>
   <p class="page-sub">Your saved documents live on this device only. Clearing your browser data will delete them — print or save anything important.</p>
@@ -787,7 +906,7 @@ body.has-pass .buy-only{display:none !important}
         <li><b>No DocOga banner or watermark</b></li>
         <li>Unlimited clean PDFs &amp; prints</li>
         <li>Priority WhatsApp support</li>
-        <li>All 7 tools — incl. employment contracts, caution-fee receipts &amp; demand letters</li>
+        <li>All 9 tools — incl. payslips, warning letters, employment contracts, caution-fee receipts &amp; demand letters</li>
       </ul>
       <button class="btn primary" id="buy-btn" style="width:100%;justify-content:center" onclick="buyPass()">Get Oga Pass — ₦2,000</button>
       <div class="flw-badge buy-only"><span class="dot"></span>Secured by Flutterwave · Card · Transfer · USSD</div>
@@ -868,10 +987,14 @@ function nairaWords(n){ return numWords(n)+' ('+fmtN(n)+') Naira Only'; }
 
 /* pass management */
 let pass=null; try{ pass=JSON.parse(store.getItem('docoga_pass')||'null'); }catch(e){}
-/* Server owns the expiry — sync on every visit: same countdown on every device,
-   adopts renewals made elsewhere, clears expired passes. Silent + fail-safe. */
-if(pass&&pass.c&&WORKER_URL){
-  fetch(WORKER_URL+'/activate?code='+encodeURIComponent(String(pass.c).replace(/[\s-]/g,''))).then(r=>r.json()).then(j=>{
+/* This device's fingerprint (random ID, kept only in this browser) — powers
+   the server's 3-device fairness fence (one pass = phone + laptop + spare). */
+let DID=''; try{ DID=store.getItem('docoga_did')||('d'+Date.now().toString(36)+Math.random().toString(36).slice(2,10)); store.setItem('docoga_did',DID); }catch(e){}
+/* Server owns the expiry — sync keeps every device on one countdown, adopts
+   renewals made elsewhere, clears expired passes. Silent + fail-safe. */
+function syncPass(){
+  if(!pass||!pass.c||!WORKER_URL) return;
+  fetch(WORKER_URL+'/activate?code='+encodeURIComponent(String(pass.c).replace(/[\s-]/g,''))+(DID?'&did='+encodeURIComponent(DID):'')).then(r=>r.json()).then(j=>{
     if(j&&(j.ok||(j.renewedCode&&j.exp))){
       const c=j.code||j.renewedCode;
       if(c&&j.exp&&(!pass||pass.c!==c||pass.exp!==j.exp)){
@@ -883,6 +1006,22 @@ if(pass&&pass.c&&WORKER_URL){
     }
   }).catch(()=>{});
 }
+syncPass();
+/* Live updates: when the payment tab activates a pass, this tab refreshes
+   itself instantly; coming back to the tab re-syncs (picks up renewals). */
+window.addEventListener('storage',e=>{ if(e.key==='docoga_pass'){ try{ pass=JSON.parse(e.newValue||'null'); }catch(err){ pass=null; } updatePassUI(); renderAll(); } });
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') syncPass(); });
+/* Magic pass link: docoga.com.ng/#code=OGA-… (or ?code=) — tap it from WhatsApp
+   on ANY device/browser and DocOga activates itself. No typing, ever.
+   The code is stripped from the address bar immediately after use. */
+(function(){
+  const m=(location.hash||'').match(/code=([A-Za-z0-9-]{8,24})/)||(location.search||'').match(/code=([A-Za-z0-9-]{8,24})/);
+  if(!m) return;
+  const c=m[1].toUpperCase();
+  try{ history.replaceState(null,'',location.pathname); }catch(e){}
+  if(pass&&pass.c&&String(pass.c).replace(/-/g,'')===c.replace(/-/g,'')&&pass.exp>Date.now()){ toast('✓ Your Oga Pass is already active on this device.'); return; }
+  submitCode(c);
+})();
 function passActive(){ return !!(pass && Date.now()<pass.exp); }
 function updatePassUI(){
   const chip=$('pass-chip');
@@ -893,12 +1032,12 @@ function updatePassUI(){
   else { chip.textContent='FREE PLAN'; chip.classList.remove('pro'); }
   const bb=$('buy-btn'); if(bb){ bb.disabled=active; bb.textContent=active?('✓ Pass active — '+days+' day'+(days>1?'s':'')+' of clean documents left'):'Get Oga Pass — ₦2,000'; }
   const ms=$('modal-sub'); if(ms){ ms.textContent=active?('Your pass is active — '+days+'d left. A NEW code adds 30 days on top of your remaining days.'):'Enter the code you received after payment to unlock 30 days of clean, watermark-free documents.'; }
-  ['agreement','notice','receipt','invoice','employment','caution','demand'].forEach(renderBadge);
+  ['agreement','notice','receipt','invoice','employment','caution','demand','payslip','warning'].forEach(renderBadge);
 }
 function openModal(){ $('modal-overlay').classList.add('open'); $('pass-input').focus(); }
 function closeModal(){ $('modal-overlay').classList.remove('open'); }
-async function submitCode(){
-  const code=$('pass-input').value.trim();
+async function submitCode(codeArg){
+  const code=(codeArg||$('pass-input').value).trim();
   if(!code){ toast('Enter your code first.'); return; }
   const norm=code.toUpperCase().replace(/[\s-]/g,'');
   const h=fnv1a(norm).toString(16).padStart(8,'0');
@@ -908,7 +1047,7 @@ async function submitCode(){
   if(WORKER_URL){
     try{
       const prev=(pass&&pass.c)?'&prev='+encodeURIComponent(String(pass.c).replace(/[\s-]/g,'')):'';
-      const r=await fetch(WORKER_URL+'/activate?code='+encodeURIComponent(norm)+prev);
+      const r=await fetch(WORKER_URL+'/activate?code='+encodeURIComponent(norm)+prev+(DID?'&did='+encodeURIComponent(DID):''));
       const j=await r.json();
       if(j.ok&&j.exp){ save(j.exp, j.code||norm); return; }
       if(j.renewedCode&&j.exp){ save(j.exp, j.renewedCode); return; } // adopt the newest code
@@ -1243,10 +1382,84 @@ function shareDoc(type){
   const url='https://wa.me/?text='+encodeURIComponent(msgs[type]+' → '+SITE_URL);
   try{ window.open(url,'_blank'); }catch(e){ toast('Open the live site to share on WhatsApp.'); }
 }
-const DOC_TITLES={agreement:'Tenancy Agreement',notice:'Notice to Quit',receipt:'Rent Receipt',invoice:'Invoice',employment:'Employment Contract',caution:'Caution Fee Receipt',demand:'Letter of Demand'};
-const RENDERERS={agreement:renderAgreement,notice:renderNotice,receipt:renderReceipt,invoice:renderInvoice,employment:renderEmployment,caution:renderCaution,demand:renderDemand};
-const COLLECTORS={agreement:collectAgreement,notice:collectNotice,receipt:collectReceipt,invoice:collectInvoice,employment:collectEmployment,caution:collectCaution,demand:collectDemand};
-const APPLIERS={agreement:applyAgreement,notice:applyNotice,receipt:applyReceipt,invoice:applyInvoice,employment:applyEmployment,caution:applyCaution,demand:applyDemand};
+/* ================= PAYSLIP ================= */
+function collectPayslip(){ return { p_biz:$('p_biz').value,p_addr:$('p_addr').value,p_emp:$('p_emp').value,p_role:$('p_role').value,p_id:$('p_id').value,
+  p_period:$('p_period').value,p_date:$('p_date').value,p_basic:$('p_basic').value,p_house:$('p_house').value,p_trans:$('p_trans').value,
+  p_other:$('p_other').value,p_paye:$('p_paye').value,p_pen:$('p_pen').value,p_nhf:$('p_nhf').value,p_ded:$('p_ded').value,
+  p_bank:$('p_bank').value,p_acct:$('p_acct').value,p_note:$('p_note').value }; }
+function applyPayslip(p){ ['p_biz','p_addr','p_emp','p_role','p_id','p_period','p_date','p_basic','p_house','p_trans','p_other','p_paye','p_pen','p_nhf','p_ded','p_bank','p_acct','p_note'].forEach(id=>{ $(id).value=p[id]||''; }); }
+function renderPayslip(){
+  const d=collectPayslip();
+  const N=x=>Number(x)||0;
+  const g=N(d.p_basic)+N(d.p_house)+N(d.p_trans)+N(d.p_other);
+  const dd=N(d.p_paye)+N(d.p_pen)+N(d.p_nhf)+N(d.p_ded);
+  const net=g-dd;
+  $('hint-p_basic').textContent=(N(d.p_basic)>0? '= '+numWords(d.p_basic)+' Naira basic monthly':'');
+  $('hint-p_net').textContent=(g>0?(net>=0?('NET PAY: '+fmtN(net)+' ('+nairaWords(net)+')'):'⚠ Deductions exceed total earnings — check the entries.'):'');
+  const row=(l,v)=>'<tr><td style="padding:5px 8px;border:1px solid #D8E0EC">'+l+'</td><td style="padding:5px 8px;border:1px solid #D8E0EC;text-align:right;white-space:nowrap">'+fmtN(v)+'</td></tr>';
+  const th='<tr style="background:#F0F4FA"><th style="padding:6px 8px;border:1px solid #D8E0EC;text-align:left">EARNINGS</th><th style="padding:6px 8px;border:1px solid #D8E0EC;text-align:right">₦</th></tr>';
+  const thd='<tr style="background:#F0F4FA"><th style="padding:6px 8px;border:1px solid #D8E0EC;text-align:left">DEDUCTIONS</th><th style="padding:6px 8px;border:1px solid #D8E0EC;text-align:right">₦</th></tr>';
+  const html =
+  '<div class="'+sheetClass()+'">'+
+  '<h1 style="margin-bottom:2px">PAYSLIP</h1>'+
+  '<div class="doc-meta">'+esc(d.p_period||'Pay period: ____________')+(d.p_date?' &middot; Paid '+fmtDateLong(d.p_date):'')+'</div>'+
+  '<table style="width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px">'+
+  '<tr><td style="padding:2px 0;width:100px;vertical-align:top"><b>Employer</b></td><td><b>'+esc(d.p_biz||'________________')+'</b>'+(d.p_addr?'<br><small>'+esc(d.p_addr)+'</small>':'')+'</td></tr>'+
+  '<tr><td style="padding:2px 0;vertical-align:top"><b>Employee</b></td><td><b>'+esc(d.p_emp||'________________')+'</b>'+(d.p_role?' &mdash; '+esc(d.p_role):'')+(d.p_id?' &middot; ID: '+esc(d.p_id):'')+'</td></tr>'+
+  '</table>'+
+  '<table style="width:100%;border-collapse:collapse;font-size:13.5px;margin-bottom:10px">'+th+
+  row('Basic salary',N(d.p_basic))+row('Housing allowance',N(d.p_house))+row('Transport allowance',N(d.p_trans))+row('Other allowances',N(d.p_other))+
+  '<tr><td style="padding:6px 8px;border:1px solid #D8E0EC"><b>GROSS PAY</b></td><td style="padding:6px 8px;border:1px solid #D8E0EC;text-align:right"><b>'+fmtN(g)+'</b></td></tr></table>'+
+  '<table style="width:100%;border-collapse:collapse;font-size:13.5px">'+thd+
+  row('PAYE (income tax)',N(d.p_paye))+row('Pension (employee)',N(d.p_pen))+row('National Housing Fund',N(d.p_nhf))+row('Other deductions',N(d.p_ded))+
+  '<tr><td style="padding:6px 8px;border:1px solid #D8E0EC"><b>TOTAL DEDUCTIONS</b></td><td style="padding:6px 8px;border:1px solid #D8E0EC;text-align:right"><b>'+fmtN(dd)+'</b></td></tr></table>'+
+  '<div style="background:#EAF6EF;border:1.5px solid #066A38;border-radius:8px;padding:10px 14px;margin:14px 0;display:flex;justify-content:space-between;align-items:center">'+
+  '<b style="font-size:15px">NET PAY</b><b style="font-size:19px;white-space:nowrap">'+fmtN(net)+'</b></div>'+
+  '<p style="font-size:13px"><b>Amount in words:</b> '+nairaWords(Math.max(net,0))+(net<0?' (negative &mdash; check entries)':'')+'.</p>'+
+  ((d.p_bank||d.p_acct)?'<p style="font-size:12.5px">Paid via: '+esc(d.p_bank||'')+(d.p_acct?' &middot; A/C '+esc(d.p_acct):'')+'</p>':'')+
+  (d.p_note?'<p style="font-size:12.5px">Note: '+esc(d.p_note)+'</p>':'')+
+  '<p style="font-size:11.5px;color:#555;margin-top:14px">This is a computer-generated payslip and does not require a signature. Generated with DocOga.</p>'+
+  freeBanner()+
+  '</div>';
+  $('preview-payslip').innerHTML=html;
+  return html;
+}
+
+/* ================= WARNING LETTER ================= */
+function collectWarning(){ return { w_biz:$('w_biz').value,w_addr:$('w_addr').value,w_emp:$('w_emp').value,w_role:$('w_role').value,w_date:$('w_date').value,
+  w_count:$('w_count').value,w_incident:$('w_incident').value,w_offence:$('w_offence').value,w_prior:$('w_prior').value,w_expect:$('w_expect').value,
+  w_deadline:$('w_deadline').value,w_signer:$('w_signer').value }; }
+function applyWarning(p){ ['w_biz','w_addr','w_emp','w_role','w_date','w_incident','w_offence','w_prior','w_expect','w_deadline','w_signer'].forEach(id=>{ $(id).value=p[id]||''; }); if(p.w_count) $('w_count').value=p.w_count; }
+function renderWarning(){
+  const d=collectWarning();
+  const count=d.w_count||'First written warning';
+  const html =
+  '<div class="'+sheetClass()+'">'+
+  '<p style="margin:0"><b>'+esc(d.w_biz||'________________')+'</b>'+(d.w_addr?'<br><small>'+esc(d.w_addr)+'</small>':'')+'</p>'+
+  '<p style="text-align:right;margin:6px 0">'+fmtDateLong(d.w_date)+'</p>'+
+  '<hr>'+
+  '<p><b>To:</b> '+esc(d.w_emp||'________________')+(d.w_role?', '+esc(d.w_role):'')+'</p>'+
+  '<p style="margin-bottom:14px"><b>RE: '+count.toUpperCase()+'</b></p>'+
+  '<p>Dear '+esc((d.w_emp||'Employee').split(' ').slice(0,2).join(' '))+',</p>'+
+  '<p>This letter serves as your <b>'+count.toLowerCase()+'</b> in respect of '+esc(d.w_offence||'the conduct described below')+(d.w_incident?' (incident date(s): <b>'+esc(d.w_incident)+'</b>)':'')+', which is contrary to the terms of your employment and company policy.</p>'+
+  (d.w_prior?'<p>Reference is made to '+esc(d.w_prior)+'.</p>':'')+
+  '<p><b>EXPECTED IMPROVEMENT:</b> You are required to '+esc(d.w_expect||'correct the conduct described above')+(d.w_deadline?' on or before <b>'+fmtDateLong(d.w_deadline)+'</b>':' without delay')+'.</p>'+
+  '<p>Be advised that failure to show the required improvement may result in further disciplinary action, up to and including the termination of your employment, in accordance with your employment contract and applicable labour laws.</p>'+
+  '<p style="margin-top:26px">Yours faithfully,</p>'+
+  '<div class="sig-grid" style="margin-top:14px"><div><div class="sig-line"></div>'+esc(d.w_signer||'Authorised manager')+'<br><small>For '+esc(d.w_biz||'the company')+'</small></div><div><div class="sig-line"></div>'+esc(d.w_emp||'Employee')+'<br><small>Date</small></div></div>'+
+  '<hr style="margin-top:24px">'+
+  '<p style="font-size:12px"><b>ACKNOWLEDGEMENT:</b> I, '+esc(d.w_emp||'the employee')+', acknowledge receipt of this letter. Receipt does not necessarily indicate agreement with its contents.</p>'+
+  '<div class="sig-grid" style="margin-top:8px"><div><div class="sig-line"></div>'+esc(d.w_emp||'Employee')+'<br><small>Signature &amp; date</small></div><div><div class="sig-line"></div>'+esc(d.w_signer||'Manager')+'<br><small>Signature &amp; date</small></div></div>'+
+  freeBanner()+
+  '</div>';
+  $('preview-warning').innerHTML=html;
+  return html;
+}
+
+const DOC_TITLES={agreement:'Tenancy Agreement',notice:'Notice to Quit',receipt:'Rent Receipt',invoice:'Invoice',employment:'Employment Contract',caution:'Caution Fee Receipt',demand:'Letter of Demand',payslip:'Payslip',warning:'Warning Letter'};
+const RENDERERS={agreement:renderAgreement,notice:renderNotice,receipt:renderReceipt,invoice:renderInvoice,employment:renderEmployment,caution:renderCaution,demand:renderDemand,payslip:renderPayslip,warning:renderWarning};
+const COLLECTORS={agreement:collectAgreement,notice:collectNotice,receipt:collectReceipt,invoice:collectInvoice,employment:collectEmployment,caution:collectCaution,demand:collectDemand,payslip:collectPayslip,warning:collectWarning};
+const APPLIERS={agreement:applyAgreement,notice:applyNotice,receipt:applyReceipt,invoice:applyInvoice,employment:applyEmployment,caution:applyCaution,demand:applyDemand,payslip:applyPayslip,warning:applyWarning};
 function getDocs(){ try{ return JSON.parse(store.getItem('docoga_docs')||'[]'); }catch(e){ return []; } }
 function saveDoc(type){
   const payload=COLLECTORS[type]();
@@ -1258,6 +1471,8 @@ function saveDoc(type){
   if(type==='employment'&&payload.e_emp) title='Contract — '+payload.e_emp;
   if(type==='caution'&&payload.c_from) title='Caution Fee — '+payload.c_from;
   if(type==='demand'&&payload.d_to) title='Demand — '+payload.d_to;
+  if(type==='payslip'&&payload.p_emp) title='Payslip — '+payload.p_emp;
+  if(type==='warning'&&payload.w_emp) title='Warning — '+payload.w_emp;
   const docs=getDocs(); docs.unshift({id:Date.now(),type,title,ts:Date.now(),payload});
   store.setItem('docoga_docs',JSON.stringify(docs.slice(0,60)));
   try{ store.removeItem(DRAFT_KEY(type)); }catch(e){}
@@ -1287,7 +1502,7 @@ const DRAFT_KEY=t=>'docoga_draft_'+t;
 function saveDraft(type){ try{ store.setItem(DRAFT_KEY(type), JSON.stringify(COLLECTORS[type]())); }catch(e){} }
 function loadDrafts(){
   let restored=false;
-  ['agreement','notice','receipt','invoice','employment','caution','demand'].forEach(t=>{
+  ['agreement','notice','receipt','invoice','employment','caution','demand','payslip','warning'].forEach(t=>{
     try{
       const raw=store.getItem(DRAFT_KEY(t)); if(!raw) return;
       const p=JSON.parse(raw);
@@ -1302,7 +1517,7 @@ function saveProfile(){ try{ store.setItem('docoga_profile', JSON.stringify({i_b
 function loadProfile(){ try{ const p=JSON.parse(store.getItem('docoga_profile')||'null'); if(p){ if(p.i_biz&&!$('i_biz').value) $('i_biz').value=p.i_biz; if(p.i_bizphone&&!$('i_bizphone').value) $('i_bizphone').value=p.i_bizphone; } }catch(e){} }
 
 /* ================= router & init ================= */
-const PAGES=['home','agreement','notice','receipt','invoice','employment','caution','demand','docs','pricing'];
+const PAGES=['home','agreement','notice','receipt','invoice','employment','caution','demand','payslip','warning','docs','pricing'];
 function route(){
   let h=(location.hash||'#home').slice(1).split('?')[0];
   if(!PAGES.includes(h)) h='home';
@@ -1310,7 +1525,7 @@ function route(){
   document.querySelectorAll('header nav a').forEach(a=>a.classList.toggle('active',a.getAttribute('href')==='#'+h));
   window.scrollTo(0,0);
 }
-function renderAll(){ renderAgreement(); renderNotice(); renderReceipt(); renderInvoice(); renderEmployment(); renderCaution(); renderDemand(); renderDocs(); updatePassUI(); }
+function renderAll(){ renderAgreement(); renderNotice(); renderReceipt(); renderInvoice(); renderEmployment(); renderCaution(); renderDemand(); renderPayslip(); renderWarning(); renderDocs(); updatePassUI(); }
 
 (function init(){
   // states select
