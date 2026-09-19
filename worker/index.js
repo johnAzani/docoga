@@ -8,8 +8,9 @@
  *                       → generates a unique code, stores it in KV, emails the buyer.
  *   POST /flw-webhook   Flutterwave webhook (auth: verif-hash header, set in FLW dashboard)
  *                       → verifies amount & status, issues + emails code. Idempotent.
- *   GET  /verify?ref=X  Verifies a payment reference via Flutterwave or Paystack API
- *                       and returns the code (creates it if first time). Used by success.html.
+ *   GET  /verify?ids=a,b,c (or ?ref=X)
+ *                       Verifies payment identifiers (charge id / reference / tx_ref)
+ *                       via Flutterwave v4 (OAuth) or Paystack API and returns the code.
  *   GET  /activate?code=X  Online activation check for server-issued codes
  *                       (the site calls this as a fallback when a code isn't in the offline list).
  *
@@ -17,7 +18,9 @@
  *
  * Setup (secrets — set in Cloudflare dashboard → Worker → Settings → Variables):
  *   ISSUE_SECRET        shared secret for /issue (you invent it, e.g. a long random string)
- *   FLW_SECRET_KEY      Flutterwave SECRET key (Path B)
+ *   FLW_CLIENT_ID       Flutterwave v4 Client ID (new accounts: live keys are v4-only)
+ *   FLW_CLIENT_SECRET   Flutterwave v4 Client Secret
+ *   FLW_SECRET_KEY      Flutterwave classic SECRET key (legacy v3 accounts only)
  *   FLW_WEBHOOK_HASH    Flutterwave webhook secret hash (optional if using redirect+verify)
  *   PAYSTACK_SECRET_KEY Paystack secret key (Path C — after CAC)
  *   PROVIDER            "flw" (default) or "paystack" — which API /verify should call
@@ -117,18 +120,101 @@ async function handleFlwWebhook(request, env, cors) {
   return new Response("ok", { status: 200 });
 }
 
-/* ---------- Verify a payment reference (called by success.html) ---------- */
-async function handleVerify(url, env, cors) {
-  const ref = url.searchParams.get("ref");
-  if (!ref) return json({ ok: false, error: "ref required" }, cors, 400);
+/* ---------- Flutterwave v4 (OAuth) helpers ---------- */
+const FLW4_TOKEN_URL = "https://idp.flutterwave.com/realms/flutterwave/protocol/openid-connect/token";
+const FLW4_BASE = "https://f4bexperience.flutterwave.com";
 
-  const existing = await env.KV.get("ref:" + ref);
-  if (existing) return json({ ok: true, code: existing }, cors);
+async function flw4Token(env) {
+  const cached = await env.KV.get("flw4:token");
+  if (cached) {
+    try {
+      const t = JSON.parse(cached);
+      if (t.exp > Date.now() + 60000) return t.token;
+    } catch (e) {}
+  }
+  const body = new URLSearchParams({
+    client_id: env.FLW_CLIENT_ID,
+    client_secret: env.FLW_CLIENT_SECRET,
+    grant_type: "client_credentials",
+  });
+  const r = await fetch(FLW4_TOKEN_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body,
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!j.access_token) throw new Error("could not obtain v4 access token");
+  try {
+    await env.KV.put("flw4:token", JSON.stringify({ token: j.access_token, exp: Date.now() + (j.expires_in || 600) * 1000 }));
+  } catch (e) {}
+  return j.access_token;
+}
+
+async function flw4GetCharge(env, idOrRef) {
+  const token = await flw4Token(env);
+  const headers = {
+    Authorization: "Bearer " + token,
+    "Content-Type": "application/json",
+    "X-Trace-Id": "docoga-verify-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8),
+  };
+  // 1) Direct charge-id lookup (chg_...)
+  if (/^chg_/i.test(idOrRef)) {
+    const r = await fetch(FLW4_BASE + "/charges/" + encodeURIComponent(idOrRef), { headers });
+    const j = await r.json().catch(() => null);
+    if (j && j.data) return j.data;
+  }
+  // 2) Lookup by merchant reference
+  const r2 = await fetch(
+    FLW4_BASE + "/charges?reference=" + encodeURIComponent(idOrRef) + "&page=1&size=10",
+    { headers }
+  );
+  const j2 = await r2.json().catch(() => null);
+  if (j2 && Array.isArray(j2.data) && j2.data.length) return j2.data[0];
+  return null;
+}
+
+function flw4Paid(c) {
+  if (!c || c.status !== "succeeded" || c.currency !== "NGN") return false;
+  const amt = c.amount && typeof c.amount === "object" ? Number(c.amount.value) : Number(c.amount);
+  return amt >= PRICE_NGN;
+}
+
+/* ---------- Verify a payment (called by success.html) — ?ids=a,b,c or ?ref=X ---------- */
+async function handleVerify(url, env, cors) {
+  const idsParam = url.searchParams.get("ids") || url.searchParams.get("ref");
+  if (!idsParam) return json({ ok: false, error: "ref required" }, cors, 400);
+  const ids = [...new Set(idsParam.split(",").map((s) => s.trim()).filter(Boolean))].slice(0, 8);
+  if (!ids.length) return json({ ok: false, error: "ref required" }, cors, 400);
+
+  // Idempotency: any known id returns the already-issued code.
+  for (const id of ids) {
+    const existing = await env.KV.get("ref:" + id);
+    if (existing) return json({ ok: true, code: existing }, cors);
+  }
 
   const provider = String(env.PROVIDER || "flw").toLowerCase();
+
+  // Primary: Flutterwave v4 (OAuth Client ID + Secret)
+  if (provider === "flw" && env.FLW_CLIENT_ID && env.FLW_CLIENT_SECRET) {
+    let charge = null, matched = null;
+    try {
+      for (const id of ids) {
+        charge = await flw4GetCharge(env, id);
+        if (charge) { matched = id; break; }
+      }
+    } catch (e) {
+      return json({ ok: false, error: "verification error: " + e.message }, cors, 502);
+    }
+    if (!flw4Paid(charge))
+      return json({ ok: false, error: "payment not found or not successful yet" }, cors, 402);
+    const code = await issueCode(env, { email: "", ref: matched });
+    return json({ ok: true, code }, cors);
+  }
+
+  // Fallback: legacy v3 (Paystack / classic Flutterwave secret key)
+  const ref = ids[0];
   let paid = false;
   let buyerEmail = url.searchParams.get("email") || "";
-
   try {
     if (provider === "paystack" && env.PAYSTACK_SECRET_KEY) {
       const r = await fetch(

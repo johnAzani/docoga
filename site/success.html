@@ -72,10 +72,12 @@ const SUPPORT_WHATSAPP = "2349021852845"; // your WhatsApp number, intl format, 
   const status = (q.get("status") || "").toLowerCase();
   if (status === "cancelled") { show("state-cancel"); return; }
 
-  const ref = q.get("tx_ref") || q.get("reference") || q.get("ref");
+  const candidates = ["tx_ref", "reference", "ref", "transaction_id", "charge_id", "id", "tr_id"]
+    .map((k) => q.get(k)).filter(Boolean);
+  const ref = candidates[0];
   if (!WORKER_URL || !ref) { show("state-manual"); return; }
 
-  fetch(WORKER_URL + "/verify?ref=" + encodeURIComponent(ref))
+  fetch(WORKER_URL + "/verify?ids=" + encodeURIComponent(candidates.join(",")) + "&ref=" + encodeURIComponent(ref))
     .then((r) => r.json())
     .then((j) => {
       if (j.ok && j.code) {
