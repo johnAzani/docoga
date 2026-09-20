@@ -44,7 +44,7 @@ ok('minimal record → activates', r.status === 200 && r.j.ok === true, r.status
 console.log('— top-up chain —');
 const tu = makeEnv({
   'code:OGA-PAST-PLAN-AAAA': rec('OGA-PAST-PLAN-AAAA', { exp: NOW + 25 * 864e5 }),
-  'code:OGA-NEWP-PLAN-BBBB': rec('OGA-NEWP-PLAN-BBBB', { exp: NOW + 55 * 864e5, prev: 'OGA-PAST-PLAN-AAAA' }),
+  'code:OGA-NEWP-PLAN-BBBB': rec('OGA-NEWP-PLAN-BBBB', { exp: NOW + 30 * 864e5 }),  // fresh mint — no prev; linking happens at activation
 });
 r = await hit(tu, '/activate?code=OGA-NEWP-PLAN-BBBB&prev=OGA-PAST-PLAN-AAAA&did=d1');   // top-up: new code adopted, links old→new
 ok('top-up activates new code with carry-over days', r.status === 200 && r.j.ok === true, JSON.stringify(r.j).slice(0, 90));
