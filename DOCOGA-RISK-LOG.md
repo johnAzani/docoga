@@ -112,3 +112,9 @@ only, safe from flooding). Delete them after the first ~10 real customers for pr
 ## State SEO pages (built 19 Sep 2026 — 24 pages)
 - Facts verified before publishing: Lagos Tenancy Law 2011 s.13(1) notice table, s.4 advance cap, s.13(2)-(3) arrears; Recovery of Premises Act s.8 (FCT). Rivers/Oyo/Kano/Enugu pages use honest general framing + "confirm with a lawyer" wording — no invented specifics.
 - All pages: "general information, not legal advice" footer; sitemap +24; home state-guides block.
+
+## Email Automation (live 20 Sep 2026 — Brevo)
+- **SMTP2GO REJECTED for Nigeria**: signup returns "Error code 3 - Service unavailable" (documented by SMTP2GO: "we don't currently operate in every territory"). Pivoted to Brevo same day.
+- **Brevo free**: 300 emails/day, no card, never expires. Sender = azanijohn2017@gmail.com (verified). Direct API test 201 + full /issue end-to-end pass. Deliverability ~80% (vs SMTP2GO 96%) — acceptable: email is the BACKUP layer; code delivery never depends on it.
+- **Owner decision (20 Sep 2026): the Brevo API key stays in chat, un-rotated** — owner explicitly wants AI in full control of infrastructure. Risk accepted by owner: chat is account-private, key has zero financial power (no card, no data), and rotation takes <60s on owner request. Secrets live in worker (BREVO_API_KEY + MAIL_FROM) and gitignored .worker-secrets.env.
+- Brevo dashboard IP-blocking feature deliberately NOT activated (would block Cloudflare worker IPs).
