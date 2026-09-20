@@ -124,3 +124,10 @@ only, safe from flooding). Delete them after the first ~10 real customers for pr
 - **No charge ever happens without the buyer's tap** (deliberate: Nigerian cards block most silent recurring debits; true auto-debit deferred to post-CAC with the yearly plan).
 - Proven live via wrangler dev --remote + /__scheduled (real KV, real Brevo): reminder sent, remindedAt stamped, no double-send.
 - Scaling note: full KV scan per run is fine below ~1k codes; index by expiry month if ever needed.
+
+## Debug Round 2 (20 Sep 2026) — full-stack sweep
+- Fixed: /issue now caps email at 254 chars / ref at 120 (was accepting 1000-char emails; deployed f6e96e50).
+- Verified live: forged webhooks (underpay ₦1 / failed status / wrong currency) all rejected with ZERO codes minted; signatures enforced (403); all endpoints graceful under hostile params; expired code → live 403; device idempotency + 3-device cap unit-verified.
+- success.html hostile loads, all secondary pages, dark mode, corrupted localStorage, legacy pass format: all survive clean.
+- **TEST TRAP (documented): pass codes use alphabet [A-Z2-9] — no 0/1/I/O (anti-misread by design). Test codes containing 0/1 look like KV propagation lag but are actually rejected by normalizeCode.**
+- New persistent tool: tools/tests/workertest.mjs (real worker code + mock KV, deterministic unit coverage: expiry, fence, hostile records, top-up).
