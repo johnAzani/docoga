@@ -58,16 +58,43 @@ function json(obj, cors, status = 200) {
 async function emailCode(env, to, code) {
   if (!to) return;
   const site = env.SITE_URL || "https://docoga.com.ng";
+  const link = `${site}/#code=${code}`;
   const subject = "Your DocOga Oga Pass — tap to activate";
   const text =
     `Thank you for your purchase!\n\n` +
-    `ACTIVATE ON ANY DEVICE — tap this link:\n` +
-    `${site}/#code=${code}\n\n` +
+    `ACTIVATE ON ANY DEVICE — tap this link:\n${link}\n\n` +
     `Your pass code (if you ever need to type it): ${code}\n\n` +
     `What you got: clean, watermark-free documents for 30 days — all 9 tools.\n\n` +
     `Keep this email — the link keeps working for the whole life of your pass.\n\n` +
     `Need help? WhatsApp us: +234 902 185 2845\n\n` +
     `— The DocOga Team, Abuja, Nigeria`;
+  const html =
+  `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#F5F7FB;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;">` +
+  `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F5F7FB;padding:16px 8px;"><tr><td align="center">` +
+  `<table role="presentation" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #DCE4F0;">` +
+  `<tr><td style="background:#0040E0;padding:22px 28px;">` +
+  `<span style="font-size:24px;font-weight:900;color:#ffffff;letter-spacing:0.5px;">DocOga</span><br>` +
+  `<span style="font-size:12px;color:#C7D4FF;">Your Documents. Our Priority.</span>` +
+  `</td></tr>` +
+  `<tr><td style="padding:28px;">` +
+  `<p style="margin:0 0 14px;font-size:17px;color:#141F33;font-weight:700;">Thank you for your purchase! 🎉</p>` +
+  `<p style="margin:0 0 20px;font-size:15px;color:#37455E;line-height:1.6;">Your <b>Oga Pass</b> is ready — <b>all 9 document tools</b>, clean and watermark-free, for <b>30 days</b>.</p>` +
+  `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto 8px;"><tr>` +
+  `<td style="background:#0040E0;border-radius:10px;">` +
+  `<a href="${link}" style="display:inline-block;padding:15px 34px;font-size:16px;font-weight:800;color:#ffffff;text-decoration:none;">Activate my pass →</a>` +
+  `</td></tr></table>` +
+  `<p style="margin:0 0 18px;font-size:13px;color:#5B6B85;text-align:center;">Tap the button on any of your devices — DocOga opens already unlocked.</p>` +
+  `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 18px;"><tr>` +
+  `<td style="background:#F0F4FA;border:1px dashed #B9C7E4;border-radius:10px;padding:14px;text-align:center;">` +
+  `<span style="font-size:11px;color:#5B6B85;letter-spacing:1px;">PREFER TO TYPE IT? YOUR PASS CODE</span><br>` +
+  `<span style="font-size:20px;font-weight:800;color:#0040E0;letter-spacing:2px;">${code}</span>` +
+  `</td></tr></table>` +
+  `<p style="margin:0 0 8px;font-size:13.5px;color:#37455E;line-height:1.6;"><b>Keep this email.</b> The button and the code keep working for the whole life of your pass — on up to 3 devices.</p>` +
+  `<p style="margin:0;font-size:13.5px;color:#37455E;line-height:1.6;">Need help? WhatsApp us: <b>+234 902 185 2845</b></p>` +
+  `</td></tr>` +
+  `<tr><td style="background:#F0F4FA;padding:16px 28px;border-top:1px solid #DCE4F0;">` +
+  `<p style="margin:0;font-size:12px;color:#5B6B85;line-height:1.5;">DocOga — free Nigerian document tools: tenancy agreement, notice to quit, rent receipt, invoice, employment contract, caution fee, letter of demand, payslip, warning letter.<br>Abuja, Nigeria · <a href="${site}" style="color:#0040E0;">docoga.com.ng</a></p>` +
+  `</td></tr></table></td></tr></table></body></html>`;
 
   /* Provider 1 (primary): Brevo — free 300/day, no card, Nigeria-friendly. */
   if (env.BREVO_API_KEY) {
@@ -81,6 +108,7 @@ async function emailCode(env, to, code) {
         to: [{ email: to }],
         subject,
         textContent: text,
+        htmlContent: html,
       }),
     });
     return;
@@ -96,6 +124,7 @@ async function emailCode(env, to, code) {
         to: [to],
         subject,
         text_body: text,
+        html_body: html,
       }),
     });
     return;
@@ -109,7 +138,7 @@ async function emailCode(env, to, code) {
         Authorization: `Bearer ${env.RESEND_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ from: env.MAIL_FROM || "DocOga <noreply@docoga.com.ng>", to, subject, text }),
+      body: JSON.stringify({ from: env.MAIL_FROM || "DocOga <noreply@docoga.com.ng>", to, subject, text, html }),
     });
   }
 }
