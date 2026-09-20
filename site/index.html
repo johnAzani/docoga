@@ -1367,7 +1367,7 @@ function renderDemand(){
 
 /* ================= print / share / save ================= */
 function printCurrent(type){
-  const html={agreement:renderAgreement,notice:renderNotice,receipt:renderReceipt,invoice:renderInvoice,employment:renderEmployment,caution:renderCaution,demand:renderDemand}[type]();
+  const html={agreement:renderAgreement,notice:renderNotice,receipt:renderReceipt,invoice:renderInvoice,employment:renderEmployment,caution:renderCaution,demand:renderDemand,payslip:renderPayslip,warning:renderWarning}[type]();
   const pr=$('print-root');
   pr.innerHTML=html;
   document.body.classList.add('printing');
@@ -1383,7 +1383,9 @@ function shareDoc(type){
     invoice:'Creating clean naira invoices with DocOga 💼 — free Nigerian document maker',
     employment:'Hiring properly with a clean employment contract from DocOga 💼 — free Nigerian document maker',
     caution:'Documenting caution fees properly with DocOga 🇳🇬 — free Nigerian document maker',
-    demand:'Sent a firm letter of demand with DocOga ⚖ — free Nigerian document maker'
+    demand:'Sent a firm letter of demand with DocOga ⚖ — free Nigerian document maker',
+    payslip:'Paying my staff properly with clean payslips from DocOga 🧾 — free Nigerian document maker',
+    warning:'Issued a formal written warning the right way with DocOga 🇳🇬 — free Nigerian document maker'
   };
   const url='https://wa.me/?text='+encodeURIComponent(msgs[type]+' → '+SITE_URL);
   try{ window.open(url,'_blank'); }catch(e){ toast('Open the live site to share on WhatsApp.'); }
@@ -1396,11 +1398,11 @@ function collectPayslip(){ return { p_biz:$('p_biz').value,p_addr:$('p_addr').va
 function applyPayslip(p){ ['p_biz','p_addr','p_emp','p_role','p_id','p_period','p_date','p_basic','p_house','p_trans','p_other','p_paye','p_pen','p_nhf','p_ded','p_bank','p_acct','p_note'].forEach(id=>{ $(id).value=p[id]||''; }); }
 function renderPayslip(){
   const d=collectPayslip();
-  const N=x=>Number(x)||0;
+  const N=x=>Number(String(x).replace(/[₦,\s]/g,''))||0;
   const g=N(d.p_basic)+N(d.p_house)+N(d.p_trans)+N(d.p_other);
   const dd=N(d.p_paye)+N(d.p_pen)+N(d.p_nhf)+N(d.p_ded);
   const net=g-dd;
-  $('hint-p_basic').textContent=(N(d.p_basic)>0? '= '+numWords(d.p_basic)+' Naira basic monthly':'');
+  $('hint-p_basic').textContent=(N(d.p_basic)>0? '= '+numWords(N(d.p_basic))+' Naira basic monthly':'');
   $('hint-p_net').textContent=(g>0?(net>=0?('NET PAY: '+fmtN(net)+' ('+nairaWords(net)+')'):'⚠ Deductions exceed total earnings — check the entries.'):'');
   const row=(l,v)=>'<tr><td style="padding:5px 8px;border:1px solid #D8E0EC">'+l+'</td><td style="padding:5px 8px;border:1px solid #D8E0EC;text-align:right;white-space:nowrap">'+fmtN(v)+'</td></tr>';
   const th='<tr style="background:#F0F4FA"><th style="padding:6px 8px;border:1px solid #D8E0EC;text-align:left">EARNINGS</th><th style="padding:6px 8px;border:1px solid #D8E0EC;text-align:right">₦</th></tr>';
@@ -1555,6 +1557,16 @@ function renderAll(){ renderAgreement(); renderNotice(); renderReceipt(); render
   $('form-notice').addEventListener('input',autoN);
   $('form-receipt').addEventListener('input',autoR);
   $('form-invoice').addEventListener('input',autoI);
+  const autoE=debounce_(()=>saveDraft('employment'),700);
+  const autoC=debounce_(()=>saveDraft('caution'),700);
+  const autoD=debounce_(()=>saveDraft('demand'),700);
+  const autoP=debounce_(()=>saveDraft('payslip'),700);
+  const autoW=debounce_(()=>saveDraft('warning'),700);
+  $('form-employment').addEventListener('input',autoE);
+  $('form-caution').addEventListener('input',autoC);
+  $('form-demand').addEventListener('input',autoD);
+  $('form-payslip').addEventListener('input',autoP);
+  $('form-warning').addEventListener('input',autoW);
   window.addEventListener('hashchange',route);
   $('foot-wa').href='https://wa.me/'+SUPPORT_WHATSAPP;
   $('wa-float').href='https://wa.me/'+SUPPORT_WHATSAPP;
