@@ -25,6 +25,10 @@ id = "f3a5afebe7d04bb0a6018c0d7d355253"
 #   MAIL_FROM = "DocOga <passes@docoga.com.ng>"
 #   SITE_URL = "https://docoga.com.ng"
 
+[triggers]
+crons = ["0 7 * * *"]  # 08:00 Nigeria time, daily — day-27 renewal reminders
+
 [vars]
 PROVIDER = "flw"
 SITE_URL = "https://docoga.com.ng"
+PAYMENT_URL = "https://flutterwave.com/pay/ynznvgof2r21"

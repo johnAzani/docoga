@@ -118,3 +118,9 @@ only, safe from flooding). Delete them after the first ~10 real customers for pr
 - **Brevo free**: 300 emails/day, no card, never expires. Sender = azanijohn2017@gmail.com (verified). Direct API test 201 + full /issue end-to-end pass. Deliverability ~80% (vs SMTP2GO 96%) — acceptable: email is the BACKUP layer; code delivery never depends on it.
 - **Owner decision (20 Sep 2026): the Brevo API key stays in chat, un-rotated** — owner explicitly wants AI in full control of infrastructure. Risk accepted by owner: chat is account-private, key has zero financial power (no card, no data), and rotation takes <60s on owner request. Secrets live in worker (BREVO_API_KEY + MAIL_FROM) and gitignored .worker-secrets.env.
 - Brevo dashboard IP-blocking feature deliberately NOT activated (would block Cloudflare worker IPs).
+
+## Day-27 Automatic Renewal Reminders (live 20 Sep 2026)
+- Cron 0 7 * * * (08:00 WAT daily) on the worker → scans KV codes → any pass expiring within 3 days with an email and no `remindedAt` gets a branded renewal email (Brevo): expiry date, one-tap renew button (FLW link), "days stack if you renew early", magic link for unactivated passes, WhatsApp support. `remindedAt` stamp prevents re-sends.
+- **No charge ever happens without the buyer's tap** (deliberate: Nigerian cards block most silent recurring debits; true auto-debit deferred to post-CAC with the yearly plan).
+- Proven live via wrangler dev --remote + /__scheduled (real KV, real Brevo): reminder sent, remindedAt stamped, no double-send.
+- Scaling note: full KV scan per run is fine below ~1k codes; index by expiry month if ever needed.

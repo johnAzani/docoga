@@ -55,6 +55,50 @@ function json(obj, cors, status = 200) {
   });
 }
 
+/* ---------- Email delivery (provider chain: Brevo > SMTP2GO > Resend) ---------- */
+async function sendMail(env, to, subject, text, html) {
+  if (!to) return;
+  if (env.BREVO_API_KEY) {
+    const from = env.MAIL_FROM || "DocOga <noreply@docoga.com.ng>";
+    const m = from.match(/^(.*?)\s*<(.+)>$/) || [null, "DocOga", from];
+    await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: { "api-key": env.BREVO_API_KEY, "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ sender: { name: m[1] || "DocOga", email: m[2] }, to: [{ email: to }], subject, textContent: text, htmlContent: html }),
+    });
+    return;
+  }
+  if (env.SMTP2GO_API_KEY) {
+    await fetch("https://api.smtp2go.com/v3/email/send", {
+      method: "POST",
+      headers: { "x-smtpto2go-api-key": env.SMTP2GO_API_KEY, "Content-Type": "application/json" },
+      body: JSON.stringify({ sender: env.MAIL_FROM || "DocOga <noreply@docoga.com.ng>", to: [to], subject, text_body: text, html_body: html }),
+    });
+    return;
+  }
+  if (env.RESEND_API_KEY) {
+    await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ from: env.MAIL_FROM || "DocOga <noreply@docoga.com.ng>", to, subject, text, html }),
+    });
+  }
+}
+
+function mailShell(inner) {
+  return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#F5F7FB;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;">` +
+  `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F5F7FB;padding:16px 8px;"><tr><td align="center">` +
+  `<table role="presentation" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #DCE4F0;">` +
+  `<tr><td style="background:#0040E0;padding:0;">` +
+  `<img src="https://docoga-pass.johnazani.workers.dev/assets/email-banner.jpg" width="600" alt="DocOga — Your Documents. Our Priority." style="display:block;width:100%;height:auto;border:0;">` +
+  `</td></tr>` +
+  `<tr><td style="padding:28px;">` + inner +
+  `</td></tr>` +
+  `<tr><td style="background:#F0F4FA;padding:16px 28px;border-top:1px solid #DCE4F0;">` +
+  `<p style="margin:0;font-size:12px;color:#5B6B85;line-height:1.5;">DocOga — free Nigerian document tools: tenancy agreement, notice to quit, rent receipt, invoice, employment contract, caution fee, letter of demand, payslip, warning letter.<br>Abuja, Nigeria · <a href="https://docoga.com.ng" style="color:#0040E0;">docoga.com.ng</a></p>` +
+  `</td></tr></table></td></tr></table></body></html>`;
+}
+
 async function emailCode(env, to, code) {
   if (!to) return;
   const site = env.SITE_URL || "https://docoga.com.ng";
@@ -68,14 +112,7 @@ async function emailCode(env, to, code) {
     `Keep this email — the link keeps working for the whole life of your pass.\n\n` +
     `Need help? WhatsApp us: +234 902 185 2845\n\n` +
     `— The DocOga Team, Abuja, Nigeria`;
-  const html =
-  `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#F5F7FB;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;">` +
-  `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F5F7FB;padding:16px 8px;"><tr><td align="center">` +
-  `<table role="presentation" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #DCE4F0;">` +
-  `<tr><td style="background:#0040E0;padding:0;">` +
-  `<img src="https://docoga-pass.johnazani.workers.dev/assets/email-banner.jpg" width="600" alt="DocOga — Your Documents. Our Priority." style="display:block;width:100%;height:auto;border:0;">` +
-  `</td></tr>` +
-  `<tr><td style="padding:28px;">` +
+  const inner =
   `<p style="margin:0 0 14px;font-size:17px;color:#141F33;font-weight:700;">Thank you for your purchase! 🎉</p>` +
   `<p style="margin:0 0 20px;font-size:15px;color:#37455E;line-height:1.6;">Your <b>Oga Pass</b> is ready — <b>all 9 document tools</b>, clean and watermark-free, for <b>30 days</b>.</p>` +
   `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto 8px;"><tr>` +
@@ -89,57 +126,60 @@ async function emailCode(env, to, code) {
   `<span style="font-size:20px;font-weight:800;color:#0040E0;letter-spacing:2px;">${code}</span>` +
   `</td></tr></table>` +
   `<p style="margin:0 0 8px;font-size:13.5px;color:#37455E;line-height:1.6;"><b>Keep this email.</b> The button and the code keep working for the whole life of your pass — on up to 3 devices.</p>` +
-  `<p style="margin:0;font-size:13.5px;color:#37455E;line-height:1.6;">Need help? WhatsApp us: <b>+234 902 185 2845</b></p>` +
-  `</td></tr>` +
-  `<tr><td style="background:#F0F4FA;padding:16px 28px;border-top:1px solid #DCE4F0;">` +
-  `<p style="margin:0;font-size:12px;color:#5B6B85;line-height:1.5;">DocOga — free Nigerian document tools: tenancy agreement, notice to quit, rent receipt, invoice, employment contract, caution fee, letter of demand, payslip, warning letter.<br>Abuja, Nigeria · <a href="${site}" style="color:#0040E0;">docoga.com.ng</a></p>` +
-  `</td></tr></table></td></tr></table></body></html>`;
+  `<p style="margin:0;font-size:13.5px;color:#37455E;line-height:1.6;">Need help? WhatsApp us: <b>+234 902 185 2845</b></p>`;
+  await sendMail(env, to, subject, text, mailShell(inner));
+}
 
-  /* Provider 1 (primary): Brevo — free 300/day, no card, Nigeria-friendly. */
-  if (env.BREVO_API_KEY) {
-    const from = env.MAIL_FROM || "DocOga <noreply@docoga.com.ng>";
-    const m = from.match(/^(.*?)\s*<(.+)>$/) || [null, "DocOga", from];
-    await fetch("https://api.brevo.com/v3/smtp/email", {
-      method: "POST",
-      headers: { "api-key": env.BREVO_API_KEY, "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({
-        sender: { name: m[1] || "DocOga", email: m[2] },
-        to: [{ email: to }],
-        subject,
-        textContent: text,
-        htmlContent: html,
-      }),
-    });
-    return;
-  }
+/* ---------- Day-27 automatic renewal reminder (cron, no charge without buyer tap) ---------- */
+function fmtD(ts) {
+  try { return new Date(ts).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }); }
+  catch (e) { return new Date(ts).toISOString().slice(0, 10); }
+}
+async function emailRenewalReminder(env, to, code, exp) {
+  const site = env.SITE_URL || "https://docoga.com.ng";
+  const pay = env.PAYMENT_URL || "https://flutterwave.com/pay/ynznvgof2r21";
+  const link = `${site}/#code=${code}`;
+  const when = fmtD(exp);
+  const subject = "Your DocOga Oga Pass expires on " + when + " — one tap renews it";
+  const text =
+    `Your Oga Pass expires on ${when}.\n\n` +
+    `RENEW IN ONE TAP:\n${pay}\n\n` +
+    `Renew before it expires and your remaining days stack on top of the new 30 — you never lose money.\n\n` +
+    `Haven't activated your current pass yet? Tap your magic link:\n${link}\n\n` +
+    `Questions? WhatsApp us: +234 902 185 2845\n\n` +
+    `— The DocOga Team, Abuja, Nigeria`;
+  const inner =
+  `<p style="margin:0 0 14px;font-size:17px;color:#141F33;font-weight:700;">Your Oga Pass expires on ${when}</p>` +
+  `<p style="margin:0 0 20px;font-size:15px;color:#37455E;line-height:1.6;">Renew in one tap and keep making clean, watermark-free documents with all 9 tools.</p>` +
+  `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto 8px;"><tr>` +
+  `<td style="background:#0040E0;border-radius:10px;">` +
+  `<a href="${pay}" style="display:inline-block;padding:15px 34px;font-size:16px;font-weight:800;color:#ffffff;text-decoration:none;">Renew my pass — ₦2,000 →</a>` +
+  `</td></tr></table>` +
+  `<p style="margin:0 0 18px;font-size:13.5px;color:#37455E;line-height:1.6;text-align:center;"><b>Renew before ${when} and your remaining days stack</b> — you never lose money.</p>` +
+  `<p style="margin:0 0 8px;font-size:13px;color:#5B6B85;line-height:1.6;">Not activated your current pass yet? <a href="${link}" style="color:#0040E0;">Tap your magic link</a>.</p>` +
+  `<p style="margin:0;font-size:13px;color:#5B6B85;line-height:1.6;">Questions? WhatsApp us: <b>+234 902 185 2845</b></p>`;
+  await sendMail(env, to, subject, text, mailShell(inner));
+}
 
-  /* Provider 2: SMTP2GO — free 1,000/month (blocked Nigeria at signup, Sep 2026). */
-  if (env.SMTP2GO_API_KEY) {
-    await fetch("https://api.smtp2go.com/v3/email/send", {
-      method: "POST",
-      headers: { "x-smtpto2go-api-key": env.SMTP2GO_API_KEY, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        sender: env.MAIL_FROM || "DocOga <noreply@docoga.com.ng>",
-        to: [to],
-        subject,
-        text_body: text,
-        html_body: html,
-      }),
-    });
-    return;
-  }
-
-  /* Provider 3 (fallback): Resend — free 3,000/month, 100/day. */
-  if (env.RESEND_API_KEY) {
-    await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${env.RESEND_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ from: env.MAIL_FROM || "DocOga <noreply@docoga.com.ng>", to, subject, text, html }),
-    });
-  }
+async function dailyRenewalReminders(env) {
+  const now = Date.now();
+  let cursor = undefined;
+  do {
+    const page = await env.KV.list({ prefix: "code:", cursor });
+    for (const k of page.keys) {
+      try {
+        const raw = await env.KV.get(k.name);
+        if (!raw) continue;
+        const r = JSON.parse(raw);
+        if (r && r.email && r.exp && r.exp > now && r.exp - now <= 3 * 864e5 && !r.remindedAt) {
+          try { await emailRenewalReminder(env, r.email, r.code, r.exp); } catch (e) {}
+          r.remindedAt = now;
+          await env.KV.put(k.name, JSON.stringify(r));
+        }
+      } catch (e) { /* one bad record never stops the loop */ }
+    }
+    cursor = page.list_complete ? undefined : page.cursor;
+  } while (cursor);
 }
 
 /** Create a code, remember it in KV, email the buyer. Returns the code. */
@@ -464,5 +504,10 @@ export default {
     } catch (e) {
       return json({ ok: false, error: String((e && e.message) || e) }, cors, 500);
     }
+  },
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil((async () => {
+      try { await dailyRenewalReminders(env); } catch (e) {}
+    })());
   },
 };
