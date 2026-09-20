@@ -57,7 +57,7 @@ function json(obj, cors, status = 200) {
 
 async function emailCode(env, to, code) {
   if (!env.RESEND_API_KEY || !to) return;
-  const from = env.MAIL_FROM || "DocOga <onboarding@resend.dev>";
+  const from = env.MAIL_FROM || "DocOga <passes@docoga.com.ng>";
   const site = env.SITE_URL || "https://docoga.com.ng";
   await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -68,16 +68,15 @@ async function emailCode(env, to, code) {
     body: JSON.stringify({
       from,
       to,
-      subject: "Your DocOga Oga Pass code",
+      subject: "Your DocOga Oga Pass — tap to activate",
       text:
         `Thank you for your purchase!\n\n` +
-        `Your Oga Pass code: ${code}\n\n` +
-        `How to use it:\n` +
-        `1. Open ${site}\n` +
-        `2. Tap "FREE PLAN" at the top\n` +
-        `3. Paste this code and tap Activate\n\n` +
-        `Clean, watermark-free documents unlocked for 30 days.\n\n` +
-        `Keep this email. Screenshot the code for safekeeping.\n\n` +
+        `ACTIVATE ON ANY DEVICE — tap this link:\n` +
+        `${site}/#code=${code}\n\n` +
+        `Your pass code (if you ever need to type it): ${code}\n\n` +
+        `What you got: clean, watermark-free documents for 30 days — all 9 tools.\n\n` +
+        `Keep this email — the link keeps working for the whole life of your pass.\n\n` +
+        `Need help? WhatsApp us: +234 902 185 2845\n\n` +
         `— The DocOga Team, Abuja, Nigeria`,
     }),
   });
