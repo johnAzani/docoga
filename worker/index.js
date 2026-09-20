@@ -69,7 +69,24 @@ async function emailCode(env, to, code) {
     `Need help? WhatsApp us: +234 902 185 2845\n\n` +
     `— The DocOga Team, Abuja, Nigeria`;
 
-  /* Provider 1: SMTP2GO — free 1,000/month, no card, 96% deliverability. */
+  /* Provider 1 (primary): Brevo — free 300/day, no card, Nigeria-friendly. */
+  if (env.BREVO_API_KEY) {
+    const from = env.MAIL_FROM || "DocOga <noreply@docoga.com.ng>";
+    const m = from.match(/^(.*?)\s*<(.+)>$/) || [null, "DocOga", from];
+    await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: { "api-key": env.BREVO_API_KEY, "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({
+        sender: { name: m[1] || "DocOga", email: m[2] },
+        to: [{ email: to }],
+        subject,
+        textContent: text,
+      }),
+    });
+    return;
+  }
+
+  /* Provider 2: SMTP2GO — free 1,000/month (blocked Nigeria at signup, Sep 2026). */
   if (env.SMTP2GO_API_KEY) {
     await fetch("https://api.smtp2go.com/v3/email/send", {
       method: "POST",
@@ -84,7 +101,7 @@ async function emailCode(env, to, code) {
     return;
   }
 
-  /* Provider 2 (fallback): Resend — free 3,000/month, 100/day. */
+  /* Provider 3 (fallback): Resend — free 3,000/month, 100/day. */
   if (env.RESEND_API_KEY) {
     await fetch("https://api.resend.com/emails", {
       method: "POST",
