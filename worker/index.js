@@ -56,30 +56,45 @@ function json(obj, cors, status = 200) {
 }
 
 async function emailCode(env, to, code) {
-  if (!env.RESEND_API_KEY || !to) return;
-  const from = env.MAIL_FROM || "DocOga <passes@docoga.com.ng>";
+  if (!to) return;
   const site = env.SITE_URL || "https://docoga.com.ng";
-  await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${env.RESEND_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from,
-      to,
-      subject: "Your DocOga Oga Pass — tap to activate",
-      text:
-        `Thank you for your purchase!\n\n` +
-        `ACTIVATE ON ANY DEVICE — tap this link:\n` +
-        `${site}/#code=${code}\n\n` +
-        `Your pass code (if you ever need to type it): ${code}\n\n` +
-        `What you got: clean, watermark-free documents for 30 days — all 9 tools.\n\n` +
-        `Keep this email — the link keeps working for the whole life of your pass.\n\n` +
-        `Need help? WhatsApp us: +234 902 185 2845\n\n` +
-        `— The DocOga Team, Abuja, Nigeria`,
-    }),
-  });
+  const subject = "Your DocOga Oga Pass — tap to activate";
+  const text =
+    `Thank you for your purchase!\n\n` +
+    `ACTIVATE ON ANY DEVICE — tap this link:\n` +
+    `${site}/#code=${code}\n\n` +
+    `Your pass code (if you ever need to type it): ${code}\n\n` +
+    `What you got: clean, watermark-free documents for 30 days — all 9 tools.\n\n` +
+    `Keep this email — the link keeps working for the whole life of your pass.\n\n` +
+    `Need help? WhatsApp us: +234 902 185 2845\n\n` +
+    `— The DocOga Team, Abuja, Nigeria`;
+
+  /* Provider 1: SMTP2GO — free 1,000/month, no card, 96% deliverability. */
+  if (env.SMTP2GO_API_KEY) {
+    await fetch("https://api.smtp2go.com/v3/email/send", {
+      method: "POST",
+      headers: { "x-smtpto2go-api-key": env.SMTP2GO_API_KEY, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sender: env.MAIL_FROM || "DocOga <noreply@docoga.com.ng>",
+        to: [to],
+        subject,
+        text_body: text,
+      }),
+    });
+    return;
+  }
+
+  /* Provider 2 (fallback): Resend — free 3,000/month, 100/day. */
+  if (env.RESEND_API_KEY) {
+    await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${env.RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ from: env.MAIL_FROM || "DocOga <noreply@docoga.com.ng>", to, subject, text }),
+    });
+  }
 }
 
 /** Create a code, remember it in KV, email the buyer. Returns the code. */
