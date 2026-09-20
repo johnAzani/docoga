@@ -72,9 +72,8 @@ async function emailCode(env, to, code) {
   `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#F5F7FB;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;">` +
   `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F5F7FB;padding:16px 8px;"><tr><td align="center">` +
   `<table role="presentation" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #DCE4F0;">` +
-  `<tr><td style="background:#0040E0;padding:22px 28px;">` +
-  `<span style="font-size:24px;font-weight:900;color:#ffffff;letter-spacing:0.5px;">DocOga</span><br>` +
-  `<span style="font-size:12px;color:#C7D4FF;">Your Documents. Our Priority.</span>` +
+  `<tr><td style="background:#0040E0;padding:0;">` +
+  `<img src="https://docoga-pass.johnazani.workers.dev/assets/email-banner.jpg" width="600" alt="DocOga — Your Documents. Our Priority." style="display:block;width:100%;height:auto;border:0;">` +
   `</td></tr>` +
   `<tr><td style="padding:28px;">` +
   `<p style="margin:0 0 14px;font-size:17px;color:#141F33;font-weight:700;">Thank you for your purchase! 🎉</p>` +
@@ -443,6 +442,13 @@ export default {
       "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
     };
     if (request.method === "OPTIONS") return new Response(null, { headers: cors });
+
+    /* Public brand assets (served from KV — works even while the site CDN is behind) */
+    if (url.pathname === "/assets/email-banner.jpg") {
+      const img = await env.KV.get("asset:email-banner", "arrayBuffer");
+      if (!img) return new Response("not found", { status: 404 });
+      return new Response(img, { headers: { "Content-Type": "image/jpeg", "Cache-Control": "public, max-age=31536000, immutable", "Access-Control-Allow-Origin": "*" } });
+    }
 
     try {
       if (url.pathname === "/") {
