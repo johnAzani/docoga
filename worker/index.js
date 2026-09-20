@@ -197,8 +197,8 @@ async function handleIssue(request, env, cors) {
   if (!env.ISSUE_SECRET || request.headers.get("x-docoga-key") !== env.ISSUE_SECRET)
     return json({ ok: false, error: "unauthorized" }, cors, 401);
   const body = await request.json().catch(() => ({}));
-  const email = String(body.email || "").trim();
-  const ref = String(body.ref || body.saleId || body.sale_id || "") || "selar-" + Date.now();
+  const email = String(body.email || "").trim().slice(0, 254);
+  const ref = String(body.ref || body.saleId || body.sale_id || "").slice(0, 120) || "selar-" + Date.now();
   if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))
     return json({ ok: false, error: "valid buyer email required" }, cors, 400);
   const existing = await env.KV.get("ref:" + ref);
