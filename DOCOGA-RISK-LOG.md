@@ -131,3 +131,49 @@ only, safe from flooding). Delete them after the first ~10 real customers for pr
 - success.html hostile loads, all secondary pages, dark mode, corrupted localStorage, legacy pass format: all survive clean.
 - **TEST TRAP (documented): pass codes use alphabet [A-Z2-9] — no 0/1/I/O (anti-misread by design). Test codes containing 0/1 look like KV propagation lag but are actually rejected by normalizeCode.**
 - New persistent tool: tools/tests/workertest.mjs (real worker code + mock KV, deterministic unit coverage: expiry, fence, hostile records, top-up).
+
+---
+
+## Update — 1 Oct 2026: independent audit from a fresh clone — 4 defects fixed, 1 revenue gap closed
+
+**Scope:** full re-audit of `worker/index.js`, `site/index.html` (pass + payment + all 9 tools),
+`site/success.html`, `tools/qa.py` and the test suites — performed from a *fresh* checkout, i.e.
+exactly how a new operator, a CI runner or a future me sees the repo.
+
+| # | Defect | Impact if it had shipped unnoticed | Status |
+|---|---|---|---|
+| 1 | `tools/qa.py` called `warn()` with 1 of its 2 required arguments whenever `.worker-secrets.env` was absent — which is **always** true on a fresh clone / CI | Pre-push gate crashed with a traceback and exit 1 (pushes blocked for no real reason), and the **secret-leak scan silently never ran** — the one check standing between a pasted secret and a public repo | ✅ **FIXED** — emits a warning instead; the scan still runs whenever the file exists |
+| 2 | `site/index.html`: `getDocs()` returned `null` when the stored value was `'null'` (interrupted write, storage-quota error, another tab). `init()` then called `.filter()` on it → uncaught TypeError → **init() aborted before wiring anything** (defaults, draft restore, autosave listeners, WhatsApp links, GA4) on **every load, permanently**, for that browser | A "the site is broken, nothing works" report with no visible cause; the only fix is clearing browser storage — which no landlord will ever do | ✅ **FIXED** — `getDocs()` now always returns an array; a corrupt-storage row in the new DOM suite proves boot survives 5 hostile storage permutations |
+| 3 | `worker/index.js` `sendMail()` sent the SMTP2GO header as `x-smtpto2go-api-key` (typo) | If Brevo is ever removed or key-rotated, the fallback provider fails **silently** — codes still appear on screen, so nobody notices until buyers complain about missing emails | ✅ **FIXED** |
+| 4 | `worker/index.js` `/verify` minted codes with `email: ""` on the Flutterwave **v4** path — the primary payment-link flow — even though the charge payload carries `customer.email` | Buyers who arrived through the redirect path were **invisible to the day-27 renewal-reminder cron** (it skips records with no email) and got no pass email: the recurring-revenue mechanism silently missed the main sales channel | ✅ **FIXED** — email captured defensively (`customer.email` → `customer_email` → `payment_method.email` → `?email=`), never blocks code issuing |
+
+### New safety net that runs anywhere (no browser, no Chromium)
+
+`tools/tests/domtest.mjs` — loads the **real** `site/index.html` in jsdom and drives **65 checks**:
+12 routes · all 9 tools filled with hostile payloads (XSS inert, output escaped) · print path ·
+WhatsApp share · saved documents (incl. corrupt/unknown-type records) · draft restore ·
+pass activation / same-code re-entry / top-up carry-over / renewed-code adoption / expiry /
+4th-device fence / offline batch codes · magic links (`#code=` and `?code=`) · 5 corrupt-storage
+permutations · live config values. The puppeteer suites are stronger but need Chromium (often
+unavailable: fresh sandbox, CI, locked-down laptop) — this one needs only `npm i jsdom`, and
+auto-skips with a notice if jsdom is missing, so it can never block a push on a fresh clone.
+
+Both suites are now wired into `tools/qa.py` (**step 9**), together with a new
+**anchor-integrity gate (step 10)**: a push can no longer land with a failing app-level
+regression or a dead in-page link.
+
+### Independently verified this round (no change needed)
+
+- State SEO pages deep-link correctly (`#agreement`, `#notice`, `#receipt`, `#caution` → real SPA routes).
+- Sitemap is complete: 27 locs = 24 state pages + privacy + terms + root; no stale entries.
+- No duplicate `const` maps; `printCurrent` covers all 9 tools (the 7-tool regression stays fixed).
+- The reported "static buy buttons don't react to pass state" **does not reproduce**: the SEO pages
+  carry CTA links (correct by design), while the SPA's `#buy-btn` updates correctly in all three
+  pass states (FREE / active / renewed), verified in the DOM suite.
+
+### Still open — owner action
+
+**Is the LIVE Netlify build the v2 pass model or the older build?** The audit sandbox cannot reach
+`docoga.com.ng` (network allowlist), so this must be confirmed by running `python3 tools/verify_live.py`
+from the owner's machine (or just opening the site and checking the Pricing page copy).
+GitHub itself is current: `main` = `30e2ca6` (20 Sep), same tree as this audit started from.

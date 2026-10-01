@@ -71,7 +71,7 @@ async function sendMail(env, to, subject, text, html) {
   if (env.SMTP2GO_API_KEY) {
     await fetch("https://api.smtp2go.com/v3/email/send", {
       method: "POST",
-      headers: { "x-smtpto2go-api-key": env.SMTP2GO_API_KEY, "Content-Type": "application/json" },
+      headers: { "x-smtp2go-api-key": env.SMTP2GO_API_KEY, "Content-Type": "application/json" },
       body: JSON.stringify({ sender: env.MAIL_FROM || "DocOga <noreply@docoga.com.ng>", to: [to], subject, text_body: text, html_body: html }),
     });
     return;
@@ -311,6 +311,28 @@ function flw4Paid(c) {
   return amt >= PRICE_NGN;
 }
 
+/* The buyer's email, from whichever shape the charge object carries (v4 charge
+   payloads nest it under customer; some redirects pass it as a query param).
+   Returns "" when none is found — issuing a code must NEVER fail just because
+   the email is missing. Capturing it matters: delivery email + the day-27
+   renewal reminder both depend on it. */
+function buyerEmailFromCharge(charge, url) {
+  try {
+    const c = charge || {};
+    const cust = c.customer || {};
+    const candidates = [
+      cust.email, c.customer_email, c.email,
+      c.payment_method && c.payment_method.email,
+      url && url.searchParams.get("email"),
+    ];
+    for (const e of candidates) {
+      const s = String(e == null ? "" : e).trim();
+      if (s && s.length <= 254 && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s)) return s;
+    }
+  } catch (e) {}
+  return "";
+}
+
 /* ---------- Verify a payment (called by success.html) — ?ids=a,b,c or ?ref=X ---------- */
 async function handleVerify(url, env, cors) {
   const idsParam = url.searchParams.get("ids") || url.searchParams.get("ref");
@@ -339,7 +361,10 @@ async function handleVerify(url, env, cors) {
     }
     if (!flw4Paid(charge))
       return json({ ok: false, error: "payment not found or not successful yet" }, cors, 402);
-    const code = await issueCode(env, { email: "", ref: matched });
+    // Email captured from the charge → buyer gets the pass email + magic link,
+    // and the day-27 renewal reminder can reach them. Was "" before: buyers who
+    // came through the payment-link redirect were invisible to the reminder cron.
+    const code = await issueCode(env, { email: buyerEmailFromCharge(charge, url), ref: matched });
     return json({ ok: true, ...(await finalizeCode(env, code, url.searchParams.get("prev"))) }, cors);
   }
 

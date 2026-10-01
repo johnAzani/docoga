@@ -143,7 +143,43 @@ if os.path.exists(secret_file):
             leaked.append(line.split("=")[0])
     check("no secrets in deployable files", not leaked, f"LEAKED: {leaked}")
 else:
-    warn("no .worker-secrets.env found (skipped)")
+    warn("no .worker-secrets.env found — secret scan skipped", False)
+
+print("── 9. Test suites (dependency-light) ──")
+# 9a. worker logic, mock KV — real worker code, no network/deps (required)
+r = subprocess.run(["node", os.path.join(ROOT, "tools", "tests", "workertest.mjs")],
+                   capture_output=True, text=True, cwd=ROOT)
+check("worker unit suite (workertest.mjs)", r.returncode == 0,
+      (r.stderr or r.stdout)[-160:].replace("\n", " ") if r.returncode else "")
+# 9b. full-app DOM suite — executes the real index.html in jsdom.
+# Skipped (exit 0 + notice) when jsdom is not installed, so a fresh clone is never blocked.
+domt = os.path.join(ROOT, "tools", "tests", "domtest.mjs")
+if os.path.exists(domt):
+    r = subprocess.run(["node", domt], capture_output=True, text=True, cwd=ROOT, timeout=600)
+    out = (r.stdout or "") + (r.stderr or "")
+    if "jsdom not installed" in out:
+        warn("DOM suite skipped — jsdom not installed (npm i jsdom to enable)", False)
+    else:
+        check("full-app DOM suite (domtest.mjs)", r.returncode == 0,
+              "see node tools/tests/domtest.mjs" if r.returncode else "")
+
+print("── 10. Anchor integrity (in-page links) ──")
+anchor_bad = []
+for i, (f, html) in enumerate([("index.html", idx), ("success.html", suc)]):
+    ids = set(re.findall(r'id="([^"]+)"', html))
+    for a in set(re.findall(r'href="#([^"\s]+)"', html)):
+        if a and a not in ids and ("page-" + a) not in ids:
+            anchor_bad.append(f"{f}#{a}")
+for f in glob.glob(os.path.join(SITE, "*.html")):
+    base = os.path.basename(f)
+    if base in ("index.html", "success.html"):
+        continue
+    html = open(f, encoding="utf-8").read()
+    ids = set(re.findall(r'id="([^"]+)"', html))
+    for a in set(re.findall(r'href="#([^"\s]+)"', html)):
+        if a and a not in ids:
+            anchor_bad.append(f"{base}#{a}")
+check("every in-page anchor resolves to a real id", not anchor_bad, ", ".join(sorted(anchor_bad)[:6]))
 
 print()
 if errors:

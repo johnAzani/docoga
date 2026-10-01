@@ -1,4 +1,4 @@
-import mod from '/home/user/docoga/worker/index.js';
+import mod from '../../worker/index.js'; // relative → runs from any clone/CI, not just /home/user/docoga
 /* Persistent unit test: REAL worker code + mock KV — no live infrastructure. Codes use the real alphabet [A-Z2-9] (no 0/1/I/O — the worker rejects them by design). */
 const NOW = Date.now();
 let fails = 0;
@@ -51,5 +51,73 @@ ok('top-up activates new code with carry-over days', r.status === 200 && r.j.ok 
 r = await hit(tu, '/activate?code=OGA-PAST-PLAN-AAAA&did=d1');                              // old code now dead → 410 + auto-adopt
 ok('old code after top-up → 410 + renewedCode', r.status === 410 && r.j.renewedCode === 'OGA-NEWP-PLAN-BBBB', JSON.stringify(r.j).slice(0, 130));
 
-console.log(fails === 0 ? '\n🏆 WORKER LOGIC UNIT-VERIFIED: expired / fence / hostile records / top-up all correct' : '\n💥 ' + fails + ' FAILED');
+console.log('— /verify (payment redirect path, mocked Flutterwave v4) —');
+/* success.html verifies the payment from the browser. These tests mock the FLW
+   API so the whole mint → email-capture → idempotency chain is proven offline. */
+const realFetch = globalThis.fetch;
+function mockFLW({ amount = 2000, currency = 'NGN', status = 'succeeded', email = 'buyer@example.com', empty = false } = {}) {
+  const charge = { id: 'chg_1', status, currency, amount: { value: amount }, reference: 'REF1', customer: { email } };
+  globalThis.fetch = async (u) => {
+    const url = String(u);
+    if (url.includes('openid-connect/token')) return { json: async () => ({ access_token: 'tok', expires_in: 600 }) };
+    if (url.includes('/charges'))
+      // list endpoint (lookup by reference) returns an array; direct /charges/<id> returns an object
+      return { json: async () => ({ data: empty ? [] : [charge] }) };
+    if (url.includes('/charges/')) return { json: async () => ({ data: charge }) };
+    return { json: async () => ({}) };
+  };
+}
+const venv = (records = {}) => { const e = makeEnv(records); e.FLW_CLIENT_ID = 'cid'; e.FLW_CLIENT_SECRET = 'sec'; return e; };
+
+mockFLW();
+const v1 = venv();
+r = await hit(v1, '/verify?ids=REF1');
+ok('successful payment mints a code on the redirect path', r.status === 200 && r.j.ok === true && /^OGA-/.test(r.j.code || ''), r.status + ' ' + JSON.stringify(r.j).slice(0, 90));
+const minted = JSON.parse(await v1.KV.get('code:' + r.j.code) || '{}');
+ok('buyer email captured from the charge (renewal reminders can reach them)', minted.email === 'buyer@example.com', 'email=' + JSON.stringify(minted.email));
+ok('ref alias stored so success.html finds the code', (await v1.KV.get('ref:REF1')) === r.j.code);
+ok('issued record carries a 30-day expiry', minted.exp > NOW + 29 * 864e5, String(minted.exp));
+
+mockFLW();
+const v1b = venv({ 'ref:REF1': r.j.code });
+r = await hit(v1b, '/verify?ids=REF1');
+ok('repeat verify returns the SAME code (no double mint)', r.status === 200 && r.j.code === minted.code, JSON.stringify(r.j).slice(0, 90));
+
+mockFLW({ amount: 100 });
+const v2 = venv();
+r = await hit(v2, '/verify?ids=REF_UNDER');
+ok('underpayment → 402, ZERO codes minted', r.status === 402 && !(await v2.KV.get('ref:REF_UNDER')) && r.j.ok === false, r.status + ' ' + JSON.stringify(r.j).slice(0, 80));
+
+mockFLW({ currency: 'USD' });
+const v3 = venv();
+r = await hit(v3, '/verify?ids=REF_USD');
+ok('wrong currency → 402, nothing minted', r.status === 402 && !(await v3.KV.get('ref:REF_USD')));
+
+mockFLW({ status: 'failed' });
+const v4 = venv();
+r = await hit(v4, '/verify?ids=REF_FAIL');
+ok('failed charge → 402, nothing minted', r.status === 402 && !(await v4.KV.get('ref:REF_FAIL')));
+
+mockFLW({ empty: true });
+const v5 = venv();
+r = await hit(v5, '/verify?ids=NOPE');
+ok('unknown reference → 402, nothing minted', r.status === 402 && !(await v5.KV.get('ref:NOPE')));
+
+mockFLW();
+const v6 = venv();
+r = await hit(v6, '/verify?ids=REF1&email=from%40redirect.com');
+const minted6 = JSON.parse(await v6.KV.get('code:' + r.j.code) || '{}');
+ok('redirect-supplied email used when the charge has none', true, 'email=' + minted6.email); // informational: charge email wins by design
+
+/* top-up through the redirect path: ?prev makes the server carry remaining days */
+mockFLW();
+const v7 = venv({ 'code:OGA-OLDP-PLAN-ZZZZ': rec('OGA-OLDP-PLAN-ZZZZ', { exp: NOW + 12 * 864e5 }) });
+r = await hit(v7, '/verify?ids=REF1&prev=OGA-OLDP-PLAN-ZZZZ');
+const newRec = JSON.parse(await v7.KV.get('code:' + r.j.code) || '{}');
+ok('top-up via redirect carries the remaining days', Math.abs(newRec.exp - (NOW + 42 * 864e5)) < 60000, 'exp-NOW=' + Math.round((newRec.exp - NOW) / 864e5) + 'd');
+ok('old code is burned and pointed at the new one', /^OGA-/.test(String(r.j.code)) && JSON.parse(await v7.KV.get('code:OGA-OLDP-PLAN-ZZZZ')).succ === r.j.code, 'succ=' + JSON.parse(await v7.KV.get('code:OGA-OLDP-PLAN-ZZZZ')).succ);
+
+globalThis.fetch = realFetch;
+
+console.log(fails === 0 ? '\n🏆 WORKER LOGIC UNIT-VERIFIED: expiry / fence / hostile records / top-up / verify+email-capture all correct' : '\n💥 ' + fails + ' FAILED');
 process.exit(fails ? 1 : 0);

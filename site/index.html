@@ -1468,7 +1468,10 @@ const DOC_TITLES={agreement:'Tenancy Agreement',notice:'Notice to Quit',receipt:
 const RENDERERS={agreement:renderAgreement,notice:renderNotice,receipt:renderReceipt,invoice:renderInvoice,employment:renderEmployment,caution:renderCaution,demand:renderDemand,payslip:renderPayslip,warning:renderWarning};
 const COLLECTORS={agreement:collectAgreement,notice:collectNotice,receipt:collectReceipt,invoice:collectInvoice,employment:collectEmployment,caution:collectCaution,demand:collectDemand,payslip:collectPayslip,warning:collectWarning};
 const APPLIERS={agreement:applyAgreement,notice:applyNotice,receipt:applyReceipt,invoice:applyInvoice,employment:applyEmployment,caution:applyCaution,demand:applyDemand,payslip:applyPayslip,warning:applyWarning};
-function getDocs(){ try{ return JSON.parse(store.getItem('docoga_docs')||'[]'); }catch(e){ return []; } }
+/* Always returns an array. A stored 'null'/object/string (interrupted write,
+   quota error, another tab) used to return null and make init() throw TypeError
+   on every load — a permanently dead app for that visitor. Guard here, once. */
+function getDocs(){ try{ const d=JSON.parse(store.getItem('docoga_docs')||'[]'); return Array.isArray(d)?d:[]; }catch(e){ return []; } }
 function saveDoc(type){
   const payload=COLLECTORS[type]();
   let title=DOC_TITLES[type];

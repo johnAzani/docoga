@@ -30,6 +30,17 @@ QA gate → commit → push → wait for Netlify deploy → live verification.
 | `tools/qa.py` (pre-push) | Every inline script in every HTML file parsed by `node --check` · no placeholders · config complete & consistent across pages · canonical/og/sitemap/robots agree · every JS-referenced id exists · script tags balanced · worker parses · wrangler KV id real · **secret-leak scan** (nothing from `.worker-secrets.env` in deployable files) |
 | `tools/verify_live.py` (post-deploy) | Live pages fetch · **live JavaScript parses** · live config values correct · SEO wiring live · Worker healthy |
 | `.git/hooks/pre-push` | Runs qa.py automatically on `git push` (belt & suspenders; may need reinstall after a fresh sandbox — see below) |
+| `tools/tests/workertest.mjs` (in qa.py step 9) | Real worker code + mock KV: expiry, device fence, hostile records, top-up chain, and the **payments ` /verify` path** (mocked FLW v4: mint, email capture, idempotency, underpay/wrong-currency/failed all rejected with zero codes). No deps, runs everywhere. |
+| `tools/tests/domtest.mjs` (in qa.py step 9) | Executes the REAL `site/index.html` in jsdom: 12 routes, all 9 tools, hostile-input XSS, print, share, saved docs, drafts, pass activation/top-up/fence/magic links, corrupt storage, live config values. Needs `npm i jsdom`; **auto-skips** (never blocks) when jsdom is absent. |
+| qa.py step 10 | Anchor integrity: every in-page `href="#x"` must resolve to a real `id` (or the SPA's `page-x` route). Catches dead nav/CTA links. |
+
+## Optional dependencies for the app-level suites
+
+The browser suites (`debugsweep.js`, `magictest.js`, `fencetest.js`, `modeltest.js`,
+`newtoolstest.js`) need Chromium via puppeteer-core; when no browser binary exists they simply
+cannot run. That used to leave **no** app-level safety net at all. `domtest.mjs` closes that hole:
+it needs only jsdom (`npm i jsdom`, or `JSDOM_PATH=/path/to/jsdom`). It is deliberately
+skip-safe — a missing jsdom prints a notice and exits 0, so a fresh clone is never blocked.
 
 ## Sandbox note (for the AI operator)
 
@@ -48,3 +59,4 @@ QA gate → commit → push → wait for Netlify deploy → live verification.
 | Date | What happened | Root cause | Prevention now in place |
 |---|---|---|---|
 | 19 Sep 2026 | `WORKER_URL` config fill stripped the `//` comment marker → raw text in JS → `SyntaxError` → every interactive feature on the live site dead ~20 min. Caught by owner testing on phone, not by any automated check. | Edit verified at line level; the "verification" grep even displayed the broken line and it was not recognized. | qa.py step 1 (full-script parse of every page) + verify_live.py (parse the LIVE script) + ship.sh pipeline + pre-push hook. |
+| 1 Oct 2026 | Fresh-clone audit: a corrupt `docoga_docs` value (`'null'`) made `getDocs()` return `null`, so `init()` threw and the whole app booted dead for that browser — permanently. Same audit found qa.py crashed (silently skipping the secret scan) whenever `.worker-secrets.env` was missing, a typo'd SMTP2GO header, and `/verify` minting codes with no email (renewal reminders could never reach redirect-path buyers). | Storage was read with `JSON.parse(...) || '[]'` — which does not protect against a stored literal `null`; the other three were unexercised code paths. | `getDocs()` now type-guards; qa.py fixed + two dependency-light suites wired into the gate (step 9) + anchor-integrity gate (step 10); corrupt-storage and payment-path tests now run on every push. |
