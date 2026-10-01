@@ -41,11 +41,13 @@ You can run A now and switch to B/C later — the same Worker serves all three.
      - `ISSUE_SECRET` = any long random string you invent (Path A)
      - `FLW_SECRET_KEY` = Flutterwave **Secret key** (Path B)
      - `FLW_WEBHOOK_HASH` = Flutterwave webhook hash (optional)
-     - `RESEND_API_KEY` = free key from **resend.com** (email delivery)
+     - `BREVO_API_KEY` = free key from **brevo.com** — PRIMARY email provider
+       (300 emails/day, no card, never expires; the worker also accepts
+       `SMTP2GO_API_KEY` then `RESEND_API_KEY` as fallbacks — see sendMail())
    - Add plain variables:
      - `PROVIDER` = `flw` (or `paystack` on CAC day)
      - `SITE_URL` = `https://docoga.com.ng`
-     - `MAIL_FROM` = `DocOga <passes@docoga.com.ng>` (after verifying your domain in Resend — free)
+     - `MAIL_FROM` = `DocOga <passes@docoga.com.ng>` (the sender address verified in Brevo)
 5. Copy your Worker URL, e.g. `https://docoga-pass.yourname.workers.dev`
 6. Test it: open `https://your-worker.workers.dev/` in a browser →
    you should see `{"ok":true,"service":"docoga-pass"}`.

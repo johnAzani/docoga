@@ -19,7 +19,9 @@ id = "f3a5afebe7d04bb0a6018c0d7d355253"
 #   wrangler secret put FLW_SECRET_KEY          (Path B)
 #   wrangler secret put FLW_WEBHOOK_HASH        (optional)
 #   wrangler secret put PAYSTACK_SECRET_KEY     (Path C — after CAC)
-#   wrangler secret put RESEND_API_KEY          (email delivery)
+#   wrangler secret put BREVO_API_KEY           (email delivery — PRIMARY, brevo.com)
+#   wrangler secret put SMTP2GO_API_KEY         (optional fallback)
+#   wrangler secret put RESEND_API_KEY          (optional fallback)
 # Plain (non-secret) variables can also be set in the dashboard:
 #   PROVIDER = "flw" or "paystack"
 #   MAIL_FROM = "DocOga <passes@docoga.com.ng>"
