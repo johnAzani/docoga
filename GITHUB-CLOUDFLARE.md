@@ -22,31 +22,39 @@ that.
 
 Repository: `https://github.com/johnAzani/docoga` — **private**. Keep it private.
 
-## Step 2 — Connect Cloudflare Pages to the repo (the step that was missed)
+## Step 2 — Create a NEW Git-connected Pages project
 
-1. `dash.cloudflare.com` → **Workers & Pages**.
-2. You should see the existing **`docoga`** Pages project. Open it.
-3. **Settings → Builds & deployments → Build configuration**.
-   - If it says *"Direct Upload"*, the project was created by dragging files in.
-     You have two options:
-     - **Cleanest:** create a new Pages project via **Create → Pages → Connect to
-       Git**, name it `docoga-git`, follow the settings below, move the custom
-       domain across, then delete the old upload-only project.
-     - **Or:** some projects can be switched to Git from Build configuration.
-       If you see a *Connect to Git* button there, use it.
-4. **Connect to Git** → authorize Cloudflare's GitHub App → grant it access to
-   **`johnAzani/docoga`** only (not all your repos) → select the repository.
-5. Set exactly these:
+> **⚠️ Read this first — it is a Cloudflare limitation, not a preference.**
+> Cloudflare's own Direct Upload docs say: *"If you choose Direct Upload, you
+> cannot switch to Git integration later. You will have to create a new project
+> with Git integration to use automatic deployments."*
+> There is **no** "Connect to Git" button on a Direct Upload project. Do not go
+> looking for one — it does not exist. The existing `docoga` project has to be
+> replaced.
+
+Do these in this order. The domain is the fragile part, so it moves last.
+
+1. **Note what the old project is serving.** Workers & Pages → **`docoga`** →
+   Custom domains. If `docoga.com.ng` is listed there, that is what you are
+   about to move.
+2. **Create the new project:** Workers & Pages → **Create → Pages →
+   Connect to Git**.
+3. Authorize Cloudflare's GitHub App. If it asks which repositories it may
+   access, choose **Only select repositories** and pick **`johnAzani/docoga`**.
+   *(This is the single most common reason a connection silently does nothing —
+   the app gets installed but is never granted the repo.)*
+4. Set exactly these:
 
    | Setting | Value |
    |---|---|
+   | **Project name** | `docoga-git` (you can reuse `docoga` only after deleting the old one) |
    | **Production branch** | `main` |
    | **Framework preset** | *None* |
    | **Build command** | *(leave completely blank — there is no build step)* |
    | **Build output directory** | `site` |
    | **Root directory** | `/` (default) |
 
-6. **Save and Deploy.**
+5. **Save and Deploy.** Wait for the first build to go green.
 
 > **⚠️ The `site` output directory is a security setting, not a preference.**
 > Cloudflare publishes *only* what you name there. If this is ever left blank or
@@ -55,14 +63,22 @@ Repository: `https://github.com/johnAzani/docoga` — **private**. Keep it priva
 > machine) `unlock-codes.txt`, which is ₦374,000 of sellable inventory. Only
 > `site/` is public material.
 
-## Step 3 — Move the custom domain onto the Git-connected project
+## Step 3 — Move the custom domain onto the new project
 
-1. New project → **Custom domains → Set up a custom domain** → `docoga.com.ng`.
-2. Then add `www.docoga.com.ng`.
+1. **Old `docoga` project → Custom domains → remove `docoga.com.ng`** (and
+   `www.docoga.com.ng`). Cloudflare will not let the same hostname sit on two
+   projects at once.
+2. **New project → Custom domains → Set up a custom domain** → `docoga.com.ng`,
+   then `www.docoga.com.ng`.
 3. Because the domain already resolves to Cloudflare, this should attach with no
    DNS changes needed. Cloudflare issues the SSL certificate automatically.
-4. **Only after `https://docoga.com.ng` serves the new project correctly** should
-   you remove the domain from the old project.
+4. Check `https://docoga.com.ng` loads the new build. Only then:
+5. **Delete the old `docoga` project** — which frees the name if you want to
+   rename the new one to `docoga` later.
+
+> You *can* still push an emergency build by hand after this: a Git-integrated
+> project accepts `wrangler pages deploy`. What you lose is dashboard
+> drag-and-drop, which you no longer need.
 
 ## Step 4 — Disconnect Netlify (do this last)
 
