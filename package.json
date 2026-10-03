@@ -1,0 +1,18 @@
+{
+  "name": "docoga",
+  "version": "1.0.0",
+  "private": true,
+  "description": "DocOga — free Nigerian document tools (static site + Cloudflare Worker). This root package only pins the QA gate's test dependencies; the site itself has no build step and the Worker has its own package.json.",
+  "scripts": {
+    "qa": "python3 tools/qa.py",
+    "test": "node tools/tests/workertest.mjs && node tools/tests/domtest.mjs",
+    "test:worker": "node tools/tests/workertest.mjs",
+    "test:dom": "node tools/tests/domtest.mjs",
+    "verify:live": "python3 tools/verify_live.py",
+    "gen:state-pages": "python3 tools/gen_state_pages.py",
+    "gen:guide-pages": "python3 tools/gen_guide_pages.py"
+  },
+  "devDependencies": {
+    "jsdom": "^30.1.1"
+  }
+}

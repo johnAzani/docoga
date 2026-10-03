@@ -33,6 +33,7 @@ QA gate → commit → push → wait for Netlify deploy → live verification.
 | `tools/tests/workertest.mjs` (in qa.py step 9) | Real worker code + mock KV: expiry, device fence, hostile records, top-up chain, and the **payments ` /verify` path** (mocked FLW v4: mint, email capture, idempotency, underpay/wrong-currency/failed all rejected with zero codes). No deps, runs everywhere. |
 | `tools/tests/domtest.mjs` (in qa.py step 9) | Executes the REAL `site/index.html` in jsdom: 12 routes, all 9 tools, hostile-input XSS, print, share, saved docs, drafts, pass activation/top-up/fence/magic links, corrupt storage, live config values. Needs `npm i jsdom`; **auto-skips** (never blocks) when jsdom is absent. |
 | qa.py step 10 | Anchor integrity: every in-page `href="#x"` must resolve to a real `id` (or the SPA's `page-x` route). Catches dead nav/CTA links. |
+| qa.py step 11 | Site-wide schema & deep-link integrity across **every** page, not just index.html: every JSON-LD block parses (a broken FAQPage silently costs the rich snippet) · every absolute `…/#route` deep link is a real SPA route (`#code=` magic links excluded by design) · every sitemap `<loc>` is a file we actually ship. Added 3 Oct 2026 with the guide pages — negative-tested: injecting a bad brace, a dead route and a phantom loc each fail the gate with exit 1. |
 
 ## Optional dependencies for the app-level suites
 
@@ -44,6 +45,10 @@ skip-safe — a missing jsdom prints a notice and exits 0, so a fresh clone is n
 
 ## Sandbox note (for the AI operator)
 
+- **First thing in a fresh workspace:** `npm ci` at the repo root. The root
+  `package.json`/`package-lock.json` pin `jsdom`, which is what makes
+  `tools/tests/domtest.mjs` run for real instead of auto-skipping. Without it
+  the gate still passes but the app-level suite silently does not execute.
 - `.git/config` and possibly `.git/hooks/` do not survive workspace snapshots.
   After a fresh session: `git config user.name "DocOga"`,
   `git config user.email "docoga@users.noreply.github.com"`, reinstall the
@@ -53,6 +58,10 @@ skip-safe — a missing jsdom prints a notice and exits 0, so a fresh clone is n
   (`sudo apt-get install -y tesseract-ocr`, `npm i -g wrangler`).
 - Secrets live in `.worker-secrets.env` (gitignored). NEVER paste secret
   values into files that ship. The qa.py leak-scan enforces this.
+- **Everything is pushed to GitHub as it is produced** (owner's standing
+  instruction, 3 Oct 2026) so a new workspace or a different agent can pick up
+  exactly where the work stopped. Session work goes to the session branch and
+  on to `main` by pull request — Netlify deploys `main`.
 
 ## Incident log
 

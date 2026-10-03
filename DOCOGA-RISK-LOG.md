@@ -177,3 +177,65 @@ regression or a dead in-page link.
 `docoga.com.ng` (network allowlist), so this must be confirmed by running `python3 tools/verify_live.py`
 from the owner's machine (or just opening the site and checking the Pricing page copy).
 GitHub itself is current: `main` = `30e2ca6` (20 Sep), same tree as this audit started from.
+
+---
+
+## Update — 3 Oct 2026: SEO guide pages shipped + 1 factual defect fixed in the live Lagos pages
+
+**Scope:** PLAN.md §4 keyword cluster (the content engine — §8 calls distribution ~80% of the
+outcome, and until today the site had 24 state pages and **zero** national guide pages).
+
+### Built: `tools/gen_guide_pages.py` → 7 national guide pages
+
+| Page | Target query |
+|---|---|
+| `tenancy-agreement-nigeria.html` | tenancy agreement format Nigeria (**pillar**, priority 0.9) |
+| `notice-to-quit-nigeria.html` | notice to quit in Nigeria — how many months |
+| `caution-fee-nigeria.html` | is caution fee refundable in Nigeria |
+| `rent-receipt-format-nigeria.html` | rent receipt format Nigeria / how to write one |
+| `tenant-rights-nigeria.html` | rights of a tenant in Nigeria / landlord obligations |
+| `shop-tenancy-agreement-nigeria.html` | agreement between landlord and tenant for a shop |
+| `invoice-format-nigeria.html` | invoice format for small business Nigeria / 7.5% VAT |
+
+Each page: FAQPage JSON-LD (rich-snippet eligible), canonical + og:url, cross-links to the other
+guides, the 6 state pages and all 9 tools, and the standard not-legal-advice footer. Homepage gained
+a "Free guides" block above the State guides block; sitemap 27 → **34** locs. The generator is
+idempotent — re-running rewrites the pages and reports sitemap/index as already up to date.
+
+**Every legal/tax claim was verified from sources before publishing** (the 19 Sep rule), including:
+s.4 advance cap · s.13(1) notice table · s.13(2)-(3) arrears · s.44 self-help offence (₦250,000 /
+6 months) · s.7 landlord obligations · s.9 business-premises access protection · the rent-receipt
+duty and its ₦10,000 fine · separate receipt + 6-monthly account for deposits and service charges ·
+compensation for consented improvements · VAT at 7.5% under the Nigeria Tax Act 2025 (1 Jan 2026)
+with residential rent zero-rated. Where 2026 advisories disagree (the exact VAT registration
+threshold) the page says so and points at the NRS/accountant instead of inventing a number. The 2026
+Lagos Tenancy Bill is described as **a bill, not law**.
+
+### 🔴 Defect found & fixed: the Lagos pages understated the law's exemptions
+
+`s.1(3) Lagos Tenancy Law 2011` excludes **four** areas — **Apapa**, Ikeja GRA, Ikoyi and Victoria
+Island — but all 4 live `*-lagos.html` pages (and `gen_state_pages.py`) listed only three, omitting
+Apapa. Impact: an Apapa landlord or tenant is told the 2011 Law protects them when it does not apply
+to their premises at all. Fixed in the generator **and** in the 4 published pages.
+Verified against 4 independent sources (Nigeria Property Centre, LawPàdí, Koriat Law, aolegal FAQ).
+
+### Gate strengthened: qa.py step 11 (site-wide, not index-only)
+
+Step 6 parsed JSON-LD **only** in `index.html`, so the 31 non-index pages could ship broken
+FAQPage schema with a green gate. New step 11 checks, on every page: JSON-LD parses · every absolute
+`…/#route` deep link resolves to a real SPA route · every sitemap `<loc>` is a file we ship.
+**Negative-tested**, because a check that cannot fail is not a check: injecting (a) a removed brace
+in a page's JSON-LD, (b) a `#bogus` deep link, (c) a phantom sitemap loc → **3 ❌, exit 1, push
+blocked**. Restored → green.
+
+Current gate: **QA GREEN, 0 errors, 1 warning** (the warning is the absent gitignored
+`.worker-secrets.env`, so the secret-leak scan is skipped — expected on a fresh clone).
+`domtest.mjs` runs for real here (jsdom installed): **65 checks passed, 0 failed**.
+
+### Still owner-side
+
+`tools/verify_live.py` cannot run from the sandbox — it reaches `docoga.com.ng` over the network and
+fails with `URLError: TLS/SSL connection has been closed (EOF)`. The 1 Oct open question
+(*is the live Netlify build the v2 pass model?*) is therefore still unanswered and must be checked
+from the owner's machine. Nothing in this update was pushed: the working tree is QA-green and ready
+for `tools/ship.sh`.

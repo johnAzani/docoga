@@ -6,7 +6,7 @@ import io, os
 
 STATES = {
  'lagos': dict(name='Lagos', place='Lagos', full='Lagos State',
-   law='Lagos Tenancy Law 2011', law_note='The 2011 law covers most of Lagos State — Ikeja GRA, Ikoyi and Victoria Island are exempted areas.',
+   law='Lagos Tenancy Law 2011', law_note='The 2011 law covers most of Lagos State — s.1(3) excludes four areas: Apapa, Ikeja GRA, Ikoyi and Victoria Island.',
    courts='the Magistrates\u2019 Courts of Lagos State',
    notice_intro='<b>Section 13(1) of the Lagos Tenancy Law 2011</b> sets the minimum notice where the agreement is silent:',
    advance='Section 4 also makes it unlawful for a landlord to demand or receive more than <b>one year\u2019s rent in advance</b> from a yearly tenant (six months for a monthly tenant).',

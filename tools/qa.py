@@ -16,6 +16,11 @@ What it checks (every run, on every file — not just the one you touched):
   7. worker/index.js parses; wrangler.toml has a real KV id
   8. SECRET LEAK CHECK: nothing from .worker-secrets.env appears in any
      file that gets deployed or committed
+  9. Dependency-light test suites: worker unit suite + full-app jsdom suite
+ 10. Anchor integrity: every in-page href="#x" resolves to a real id
+ 11. Site-wide (every page, not just index.html): JSON-LD parses, every
+     absolute …/#route deep link is a real SPA route, every sitemap loc is
+     a file we actually ship
 """
 import re, os, sys, glob, tempfile, subprocess
 
@@ -180,6 +185,40 @@ for f in glob.glob(os.path.join(SITE, "*.html")):
         if a and a not in ids:
             anchor_bad.append(f"{base}#{a}")
 check("every in-page anchor resolves to a real id", not anchor_bad, ", ".join(sorted(anchor_bad)[:6]))
+
+print("── 11. Site-wide schema & deep-link integrity (every page, not just index) ──")
+# 11a. Step 6 only parses the JSON-LD in index.html. The 24 state pages and the
+#      guide pages carry FAQPage schema too — invalid JSON there silently costs
+#      the rich snippet, and nothing else would notice.
+ld_bad, ld_count = [], 0
+for f in sorted(glob.glob(f"{SITE}/*.html")):
+    for b in re.findall(r'<script type="application/ld\+json">(.*?)</script>',
+                        open(f, encoding="utf-8").read(), re.DOTALL):
+        ld_count += 1
+        try:
+            _json.loads(b)
+        except Exception as e:
+            ld_bad.append(f"{os.path.basename(f)}: {str(e)[:60]}")
+check(f"JSON-LD valid on every page ({ld_count} blocks)", not ld_bad, "; ".join(ld_bad[:3]))
+
+# 11b. Every absolute deep link into the SPA (…/#route) must be a real route.
+#      '#code=' is the magic pass link, not a route — excluded by design.
+routes = set(re.findall(r'id="(page-[A-Za-z0-9_-]+)"', idx))
+dead_routes = []
+for f in sorted(glob.glob(f"{SITE}/*.html")):
+    html = open(f, encoding="utf-8").read()
+    for a in sorted(set(re.findall(r'docoga\.com\.ng/#([A-Za-z0-9_-]+)', html))):
+        if a == "code":
+            continue
+        if ("page-" + a) not in routes:
+            dead_routes.append(f"{os.path.basename(f)}#{a}")
+check(f"every SPA deep link resolves to a real route ({len(routes)} routes)",
+      not dead_routes, ", ".join(dead_routes[:5]))
+
+# 11c. A sitemap entry for a file we don't ship is a soft 404 in Search Console.
+smap_locs = re.findall(r"<loc>https://docoga\.com\.ng/([^<]*)</loc>", smap)
+orphan = [l for l in smap_locs if l and not os.path.exists(os.path.join(SITE, l))]
+check(f"every sitemap loc is a real file ({len(smap_locs)} locs)", not orphan, ", ".join(orphan[:5]))
 
 print()
 if errors:
