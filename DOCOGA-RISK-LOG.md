@@ -32,7 +32,7 @@ either TESTED, MITIGATED, or consciously ACCEPTED with a reason.*
 | KYC rejected | Fix & resubmit — no funds lost | FLW notification |
 | Chargeback on stolen card after code issued | ₦2,000 loss, rare at this scale | >1 per month |
 | KV 1k writes/day ceiling (~200 sales/day) | Free tier; 200 sales/day = ₦400k/mo — a good problem | >100 sales/day sustained |
-| Netlify outage | Rare, short; repo is source of truth | >1h downtime |
+| Cloudflare Pages outage | Rare, short; repo is source of truth. (Was "Netlify outage" — hosting moved to Cloudflare Pages 3 Oct 2026) | >1h downtime |
 | Copycat clones site | Moat = codes+machine+SEO history+price | Traffic drop in GA4 |
 | Flutterwave itself frozen | Payouts pause (money safe); Selar alternative | FLW notice |
 
@@ -131,3 +131,165 @@ only, safe from flooding). Delete them after the first ~10 real customers for pr
 - success.html hostile loads, all secondary pages, dark mode, corrupted localStorage, legacy pass format: all survive clean.
 - **TEST TRAP (documented): pass codes use alphabet [A-Z2-9] — no 0/1/I/O (anti-misread by design). Test codes containing 0/1 look like KV propagation lag but are actually rejected by normalizeCode.**
 - New persistent tool: tools/tests/workertest.mjs (real worker code + mock KV, deterministic unit coverage: expiry, fence, hostile records, top-up).
+
+---
+
+## Update — 1 Oct 2026: independent audit from a fresh clone — 4 defects fixed, 1 revenue gap closed
+
+**Scope:** full re-audit of `worker/index.js`, `site/index.html` (pass + payment + all 9 tools),
+`site/success.html`, `tools/qa.py` and the test suites — performed from a *fresh* checkout, i.e.
+exactly how a new operator, a CI runner or a future me sees the repo.
+
+| # | Defect | Impact if it had shipped unnoticed | Status |
+|---|---|---|---|
+| 1 | `tools/qa.py` called `warn()` with 1 of its 2 required arguments whenever `.worker-secrets.env` was absent — which is **always** true on a fresh clone / CI | Pre-push gate crashed with a traceback and exit 1 (pushes blocked for no real reason), and the **secret-leak scan silently never ran** — the one check standing between a pasted secret and a public repo | ✅ **FIXED** — emits a warning instead; the scan still runs whenever the file exists |
+| 2 | `site/index.html`: `getDocs()` returned `null` when the stored value was `'null'` (interrupted write, storage-quota error, another tab). `init()` then called `.filter()` on it → uncaught TypeError → **init() aborted before wiring anything** (defaults, draft restore, autosave listeners, WhatsApp links, GA4) on **every load, permanently**, for that browser | A "the site is broken, nothing works" report with no visible cause; the only fix is clearing browser storage — which no landlord will ever do | ✅ **FIXED** — `getDocs()` now always returns an array; a corrupt-storage row in the new DOM suite proves boot survives 5 hostile storage permutations |
+| 3 | `worker/index.js` `sendMail()` sent the SMTP2GO header as `x-smtpto2go-api-key` (typo) | If Brevo is ever removed or key-rotated, the fallback provider fails **silently** — codes still appear on screen, so nobody notices until buyers complain about missing emails | ✅ **FIXED** |
+| 4 | `worker/index.js` `/verify` minted codes with `email: ""` on the Flutterwave **v4** path — the primary payment-link flow — even though the charge payload carries `customer.email` | Buyers who arrived through the redirect path were **invisible to the day-27 renewal-reminder cron** (it skips records with no email) and got no pass email: the recurring-revenue mechanism silently missed the main sales channel | ✅ **FIXED** — email captured defensively (`customer.email` → `customer_email` → `payment_method.email` → `?email=`), never blocks code issuing |
+
+### New safety net that runs anywhere (no browser, no Chromium)
+
+`tools/tests/domtest.mjs` — loads the **real** `site/index.html` in jsdom and drives **65 checks**:
+12 routes · all 9 tools filled with hostile payloads (XSS inert, output escaped) · print path ·
+WhatsApp share · saved documents (incl. corrupt/unknown-type records) · draft restore ·
+pass activation / same-code re-entry / top-up carry-over / renewed-code adoption / expiry /
+4th-device fence / offline batch codes · magic links (`#code=` and `?code=`) · 5 corrupt-storage
+permutations · live config values. The puppeteer suites are stronger but need Chromium (often
+unavailable: fresh sandbox, CI, locked-down laptop) — this one needs only `npm i jsdom`, and
+auto-skips with a notice if jsdom is missing, so it can never block a push on a fresh clone.
+
+Both suites are now wired into `tools/qa.py` (**step 9**), together with a new
+**anchor-integrity gate (step 10)**: a push can no longer land with a failing app-level
+regression or a dead in-page link.
+
+### Independently verified this round (no change needed)
+
+- State SEO pages deep-link correctly (`#agreement`, `#notice`, `#receipt`, `#caution` → real SPA routes).
+- Sitemap is complete: 27 locs = 24 state pages + privacy + terms + root; no stale entries.
+- No duplicate `const` maps; `printCurrent` covers all 9 tools (the 7-tool regression stays fixed).
+- The reported "static buy buttons don't react to pass state" **does not reproduce**: the SEO pages
+  carry CTA links (correct by design), while the SPA's `#buy-btn` updates correctly in all three
+  pass states (FREE / active / renewed), verified in the DOM suite.
+
+### Still open — owner action
+
+**Is the LIVE Netlify build the v2 pass model or the older build?** The audit sandbox cannot reach
+`docoga.com.ng` (network allowlist), so this must be confirmed by running `python3 tools/verify_live.py`
+from the owner's machine (or just opening the site and checking the Pricing page copy).
+GitHub itself is current: `main` = `30e2ca6` (20 Sep), same tree as this audit started from.
+
+---
+
+## Update — 3 Oct 2026: SEO guide pages shipped + 1 factual defect fixed in the live Lagos pages
+
+**Scope:** PLAN.md §4 keyword cluster (the content engine — §8 calls distribution ~80% of the
+outcome, and until today the site had 24 state pages and **zero** national guide pages).
+
+### Built: `tools/gen_guide_pages.py` → 7 national guide pages
+
+| Page | Target query |
+|---|---|
+| `tenancy-agreement-nigeria.html` | tenancy agreement format Nigeria (**pillar**, priority 0.9) |
+| `notice-to-quit-nigeria.html` | notice to quit in Nigeria — how many months |
+| `caution-fee-nigeria.html` | is caution fee refundable in Nigeria |
+| `rent-receipt-format-nigeria.html` | rent receipt format Nigeria / how to write one |
+| `tenant-rights-nigeria.html` | rights of a tenant in Nigeria / landlord obligations |
+| `shop-tenancy-agreement-nigeria.html` | agreement between landlord and tenant for a shop |
+| `invoice-format-nigeria.html` | invoice format for small business Nigeria / 7.5% VAT |
+
+Each page: FAQPage JSON-LD (rich-snippet eligible), canonical + og:url, cross-links to the other
+guides, the 6 state pages and all 9 tools, and the standard not-legal-advice footer. Homepage gained
+a "Free guides" block above the State guides block; sitemap 27 → **34** locs. The generator is
+idempotent — re-running rewrites the pages and reports sitemap/index as already up to date.
+
+**Every legal/tax claim was verified from sources before publishing** (the 19 Sep rule), including:
+s.4 advance cap · s.13(1) notice table · s.13(2)-(3) arrears · s.44 self-help offence (₦250,000 /
+6 months) · s.7 landlord obligations · s.9 business-premises access protection · the rent-receipt
+duty and its ₦10,000 fine · separate receipt + 6-monthly account for deposits and service charges ·
+compensation for consented improvements · VAT at 7.5% under the Nigeria Tax Act 2025 (1 Jan 2026)
+with residential rent zero-rated. Where 2026 advisories disagree (the exact VAT registration
+threshold) the page says so and points at the NRS/accountant instead of inventing a number. The 2026
+Lagos Tenancy Bill is described as **a bill, not law**.
+
+### 🔴 Defect found & fixed: the Lagos pages understated the law's exemptions
+
+`s.1(3) Lagos Tenancy Law 2011` excludes **four** areas — **Apapa**, Ikeja GRA, Ikoyi and Victoria
+Island — but all 4 live `*-lagos.html` pages (and `gen_state_pages.py`) listed only three, omitting
+Apapa. Impact: an Apapa landlord or tenant is told the 2011 Law protects them when it does not apply
+to their premises at all. Fixed in the generator **and** in the 4 published pages.
+Verified against 4 independent sources (Nigeria Property Centre, LawPàdí, Koriat Law, aolegal FAQ).
+
+### Gate strengthened: qa.py step 11 (site-wide, not index-only)
+
+Step 6 parsed JSON-LD **only** in `index.html`, so the 31 non-index pages could ship broken
+FAQPage schema with a green gate. New step 11 checks, on every page: JSON-LD parses · every absolute
+`…/#route` deep link resolves to a real SPA route · every sitemap `<loc>` is a file we ship.
+**Negative-tested**, because a check that cannot fail is not a check: injecting (a) a removed brace
+in a page's JSON-LD, (b) a `#bogus` deep link, (c) a phantom sitemap loc → **3 ❌, exit 1, push
+blocked**. Restored → green.
+
+Current gate: **QA GREEN, 0 errors, 1 warning** (the warning is the absent gitignored
+`.worker-secrets.env`, so the secret-leak scan is skipped — expected on a fresh clone).
+`domtest.mjs` runs for real here (jsdom installed): **65 checks passed, 0 failed**.
+
+### Still owner-side
+
+`tools/verify_live.py` cannot run from the sandbox — it reaches `docoga.com.ng` over the network and
+fails with `URLError: TLS/SSL connection has been closed (EOF)`. The 1 Oct open question
+(*is the live Netlify build the v2 pass model?*) is therefore still unanswered and must be checked
+from the owner's machine. Nothing in this update was pushed: the working tree is QA-green and ready
+for `tools/ship.sh`.
+
+---
+
+## Update — 3 Oct 2026 (evening): hosting moved off Netlify to Cloudflare Pages — and the Git connection was found missing
+
+**Owner instruction:** no Netlify at all; Cloudflare only, connected to Git so that a push deploys.
+
+### What was verified before changing anything
+
+| Check | Command / source | Result |
+|---|---|---|
+| Does a Pages project exist? | DNS lookup | `docoga.pages.dev` → **172.66.44.157**. Control: `zzq-docoga-does-not-exist-88213.pages.dev` → **NXDOMAIN**, so `*.pages.dev` is not a wildcard zone — the project is real |
+| Where does the domain point? | DNS lookup | `docoga.com.ng` and `www` → **104.21.33.145 / 172.67.146.104** + `2606:4700::/32` = Cloudflare anycast. **Not** Netlify's old `75.2.60.5` |
+| Is Netlify still connected? | `gh api …/commits/43d644c/status` | **YES** — `netlify/docoga/deploy-preview` → success → `deploy-preview-2--docoga.netlify.app` (2026-10-03T03:16:14Z), plus 3 check-runs from the GitHub App `netlify` |
+| Is Cloudflare Pages connected to Git? | same call | **NO** — zero `cloudflare/pages` statuses or check-runs on that commit, and zero on `main` (`30e2ca6`) |
+| Is `docoga.netlify.app` still up? | DNS lookup | Resolves to 13.52.188.95 / 52.52.192.191 (AWS) — the site exists but no longer serves our domain |
+
+**Conclusion:** the Pages project and the domain are on Cloudflare, but the
+project was **hand-uploaded**, not Git-connected. Every push to GitHub has been
+silently *not* reaching production, while Netlify — a platform the owner no
+longer wants — kept building the private repo.
+
+### 🔴 Risk this closes
+
+| Scenario | Impact | Status |
+|---|---|---|
+| Owner edits the repo, pushes, and believes the site changed | Live site silently drifts from source; a bug fix or a price change never reaches buyers; nobody notices because the push "succeeded" | 🔴 **IDENTIFIED 3 Oct** — fix is owner-side (Cloudflare dashboard: *Connect to Git*, production branch `main`, build command blank, **output directory `site`**). `GITHUB-CLOUDFLARE.md` documents it and the 30-second verification |
+| Netlify GitHub App left installed on a private repo | A platform no longer in use keeps cloning and building the private repo on every push | 🔴 **IDENTIFIED 3 Oct** — disconnect steps in `GITHUB-CLOUDFLARE.md` Step 4; verify with the same `gh api` call |
+| Cloudflare Pages output directory left blank or `/` | Publishes the **repo root**: PLAN.md, AUTOMATE.md, this risk log, `worker/` source, and `unlock-codes.txt` (₦374,000 of inventory) | 🟡 **MITIGATED BY DOCUMENTATION** — the field is called out as a security setting in README, DEPLOY.md and GITHUB-CLOUDFLARE.md |
+
+### Repo changes in this migration
+
+- **`netlify.toml` deleted** — deliberately *after* the disconnect steps were
+  written down. While Netlify is still connected it pins Netlify's publish
+  directory to `site/`; deleting it first would have been the dangerous order.
+- **`GITHUB-NETLIFY.md` deleted → `GITHUB-CLOUDFLARE.md`** written, including
+  the verification evidence above so a future operator does not have to
+  re-derive it.
+- README deploy section, DEPLOY.md Step 2 + Step 4 + the domain/DNS block,
+  PLAN.md week-1 checkbox, QA-PROTOCOL.md ship.sh description, and
+  `tools/ship.sh` steps 4 (label + comment) all switched to Cloudflare.
+- DEPLOY.md's DNS block was **stale and wrong** — it still recorded
+  `A @ -> 75.2.60.5` and `CNAME www -> docoga.netlify.app`. Replaced with the
+  3 Oct verified records and a one-liner to re-check them.
+- qa.py **step 12**: no Netlify deploy config may come back into the repo.
+
+### Not verifiable from the sandbox (unchanged limitation)
+
+Egress here is allowlisted to `api.github.com` and `registry.npmjs.org`. DNS
+resolves fine, but every HTTPS call to `docoga.com.ng`, `*.pages.dev`,
+`*.netlify.app`, `*.workers.dev` and `dash.cloudflare.com` fails with
+`SSL_ERROR_SYSCALL`. So **which project actually serves docoga.com.ng today
+cannot be confirmed from here** — only that the domain is on Cloudflare and the
+repo is not wired to it.

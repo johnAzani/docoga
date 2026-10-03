@@ -8,7 +8,7 @@
 #   1. QA gate        (tools/qa.py — full pre-push checks on all local files)
 #   2. Commit         (all changes, with the message you give)
 #   3. Push           (token used, then stripped from the remote URL)
-#   4. Deploy wait    (polls the live site until Netlify serves the new build)
+#   4. Deploy wait    (polls the live site until Cloudflare Pages serves the new build)
 #   5. LIVE verify    (tools/verify_live.py — parses the REAL live JavaScript)
 #
 # If step 5 fails, the ship FAILED even if the push succeeded — fix forward.
@@ -44,7 +44,7 @@ git remote set-url origin https://github.com/johnAzani/docoga.git
 echo "remote reset to clean URL ✅"
 
 echo ""
-echo "═══ 4/5 WAIT FOR NETLIFY DEPLOY ═══"
+echo "═══ 4/5 WAIT FOR CLOUDFLARE PAGES DEPLOY ═══"
 SITE_CHANGED=$(git diff --name-only HEAD@{1} HEAD 2>/dev/null | grep -c "^site/" || true)
 if [ "${SITE_CHANGED:-0}" = "0" ] && git diff --cached --quiet 2>/dev/null; then
   echo "(no site/ files changed — skipping deploy wait)"

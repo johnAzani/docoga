@@ -109,5 +109,40 @@
     <loc>https://docoga.com.ng/caution-fee-enugu.html</loc>
     <priority>0.7</priority>
   </url>
+  <url>
+    <loc>https://docoga.com.ng/tenancy-agreement-nigeria.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://docoga.com.ng/notice-to-quit-nigeria.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://docoga.com.ng/caution-fee-nigeria.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docoga.com.ng/rent-receipt-format-nigeria.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docoga.com.ng/tenant-rights-nigeria.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docoga.com.ng/shop-tenancy-agreement-nigeria.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docoga.com.ng/invoice-format-nigeria.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
 </urlset>
 <!-- Add one <url> block per SEO content page as you publish them (see PLAN.md keyword cluster). -->

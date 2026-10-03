@@ -16,6 +16,14 @@ What it checks (every run, on every file — not just the one you touched):
   7. worker/index.js parses; wrangler.toml has a real KV id
   8. SECRET LEAK CHECK: nothing from .worker-secrets.env appears in any
      file that gets deployed or committed
+  9. Dependency-light test suites: worker unit suite + full-app jsdom suite
+ 10. Anchor integrity: every in-page href="#x" resolves to a real id
+ 11. Site-wide (every page, not just index.html): JSON-LD parses, every
+     absolute …/#route deep link is a real SPA route, every sitemap loc is
+     a file we actually ship
+ 12. Hosting is Cloudflare Pages: no netlify.toml, no Netlify references in
+     deployable files, README still documents the host and the `site`
+     publish-directory warning (Netlify retired 3 Oct 2026)
 """
 import re, os, sys, glob, tempfile, subprocess
 
@@ -143,7 +151,98 @@ if os.path.exists(secret_file):
             leaked.append(line.split("=")[0])
     check("no secrets in deployable files", not leaked, f"LEAKED: {leaked}")
 else:
-    warn("no .worker-secrets.env found (skipped)")
+    warn("no .worker-secrets.env found — secret scan skipped", False)
+
+print("── 9. Test suites (dependency-light) ──")
+# 9a. worker logic, mock KV — real worker code, no network/deps (required)
+r = subprocess.run(["node", os.path.join(ROOT, "tools", "tests", "workertest.mjs")],
+                   capture_output=True, text=True, cwd=ROOT)
+check("worker unit suite (workertest.mjs)", r.returncode == 0,
+      (r.stderr or r.stdout)[-160:].replace("\n", " ") if r.returncode else "")
+# 9b. full-app DOM suite — executes the real index.html in jsdom.
+# Skipped (exit 0 + notice) when jsdom is not installed, so a fresh clone is never blocked.
+domt = os.path.join(ROOT, "tools", "tests", "domtest.mjs")
+if os.path.exists(domt):
+    r = subprocess.run(["node", domt], capture_output=True, text=True, cwd=ROOT, timeout=600)
+    out = (r.stdout or "") + (r.stderr or "")
+    if "jsdom not installed" in out:
+        warn("DOM suite skipped — jsdom not installed (npm i jsdom to enable)", False)
+    else:
+        check("full-app DOM suite (domtest.mjs)", r.returncode == 0,
+              "see node tools/tests/domtest.mjs" if r.returncode else "")
+
+print("── 10. Anchor integrity (in-page links) ──")
+anchor_bad = []
+for i, (f, html) in enumerate([("index.html", idx), ("success.html", suc)]):
+    ids = set(re.findall(r'id="([^"]+)"', html))
+    for a in set(re.findall(r'href="#([^"\s]+)"', html)):
+        if a and a not in ids and ("page-" + a) not in ids:
+            anchor_bad.append(f"{f}#{a}")
+for f in glob.glob(os.path.join(SITE, "*.html")):
+    base = os.path.basename(f)
+    if base in ("index.html", "success.html"):
+        continue
+    html = open(f, encoding="utf-8").read()
+    ids = set(re.findall(r'id="([^"]+)"', html))
+    for a in set(re.findall(r'href="#([^"\s]+)"', html)):
+        if a and a not in ids:
+            anchor_bad.append(f"{base}#{a}")
+check("every in-page anchor resolves to a real id", not anchor_bad, ", ".join(sorted(anchor_bad)[:6]))
+
+print("── 11. Site-wide schema & deep-link integrity (every page, not just index) ──")
+# 11a. Step 6 only parses the JSON-LD in index.html. The 24 state pages and the
+#      guide pages carry FAQPage schema too — invalid JSON there silently costs
+#      the rich snippet, and nothing else would notice.
+ld_bad, ld_count = [], 0
+for f in sorted(glob.glob(f"{SITE}/*.html")):
+    for b in re.findall(r'<script type="application/ld\+json">(.*?)</script>',
+                        open(f, encoding="utf-8").read(), re.DOTALL):
+        ld_count += 1
+        try:
+            _json.loads(b)
+        except Exception as e:
+            ld_bad.append(f"{os.path.basename(f)}: {str(e)[:60]}")
+check(f"JSON-LD valid on every page ({ld_count} blocks)", not ld_bad, "; ".join(ld_bad[:3]))
+
+# 11b. Every absolute deep link into the SPA (…/#route) must be a real route.
+#      '#code=' is the magic pass link, not a route — excluded by design.
+routes = set(re.findall(r'id="(page-[A-Za-z0-9_-]+)"', idx))
+dead_routes = []
+for f in sorted(glob.glob(f"{SITE}/*.html")):
+    html = open(f, encoding="utf-8").read()
+    for a in sorted(set(re.findall(r'docoga\.com\.ng/#([A-Za-z0-9_-]+)', html))):
+        if a == "code":
+            continue
+        if ("page-" + a) not in routes:
+            dead_routes.append(f"{os.path.basename(f)}#{a}")
+check(f"every SPA deep link resolves to a real route ({len(routes)} routes)",
+      not dead_routes, ", ".join(dead_routes[:5]))
+
+# 11c. A sitemap entry for a file we don't ship is a soft 404 in Search Console.
+smap_locs = re.findall(r"<loc>https://docoga\.com\.ng/([^<]*)</loc>", smap)
+orphan = [l for l in smap_locs if l and not os.path.exists(os.path.join(SITE, l))]
+check(f"every sitemap loc is a real file ({len(smap_locs)} locs)", not orphan, ", ".join(orphan[:5]))
+
+print("── 12. Hosting is Cloudflare Pages (Netlify retired 3 Oct 2026) ──")
+# The owner moved hosting off Netlify entirely. These three checks exist because
+# the failure mode is silent: a re-added netlify.toml, or a doc that still says
+# "Netlify deploys main", sends the next operator to the wrong dashboard while
+# production quietly stops updating.
+check("no netlify.toml / .netlify in repo",
+      not os.path.exists(os.path.join(ROOT, "netlify.toml"))
+      and not os.path.exists(os.path.join(ROOT, ".netlify")))
+nl_site = [os.path.basename(f) for f in sorted(glob.glob(f"{SITE}/*.html"))
+           if "netlify" in open(f, encoding="utf-8").read().lower()]
+check("no Netlify references in deployable site/", not nl_site, ", ".join(nl_site[:4]))
+rdme = open(os.path.join(ROOT, "README.md"), encoding="utf-8").read()
+check("README documents Cloudflare Pages as the host",
+      "## Deploy (Cloudflare Pages)" in rdme,
+      "README deploy section must say Cloudflare Pages, not Netlify")
+# The output-directory field is a security setting: blank or "/" publishes the
+# repo root (PLAN.md, worker/, unlock-codes.txt). The README must keep saying so.
+check("README keeps the `site` output-directory warning",
+      "`site` is a security setting" in rdme and "never blank" in rdme,
+      "do not drop the publish-directory warning from README")
 
 print()
 if errors:

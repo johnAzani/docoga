@@ -438,6 +438,12 @@ body.has-pass .buy-only{display:none !important}
   </div>
 
   <div class="seo-block">
+    <h2>Free guides — the questions Nigerians ask first</h2>
+    <p>Plain-English answers on Nigerian renting and small-business paperwork, current for 2026:</p>
+    <p style="line-height:2"><a href="tenancy-agreement-nigeria.html">Tenancy agreement format</a> · <a href="notice-to-quit-nigeria.html">Notice to quit: how many months</a> · <a href="caution-fee-nigeria.html">Is the caution fee refundable?</a> · <a href="rent-receipt-format-nigeria.html">Rent receipt format</a> · <a href="tenant-rights-nigeria.html">Tenant rights &amp; landlord duties</a> · <a href="shop-tenancy-agreement-nigeria.html">Shop &amp; business tenancy</a> · <a href="invoice-format-nigeria.html">Invoice format + 7.5% VAT</a></p>
+  </div>
+
+  <div class="seo-block">
     <h2>State guides — tenancy rules where you rent</h2>
     <p>Notice-to-quit minimums and tenancy practice differ by state. Plain-English guides, current for 2026:</p>
     <p style="line-height:2"><a href="tenancy-agreement-lagos.html">Lagos</a> · <a href="tenancy-agreement-abuja.html">Abuja (FCT)</a> · <a href="tenancy-agreement-rivers.html">Rivers</a> · <a href="tenancy-agreement-oyo.html">Oyo</a> · <a href="tenancy-agreement-kano.html">Kano</a> · <a href="tenancy-agreement-enugu.html">Enugu</a></p>
@@ -1468,7 +1474,10 @@ const DOC_TITLES={agreement:'Tenancy Agreement',notice:'Notice to Quit',receipt:
 const RENDERERS={agreement:renderAgreement,notice:renderNotice,receipt:renderReceipt,invoice:renderInvoice,employment:renderEmployment,caution:renderCaution,demand:renderDemand,payslip:renderPayslip,warning:renderWarning};
 const COLLECTORS={agreement:collectAgreement,notice:collectNotice,receipt:collectReceipt,invoice:collectInvoice,employment:collectEmployment,caution:collectCaution,demand:collectDemand,payslip:collectPayslip,warning:collectWarning};
 const APPLIERS={agreement:applyAgreement,notice:applyNotice,receipt:applyReceipt,invoice:applyInvoice,employment:applyEmployment,caution:applyCaution,demand:applyDemand,payslip:applyPayslip,warning:applyWarning};
-function getDocs(){ try{ return JSON.parse(store.getItem('docoga_docs')||'[]'); }catch(e){ return []; } }
+/* Always returns an array. A stored 'null'/object/string (interrupted write,
+   quota error, another tab) used to return null and make init() throw TypeError
+   on every load — a permanently dead app for that visitor. Guard here, once. */
+function getDocs(){ try{ const d=JSON.parse(store.getItem('docoga_docs')||'[]'); return Array.isArray(d)?d:[]; }catch(e){ return []; } }
 function saveDoc(type){
   const payload=COLLECTORS[type]();
   let title=DOC_TITLES[type];

@@ -15,32 +15,38 @@ Cheapest first-year options (fits the ₦10,000 budget):
 
 > Budget check: domain ≈ ₦2,000 → remaining budget ≈ ₦8,000 (keep as buffer).
 
-## Step 2 — Deploy the site FREE (10 minutes)
+## Step 2 — Deploy the site FREE on Cloudflare Pages (10 minutes)
 
-**Recommended — GitHub → Netlify (auto-deploy on every change):**
-Follow `GITHUB-NETLIFY.md` — the repo-ready package is `docoga-github-repo.zip`
-in this workspace (inventory files already excluded, `netlify.toml` included so
-Netlify configures itself). Netlify publishes only the `site` folder.
+**Recommended — GitHub → Cloudflare Pages (auto-deploy on every push):**
+Follow `GITHUB-CLOUDFLARE.md`. The three settings that matter:
 
-**Quick alternative — Netlify Drop (no GitHub):**
-1. Go to `app.netlify.com/drop` and create a free account.
-2. Drag the **`docoga/site` folder** onto the page — it contains ONLY the files
-   meant for the public web.
-3. Your site is live on a free subdomain instantly.
+| Setting | Value |
+|---|---|
+| Production branch | `main` |
+| Build command | *(leave blank — there is no build step)* |
+| Build output directory | **`site`** |
 
-> **🔒 SECURITY — read this twice:** Only ever upload the `site` folder.
+Then in the Pages project → **Custom domains**, add `docoga.com.ng` and
+`www.docoga.com.ng`. Free SSL is issued automatically.
+
+**Quick alternative — direct upload (no GitHub, but no auto-deploy either):**
+1. `dash.cloudflare.com` → **Workers & Pages → Create → Pages → Upload assets**.
+2. Drag the **`docoga/site` folder** — it contains ONLY the files meant for the
+   public web.
+3. Or from the command line: `wrangler pages deploy site --project-name=docoga`.
+
+> **🔒 SECURITY — read this twice:** Only ever publish the `site` folder.
 > The files at the `docoga` root level — `unlock-codes.txt`, `PLAN.md`,
 > `DEPLOY.md`, `AUTOMATE.md` and the `worker/` folder — are **private business
 > documents**. `unlock-codes.txt` is ₦374,000 of sellable inventory and
 > `worker/index.js` must be edited to contain no secrets anyway. Uploading them
-> publicly would leak your entire code inventory.
+> publicly would leak your entire code inventory. In Cloudflare Pages this is
+> controlled by the **Build output directory** field: it must say `site`, never
+> blank and never `/`.
 
-**Best long-term — Cloudflare Pages:** create free account → Workers & Pages →
-Create → Pages → Upload assets → drag the folder. Connect your domain in
-Settings → Custom domains (free SSL).
-
-Then in your domain registrar's DNS panel, add the CNAME/A records Netlify or
-Cloudflare shows you. Done — `https://docoga.com.ng` is live with a padlock.
+> **Netlify is no longer used.** `netlify.toml` was removed from the repo on
+> 3 Oct 2026 and the migration steps (including disconnecting Netlify's GitHub
+> App, which was still building this repo) are in `GITHUB-CLOUDFLARE.md`.
 
 ## Step 3 — Set up Selar (30 minutes)
 
@@ -71,8 +77,9 @@ const WORKER_URL = "https://docoga-pass.yourname.workers.dev"; ← after AUTOMAT
 
 Also set `WORKER_URL` at the top of `success.html` (same value).
 
-Save, and re-upload/drag the folder to Netlify/Cloudflare again. That's it —
-buyers now pay and receive their pass instantly, with zero work from you.
+Save, commit and push — Cloudflare Pages redeploys `main` automatically (or
+`wrangler pages deploy site --project-name=docoga` if you need it now). That's
+it — buyers now pay and receive their pass instantly, with zero work from you.
 
 ## Step 5 — Selling (the daily income part)
 
@@ -132,6 +139,8 @@ their code in seconds, 24/7, without you touching anything.
   previews; it works on the live site.
 - **"Invalid code"** → check for typos; code is case-insensitive; dashes optional.
 
-### Domain — docoga.com.ng (decision 18 Sep 2026)
-- Registrar: GO54/WhoGoHost (panel.whogohost.com) — NGN3,000 year 1, NGN7,200/yr renewal (due Sep 2027) — keep account funded / auto-renew ON.
-- DNS records at GO54: A @ -> 75.2.60.5 ; CNAME www -> docoga.netlify.app. HTTPS auto-provisioned by Netlify.
+### Domain — docoga.com.ng (decision 18 Sep 2026; DNS moved to Cloudflare, verified 3 Oct 2026)
+- Registrar: GO54/WhoGoHost (panel.whogohost.com) — NGN3,000 year 1, NGN7,200/yr renewal (due Sep 2027) — keep account funded / auto-renew ON. **Set a phone reminder for Aug 2027.**
+- **Current DNS (verified by lookup on 3 Oct 2026):** `docoga.com.ng` and `www.docoga.com.ng` both resolve to Cloudflare anycast — `104.21.33.145`, `172.67.146.104`, and `2606:4700:3033::ac43:9268` / `2606:4700:3034::6815:2191`. HTTPS is issued by Cloudflare.
+- The original Netlify records (`A @ -> 75.2.60.5`, `CNAME www -> docoga.netlify.app`) are **no longer in use** and should be deleted from the registrar panel if they are still there.
+- Re-check any time with: `python3 -c "import socket;print(socket.getaddrinfo('docoga.com.ng',None))"` — Cloudflare ranges are `104.16-31.x.x`, `172.64-71.x.x` and `2606:4700::/32`.

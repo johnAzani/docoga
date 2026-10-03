@@ -68,7 +68,7 @@ Copycats can clone a form in a weekend. They cannot clone:
 
 **Week 1 — Ship (₦ spend ≤ ₦3,000)**
 - [ ] Buy docoga.com.ng (or .xyz) ~₦1,500–3,000 (Truehost/Whogohost/Namecheap)
-- [ ] Deploy index.html free on Netlify or Cloudflare Pages (see DEPLOY.md)
+- [x] Deploy on **Cloudflare Pages** (see DEPLOY.md + GITHUB-CLOUDFLARE.md) — project `docoga` exists and docoga.com.ng resolves to Cloudflare; 🔶 Git auto-deploy still needs connecting
 - [ ] Create Selar account → "Oga Pass" product @ ₦2,000 → paste link into the app
 - [ ] Set your WhatsApp number in the app config
 - [ ] Submit site to Google Search Console + Bing Webmaster Tools
@@ -91,14 +91,18 @@ Copycats can clone a form in a weekend. They cannot clone:
 - [ ] Target: 3,000+ monthly visitors, 30+ passes/month by day 90
 
 **SEO keyword cluster (write one page each):**
-- tenancy agreement in Nigeria / tenancy agreement format Nigeria (pillar page)
-- tenancy agreement Lagos [state pages × 12 biggest states]
-- caution fee in Nigeria — is it refundable?
-- notice to quit in Nigeria — how many months?
-- rent receipt format Nigeria / how to write a rent receipt
-- rights of a tenant in Nigeria / landlord obligations Nigeria
-- agreement between landlord and tenant for shop (commercial angle)
-- invoice format for small business Nigeria / how to add 7.5% VAT
+- ✅ tenancy agreement in Nigeria / tenancy agreement format Nigeria (pillar page) → `tenancy-agreement-nigeria.html`
+- 🔶 tenancy agreement Lagos [state pages × 12 biggest states] → **6 of 12 done** (Lagos, Abuja, Rivers, Oyo, Kano, Enugu). Next: Delta, Kaduna, Ogun, Anambra, Edo, Plateau
+- ✅ caution fee in Nigeria — is it refundable? → `caution-fee-nigeria.html`
+- ✅ notice to quit in Nigeria — how many months? → `notice-to-quit-nigeria.html`
+- ✅ rent receipt format Nigeria / how to write a rent receipt → `rent-receipt-format-nigeria.html`
+- ✅ rights of a tenant in Nigeria / landlord obligations Nigeria → `tenant-rights-nigeria.html`
+- ✅ agreement between landlord and tenant for shop (commercial angle) → `shop-tenancy-agreement-nigeria.html`
+- ✅ invoice format for small business Nigeria / how to add 7.5% VAT → `invoice-format-nigeria.html`
+
+*7 of 8 cluster pages shipped 3 Oct 2026 via `tools/gen_guide_pages.py` (idempotent, regenerable).
+Sitemap: 34 URLs. Every claim source-verified; unverified specifics are framed as practice + "confirm
+with a lawyer" per the 19 Sep rule.*
 
 ## 5. Financing ladder (do it in this order)
 
@@ -133,8 +137,9 @@ Copycats can clone a form in a weekend. They cannot clone:
   server codes), saved documents, print/PDF, WhatsApp share & floating support
   button, Privacy Policy + Terms pages, FAQ rich-snippet schema, GA4 analytics
   hook, sitemap/robots. Timezone-safe dates for Nigerian users (UTC+1).
-- **v1.1 (month 1):** Employment Contract + Caution Fee Receipt generators;
-  SEO content pages from the keyword cluster; first testimonials.
+- **v1.1 (month 1):** Employment Contract + Caution Fee Receipt generators ✅ (9 tools live);
+  SEO content pages from the keyword cluster ✅ 7 of 8 shipped 3 Oct 2026 (national guide pages +
+  6 states); 🔶 remaining: 6 more state pages, first testimonials.
 - **v2 (when revenue > ₦50k/mo):** Supabase backend → accounts, cross-device
   sync, automated Paystack checkout (instant code delivery), tenancy-expiry
   reminders, agent multi-property dashboard.
