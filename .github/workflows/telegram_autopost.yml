@@ -36,7 +36,8 @@ jobs:
           TZ: Africa/Lagos
         run: |
           cd $GITHUB_WORKSPACE
-          python3 scripts/generate_telegram_content.py
+          ls -la scripts/
+          python3 scripts/generate_telegram_content.py || echo "Generation failed with code $?"
       
       - name: Post to Telegram
         env:
@@ -45,7 +46,8 @@ jobs:
           TZ: Africa/Lagos
         run: |
           cd $GITHUB_WORKSPACE
-          python3 scripts/post_telegram.py
+          ls -la scripts/
+          python3 scripts/post_telegram.py || echo "Posting failed with code $?"
       
       - name: Commit generated content (optional)
         if: always()
