@@ -1,0 +1,47 @@
+name: DocOga Telegram Photo Post Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  send-photo:
+    name: Send Photo Post to Telegram
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Send photo to Telegram
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          CAPTION='🏠 *DAILY DOCUMENT TIP* 🏠
+
+          Renting in Lagos? Here is what you MUST know about *Caution Fees*:
+
+          💡 Many landlords charge ₦50k–₦200k as caution fee but refuse to refund when you move out!
+
+          ✅ *How to Protect Yourself:*
+          1️⃣ Get a written receipt
+          2️⃣ Include it in your tenancy agreement
+          3️⃣ Take photos of the apartment before moving in
+          4️⃣ Request a move-out inspection
+
+          📋 *Need proper documents?*
+          DocOga has templates for:
+          • Tenancy Agreements
+          • Rent Receipts
+          • Notice to Quit
+          • Caution Fee Receipts
+
+          👉 Visit: https://docoga.com.ng
+
+          🔔 *Subscribe for daily tips!*'
+
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto" \
+            -F "chat_id=${TELEGRAM_CHAT_ID}" \
+            -F "photo=@brand/official-logo-transparent.png" \
+            -F "caption=${CAPTION}" \
+            -F "parse_mode=Markdown" | python3 -c "import sys,json; r=json.load(sys.stdin); print('✅ Photo sent! Message ID:', r['result']['message_id']) if r.get('ok') else print('❌ Error:', r.get('description','Unknown'))"
