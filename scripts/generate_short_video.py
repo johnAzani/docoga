@@ -193,6 +193,64 @@ def create_slide_image(slide_data, logo_path=None):
     return img
 
 
+def add_official_logo(img):
+    """
+    Composite the REAL official logo onto a PIL Image using the same
+    approach as tools/add_logo.py: white rounded chip, bottom center.
+    Never redraws the logo — pastes the exact pixels from brand/official-logo-transparent.png.
+    """
+    from PIL import ImageFilter
+    
+    logo_path = BRAND_DIR / "official-logo-transparent.png"
+    if not logo_path.exists():
+        return img
+    
+    img = img.convert("RGBA")
+    W, H = img.size
+    
+    logo = Image.open(logo_path).convert("RGBA")
+    bbox = logo.getbbox()
+    if bbox:
+        logo = logo.crop(bbox)
+    lw, lh = logo.size
+    
+    # Chip sizing: logo ~26% of image width
+    target_lw = int(W * 0.26)
+    target_lh = int(target_lw * lh / lw)
+    if target_lh > int(H * 0.20):
+        target_lh = int(H * 0.20)
+        target_lw = int(target_lh * lw / lh)
+    pad = int(target_lw * 0.16)
+    chip_w, chip_h = target_lw + 2 * pad, target_lh + 2 * pad
+    chip_x = (W - chip_w) // 2
+    chip_y = H - chip_h - int(H * 0.035)
+    
+    rad = int(chip_h * 0.22)
+    
+    # Shadow
+    sh = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    ds = ImageDraw.Draw(sh)
+    ds.rounded_rectangle(
+        [chip_x, chip_y + 6, chip_x + chip_w, chip_y + chip_h + 6],
+        radius=rad, fill=(0, 0, 30, 110))
+    sh = sh.filter(ImageFilter.GaussianBlur(10))
+    img = Image.alpha_composite(img, sh)
+    
+    # White chip
+    ov = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    d = ImageDraw.Draw(ov)
+    d.rounded_rectangle(
+        [chip_x, chip_y, chip_x + chip_w, chip_y + chip_h],
+        radius=rad, fill=(255, 255, 255, 255))
+    
+    # Paste logo (exact colours, only scaled)
+    logo_scaled = logo.resize((target_lw, target_lh), Image.LANCZOS)
+    ov.alpha_composite(logo_scaled, (chip_x + pad, chip_y + pad))
+    
+    img = Image.alpha_composite(img, ov)
+    return img.convert("RGB")
+
+
 def generate_video(script=None):
     """Generate a short-form video from a script"""
     if script is None:
@@ -200,10 +258,11 @@ def generate_video(script=None):
 
     print(f"🎬 Generating video: {script['title']}")
 
-    # Create slide images
+    # Create slide images with official logo composited
     slide_images = []
     for i, slide in enumerate(script["slides"]):
-        img = create_slide_image(slide, LOGO_PATH)
+        img = create_slide_image(slide, logo_path=None)  # no inline logo
+        img = add_official_logo(img)  # composite real logo via chip
         slide_images.append((img, slide.get("duration", 3)))
         print(f"   📸 Slide {i+1}: {slide['text'][:30]}... ({slide['duration']}s)")
 
