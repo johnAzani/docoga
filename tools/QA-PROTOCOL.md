@@ -21,7 +21,7 @@ GITHUB_TOKEN=github_pat_xxx tools/ship.sh "commit message"
 ```
 
 Runs the full pipeline and refuses to finish if any stage fails:
-QA gate → commit → push → wait for Netlify deploy → live verification.
+QA gate → commit → push → wait for the Cloudflare Pages deploy → live verification.
 
 ## What the gates check
 
@@ -33,6 +33,7 @@ QA gate → commit → push → wait for Netlify deploy → live verification.
 | `tools/tests/workertest.mjs` (in qa.py step 9) | Real worker code + mock KV: expiry, device fence, hostile records, top-up chain, and the **payments ` /verify` path** (mocked FLW v4: mint, email capture, idempotency, underpay/wrong-currency/failed all rejected with zero codes). No deps, runs everywhere. |
 | `tools/tests/domtest.mjs` (in qa.py step 9) | Executes the REAL `site/index.html` in jsdom: 12 routes, all 9 tools, hostile-input XSS, print, share, saved docs, drafts, pass activation/top-up/fence/magic links, corrupt storage, live config values. Needs `npm i jsdom`; **auto-skips** (never blocks) when jsdom is absent. |
 | qa.py step 10 | Anchor integrity: every in-page `href="#x"` must resolve to a real `id` (or the SPA's `page-x` route). Catches dead nav/CTA links. |
+| qa.py step 12 | Hosting guard: no `netlify.toml` or `.netlify` in the repo, no Netlify references in deployable `site/` files, and README still documents Cloudflare Pages + the `site` publish-directory warning. Netlify was retired 3 Oct 2026; the silent failure this prevents is the next operator being sent to the wrong dashboard while production stops updating |
 | qa.py step 11 | Site-wide schema & deep-link integrity across **every** page, not just index.html: every JSON-LD block parses (a broken FAQPage silently costs the rich snippet) · every absolute `…/#route` deep link is a real SPA route (`#code=` magic links excluded by design) · every sitemap `<loc>` is a file we actually ship. Added 3 Oct 2026 with the guide pages — negative-tested: injecting a bad brace, a dead route and a phantom loc each fail the gate with exit 1. |
 
 ## Optional dependencies for the app-level suites
@@ -61,7 +62,7 @@ skip-safe — a missing jsdom prints a notice and exits 0, so a fresh clone is n
 - **Everything is pushed to GitHub as it is produced** (owner's standing
   instruction, 3 Oct 2026) so a new workspace or a different agent can pick up
   exactly where the work stopped. Session work goes to the session branch and
-  on to `main` by pull request — Netlify deploys `main`.
+  on to `main` by pull request — **Cloudflare Pages** deploys `main` (output dir `site`).
 
 ## Incident log
 

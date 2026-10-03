@@ -32,7 +32,7 @@ either TESTED, MITIGATED, or consciously ACCEPTED with a reason.*
 | KYC rejected | Fix & resubmit — no funds lost | FLW notification |
 | Chargeback on stolen card after code issued | ₦2,000 loss, rare at this scale | >1 per month |
 | KV 1k writes/day ceiling (~200 sales/day) | Free tier; 200 sales/day = ₦400k/mo — a good problem | >100 sales/day sustained |
-| Netlify outage | Rare, short; repo is source of truth | >1h downtime |
+| Cloudflare Pages outage | Rare, short; repo is source of truth. (Was "Netlify outage" — hosting moved to Cloudflare Pages 3 Oct 2026) | >1h downtime |
 | Copycat clones site | Moat = codes+machine+SEO history+price | Traffic drop in GA4 |
 | Flutterwave itself frozen | Payouts pause (money safe); Selar alternative | FLW notice |
 
@@ -239,3 +239,57 @@ fails with `URLError: TLS/SSL connection has been closed (EOF)`. The 1 Oct open 
 (*is the live Netlify build the v2 pass model?*) is therefore still unanswered and must be checked
 from the owner's machine. Nothing in this update was pushed: the working tree is QA-green and ready
 for `tools/ship.sh`.
+
+---
+
+## Update — 3 Oct 2026 (evening): hosting moved off Netlify to Cloudflare Pages — and the Git connection was found missing
+
+**Owner instruction:** no Netlify at all; Cloudflare only, connected to Git so that a push deploys.
+
+### What was verified before changing anything
+
+| Check | Command / source | Result |
+|---|---|---|
+| Does a Pages project exist? | DNS lookup | `docoga.pages.dev` → **172.66.44.157**. Control: `zzq-docoga-does-not-exist-88213.pages.dev` → **NXDOMAIN**, so `*.pages.dev` is not a wildcard zone — the project is real |
+| Where does the domain point? | DNS lookup | `docoga.com.ng` and `www` → **104.21.33.145 / 172.67.146.104** + `2606:4700::/32` = Cloudflare anycast. **Not** Netlify's old `75.2.60.5` |
+| Is Netlify still connected? | `gh api …/commits/43d644c/status` | **YES** — `netlify/docoga/deploy-preview` → success → `deploy-preview-2--docoga.netlify.app` (2026-10-03T03:16:14Z), plus 3 check-runs from the GitHub App `netlify` |
+| Is Cloudflare Pages connected to Git? | same call | **NO** — zero `cloudflare/pages` statuses or check-runs on that commit, and zero on `main` (`30e2ca6`) |
+| Is `docoga.netlify.app` still up? | DNS lookup | Resolves to 13.52.188.95 / 52.52.192.191 (AWS) — the site exists but no longer serves our domain |
+
+**Conclusion:** the Pages project and the domain are on Cloudflare, but the
+project was **hand-uploaded**, not Git-connected. Every push to GitHub has been
+silently *not* reaching production, while Netlify — a platform the owner no
+longer wants — kept building the private repo.
+
+### 🔴 Risk this closes
+
+| Scenario | Impact | Status |
+|---|---|---|
+| Owner edits the repo, pushes, and believes the site changed | Live site silently drifts from source; a bug fix or a price change never reaches buyers; nobody notices because the push "succeeded" | 🔴 **IDENTIFIED 3 Oct** — fix is owner-side (Cloudflare dashboard: *Connect to Git*, production branch `main`, build command blank, **output directory `site`**). `GITHUB-CLOUDFLARE.md` documents it and the 30-second verification |
+| Netlify GitHub App left installed on a private repo | A platform no longer in use keeps cloning and building the private repo on every push | 🔴 **IDENTIFIED 3 Oct** — disconnect steps in `GITHUB-CLOUDFLARE.md` Step 4; verify with the same `gh api` call |
+| Cloudflare Pages output directory left blank or `/` | Publishes the **repo root**: PLAN.md, AUTOMATE.md, this risk log, `worker/` source, and `unlock-codes.txt` (₦374,000 of inventory) | 🟡 **MITIGATED BY DOCUMENTATION** — the field is called out as a security setting in README, DEPLOY.md and GITHUB-CLOUDFLARE.md |
+
+### Repo changes in this migration
+
+- **`netlify.toml` deleted** — deliberately *after* the disconnect steps were
+  written down. While Netlify is still connected it pins Netlify's publish
+  directory to `site/`; deleting it first would have been the dangerous order.
+- **`GITHUB-NETLIFY.md` deleted → `GITHUB-CLOUDFLARE.md`** written, including
+  the verification evidence above so a future operator does not have to
+  re-derive it.
+- README deploy section, DEPLOY.md Step 2 + Step 4 + the domain/DNS block,
+  PLAN.md week-1 checkbox, QA-PROTOCOL.md ship.sh description, and
+  `tools/ship.sh` steps 4 (label + comment) all switched to Cloudflare.
+- DEPLOY.md's DNS block was **stale and wrong** — it still recorded
+  `A @ -> 75.2.60.5` and `CNAME www -> docoga.netlify.app`. Replaced with the
+  3 Oct verified records and a one-liner to re-check them.
+- qa.py **step 12**: no Netlify deploy config may come back into the repo.
+
+### Not verifiable from the sandbox (unchanged limitation)
+
+Egress here is allowlisted to `api.github.com` and `registry.npmjs.org`. DNS
+resolves fine, but every HTTPS call to `docoga.com.ng`, `*.pages.dev`,
+`*.netlify.app`, `*.workers.dev` and `dash.cloudflare.com` fails with
+`SSL_ERROR_SYSCALL`. So **which project actually serves docoga.com.ng today
+cannot be confirmed from here** — only that the domain is on Cloudflare and the
+repo is not wired to it.

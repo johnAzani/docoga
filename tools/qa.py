@@ -21,6 +21,9 @@ What it checks (every run, on every file — not just the one you touched):
  11. Site-wide (every page, not just index.html): JSON-LD parses, every
      absolute …/#route deep link is a real SPA route, every sitemap loc is
      a file we actually ship
+ 12. Hosting is Cloudflare Pages: no netlify.toml, no Netlify references in
+     deployable files, README still documents the host and the `site`
+     publish-directory warning (Netlify retired 3 Oct 2026)
 """
 import re, os, sys, glob, tempfile, subprocess
 
@@ -219,6 +222,27 @@ check(f"every SPA deep link resolves to a real route ({len(routes)} routes)",
 smap_locs = re.findall(r"<loc>https://docoga\.com\.ng/([^<]*)</loc>", smap)
 orphan = [l for l in smap_locs if l and not os.path.exists(os.path.join(SITE, l))]
 check(f"every sitemap loc is a real file ({len(smap_locs)} locs)", not orphan, ", ".join(orphan[:5]))
+
+print("── 12. Hosting is Cloudflare Pages (Netlify retired 3 Oct 2026) ──")
+# The owner moved hosting off Netlify entirely. These three checks exist because
+# the failure mode is silent: a re-added netlify.toml, or a doc that still says
+# "Netlify deploys main", sends the next operator to the wrong dashboard while
+# production quietly stops updating.
+check("no netlify.toml / .netlify in repo",
+      not os.path.exists(os.path.join(ROOT, "netlify.toml"))
+      and not os.path.exists(os.path.join(ROOT, ".netlify")))
+nl_site = [os.path.basename(f) for f in sorted(glob.glob(f"{SITE}/*.html"))
+           if "netlify" in open(f, encoding="utf-8").read().lower()]
+check("no Netlify references in deployable site/", not nl_site, ", ".join(nl_site[:4]))
+rdme = open(os.path.join(ROOT, "README.md"), encoding="utf-8").read()
+check("README documents Cloudflare Pages as the host",
+      "## Deploy (Cloudflare Pages)" in rdme,
+      "README deploy section must say Cloudflare Pages, not Netlify")
+# The output-directory field is a security setting: blank or "/" publishes the
+# repo root (PLAN.md, worker/, unlock-codes.txt). The README must keep saying so.
+check("README keeps the `site` output-directory warning",
+      "`site` is a security setting" in rdme and "never blank" in rdme,
+      "do not drop the publish-directory warning from README")
 
 print()
 if errors:

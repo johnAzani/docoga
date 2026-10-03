@@ -68,7 +68,7 @@ Copycats can clone a form in a weekend. They cannot clone:
 
 **Week 1 — Ship (₦ spend ≤ ₦3,000)**
 - [ ] Buy docoga.com.ng (or .xyz) ~₦1,500–3,000 (Truehost/Whogohost/Namecheap)
-- [ ] Deploy index.html free on Netlify or Cloudflare Pages (see DEPLOY.md)
+- [x] Deploy on **Cloudflare Pages** (see DEPLOY.md + GITHUB-CLOUDFLARE.md) — project `docoga` exists and docoga.com.ng resolves to Cloudflare; 🔶 Git auto-deploy still needs connecting
 - [ ] Create Selar account → "Oga Pass" product @ ₦2,000 → paste link into the app
 - [ ] Set your WhatsApp number in the app config
 - [ ] Submit site to Google Search Console + Bing Webmaster Tools
