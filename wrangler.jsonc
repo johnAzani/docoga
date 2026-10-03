@@ -1,0 +1,14 @@
+{
+  // DocOga website — Cloudflare Workers with static assets (the modern Pages).
+  // Created 3 Oct 2026 when the site moved to a Git-connected build. The unified
+  // dashboard flow runs `npx wrangler deploy` at the repo root, which reads THIS
+  // file and publishes ./site as the worker's assets.
+  //
+  // Security: `assets.directory` is what gets published. It must stay "./site".
+  // Pointing it at "/" would publish PLAN.md, worker/ and unlock-codes.txt.
+  "name": "docoga-git",
+  "compatibility_date": "2026-09-18",
+  "assets": {
+    "directory": "./site"
+  }
+}
