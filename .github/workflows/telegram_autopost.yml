@@ -13,6 +13,11 @@ jobs:
     name: Generate Content & Post to Telegram
     runs-on: ubuntu-latest
     
+    env:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      TZ: Africa/Lagos
+    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -26,7 +31,7 @@ jobs:
         run: |
           python3 -m pip install --upgrade pip
           python3 -m pip install requests
-          python3 -c "import requests; print('requests OK')"
+          python3 -c "import requests; print('✅ requests OK')"
       
       - name: Debug - Check files
         run: |
@@ -35,27 +40,24 @@ jobs:
           echo "=== All files ==="
           ls -la
           echo "=== Scripts directory ==="
-          ls -la scripts/ || echo "scripts/ not found"
+          ls -la scripts/ || echo "❌ scripts/ not found"
       
       - name: Debug - Check Python
         run: |
           which python3
           python3 --version
-          python3 -c "import sys; print(sys.executable)"
+          python3 -c "import sys; print(f'Python: {sys.version}')"
       
       - name: Debug - Check environment variables
         run: |
-          echo "TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:+SET}"
-          echo "TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:+SET}"
+          echo "TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:+SET (hidden)}"
+          echo "TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:+SET (hidden)}"
+          if [ -z "$TELEGRAM_BOT_TOKEN" ]; then echo "❌ TELEGRAM_BOT_TOKEN is EMPTY"; exit 1; fi
+          if [ -z "$TELEGRAM_CHAT_ID" ]; then echo "❌ TELEGRAM_CHAT_ID is EMPTY"; exit 1; fi
+          echo "✅ Both secrets are loaded"
       
       - name: Generate Telegram content
-        env:
-          TZ: Africa/Lagos
         run: python3 scripts/generate_telegram_content.py
       
       - name: Post to Telegram
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          TZ: Africa/Lagos
         run: python3 scripts/post_telegram.py
