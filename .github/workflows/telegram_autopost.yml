@@ -35,7 +35,8 @@ jobs:
         env:
           TZ: Africa/Lagos
         run: |
-          python scripts/generate_telegram_content.py
+          cd $GITHUB_WORKSPACE
+          python3 scripts/generate_telegram_content.py
       
       - name: Post to Telegram
         env:
@@ -43,7 +44,8 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           TZ: Africa/Lagos
         run: |
-          python scripts/post_telegram.py
+          cd $GITHUB_WORKSPACE
+          python3 scripts/post_telegram.py
       
       - name: Commit generated content (optional)
         if: always()
