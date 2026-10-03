@@ -20,12 +20,13 @@ BRAND_DIR = Path("brand")
 LOG_FILE = Path("logs/social_media.log")
 LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
 
-# Brand images for photo posts (pick one randomly each day)
+# Primary DocOga logo for photo posts
+PRIMARY_LOGO = "brand/official-logo-white.png"
+
+# Additional brand images for variety (used on some days)
 BRAND_IMAGES = [
-    "brand/logo-primary.png",
-    "brand/logo-icon.png",
+    "brand/official-logo-white.png",
     "brand/official-logo-transparent.png",
-    "brand/logo-stamp.png",
     "brand/official-3.png",
     "brand/official-4.png",
     "brand/official-5.png",
@@ -121,12 +122,24 @@ def send_telegram_message(text, parse_mode="Markdown", disable_web_page_preview=
 
 
 def pick_brand_image():
-    """Pick a random brand image that exists"""
-    available = [img for img in BRAND_IMAGES if os.path.exists(img)]
+    """Pick brand image — primary logo 80% of the time, variety 20%"""
+    # 80% chance: use the official DocOga logo
+    # 20% chance: use a different brand image for variety
+    if os.path.exists(PRIMARY_LOGO) and random.random() < 0.8:
+        log(f"📸 Using primary logo: {PRIMARY_LOGO}")
+        return PRIMARY_LOGO
+    
+    available = [img for img in BRAND_IMAGES if os.path.exists(img) and img != PRIMARY_LOGO]
     if available:
         chosen = random.choice(available)
-        log(f"📸 Selected brand image: {chosen}")
+        log(f"📸 Using variety image: {chosen}")
         return chosen
+    
+    # Fallback to primary logo
+    if os.path.exists(PRIMARY_LOGO):
+        log(f"📸 Fallback to primary logo: {PRIMARY_LOGO}")
+        return PRIMARY_LOGO
+    
     log("⚠️ No brand images found, falling back to text post")
     return None
 
