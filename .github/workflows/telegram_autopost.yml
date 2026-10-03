@@ -1,0 +1,57 @@
+name: DocOga Telegram Auto-Post
+
+# This workflow posts daily content to Telegram automatically
+# Runs at 9 AM Nigeria time (UTC+1 = 8 AM UTC)
+
+on:
+  schedule:
+    - cron: '0 8 * * *'  # 8 AM UTC = 9 AM Nigeria time (UTC+1)
+  workflow_dispatch:     # Allow manual triggering
+
+jobs:
+  generate-and-post:
+    name: Generate Content & Post to Telegram
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: arena/01a10172-docoga
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+      
+      - name: Create directories
+        run: |
+          mkdir -p assets/telegram logs
+      
+      - name: Generate Telegram content
+        env:
+          TZ: Africa/Lagos
+        run: |
+          python scripts/generate_telegram_content.py
+      
+      - name: Post to Telegram
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TZ: Africa/Lagos
+        run: |
+          python scripts/post_telegram.py
+      
+      - name: Commit generated content (optional)
+        if: always()
+        run: |
+          git config --global user.name "DocOga Bot"
+          git config --global user.email "bot@docoga.com.ng"
+          git add assets/telegram/ logs/
+          git diff --cached --quiet || git commit -m "Auto: Telegram content for $(date +%Y-%m-%d)"
+          git push
