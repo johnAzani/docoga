@@ -16,8 +16,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          ref: arena/01a10172-docoga
       
       - name: Set up Python
         uses: actions/setup-python@v4
