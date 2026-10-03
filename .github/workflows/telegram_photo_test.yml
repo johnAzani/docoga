@@ -12,36 +12,54 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
       
+      - name: Install requests
+        run: python3 -m pip install requests
+      
       - name: Send photo to Telegram
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-          CAPTION='🏠 *DAILY DOCUMENT TIP* 🏠
+          python3 << 'PYEOF'
+          import requests, os
 
-          Renting in Lagos? Here is what you MUST know about *Caution Fees*:
+          BOT_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
+          CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 
-          💡 Many landlords charge ₦50k–₦200k as caution fee but refuse to refund when you move out!
+          caption = """🏠 *DAILY DOCUMENT TIP* 🏠
 
-          ✅ *How to Protect Yourself:*
-          1️⃣ Get a written receipt
-          2️⃣ Include it in your tenancy agreement
-          3️⃣ Take photos of the apartment before moving in
-          4️⃣ Request a move-out inspection
+Renting in Lagos? Here is what you MUST know about *Caution Fees*:
 
-          📋 *Need proper documents?*
-          DocOga has templates for:
-          • Tenancy Agreements
-          • Rent Receipts
-          • Notice to Quit
-          • Caution Fee Receipts
+💡 Many landlords charge ₦50k–₦200k as caution fee but refuse to refund when you move out!
 
-          👉 Visit: https://docoga.com.ng
+✅ *How to Protect Yourself:*
+1️⃣ Get a written receipt
+2️⃣ Include it in your tenancy agreement
+3️⃣ Take photos of the apartment before moving in
+4️⃣ Request a move-out inspection
 
-          🔔 *Subscribe for daily tips!*'
+📋 *Need proper documents?*
+DocOga has templates for:
+• Tenancy Agreements
+• Rent Receipts
+• Notice to Quit
+• Caution Fee Receipts
 
-          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto" \
-            -F "chat_id=${TELEGRAM_CHAT_ID}" \
-            -F "photo=@brand/official-logo-transparent.png" \
-            -F "caption=${CAPTION}" \
-            -F "parse_mode=Markdown" | python3 -c "import sys,json; r=json.load(sys.stdin); print('✅ Photo sent! Message ID:', r['result']['message_id']) if r.get('ok') else print('❌ Error:', r.get('description','Unknown'))"
+👉 Visit: https://docoga.com.ng
+
+🔔 *Subscribe for daily tips!*"""
+
+          with open("brand/official-logo-transparent.png", "rb") as photo:
+              resp = requests.post(
+                  f"https://api.telegram.org/bot{BOT_TOKEN}/sendPhoto",
+                  data={"chat_id": CHAT_ID, "caption": caption, "parse_mode": "Markdown"},
+                  files={"photo": photo},
+                  timeout=30
+              )
+
+          result = resp.json()
+          if result.get("ok"):
+              print(f"✅ Photo sent! Message ID: {result['result']['message_id']}")
+          else:
+              print(f"❌ Error: {result.get('description', 'Unknown')}")
+          PYEOF
