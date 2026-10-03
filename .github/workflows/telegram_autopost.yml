@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -23,37 +25,22 @@ jobs:
           python-version: '3.10'
       
       - name: Install dependencies
-        run: |
-          python3 -m pip install --upgrade pip
-          python3 -m pip install requests
+        run: python3 -m pip install requests
       
-      - name: Create directories
-        run: |
-          mkdir -p assets/telegram logs
+      - name: List files (debug)
+        run: ls -la
+      
+      - name: List scripts directory (debug)
+        run: ls -la scripts/
       
       - name: Generate Telegram content
         env:
           TZ: Africa/Lagos
-        run: |
-          cd $GITHUB_WORKSPACE
-          ls -la scripts/
-          python3 scripts/generate_telegram_content.py || echo "Generation failed with code $?"
+        run: python3 scripts/generate_telegram_content.py
       
       - name: Post to Telegram
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           TZ: Africa/Lagos
-        run: |
-          cd $GITHUB_WORKSPACE
-          ls -la scripts/
-          python3 scripts/post_telegram.py || echo "Posting failed with code $?"
-      
-      - name: Commit generated content (optional)
-        if: always()
-        run: |
-          git config --global user.name "DocOga Bot"
-          git config --global user.email "bot@docoga.com.ng"
-          git add assets/telegram/ logs/
-          git diff --cached --quiet || git commit -m "Auto: Telegram content for $(date +%Y-%m-%d)"
-          git push
+        run: python3 scripts/post_telegram.py
