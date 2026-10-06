@@ -9,3 +9,7 @@ Thumbs.db
 node_modules/
 docoga-github-repo.zip
 .worker-secrets.env
+
+# Python
+__pycache__/
+*.py[cod]
