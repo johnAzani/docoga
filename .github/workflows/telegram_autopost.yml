@@ -1,0 +1,81 @@
+name: DocOga Daily Content - Photo + Video
+
+# Posts daily content to Telegram: photo posts + video shorts
+# Runs at 9 AM and 6 PM Nigeria time (UTC+1)
+
+on:
+  schedule:
+    - cron: '0 8 * * *'   # 9 AM Nigeria time — Photo post
+    - cron: '0 17 * * *'  # 6 PM Nigeria time — Video post
+  workflow_dispatch:
+    inputs:
+      content_type:
+        description: 'Type of content to post'
+        required: false
+        default: 'both'
+        type: choice
+        options:
+          - photo
+          - video
+          - both
+
+jobs:
+  photo-post:
+    name: 📸 Photo Post
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'schedule' ||
+      github.event.inputs.content_type == 'photo' ||
+      github.event.inputs.content_type == 'both' ||
+      github.event.inputs.content_type == ''
+    
+    env:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      TZ: Africa/Lagos
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Install dependencies
+        run: python3 -m pip install requests
+      
+      - name: Generate & Post Photo
+        run: python3 scripts/post_telegram.py
+
+  video-post:
+    name: 🎬 Video Post
+    runs-on: ubuntu-latest
+    if: >-
+      (github.event_name == 'schedule' && github.event.schedule == '0 17 * * *') ||
+      github.event.inputs.content_type == 'video' ||
+      github.event.inputs.content_type == 'both'
+    
+    env:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      TZ: Africa/Lagos
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Install dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install requests Pillow moviepy
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      
+      - name: Generate & Post Video
+        run: python3 scripts/post_telegram_video.py
