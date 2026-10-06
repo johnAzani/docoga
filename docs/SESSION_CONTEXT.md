@@ -19,6 +19,46 @@ This ensures the next session feels like the same person continuing.
 
 ---
 
+## 🚨 INCIDENT — 6 Oct 2026: `main` was force-pushed and orphaned 124 commits
+
+**Read this before touching `main`.**
+
+`main` was force-pushed to an orphan root commit (`f7fc227`), discarding the
+real lineage. Two independent lines were orphaned:
+
+- `e7eb57d` — **124 commits / 157 files**: the content & growth system
+  (`BRAND_STYLE`, `GROWTH_JOURNAL`, `BUSINESS_PLAN`, `HOOK_LEDGER`,
+  `GROWTH_ENGINE`, `DESIGN_SYSTEM`) and the tool suite (`rebuild_ep1.py`,
+  `yt_upload_long.py`, `yt_suggest.py`, `weekly_report.py`, `vector_kit.py`,
+  `tts_harvest.py`, `tts_batch_dd3.py`, `qa.py`, `verify_live.py`)
+- `85097d7` — the Oct 6 automation line (53 commits): the 5 social workflows,
+  `tools/{yt,fb,ig}_publish.py`, `youtube_queue.json`, and this file
+
+Neither descends from the other. Both were recovered with
+`git fetch origin <sha>` — GitHub still serves orphaned commits, **but only
+until they are garbage-collected.** They are now anchored to
+`arena/a0d5b259-docoga`.
+
+**Why nobody noticed:** `tools/pre_push_verify.sh` tested file existence with
+`if git ls-tree HEAD <path>`. `git ls-tree` **exits 0 even when the path does
+not exist** — it just prints nothing. Every check passed unconditionally, so
+the script printed `✅ ALL CHECKS PASSED — Safe to push!` on a tree missing
+all 12 files it checks. It was also never wired to anything.
+
+**Fixed:** existence is now tested with `git cat-file -e`; the script gained a
+history-safety check that flags refs with no common ancestor vs `origin/main`
+and lists what a force-push would delete; `tools/pre-push` runs it alongside
+`qa.py`; and `.github/workflows/verify.yml` runs both in CI on every push and
+PR, where `--no-verify` cannot bypass them.
+
+**Rules that follow from this:**
+1. Never `git push --force` to `main`.
+2. If a branch has no common ancestor with `main`, merge with
+   `--allow-unrelated-histories` — do not overwrite.
+3. Run `bash tools/pre_push_verify.sh` before any push, and trust it now.
+
+---
+
 ## Who You're Talking To
 
 You are continuing a conversation with the owner of **DocOga** (johnAzani/docoga). The owner is building an autonomous social media content creation and legal document generation platform for Nigerian tenants. Treat every conversation as a continuation. Never start from scratch. Never say "let me check the repo" — you already know everything below.
@@ -245,9 +285,19 @@ All in `docs/`. All committed to `main`.
 
 ## GitHub Actions (Automation)
 
-- `.github/workflows/telegram_autopost.yml` — Photo 9 AM + Video 6 PM
-- Telegram credentials in GitHub Actions secrets (not locally accessible)
-- User triggers workflows manually from GitHub
+| Workflow | Trigger | Purpose |
+|---|---|---|
+| `verify.yml` | push, PR, manual | **Gate.** Runs `pre_push_verify.sh` + `qa.py` in CI |
+| `telegram_autopost.yml` | 9 AM + 6 PM WAT, manual | Photo post + video short |
+| `youtube_queue.yml` | manual (one click) | Uploads next item from `youtube_queue.json`, then commits the popped queue |
+| `youtube_scheduled.yml` | Tue + Fri 6 PM WAT | Same queue, on a schedule |
+| `youtube_autopost.yml` | manual | Single upload via `tools/yt_publish.py` |
+| `facebook_autopost.yml` | manual | `tools/fb_publish.py` |
+| `instagram_autopost.yml` | manual | `tools/ig_publish.py` |
+
+- Credentials live in GitHub Actions secrets (not locally accessible)
+- The three workflows that commit back to the repo declare `permissions: contents: write`
+- **Do not force-push `main`.** See the incident note at the top of this file.
 
 ---
 
@@ -430,14 +480,26 @@ Documented in `docs/GROWTH_JOURNAL.md`. Key milestones:
 | 10 | 4 Oct 2026 | SESSION_CONTEXT.md — single source of truth | `7cea9fd` |
 | 11 | 4 Oct 2026 | Microsoft Clarity added (`ym9fd3sxq5`) | `668ddfb` |
 | 12 | 4 Oct 2026 | BUSINESS_DOMINANCE.md — 5-phase global expansion | `badc06e` |
+| 13 | 6 Oct 2026 | **Disaster recovery** — force-push orphaned `e7eb57d` (124 commits) + `85097d7`; recovered all 177 files. Fixed `pre_push_verify.sh` false green, added `verify.yml` CI gate, added `permissions: contents: write` to the 3 pushing workflows, removed committed `.pyc` | `8638354` |
 
 ---
 
 ## What's Next (Pending)
 
-The owner hasn't specified. Check the conversation for the most recent request. If unclear, ask:
-
-> "We've built the complete content system. What do you want to work on next? Options: (1) Create more content, (2) Set up automation, (3) Build new tools, (4) Something else?"
+1. **Merge PR #5** into `main` so the recovered work is on the default branch.
+   Until then it exists only on `arena/a0d5b259-docoga`.
+2. **Confirm YouTube secrets exist** — `YT_REFRESH_TOKEN`, `YT_CLIENT_ID`,
+   `YT_CLIENT_SECRET`. `tools/yt_publish.py:29` exits immediately if any are
+   missing. This is the one cause of the two failed `YouTube Upload from
+   Queue` runs that was never ruled out.
+3. **Re-run `YouTube Upload from Queue`** once merged. The other known cause
+   is fixed: the earlier runs used `head_sha 85097d7`, where
+   `youtube_queue.json` pointed at `social/reel-stakes-final.mp4` but that
+   commit did not contain it.
+4. **Branch protection on `main`** (block force-pushes) needs an admin token —
+   it could not be set from CI.
+5. The Cloudflare Workers build fails on every non-`main` branch
+   (pre-existing; it succeeds on `main`). PRs therefore get no Workers signal.
 
 ---
 

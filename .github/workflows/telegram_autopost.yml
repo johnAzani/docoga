@@ -19,6 +19,11 @@ on:
           - video
           - both
 
+# Needs contents:write — this workflow commits and pushes an updated
+# youtube_queue.json / generated content back to the repo. Without it the
+# push fails 403 on repos whose default GITHUB_TOKEN is read-only.
+permissions:
+  contents: write
 jobs:
   photo-post:
     name: 📸 Photo Post

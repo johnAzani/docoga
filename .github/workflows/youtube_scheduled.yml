@@ -4,6 +4,11 @@ on:
     # Every Tuesday and Friday at 6 PM WAT (5 PM UTC)
     - cron: '0 17 * * 2,5'
 
+# Needs contents:write — this workflow commits and pushes an updated
+# youtube_queue.json / generated content back to the repo. Without it the
+# push fails 403 on repos whose default GITHUB_TOKEN is read-only.
+permissions:
+  contents: write
 jobs:
   upload:
     runs-on: ubuntu-latest
