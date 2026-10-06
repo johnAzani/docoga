@@ -486,18 +486,44 @@ Documented in `docs/GROWTH_JOURNAL.md`. Key milestones:
 
 ## What's Next (Pending)
 
-1. **Merge PR #5** into `main` so the recovered work is on the default branch.
-   Until then it exists only on `arena/a0d5b259-docoga`.
-2. **Confirm YouTube secrets exist** — `YT_REFRESH_TOKEN`, `YT_CLIENT_ID`,
+1. **Merge PR #5 with "Create a merge commit"** — *not* squash. Squashing would
+   collapse the recovered 124-commit lineage into one commit and re-flatten
+   exactly the history that was lost. Until merged, the recovered work exists
+   only on `arena/a0d5b259-docoga`.
+
+2. **`youtube_queue.json` is deliberately empty (`[]`).** It was emptied
+   because merging arms `youtube_scheduled.yml` (cron `0 17 * * 2,5`, UTC),
+   which would otherwise have auto-published the first queued item at
+   `privacy: public` with nobody watching. All four of its steps are guarded by
+   `if: steps.check.outputs.count != '0'`, so an empty queue skips cleanly
+   rather than failing.
+
+   The two entries are preserved in **`youtube_queue.pending.json`**. To arm
+   an upload, copy an entry back:
+   ```bash
+   python3 - <<'EOF'
+   import json
+   q = json.load(open('youtube_queue.json'))
+   p = json.load(open('youtube_queue.pending.json'))
+   q.append(p.pop(0))
+   json.dump(q, open('youtube_queue.json','w'), indent=2)
+   json.dump(p, open('youtube_queue.pending.json','w'), indent=2)
+   EOF
+   ```
+   Then either click **YouTube Upload from Queue** (manual, one click) or let
+   the Tue/Fri scheduler take it.
+
+3. **Confirm YouTube secrets exist** — `YT_REFRESH_TOKEN`, `YT_CLIENT_ID`,
    `YT_CLIENT_SECRET`. `tools/yt_publish.py:29` exits immediately if any are
    missing. This is the one cause of the two failed `YouTube Upload from
-   Queue` runs that was never ruled out.
-3. **Re-run `YouTube Upload from Queue`** once merged. The other known cause
-   is fixed: the earlier runs used `head_sha 85097d7`, where
-   `youtube_queue.json` pointed at `social/reel-stakes-final.mp4` but that
-   commit did not contain it.
+   Queue` runs that was never ruled out. The other cause is fixed: those runs
+   used `head_sha 85097d7`, where the queue pointed at
+   `social/reel-stakes-final.mp4` but that commit did not contain it.
+
 4. **Branch protection on `main`** (block force-pushes) needs an admin token —
-   it could not be set from CI.
+   it could not be set from CI. Without it, nothing prevents a repeat of the
+   6 Oct force-push.
+
 5. The Cloudflare Workers build fails on every non-`main` branch
    (pre-existing; it succeeds on `main`). PRs therefore get no Workers signal.
 
