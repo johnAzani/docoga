@@ -39,6 +39,17 @@ Neither descends from the other. Both were recovered with
 until they are garbage-collected.** They are now anchored to
 `arena/a0d5b259-docoga`.
 
+**✅ RESOLVED 7 Oct 2026 — merged to `main` as `bfa555b`, with a merge commit
+(never squash: squashing would have re-flattened exactly the lineage that was
+lost).** Verified after the merge, not just asserted:
+
+- `main` is now **138 commits / 179 files** (was 56 / 112)
+- `e7eb57d`, `85097d7`, `c184d6a` and `51f5444` are **all ancestors of `main`**
+- `git ls-tree` diff of pre-merge `main` vs post-merge `main`:
+  **zero files dropped**
+- `tools/pre_push_verify.sh` ✅ and `tools/qa.py` 🏆 green on the merged tree
+- CI `Verify` run `37669606893` — green on the merge commit itself
+
 **Why nobody noticed:** `tools/pre_push_verify.sh` tested file existence with
 `if git ls-tree HEAD <path>`. `git ls-tree` **exits 0 even when the path does
 not exist** — it just prints nothing. Every check passed unconditionally, so
@@ -430,25 +441,18 @@ Documented in `docs/GROWTH_JOURNAL.md`. Key milestones:
 
 ## Last Session (LIVING — Update This Every Time)
 
-**Date:** 4 Oct 2026
+**Date:** 7 Oct 2026
 **What was done:**
-- Built complete content system (6 documents: CONTENT_SYSTEM, CONTENT_CALENDAR, CONTENT_ATOMIZATION, CONTENT_EMOTION_MAP, CONTENT_SCORING, SESSION_CONTEXT)
-- Created STAKES hook reel (reel-stakes-caution.mp4, 14.4s, 5 scenes)
-- Created professional SFX v2 (reel-stakes-final.mp4, 5-layer impacts, stereo)
-- Created research-backed thumbnail (reel-stakes-thumb.jpg, 3 versions)
-- Locked in status post template (status-oct3.jpg, asymmetric layout)
-- Locked in brand style (docs/BRAND_STYLE.md)
-- Locked in sound design (tools/make_sfx_v2.py)
-- Added Microsoft Clarity (project `ym9fd3sxq5`) to site/index.html
-- SESSION_CONTEXT.md made living document (always updated, session log)
-- Built BUSINESS_DOMINANCE.md — 5-phase global expansion (Nigeria → Africa → World, $1B vision)
-- 52 tools committed, 18 documents committed
-- All pushed to main on johnAzani/docoga
+- **Merged PR #5** as a merge commit (`bfa555b`) — the recovered 124-commit lineage and all 177 files are back on `main`
+- Verified the merge independently: depth **56 → 138**, all recovered SHAs are ancestors of `main`, **zero files dropped**, `pre_push_verify.sh` ✅ + `qa.py` 🏆 green on the merged tree, CI `Verify` run `37669606893` green on the merge push
+- Confirmed the live `telegram_autopost.yml` is **byte-identical to the version that ran green** in run `37148957419`, plus PR #5's additive `permissions: contents: write`
+- **Found and fixed a real defect:** the manual `youtube_queue.yml` had no empty-queue guard, so it exited 1 with `❌ Queue is empty!`. That is the red run of 6 Oct — and the exact result of following the documented "click **YouTube Upload from Queue**" instruction today. It now mirrors `youtube_scheduled.yml`: a `Check queue` step plus `if: steps.check.outputs.count != '0'` on every later step, and a visible `::notice::` when there is nothing to upload
+- **Could not** set branch protection on `main`, and **could not** dispatch workflows: both return HTTP 403 for the token this agent runs as (repo admin, but the token lacks the scope). Both remain owner actions — see What's Next
 
-**What's next:** Owner hasn't specified. Check conversation for latest request. If unclear, ask.
+**What's next:** Nothing blocks content work — the Telegram and YouTube pipelines are live and armed. The owner actions below are the only things left before YouTube can publish.
 
-**Branch:** `arena/01a10172-docoga` (branched from main)
-**Last commit:** `668ddfb` — Add Microsoft Clarity
+**Branch:** `arena/22719d94-docoga` (branched from `main` at `bfa555b`)
+**Last commit:** `bfa555b` (the merge) + this session's commit
 
 ---
 
@@ -481,22 +485,25 @@ Documented in `docs/GROWTH_JOURNAL.md`. Key milestones:
 | 11 | 4 Oct 2026 | Microsoft Clarity added (`ym9fd3sxq5`) | `668ddfb` |
 | 12 | 4 Oct 2026 | BUSINESS_DOMINANCE.md — 5-phase global expansion | `badc06e` |
 | 13 | 6 Oct 2026 | **Disaster recovery** — force-push orphaned `e7eb57d` (124 commits) + `85097d7`; recovered all 177 files. Fixed `pre_push_verify.sh` false green, added `verify.yml` CI gate, added `permissions: contents: write` to the 3 pushing workflows, removed committed `.pyc` | `8638354` |
+| 14 | 7 Oct 2026 | **PR #5 merged** — recovery landed on `main` (`bfa555b`); independently verified depth 138, zero files dropped, QA + integrity green, merge push CI green | `bfa555b` |
+| 15 | 7 Oct 2026 | Fixed `youtube_queue.yml`: empty queue now skips with a notice instead of failing red (mirrors the scheduler) | this PR |
 
 ---
 
 ## What's Next (Pending)
 
-1. **Merge PR #5 with "Create a merge commit"** — *not* squash. Squashing would
-   collapse the recovered 124-commit lineage into one commit and re-flatten
-   exactly the history that was lost. Until merged, the recovered work exists
-   only on `arena/a0d5b259-docoga`.
+1. ~~**Merge PR #5 with "Create a merge commit"**~~ — **✅ DONE 7 Oct 2026**
+   (`bfa555b`, merge commit, not squash). `main` is whole again: 138 commits,
+   179 files. Do not force-push either direction.
 
 2. **`youtube_queue.json` is deliberately empty (`[]`).** It was emptied
    because merging arms `youtube_scheduled.yml` (cron `0 17 * * 2,5`, UTC),
    which would otherwise have auto-published the first queued item at
    `privacy: public` with nobody watching. All four of its steps are guarded by
    `if: steps.check.outputs.count != '0'`, so an empty queue skips cleanly
-   rather than failing.
+   rather than failing. **As of 7 Oct the manual `youtube_queue.yml` skips
+   cleanly too** — it previously had no guard and failed red on an empty queue,
+   which is what the 6 Oct "YouTube Upload from Queue" failure was.
 
    The two entries are preserved in **`youtube_queue.pending.json`**. To arm
    an upload, copy an entry back:
@@ -520,12 +527,28 @@ Documented in `docs/GROWTH_JOURNAL.md`. Key milestones:
    used `head_sha 85097d7`, where the queue pointed at
    `social/reel-stakes-final.mp4` but that commit did not contain it.
 
-4. **Branch protection on `main`** (block force-pushes) needs an admin token —
-   it could not be set from CI. Without it, nothing prevents a repeat of the
-   6 Oct force-push.
+   **Owner action, UI only:** repo → *Settings* → *Secrets and variables* →
+   *Actions* → the three names must be listed. The agent's token cannot read
+   them (`HTTP 403`), so this cannot be checked from a session.
+
+4. **Branch protection on `main`** — **still NOT set.** The API returns
+   `403 Resource not accessible by integration` for the agent's token despite
+   the account holding repo admin, so this cannot be done from a session.
+   **Owner action, UI only:** repo → *Settings* → *Branches* →
+   *Add branch protection rule* → branch name pattern `main` → tick
+   **"Do not allow force pushes"** and **"Do not allow deletions"** (and
+   *"Do not allow bypassing the above settings"* so it applies to admins too).
+   **Do NOT tick "Require a pull request before merging"** — the automation
+   workflows (`youtube_scheduled.yml`, `telegram_autopost.yml`) commit and push
+   to `main` with `GITHUB_TOKEN`, and that rule would block every one of them.
 
 5. The Cloudflare Workers build fails on every non-`main` branch
    (pre-existing; it succeeds on `main`). PRs therefore get no Workers signal.
+
+6. **Token limits worth knowing before the next session:** the agent's token
+   cannot read or list secrets, cannot set branch protection, and cannot
+   dispatch workflows (`workflow_dispatch` → 403). Verification runs must be
+   clicked by the owner, or waited for on the cron.
 
 ---
 
