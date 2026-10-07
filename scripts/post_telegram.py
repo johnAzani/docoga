@@ -2,41 +2,27 @@
 """
 DocOga Telegram Auto-Poster
 Posts generated content to Telegram channel automatically.
-Sends photo posts with DocOga branding for maximum engagement.
-Fully autonomous - runs on GitHub Actions or local cron.
+Supports text posts and photo posts with captions.
+Fully autonomous — runs on GitHub Actions or local cron.
 """
 
 import os
 import sys
 import json
-import random
 import requests
 from datetime import datetime
 from pathlib import Path
 
 # ===== CONFIG =====
 ASSETS_DIR = Path("assets/telegram")
-BRAND_DIR = Path("brand")
 LOG_FILE = Path("logs/social_media.log")
 LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
-
-# Primary DocOga logo for photo posts
-PRIMARY_LOGO = "brand/official-logo-white.png"
-
-# Additional brand images for variety (used on some days)
-BRAND_IMAGES = [
-    "brand/official-logo-white.png",
-    "brand/official-logo-transparent.png",
-    "brand/official-3.png",
-    "brand/official-4.png",
-    "brand/official-5.png",
-    "brand/comparison.png",
-    "brand/comparison-2.png",
-]
 
 # Load environment variables
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+
+TELEGRAM_API = "https://api.telegram.org"
 
 
 def log(message):
@@ -56,92 +42,95 @@ def validate_credentials():
     if not TELEGRAM_CHAT_ID:
         log("❌ TELEGRAM_CHAT_ID not set!")
         return False
-    log(f"✅ Credentials loaded: BOT_TOKEN={TELEGRAM_BOT_TOKEN[:5]}..., CHAT_ID={TELEGRAM_CHAT_ID}")
     return True
 
 
-def send_telegram_photo(photo_path, caption):
-    """Send a photo with caption to Telegram"""
-    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendPhoto"
-
-    if not os.path.exists(photo_path):
-        log(f"❌ Photo not found: {photo_path}")
-        return False, None
-
-    try:
-        with open(photo_path, "rb") as photo:
-            data = {
-                "chat_id": TELEGRAM_CHAT_ID,
-                "caption": caption,
-                "parse_mode": "Markdown",
-            }
-            response = requests.post(url, data=data, files={"photo": photo}, timeout=30)
-            response.raise_for_status()
-
-        result = response.json()
-        if result.get("ok"):
-            message_id = result.get("result", {}).get("message_id")
-            log(f"✅ Photo post sent! Message ID: {message_id}")
-            return True, message_id
-        else:
-            log(f"❌ Telegram API error: {result.get('description', 'Unknown error')}")
-            return False, None
-    except Exception as e:
-        log(f"❌ Photo upload failed: {type(e).__name__}: {e}")
-        return False, None
-
-
-def send_telegram_message(text, parse_mode="Markdown", disable_web_page_preview=None):
-    """Send a text message to Telegram (fallback)"""
-    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+def send_text_message(text, parse_mode="MarkdownV2"):
+    """Send a text-only message to Telegram"""
+    url = f"{TELEGRAM_API}/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
 
     payload = {
         "chat_id": TELEGRAM_CHAT_ID,
         "text": text,
         "parse_mode": parse_mode,
+        "disable_web_page_preview": False,
     }
 
-    if disable_web_page_preview is not None:
-        payload["disable_web_page_preview"] = disable_web_page_preview
+    try:
+        r = requests.post(url, json=payload, timeout=30)
+        result = r.json()
+        if result.get("ok"):
+            msg_id = result["result"].get("message_id")
+            log(f"✅ Text message sent (id={msg_id})")
+            return True
+        else:
+            desc = result.get("description", "Unknown error")
+            log(f"❌ Telegram API error: {desc}")
+            # Fallback to plain text if Markdown fails
+            if "can't parse" in desc.lower():
+                log("⚠️ Markdown parse failed, retrying as plain text...")
+                payload.pop("parse_mode")
+                # Strip markdown characters for plain text fallback
+                plain = text.replace("\\", "").replace("*", "")
+                payload["text"] = plain
+                r2 = requests.post(url, json=payload, timeout=30)
+                r2_result = r2.json()
+                if r2_result.get("ok"):
+                    log("✅ Sent as plain text fallback")
+                    return True
+            return False
+    except requests.exceptions.RequestException as e:
+        log(f"❌ Request failed: {e}")
+        return False
+
+
+def send_photo_message(photo_path, caption=None, parse_mode="MarkdownV2"):
+    """Send a photo with optional caption to Telegram"""
+    url = f"{TELEGRAM_API}/bot{TELEGRAM_BOT_TOKEN}/sendPhoto"
+
+    if not os.path.exists(photo_path):
+        log(f"❌ Photo not found: {photo_path}")
+        # Fall back to text-only
+        if caption:
+            log("⚠️ Falling back to text-only post")
+            return send_text_message(caption, parse_mode)
+        return False
 
     try:
-        response = requests.post(url, json=payload, timeout=30)
-        response.raise_for_status()
+        data = {"chat_id": TELEGRAM_CHAT_ID}
+        if caption:
+            data["caption"] = caption
+            data["parse_mode"] = parse_mode
 
-        result = response.json()
+        with open(photo_path, "rb") as photo:
+            files = {"photo": photo}
+            r = requests.post(url, data=data, files=files, timeout=60)
+
+        result = r.json()
         if result.get("ok"):
-            message_id = result.get("result", {}).get("message_id")
-            log(f"✅ Text message sent! ID: {message_id}")
-            return True, message_id
+            msg_id = result["result"].get("message_id")
+            log(f"✅ Photo message sent (id={msg_id})")
+            return True
         else:
-            log(f"❌ Telegram API error: {result.get('description', 'Unknown error')}")
-            return False, None
-    except Exception as e:
-        log(f"❌ Telegram request failed: {type(e).__name__}: {e}")
-        return False, None
-
-
-def pick_brand_image():
-    """Pick brand image — primary logo 80% of the time, variety 20%"""
-    # 80% chance: use the official DocOga logo
-    # 20% chance: use a different brand image for variety
-    if os.path.exists(PRIMARY_LOGO) and random.random() < 0.8:
-        log(f"📸 Using primary logo: {PRIMARY_LOGO}")
-        return PRIMARY_LOGO
-    
-    available = [img for img in BRAND_IMAGES if os.path.exists(img) and img != PRIMARY_LOGO]
-    if available:
-        chosen = random.choice(available)
-        log(f"📸 Using variety image: {chosen}")
-        return chosen
-    
-    # Fallback to primary logo
-    if os.path.exists(PRIMARY_LOGO):
-        log(f"📸 Fallback to primary logo: {PRIMARY_LOGO}")
-        return PRIMARY_LOGO
-    
-    log("⚠️ No brand images found, falling back to text post")
-    return None
+            desc = result.get("description", "Unknown error")
+            log(f"❌ Photo API error: {desc}")
+            # Fallback: retry without parse mode
+            if "can't parse" in desc.lower():
+                log("⚠️ Caption parse failed, retrying plain...")
+                data.pop("parse_mode", None)
+                if caption:
+                    plain = caption.replace("\\", "").replace("*", "")
+                    data["caption"] = plain
+                with open(photo_path, "rb") as photo:
+                    files = {"photo": photo}
+                    r2 = requests.post(url, data=data, files=files, timeout=60)
+                if r2.json().get("ok"):
+                    log("✅ Photo sent with plain caption")
+                    return True
+            return False
+    except requests.exceptions.RequestException as e:
+        log(f"❌ Photo upload failed: {e}")
+        return False
 
 
 def load_content():
@@ -149,14 +138,12 @@ def load_content():
     content_file = ASSETS_DIR / "telegram_content_latest.json"
 
     if not content_file.exists():
-        log("⚠️ No content file found. Generating fresh content...")
-        try:
-            from scripts.generate_telegram_content import generate_daily_content
-            content = generate_daily_content()
-            return [content]
-        except Exception as e:
-            log(f"❌ Failed to generate content: {e}")
-            return []
+        log("⚠️ No content file found — generating fresh content...")
+        sys.path.insert(0, str(Path(__file__).parent))
+        from generate_telegram_content import generate_daily_content
+
+        content = generate_daily_content()
+        return [content]
 
     try:
         with open(content_file) as f:
@@ -168,65 +155,47 @@ def load_content():
 
 
 def post_to_telegram():
-    """Main function: Post content to Telegram with photos"""
-    log("🚀 Starting Telegram posting...")
+    """Main function: generate and post content to Telegram"""
+    log("🚀 Starting Telegram auto-post...")
 
-    # Validate credentials
     if not validate_credentials():
-        log("❌ Cannot post: Missing credentials")
-        sys.exit(1)
+        log("❌ Cannot post — missing credentials")
+        return False
 
-    # Load content
     posts = load_content()
-
     if not posts:
         log("❌ No content to post")
-        sys.exit(1)
+        return False
 
-    # Post each message with a brand photo
     success_count = 0
     for i, post in enumerate(posts):
-        log(f"\n📝 Posting message {i+1}/{len(posts)}...")
+        log(f"\n📝 Posting message {i + 1}/{len(posts)}...")
 
         message = post.get("message", "")
         post_type = post.get("post_type", "unknown")
+        send_photo = post.get("send_photo", False)
+        photo_path = post.get("photo_path")
 
-        # Pick a brand image for this post
-        image_path = pick_brand_image()
-
-        if image_path:
-            # Send as photo post with caption
-            success, message_id = send_telegram_photo(image_path, message)
+        if send_photo and photo_path:
+            ok = send_photo_message(photo_path, caption=message)
         else:
-            # Fallback to text-only post
-            disable_preview = post_type in ["promo", "urgent"]
-            success, message_id = send_telegram_message(
-                text=message,
-                parse_mode="Markdown",
-                disable_web_page_preview=disable_preview,
-            )
+            ok = send_text_message(message)
 
-        if success:
+        if ok:
             success_count += 1
-            log(f"   ✅ Posted {post_type} {'photo' if image_path else 'text'} message")
+            log(f"   ✅ Posted {post_type} message")
         else:
             log(f"   ❌ Failed to post {post_type} message")
 
-    log(f"\n📊 Posting complete: {success_count}/{len(posts)} messages sent")
+    log(f"\n📊 Complete: {success_count}/{len(posts)} messages sent")
     return success_count > 0
 
 
 if __name__ == "__main__":
-    try:
-        success = post_to_telegram()
-        if success:
-            log("✅ Telegram auto-posting completed successfully!")
-            sys.exit(0)
-        else:
-            log("❌ Telegram auto-posting failed!")
-            sys.exit(1)
-    except Exception as e:
-        log(f"❌ Fatal error: {type(e).__name__}: {e}")
-        import traceback
-        traceback.print_exc()
+    success = post_to_telegram()
+    if success:
+        log("✅ Telegram auto-posting completed successfully!")
+        sys.exit(0)
+    else:
+        log("❌ Telegram auto-posting failed!")
         sys.exit(1)

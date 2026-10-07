@@ -2,6 +2,9 @@
 unlock-codes.txt
 .code_hashes.js
 
+# Generated at runtime by Telegram workflow
+assets/telegram/
+
 # OS / editor noise
 .DS_Store
 Thumbs.db
@@ -9,7 +12,3 @@ Thumbs.db
 node_modules/
 docoga-github-repo.zip
 .worker-secrets.env
-
-# Python
-__pycache__/
-*.py[cod]

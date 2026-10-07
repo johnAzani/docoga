@@ -14,6 +14,41 @@
     <priority>0.3</priority>
   </url>
   <url>
+    <loc>https://docoga.com.ng/tenancy-agreement-nigeria.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://docoga.com.ng/notice-to-quit-nigeria.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://docoga.com.ng/caution-fee-nigeria.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docoga.com.ng/rent-receipt-format-nigeria.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docoga.com.ng/tenant-rights-nigeria.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docoga.com.ng/shop-tenancy-agreement-nigeria.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docoga.com.ng/invoice-format-nigeria.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://docoga.com.ng/tenancy-agreement-lagos.html</loc>
     <priority>0.7</priority>
   </url>
@@ -110,39 +145,100 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://docoga.com.ng/tenancy-agreement-nigeria.html</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
+    <loc>https://docoga.com.ng/tenancy-agreement-delta.html</loc>
+    <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://docoga.com.ng/notice-to-quit-nigeria.html</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
+    <loc>https://docoga.com.ng/notice-to-quit-delta.html</loc>
+    <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://docoga.com.ng/caution-fee-nigeria.html</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <loc>https://docoga.com.ng/rent-receipt-delta.html</loc>
+    <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://docoga.com.ng/rent-receipt-format-nigeria.html</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <loc>https://docoga.com.ng/caution-fee-delta.html</loc>
+    <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://docoga.com.ng/tenant-rights-nigeria.html</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <loc>https://docoga.com.ng/tenancy-agreement-kaduna.html</loc>
+    <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://docoga.com.ng/shop-tenancy-agreement-nigeria.html</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <loc>https://docoga.com.ng/notice-to-quit-kaduna.html</loc>
+    <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://docoga.com.ng/invoice-format-nigeria.html</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <loc>https://docoga.com.ng/rent-receipt-kaduna.html</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://docoga.com.ng/caution-fee-kaduna.html</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://docoga.com.ng/tenancy-agreement-ogun.html</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://docoga.com.ng/notice-to-quit-ogun.html</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://docoga.com.ng/rent-receipt-ogun.html</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://docoga.com.ng/caution-fee-ogun.html</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://docoga.com.ng/tenancy-agreement-anambra.html</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://docoga.com.ng/notice-to-quit-anambra.html</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://docoga.com.ng/rent-receipt-anambra.html</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://docoga.com.ng/caution-fee-anambra.html</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://docoga.com.ng/tenancy-agreement-edo.html</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://docoga.com.ng/notice-to-quit-edo.html</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://docoga.com.ng/rent-receipt-edo.html</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://docoga.com.ng/caution-fee-edo.html</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://docoga.com.ng/tenancy-agreement-plateau.html</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://docoga.com.ng/notice-to-quit-plateau.html</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://docoga.com.ng/rent-receipt-plateau.html</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://docoga.com.ng/caution-fee-plateau.html</loc>
+    <priority>0.7</priority>
   </url>
 </urlset>
 <!-- Add one <url> block per SEO content page as you publish them (see PLAN.md keyword cluster). -->
