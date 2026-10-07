@@ -13,15 +13,33 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # An empty queue is a normal state (the scheduler is deliberately disarmed
+      # between uploads). Skip cleanly with a visible notice instead of failing —
+      # an empty queue previously produced a red run and a misleading
+      # "Add videos to youtube_queue.json" error. Mirrors youtube_scheduled.yml.
+      - name: Check queue
+        id: check
+        run: |
+          COUNT=$(python3 -c "import json; print(len(json.load(open('youtube_queue.json'))))")
+          echo "count=$COUNT" >> $GITHUB_OUTPUT
+          if [ "$COUNT" = "0" ]; then
+            echo "::notice title=Queue is empty::youtube_queue.json holds no videos — nothing to upload. Copy an entry back from youtube_queue.pending.json to arm an upload."
+          else
+            echo "Queue has $COUNT videos"
+          fi
+
       - name: Set up Python
+        if: steps.check.outputs.count != '0'
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
       - name: Install dependencies
+        if: steps.check.outputs.count != '0'
         run: pip install requests
 
       - name: Read queue and upload
+        if: steps.check.outputs.count != '0'
         env:
           YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
           YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
@@ -71,6 +89,7 @@ jobs:
           "
 
       - name: Commit queue update
+        if: steps.check.outputs.count != '0'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
