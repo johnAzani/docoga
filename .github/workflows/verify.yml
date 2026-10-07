@@ -38,6 +38,12 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Install YouTube uploader test dependency
+        run: python -m pip install requests
+
+      - name: YouTube uploader failure-exit regression test
+        run: python3 -m unittest discover -s tools/tests -p 'test_yt_publish.py' -v
+
       - name: Repo integrity (pre_push_verify.sh)
         run: bash tools/pre_push_verify.sh
 
