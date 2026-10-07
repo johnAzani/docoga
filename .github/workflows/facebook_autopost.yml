@@ -1,0 +1,50 @@
+name: Facebook Page Autopost
+on:
+  workflow_dispatch:
+    inputs:
+      content_type:
+        description: 'Content type'
+        required: true
+        type: choice
+        options:
+          - text
+          - photo
+          - video
+      message:
+        description: 'Post message / caption'
+        required: true
+      media_url:
+        description: 'Public URL to image or video (for photo/video posts)'
+        required: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Publish to Facebook
+        env:
+          FB_PAGE_ACCESS_TOKEN: ${{ secrets.FB_PAGE_ACCESS_TOKEN }}
+          FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
+        run: |
+          if [ "${{ inputs.content_type }}" = "video" ]; then
+            python3 tools/fb_publish.py \
+              --video-url "${{ inputs.media_url }}" \
+              --text "${{ inputs.message }}"
+          elif [ "${{ inputs.content_type }}" = "photo" ]; then
+            python3 tools/fb_publish.py \
+              --photo-url "${{ inputs.media_url }}" \
+              --text "${{ inputs.message }}"
+          else
+            python3 tools/fb_publish.py \
+              --text "${{ inputs.message }}"
+          fi
