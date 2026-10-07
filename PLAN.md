@@ -92,7 +92,7 @@ Copycats can clone a form in a weekend. They cannot clone:
 
 **SEO keyword cluster (write one page each):**
 - ✅ tenancy agreement in Nigeria / tenancy agreement format Nigeria (pillar page) → `tenancy-agreement-nigeria.html`
-- 🔶 tenancy agreement Lagos [state pages × 12 biggest states] → **6 of 12 done** (Lagos, Abuja, Rivers, Oyo, Kano, Enugu). Next: Delta, Kaduna, Ogun, Anambra, Edo, Plateau
+- ✅ tenancy agreement Lagos [state pages × 12 biggest states] → **ALL 12 DONE** (Lagos, Abuja, Rivers, Oyo, Kano, Enugu, Delta, Kaduna, Ogun, Anambra, Edo, Plateau)
 - ✅ caution fee in Nigeria — is it refundable? → `caution-fee-nigeria.html`
 - ✅ notice to quit in Nigeria — how many months? → `notice-to-quit-nigeria.html`
 - ✅ rent receipt format Nigeria / how to write a rent receipt → `rent-receipt-format-nigeria.html`
@@ -101,7 +101,8 @@ Copycats can clone a form in a weekend. They cannot clone:
 - ✅ invoice format for small business Nigeria / how to add 7.5% VAT → `invoice-format-nigeria.html`
 
 *7 of 8 cluster pages shipped 3 Oct 2026 via `tools/gen_guide_pages.py` (idempotent, regenerable).
-Sitemap: 34 URLs. Every claim source-verified; unverified specifics are framed as practice + "confirm
+12 states × 4 tools = 48 state pages shipped 7 Oct 2026 via `tools/gen_state_pages.py`.
+Sitemap: 58+ URLs. Every claim source-verified; unverified specifics are framed as practice + "confirm
 with a lawyer" per the 19 Sep rule.*
 
 ## 5. Financing ladder (do it in this order)
@@ -139,7 +140,7 @@ with a lawyer" per the 19 Sep rule.*
   hook, sitemap/robots. Timezone-safe dates for Nigerian users (UTC+1).
 - **v1.1 (month 1):** Employment Contract + Caution Fee Receipt generators ✅ (9 tools live);
   SEO content pages from the keyword cluster ✅ 7 of 8 shipped 3 Oct 2026 (national guide pages +
-  6 states); 🔶 remaining: 6 more state pages, first testimonials.
+  12 states × 4 tools = 48 state pages, completed 7 Oct 2026); 🔶 remaining: first testimonials, Telegram automation credentials.
 - **v2 (when revenue > ₦50k/mo):** Supabase backend → accounts, cross-device
   sync, automated Paystack checkout (instant code delivery), tenancy-expiry
   reminders, agent multi-property dashboard.

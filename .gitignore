@@ -2,6 +2,9 @@
 unlock-codes.txt
 .code_hashes.js
 
+# Generated at runtime by Telegram workflow
+assets/telegram/
+
 # OS / editor noise
 .DS_Store
 Thumbs.db

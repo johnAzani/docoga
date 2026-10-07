@@ -42,6 +42,42 @@ STATES = {
    notice_intro='Where the agreement is silent, courts in most states \u2014 including Enugu \u2014 apply the traditional graduated framework:',
    advance='Agree the advance in writing in the tenancy agreement before any money moves.',
    arrears='', verified=False),
+ 'delta': dict(name='Delta', place='Delta State (Asaba / Warri)', full='Delta State',
+   law='recovery-of-premises legislation', law_note='Delta State follows the traditional graduated notice framework. Warri and Asaba are the main rental markets.',
+   courts='the Magistrates\u2019 Courts in Delta State',
+   notice_intro='Where the agreement is silent, courts in Delta State apply the traditional graduated framework:',
+   advance='Agree the advance in writing in the tenancy agreement before any money moves. In Warri and Asaba, yearly advance is common.',
+   arrears='', verified=False),
+ 'kaduna': dict(name='Kaduna', place='Kaduna State', full='Kaduna State',
+   law='recovery-of-premises legislation', law_note='Kaduna State follows the traditional graduated notice framework in its recovery-of-premises legislation.',
+   courts='the courts of Kaduna State',
+   notice_intro='Where the agreement is silent, courts in Kaduna State apply the traditional graduated framework:',
+   advance='Agree the advance in writing in the tenancy agreement before any money moves.',
+   arrears='', verified=False),
+ 'ogun': dict(name='Ogun', place='Ogun State (Abeokuta)', full='Ogun State',
+   law='recovery-of-premises legislation', law_note='Ogun State follows the traditional graduated notice framework. With Lagos overflow, towns like Ota, Mowe and Ibafo see fast-growing rental markets.',
+   courts='the Magistrates\u2019 Courts in Ogun State',
+   notice_intro='Where the agreement is silent, courts in Ogun State apply the traditional graduated framework:',
+   advance='Agree the advance in writing in the tenancy agreement before any money moves.',
+   arrears='', verified=False),
+ 'anambra': dict(name='Anambra', place='Anambra State (Onitsha / Awka)', full='Anambra State',
+   law='recovery-of-premises legislation', law_note='Anambra State follows the traditional graduated notice framework. Onitsha and Awka are the main rental hubs.',
+   courts='the Magistrates\u2019 Courts in Anambra State',
+   notice_intro='Where the agreement is silent, courts in Anambra State apply the traditional graduated framework:',
+   advance='Agree the advance in writing in the tenancy agreement before any money moves.',
+   arrears='', verified=False),
+ 'edo': dict(name='Edo', place='Edo State (Benin City)', full='Edo State',
+   law='recovery-of-premises legislation', law_note='Edo State follows the traditional graduated notice framework in its recovery-of-premises legislation.',
+   courts='the Magistrates\u2019 Courts in Edo State',
+   notice_intro='Where the agreement is silent, courts in Edo State apply the traditional graduated framework:',
+   advance='Agree the advance in writing in the tenancy agreement before any money moves.',
+   arrears='', verified=False),
+ 'plateau': dict(name='Plateau', place='Plateau State (Jos)', full='Plateau State',
+   law='recovery-of-premises legislation', law_note='Plateau State follows the traditional graduated notice framework. Jos remains a popular and affordable rental market in the North-Central region.',
+   courts='the Magistrates\u2019 Courts in Plateau State',
+   notice_intro='Where the agreement is silent, courts in Plateau State apply the traditional graduated framework:',
+   advance='Agree the advance in writing in the tenancy agreement before any money moves.',
+   arrears='', verified=False),
 }
 
 TOOLS = {
@@ -234,30 +270,46 @@ def main():
     print(f"avg size: {sum(sizes)//len(sizes)}B, total: {sum(sizes)//1024}KB")
 
     s = io.open('site/sitemap.xml', encoding='utf-8').read()
-    assert '</urlset>' in s and sitemap_add[0] not in s
+    assert '</urlset>' in s
+    # Remove existing state page entries (idempotent regeneration)
+    import re
+    for f in sitemap_add:
+        pattern = rf'\s*<url>\s*<loc>https://docoga\.com\.ng/{re.escape(f)}</loc>\s*<priority>0\.7</priority>\s*</url>'
+        s = re.sub(pattern, '', s)
     entries = ''.join(f'  <url>\n    <loc>https://docoga.com.ng/{f}</loc>\n    <priority>0.7</priority>\n  </url>\n' for f in sitemap_add)
     s = s.replace('</urlset>', entries + '</urlset>')
     io.open('site/sitemap.xml', 'w', encoding='utf-8').write(s)
-    print(f"sitemap: +{len(sitemap_add)} URLs")
+    print(f"sitemap: {len(sitemap_add)} URLs (regenerated)")
 
     s = io.open('site/index.html', encoding='utf-8').read()
     anchor = '''    <p>DocOga puts a standard, fill-in-the-blanks document generator in every pocket — from Lagos to Kano to Port Harcourt. Answer simple questions, and your document is ready to print, save as PDF, or share on WhatsApp. The free version carries a small DocOga banner; the <b>Oga Pass (₦2,000)</b> removes it and unlocks unlimited clean copies for 30 days.</p>
   </div>'''
-    assert s.count(anchor) == 1, "index anchor fail"
+    links = ' · '.join(f'<a href="tenancy-agreement-{k}.html">{st["name"]}</a>' for k, st in STATES.items())
     if 'State guides' not in s:
-        links = ' · '.join(f'<a href="tenancy-agreement-{k}.html">{st["name"]}</a>' for k, st in STATES.items())
-        block = anchor + f'''
+        if s.count(anchor) == 1:
+            block = anchor + '''
 
   <div class="seo-block">
     <h2>State guides — tenancy rules where you rent</h2>
     <p>Notice-to-quit minimums and tenancy practice differ by state. Plain-English guides, current for 2026:</p>
     <p style="line-height:2">{links}</p>
   </div>'''
-        s = s.replace(anchor, block)
-        io.open('site/index.html', 'w', encoding='utf-8').write(s)
-        print("index: state guides block added")
+            s = s.replace(anchor, block)
+            io.open('site/index.html', 'w', encoding='utf-8').write(s)
+            print("index: state guides block added")
+        else:
+            print("index: anchor not found, state guides block skipped")
     else:
-        print("index: state guides block already present")
+        # Update existing state guides block with current state list
+        import re as _re
+        old_links = _re.search(r'(<p style="line-height:2">).*?(</p>)', s, _re.DOTALL)
+        if old_links:
+            replacement = f'<p style="line-height:2">{links}</p>'
+            s = s[:old_links.start()] + replacement + s[old_links.end():]
+            io.open('site/index.html', 'w', encoding='utf-8').write(s)
+            print("index: state guides block updated")
+        else:
+            print("index: state guides block already present")
 
 if __name__ == '__main__':
     main()
