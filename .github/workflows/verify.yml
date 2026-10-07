@@ -1,0 +1,45 @@
+name: Verify
+
+# Authoritative pre-push gate. Runs the same checks as tools/pre-push, but in
+# CI where they cannot be bypassed with --no-verify and cannot be skipped by a
+# fresh clone that never installed the hook.
+#
+# This exists because tools/pre_push_verify.sh was broken (it tested file
+# existence with `git ls-tree`, which exits 0 for missing paths) AND was never
+# wired to anything, so nothing stopped a force-push that orphaned 124 commits.
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: QA + repo integrity
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (full history)
+        uses: actions/checkout@v4
+        with:
+          # pre_push_verify.sh compares against origin/main, so the full
+          # history and the main ref must be present.
+          fetch-depth: 0
+
+      - name: Make origin/main available for the history-safety check
+        run: |
+          git fetch --no-tags --force origin main:refs/remotes/origin/main || \
+            echo "::warning::could not fetch origin/main; history check will warn"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Repo integrity (pre_push_verify.sh)
+        run: bash tools/pre_push_verify.sh
+
+      - name: QA gate (qa.py)
+        run: python3 tools/qa.py

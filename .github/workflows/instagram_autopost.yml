@@ -1,0 +1,77 @@
+name: Instagram Autopost
+on:
+  workflow_dispatch:
+    inputs:
+      content_type:
+        description: 'Content type'
+        required: true
+        type: choice
+        options:
+          - reel
+          - photo
+          - carousel
+      video_url:
+        description: 'Public video URL (for Reels)'
+        required: false
+      image_url:
+        description: 'Public image URL (for photos)'
+        required: false
+      image_urls:
+        description: 'Public image URLs, comma-separated (for carousels)'
+        required: false
+      caption:
+        description: 'Post caption'
+        required: true
+      cover_url:
+        description: 'Public cover image URL (for Reels)'
+        required: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Publish to Instagram
+        env:
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+          META_APP_ID: ${{ secrets.META_APP_ID }}
+          META_APP_SECRET: ${{ secrets.META_APP_SECRET }}
+        run: |
+          if [ "${{ inputs.content_type }}" = "reel" ]; then
+            python3 tools/ig_publish.py \
+              --video-url "${{ inputs.video_url }}" \
+              --caption "${{ inputs.caption }}" \
+              --cover-url "${{ inputs.cover_url || '' }}"
+          elif [ "${{ inputs.content_type }}" = "photo" ]; then
+            python3 tools/ig_publish.py \
+              --image-url "${{ inputs.image_url }}" \
+              --caption "${{ inputs.caption }}"
+          elif [ "${{ inputs.content_type }}" = "carousel" ]; then
+            IFS=',' read -ra URLS <<< "${{ inputs.image_urls }}"
+            URL_ARGS=""
+            for url in "${URLS[@]}"; do
+              URL_ARGS="$URL_ARGS --image-urls $url"
+            done
+            python3 tools/ig_publish.py \
+              --image-urls ${URLS[@]} \
+              --caption "${{ inputs.caption }}"
+          fi
+
+      - name: Refresh token
+        if: always()
+        env:
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          META_APP_ID: ${{ secrets.META_APP_ID }}
+          META_APP_SECRET: ${{ secrets.META_APP_SECRET }}
+        run: |
+          python3 tools/ig_publish.py --refresh-token || echo "Token refresh skipped"

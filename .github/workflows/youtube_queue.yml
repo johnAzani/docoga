@@ -1,0 +1,79 @@
+name: YouTube Upload from Queue
+on:
+  workflow_dispatch: {}
+
+# Needs contents:write — this workflow commits and pushes an updated
+# youtube_queue.json / generated content back to the repo. Without it the
+# push fails 403 on repos whose default GITHUB_TOKEN is read-only.
+permissions:
+  contents: write
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Read queue and upload
+        env:
+          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+          YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+        run: |
+          python3 -c "
+          import json, subprocess, sys
+
+          with open('youtube_queue.json') as f:
+              queue = json.load(f)
+
+          if not queue:
+              print('❌ Queue is empty! Add videos to youtube_queue.json')
+              sys.exit(1)
+
+          # Pop first video from queue
+          item = queue.pop(0)
+          video = item['video_path']
+          title = item['title']
+          desc = item.get('description', '')
+          tags = item.get('tags', '')
+          privacy = item.get('privacy', 'public')
+
+          print(f'📹 Uploading: {title}')
+          print(f'   File: {video}')
+          print(f'   Privacy: {privacy}')
+
+          # Upload
+          result = subprocess.run([
+              'python3', 'tools/yt_publish.py',
+              '--video', video,
+              '--title', title,
+              '--description', desc,
+              '--tags', tags,
+              '--privacy', privacy,
+          ], capture_output=True, text=True)
+
+          print(result.stdout)
+          if result.returncode != 0:
+              print(result.stderr)
+              sys.exit(1)
+
+          # Save updated queue
+          with open('youtube_queue.json', 'w') as f:
+              json.dump(queue, f, indent=2)
+          print(f'✅ Queue updated. {len(queue)} videos remaining.')
+          "
+
+      - name: Commit queue update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add youtube_queue.json
+          git diff --staged --quiet || git commit -m "Auto: remove uploaded video from queue"
+          git push
