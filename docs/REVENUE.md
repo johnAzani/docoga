@@ -94,6 +94,36 @@ problem instead of a 510,204-customer problem.** Flutterwave already supports th
 collection and USD settlement; the fee is 4.8% instead of 2.0%, which is irrelevant
 against a 15× price.
 
+### Path A is only real if we sell what the diaspora actually buys
+
+Rule Zero check before pricing anything: **what document do they actually need?**
+
+The sources are unusually consistent, and the answer is not a tenancy agreement:
+
+- A Power of Attorney is *"by far the most common use among diaspora Nigerians"*
+  [legaldoc.ng](https://legaldoc.ng/articles/family-law/power-of-attorney-in-nigeria-template-and-a-z-guide).
+- It is the instrument a Nigerian lawyer needs in order to act for someone abroad —
+  to file, appear, sign and receive evidence
+  [Olamide Oyetayo Legal](https://olamideoyetayolegal.com/how-to-sue-someone-in-nigeria-while-living-abroad/).
+- POA registration alone runs **₦50,000**
+  [nigisservices.com](https://www.nigisservices.com/index.php/landfolio-4/10-power-of-attorney).
+- The demand is driven by fear, which is a strong buyer emotion: the Guardian
+  reported a UK-based Nigerian who sent money to build in Enugu and found the land
+  *did not exist or had been resold*
+  [Guardian](https://guardian.ng/property/how-diaspora-investments-are-reshaping-real-estate-market/).
+
+**DocOga had zero mentions of "power of attorney" anywhere in the site.** The
+most-wanted, highest-priced document in the target market was not in the product.
+
+→ **Shipped 8 Oct 2026: Power of Attorney is now the 10th tool** (commit `9f41acd`),
+with 8 tick-box powers and sourced legal warnings (s.22 Land Use Act; *Ojugbele v.
+Olasoji* (1982) SC 71 — an unregistered registrable POA is inadmissible; stamp duty;
+notarisation; Nigeria is not on the Hague Apostille Convention, so consular
+legalisation not apostille).
+
+**This is the product to put in front of the diaspora**, not the tenancy agreement.
+Next step is a POA landing page aimed at diaspora search intent and a USD price.
+
 ### Path B — B2B / bulk / API
 
 Estate agents, property managers, landlords' associations, HR platforms, co-working
