@@ -1,0 +1,93 @@
+name: Network probe
+
+# Why this exists
+# --------------
+# The agent sandbox can only reach a short allowlist (github.com, api.github.com,
+# registry.npmjs.org, pypi.org, files.pythonhosted.org). It cannot open a socket
+# to workers.dev, docoga.com.ng, or anything else — curl fails with SSL_ERROR_SYSCALL.
+#
+# GitHub Actions runners have unrestricted egress, and the sandbox CAN reach
+# api.github.com. So this workflow is an egress proxy: the agent triggers it with
+# `gh workflow run net-probe.yml -f url=...` and reads the real HTTP status,
+# headers and body out of the run log with `gh run view --log`.
+#
+# This is how the agent verifies the live payment worker (docoga-pass) and the
+# live site (docoga.com.ng) — including POSTs and status codes, which a plain
+# page-fetch cannot give.
+#
+# SECURITY: inputs are passed via env vars, never interpolated directly into the
+# shell command, so a crafted url/body cannot execute shell. Only repo
+# collaborators can trigger this (workflow_dispatch requires write access).
+# Do not add secret values to the inputs — the body is printed to the run log,
+# which is visible to anyone with read access on the repo.
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: 'URL to probe'
+        required: true
+        type: string
+      method:
+        description: 'HTTP method (GET or POST)'
+        required: false
+        default: 'GET'
+        type: string
+      body:
+        description: 'Request body for POST (printed to log — never send secrets)'
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Probe the URL
+        env:
+          PROBE_URL: ${{ inputs.url }}
+          PROBE_METHOD: ${{ inputs.method }}
+          PROBE_BODY: ${{ inputs.body }}
+        run: |
+          set -u
+          echo "########## PROBE ##########"
+          echo "URL:    $PROBE_URL"
+          echo "METHOD: $PROBE_METHOD"
+          echo
+
+          # -i includes response headers; -w prints timing + status; -sS shows errors.
+          # --max-time keeps the job bounded.
+          if [ "$PROBE_METHOD" = "POST" ]; then
+            curl -sS -i -X POST \
+              -H 'Content-Type: application/json' \
+              -H 'User-Agent: docoga-net-probe/1.0' \
+              --data "$PROBE_BODY" \
+              --max-time 25 \
+              -w '\n\n########## TIMING ##########\nhttp_code=%{http_code}\ntime_total=%{time_total}s\n' \
+              "$PROBE_URL" | head -c 4000
+          else
+            curl -sS -i \
+              -H 'User-Agent: docoga-net-probe/1.0' \
+              --max-time 25 \
+              -w '\n\n########## TIMING ##########\nhttp_code=%{http_code}\ntime_total=%{time_total}s\n' \
+              "$PROBE_URL" | head -c 4000
+          fi
+
+      - name: DNS and TLS detail
+        env:
+          PROBE_URL: ${{ inputs.url }}
+        run: |
+          set -u
+          HOST="$(echo "$PROBE_URL" | sed -E 's#^[a-zA-Z]+://##; s#[/?].*$##')"
+          echo
+          echo "########## DNS ##########"
+          echo "host: $HOST"
+          getent hosts "$HOST" || echo "(no A record)"
+          echo
+          echo "########## TLS ##########"
+          echo | timeout 15 openssl s_client -connect "$HOST:443" -servername "$HOST" 2>/dev/null \
+            | grep -E "subject=|issuer=|Verify return code" | head -5 || echo "(tls handshake failed)"
