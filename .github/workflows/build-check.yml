@@ -21,6 +21,10 @@ on:
 
 permissions:
   contents: read
+  # Needed to post the build result back, because the sandbox cannot download
+  # run logs: results-receiver.actions.githubusercontent.com is not in its
+  # egress allowlist. A PR comment IS readable through api.github.com.
+  pull-requests: write
 
 jobs:
   build:
@@ -56,13 +60,20 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || '' }}
         run: |
           set -u
-          echo "########## wrangler version ##########"
-          npx --yes wrangler@latest --version
-          echo
-          echo "########## wrangler deploy --dry-run ##########"
-          npx --yes wrangler@latest deploy --dry-run --outdir .cloudflare-build 2>&1 \
-            | tail -60
-          echo "wrangler_exit=${PIPESTATUS[0]}"
+          BUILD_LOG="$RUNNER_TEMP/build.log"
+          : > "$BUILD_LOG"
+          {
+            echo "########## wrangler version ##########"
+            npx --yes wrangler@latest --version 2>&1
+            echo
+            echo "########## wrangler deploy --dry-run ##########"
+          } | tee -a "$BUILD_LOG"
+          set +e
+          npx --yes wrangler@latest deploy --dry-run --outdir .cloudflare-build > >(tee -a "$BUILD_LOG") 2>&1
+          WEXIT=$?
+          set -e
+          echo "wrangler_exit=$WEXIT" | tee -a "$BUILD_LOG"
+          echo "BUILD_LOG=$BUILD_LOG" >> "$GITHUB_ENV"
 
       - name: Inspect build output
         if: always()
@@ -75,3 +86,39 @@ jobs:
           else
             echo "(no output directory — the build did not complete)"
           fi
+
+      - name: Post the result where the agent can read it
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const log = (process.env.BUILD_LOG && fs.existsSync(process.env.BUILD_LOG))
+              ? fs.readFileSync(process.env.BUILD_LOG, 'utf8')
+              : '(no build log captured)';
+            // Cap the body — PR comments have a 65536 char limit.
+            const body = [
+              '## Cloudflare build check (wrangler deploy --dry-run)',
+              '',
+              'Reproduces what Workers Builds does, so the sandbox can see the',
+              'failure without access to the Cloudflare dashboard.',
+              '',
+              '```',
+              log.slice(-14000),
+              '```',
+            ].join('\n');
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number,
+            });
+            const marker = '<!-- build-check -->';
+            const existing = comments.find(c => c.body && c.body.includes(marker));
+            const full = marker + '\n' + body;
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner, repo: context.repo.repo, comment_id: existing.id, body: full,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number, body: full,
+              });
+            }
