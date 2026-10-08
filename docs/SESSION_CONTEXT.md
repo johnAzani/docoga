@@ -486,8 +486,14 @@ Documented in `docs/GROWTH_JOURNAL.md`. Key milestones:
 `qa.py` 🏆 (2 pre-existing warnings, 0 errors), `pre_push_verify.sh` ✅,
 `npm test` worker suite ✅, plus a real end-to-end render + frame inspection.
 
-**What's next:** YouTube is the last platform still dark, and its only real
-blocker is the owner's YouTube secrets. See What's Next.
+**Shipped:** PR #9 merged to `main` as merge commit **`72ec955`**; PR #8
+auto-marked merged two seconds later (its head `42e4031` is now an ancestor of
+`main`). CI `Verify` green on the merge push. Verified the merged tree
+independently from a clean `origin/main` worktree, not just on the branch.
+
+**What's next:** **YouTube is armed and fires Friday 9 Oct, 18:00 WAT** — read
+item 9 in What's Next before then. The owner's YouTube secrets are the only
+thing that decides whether that run publishes a Short or fails red.
 
 **Branch:** `arena/10e42594-docoga` (branched from `main` at `ec5b7a7`)
 **Last commit:** PR #8's `42e4031` (merged in) + this session's commit
@@ -525,7 +531,8 @@ blocker is the owner's YouTube secrets. See What's Next.
 | 13 | 6 Oct 2026 | **Disaster recovery** — force-push orphaned `e7eb57d` (124 commits) + `85097d7`; recovered all 177 files. Fixed `pre_push_verify.sh` false green, added `verify.yml` CI gate, added `permissions: contents: write` to the 3 pushing workflows, removed committed `.pyc` | `8638354` |
 | 14 | 7 Oct 2026 | **PR #5 merged** — recovery landed on `main` (`bfa555b`); independently verified depth 138, zero files dropped, QA + integrity green, merge push CI green | `bfa555b` |
 | 15 | 7 Oct 2026 | Fixed `youtube_queue.yml`: empty queue now skips with a notice instead of failing red (mirrors the scheduler) | PR #6 |
-| 16 | 8 Oct 2026 | **Caught a locked-brand-rule violation before it shipped:** the new unattended Shorts pipeline stamped the official logo on every video frame (banned) and collided with the CTA bar. Removed the logo from video, rebuilt the layout, restored film grain σ≈2.2, added 8 regression tests and proved the detector fails on the regression | this PR (stacked on #8) |
+| 16 | 8 Oct 2026 | **Caught a locked-brand-rule violation before it shipped:** the new unattended Shorts pipeline stamped the official logo on every video frame (banned) and collided with the CTA bar. Removed the logo from video, rebuilt the layout, restored film grain σ≈2.2, added 8 regression tests and proved the detector fails on the regression | `945b28e` |
+| 17 | 8 Oct 2026 | Merged PR #9 to `main` (`72ec955`) — the pipeline plus the brand fix; PR #8 auto-merged. **This armed the YouTube scheduler: next public upload attempt Friday 9 Oct, 18:00 WAT, and the old empty-queue safety no longer applies** | `72ec955` |
 
 ---
 
@@ -589,16 +596,14 @@ blocker is the owner's YouTube secrets. See What's Next.
    dispatch workflows (`workflow_dispatch` → 403). Verification runs must be
    clicked by the owner, or waited for on the cron.
 
-7. **Two PRs are stacked, and merging is a one-decision job.** This session's
-   branch merged PR #8's commits in, so the PR opened from
-   `arena/10e42594-docoga` **contains PR #8 plus the brand-rule fix**:
-   - **Recommended:** merge the newer PR (from `arena/10e42594-docoga`) with a
-     **merge commit** — it carries both, and PR #8 can then be closed as
-     superseded.
-   - If #8 is merged first instead, say so in the next session and the branch
-     will be rebased so its diff shows only the brand fix.
-   Either way: **merge commit, never squash** (the 6 Oct incident was caused by
-   flattening lineage).
+7. ~~**Two PRs are stacked, and merging is a one-decision job.**~~ — **✅ DONE
+   8 Oct 2026.** PR #9 was merged to `main` as merge commit **`72ec955`**
+   (merge commit, not squash), carrying the Shorts pipeline *and* the
+   brand-rule fix. PR #8 was auto-marked merged two seconds later, because its
+   head commit `42e4031` is now an ancestor of `main` — nothing was lost and no
+   separate merge was needed. Verified on the merged tree: 12/12 automation
+   tests, `qa.py` 🏆, `pre_push_verify.sh` ✅, and the CI `Verify` run on the
+   merge push (`37738312570`, 06:34 UTC) green.
 
 8. **Three legacy MP4s are still committed with the banned logo on them:**
    `assets/videos/docoga_short_20261003_*.mp4` (3 Oct, ~3.4 MB total). They were
@@ -611,13 +616,37 @@ blocker is the owner's YouTube secrets. See What's Next.
    **Owner decision:** safe to delete, or leave as historical samples. Future
    renders no longer get committed (`assets/videos/` is gitignored).
 
-9. **YouTube is the only platform still dark, and the pipeline is now armed
-   and safe.** After the merge, `youtube_scheduled.yml` runs Tue + Fri at
-   18:00 WAT, renders a fresh Short from the fact-checked rotation and uploads
-   it **public**. The brand defect that was going to ship is fixed and now
-   guarded by tests. The remaining blocker is item 3 above (secrets) — and note
-   YouTube may hold API uploads private until the Google Cloud project passes
-   its audit, which is a YouTube-side restriction nothing in this repo can fix.
+9. **⚠️ YouTube is ARMED — it will try to publish publicly on Friday
+   9 Oct at 18:00 WAT (17:00 UTC).** This is the single most important thing
+   to know before then, because the merge **removed the safety that was
+   deliberately in place.** `youtube_scheduled.yml` on `main` now:
+   - runs cron `0 17 * * 2,5` (Tue + Fri),
+   - renders a fresh Short on every run and uploads it with `--privacy public`,
+   - and **no longer reads `youtube_queue.json` at all.**
+
+   That last point is the change nobody should miss: the old protection was
+   that the queue had been deliberately emptied, so the scheduler had nothing
+   to publish. **That protection is gone by design.** This pipeline always
+   generates content and always uploads. It does not need arming — it is armed
+   the moment it lands on `main`, which it now has. `.gitignore` keeps renders
+   out of the repo, so there is no queue to inspect either.
+
+   **Three honest outcomes on the next run:**
+   - **If `YT_REFRESH_TOKEN` / `YT_CLIENT_ID` / `YT_CLIENT_SECRET` are missing
+     or stale**, the run fails red and **nothing is published**. Harmless, and
+     the fastest possible way to finally answer item 3.
+   - **If they are valid**, a Short goes live **public, unattended** — which is
+     the documented intent ("system must work autonomously without user
+     intervention after setup", and this is the platform that was left dark).
+     The brand defect that would have made that embarrassing is fixed and
+     guarded, so this is now a *safe* first unattended publish.
+   - **YouTube may hold API uploads private** until the Google Cloud project
+     passes its audit. That is a YouTube-side restriction nothing in this repo
+     can change.
+
+   **To hold it back** until you have watched one land: disable **YouTube
+   Shorts Auto-Generate and Publish** in the Actions tab — no code change and
+   no queue to clear — or ask for `--privacy unlisted` for the first few.
 
 ---
 
