@@ -98,7 +98,9 @@ jobs:
           DEPLOY_LOG: ${{ runner.temp }}/deploy.log
         run: |
           set -u
-          : > "$DEPLOY_LOG"
+          # Do NOT truncate: the verify step already wrote the token's
+          # permission list here, and that is the whole point of capturing it.
+          touch "$DEPLOY_LOG"
           echo "########## versions ##########" | tee -a "$DEPLOY_LOG"
           node --version 2>&1 | tee -a "$DEPLOY_LOG"
           npx --yes wrangler@latest --version 2>&1 | tee -a "$DEPLOY_LOG"
