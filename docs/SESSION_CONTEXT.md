@@ -3,6 +3,53 @@
 
 ---
 
+## 🔴 RULE ZERO — RESEARCH BEFORE ACTION (LOCKED 8 Oct 2026 — NEVER IGNORE)
+
+**"I want you to always do a very very indepth research to the thinnest details
+first, before answering any question or doing anything. Lock it in."** — the user,
+stated twice in one session, so it is permanent.
+
+This outranks every other rule in this file. It is the user's explicit standing
+order, not a preference, and it applies to:
+
+1. **Every question**, however small. Do not answer from memory or from a
+   plausible-sounding pattern. Go and check.
+2. **Every change**, before a line of it is written. Measure or source the
+   current state first; then act.
+3. **Every plan** inherited from a previous session. Session 19 proved why:
+   the plan said "expand state pages 12 → 37". Researching first showed the 48
+   existing pages were 94.2% duplicates of each other and would have been
+   deindexed. **The research reversed the plan.** Had the plan been executed
+   first and researched second, it would have been the most damaging thing
+   available to do to this site.
+
+### What "to the thinnest details" means here, concretely
+
+- **Go to the primary source.** A state's own judiciary site or official laws
+  portal beats a blog, a law-firm explainer, and an academic footnote. In
+  session 19 this produced section-level text for Lagos (No. 14 of 2011),
+  Edo (Edict No. 4 of 1977), Cross River (Cap. R3) and Kwara (1995).
+- **Quote the section, not the summary.** "Six months" is a summary. "six (6)
+  months notice for a yearly tenant — s.13(1)(e)" is a detail.
+- **Tier every claim by confidence** (A: primary statute + sections; B: named
+  statute from practitioner/academic source; C: single source; D: verified
+  negative; E: nothing verified) and publish the tier, not just the claim.
+- **Record the disagreements.** Where sources conflict, say so and say which
+  is preferred and why. Do not silently pick one.
+- **Write down what you could NOT verify.** A dossier with 20 honest
+  "nothing found" entries is worth more than 37 confident guesses.
+- **Measure before building.** If the task is "add more X", measure the X that
+  already exists (`tools/audit_state_pages.py` exists for exactly this).
+
+### Operational consequence
+
+Research happens in the **same turn**, before the tool call that builds. If
+research is still incomplete, the correct output is "here is what I have
+verified so far, and here is what is still open" — not a confident answer
+filling the gaps with invention.
+
+---
+
 ## 🔴 CRITICAL INSTRUCTION (LOCKED — NEVER IGNORE)
 
 **This file is a LIVING DOCUMENT. It MUST be updated at the end of EVERY work session.**
