@@ -788,6 +788,28 @@ item 9.
     into `qa.py` yet**, because a gate that fails all 48 pages gets deleted
     rather than obeyed. It gets wired the moment the enrichment lands.
 
+    **Where it actually stands after session 20 — measured, not estimated:**
+
+    | pair type | similarity | vs target (≤80%) |
+    |---|---|---|
+    | both pages for a verified state | **44–46%** | inside |
+    | one verified, one not | 49–54% | inside |
+    | both pages for an unverified state | **93%** | outside |
+    | **overall median** | **53%** (was 94.2%) | — |
+
+    The method works. The doorway risk is now **co-located with the eight
+    states that have not been researched**: anambra, delta, enugu, kaduna,
+    kano, ogun, oyo, plateau. Two of them — **ogun and plateau** — have
+    nothing verified behind them at all and, per the publication rule in
+    `docs/STATE_TENANCY_RESEARCH.md` §10, arguably should not have four-tool
+    pages.
+
+    One target is still missed even by the verified pages: **unique words per
+    page runs 72–211 against a target of 250** (Lagos is highest at ~200).
+    Closing that needs more genuinely local content per state — courts, areas,
+    LGAs, zones, local practice — which means more research per state, not more
+    template.
+
 ---
 
 *This file is the contract between sessions. Update it at the end of EVERY session. If you're reading this, you have everything you need. Continue naturally.*
