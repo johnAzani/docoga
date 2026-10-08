@@ -410,7 +410,7 @@ ABUJA = dict(
 
 # ---------------------------------------------------------------------------
 # EDO — Tier A. Primary text read from the Edo State Judiciary's own PDF.
-# NOTE: two Edo provisions remain unverified this pass and are marked as such.
+# NOTE: two Edo provisions remain unverified and are marked as such.
 # ---------------------------------------------------------------------------
 EDO = dict(
     slug="edo",
@@ -452,8 +452,7 @@ EDO = dict(
     forum=dict(
         name="the Rent Tribunals of Edo State",
         text=(
-            "<b>Edo is a tribunal state, not a magistrates’-court state</b> — the opposite of what "
-            "our current Edo pages say. s.4 establishes Rent Tribunals constituted of "
+            "<b>Edo is a tribunal state, not a magistrates’-court state.</b> s.4 establishes Rent Tribunals constituted of "
             "(a) a chairman who has been in practice as a legal practitioner in Nigeria for "
             "<b>not less than five years</b>, and (b) <b>two other persons of probity</b>, "
             "appointed by the Governor. The chairman plus one other member is a quorum (s.4(4)), "
@@ -534,8 +533,7 @@ EDO = dict(
 
     notice_ladder=[],
     notice_ladder_gap=(
-        "<b>Not yet verified.</b> The Edict’s graduated notice periods sit in s.18, and this pass "
-        "did not capture the subsection text. We therefore do <b>not</b> publish a figure for Edo. "
+        "<b>Not yet verified.</b> The Edict’s graduated notice periods sit in s.18, and the subsection text has not yet been read. We therefore do <b>not</b> publish a figure for Edo. "
         "What is verified is the rule of validity: a notice is ineffective where the time between "
         "the giving of the notice and the determination of the tenancy is less than the period "
         "prescribed in s.18."
@@ -627,9 +625,9 @@ EDO = dict(
     ],
 
     open_questions=[
-        "The graduated notice periods in s.18 — not captured this pass. NOT PUBLISHED.",
-        "The rent-book provision (reported in an earlier pass as s.33) — not re-confirmed this pass. NOT PUBLISHED.",
-        "Contents of the Rent Control Maximum Rent Order 1996 — listed but unread.",
+        "The graduated notice periods in s.18 have not yet been read from the primary text, so no figure is given here.",
+        "Whether Edo imposes a rent-book duty has not been confirmed from the primary text, so none is stated here.",
+        "The rent figures in the Rent Control Maximum Rent Order 1996 have not been read.",
         "Whether Delta State received the same Edict on the 1991 split — likely, but unverified.",
     ],
 )
@@ -840,7 +838,7 @@ CROSS_RIVER = dict(
             "(Information for tenant)\u201d</b>. Cross River therefore prescribes a document that "
             "carries tenant information inside the rent book itself."
         ),
-        gap="<b>The full text of s.34 was not captured this pass</b> — the section heading and the Form P entry are verified; the duty’s precise wording is not, so it is not quoted.",
+        gap="<b>The full wording of s.34 has not been read</b> — the section heading and the Form P entry are verified; the duty’s precise wording is not, so it is not quoted.",
     ),
 
     schedules_omitted=dict(
@@ -871,7 +869,7 @@ CROSS_RIVER = dict(
     ],
 
     open_questions=[
-        "Full text of s.33 (distress for rent) and s.34 (rent book and receipts) — not captured.",
+        "The full text of s.33 (distress for rent) and s.34 (rent book and receipts) has not been captured.",
         "Schedule 1 (Zones) and Schedule 2 (Prescribed rents) are omitted from the published revised edition; the rent figures are not available.",
         "Whether a Cross River Rent Control Court has in fact been established and gazetted for each zone.",
     ],

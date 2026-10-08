@@ -186,18 +186,13 @@ footer{{margin-top:34px;border-top:1px solid #DCE4F0;padding-top:16px;font-size:
 <div class="box">
 <h2>Notice-to-quit minimums in {place}</h2>
 <p class="law">{notice_intro}</p>
-<table>
-<tr><th>Type of tenancy</th><th>Minimum notice to quit</th></tr>
-<tr><td>Tenant at will</td><td>1 week</td></tr>
-<tr><td>Monthly</td><td>1 month</td></tr>
-<tr><td>Quarterly</td><td>3 months</td></tr>
-<tr><td>Half-yearly</td><td>3 months</td></tr>
-<tr><td>Yearly</td><td>6 months</td></tr>
-</table>
+{notice_table}
 <p class="law">{advance}</p>
 {arrears_block}
 <p class="law"><b>The law:</b> {law} {law_note} Disputes go to {courts}. This page is general information, not legal advice \u2014 confirm the current position for your case with a Nigerian lawyer.</p>
 </div>
+
+{law_block}
 
 <div class="box">
 <h2>{body_title}</h2>
@@ -217,6 +212,8 @@ footer{{margin-top:34px;border-top:1px solid #DCE4F0;padding-top:16px;font-size:
 {faq}
 </div>
 
+{sources_block}
+
 <div class="box links">
 <h2>More for {name}</h2>
 {same_state_links}
@@ -232,6 +229,343 @@ footer{{margin-top:34px;border-top:1px solid #DCE4F0;padding-top:16px;font-size:
 </body>
 </html>
 '''
+
+# ---------------------------------------------------------------------------
+# State-specific legal content.
+#
+# Verified statute-level law lives in tools/state_law_data.py, compiled under
+# Rule Zero: primary sources, section citations, and open questions recorded
+# rather than guessed at. A state appears there only if it reaches tier A-D.
+# States that are not there get the general Nigerian position AND a plain
+# statement that we have not verified their own statute.
+# ---------------------------------------------------------------------------
+try:
+    from state_law_data import STATE_LAW, NEEDS_CONFIRMATION, TIER_E_PUBLISHED
+except ImportError:  # only when run from outside tools/
+    from tools.state_law_data import STATE_LAW, NEEDS_CONFIRMATION, TIER_E_PUBLISHED
+
+# The general ladder, WITHOUT a half-yearly tier. Lagos is the only
+# jurisdiction we have verified that legislates for a half-yearly tenant
+# (s.13(1)(d), three months). The FCT Act, Cross River s.15 and Kwara s.17
+# all run week / month / quarter / half-year with no half-yearly row.
+DEFAULT_NOTICE = [
+    ("Tenant at will", "1 week"),
+    ("Monthly", "1 month"),
+    ("Quarterly", "3 months (a quarter)"),
+    ("Yearly", "6 months (half a year)"),
+]
+
+LAGOS_NOTICE = [
+    ("Tenant at will", "1 week"),
+    ("Monthly", "1 month"),
+    ("Quarterly", "3 months"),
+    ("Half-yearly", "3 months"),
+    ("Yearly", "6 months"),
+]
+
+
+def overlay(st, slug):
+    """Drive the legacy per-state strings from the verified data layer.
+
+    The STATES dict still carries hand-written sentences from before the
+    research. Where a state now has verified law, those strings are wrong --
+    the most serious being Edo, described as "the Magistrates' Courts in Edo
+    State" when s.4 of the Edict establishes Rent Tribunals and s.41(2)
+    repealed the Recovery of Premises Law for residential accommodation.
+    Overlaying here means the old strings cannot silently contradict the
+    cited law block underneath them.
+    """
+    law = STATE_LAW.get(slug)
+    if law:
+        st['courts'] = law['forum']['name']
+        st['law'] = law['statutes'][0]['title']
+        st['law_note'] = '(%s)' % law['statutes'][0].get('citation', '')
+        st['notice_intro'] = (
+            'Verified against <i>%s</i> \u2014 %s. Where the agreement is '
+            'silent, the minimum notice is:' % (
+                law['statutes'][0]['title'], law['statutes'][0].get('citation', '')))
+        ar = law.get('advance_rent') or {}
+        st['advance'] = ar.get('text', '') or (
+            'This state\u2019s statute sets no cap we have been able to verify \u2014 '
+            'agree the advance in writing before any money moves.')
+        if law.get('notice_extras'):
+            st['arrears'] = law['notice_extras'][1] if len(law['notice_extras']) > 1 else ''
+    else:
+        st['notice_intro'] = (
+            'We have <b>not</b> verified this state\u2019s own statute, so the '
+            'table below is the general Nigerian position rather than a citation. '
+            'Confirm it locally before relying on it:')
+        st['advance'] = (
+            'We have found no advance-rent cap in force for this state. Whatever '
+            'you agree, record it in the tenancy agreement before money moves.')
+
+
+def notice_rows(slug):
+    """Per-state notice table. Lagos is the only state with a half-yearly tier."""
+    if slug == 'lagos':
+        return LAGOS_NOTICE
+    law = STATE_LAW.get(slug)
+    if law and law.get('notice_ladder'):
+        return [(a, b) for a, b, _cite in law['notice_ladder']]
+    return DEFAULT_NOTICE
+
+
+def notice_table(slug, place):
+    rows = '\n'.join(
+        f'<tr><td>{a}</td><td>{b}</td></tr>' for a, b in notice_rows(slug)
+    )
+    law = STATE_LAW.get(slug)
+    if law:
+        cite = ' &middot; '.join(
+            '<b>s.%s</b>' % r[2].replace('s.', '') if r[2].startswith('s.') else r[2]
+            for r in law.get('notice_ladder', [])[:1]
+        )
+        note = '<p class="law">Source: %s, %s.</p>' % (
+            law['statutes'][0]['title'], law['statutes'][0].get('citation', ''))
+    else:
+        note = ('<p class="law">This is the general Nigerian position. '
+                '<b>We have not yet verified %s&rsquo;s own tenancy statute</b> '
+                '&mdash; see the note below.</p>' % place)
+    return (
+        '<table>\n<tr><th>Type of tenancy</th><th>Minimum notice to quit</th></tr>\n'
+        + rows + '\n</table>\n' + note
+    )
+
+
+def law_block(slug, tslug):
+    """The state-specific legal section. This is what makes the page unique."""
+    law = STATE_LAW.get(slug)
+    if not law:
+        return unverified_block(slug)
+
+    parts = ['<div class="box">',
+             '<h2>What the law actually says in %s</h2>' % law['name']]
+
+    # --- the statute itself, with citation -------------------------------
+    st0 = law['statutes'][0]
+    parts.append('<p class="law"><b>The statute:</b> <i>%s</i> &mdash; %s. Commenced %s.</p>' % (
+        st0['title'], st0.get('citation', ''), st0.get('commenced', 'date not stated')))
+    if st0.get('note'):
+        parts.append('<p class="law">%s</p>' % st0['note'])
+
+    # --- forum -----------------------------------------------------------
+    if 'forum' in law:
+        parts.append('<h3 style="font-size:15px;margin:14px 0 6px">Where a dispute goes</h3>')
+        parts.append('<p class="law">%s</p>' % law['forum']['text'])
+        for key in ('important', 'adr', 'valuers', 'procedure', 'rules_committee', 'zones', 'terms'):
+            if law['forum'].get(key):
+                parts.append('<p class="law">%s</p>' % law['forum'][key])
+
+    # --- tool-specific substance ----------------------------------------
+    parts.extend(tool_block(law, tslug))
+
+    # --- the things worth knowing regardless of tool --------------------
+    for key, heading in (('repairs', 'Who repairs what'),
+                         ('security_of_tenancy', 'Protection from retaliatory notices'),
+                         ('first_six_months', 'A new tenant&rsquo;s first six months'),
+                         ('suitable_alternative_accommodation', 'Alternative accommodation'),
+                         ('distress', 'Seizing a tenant&rsquo;s property'),
+                         ('excluded_areas', 'Where this law does <i>not</i> apply'),
+                         ('application', 'What the law covers')):
+        if law.get(key):
+            parts.append('<h3 style="font-size:15px;margin:14px 0 6px">%s</h3>' % heading)
+            parts.append('<p class="law">%s</p>' % law[key]['text'])
+            for sub in ('why', 'plain', 'detail', 'definitions', 'definition', 'protection',
+                        'supersedes', 'exception', 'contrast', 'penalty', 'must_state',
+                        'also_excluded', 'arrears', 'secondary_conflict', 'stale_warning',
+                        'how_to_read', 'grandfather'):
+                if law[key].get(sub):
+                    v = law[key][sub]
+                    if isinstance(v, list):
+                        parts.append('<ul>' + ''.join('<li>%s</li>' % i for i in v) + '</ul>')
+                    else:
+                        parts.append('<p class="law">%s</p>' % v)
+            if law[key].get('rows'):
+                parts.append('<table>\n<tr><th>Who</th><th>Rule</th></tr>' +
+                             '\n'.join('<tr><td>%s</td><td>%s</td></tr>' % (a, b)
+                                       for a, b, *_ in law[key]['rows']) + '\n</table>')
+
+    # --- protections -----------------------------------------------------
+    if law.get('protections'):
+        parts.append('<h3 style="font-size:15px;margin:14px 0 6px">Other protections worth knowing</h3>')
+        parts.append('<ul>' + ''.join('<li>%s</li>' % p for p in law['protections']) + '</ul>')
+
+    # --- the honest part -------------------------------------------------
+    gaps = []
+    for key in ('lagos_dispute', 'kwara_conflict', 'notice_ladder_gap', 'schedules_omitted'):
+        if law.get(key):
+            v = law[key]
+            if isinstance(v, str):
+                gaps.append(v)
+            else:
+                gaps.append(v.get('summary') or v.get('detail') or v.get('note') or v.get('text', ''))
+    if law.get('standard_rent', {}).get('anomaly'):
+        gaps.append(law['standard_rent']['anomaly']['summary'])
+    if law.get('rent_book', {}).get('gap'):
+        gaps.append(law['rent_book']['gap'])
+    gaps.extend(law.get('open_questions', []))
+    if gaps:
+        parts.append('<h3 style="font-size:15px;margin:14px 0 6px">What we could not confirm</h3>')
+        parts.append('<p class="law">We publish the gaps rather than fill them in:</p>')
+        parts.append('<ul>' + ''.join('<li>%s</li>' % g for g in gaps) + '</ul>')
+
+    parts.append('</div>')
+    return '\n'.join(parts)
+
+
+def tool_block(law, tslug):
+    """Content specific to this tool, drawn from the state's own statute."""
+    out = []
+    if tslug == 'tenancy-agreement':
+        ar = law.get('advance_rent')
+        if ar:
+            out.append('<h3 style="font-size:15px;margin:14px 0 6px">Advance rent</h3>')
+            out.append('<p class="law">%s</p>' % ar['text'])
+            if ar.get('rows'):
+                out.append('<table>\n<tr><th>Who</th><th>Cap</th><th>Section</th></tr>' +
+                           '\n'.join('<tr><td>%s</td><td>%s</td><td>%s</td></tr>' % r
+                                     for r in ar['rows']) + '\n</table>')
+            for k in ('penalty', 'how_to_read', 'contrast', 'grandfather'):
+                if ar.get(k):
+                    out.append('<p class="law">%s</p>' % ar[k])
+        if law.get('tenant_at_will'):
+            out.append('<h3 style="font-size:15px;margin:14px 0 6px">Tenants at will</h3>')
+            out.append('<p class="law">%s</p>' % law['tenant_at_will']['text'])
+            for k in ('contrast', 'arrears'):
+                if law['tenant_at_will'].get(k):
+                    out.append('<p class="law">%s</p>' % law['tenant_at_will'][k])
+        if law.get('contracting_out'):
+            out.append('<p class="law">%s</p>' % law['contracting_out']['text'])
+        if law.get('rent_control'):
+            out.append('<h3 style="font-size:15px;margin:14px 0 6px">Rent control</h3>')
+            out.append('<p class="law">%s</p>' % law['rent_control']['text'])
+            for k in ('supersedes', 'recovery_of_excess'):
+                if law['rent_control'].get(k):
+                    out.append('<p class="law">%s</p>' % law['rent_control'][k])
+
+    elif tslug == 'notice-to-quit':
+        extras = law.get('notice_extras') or []
+        if extras:
+            out.append('<h3 style="font-size:15px;margin:14px 0 6px">How notice works here</h3>')
+            out.append('<ul>' + ''.join('<li>%s</li>' % e for e in extras) + '</ul>')
+        if law.get('notice_ladder_gap'):
+            out.append('<p class="law">%s</p>' % law['notice_ladder_gap'])
+        if law.get('service'):
+            out.append('<p class="law"><b>Service:</b> %s</p>' % law['service']['text'])
+        g = law.get('grounds_for_possession')
+        if g:
+            out.append('<h3 style="font-size:15px;margin:14px 0 6px">Grounds a landlord can rely on</h3>')
+            out.append('<ul>' + ''.join(
+                '<li>%s%s</li>' % (a, (' &mdash; <i>%s</i>' % b) if b else '') for a, b in g
+            ) + '</ul>')
+            if law.get('grounds_note'):
+                out.append('<p class="law">%s</p>' % law['grounds_note'])
+        if law.get('forms'):
+            out.append('<h3 style="font-size:15px;margin:14px 0 6px">Prescribed forms</h3>')
+            out.append('<ul>' + ''.join('<li>%s</li>' % f for f in law['forms']) + '</ul>')
+            if law.get('subtenant_warning'):
+                out.append('<p class="law">%s</p>' % law['subtenant_warning'])
+
+    elif tslug == 'rent-receipt':
+        r = law.get('receipts')
+        if r:
+            out.append('<h3 style="font-size:15px;margin:14px 0 6px">Receipts</h3>')
+            out.append('<p class="law">%s</p>' % r['text'])
+            if r.get('must_state'):
+                out.append('<p class="law">The receipt must state:</p>')
+                out.append('<ul>' + ''.join('<li>%s</li>' % i for i in r['must_state']) + '</ul>')
+            for k in ('penalty', 'extra'):
+                if r.get(k):
+                    out.append('<p class="law">%s</p>' % r[k])
+        rb = law.get('rent_book')
+        if rb:
+            out.append('<h3 style="font-size:15px;margin:14px 0 6px">Rent books</h3>')
+            out.append('<p class="law">%s</p>' % rb['text'])
+            if rb.get('penalty'):
+                out.append('<p class="law">%s</p>' % rb['penalty'])
+            if rb.get('note'):
+                out.append('<p class="law">%s</p>' % rb['note'])
+            if rb.get('gap'):
+                out.append('<p class="law">%s</p>' % rb['gap'])
+
+    elif tslug == 'caution-fee':
+        p = law.get('premium')
+        if p:
+            out.append('<h3 style="font-size:15px;margin:14px 0 6px">Premiums, loans and caution money</h3>')
+            out.append('<p class="law">%s</p>' % p['text'])
+            for k in ('plain', 'penalty', 'exception'):
+                if p.get(k):
+                    out.append('<p class="law">%s</p>' % p[k])
+        c = law.get('caution_fee')
+        if c:
+            out.append('<p class="law">%s</p>' % c['text'])
+            if c.get('warning'):
+                out.append('<p class="law">%s</p>' % c['warning'])
+        if law.get('improvements'):
+            out.append('<h3 style="font-size:15px;margin:14px 0 6px">Improvements you make</h3>')
+            out.append('<p class="law">%s</p>' % law['improvements']['text'])
+        gf = law.get('grounds_and_forms')
+        if gf and gf.get('improvements'):
+            out.append('<p class="law">%s</p>' % gf['improvements'])
+        if law.get('penalties') and law['penalties'].get('rows'):
+            out.append('<h3 style="font-size:15px;margin:14px 0 6px">Penalties</h3>')
+            out.append('<table>\n<tr><th>Conduct</th><th>Penalty</th></tr>' +
+                       '\n'.join('<tr><td>%s</td><td>%s</td></tr>' % (a, b)
+                                 for a, b, *_ in law['penalties']['rows']) + '\n</table>')
+
+    return out
+
+
+def unverified_block(slug):
+    """Honest framing for a state whose own statute we have not verified."""
+    note = NEEDS_CONFIRMATION.get(slug)
+    parts = ['<div class="box">', '<h2>What we can and cannot tell you about this state</h2>']
+    if note:
+        parts.append('<p class="law"><b>Status of our research:</b> %s</p>' % note)
+    else:
+        parts.append(
+            '<p class="law"><b>Status of our research:</b> we have not been able to verify a '
+            'tenancy or rent-control statute for this state from a primary source. Rather than '
+            'describe a law we cannot cite, we say so. Everything below is the general Nigerian '
+            'position, which is the starting point most states share.</p>')
+    parts.append(
+        '<p class="law">Almost every Nigerian state has <i>some</i> recovery-of-premises or '
+        'rent-control legislation, and almost all of them descend from the same colonial-era '
+        'model &mdash; which is why the notice ladder below looks familiar. But the details that '
+        'decide real cases &mdash; the forum, the advance-rent cap, whether a tribunal exists, '
+        'whether alternative accommodation must be found &mdash; are set state by state, and '
+        'they genuinely differ.</p>')
+    parts.append(
+        '<p class="law">Before you rely on any figure here for this state, confirm it against the '
+        'state&rsquo;s own laws or a lawyer practising there. We will update this page the moment '
+        'we can cite the statute.</p>')
+    parts.append('</div>')
+    return '\n'.join(parts)
+
+
+def sources_block(slug):
+    """Sources and confidence tier, on the page rather than hidden in a comment."""
+    law = STATE_LAW.get(slug)
+    parts = ['<div class="box">', '<h2>Sources and confidence</h2>']
+    if law:
+        parts.append('<p class="law"><b>Confidence: tier %s.</b> %s</p>' % (
+            law['tier'], law.get('tier_note', '')))
+        srcs = law.get('sources', [])
+        if srcs:
+            parts.append('<ul>' + ''.join('<li>%s</li>' % s for s in srcs) + '</ul>')
+    else:
+        parts.append(
+            '<p class="law"><b>Confidence: tier E for the state&rsquo;s own statute.</b> '
+            'The general Nigerian position on this page rests on the Recovery of Premises Act '
+            '(Cap. 544 LFN, Abuja) and the Lagos Tenancy Law 2011 as the two texts we have read '
+            'in full. We have not verified a statute for this state, and we do not cite one.</p>')
+    parts.append(
+        '<p class="law">This page is general information, not legal advice. Tenancy law in Nigeria '
+        'is made state by state, and a lawyer practising in your state will know the current '
+        'position in a way a national page cannot.</p>')
+    parts.append('</div>')
+    return '\n'.join(parts)
+
 
 def faq_html(t, st):
     out = []
@@ -249,6 +583,8 @@ def main():
     for slug, st in STATES.items():
         for tslug, t in TOOLS.items():
             fname = f"{tslug}-{slug}.html"
+            st = dict(STATES[slug])
+            overlay(st, slug)
             d = dict(st)
             d.update(t)
             d['title'] = t['title'].format(place=st['place'])
@@ -259,6 +595,9 @@ def main():
             d['faq'] = faq_html(t, st)
             d['fname'] = fname
             d['arrears_block'] = ('<p class="law">' + st['arrears'] + '</p>' if st['arrears'] else '')
+            d['notice_table'] = notice_table(slug, st['place'])
+            d['law_block'] = law_block(slug, tslug)
+            d['sources_block'] = sources_block(slug)
             d['same_state_links'] = '\n'.join(f'<a href="https://docoga.com.ng/{ts2}-{slug}.html">{t2["tool"]} \u2014 {st["name"]}</a>' for ts2, t2 in TOOLS.items() if ts2 != tslug)
             d['other_states_links'] = '\n'.join(f'<a href="https://docoga.com.ng/{tslug}-{s2}.html">{st2["name"]}</a>' for s2, st2 in STATES.items() if s2 != slug)
             html = TPL.format(**d)
