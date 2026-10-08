@@ -1,0 +1,115 @@
+name: Deploy docoga-pass (gated)
+
+# Why this file exists alongside deploy-pass.yml
+# ----------------------------------------------
+# deploy-pass.yml is workflow_dispatch, and GitHub only registers dispatch
+# workflows from the DEFAULT branch. It lives in PR #11, so it cannot be
+# triggered yet. This one is push-triggered (which does work on a feature
+# branch) but gated behind a commit-marker so it never fires accidentally:
+#
+#     git commit -m ".... [deploy-pass]"
+#
+# Once PR #11 is merged and deploy-pass.yml is live on main, this file should
+# be deleted — two ways to deploy the same worker is one too many.
+
+on:
+  push:
+    branches: ['**']
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Validate only, do not publish'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  deploy:
+    # The gate. workflow_dispatch always runs; pushes need the marker.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.head_commit.message, '[deploy-pass]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Confirm the secrets are reachable
+        env:
+          HAS_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          HAS_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -u
+          if [ -z "${HAS_TOKEN:-}" ] || [ -z "${HAS_ACCOUNT:-}" ]; then
+            echo "RESULT=MISSING_SECRETS" >> "$GITHUB_ENV"
+            echo "::error::CLOUDFLARE_API_TOKEN and/or CLOUDFLARE_ACCOUNT_ID are not set."
+            echo "::error::Add them at Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+          echo "RESULT=SECRETS_PRESENT" >> "$GITHUB_ENV"
+          echo "Both secrets are present."
+
+      - name: Verify the token against Cloudflare
+        if: ${{ env.RESULT != 'MISSING_SECRETS' }}
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -u
+          echo "########## token/verify ##########"
+          curl -sS --max-time 25 \
+            -H "Authorization: Bearer $CF_TOKEN" \
+            -H "Content-Type: application/json" \
+            https://api.cloudflare.com/client/v4/user/tokens/verify \
+            | head -c 1200
+          echo
+          echo "########## workers on this account ##########"
+          curl -sS --max-time 25 \
+            -H "Authorization: Bearer $CF_TOKEN" \
+            -H "Content-Type: application/json" \
+            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/workers/scripts" \
+            | head -c 2000
+
+      - name: Deploy worker/ as docoga-pass
+        if: ${{ env.RESULT != 'MISSING_SECRETS' }}
+        uses: cloudflare/wrangler-action@v3
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: 'worker'
+          command: >-
+            deploy
+            ${{ github.event.inputs.dry_run == 'true' && '--dry-run --outdir /tmp/dryrun' || '' }}
+
+      - name: Probe the live worker
+        if: ${{ env.RESULT != 'MISSING_SECRETS' && github.event.inputs.dry_run != 'true' }}
+        env:
+          WORKER: https://docoga-pass.johnazani.workers.dev
+        run: |
+          set -u
+          echo "########## /activate (bogus code) ##########"
+          curl -sS -i --max-time 25 "$WORKER/activate?code=BOGUSTEST123" \
+            -w '\nhttp_code=%{http_code}\n' | head -25
+          echo
+          echo "########## /verify (bogus ref) ##########"
+          curl -sS -i --max-time 25 "$WORKER/verify?ref=TESTREF123" \
+            -w '\nhttp_code=%{http_code}\n' | head -25
+
+      - name: Post result where the agent can read it
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner, repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: '<!-- deploy-pass -->\nDeploy run finished: ' +
+                    `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+            });
