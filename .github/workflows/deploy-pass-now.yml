@@ -58,41 +58,37 @@ jobs:
         env:
           CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          DEPLOY_LOG: ${{ runner.temp }}/deploy.log
         run: |
           set -u
-          echo "########## token/verify ##########"
+          : > "$DEPLOY_LOG"
+          echo "DEPLOY_LOG=$DEPLOY_LOG" >> "$GITHUB_ENV"
+          echo "########## token/verify ##########" | tee -a "$DEPLOY_LOG"
           curl -sS --max-time 25 \
             -H "Authorization: Bearer $CF_TOKEN" \
             -H "Content-Type: application/json" \
             https://api.cloudflare.com/client/v4/user/tokens/verify \
-            | head -c 1200
-          echo
-          echo "########## accounts this token can see ##########"
+            | head -c 2000 | tee -a "$DEPLOY_LOG"
+          echo | tee -a "$DEPLOY_LOG"
+          echo "########## accounts this token can see ##########" | tee -a "$DEPLOY_LOG"
           curl -sS --max-time 25 \
             -H "Authorization: Bearer $CF_TOKEN" \
             -H "Content-Type: application/json" \
             "https://api.cloudflare.com/client/v4/accounts?per_page=50" \
-            | head -c 3000
-          echo
-          echo "########## memberships ##########"
-          curl -sS --max-time 25 \
-            -H "Authorization: Bearer $CF_TOKEN" \
-            -H "Content-Type: application/json" \
-            "https://api.cloudflare.com/client/v4/memberships?per_page=50" \
-            | head -c 3000
-          echo
-          echo "########## workers in account $CF_ACCOUNT ##########"
+            | head -c 2500 | tee -a "$DEPLOY_LOG"
+          echo | tee -a "$DEPLOY_LOG"
+          echo "########## workers in account $CF_ACCOUNT ##########" | tee -a "$DEPLOY_LOG"
           curl -sS --max-time 25 \
             -H "Authorization: Bearer $CF_TOKEN" \
             -H "Content-Type: application/json" \
             "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/workers/scripts" \
-            | head -c 2000
-          echo
-          echo "########## KV namespaces in account $CF_ACCOUNT ##########"
+            | head -c 2000 | tee -a "$DEPLOY_LOG"
+          echo | tee -a "$DEPLOY_LOG"
+          echo "########## KV namespaces in account $CF_ACCOUNT ##########" | tee -a "$DEPLOY_LOG"
           curl -sS --max-time 25 \
             -H "Authorization: Bearer $CF_TOKEN" \
             "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/storage/kv/namespaces" \
-            | head -c 2000
+            | head -c 2000 | tee -a "$DEPLOY_LOG"
 
       - name: Deploy worker/ as docoga-pass
         if: ${{ env.RESULT != 'MISSING_SECRETS' }}
