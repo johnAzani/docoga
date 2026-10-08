@@ -61,8 +61,40 @@ Rules:
 4. **NEVER** say "let me check the repo" — you already know everything here.
 5. **ALWAYS** update the "Last Session" section, "What's Been Built" section, and "What's Next" section.
 6. **ALWAYS** commit the update: `git add docs/SESSION_CONTEXT.md && git commit -m "Update SESSION_CONTEXT.md — [summary]" && git push origin main`
+7. **FIRST, CHECK THE BRANCH IS WHERE YOU LEFT IT.** See the incident note below.
+   The sandbox can reset the local branch pointer to the base commit between
+   sessions while keeping the working tree. Recover with
+   `git fetch origin && git reset --mixed origin/<branch>` before doing anything
+   else — and never force-push to "fix" it.
 
 This ensures the next session feels like the same person continuing.
+
+---
+
+## 🚨 OPERATIONAL NOTE — 8 Oct 2026: the sandbox can reset the local branch
+
+Between turns the local branch pointer was rolled back from `ec97606` to the
+base commit `b84ecfb`. **The working tree kept every file**, so nothing was
+lost on disk, and **all commits were still on GitHub** — but the local branch
+looked like the session's work had never happened.
+
+**Do not "fix" this by force-pushing.** That would have destroyed the work.
+
+Recovery, in this order:
+
+```
+git fetch origin
+git reset --mixed origin/arena/b51ecc68-docoga   # HEAD + index; working tree untouched
+git status                                       # should be clean
+```
+
+`--soft` is not enough: it moves HEAD but leaves the index holding the old
+base state, which makes git report your new files as staged deletions. `--mixed`
+resets HEAD and index together and leaves the working tree alone, which is
+exactly right when the files on disk are the ones you want.
+
+**Verify before you act.** `git log --oneline -1` at the start of a turn is
+worth two seconds.
 
 ---
 
