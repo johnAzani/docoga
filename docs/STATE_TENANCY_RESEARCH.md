@@ -465,3 +465,135 @@ today — a Scribd template, nothing more).
 *Researcher's note: this dossier is the evidence, not the copy. Nothing in it
 should be pasted onto a page without the house rule applied — verified facts as
 facts, everything else as practice plus "confirm with a lawyer".*
+
+---
+
+## 11. Corrections forced by the deeper pass (8 Oct 2026)
+
+Rule Zero sent me back to primary sources. It found **errors in §5 and §8 of
+this dossier**. They are recorded here rather than silently amended, because
+the earlier versions are what an earlier session would have built from.
+
+### 11.1 Lagos has no Rent Tribunal — the earlier note was wrong
+
+The dossier listed "Lagos Rent Tribunal" as the forum. It is not.
+
+- s.48 of the Tenancy Law 2011 repeals the **Rent Tribunals (Abolition and
+  Transfer of Functions) Law 2007**.
+- The tribunals had already been abolished and their functions transferred to
+  the Magistrates' Courts (*Commonwealth Law Bulletin* 46(1), n.65).
+- s.47 defines "Court" as the High Court and Magistrates' Court of Lagos State
+  and **expressly excludes the Customary Court**.
+- s.2(4): proceedings go to the High Court where the rental value exceeds the
+  Magistrates' Court jurisdiction under the Magistrates' Courts Law.
+- The "₦250,000 tribunal cap" was already flagged as dated; it is in fact
+  moot, because there is no tribunal to have a cap.
+
+### 11.2 Edo is a tribunal state — and the live Edo pages are wrong
+
+The generator currently describes Edo with "recovery-of-premises legislation"
+and "the Magistrates' Courts in Edo State". Both are wrong.
+
+- s.4 establishes **Rent Tribunals**: a chairman of ≥5 years' standing plus
+  two persons of probity; quorum is chairman + one.
+- **s.41(2) repealed the Recovery of Premises Law** to the extent it relates to
+  accommodation in residential premises, and s.41(3) repealed the Magistrates'
+  Court Law landlord/tenant provisions.
+- s.2: "court" **includes customary courts**.
+
+This is a live factual error on four published pages, not merely thin copy.
+
+### 11.3 The Lagos 1997 Rent Control law's status is genuinely disputed
+
+§5 presented Cap R6 as "separate, surviving". That is one side of a live
+argument and must be published as one side.
+
+- s.48 of the 2011 Law repeals **only** the Rent Tribunals (Abolition and
+  Transfer of Functions) Law 2007 — it does not expressly repeal the 1997 law.
+  Practitioners relying on that say the 1997 law still governs the four areas
+  excluded by s.1(3).
+- Other practitioner and academic sources say flatly it is repealed and "no
+  longer applicable".
+- Even among those who apply it, the advance-rent figures are reported
+  inconsistently and **do not reconcile** (half a year / three months in one
+  account; 6/12/3 months by category, ₦50,000 or six months, in another).
+
+**We therefore publish neither figure as fact.** Both views of the survival
+question go on the page.
+
+### 11.4 The advance-rent picture is far more varied than "Lagos-only"
+
+§5 said an enforceable cap is "essentially Lagos-only". Now that Cross River
+and Kwara have been read, that is wrong:
+
+| Jurisdiction | Cap in advance | Cite |
+|---|---|---|
+| **Lagos** (2011 Law) | 6 months (sitting, monthly) / 1 year (sitting, yearly) / **1 year (new tenant, no six-month branch)** | s.4(1)–(4) |
+| **Cross River** | **3 months** from individual tenants; 12 months from tenants other than individuals | s.6(6) |
+| **Kwara** | s.4(6): 1 year individual / 2 years commercial · s.35(6): **3 months** individual / 12 months commercial — **the statute contradicts itself** | s.4(6), s.35(6) |
+| **FCT** | **No cap at all** — a genuine, verified gap | — |
+
+Cross River is the strictest jurisdiction verified: **three months for an
+individual**, a quarter of what Lagos allows a new tenant.
+
+### 11.5 Arrears triggers vary by a factor of two
+
+| Jurisdiction | Monthly tenant in arrears → tenancy determines | Cite |
+|---|---|---|
+| Lagos | **6 months** | s.13(2) |
+| Lagos (quarterly/half-yearly) | 1 year | s.13(3) |
+| Cross River | **3 months** | s.15 proviso |
+| Kwara | **3 months** | s.17 proviso |
+| FCT | **no shortcut — serve the notice** | — |
+
+### 11.6 Notice ladders differ in a way that is easy to get wrong
+
+Lagos s.13(1)(d) provides a **half-yearly tier (three months)**. The FCT Act
+(Cap. 544 s.8), Cross River (s.15) and Kwara (s.17) **do not** — they run
+week / month / quarter / half-year. A page that prints "half-yearly: 3 months"
+as if it were national law is wrong for three of the five jurisdictions here.
+
+Two further divergences:
+
+- **Kwara, Chapter L4:** a **tenant at will is entitled to no notice period at
+  all** — against a week everywhere else, including Kwara's own s.17(1)(a).
+  The reconciliation is unknown to us and is recorded as an open question.
+- **Edo, s.18 proviso:** where rent is payable in advance for a monthly or
+  quarterly tenancy, the landlord may not give notice to quit or recover
+  possession during the **first six months** of the tenancy, except on the
+  tribunal's order or with the tenant's consent.
+
+### 11.7 Alternative accommodation: Kwara requires it, Edo may dispense with it
+
+Kwara s.26(1): no possession order unless the tribunal or court considers it
+reasonable **and** either it has power under the Second Schedule **or** it is
+satisfied **suitable alternative accommodation is available** — suitability
+being judged by proximity to place of work, the tenant's means, and extent and
+character. Edo's tribunal may order possession **without proof of alternative
+accommodation** where it considers it reasonable.
+
+### 11.8 Cross River's rent figures are simply not published
+
+The 2004 revised edition (Vol. 6) carries an editorial note that **Schedule 1
+(Zones) and Schedule 2 (Prescribed rents) have been omitted** and "will be
+included in subsequent updates". s.54(2) tells us seven zones exist — A1, A2,
+B, C, D, E, F — but the rents themselves are unavailable. **We publish the
+zones, because s.54(2) states them; we do not publish rents, because we
+cannot.**
+
+---
+
+## 12. Where the research stands
+
+Five jurisdictions have reached tier A with section-level citations. All five
+are now written up in `tools/state_law_data.py`, the data layer that will drive
+the generator. **15 open questions are recorded** and none of them is guessed
+at — where the primary text was not captured, the page says nothing rather
+than filling the gap.
+
+Two states we publish four pages each for (**Ogun, Plateau**) still have
+**nothing** verified behind them. Per the publication rule in §10 they should
+not have four-tool pages at all.
+
+Cross River and Kwara are tier A but are **not** among the 12 states we
+currently publish. They are the two states we could add honestly, today.
