@@ -617,8 +617,27 @@ item 9.
    workflows (`youtube_scheduled.yml`, `telegram_autopost.yml`) commit and push
    to `main` with `GITHUB_TOKEN`, and that rule would block every one of them.
 
-5. The Cloudflare Workers build fails on every non-`main` branch
+5. **The Cloudflare Workers build fails on every non-`main` branch**
    (pre-existing; it succeeds on `main`). PRs therefore get no Workers signal.
+
+   **Diagnosed 8 Oct 2026 — and the obvious theory was wrong.** Workers Builds
+   derives a preview URL from the branch name, so the `/` in
+   `arena/b51ecc68-docoga` was the prime suspect (a slash cannot appear in a
+   hostname). Tested against the check-runs API: `main` ✅ success,
+   `arena/b51ecc68-docoga` ❌, **`Zip` ❌ — and `Zip` has no slash.** So the
+   branch name is not the cause. What is left is the only remaining difference:
+   `main` is a *production* deployment, every other branch a *preview* one. The
+   deploy target is byte-identical in all three cases (`wrangler.jsonc`
+   publishes `./site`; no bindings, no secrets, no build command), so nothing in
+   the repo can make a preview deploy succeed — it is the account's preview
+   configuration.
+
+   **Owner fix, dashboard only:** Workers & Pages → `docoga-git` → Settings →
+   Builds → production branch `main`, and turn **off** non-production branch
+   builds. That is the right setting here anyway: every non-`main` branch is a
+   throwaway, there is one deployable target, and no preview URL is ever
+   shared. Full write-up in `GITHUB-CLOUDFLARE.md`. The failure is cosmetic —
+   `main` deploys fine and the repo's own `Verify` gate is authoritative.
 
 6. **Token limits worth knowing before the next session:** the agent's token
    cannot read or list secrets, cannot set branch protection, and cannot

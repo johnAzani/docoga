@@ -142,3 +142,56 @@ Both are free and both work. Cloudflare is the better fit here because:
 - **Cloudflare's free tier is more generous** on bandwidth, which matters when
   the SEO pages start pulling mobile traffic from across Nigeria.
 - **One fewer third party** holding a build of your private repo.
+
+---
+
+## Workers Builds — why every non-`main` branch shows a red check
+
+**Symptom.** Every PR carries a failing check, **Workers Builds: docoga-git**,
+while the identical push to `main` is green. The site itself is unaffected:
+`main` deploys fine, and this branch's own `Verify` workflow is green.
+
+**What was actually tested (8 Oct 2026), from the GitHub check-runs API:**
+
+| Commit | Branch | Workers Builds |
+|---|---|---|
+| `b84ecfb` | `main` | ✅ success |
+| `243309d` | `arena/b51ecc68-docoga` | ❌ failure |
+| `8374e21` | `Zip` | ❌ failure |
+
+**One popular theory is wrong.** These builds run `npx wrangler deploy` from
+the repo root against `wrangler.jsonc`, and Workers Builds derives a preview
+URL from the branch name — so the obvious suspect was the `/` in
+`arena/b51ecc68-docoga`, which cannot appear in a hostname. **`Zip` has no
+slash and failed too.** The branch name is not the cause.
+
+What is left is the only thing that actually differs between those rows:
+`main` is a **production** deployment and every other branch is a **preview**
+deployment. The deploy target is identical in all three cases — `wrangler.jsonc`
+publishes `./site` and declares no bindings, no secrets and no build command —
+so nothing in this repository can be changed to make a preview deploy succeed.
+This one is the account's preview configuration, not the code.
+
+**Fix (owner-side, ~30 seconds, dashboard only):**
+
+1. Cloudflare dashboard → **Workers & Pages** → `docoga-git` → **Settings** →
+   **Builds** (or *Workers Builds* → the connected repo).
+2. Set **Production branch** to `main`.
+3. Turn **off** builds/preview deployments for **non-production branches**.
+
+That is the right setting for this repo regardless of the error: every
+non-`main` branch here is a throwaway working branch, there is exactly one
+deployable target (`./site`), and a preview URL is never shared with anyone.
+Keeping previews on buys nothing and paints every PR red.
+
+**If you would rather keep previews,** open the failed build from the check
+(it links straight to the log in the dashboard) and read the deploy step. The
+URL is not reachable from a coding sandbox — egress is limited to
+`github.com`, `api.github.com`, `registry.npmjs.org` and `pypi.org` — so the
+log line itself could not be read from here, and the report above stops at
+what the GitHub API can prove.
+
+**Do not** "fix" this by pointing `assets.directory` anywhere but `./site`, by
+adding bindings to `wrangler.jsonc`, or by deleting `wrangler.jsonc`. The
+directory line is a security setting: pointed at `/` it would publish
+`PLAN.md`, `worker/` and `unlock-codes.txt` (₦374,000 of inventory).
