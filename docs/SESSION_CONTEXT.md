@@ -249,7 +249,7 @@ All in `tools/`. Key tools:
 | `blend_image.py` | Image blending pipeline (filmify, scrim, vignette, grain) |
 | `make_fresh_reel.py` | Reel generator (5 scenes, 14.4s, brand style) |
 | `make_sfx_v2.py` | Professional sound design (synthetic, CC0) |
-| `add_logo.py` | Logo compositor |
+| `add_logo.py` | Logo compositor — **static images ONLY.** Never video (locked rule) |
 | `weekly_report.py` | Growth report assembler |
 | `yt_suggest.py` | YouTube autocomplete research |
 | `yt_upload_long.py` | Direct long-form YT upload |
@@ -258,7 +258,7 @@ All in `tools/`. Key tools:
 | `gemini_tts.py` | Gemini TTS (voiceover) |
 | `motionstudio.py` | MotionStudio v4 |
 | `dd2_shorts.py` | DD2 Shorts A/B/C |
-| `generate_short_video.py` | Short-form video |
+| `generate_short_video.py` | Short-form video — no logo, film grain σ≈2.2, CTA bar (tests enforce) |
 | `lead_magnets.py` | Lead magnets |
 | `auto_caption.py` | Auto-caption |
 | `reframe.py` | 9:16 → 1:1 reframe |
@@ -441,18 +441,56 @@ Documented in `docs/GROWTH_JOURNAL.md`. Key milestones:
 
 ## Last Session (LIVING — Update This Every Time)
 
-**Date:** 7 Oct 2026
+**Date:** 8 Oct 2026
 **What was done:**
-- **Merged PR #5** as a merge commit (`bfa555b`) — the recovered 124-commit lineage and all 177 files are back on `main`
-- Verified the merge independently: depth **56 → 138**, all recovered SHAs are ancestors of `main`, **zero files dropped**, `pre_push_verify.sh` ✅ + `qa.py` 🏆 green on the merged tree, CI `Verify` run `37669606893` green on the merge push
-- Confirmed the live `telegram_autopost.yml` is **byte-identical to the version that ran green** in run `37148957419`, plus PR #5's additive `permissions: contents: write`
-- **Found and fixed a real defect:** the manual `youtube_queue.yml` had no empty-queue guard, so it exited 1 with `❌ Queue is empty!`. That is the red run of 6 Oct — and the exact result of following the documented "click **YouTube Upload from Queue**" instruction today. It now mirrors `youtube_scheduled.yml`: a `Check queue` step plus `if: steps.check.outputs.count != '0'` on every later step, and a visible `::notice::` when there is nothing to upload
-- **Could not** set branch protection on `main`, and **could not** dispatch workflows: both return HTTP 403 for the token this agent runs as (repo admin, but the token lacks the scope). Both remain owner actions — see What's Next
+- **Found and fixed a locked-brand-rule violation that was about to ship.**
+  PR #8 (opened 7 Oct, *Automate scheduled YouTube Shorts generation and
+  publishing*) was built to render a Short and upload it **public**, unattended,
+  twice a week — and the frames it rendered had **the official logo composited
+  onto every slide**. That breaks the owner's 21 Sep 2026 direction
+  (`docs/DESIGN_SYSTEM.md` §1: *"the logo is NOT stamped on social posts"*) and
+  the explicit motion rule in this file: *"NEVER stamp the logo on reels or
+  videos. Logo goes on static images only. NEVER on video. PERMANENT RULE."*
+  The chip also physically **collided with the `DOCOGA.COM.NG` CTA bar** on
+  every slide. The Shorts pipeline has **never run** (0 runs in the workflow's
+  history), so nothing had ever been published this way — the defect was
+  caught before it could reach the channel, not after.
+- **Proved it by rendering the real thing, not by reading code.** Rendered the
+  8 Oct topic (`Keep a Rent Paper Trail`) to a real 1080×1920 H.264 MP4 and
+  inspected frames at 1s and 13s. The logo chip + CTA collision was visible in
+  both. Fix re-rendered; frames are clean.
+- **Fixed `scripts/generate_short_video.py`:** the logo compositor and its call
+  site are gone (`create_slide_image()` no longer takes a logo argument at all,
+  so the rule cannot be reintroduced by passing a different path). The
+  type block is now measured and centred as one unit above the CTA bar instead
+  of starting at a fixed y=600, which was the cause of the collision.
+- **Restored a brand element that was missing on video:** film grain, σ≈2.2 —
+  `BRAND_STYLE.md` §3 lists it as *always present* on every finished piece.
+  Implemented with pure PIL (`Image.effect_noise` + `ImageChops.add`) so the CI
+  test job stays dependency-light.
+- **Gave the rule teeth — 8 new regression tests** in
+  `tools/tests/test_youtube_short_generation.py`: the video module may not name
+  a logo file or call the compositor; no solid near-white block may appear above
+  the CTA bar; frames must be **byte-comparable when `brand/` is absent**;
+  grain must be present and on-strength; type must stay inside the safe area.
+  **Verified the detector actually fails on the regression** (re-pasted the old
+  chip geometry: clean frame = 0px solid run, chipped = 438px, threshold 150).
+  A test that cannot fail is not a test.
+- Also: `assets/videos/` is now gitignored (1–6 MB per render is build output,
+  not source) and `YOUTUBE_AUTOMATION.md` documents the locked brand rules.
+- **Merged PR #8's commits into this branch** so the fix ships with them — the
+  PR opened from this session is stacked on top of #8 (see What's Next for how
+  to merge the pair).
 
-**What's next:** Nothing blocks content work — the Telegram and YouTube pipelines are live and armed. The owner actions below are the only things left before YouTube can publish.
+**Verification (all green on the merged tree):** 12/12 Python automation tests,
+`qa.py` 🏆 (2 pre-existing warnings, 0 errors), `pre_push_verify.sh` ✅,
+`npm test` worker suite ✅, plus a real end-to-end render + frame inspection.
 
-**Branch:** `arena/22719d94-docoga` (branched from `main` at `bfa555b`)
-**Last commit:** `bfa555b` (the merge) + this session's commit
+**What's next:** YouTube is the last platform still dark, and its only real
+blocker is the owner's YouTube secrets. See What's Next.
+
+**Branch:** `arena/10e42594-docoga` (branched from `main` at `ec5b7a7`)
+**Last commit:** PR #8's `42e4031` (merged in) + this session's commit
 
 ---
 
@@ -486,7 +524,8 @@ Documented in `docs/GROWTH_JOURNAL.md`. Key milestones:
 | 12 | 4 Oct 2026 | BUSINESS_DOMINANCE.md — 5-phase global expansion | `badc06e` |
 | 13 | 6 Oct 2026 | **Disaster recovery** — force-push orphaned `e7eb57d` (124 commits) + `85097d7`; recovered all 177 files. Fixed `pre_push_verify.sh` false green, added `verify.yml` CI gate, added `permissions: contents: write` to the 3 pushing workflows, removed committed `.pyc` | `8638354` |
 | 14 | 7 Oct 2026 | **PR #5 merged** — recovery landed on `main` (`bfa555b`); independently verified depth 138, zero files dropped, QA + integrity green, merge push CI green | `bfa555b` |
-| 15 | 7 Oct 2026 | Fixed `youtube_queue.yml`: empty queue now skips with a notice instead of failing red (mirrors the scheduler) | this PR |
+| 15 | 7 Oct 2026 | Fixed `youtube_queue.yml`: empty queue now skips with a notice instead of failing red (mirrors the scheduler) | PR #6 |
+| 16 | 8 Oct 2026 | **Caught a locked-brand-rule violation before it shipped:** the new unattended Shorts pipeline stamped the official logo on every video frame (banned) and collided with the CTA bar. Removed the logo from video, rebuilt the layout, restored film grain σ≈2.2, added 8 regression tests and proved the detector fails on the regression | this PR (stacked on #8) |
 
 ---
 
@@ -549,6 +588,36 @@ Documented in `docs/GROWTH_JOURNAL.md`. Key milestones:
    cannot read or list secrets, cannot set branch protection, and cannot
    dispatch workflows (`workflow_dispatch` → 403). Verification runs must be
    clicked by the owner, or waited for on the cron.
+
+7. **Two PRs are stacked, and merging is a one-decision job.** This session's
+   branch merged PR #8's commits in, so the PR opened from
+   `arena/10e42594-docoga` **contains PR #8 plus the brand-rule fix**:
+   - **Recommended:** merge the newer PR (from `arena/10e42594-docoga`) with a
+     **merge commit** — it carries both, and PR #8 can then be closed as
+     superseded.
+   - If #8 is merged first instead, say so in the next session and the branch
+     will be rebased so its diff shows only the brand fix.
+   Either way: **merge commit, never squash** (the 6 Oct incident was caused by
+   flattening lineage).
+
+8. **Three legacy MP4s are still committed with the banned logo on them:**
+   `assets/videos/docoga_short_20261003_*.mp4` (3 Oct, ~3.4 MB total). They were
+   rendered by the old generator **before** this session's fix, so they carry
+   the logo chip and the CTA collision. No workflow references or posts them —
+   `.github/workflows/telegram_autopost.yml` is text-only, and
+   `post_telegram_video.py` regenerates rather than reusing them — so nothing
+   will publish them by accident. They are left in place rather than deleted
+   silently, because they are published content and that is the owner's call.
+   **Owner decision:** safe to delete, or leave as historical samples. Future
+   renders no longer get committed (`assets/videos/` is gitignored).
+
+9. **YouTube is the only platform still dark, and the pipeline is now armed
+   and safe.** After the merge, `youtube_scheduled.yml` runs Tue + Fri at
+   18:00 WAT, renders a fresh Short from the fact-checked rotation and uploads
+   it **public**. The brand defect that was going to ship is fixed and now
+   guarded by tests. The remaining blocker is item 3 above (secrets) — and note
+   YouTube may hold API uploads private until the Google Cloud project passes
+   its audit, which is a YouTube-side restriction nothing in this repo can fix.
 
 ---
 

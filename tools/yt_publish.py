@@ -102,7 +102,7 @@ def upload_video(video_path, title, description="", tags="", privacy="public", c
         return None
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(description="DocOga YouTube Publisher")
     parser.add_argument("--video", required=True, help="Path to video file")
     parser.add_argument("--title", required=True, help="Video title")
@@ -111,14 +111,29 @@ def main():
     parser.add_argument("--privacy", default="public", choices=["public", "unlisted", "private"])
     parser.add_argument("--category", default="22", help="YouTube category ID (22=People & Blogs)")
     
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     
     if not os.path.exists(args.video):
         print(f"❌ Video file not found: {args.video}")
         sys.exit(1)
     
-    upload_video(args.video, args.title, args.description, args.tags, args.privacy, args.category)
+    video_id = upload_video(
+        args.video,
+        args.title,
+        args.description,
+        args.tags,
+        args.privacy,
+        args.category,
+    )
+    if not video_id:
+        print(
+            "❌ Upload failed; exiting non-zero so queue workflows retain this item.",
+            file=sys.stderr,
+        )
+        return 1
+
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

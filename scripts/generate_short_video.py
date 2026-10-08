@@ -4,7 +4,7 @@ DocOga Short-Form Video Generator
 Creates 30-60 second vertical videos (9:16) for Telegram, YouTube Shorts, Reels
 Uses moviepy with FFmpeg for video creation
 
-BRAND COLORS (from official-logo-white.png):
+BRAND COLORS (sampled from the official brand mark, 18 Sep 2026):
   Navy:        #002040  RGB(0, 32, 64)
   Brand Blue:  #0060e0  RGB(0, 96, 224)
   Royal Blue:  #0040c0  RGB(0, 64, 192)
@@ -12,8 +12,7 @@ BRAND COLORS (from official-logo-white.png):
 """
 
 import os
-import random
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 
 try:
@@ -22,7 +21,7 @@ try:
 except ImportError:
     MOVIEPY_AVAILABLE = False
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageChops, ImageDraw, ImageFont
 
 # ===== CONFIG =====
 WIDTH = 1080
@@ -30,9 +29,31 @@ HEIGHT = 1920
 FPS = 24
 OUTPUT_DIR = Path("assets/videos")
 BRAND_DIR = Path("brand")
-LOGO_PATH = BRAND_DIR / "official-logo-white.png"
 
-# ===== BRAND COLORS (from official-logo-white.png) =====
+# ===== LOCKED BRAND RULES ENCODED HERE =====
+# 🔴 THE OFFICIAL LOGO IS NOT STAMPED ON SOCIAL POSTS — AND NEVER ON VIDEO.
+# Owner direction 21 Sep 2026 (docs/DESIGN_SYSTEM.md §1): the logo is not
+# stamped on social posts. docs/SESSION_CONTEXT.md is explicit for motion:
+# "NEVER stamp the logo on reels or videos. Logo goes on static images only
+# (carousels, status posts). NEVER on video. PERMANENT RULE."
+#
+# Therefore nothing in this module may read brand/*.png into a frame. The one
+# sanctioned way the real logo touches a design is tools/add_logo.py, which
+# pastes the exact pixels onto STATIC images. Regression tests enforce this.
+LOGO_FORBIDDEN_ON_VIDEO = True
+
+# CTA bar — the brand checklist requires "CTA: docoga.com.ng present".
+CTA_TEXT = "DOCOGA.COM.NG"
+CTA_BAR_H = 132
+CTA_FONT_SIZE = 44
+
+# BRAND_STYLE.md §3 "Always present": film grain, σ≈2.2 luminance noise.
+FILM_GRAIN_SIGMA = 2.2
+
+# BRAND_STYLE.md §3 grid: 84px margins / safe areas respected.
+SAFE_MARGIN = 84
+
+# ===== BRAND COLORS (sampled from the official brand mark) =====
 NAVY       = (0, 32, 64)      # #002040
 BRAND_BLUE = (0, 96, 224)     # #0060e0
 ROYAL_BLUE = (0, 64, 192)     # #0040c0
@@ -45,80 +66,82 @@ DARK       = (10, 15, 30)     # Near-black with blue tint
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 
-# ===== CONTENT SCRIPTS =====
+# ===== FACT-SAFE CONTENT SCRIPTS =====
+# These are practical record-keeping prompts, not legal conclusions. Every Short
+# ends with a reminder that rules vary by state and agreement.
 VIDEO_SCRIPTS = [
     {
-        "title": "Caution Fee Warning",
+        "title": "Keep a Rent Paper Trail",
         "slides": [
-            {"bg": DARK,       "text": "⚠️ STOP!", "sub": "", "color": RED, "duration": 3},
-            {"bg": DARK,       "text": "Don't pay Caution Fee\nwithout a RECEIPT!", "sub": "Many landlords no dey refund...", "color": WHITE, "duration": 4},
-            {"bg": DARK,       "text": "80% of tenants", "sub": "lose their caution fee\nevery year in Nigeria", "color": RED, "duration": 4},
-            {"bg": NAVY,       "text": "3 THINGS TO DO:", "sub": "", "color": YELLOW, "duration": 2},
-            {"bg": NAVY,       "text": "1️⃣ Get receipt BEFORE paying", "sub": "", "color": WHITE, "duration": 3},
-            {"bg": NAVY,       "text": "2️⃣ Snap the apartment\nbefore you move in", "sub": "", "color": WHITE, "duration": 3},
-            {"bg": NAVY,       "text": "3️⃣ Add it to your\ntenancy agreement", "sub": "", "color": WHITE, "duration": 3},
-            {"bg": DARK,       "text": "Need documents?", "sub": "DocOga dey for you!", "color": SKY_BLUE, "duration": 3},
-            {"bg": BRAND_BLUE, "text": "docoga.com.ng", "sub": "FREE templates!", "color": WHITE, "duration": 3},
-            {"bg": NAVY,       "text": "🔔 Follow for\ndaily tips!", "sub": "", "color": YELLOW, "duration": 3},
+            {"bg": NAVY, "text": "KEEP A PAPER TRAIL", "sub": "for every rent payment", "color": SKY_BLUE, "duration": 3},
+            {"bg": DARK, "text": "SAVE YOUR RECEIPT", "sub": "after each payment", "color": WHITE, "duration": 4},
+            {"bg": DARK, "text": "KEEP THE TRANSFER RECORD", "sub": "date · amount · reference", "color": YELLOW, "duration": 4},
+            {"bg": DARK, "text": "SAVE YOUR AGREEMENT", "sub": "and messages about changes", "color": SKY_BLUE, "duration": 4},
+            {"bg": BRAND_BLUE, "text": "ONE FOLDER. EASY TO FIND.", "sub": "Keep copies somewhere safe", "color": WHITE, "duration": 4},
+            {"bg": NAVY, "text": "GENERAL INFO ONLY", "sub": "Rules vary by state and agreement", "color": YELLOW, "duration": 4},
         ],
     },
     {
-        "title": "Know Your Tenant Rights",
+        "title": "Before You Pay an Agent",
         "slides": [
-            {"bg": NAVY,       "text": "🏠 TENANT RIGHTS", "sub": "Nigeria Edition", "color": SKY_BLUE, "duration": 3},
-            {"bg": DARK,       "text": "Your landlord\ncan NOT just\nevict you!", "sub": "Na your right!", "color": YELLOW, "duration": 4},
-            {"bg": DARK,       "text": "They must give you:", "sub": "", "color": WHITE, "duration": 2},
-            {"bg": DARK,       "text": "📋 Written Notice", "sub": "Minimum 6 months\nfor yearly tenants", "color": SKY_BLUE, "duration": 4},
-            {"bg": DARK,       "text": "📜 Notice to Quit", "sub": "Must follow legal process", "color": SKY_BLUE, "duration": 4},
-            {"bg": DARK,       "text": "⚖️ Court Order", "sub": "If you refuse to leave", "color": SKY_BLUE, "duration": 4},
-            {"bg": DARK,       "text": "Don't let anyone\nrush you out!", "sub": "Know your rights! 💪", "color": YELLOW, "duration": 4},
-            {"bg": BRAND_BLUE, "text": "Get proper docs at", "sub": "docoga.com.ng", "color": WHITE, "duration": 3},
-            {"bg": NAVY,       "text": "🔔 Follow DocOga", "sub": "for daily property tips!", "color": YELLOW, "duration": 3},
+            {"bg": NAVY, "text": "BEFORE YOU PAY", "sub": "pause and verify", "color": SKY_BLUE, "duration": 3},
+            {"bg": DARK, "text": "SEE THE PROPERTY", "sub": "in person, if you can", "color": WHITE, "duration": 4},
+            {"bg": DARK, "text": "CHECK WHO IS LETTING IT", "sub": "ask how they are authorised", "color": YELLOW, "duration": 4},
+            {"bg": DARK, "text": "GET TERMS IN WRITING", "sub": "fees · dates · who receives payment", "color": SKY_BLUE, "duration": 4},
+            {"bg": BRAND_BLUE, "text": "KEEP PAYMENT PROOF", "sub": "and ask for a receipt", "color": WHITE, "duration": 4},
+            {"bg": NAVY, "text": "GENERAL INFO ONLY", "sub": "Rules vary by state and agreement", "color": YELLOW, "duration": 4},
         ],
     },
     {
-        "title": "Rent Receipt vs Tenancy Agreement",
+        "title": "Moving In? Record the Condition",
         "slides": [
-            {"bg": NAVY,       "text": "📄 KNOW THE DIFFERENCE", "sub": "", "color": YELLOW, "duration": 3},
-            {"bg": DARK,       "text": "RENT RECEIPT", "sub": "Proof you don pay rent", "color": SKY_BLUE, "duration": 4},
-            {"bg": DARK,       "text": "Shows:\n• Amount paid\n• Date\n• Landlord name\n• Property address", "sub": "", "color": WHITE, "duration": 5},
-            {"bg": DARK,       "text": "TENANCY AGREEMENT", "sub": "Your protection document", "color": SKY_BLUE, "duration": 4},
-            {"bg": DARK,       "text": "Shows:\n• Rent amount\n• Duration\n• Rules & terms\n• Both signatures", "sub": "", "color": WHITE, "duration": 5},
-            {"bg": RED,        "text": "YOU NEED BOTH!", "sub": "No just one o!", "color": YELLOW, "duration": 3},
-            {"bg": DARK,       "text": "DocOga fit generate\nboth for you!", "sub": "In 2 minutes! ⚡", "color": SKY_BLUE, "duration": 4},
-            {"bg": BRAND_BLUE, "text": "docoga.com.ng", "sub": "Free to try!", "color": WHITE, "duration": 3},
-            {"bg": NAVY,       "text": "🔔 Follow for more!", "sub": "", "color": YELLOW, "duration": 3},
+            {"bg": NAVY, "text": "MOVING IN?", "sub": "make a simple record", "color": SKY_BLUE, "duration": 3},
+            {"bg": DARK, "text": "PHOTOGRAPH EACH ROOM", "sub": "include visible damage", "color": WHITE, "duration": 4},
+            {"bg": DARK, "text": "NOTE THE DATE", "sub": "keep original photos and videos", "color": YELLOW, "duration": 4},
+            {"bg": DARK, "text": "RECORD METER READINGS", "sub": "where applicable", "color": SKY_BLUE, "duration": 4},
+            {"bg": BRAND_BLUE, "text": "SHARE ISSUES IN WRITING", "sub": "keep a copy of the message", "color": WHITE, "duration": 4},
+            {"bg": NAVY, "text": "GENERAL INFO ONLY", "sub": "Rules vary by state and agreement", "color": YELLOW, "duration": 4},
         ],
     },
     {
-        "title": "Landlord Scam Alert",
+        "title": "Caution Fee: Ask These Questions",
         "slides": [
-            {"bg": DARK,       "text": "🚨 SCAM ALERT!", "sub": "", "color": RED, "duration": 3},
-            {"bg": NAVY,       "text": "5 Ways Your\nLandlord Fit\nChop Your Money", "sub": "", "color": YELLOW, "duration": 4},
-            {"bg": DARK,       "text": "1. No receipt for\n   caution fee", "sub": " = No refund", "color": RED, "duration": 3},
-            {"bg": DARK,       "text": "2. Verbal agreement\n   only", "sub": " = No proof", "color": RED, "duration": 3},
-            {"bg": DARK,       "text": "3. Rent increase\n   without notice", "sub": " = Illegal!", "color": RED, "duration": 3},
-            {"bg": DARK,       "text": "4. No inspection\n   before you enter", "sub": " = You pay for damage\nyou never cause", "color": RED, "duration": 3},
-            {"bg": DARK,       "text": "5. No tenancy\n   agreement", "sub": " = Zero protection", "color": RED, "duration": 3},
-            {"bg": BRAND_BLUE, "text": "Protect yourself!", "sub": "Get proper documents\nat docoga.com.ng", "color": WHITE, "duration": 4},
-            {"bg": NAVY,       "text": "🔔 Follow DocOga!", "sub": "Don't get scammed!", "color": YELLOW, "duration": 3},
+            {"bg": NAVY, "text": "CAUTION FEE?", "sub": "get the details first", "color": SKY_BLUE, "duration": 3},
+            {"bg": DARK, "text": "HOW MUCH IS IT?", "sub": "ask what the payment covers", "color": WHITE, "duration": 4},
+            {"bg": DARK, "text": "WHAT CAN BE DEDUCTED?", "sub": "ask for the conditions in writing", "color": YELLOW, "duration": 4},
+            {"bg": DARK, "text": "WHEN IS IT RETURNED?", "sub": "clarify the process and timeline", "color": SKY_BLUE, "duration": 4},
+            {"bg": BRAND_BLUE, "text": "KEEP A SEPARATE RECEIPT", "sub": "save it with your agreement", "color": WHITE, "duration": 4},
+            {"bg": NAVY, "text": "GENERAL INFO ONLY", "sub": "Rules vary by state and agreement", "color": YELLOW, "duration": 4},
         ],
     },
     {
-        "title": "How to Rent in Lagos",
+        "title": "Tenancy Agreement Checklist",
         "slides": [
-            {"bg": BRAND_BLUE, "text": "🏠 HOW TO RENT\nIN LAGOS", "sub": "2026 Guide", "color": WHITE, "duration": 3},
-            {"bg": DARK,       "text": "Step 1:", "sub": "Find house through\ntrusted agents only", "color": YELLOW, "duration": 4},
-            {"bg": DARK,       "text": "Step 2:", "sub": "Inspect the house\nbefore paying anything!", "color": YELLOW, "duration": 4},
-            {"bg": DARK,       "text": "Step 3:", "sub": "Get tenancy agreement\nBEFORE you pay", "color": YELLOW, "duration": 4},
-            {"bg": DARK,       "text": "Step 4:", "sub": "Pay via bank transfer\nNEVER cash!", "color": YELLOW, "duration": 4},
-            {"bg": DARK,       "text": "Step 5:", "sub": "Collect receipt for\nevery payment!", "color": YELLOW, "duration": 4},
-            {"bg": RED,        "text": "⚠️ If landlord say\nno to any of these...", "sub": "RUN! 🏃‍♂️", "color": YELLOW, "duration": 3},
-            {"bg": BRAND_BLUE, "text": "DocOga has all the\ndocuments you need!", "sub": "docoga.com.ng", "color": WHITE, "duration": 4},
-            {"bg": NAVY,       "text": "🔔 Follow for\nmore Lagos tips!", "sub": "", "color": YELLOW, "duration": 3},
+            {"bg": NAVY, "text": "BEFORE YOU SIGN", "sub": "check the key details", "color": SKY_BLUE, "duration": 3},
+            {"bg": DARK, "text": "NAMES AND CONTACTS", "sub": "are they written correctly?", "color": WHITE, "duration": 4},
+            {"bg": DARK, "text": "PROPERTY AND RENT", "sub": "check the address and amount", "color": YELLOW, "duration": 4},
+            {"bg": DARK, "text": "DATES AND RESPONSIBILITIES", "sub": "who handles what, and when?", "color": SKY_BLUE, "duration": 4},
+            {"bg": BRAND_BLUE, "text": "READ. ASK. KEEP A COPY.", "sub": "clarify anything you do not understand", "color": WHITE, "duration": 4},
+            {"bg": NAVY, "text": "GENERAL INFO ONLY", "sub": "Rules vary by state and agreement", "color": YELLOW, "duration": 4},
+        ],
+    },
+    {
+        "title": "Keep Records of Repairs",
+        "slides": [
+            {"bg": NAVY, "text": "NEED A REPAIR?", "sub": "make the request clear", "color": SKY_BLUE, "duration": 3},
+            {"bg": DARK, "text": "DESCRIBE THE ISSUE", "sub": "what happened and where", "color": WHITE, "duration": 4},
+            {"bg": DARK, "text": "ADD A PHOTO IF USEFUL", "sub": "include the date", "color": YELLOW, "duration": 4},
+            {"bg": DARK, "text": "SEND IT IN WRITING", "sub": "keep your message and reply", "color": SKY_BLUE, "duration": 4},
+            {"bg": BRAND_BLUE, "text": "SAVE THE REPAIR RECORD", "sub": "quotes · receipts · completion date", "color": WHITE, "duration": 4},
+            {"bg": NAVY, "text": "GENERAL INFO ONLY", "sub": "Rules vary by state and agreement", "color": YELLOW, "duration": 4},
         ],
     },
 ]
+
+
+def script_for_date(run_date: date):
+    """Return a repeatable topic for a local calendar date."""
+    return VIDEO_SCRIPTS[(run_date.toordinal() - 1) % len(VIDEO_SCRIPTS)]
 
 
 def get_font(size):
@@ -134,8 +157,39 @@ def get_font(size):
     return ImageFont.load_default()
 
 
-def create_slide_image(slide_data, logo_path=None):
-    """Create a single slide as a PIL Image"""
+def fit_font(draw, text, size, max_width, min_size=32):
+    """Shrink a line until it fits the safe area of a portrait slide."""
+    while size > min_size:
+        font = get_font(size)
+        bbox = draw.textbbox((0, 0), text, font=font)
+        if bbox[2] - bbox[0] <= max_width:
+            return font
+        size -= 2
+    return get_font(min_size)
+
+
+def add_film_grain(img, sigma=FILM_GRAIN_SIGMA):
+    """Brand texture: zero-mean gaussian luminance noise (σ≈2.2).
+
+    BRAND_STYLE.md §3 lists film grain as "always present" on every finished
+    piece, video included. Pure PIL so the test job stays dependency-light:
+    ImageChops.add(..., offset=-128) is img + (noise - 128) — zero-mean grain.
+    """
+    noise = Image.effect_noise((img.width, img.height), sigma).convert("RGB")
+    return ImageChops.add(img, noise, scale=1.0, offset=-128)
+
+
+def _text_height(draw, line, font):
+    box = draw.textbbox((0, 0), line, font=font)
+    return box[3] - box[1]
+
+
+def create_slide_image(slide_data):
+    """Render one slide.
+
+    Deliberately takes no logo argument: see the locked brand rule at the top
+    of this file. Text and the CTA bar are the only content.
+    """
     bg_color = slide_data.get("bg", DARK)
     text = slide_data.get("text", "")
     sub = slide_data.get("sub", "")
@@ -144,141 +198,88 @@ def create_slide_image(slide_data, logo_path=None):
     img = Image.new("RGB", (WIDTH, HEIGHT), bg_color)
     draw = ImageDraw.Draw(img)
 
-    # Add logo at top if exists
-    if logo_path and os.path.exists(logo_path):
-        try:
-            logo = Image.open(logo_path).convert("RGBA")
-            logo_max = 300
-            ratio = min(logo_max / logo.width, logo_max / logo.height)
-            new_w = int(logo.width * ratio)
-            new_h = int(logo.height * ratio)
-            logo = logo.resize((new_w, new_h), Image.LANCZOS)
-            logo_x = (WIDTH - new_w) // 2
-            img.paste(logo, (logo_x, 80), logo if logo.mode == "RGBA" else None)
-        except Exception:
-            pass
-
-    # Main text
-    font_main = get_font(72)
+    # Main text — shrink long lines so mobile viewers never lose cropped words.
+    safe_width = WIDTH - 2 * SAFE_MARGIN
     lines = text.split("\n")
-    y_start = 700 if (logo_path and os.path.exists(logo_path)) else 600
+    main_fonts = [fit_font(draw, line, 72, safe_width) for line in lines]
+    sub_lines = sub.split("\n") if sub else []
+    sub_fonts = [fit_font(draw, line, 42, safe_width, min_size=26) for line in sub_lines]
 
-    for i, line in enumerate(lines):
+    # Lay the block out as one unit and centre it above the CTA bar. The old
+    # fixed y=600 start left every frame top-heavy with a dead gap beneath it.
+    line_stride = 100
+    sub_gap = 60
+    sub_stride = 60
+    block_h = (len(lines) - 1) * line_stride + _text_height(draw, lines[-1], main_fonts[-1])
+    if sub_lines:
+        block_h += sub_gap + (len(sub_lines) - 1) * sub_stride
+        block_h += _text_height(draw, sub_lines[-1], sub_fonts[-1])
+
+    content_h = HEIGHT - CTA_BAR_H
+    y = max(SAFE_MARGIN, (content_h - block_h) // 2)
+
+    for i, (line, font_main) in enumerate(zip(lines, main_fonts)):
         bbox = draw.textbbox((0, 0), line, font=font_main)
         tw = bbox[2] - bbox[0]
-        tx = (WIDTH - tw) // 2
-        ty = y_start + i * 100
+        tx = (WIDTH - tw) // 2 - bbox[0]
+        ty = y + i * line_stride - bbox[1]
         # Shadow
         draw.text((tx + 3, ty + 3), line, fill=(0, 0, 0), font=font_main)
         draw.text((tx, ty), line, fill=text_color, font=font_main)
 
-    # Subtitle
-    if sub:
-        font_sub = get_font(42)
-        sub_lines = sub.split("\n")
-        sub_y = y_start + len(lines) * 100 + 60
-        for i, sline in enumerate(sub_lines):
+    if sub_lines:
+        sub_y = (
+            y
+            + (len(lines) - 1) * line_stride
+            + _text_height(draw, lines[-1], main_fonts[-1])
+            + sub_gap
+        )
+        for i, (sline, font_sub) in enumerate(zip(sub_lines, sub_fonts)):
             bbox = draw.textbbox((0, 0), sline, font=font_sub)
             sw = bbox[2] - bbox[0]
-            sx = (WIDTH - sw) // 2
-            draw.text((sx, sub_y + i * 60), sline, fill=(200, 200, 200), font=font_sub)
+            sx = (WIDTH - sw) // 2 - bbox[0]
+            draw.text((sx, sub_y + i * sub_stride - bbox[1]), sline, fill=(200, 200, 200), font=font_sub)
 
-    # Bottom bar — BRAND_BLUE
-    draw.rectangle([0, HEIGHT - 100, WIDTH, HEIGHT], fill=BRAND_BLUE)
-    font_brand = get_font(32)
-    bbox = draw.textbbox((0, 0), "DOCOGA.COM.NG", font=font_brand)
-    bw = bbox[2] - bbox[0]
-    draw.text(((WIDTH - bw) // 2, HEIGHT - 70), "DOCOGA.COM.NG", fill=WHITE, font=font_brand)
+    # CTA bar — brand checklist requires "CTA: docoga.com.ng present". Drawn
+    # and centred with the real glyph box so the type never collides with the
+    # bar edges (the old logo chip overlapped this bar on every slide).
+    draw.rectangle([0, HEIGHT - CTA_BAR_H, WIDTH, HEIGHT], fill=BRAND_BLUE)
+    font_cta = get_font(CTA_FONT_SIZE)
+    box = draw.textbbox((0, 0), CTA_TEXT, font=font_cta)
+    cw, ch = box[2] - box[0], box[3] - box[1]
+    draw.text(
+        ((WIDTH - cw) // 2 - box[0], HEIGHT - CTA_BAR_H + (CTA_BAR_H - ch) // 2 - box[1]),
+        CTA_TEXT,
+        fill=WHITE,
+        font=font_cta,
+    )
 
-    return img
-
-
-def add_official_logo(img):
-    """
-    Composite the REAL official logo onto a PIL Image using the same
-    approach as tools/add_logo.py: white rounded chip, bottom center.
-    Never redraws the logo — pastes the exact pixels from brand/official-logo-transparent.png.
-    """
-    from PIL import ImageFilter
-    
-    logo_path = BRAND_DIR / "official-logo-transparent.png"
-    if not logo_path.exists():
-        return img
-    
-    img = img.convert("RGBA")
-    W, H = img.size
-    
-    logo = Image.open(logo_path).convert("RGBA")
-    bbox = logo.getbbox()
-    if bbox:
-        logo = logo.crop(bbox)
-    lw, lh = logo.size
-    
-    # Chip sizing: logo ~26% of image width
-    target_lw = int(W * 0.26)
-    target_lh = int(target_lw * lh / lw)
-    if target_lh > int(H * 0.20):
-        target_lh = int(H * 0.20)
-        target_lw = int(target_lh * lw / lh)
-    pad = int(target_lw * 0.16)
-    chip_w, chip_h = target_lw + 2 * pad, target_lh + 2 * pad
-    chip_x = (W - chip_w) // 2
-    chip_y = H - chip_h - int(H * 0.035)
-    
-    rad = int(chip_h * 0.22)
-    
-    # Shadow
-    sh = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    ds = ImageDraw.Draw(sh)
-    ds.rounded_rectangle(
-        [chip_x, chip_y + 6, chip_x + chip_w, chip_y + chip_h + 6],
-        radius=rad, fill=(0, 0, 30, 110))
-    sh = sh.filter(ImageFilter.GaussianBlur(10))
-    img = Image.alpha_composite(img, sh)
-    
-    # White chip
-    ov = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    d = ImageDraw.Draw(ov)
-    d.rounded_rectangle(
-        [chip_x, chip_y, chip_x + chip_w, chip_y + chip_h],
-        radius=rad, fill=(255, 255, 255, 255))
-    
-    # Paste logo (exact colours, only scaled)
-    logo_scaled = logo.resize((target_lw, target_lh), Image.LANCZOS)
-    ov.alpha_composite(logo_scaled, (chip_x + pad, chip_y + pad))
-    
-    img = Image.alpha_composite(img, ov)
-    return img.convert("RGB")
+    # Grain last, over type and all, so "image + type = one texture".
+    return add_film_grain(img)
 
 
-def generate_video(script=None):
-    """Generate a short-form video from a script"""
+def generate_video(script=None, output_path=None):
+    """Generate a short-form video from a script."""
     if script is None:
-        script = random.choice(VIDEO_SCRIPTS)
+        script = script_for_date(datetime.now().date())
 
     print(f"🎬 Generating video: {script['title']}")
 
-    # Create slide images with official logo composited
+    # No logo on these frames — locked brand rule, see the top of this file.
     slide_images = []
     for i, slide in enumerate(script["slides"]):
-        img = create_slide_image(slide, logo_path=None)  # no inline logo
-        img = add_official_logo(img)  # composite real logo via chip
+        img = create_slide_image(slide)
         slide_images.append((img, slide.get("duration", 3)))
         print(f"   📸 Slide {i+1}: {slide['text'][:30]}... ({slide['duration']}s)")
 
     if not MOVIEPY_AVAILABLE:
-        print("⚠️ moviepy not available, saving as GIF")
-        gif_path = OUTPUT_DIR / f"video_{datetime.now().strftime('%Y%m%d_%H%M%S')}.gif"
-        pil_frames = []
-        for img, duration in slide_images:
-            pil_frames.extend([img] * int(duration * 2))
-        pil_frames[0].save(gif_path, save_all=True, append_images=pil_frames[1:], duration=500, loop=0)
-        print(f"✅ Saved GIF: {gif_path}")
-        return str(gif_path), script["title"]
+        raise RuntimeError("MoviePy is required for YouTube Shorts generation; refusing to emit a GIF.")
 
-    # Generate MP4 with moviepy
+    # Use a date-based name in scheduled runs so a retry overwrites the same
+    # generated file instead of leaving multiple ambiguous outputs.
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    video_path = OUTPUT_DIR / f"docoga_short_{timestamp}.mp4"
+    video_path = Path(output_path) if output_path else OUTPUT_DIR / f"docoga_short_{timestamp}.mp4"
+    video_path.parent.mkdir(parents=True, exist_ok=True)
 
     clips = []
     for img, duration in slide_images:
@@ -316,7 +317,10 @@ if __name__ == "__main__":
     print("🎬 DocOga Short Video Generator")
     print("🎨 Brand: NAVY #002040 | BLUE #0060e0 | SKY #0080e0")
     print("=" * 50)
-    video_path, title = generate_video()
+    run_date = datetime.now().date()
+    script = script_for_date(run_date)
+    output_path = OUTPUT_DIR / f"docoga_short_{run_date:%Y%m%d}.mp4"
+    video_path, title = generate_video(script=script, output_path=output_path)
     print(f"\n📊 Result:")
     print(f"   Title: {title}")
     print(f"   Path: {video_path}")
