@@ -67,11 +67,31 @@ jobs:
             https://api.cloudflare.com/client/v4/user/tokens/verify \
             | head -c 1200
           echo
-          echo "########## workers on this account ##########"
+          echo "########## accounts this token can see ##########"
+          curl -sS --max-time 25 \
+            -H "Authorization: Bearer $CF_TOKEN" \
+            -H "Content-Type: application/json" \
+            "https://api.cloudflare.com/client/v4/accounts?per_page=50" \
+            | head -c 3000
+          echo
+          echo "########## memberships ##########"
+          curl -sS --max-time 25 \
+            -H "Authorization: Bearer $CF_TOKEN" \
+            -H "Content-Type: application/json" \
+            "https://api.cloudflare.com/client/v4/memberships?per_page=50" \
+            | head -c 3000
+          echo
+          echo "########## workers in account $CF_ACCOUNT ##########"
           curl -sS --max-time 25 \
             -H "Authorization: Bearer $CF_TOKEN" \
             -H "Content-Type: application/json" \
             "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/workers/scripts" \
+            | head -c 2000
+          echo
+          echo "########## KV namespaces in account $CF_ACCOUNT ##########"
+          curl -sS --max-time 25 \
+            -H "Authorization: Bearer $CF_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/storage/kv/namespaces" \
             | head -c 2000
 
       - name: Deploy worker/ as docoga-pass
@@ -93,9 +113,12 @@ jobs:
             "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/storage/kv/namespaces" \
             2>&1 | head -c 1500 | tee -a "$DEPLOY_LOG"
           echo
-          echo "########## wrangler deploy ##########" | tee -a "$DEPLOY_LOG"
+          echo "########## which config does wrangler pick up? ##########" | tee -a "$DEPLOY_LOG"
+          ( cd worker && npx --yes wrangler@latest deploy --dry-run --outdir /tmp/probe 2>&1 | grep -iE "config|Reading|services/|name" | head -10 ) | tee -a "$DEPLOY_LOG"
+          echo
+          echo "########## wrangler deploy (explicit config) ##########" | tee -a "$DEPLOY_LOG"
           set +e
-          ( cd worker && npx --yes wrangler@latest deploy ) > >(tee -a "$DEPLOY_LOG") 2>&1
+          ( cd worker && npx --yes wrangler@latest deploy --config wrangler.toml ) > >(tee -a "$DEPLOY_LOG") 2>&1
           DEXIT=$?
           set -e
           echo "deploy_exit=$DEXIT" | tee -a "$DEPLOY_LOG"
