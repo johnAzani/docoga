@@ -560,6 +560,7 @@ item 9.
 | 14 | 7 Oct 2026 | **PR #5 merged** — recovery landed on `main` (`bfa555b`); independently verified depth 138, zero files dropped, QA + integrity green, merge push CI green | `bfa555b` |
 | 15 | 7 Oct 2026 | Fixed `youtube_queue.yml`: empty queue now skips with a notice instead of failing red (mirrors the scheduler) | PR #6 |
 | 16 | 8 Oct 2026 | **Caught a locked-brand-rule violation before it shipped:** the new unattended Shorts pipeline stamped the official logo on every video frame (banned) and collided with the CTA bar. Removed the logo from video, rebuilt the layout, restored film grain σ≈2.2, added 8 regression tests and proved the detector fails on the regression | `945b28e` |
+| 19 | 8 Oct 2026 | **Research before building: measured the state pages and found they fail Google's doorway-page test — median 94.2% similarity between same-tool state pages, median 3 unique words each (worst pairs 99.6%).** So "expand 12 states to 37" was the wrong next move. Wrote `docs/STATE_TENANCY_RESEARCH.md`: verified statute names, sections and sources for 17 of 37 jurisdictions, tiered A-E, with everything unverified listed and three pending bills flagged as NOT law. Added `tools/audit_state_pages.py` to measure and later enforce (80% / 250 unique words / 500 body words) | PR #12 |
 | 18 | 8 Oct 2026 | **Gave the armed Shorts pipeline a memory and an alarm:** publish ledger (`tools/youtube_ledger.py`) + duplicate guard, a secrets preflight that names what is missing, a `YT_PRIVACY` repo-variable switch, a run summary, and a labelled issue opened on any failed run. Verified by simulating all nine scenarios locally (the token cannot dispatch), which caught a real bug: `force=true` exited 3 and failed the run instead of publishing. 48 tests green | PR #11 |
 | 17 | 8 Oct 2026 | Merged PR #9 to `main` (`72ec955`) — the pipeline plus the brand fix; PR #8 auto-merged. **This armed the YouTube scheduler: next public upload attempt Friday 9 Oct, 18:00 WAT, and the old empty-queue safety no longer applies** | `72ec955` |
 
@@ -712,11 +713,32 @@ item 9.
     (*is the live build the v2 pass model?*) is still unanswered and needs the
     owner's machine.
 
-11. **State SEO pages stand at 12 of 37** (36 states + FCT), 48 pages. PLAN.md
-    §3 rung 1 and §4 both point at full state coverage, and it is the largest
-    remaining reach lever inside the repo. Not started: each new state needs
-    its own honest wording, because the doorway-page risk is real if 25 more
-    pages differ only by the state name.
+11. **State SEO pages stand at 12 of 37** (36 states + FCT), 48 pages — and
+    **they were measured before anything was added to them** (8 Oct 2026). The
+    result is in `docs/STATE_TENANCY_RESEARCH.md` §1: same-tool state pages are
+    a median of **94.2% identical**, with a median of **3 unique words** per
+    page; the worst pairs (Enugu/Oyo/Kano) are 99.6% identical. That is
+    Google's doorway-page pattern almost verbatim ("pages targeted at specific
+    regions or cities that funnel users to one page"), and the failure mode is
+    deindexing, not a ranking slip.
+
+    **So expanding to 37 is not the next step — earning the existing 48 is.**
+    Adding ~100 more pages like these would have been the single most damaging
+    thing available to do to the site's search traffic.
+
+    The research that replaces the guesswork is done (`STATE_TENANCY_RESEARCH.md`):
+    17 of 37 jurisdictions now have a named, sourced statute or an honest
+    negative finding (Lagos and Edo down to section level from primary state
+    sources; Cross River and Kwara from official state law portals; Rivers has
+    \*two\* statutes and its Landlord & Tenant Law Cap 75 s.75(1) makes rent
+    payable **in arrears** by default — the reverse of the national assumption).
+    Three pending bills must stay labelled as bills. One state we already
+    publish four pages for (Ogun) has nothing verifiable behind it.
+
+    `tools/audit_state_pages.py` measures it and will enforce it (≤80%
+    similarity, ≥250 unique words, ≥500 body words) — **deliberately not wired
+    into `qa.py` yet**, because a gate that fails all 48 pages gets deleted
+    rather than obeyed. It gets wired the moment the enrichment lands.
 
 ---
 
