@@ -1167,11 +1167,176 @@ KWARA = dict(
     ],
 )
 
+
+# ---------------------------------------------------------------------------
+# RIVERS — Tier B. Two named statutes with chapter citations, from a
+# practitioner and an academic source. No primary text read yet, so the
+# graduated ladder is given only where both sources agree on it.
+# ---------------------------------------------------------------------------
+RIVERS = dict(
+    slug="rivers",
+    name="Rivers",
+    place="Rivers State (Port Harcourt)",
+    full="Rivers State",
+    tier="B",
+    tier_note="Named statutes with chapter citations from a practitioner and an academic source. Primary text not yet read.",
+
+    statutes=[
+        dict(
+            title="Recovery of Premises Law",
+            citation="Cap. 109, Laws of Rivers State of Nigeria, 1999",
+            commenced="1999",
+            note="Governsquit notices and the procedure for recovering possession.",
+            source="https://barristerng.com/expiration-of-rent-does-not-determine-a-tenancy-relationship-c-s-onyimah-esq/",
+        ),
+        dict(
+            title="Landlord and Tenant Law",
+            citation="Cap. 75, Laws of Rivers State",
+            note="Governs the wider landlord-and-tenant relationship, including when rent falls due.",
+            source="https://barristerng.com/expiration-of-rent-does-not-determine-a-tenancy-relationship-c-s-onyimah-esq/",
+        ),
+    ],
+
+    forum=dict(
+        name="the Magistrates’ Courts and the High Court of Rivers State",
+        text=(
+            "Recovery proceedings run through the courts of Rivers State — a notice to quit in "
+            "practice issues in the name of the Magistrate Court of Rivers State, in the "
+            "magisterial district where the premises sit (for example, the Port Harcourt "
+            "Magisterial District). <b>We have not read the primary text establishing a Rivers "
+            "Rent Tribunal</b>, and we do not assert that one exists."
+        ),
+    ),
+
+    anniversary_rule=dict(
+        cite="s.7",
+        text=(
+            "<b>This is the Rivers rule that most affects real cases, and it is the opposite of "
+            "Lagos.</b> s.7: a notice to quit must terminate on the <b>eve of the anniversary</b> "
+            "of the current term. The notice must end on the day before the next term would "
+            "renew, and it must cover the full statutory length between the date of service and "
+            "that eve."
+        ),
+        contrast=(
+            "Lagos s.13(4) is the exception: three- and six-month notices there <i>need not</i> "
+            "end on the anniversary, and may end on or after the term expires. In Rivers — "
+            "and, on the practitioner account, <b>in most Nigerian states except Lagos</b> — "
+            "the eve-of-anniversary rule applies. Get the date wrong and the notice is defective."
+        ),
+        worked=(
+            "A yearly tenancy that began on 1 January 2025 runs to 31 December 2025. A valid "
+            "six-month quit notice must expire on that 31 December — the eve of the "
+            "anniversary — not a week either side of it."
+        ),
+    ),
+
+    notice_ladder=[
+        ("Yearly tenant", "six months", "s.6(1)(d)"),
+    ],
+    notice_ladder_note=(
+        "<b>Only the yearly tier is published.</b> s.6(1)(d) giving a yearly tenant six months "
+        "is stated by a Rivers practitioner and is consistent with the national pattern. We have "
+        "not read the primary text, so we do not publish the weekly, monthly or quarterly tiers "
+        "rather than assume them."
+    ),
+    notice_extras=[
+        "<b>s.6(2)</b> — the nature of a tenancy is determined, absent contrary evidence, by "
+        "reference to the <b>mode of payment and demand for rent</b>, not by what the agreement "
+        "calls it.",
+        "<b>Expiry of rent does not end the tenancy.</b> A tenancy is determined by a valid "
+        "notice (or effluxion of a fixed term) — not by the rent running out. A landlord who "
+        "treats the end of the paid period as the end of the tenancy and moves to eject is "
+        "acting unlawfully.",
+        "<b>After the quit notice expires</b>, the landlord serves a further written notice of "
+        "the owner’s intention to apply to court to recover possession, of not less than "
+        "<b>seven days</b>. That notice cannot be issued before the quit notice expires.",
+        "<b>Seven clear days:</b> the day of service is excluded and the day of expiry included.",
+    ],
+
+    rent_in_arrears=dict(
+        cite="Landlord and Tenant Law, Cap. 75, s.75(1)",
+        text=(
+            "<b>Rivers reverses the assumption most Nigerian tenants make.</b> s.75(1) of the "
+            "Landlord and Tenant Law: rent is payable <b>in arrears</b> — at the end of the "
+            "period — unless the parties agree otherwise."
+        ),
+        contrast=(
+            "The national practice is rent in advance, and Lagos s.4 regulates how much advance "
+            "may be taken. Kwara’s Chapter L4 is the same as Rivers: rent is recoverable "
+            "only once it is in arrear. In Rivers, unless your agreement says otherwise, paying "
+            "up front is a concession you are making, not a duty you owe."
+        ),
+    ),
+
+    advance_rent=dict(
+        cite="no cap verified",
+        text=(
+            "We have found <b>no Rivers equivalent of the Lagos s.4 advance-rent cap</b>. On the "
+            "statutory starting point above, rent in Rivers is not even due until it is in "
+            "arrear. Whatever advance is agreed should be written into the tenancy agreement "
+            "before money moves — and note that a written advance term displaces the "
+            "s.75(1) default."
+        ),
+    ),
+
+    receipts=dict(
+        cite="not verified",
+        text=(
+            "We have not verified a Rivers statutory duty to issue a rent receipt with prescribed "
+            "contents, so none is claimed. The ordinary position still applies: a receipt is the "
+            "evidence that rent was paid, and whoever asserts payment bears the burden of "
+            "proving it."
+        ),
+    ),
+
+    caution_fee=dict(
+        cite="not verified",
+        text=(
+            "We have not verified a Rivers provision on premiums, caution fees or deposits of the "
+            "kind found in Edo s.6(4), Cross River s.6(4) and Kwara s.5(4). Nothing here should "
+            "be read as saying Rivers bans or permits them — we simply have not read the "
+            "statute. Record the deposit and its refund terms in writing."
+        ),
+    ),
+
+    increase_challenge=dict(
+        cite="not verified",
+        text=(
+            "We have not verified a Rivers equivalent of the Lagos s.37 application to have an "
+            "increase declared unreasonable."
+        ),
+        false_claim="No percentage cap on rent increases exists in Rivers or anywhere in Nigeria.",
+    ),
+
+    protections=[
+        "A landlord may not resort to self-help — no lock-outs, no removal of goods, no "
+        "disconnection. Unlawful eviction sounds in damages.",
+        "A defect in the issue, content or service of a notice vitiates the whole proceeding.",
+        "The date of <b>service</b> is the material date, not the date written on the notice.",
+    ],
+
+    sources=[
+        "C.S. Onyimah, “Expiration of Rent does not Determine a Tenancy Relationship”, BarristerNG — Rivers State Recovery of Premises Law Cap. 109, ss.6(1)(d), 6(2), 7: https://barristerng.com/expiration-of-rent-does-not-determine-a-tenancy-relationship-c-s-onyimah-esq/",
+        "Dr Chris Wigwe, “Recovery of Premises in Nigeria: An Assessment of the Relationship of Landlord and Tenant Law”, Journal of Commercial and Contemporary Law — section-by-section mapping of the Rivers Law (ss.6(2), 7, 8, 17, 18, 20–22) against the Abuja Act and the Lagos Rent Control Law: https://www.researchgate.net/profile/Dr-Christian-Wigwe/publication/274377789",
+        "https://lawgivernigeria.blogspot.com/2016/07/recovery-of-premises-in-nigeria-drafts.html — Rivers Magistrate Court forms and procedure",
+    ],
+
+    open_questions=[
+        "The graduated notice periods for weekly, monthly and quarterly tenancies under Cap. 109 — not published pending the primary text.",
+        "Whether the proviso to s.6(1)(d) creates an arrears shortcut, and at what threshold.",
+        "Whether Rivers has a Rent Tribunal in operation, and if so its composition and jurisdiction.",
+        "The full wording of Landlord and Tenant Law Cap. 75 s.75(1).",
+        "Whether Rivers has a rent-control or standard-rent regime in addition to the recovery law.",
+    ],
+)
+
+
 # ---------------------------------------------------------------------------
 # Registry. A state appears here only if it reaches tier A-D.
 # ---------------------------------------------------------------------------
 STATE_LAW = {
     "lagos": LAGOS,
+    "rivers": RIVERS,
     "abuja": ABUJA,
     "edo": EDO,
     "cross-river": CROSS_RIVER,
@@ -1184,7 +1349,6 @@ TIER_E_PUBLISHED = ["ogun", "plateau"]
 
 # States we publish that sit below tier A and still need primary confirmation.
 NEEDS_CONFIRMATION = {
-    "rivers": "B — Recovery of Premises Law Cap 109 (1999) and Landlord & Tenant Law Cap 75 s.75(1); named statutes but no primary text read yet.",
     "oyo": "B/C — Recovery of Premises Law Cap 144 and a Rent (Increase Restriction) Law; two sources disagree on the chapter number (Cap 144 vs Cap 71).",
     "enugu": "B — Landlord and Tenant Law, Cap. 101, Laws of Enugu State 2004. An amendment BILL would abolish caution fees; it has NOT passed (ICIR, Dec 2025).",
     "delta": "C — Rent Control and Recovery of Residential Premises Law, Cap. R5, Laws of Delta State. A 2026 Tenancy Bill is at second reading; not law.",

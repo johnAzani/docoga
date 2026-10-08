@@ -305,8 +305,12 @@ def notice_rows(slug):
     if slug == 'lagos':
         return LAGOS_NOTICE
     law = STATE_LAW.get(slug)
-    if law and law.get('notice_ladder'):
-        return [(a, b) for a, b, _cite in law['notice_ladder']]
+    ladder = (law or {}).get('notice_ladder') or []
+    # Only replace the national ladder where we actually verified most of it.
+    # Rivers publishes the yearly tier alone; one row would read as if the
+    # other tiers did not exist, so the general ladder is shown with a note.
+    if len(ladder) >= 3:
+        return [(a, b) for a, b, _cite in ladder]
     return DEFAULT_NOTICE
 
 
@@ -450,6 +454,17 @@ def tool_block(law, tslug):
             out.append('<ul>' + ''.join('<li>%s</li>' % e for e in extras) + '</ul>')
         if law.get('notice_ladder_gap'):
             out.append('<p class="law">%s</p>' % law['notice_ladder_gap'])
+        if law.get('notice_ladder_note'):
+            out.append('<p class="law">%s</p>' % law['notice_ladder_note'])
+        for key in ('anniversary_rule', 'rent_in_arrears'):
+            if law.get(key):
+                heading = ('When the notice must expire' if key == 'anniversary_rule'
+                           else 'When rent is due')
+                out.append('<h3 style="font-size:15px;margin:14px 0 6px">%s</h3>' % heading)
+                out.append('<p class="law">%s</p>' % law[key]['text'])
+                for sub in ('contrast', 'worked'):
+                    if law[key].get(sub):
+                        out.append('<p class="law">%s</p>' % law[key][sub])
         if law.get('service'):
             out.append('<p class="law"><b>Service:</b> %s</p>' % law['service']['text'])
         g = law.get('grounds_for_possession')
