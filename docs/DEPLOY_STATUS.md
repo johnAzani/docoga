@@ -108,7 +108,42 @@ is not fetchable as a page. Everything above is inference from controls.
   only registers `workflow_dispatch` from the **default branch**, so this is
   dispatchable once it lands on `main` (it is in PR #11).
 
-## 8. To let the agent fix this itself
+## 8. Token diagnosis — measured 8 Oct 2026
+
+A Cloudflare API token was added to the repo as `CLOUDFLARE_API_TOKEN` and used
+from GitHub Actions. Result per endpoint:
+
+| Endpoint | Result |
+|---|---|
+| `GET /accounts` | **success** — sees `276c50d7329e162bd36d1ef8eb3e7566`, *"Azanijohn2017@gmail.com's Account"*, created 2026-09-18 |
+| `GET /accounts/{id}/workers/scripts` | `{"result": []}` — empty |
+| `GET /accounts/{id}/storage/kv/namespaces` | `Authentication error` (code 10000) |
+| `GET /accounts/{id}/workers/scripts/docoga-pass/secrets` | `No access to the specified resource` |
+| `GET /user/tokens/verify` | `Invalid API Token` (code 1000) |
+
+**Reading these:**
+
+- The token is **valid** and the **account ID is correct** — `/accounts` would have
+  failed otherwise.
+- `token/verify` returning "Invalid API Token" is **expected and not evidence of a
+  bad token**: that endpoint authenticates *user* tokens, not account-scoped API
+  tokens.
+- The failures are therefore **permission** failures, not credential failures. The
+  token cannot read Workers, cannot read KV, and cannot read Worker secrets. It has
+  at most Account-level read.
+
+**Conclusion: the token was created without the Workers permissions.** It needs the
+**Edit Cloudflare Workers** template, which includes Workers Scripts:Edit *and*
+Workers KV Storage:Edit. The KV permission is mandatory here — `worker/wrangler.toml`
+binds namespace `f3a5afebe7d04bb0a6018c0d7d355253`.
+
+Separate bug found and fixed in passing: `npx wrangler deploy` run from `worker/`
+was picking up the **root `wrangler.jsonc`** and targeting `docoga-git` instead of
+`worker/wrangler.toml` / `docoga-pass`. Fixed by passing `--config wrangler.toml`
+explicitly. After that the deploy targeted `docoga-pass` correctly and failed only
+on permissions.
+
+## 9. To let the agent fix this itself
 
 Give the repo a Cloudflare API token as a secret:
 
