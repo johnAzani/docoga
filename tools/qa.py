@@ -114,11 +114,27 @@ for f, html in [("index.html", idx), ("success.html", suc)]:
     closes = html.count("</script>")
     check(f"{f}: balanced <script> tags ({opens}/{closes})", opens == closes)
     warn(f"{f}: no duplicate static ids", len(re.findall(r'id="', html)) == len(set(re.findall(r'id="([^"]+)"', html))))
-# 60–135KB sanity window (measured Sep 2026: 120.0KB raw with 9 tools = 33.3KB gzipped
-# over the wire — 6.7% of the 500KB Nigerian-mobile page-weight guidance; single-file by
-# design, no build step). The window catches bloat/corruption. Do NOT raise past 135k
-# without new gzip math.
-check("index.html size in sane range (60–135 KB)", 60000 <= len(idx.encode()) <= 135000, f"{len(idx.encode())} bytes")
+# Page-weight guard. The ORIGINAL rule was a 60–135KB RAW window (Sep 2026: 120.0KB raw
+# with 9 tools = 33.3KB gzipped). Raw bytes are only a proxy — what reaches a phone on
+# Nigerian data is the compressed payload, and raw size punishes exactly the thing we
+# want to do (add tools) without tracking the thing we care about (load time).
+#
+# New gzip math, 8 Oct 2026, with 10 tools + a Business pricing tier:
+#     135,856 bytes raw -> 38,217 bytes gzipped (28.1%)
+#     i.e. 37.3KB over the wire, up from 33.3KB at the 9-tool baseline.
+#     ~7.5% of the 500KB Nigerian-mobile page-weight guidance. Still single-file by
+#     design, no build step.
+#
+# So: gate on GZIPPED size (the real metric), ceiling 48KB — comfortable headroom above
+# the current 37.3KB for several more tools. Keep a generous RAW ceiling as a pure
+# corruption tripwire (a duplicated or concatenated file blows past it immediately).
+# Revisit the 48KB gzip ceiling if we ever add images or a second script bundle.
+import gzip as _gzip
+_idx_gz = len(_gzip.compress(idx.encode(), 9))
+check("index.html gzipped payload under 48 KB (real page weight)",
+      _idx_gz <= 48 * 1024, f"{_idx_gz} bytes gzipped")
+check("index.html raw size sane (corruption tripwire, 40–200 KB)",
+      40000 <= len(idx.encode()) <= 200000, f"{len(idx.encode())} bytes raw")
 
 import json as _json
 ld_blocks = re.findall(r'<script type="application/ld\+json">(.*?)</script>', idx, re.DOTALL)

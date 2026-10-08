@@ -144,6 +144,42 @@ win.location.hash = '#not-a-real-page';
 win.dispatchEvent(new win.Event('hashchange'));
 check('unknown hash falls back to home', $(dom, 'page-home').style.display === 'block');
 
+/* ---------- pricing page is a revenue surface — guard its copy ---------- */
+section('pricing page (revenue surface)');
+win.location.hash = '#pricing';
+win.dispatchEvent(new win.Event('hashchange'));
+const priceSec = $(dom, 'page-pricing');
+check('pricing route renders', priceSec.style.display === 'block');
+
+const priceText = priceSec.textContent;
+const cards = priceSec.querySelectorAll('.price-card');
+check('pricing shows all 3 tiers', cards.length === 3, 'cards=' + cards.length);
+
+// The tool count is stated in marketing copy. It must match the real tool count,
+// or we advertise fewer tools than we ship.
+const realToolCount = lex(dom, 'Object.keys(RENDERERS).length');
+for (const stale of ['All four tools', 'All 9 tools', 'All nine tools', 'All 4 tools']) {
+  check('pricing copy is not stale: "' + stale + '"', !priceText.includes(stale), 'found stale copy');
+}
+check('pricing states the real tool count on Oga Pass',
+      priceText.includes('All ' + realToolCount + ' tools') || priceText.includes('All ten tools'),
+      'RENDERERS has ' + realToolCount + ' tools');
+
+// The newest, highest-value tool must be named on the paid tier.
+check('Oga Pass names Power of Attorney', /power of attorney/i.test(priceText));
+
+// Business tier must exist and must be contactable.
+check('Business tier present', priceText.includes('Business'));
+const bizLink = priceSec.querySelector('a[href*="wa.me"]');
+check('Business tier links to WhatsApp', !!bizLink, bizLink ? bizLink.getAttribute('href').slice(0, 40) : 'none');
+check('Business WhatsApp uses the configured support number',
+      !!bizLink && bizLink.getAttribute('href').includes(lex(dom, 'SUPPORT_WHATSAPP')));
+
+// The buy button must still be wired.
+check('Oga Pass buy button present and wired',
+      !!$(dom, 'buy-btn') && /buyPass\(/.test($(dom, 'buy-btn').getAttribute('onclick') || ''));
+
+
 section('Power of Attorney (diaspora tool)');
 const POWERS_KEYS = ['poa_k1','poa_k2','poa_k3','poa_k4','poa_k5','poa_k6','poa_k7','poa_k8'];
 
