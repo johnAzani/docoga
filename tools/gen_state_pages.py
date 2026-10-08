@@ -277,13 +277,22 @@ def overlay(st, slug):
     """
     law = STATE_LAW.get(slug)
     if law:
-        st['courts'] = law['forum']['name']
-        st['law'] = law['statutes'][0]['title']
-        st['law_note'] = '(%s)' % law['statutes'][0].get('citation', '')
+        forum = law.get('forum') or {}
+        st['courts'] = forum.get('name') or (
+            'the courts of %s (not yet confirmed from the primary text)' % law['name'])
+        # Kano deliberately has no `statutes` entry: we could not cite one, and
+        # inventing a title would be worse than naming nothing.
+        _s0 = (law.get('statutes') or [None])[0]
+        st['law'] = _s0['title'] if _s0 else (
+            'a law we could not verify for %s' % law['name'])
+        st['law_note'] = (' (%s)' % _s0.get('citation', '')) if _s0 else (
+            ' We looked and could not cite one — see the note below.')
         st['notice_intro'] = (
             'Verified against <i>%s</i> \u2014 %s. Where the agreement is '
-            'silent, the minimum notice is:' % (
-                law['statutes'][0]['title'], law['statutes'][0].get('citation', '')))
+            'silent, the minimum notice is:' % (_s0['title'], _s0.get('citation', ''))
+            if _s0 else
+            'We could not verify this state\u2019s own statute, so the table below is '
+            'the general Nigerian position rather than a citation:')
         ar = law.get('advance_rent') or {}
         st['advance'] = ar.get('text', '') or (
             'This state\u2019s statute sets no cap we have been able to verify \u2014 '
@@ -295,6 +304,13 @@ def overlay(st, slug):
             'We have <b>not</b> verified this state\u2019s own statute, so the '
             'table below is the general Nigerian position rather than a citation. '
             'Confirm it locally before relying on it:')
+        # Do not assert a forum or a statute we cannot cite. These strings were
+        # hand-written before the research and stated specific courts and laws
+        # for states whose legislation had never been checked.
+        st['courts'] = 'the courts of %s (not yet verified for this state)' % st['name']
+        st['law'] = 'a recovery-of-premises or landlord-and-tenant law we have not been able to verify'
+        st['law_note'] = ('We have not located this state\u2019s own statute, so we do not '
+                          'name one. See the note below.')
         st['advance'] = (
             'We have found no advance-rent cap in force for this state. Whatever '
             'you agree, record it in the tenancy agreement before money moves.')
@@ -319,7 +335,7 @@ def notice_table(slug, place):
         f'<tr><td>{a}</td><td>{b}</td></tr>' for a, b in notice_rows(slug)
     )
     law = STATE_LAW.get(slug)
-    if law:
+    if law and law.get('statutes'):
         cite = ' &middot; '.join(
             '<b>s.%s</b>' % r[2].replace('s.', '') if r[2].startswith('s.') else r[2]
             for r in law.get('notice_ladder', [])[:1]
@@ -346,14 +362,22 @@ def law_block(slug, tslug):
              '<h2>What the law actually says in %s</h2>' % law['name']]
 
     # --- the statute itself, with citation -------------------------------
-    st0 = law['statutes'][0]
-    parts.append('<p class="law"><b>The statute:</b> <i>%s</i> &mdash; %s. Commenced %s.</p>' % (
-        st0['title'], st0.get('citation', ''), st0.get('commenced', 'date not stated')))
-    if st0.get('note'):
-        parts.append('<p class="law">%s</p>' % st0['note'])
+    # Only where we can cite one. Kano has none, and the honest absence is
+    # carried by its verified_negative and inheritance blocks instead.
+    st0 = (law.get('statutes') or [None])[0]
+    if st0:
+        parts.append('<p class="law"><b>The statute:</b> <i>%s</i> &mdash; %s. Commenced %s.</p>' % (
+            st0['title'], st0.get('citation', ''), st0.get('commenced', 'date not stated')))
+        if st0.get('note'):
+            parts.append('<p class="law">%s</p>' % st0['note'])
+    else:
+        parts.append('<p class="law"><b>No citable statute found.</b> We could not locate a '
+                     'tenancy or rent-control statute for %s from any source we trust. '
+                     'Rather than name one we cannot cite, the sections below set out what '
+                     'we did find.</p>' % law['name'])
 
     # --- forum -----------------------------------------------------------
-    if 'forum' in law:
+    if law.get('forum'):
         parts.append('<h3 style="font-size:15px;margin:14px 0 6px">Where a dispute goes</h3>')
         parts.append('<p class="law">%s</p>' % law['forum']['text'])
         for key in ('important', 'adr', 'valuers', 'procedure', 'rules_committee', 'zones', 'terms'):
@@ -364,20 +388,31 @@ def law_block(slug, tslug):
     parts.extend(tool_block(law, tslug))
 
     # --- the things worth knowing regardless of tool --------------------
-    for key, heading in (('repairs', 'Who repairs what'),
+    for key, heading in (('correction', 'A correction to our own research'),
+                         ('verified_negative', 'What we found when we looked'),
+                         ('inheritance', 'What probably governs recovery instead'),
+                         ('alternative_accommodation', 'Alternative accommodation'),
+                         ('repairs', 'Who repairs what'),
                          ('security_of_tenancy', 'Protection from retaliatory notices'),
                          ('first_six_months', 'A new tenant&rsquo;s first six months'),
                          ('suitable_alternative_accommodation', 'Alternative accommodation'),
                          ('distress', 'Seizing a tenant&rsquo;s property'),
                          ('excluded_areas', 'Where this law does <i>not</i> apply'),
-                         ('application', 'What the law covers')):
+                         ('application', 'What the law covers'),
+                         ('related', 'A related jurisdiction')):
         if law.get(key):
-            parts.append('<h3 style="font-size:15px;margin:14px 0 6px">%s</h3>' % heading)
-            parts.append('<p class="law">%s</p>' % law[key]['text'])
-            for sub in ('why', 'plain', 'detail', 'definitions', 'definition', 'protection',
-                        'supersedes', 'exception', 'contrast', 'penalty', 'must_state',
-                        'also_excluded', 'arrears', 'secondary_conflict', 'stale_warning',
-                        'how_to_read', 'grandfather'):
+            blk = law[key] or {}
+            head = blk.get('title') or heading
+            parts.append('<h3 style="font-size:15px;margin:14px 0 6px">%s</h3>' % head)
+            if blk.get('text'):
+                parts.append('<p class="law">%s</p>' % blk['text'])
+            if blk.get('summary'):
+                parts.append('<p class="law">%s</p>' % blk['summary'])
+            for sub in ('why', 'why_it_matters', 'plain', 'detail', 'definitions', 'definition',
+                        'protection', 'supersedes', 'exception', 'contrast', 'penalty',
+                        'must_state', 'also_excluded', 'arrears', 'secondary_conflict',
+                        'stale_warning', 'how_to_read', 'grandfather', 'caution',
+                        'statute', 'enugu', 'important'):
                 if law[key].get(sub):
                     v = law[key][sub]
                     if isinstance(v, list):

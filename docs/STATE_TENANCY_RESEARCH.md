@@ -597,3 +597,61 @@ not have four-tool pages at all.
 
 Cross River and Kwara are tier A but are **not** among the 12 states we
 currently publish. They are the two states we could add honestly, today.
+
+---
+
+## 13. Corrections from the Kano / Anambra pass (8 Oct 2026)
+
+### 13.1 Anambra was wrong in §8 — it was tier D, and it is not
+
+§8 recorded Anambra as "none in force, bill pending". **That was wrong.**
+
+The Court of Appeal in *Amah v. Ozouli* (CA/E/298/2006) [2010] NGCA 6 identifies
+the **Landlord and Tenant Law, Cap. 76, Laws of Anambra State** as the law
+governing recovery of possession, and quotes from it:
+
+- **s.172** — limitation of orders and judgments.
+- **s.173** — no order for recovery of possession or ejectment unless the court
+  is satisfied that **suitable alternative accommodation is available for the
+  tenant**.
+- **s.173(2)** — the court may order possession **without** proof of alternative
+  accommodation where it considers it reasonable, if a circumstance in **s.174**
+  is proved.
+- **s.144** (from Wigwe) — channels matters to the Magistrate Court where it can
+  hear them, on the Abuja pattern. Wigwe notes the limit: wholly excluding the
+  High Court would offend **s.272 of the 1999 Constitution**.
+
+That is the **same architecture as Kwara s.26 and its Second Schedule** — now
+confirmed in two of our jurisdictions.
+
+What is pending in Anambra is a **new** Rent and Tenancy Law. There was already
+one. Our page previously said otherwise.
+
+### 13.2 A by-product: Enugu's citation is now resolved
+
+The same judgment holds that the law applicable in Enugu is the **Landlord and
+Tenant Law, Cap. 101, Revised Laws of Enugu State, which came into operation on
+27 August 1991**. Our notes carried both "Cap. 101 of 2004" and other dates.
+The 1991 date is commencement; 2004 is the revised edition. Both were right
+about different things.
+
+### 13.3 Kano: the negative survived a second pass, and that is the finding
+
+A second targeted search for Kano returned **no Nigerian authority at all** —
+the results were Kenyan (Cap. 296), Indian (Model Tenancy Act 2021) and US
+state law. On the published sources there is **no Kano rent-control statute**,
+hence no Kano standard rent, no identifiable Kano rent tribunal, and no
+advance-rent cap.
+
+The honest inference is separate from that, and is labelled as inference:
+Kano was carved from the **Northern Region**, whose recovery law is cited as
+the **Recovery of Premises Law, Laws of Northern Nigeria 1963** — given as
+**Cap. 113 Vol. 3** by Wigwe and as **Cap. 115** by a practitioner list. Those
+citations conflict and are not resolved.
+
+### 13.4 A bug the pass exposed
+
+Unverified states were still asserting specific forums and statutes — the
+Ogun page said "Disputes go to the Magistrates' Courts in Ogun State" directly
+above its own tier-E disclaimer. The overlay now replaces those strings with
+an explicit "not yet verified" for any state whose law we cannot cite.

@@ -1331,12 +1331,330 @@ RIVERS = dict(
 )
 
 
+
+# ---------------------------------------------------------------------------
+# ANAMBRA — Tier B. Confirmed by a Court of Appeal judgment, which also
+# corrects an error in this project's own earlier research.
+# ---------------------------------------------------------------------------
+ANAMBRA = dict(
+    slug="anambra",
+    name="Anambra",
+    place="Anambra State (Onitsha / Awka)",
+    full="Anambra State",
+    tier="B",
+    tier_note="Statute confirmed by a Court of Appeal judgment and an academic source. Section contents partly quoted by the Court, not yet read in full.",
+
+    correction=dict(
+        summary="<b>A correction to our own earlier research.</b>",
+        detail=(
+            "We previously recorded Anambra as having no tenancy legislation in force. "
+            "<b>That was wrong.</b> The Court of Appeal in <i>Amah v. Ozouli</i> "
+            "[2010] NGCA 6 (CA/E/298/2006) identifies the "
+            "<b>Landlord and Tenant Law, Cap. 76, Laws of Anambra State</b> as the law "
+            "governing recovery of possession, and quotes from it. What is pending in "
+            "Anambra is a <i>new</i> Rent and Tenancy Law — not the first one."
+        ),
+    ),
+
+    statutes=[
+        dict(
+            title="Landlord and Tenant Law",
+            citation="Cap. 76, Laws of Anambra State",
+            note=(
+                "Identified by the Court of Appeal as the law governing recovery of "
+                "possession of premises in Anambra State, and applied in the state from "
+                "which Enugu was carved in 1991."
+            ),
+            source="https://nigerialii.org/akn/ng/judgment/ngca/2010/6/eng@2010-05-20",
+        ),
+        dict(
+            title="Rent and Tenancy Law (proposed)",
+            citation="—",
+            status="A BILL, NOT LAW. Do not describe its contents as current rules.",
+            note=(
+                "A new Anambra Rent and Tenancy Law has been proposed, following protests "
+                "over rents and agents' fees. It must not be confused with the Landlord and "
+                "Tenant Law Cap. 76, which is in force."
+            ),
+            source="",
+        ),
+    ],
+
+    forum=dict(
+        name="the Magistrates’ Courts and the High Court of Anambra State",
+        text=(
+            "<b>s.144 of the Landlord and Tenant Law</b> follows the Abuja pattern: it "
+            "discourages commencing an action in the High Court where the matter is one the "
+            "Magistrate Court can entertain."
+        ),
+        important=(
+            "Wigwe notes the constitutional limit on that: a provision purporting wholly to "
+            "<b>exclude</b> the High Court’s jurisdiction would be inconsistent with "
+            "<b>s.272 of the 1999 Constitution (as amended)</b>. So the High Court retains "
+            "jurisdiction in Anambra; s.144 channels the ordinary case downward, it does not "
+            "shut the High Court out."
+        ),
+    ),
+
+    alternative_accommodation=dict(
+        cite="s.173 (with s.172 and s.174)",
+        text=(
+            "<b>Anambra is the second jurisdiction we have found, after Kwara, where the court "
+            "must be satisfied about alternative accommodation.</b> On the Court of Appeal’s "
+            "quotation of the law: no order for recovery of possession or ejectment may be made "
+            "unless the court is satisfied that <b>suitable alternative accommodation is "
+            "available for the tenant</b>."
+        ),
+        exception=(
+            "<b>s.173(2)</b>: where the court considers it reasonable to do so, it may make the "
+            "order <b>without proof of suitable alternative accommodation</b> if one or more of "
+            "the circumstances set out in <b>s.174</b> are proved to its satisfaction."
+        ),
+        contrast=(
+            "This is the same architecture as Kwara s.26 and its Second Schedule, and the "
+            "Eastern/Northern cousin of the Cross River Schedule 3 list. Edo, by contrast, lets "
+            "the tribunal dispense with proof of alternative accommodation wherever it considers "
+            "it reasonable. <b>The full text of s.174 has not been read, so the individual "
+            "circumstances are not listed here.</b>"
+        ),
+    ),
+
+    notice_ladder=[],
+    notice_extras=[
+        "<b>Expiry must fall on the eve of the anniversary.</b> A quit notice must terminate at "
+        "midnight on the last day of the current term — for a yearly tenancy running "
+        "1 January to 31 December, a six-month notice must expire on that 31 December, not "
+        "before and not after. This is the general Nigerian rule (see "
+        "<i>African Petroleum Ltd v. Owodunni</i>) and Lagos s.13(4) is the statutory exception.",
+        "<b>The statutory periods are minimums.</b> A notice that is <i>longer</i> than the "
+        "statutory minimum is valid; one that falls short by even a day is ineffective.",
+        "<b>What the parties agree governs first.</b> Where the tenancy agreement fixes the "
+        "notice, that period binds — even a week in a yearly tenancy. The statutory ladder "
+        "applies only where the agreement is silent.",
+        "<b>A month means a calendar month.</b> Under s.18 of the Interpretation Act a month is "
+        "a calendar month reckoned by the Gregorian calendar.",
+        "<b>After the quit notice expires</b>, the landlord serves a further written notice of "
+        "the owner’s intention to apply to court, of not less than <b>seven clear days</b> "
+        "— the day of service excluded, the day of expiry included. It cannot be issued "
+        "before the quit notice expires.",
+        "<b>Unlawful eviction sounds in damages</b> — see <i>Ihenacho v. Uzochukwu</i> "
+        "(1997) 1 SCNJ 117.",
+    ],
+
+    advance_rent=dict(
+        cite="not verified",
+        text=(
+            "We have not read Cap. 76 and have found <b>no Anambra advance-rent cap</b> of the "
+            "Lagos s.4 kind. Nothing here should be read as saying one does or does not exist. "
+            "Record whatever advance is agreed in the tenancy agreement before money moves."
+        ),
+        warning=(
+            "The <b>proposed</b> Rent and Tenancy Law is reported to address advance rent and "
+            "agents’ fees. It is not law and its contents are not stated here."
+        ),
+    ),
+
+    receipts=dict(
+        cite="not verified",
+        text=(
+            "No Anambra statutory receipt duty has been verified, so none is claimed. The "
+            "ordinary evidential position applies: the receipt is the proof that rent was paid."
+        ),
+    ),
+
+    caution_fee=dict(
+        cite="not verified",
+        text=(
+            "We have not read Cap. 76 on premiums, caution fees or deposits, so no Anambra rule "
+            "is stated. Note that neighbouring Edo (s.6(4)), Cross River (s.6(4)) and Kwara "
+            "(s.5(4)) all ban premiums outright — but those are their statutes, not "
+            "Anambra’s, and must not be attributed here."
+        ),
+    ),
+
+    increase_challenge=dict(
+        cite="not verified",
+        text="We have not verified an Anambra equivalent of the Lagos s.37 unreasonable-increase application.",
+        false_claim="No percentage cap on rent increases exists in Anambra or anywhere in Nigeria.",
+    ),
+
+    related=dict(
+        enugu=(
+            "<b>Enugu inherited this law.</b> The Court of Appeal in <i>Amah v. Ozouli</i> held "
+            "that the law applicable in Enugu State is the <b>Landlord and Tenant Law, "
+            "Cap. 101, Revised Laws of Enugu State, which came into operation on "
+            "27 August 1991</b> — resolving the earlier conflict in our notes between "
+            "“Cap. 101 of 2004” and other dates. The 1991 date is when it commenced; "
+            "2004 is the revised edition."
+        ),
+    ),
+
+    protections=[
+        "A landlord may not resort to self-help. Unlawful eviction is actionable in damages.",
+        "The High Court retains jurisdiction in Anambra notwithstanding s.144 — a "
+        "provision wholly excluding it would offend s.272 of the 1999 Constitution.",
+        "Improvements made with the landlord’s written consent may found a counterclaim "
+        "for their unexhausted value.",
+    ],
+
+    sources=[
+        "Court of Appeal, Amah v. Ozouli (CA/E/298/2006) [2010] NGCA 6 — identifies the Landlord and Tenant Law, Cap. 76, Laws of Anambra State and quotes ss.172–174: https://nigerialii.org/akn/ng/judgment/ngca/2010/6/eng@2010-05-20",
+        "Dr Chris Wigwe, “Recovery of Premises in Nigeria”, Journal of Commercial and Contemporary Law — s.144 Landlord and Tenant Law (Anambra) on jurisdiction, and the constitutional limit under s.272: https://www.researchgate.net/profile/Dr-Christian-Wigwe/publication/274377789",
+        "African Petroleum Ltd v. Owodunni (eve-of-anniversary rule); Ihenacho v. Uzochukwu (1997) 1 SCNJ 117 (unlawful eviction)",
+    ],
+
+    open_questions=[
+        "The full text of Cap. 76 — not read. Section contents are known only from the Court of Appeal’s quotation of ss.172–174.",
+        "The individual circumstances listed in s.174 (possession without proof of alternative accommodation).",
+        "Whether Anambra has a separate rent-control or recovery-of-premises statute alongside the Landlord and Tenant Law.",
+        "Whether the proposed Rent and Tenancy Law has been passed — treat as pending until confirmed.",
+    ],
+)
+
+# ---------------------------------------------------------------------------
+# KANO — Tier D for rent control (a verified negative, twice) with a
+# reasoned but unconfirmed inheritance of the Northern Nigeria recovery law.
+# ---------------------------------------------------------------------------
+KANO = dict(
+    slug="kano",
+    name="Kano",
+    place="Kano State",
+    full="Kano State",
+    tier="D",
+    tier_note="Verified negative on rent control — two search passes found no Kano statute. A recovery law is inherited from Northern Nigeria by constitutional succession, but that is not confirmed for Kano.",
+
+    verified_negative=dict(
+        summary="<b>We looked properly, twice, and found nothing. That is the finding.</b>",
+        detail=(
+            "Two separate research passes for a Kano rent-control or tenancy statute returned "
+            "<b>no Nigerian authority at all</b> — the results were Kenyan, Indian and "
+            "United States landlord-and-tenant law. On the present state of published sources "
+            "there is <b>no Kano rent-control statute we can cite</b>, which means there is no "
+            "Kano standard-rent regime, no Kano rent tribunal we can identify, and no Kano "
+            "advance-rent cap."
+        ),
+        why_it_matters=(
+            "That absence is itself the useful information. A Kano tenant has no statutory "
+            "figure to point to and no tribunal to apply to about the rent itself — so "
+            "everything turns on the tenancy agreement. It also means any page or agent "
+            "quoting a “Kano rent control law” is inventing it."
+        ),
+    ),
+
+    inheritance=dict(
+        title="What probably governs recovery of possession instead",
+        text=(
+            "Kano was created out of the former <b>Northern Region</b>. The peer-reviewed "
+            "account of how Nigerian tenancy law travelled is that the regions each reproduced "
+            "the original Recovery of Premises Ordinance, and that on the creation of twelve "
+            "states in 1968 <b>each new state inherited all the existing laws of the region it "
+            "was carved from</b> — later states inheriting in turn, mutatis mutandis, under "
+            "the States Creation and Transitional Provisions Act."
+        ),
+        statute=(
+            "The Northern Region’s recovery law is cited as the "
+            "<b>Recovery of Premises Law, Laws of Northern Nigeria 1963</b> — given as "
+            "<b>Cap. 113, Vol. 3</b> in one source and as <b>Cap. 115</b> in another. "
+            "<b>Those citations conflict and we have not resolved them.</b>"
+        ),
+        caution=(
+            "<b>This is inference, not confirmation.</b> It rests on the constitutional "
+            "framework for the succession of regional laws, not on a Kano statute or a Kano "
+            "judgment we have read. We publish it as the most likely starting point and say "
+            "plainly that it is unconfirmed. Do not rely on it without local advice."
+        ),
+    ),
+
+    notice_ladder=[],
+    notice_extras=[
+        "<b>Expiry must fall on the eve of the anniversary</b> — midnight on the last day "
+        "of the current term. Lagos s.13(4) is the statutory exception to this general rule.",
+        "<b>The statutory periods are minimums;</b> longer is valid, shorter by a day is not.",
+        "<b>The agreement governs first.</b> Where it fixes the notice, that period binds; the "
+        "statutory ladder applies only where it is silent.",
+        "<b>After the quit notice expires</b>, a further written notice of the owner’s "
+        "intention to apply to court, of not less than <b>seven clear days</b>, is required — "
+        "and it cannot be issued before the quit notice expires.",
+        "<b>A month means a calendar month</b> (Interpretation Act s.18).",
+        "<b>Unlawful eviction is actionable in damages</b> — <i>Ihenacho v. Uzochukwu</i> "
+        "(1997) 1 SCNJ 117.",
+    ],
+
+    advance_rent=dict(
+        cite="no cap found",
+        text=(
+            "<b>No Kano advance-rent cap has been found, and no rent-control statute to put one "
+            "in.</b> On the present state of the sources there is no statutory limit on what a "
+            "Kano landlord may ask for in advance, and no penalty for asking. Whatever is "
+            "agreed must therefore go into the tenancy agreement before money moves — "
+            "that agreement is the only protection available."
+        ),
+    ),
+
+    receipts=dict(
+        cite="no statutory duty found",
+        text=(
+            "We have found no Kano statutory duty to issue a rent receipt with prescribed "
+            "contents. Because there is also no rent-control regime to give a tenant a "
+            "paper trail remedy, <b>the receipt matters more in Kano, not less</b>: with no "
+            "statutory rent record and no tribunal, a tenant’s evidence that rent was paid "
+            "is the receipt itself. Insist on one for every payment."
+        ),
+    ),
+
+    caution_fee=dict(
+        cite="no provision found",
+        text=(
+            "No Kano provision on premiums, caution fees or deposits has been found — "
+            "so there is no statutory ban of the kind Edo, Cross River and Kwara have, and no "
+            "statutory protection either. The deposit is purely a matter of contract, which is "
+            "exactly why the amount, the purpose and the refund terms must be written down and "
+            "receipted separately from rent."
+        ),
+    ),
+
+    increase_challenge=dict(
+        cite="no mechanism found",
+        text=(
+            "With no rent-control statute there is no Kano equivalent of the Lagos s.37 "
+            "application to have an increase declared unreasonable, and no tribunal to apply "
+            "to. Rent increases are governed entirely by the tenancy agreement."
+        ),
+        false_claim="No percentage cap on rent increases exists in Kano or anywhere in Nigeria.",
+    ),
+
+    protections=[
+        "A landlord may not resort to self-help; unlawful eviction is actionable in damages.",
+        "The High Court has jurisdiction to entertain recovery proceedings in every state, "
+        "whatever the lower-court position.",
+        "Improvements made with the landlord’s written consent may found a counterclaim for "
+        "their unexhausted value.",
+    ],
+
+    sources=[
+        "No Kano statute located — two independent research passes returned only non-Nigerian authority.",
+        "Dr Chris Wigwe, “Recovery of Premises in Nigeria”, Journal of Commercial and Contemporary Law — regional succession of the Recovery of Premises Ordinance; Recovery of Premises Law, Laws of Northern Nigeria 1963 (Cap. 113 Vol. 3): https://www.researchgate.net/profile/Dr-Christian-Wigwe/publication/274377789",
+        "https://lawgivernigeria.blogspot.com/2016/07/recovery-of-premises-in-nigeria-drafts.html — cites the same Northern law as Cap. 115 (conflict noted).",
+        "Ihenacho v. Uzochukwu (1997) 1 SCNJ 117 (unlawful eviction).",
+    ],
+
+    open_questions=[
+        "Whether Kano has enacted or re-enacted its own recovery-of-premises or rent-control law — not found.",
+        "The correct chapter for the Northern Nigeria Recovery of Premises Law 1963 — Cap. 113 Vol. 3 or Cap. 115.",
+        "Whether any Kano rent tribunal has ever been established.",
+        "Whether Kano’s Sharia/Customary Court structure affects recovery proceedings — not researched.",
+    ],
+)
+
+
 # ---------------------------------------------------------------------------
 # Registry. A state appears here only if it reaches tier A-D.
 # ---------------------------------------------------------------------------
 STATE_LAW = {
     "lagos": LAGOS,
     "rivers": RIVERS,
+    "anambra": ANAMBRA,
+    "kano": KANO,
     "abuja": ABUJA,
     "edo": EDO,
     "cross-river": CROSS_RIVER,
@@ -1353,8 +1671,6 @@ NEEDS_CONFIRMATION = {
     "enugu": "B — Landlord and Tenant Law, Cap. 101, Laws of Enugu State 2004. An amendment BILL would abolish caution fees; it has NOT passed (ICIR, Dec 2025).",
     "delta": "C — Rent Control and Recovery of Residential Premises Law, Cap. R5, Laws of Delta State. A 2026 Tenancy Bill is at second reading; not law.",
     "kaduna": "C — Landlord and Tenant Law 2018, single source.",
-    "anambra": "D — verified negative: no rent-control legislation in force; a Rent and Tenancy Law has been proposed after student protests. Publish the gap, not a guess.",
-    "kano": "D — verified negative: no rent-control legislation found on the state laws portal.",
 }
 
 
