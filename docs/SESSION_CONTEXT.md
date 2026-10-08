@@ -441,64 +441,92 @@ Documented in `docs/GROWTH_JOURNAL.md`. Key milestones:
 
 ## Last Session (LIVING — Update This Every Time)
 
-**Date:** 8 Oct 2026
+**Date:** 8 Oct 2026 (second session of the day)
+**Branch:** `arena/b51ecc68-docoga` (branched from `main` at `b84ecfb`)
 **What was done:**
-- **Found and fixed a locked-brand-rule violation that was about to ship.**
-  PR #8 (opened 7 Oct, *Automate scheduled YouTube Shorts generation and
-  publishing*) was built to render a Short and upload it **public**, unattended,
-  twice a week — and the frames it rendered had **the official logo composited
-  onto every slide**. That breaks the owner's 21 Sep 2026 direction
-  (`docs/DESIGN_SYSTEM.md` §1: *"the logo is NOT stamped on social posts"*) and
-  the explicit motion rule in this file: *"NEVER stamp the logo on reels or
-  videos. Logo goes on static images only. NEVER on video. PERMANENT RULE."*
-  The chip also physically **collided with the `DOCOGA.COM.NG` CTA bar** on
-  every slide. The Shorts pipeline has **never run** (0 runs in the workflow's
-  history), so nothing had ever been published this way — the defect was
-  caught before it could reach the channel, not after.
-- **Proved it by rendering the real thing, not by reading code.** Rendered the
-  8 Oct topic (`Keep a Rent Paper Trail`) to a real 1080×1920 H.264 MP4 and
-  inspected frames at 1s and 13s. The logo chip + CTA collision was visible in
-  both. Fix re-rendered; frames are clean.
-- **Fixed `scripts/generate_short_video.py`:** the logo compositor and its call
-  site are gone (`create_slide_image()` no longer takes a logo argument at all,
-  so the rule cannot be reintroduced by passing a different path). The
-  type block is now measured and centred as one unit above the CTA bar instead
-  of starting at a fixed y=600, which was the cause of the collision.
-- **Restored a brand element that was missing on video:** film grain, σ≈2.2 —
-  `BRAND_STYLE.md` §3 lists it as *always present* on every finished piece.
-  Implemented with pure PIL (`Image.effect_noise` + `ImageChops.add`) so the CI
-  test job stays dependency-light.
-- **Gave the rule teeth — 8 new regression tests** in
-  `tools/tests/test_youtube_short_generation.py`: the video module may not name
-  a logo file or call the compositor; no solid near-white block may appear above
-  the CTA bar; frames must be **byte-comparable when `brand/` is absent**;
-  grain must be present and on-strength; type must stay inside the safe area.
-  **Verified the detector actually fails on the regression** (re-pasted the old
-  chip geometry: clean frame = 0px solid run, chipped = 438px, threshold 150).
-  A test that cannot fail is not a test.
-- Also: `assets/videos/` is now gitignored (1–6 MB per render is build output,
-  not source) and `YOUTUBE_AUTOMATION.md` documents the locked brand rules.
-- **Merged PR #8's commits into this branch** so the fix ships with them — the
-  PR opened from this session is stacked on top of #8 (see What's Next for how
-  to merge the pair).
 
-**Verification (all green on the merged tree):** 12/12 Python automation tests,
-`qa.py` 🏆 (2 pre-existing warnings, 0 errors), `pre_push_verify.sh` ✅,
-`npm test` worker suite ✅, plus a real end-to-end render + frame inspection.
+**The armed pipeline had no memory and no alarm. It now has both.**
 
-**Shipped:** PR #9 merged to `main` as merge commit **`72ec955`**; PR #8
-auto-marked merged two seconds later (its head `42e4031` is now an ancestor of
-`main`). CI `Verify` green on the merge push. Verified the merged tree
-independently from a clean `origin/main` worktree, not just on the branch.
+Item 9 below says it plainly: from Friday 9 Oct the Shorts workflow renders and
+uploads **public, twice a week, with nobody watching**. Reading it end to end
+raised three questions the pipeline could not answer, and none of them was
+fixable by a human on the day:
 
-**What's next:** **YouTube is armed and fires Friday 9 Oct, 18:00 WAT** — read
-item 9 in What's Next before then. The owner's YouTube secrets are the only
-thing that decides whether that run publishes a Short or fails red.
+1. *If the run fails, who finds out?* Nobody. It was a red dot in a repo
+   nobody opens.
+2. *If a re-run, a GitHub retry or two dispatches land on the same day, what
+   stops a duplicate Short?* Nothing. The rotation is deterministic and
+   date-seeded, so the same topic would be rendered and uploaded again.
+3. *What did we actually publish?* Nothing in the repo said. You had to open
+   YouTube and read the channel.
 
-**Branch:** `arena/10e42594-docoga` (branched from `main` at `ec5b7a7`)
-**Last commit:** PR #8's `42e4031` (merged in) + this session's commit
+**What shipped:**
 
----
+- **`tools/youtube_ledger.py`** (new) — `logs/youtube_published.json`, a
+  publish ledger: title, topic, video id, URL, privacy, WAT date, run id, size.
+  Sub-commands `check` / `record` / `show`. stdlib only; a missing or corrupt
+  ledger never blocks publishing (a damaged file is backed up as
+  `.corrupt-<timestamp>`, not overwritten); newest first and capped at 200
+  entries so a file we push to twice a week cannot grow forever.
+- **Duplicate guard** in the workflow: `check` exits 3 inside a 7-day window.
+  Six topics x two runs a week means a title returns after ~3 weeks — that
+  repeat is intended and is *not* blocked; a same-day re-run is. A skipped run
+  is **green** with a notice. `force=true` overrides, deliberately.
+- **Preflight step** — the three secrets are checked in the first 30 seconds
+  and the error names the missing one. Previously the failure appeared after a
+  ten-minute render, from inside the uploader, without saying which secret.
+- **Failure visibility** — a failed run opens an issue labelled
+  `youtube-automation` (or comments on the one already open for that date)
+  with the run link and a 4-step triage list: secrets → revoked token →
+  YouTube audit → quota.
+- **Owner-side privacy switch** — repository **variable** `YT_PRIVACY`
+  (`unlisted`/`private`) changes every future run with no code change, for
+  anyone who wants to watch the first ones land before they go public. An
+  invalid value fails loudly rather than publishing at the wrong privacy.
+  Manual dispatch also takes `privacy` and `force`.
+- **Run summary** on every run — topic, title, privacy, result, link, size.
+- `tools/yt_publish.py` now prints `VIDEO_ID=<id>`, and the workflow refuses to
+  record a publish when that line is missing (an unverified ledger entry is
+  worse than a red run). `scripts/youtube_short_daily.py` gained a `topic`
+  output so the ledger reads as plain English.
+
+**Verification — the workflow was run, not just read.** The token cannot
+dispatch workflows (403), so the job was simulated on this machine: the real
+step scripts from the YAML, through `bash -e`, with the same `GITHUB_OUTPUT`
+plumbing, against a real git remote (the ledger commit is a real pull --rebase
++ push), a fake `gh`, and stubs only for ffmpeg and the YouTube network. The
+logic under test was never stubbed. **Nine scenarios:**
+
+| # | Scenario | Result |
+|---|---|---|
+| 1 | Happy path, empty ledger, secrets present | GREEN — published, recorded, ledger committed and pushed |
+| 2 | Secrets missing | FAILED at preflight, nothing rendered, issue opened |
+| 3 | Same title already in the ledger | GREEN, skipped with a notice, ledger untouched |
+| 4 | Duplicate + `force=true` | GREEN, published anyway, ledger 2 entries |
+| 5 | `YT_PRIVACY=unlisted` | `--privacy unlisted` reached the uploader |
+| 6 | Typo in `YT_PRIVACY` | FAILED at settings, nothing published |
+| 7 | Upload exits 0 but prints no `VIDEO_ID` | FAILED, **no** ledger entry recorded |
+| 8 | Upload rejected by YouTube | FAILED, no ledger entry, issue opened |
+| 9 | Second failure the same day | Commented on the open issue instead of opening a second |
+
+**One real bug was caught by simulating it, and it would have shipped.** The
+`force` path in the duplicate guard was written as
+`if code == 3 && FORCE != "true" { skip } elif code != 0 { exit code }`, so
+asking to force a re-publish took the `elif` and **exited 3 — failing the run
+instead of publishing**. Reading the YAML does not show this; only running it
+does. Fixed, and pinned by a regression test.
+
+**Tests:** 48 pass (was 30). New `tools/tests/test_youtube_ledger.py` (17) and
+`tools/tests/test_workflow_contract.py` (18), which statically checks every
+`steps.<id>.outputs.<key>` reference in every workflow points at a real,
+preceding step — an unknown id resolves to `""` at run time, which is the
+silent failure mode this repo keeps getting bitten by. `PyYAML` added to the
+CI test dependencies. `qa.py` 🏆 and `pre_push_verify.sh` ✅ green.
+
+**What's next:** the Friday 18:00 WAT run is still the open question, but it is
+now a *safe* one to let happen: a missing secret fails in 30 seconds with a
+named cause and an issue, and a successful publish is recorded in the repo. See
+item 9.
 
 ## How to Continue in a New Session
 
@@ -532,6 +560,7 @@ thing that decides whether that run publishes a Short or fails red.
 | 14 | 7 Oct 2026 | **PR #5 merged** — recovery landed on `main` (`bfa555b`); independently verified depth 138, zero files dropped, QA + integrity green, merge push CI green | `bfa555b` |
 | 15 | 7 Oct 2026 | Fixed `youtube_queue.yml`: empty queue now skips with a notice instead of failing red (mirrors the scheduler) | PR #6 |
 | 16 | 8 Oct 2026 | **Caught a locked-brand-rule violation before it shipped:** the new unattended Shorts pipeline stamped the official logo on every video frame (banned) and collided with the CTA bar. Removed the logo from video, rebuilt the layout, restored film grain σ≈2.2, added 8 regression tests and proved the detector fails on the regression | `945b28e` |
+| 18 | 8 Oct 2026 | **Gave the armed Shorts pipeline a memory and an alarm:** publish ledger (`tools/youtube_ledger.py`) + duplicate guard, a secrets preflight that names what is missing, a `YT_PRIVACY` repo-variable switch, a run summary, and a labelled issue opened on any failed run. Verified by simulating all nine scenarios locally (the token cannot dispatch), which caught a real bug: `force=true` exited 3 and failed the run instead of publishing. 48 tests green | PR #11 |
 | 17 | 8 Oct 2026 | Merged PR #9 to `main` (`72ec955`) — the pipeline plus the brand fix; PR #8 auto-merged. **This armed the YouTube scheduler: next public upload attempt Friday 9 Oct, 18:00 WAT, and the old empty-queue safety no longer applies** | `72ec955` |
 
 ---
@@ -647,6 +676,28 @@ thing that decides whether that run publishes a Short or fails red.
    **To hold it back** until you have watched one land: disable **YouTube
    Shorts Auto-Generate and Publish** in the Actions tab — no code change and
    no queue to clear — or ask for `--privacy unlisted` for the first few.
+
+   **Updated 8 Oct (second session) — the run is now safe either way.**
+   `youtube_scheduled.yml` gained: a preflight that names the missing secret
+   and stops before rendering; a duplicate guard backed by
+   `logs/youtube_published.json` so a re-run cannot publish the same Short
+   twice (a skip is green, and `force=true` overrides); a job summary; a
+   `YT_PRIVACY` repository variable for owner-side privacy control; and a
+   labelled issue opened (or commented on) whenever a run fails. A successful
+   publish is committed back to the repo, so the channel's history is readable
+   without opening YouTube. Full detail in `YOUTUBE_AUTOMATION.md`.
+
+10. **`tools/verify_live.py` cannot run from the sandbox** (unchanged): it
+    reaches `docoga.com.ng` over the network and fails with
+    `URLError: TLS/SSL connection has been closed (EOF)`. The 1 Oct question
+    (*is the live build the v2 pass model?*) is still unanswered and needs the
+    owner's machine.
+
+11. **State SEO pages stand at 12 of 37** (36 states + FCT), 48 pages. PLAN.md
+    §3 rung 1 and §4 both point at full state coverage, and it is the largest
+    remaining reach lever inside the repo. Not started: each new state needs
+    its own honest wording, because the doorway-page risk is real if 25 more
+    pages differ only by the state name.
 
 ---
 

@@ -1,12 +1,39 @@
 name: YouTube Shorts Auto-Generate and Publish
 
+# Renders a fresh Short from the date-seeded, fact-safe templates and uploads
+# it — public, unattended, twice a week.
+#
+# Three safeguards exist because this job is never watched by a human:
+#   1. a preflight that names the missing secret instead of failing mid-upload,
+#   2. a duplicate guard (tools/youtube_ledger.py) so a re-run, a GitHub retry
+#      or a second dispatch cannot put the same Short on the channel twice,
+#   3. a visible issue on failure, so a broken run is not just a red dot nobody
+#      opens.
+
 on:
   schedule:
     # Twice weekly at 6 PM West Africa Time (UTC+1).
     - cron: '0 17 * * 2,5'
+  workflow_dispatch:
+    inputs:
+      privacy:
+        description: 'Privacy status for this upload'
+        required: false
+        default: public
+        type: choice
+        options:
+          - public
+          - unlisted
+          - private
+      force:
+        description: 'Publish even if the ledger already has this title within the duplicate window'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
-  contents: read
+  contents: write   # the publish ledger is committed back after a successful upload
+  issues: write     # a failed run opens (or comments on) a visible issue
 
 concurrency:
   group: youtube-shorts-scheduled
@@ -17,6 +44,8 @@ jobs:
     name: Generate and publish one Short
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      TZ: Africa/Lagos
     steps:
       - name: Check out the default branch
         uses: actions/checkout@v4
@@ -34,13 +63,74 @@ jobs:
       - name: Install video and upload dependencies
         run: python -m pip install -r requirements-youtube.txt
 
+      - name: Resolve the settings for this run
+        id: settings
+        run: |
+          PRIVACY="${{ inputs.privacy }}"
+          [ -n "$PRIVACY" ] || PRIVACY="${{ vars.YT_PRIVACY }}"
+          [ -n "$PRIVACY" ] || PRIVACY="public"
+          case "$PRIVACY" in
+            public|unlisted|private) ;;
+            *)
+              echo "::error title=Bad privacy setting::'$PRIVACY' is not public/unlisted/private — fix the YT_PRIVACY repository variable."
+              exit 1
+              ;;
+          esac
+          echo "privacy=$PRIVACY" >> "$GITHUB_OUTPUT"
+          echo "run_date=$(date +%F)" >> "$GITHUB_OUTPUT"
+          echo "Privacy for this run: $PRIVACY · WAT date: $(date +%F)"
+
+      # Fail here, before spending ten minutes rendering, and name the secret
+      # that is missing. yt_publish.py would also refuse, but only after the
+      # render, and its message does not say which one is absent.
+      - name: Preflight — are the YouTube secrets present?
+        env:
+          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+          YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+        run: |
+          missing=""
+          [ -n "$YT_REFRESH_TOKEN" ] || missing="$missing YT_REFRESH_TOKEN"
+          [ -n "$YT_CLIENT_ID" ]     || missing="$missing YT_CLIENT_ID"
+          [ -n "$YT_CLIENT_SECRET" ] || missing="$missing YT_CLIENT_SECRET"
+          if [ -n "$missing" ]; then
+            echo "::error title=YouTube secrets missing::Set these repository secrets:$missing — nothing was rendered and nothing was published."
+            exit 1
+          fi
+          echo "All three YouTube secrets are present."
+
       - name: Generate today's Short
         id: short
-        env:
-          TZ: Africa/Lagos
         run: python3 scripts/youtube_short_daily.py
 
+      - name: Duplicate guard (publish ledger)
+        id: guard
+        env:
+          VIDEO_TITLE: ${{ steps.short.outputs.title }}
+          RUN_DATE: ${{ steps.settings.outputs.run_date }}
+          FORCE: ${{ inputs.force }}
+        run: |
+          set +e
+          python3 tools/youtube_ledger.py check --title "$VIDEO_TITLE" --date "$RUN_DATE"
+          code=$?
+          set -e
+          if [ "$code" -eq 3 ]; then
+            if [ "$FORCE" = "true" ]; then
+              echo "skip=no" >> "$GITHUB_OUTPUT"
+              echo "::notice title=Duplicate overridden::force=true — \"$VIDEO_TITLE\" is in the ledger inside the duplicate window, but this run was told to publish it anyway."
+            else
+              echo "skip=yes" >> "$GITHUB_OUTPUT"
+              echo "::notice title=Short already published::\"$VIDEO_TITLE\" is already in the ledger inside the duplicate window — nothing was uploaded. Re-run with force=true to publish it anyway."
+            fi
+          elif [ "$code" -ne 0 ]; then
+            exit "$code"
+          else
+            echo "skip=no" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Upload to YouTube
+        id: upload
+        if: steps.guard.outputs.skip != 'yes'
         env:
           YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
           YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
@@ -49,10 +139,141 @@ jobs:
           VIDEO_TITLE: ${{ steps.short.outputs.title }}
           VIDEO_DESCRIPTION: ${{ steps.short.outputs.description }}
           VIDEO_TAGS: ${{ steps.short.outputs.tags }}
+          PRIVACY: ${{ steps.settings.outputs.privacy }}
         run: |
+          set -o pipefail
           python3 tools/yt_publish.py \
             --video "$VIDEO_PATH" \
             --title "$VIDEO_TITLE" \
             --description "$VIDEO_DESCRIPTION" \
             --tags "$VIDEO_TAGS" \
-            --privacy public
+            --privacy "$PRIVACY" | tee /tmp/yt_upload.log
+          VIDEO_ID=$(sed -n 's/^VIDEO_ID=//p' /tmp/yt_upload.log | tail -1)
+          if [ -z "$VIDEO_ID" ]; then
+            echo "::error title=No video id::yt_publish.py exited 0 without printing VIDEO_ID — refusing to record a publish that cannot be verified."
+            exit 1
+          fi
+          {
+            echo "video_id=$VIDEO_ID"
+            echo "video_url=https://youtube.com/watch?v=$VIDEO_ID"
+            echo "size_bytes=$(stat -c%s "$VIDEO_PATH")"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Record the publish in the ledger
+        if: steps.guard.outputs.skip != 'yes'
+        env:
+          VIDEO_TITLE: ${{ steps.short.outputs.title }}
+          VIDEO_TOPIC: ${{ steps.short.outputs.topic }}
+          VIDEO_ID: ${{ steps.upload.outputs.video_id }}
+          VIDEO_URL: ${{ steps.upload.outputs.video_url }}
+          SIZE_BYTES: ${{ steps.upload.outputs.size_bytes }}
+          PRIVACY: ${{ steps.settings.outputs.privacy }}
+          RUN_DATE: ${{ steps.settings.outputs.run_date }}
+        run: |
+          python3 tools/youtube_ledger.py record \
+            --title "$VIDEO_TITLE" \
+            --topic "$VIDEO_TOPIC" \
+            --video-id "$VIDEO_ID" \
+            --url "$VIDEO_URL" \
+            --privacy "$PRIVACY" \
+            --date "$RUN_DATE" \
+            --run-id "$GITHUB_RUN_ID" \
+            --size-bytes "$SIZE_BYTES"
+
+      # Never let bookkeeping turn a successful publish red: continue-on-error
+      # keeps the job green and leaves a visible warning instead.
+      - name: Commit the publish ledger
+        if: steps.guard.outputs.skip != 'yes'
+        continue-on-error: true
+        env:
+          RUN_DATE: ${{ steps.settings.outputs.run_date }}
+          BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if ! git pull --rebase --autostash origin "$BRANCH"; then
+            echo "::warning title=Ledger not committed::could not rebase on $BRANCH. The Short is published; this run is simply not recorded, so a re-run could publish it again."
+            exit 1
+          fi
+          git add logs/youtube_published.json
+          if git diff --staged --quiet; then
+            echo "Ledger unchanged — nothing to commit."
+            exit 0
+          fi
+          git commit -m "Auto: record YouTube Short published $RUN_DATE"
+          if ! git push origin "HEAD:$BRANCH"; then
+            echo "::warning title=Ledger not pushed::the Short is published but the ledger entry did not reach $BRANCH — a re-run could publish it again."
+            exit 1
+          fi
+
+      - name: Write the run summary
+        if: always()
+        env:
+          RUN_DATE: ${{ steps.settings.outputs.run_date }}
+          PRIVACY: ${{ steps.settings.outputs.privacy }}
+          TOPIC: ${{ steps.short.outputs.topic }}
+          TITLE: ${{ steps.short.outputs.title }}
+          VIDEO_PATH: ${{ steps.short.outputs.video_path }}
+          VIDEO_URL: ${{ steps.upload.outputs.video_url }}
+          VIDEO_ID: ${{ steps.upload.outputs.video_id }}
+          SKIP: ${{ steps.guard.outputs.skip }}
+        run: |
+          RUN_DATE="${RUN_DATE:-$(date +%F)}"
+          {
+            echo "## DocOga Short — $RUN_DATE"
+            echo
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Topic | ${TOPIC:-not rendered} |"
+            echo "| Title | ${TITLE:-—} |"
+            echo "| Privacy | ${PRIVACY:-—} |"
+            if [ "$SKIP" = "yes" ]; then
+              echo "| Result | ⏭️ Skipped — this title is already in the publish ledger |"
+            elif [ -n "$VIDEO_ID" ]; then
+              echo "| Result | ✅ Published |"
+              echo "| Link | $VIDEO_URL |"
+              echo "| Size | $(stat -c%s "$VIDEO_PATH" 2>/dev/null || echo '?') bytes |"
+            else
+              echo "| Result | ❌ Failed — see the failing step above |"
+            fi
+            echo "| Ledger | \`logs/youtube_published.json\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # A red run in a repo nobody opens is the same as silence. This makes the
+      # failure land where the owner will actually see it.
+      - name: Open a visible issue if the run failed
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          RUN_DATE: ${{ steps.settings.outputs.run_date }}
+          TITLE: ${{ steps.short.outputs.title }}
+        run: |
+          RUN_DATE="${RUN_DATE:-$(date +%F)}"
+          gh label create youtube-automation --color FF5A5F \
+            --description "Unattended YouTube Shorts pipeline" >/dev/null 2>&1 || true
+          cat > /tmp/issue_body.md <<BODY
+          The unattended Shorts run for **$RUN_DATE** failed. **Nothing may have been published.**
+
+          - Run: $RUN_URL
+          - Intended title: ${TITLE:-unknown — the render may not have run}
+
+          Triage, fastest first:
+
+          1. **Secrets** — repo → Settings → Secrets and variables → Actions: \`YT_REFRESH_TOKEN\`, \`YT_CLIENT_ID\`, \`YT_CLIENT_SECRET\` must all be present. A missing one fails the preflight before anything is rendered.
+          2. **Stale or revoked token** — a 4xx from \`oauth2.googleapis.com/token\` during upload means the refresh token needs re-issuing.
+          3. **YouTube audit** — Google may hold API uploads private until the Cloud project is verified. The upload succeeds and the video simply is not public.
+          4. **Quota** — the Data API allows roughly six uploads a day; this job uploads at most one.
+
+          The channel's own history is the ledger: \`logs/youtube_published.json\`.
+          BODY
+          EXISTING=$(gh issue list --label youtube-automation --state open --limit 100 \
+            --json number,title \
+            --jq "[.[] | select(.title | contains(\$ENV.RUN_DATE)) | .number][0] // empty")
+          if [ -n "$EXISTING" ]; then
+            gh issue comment "$EXISTING" --body-file /tmp/issue_body.md
+            echo "Commented on issue #$EXISTING"
+          else
+            gh issue create --title "YouTube Shorts publish failed — $RUN_DATE" \
+              --label youtube-automation --body-file /tmp/issue_body.md
+          fi

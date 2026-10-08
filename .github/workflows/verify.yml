@@ -42,7 +42,8 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq fonts-dejavu-core
-          python -m pip install requests 'Pillow>=10,<13'
+          # PyYAML is for the workflow contract tests (tools/tests/test_workflow_contract.py).
+          python -m pip install requests 'Pillow>=10,<13' 'PyYAML>=6,<7'
 
       - name: YouTube automation regression tests
         run: python3 -m unittest discover -s tools/tests -p 'test_*.py' -v
