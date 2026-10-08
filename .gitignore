@@ -5,6 +5,10 @@ unlock-codes.txt
 # Generated at runtime by Telegram workflow
 assets/telegram/
 
+# Python bytecode
+__pycache__/
+*.py[cod]
+
 # OS / editor noise
 .DS_Store
 Thumbs.db

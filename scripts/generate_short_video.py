@@ -12,8 +12,7 @@ BRAND COLORS (from official-logo-white.png):
 """
 
 import os
-import random
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 
 try:
@@ -45,80 +44,82 @@ DARK       = (10, 15, 30)     # Near-black with blue tint
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 
-# ===== CONTENT SCRIPTS =====
+# ===== FACT-SAFE CONTENT SCRIPTS =====
+# These are practical record-keeping prompts, not legal conclusions. Every Short
+# ends with a reminder that rules vary by state and agreement.
 VIDEO_SCRIPTS = [
     {
-        "title": "Caution Fee Warning",
+        "title": "Keep a Rent Paper Trail",
         "slides": [
-            {"bg": DARK,       "text": "⚠️ STOP!", "sub": "", "color": RED, "duration": 3},
-            {"bg": DARK,       "text": "Don't pay Caution Fee\nwithout a RECEIPT!", "sub": "Many landlords no dey refund...", "color": WHITE, "duration": 4},
-            {"bg": DARK,       "text": "80% of tenants", "sub": "lose their caution fee\nevery year in Nigeria", "color": RED, "duration": 4},
-            {"bg": NAVY,       "text": "3 THINGS TO DO:", "sub": "", "color": YELLOW, "duration": 2},
-            {"bg": NAVY,       "text": "1️⃣ Get receipt BEFORE paying", "sub": "", "color": WHITE, "duration": 3},
-            {"bg": NAVY,       "text": "2️⃣ Snap the apartment\nbefore you move in", "sub": "", "color": WHITE, "duration": 3},
-            {"bg": NAVY,       "text": "3️⃣ Add it to your\ntenancy agreement", "sub": "", "color": WHITE, "duration": 3},
-            {"bg": DARK,       "text": "Need documents?", "sub": "DocOga dey for you!", "color": SKY_BLUE, "duration": 3},
-            {"bg": BRAND_BLUE, "text": "docoga.com.ng", "sub": "FREE templates!", "color": WHITE, "duration": 3},
-            {"bg": NAVY,       "text": "🔔 Follow for\ndaily tips!", "sub": "", "color": YELLOW, "duration": 3},
+            {"bg": NAVY, "text": "KEEP A PAPER TRAIL", "sub": "for every rent payment", "color": SKY_BLUE, "duration": 3},
+            {"bg": DARK, "text": "SAVE YOUR RECEIPT", "sub": "after each payment", "color": WHITE, "duration": 4},
+            {"bg": DARK, "text": "KEEP THE TRANSFER RECORD", "sub": "date · amount · reference", "color": YELLOW, "duration": 4},
+            {"bg": DARK, "text": "SAVE YOUR AGREEMENT", "sub": "and messages about changes", "color": SKY_BLUE, "duration": 4},
+            {"bg": BRAND_BLUE, "text": "ONE FOLDER. EASY TO FIND.", "sub": "Keep copies somewhere safe", "color": WHITE, "duration": 4},
+            {"bg": NAVY, "text": "GENERAL INFO ONLY", "sub": "Rules vary by state and agreement", "color": YELLOW, "duration": 4},
         ],
     },
     {
-        "title": "Know Your Tenant Rights",
+        "title": "Before You Pay an Agent",
         "slides": [
-            {"bg": NAVY,       "text": "🏠 TENANT RIGHTS", "sub": "Nigeria Edition", "color": SKY_BLUE, "duration": 3},
-            {"bg": DARK,       "text": "Your landlord\ncan NOT just\nevict you!", "sub": "Na your right!", "color": YELLOW, "duration": 4},
-            {"bg": DARK,       "text": "They must give you:", "sub": "", "color": WHITE, "duration": 2},
-            {"bg": DARK,       "text": "📋 Written Notice", "sub": "Minimum 6 months\nfor yearly tenants", "color": SKY_BLUE, "duration": 4},
-            {"bg": DARK,       "text": "📜 Notice to Quit", "sub": "Must follow legal process", "color": SKY_BLUE, "duration": 4},
-            {"bg": DARK,       "text": "⚖️ Court Order", "sub": "If you refuse to leave", "color": SKY_BLUE, "duration": 4},
-            {"bg": DARK,       "text": "Don't let anyone\nrush you out!", "sub": "Know your rights! 💪", "color": YELLOW, "duration": 4},
-            {"bg": BRAND_BLUE, "text": "Get proper docs at", "sub": "docoga.com.ng", "color": WHITE, "duration": 3},
-            {"bg": NAVY,       "text": "🔔 Follow DocOga", "sub": "for daily property tips!", "color": YELLOW, "duration": 3},
+            {"bg": NAVY, "text": "BEFORE YOU PAY", "sub": "pause and verify", "color": SKY_BLUE, "duration": 3},
+            {"bg": DARK, "text": "SEE THE PROPERTY", "sub": "in person, if you can", "color": WHITE, "duration": 4},
+            {"bg": DARK, "text": "CHECK WHO IS LETTING IT", "sub": "ask how they are authorised", "color": YELLOW, "duration": 4},
+            {"bg": DARK, "text": "GET TERMS IN WRITING", "sub": "fees · dates · who receives payment", "color": SKY_BLUE, "duration": 4},
+            {"bg": BRAND_BLUE, "text": "KEEP PAYMENT PROOF", "sub": "and ask for a receipt", "color": WHITE, "duration": 4},
+            {"bg": NAVY, "text": "GENERAL INFO ONLY", "sub": "Rules vary by state and agreement", "color": YELLOW, "duration": 4},
         ],
     },
     {
-        "title": "Rent Receipt vs Tenancy Agreement",
+        "title": "Moving In? Record the Condition",
         "slides": [
-            {"bg": NAVY,       "text": "📄 KNOW THE DIFFERENCE", "sub": "", "color": YELLOW, "duration": 3},
-            {"bg": DARK,       "text": "RENT RECEIPT", "sub": "Proof you don pay rent", "color": SKY_BLUE, "duration": 4},
-            {"bg": DARK,       "text": "Shows:\n• Amount paid\n• Date\n• Landlord name\n• Property address", "sub": "", "color": WHITE, "duration": 5},
-            {"bg": DARK,       "text": "TENANCY AGREEMENT", "sub": "Your protection document", "color": SKY_BLUE, "duration": 4},
-            {"bg": DARK,       "text": "Shows:\n• Rent amount\n• Duration\n• Rules & terms\n• Both signatures", "sub": "", "color": WHITE, "duration": 5},
-            {"bg": RED,        "text": "YOU NEED BOTH!", "sub": "No just one o!", "color": YELLOW, "duration": 3},
-            {"bg": DARK,       "text": "DocOga fit generate\nboth for you!", "sub": "In 2 minutes! ⚡", "color": SKY_BLUE, "duration": 4},
-            {"bg": BRAND_BLUE, "text": "docoga.com.ng", "sub": "Free to try!", "color": WHITE, "duration": 3},
-            {"bg": NAVY,       "text": "🔔 Follow for more!", "sub": "", "color": YELLOW, "duration": 3},
+            {"bg": NAVY, "text": "MOVING IN?", "sub": "make a simple record", "color": SKY_BLUE, "duration": 3},
+            {"bg": DARK, "text": "PHOTOGRAPH EACH ROOM", "sub": "include visible damage", "color": WHITE, "duration": 4},
+            {"bg": DARK, "text": "NOTE THE DATE", "sub": "keep original photos and videos", "color": YELLOW, "duration": 4},
+            {"bg": DARK, "text": "RECORD METER READINGS", "sub": "where applicable", "color": SKY_BLUE, "duration": 4},
+            {"bg": BRAND_BLUE, "text": "SHARE ISSUES IN WRITING", "sub": "keep a copy of the message", "color": WHITE, "duration": 4},
+            {"bg": NAVY, "text": "GENERAL INFO ONLY", "sub": "Rules vary by state and agreement", "color": YELLOW, "duration": 4},
         ],
     },
     {
-        "title": "Landlord Scam Alert",
+        "title": "Caution Fee: Ask These Questions",
         "slides": [
-            {"bg": DARK,       "text": "🚨 SCAM ALERT!", "sub": "", "color": RED, "duration": 3},
-            {"bg": NAVY,       "text": "5 Ways Your\nLandlord Fit\nChop Your Money", "sub": "", "color": YELLOW, "duration": 4},
-            {"bg": DARK,       "text": "1. No receipt for\n   caution fee", "sub": " = No refund", "color": RED, "duration": 3},
-            {"bg": DARK,       "text": "2. Verbal agreement\n   only", "sub": " = No proof", "color": RED, "duration": 3},
-            {"bg": DARK,       "text": "3. Rent increase\n   without notice", "sub": " = Illegal!", "color": RED, "duration": 3},
-            {"bg": DARK,       "text": "4. No inspection\n   before you enter", "sub": " = You pay for damage\nyou never cause", "color": RED, "duration": 3},
-            {"bg": DARK,       "text": "5. No tenancy\n   agreement", "sub": " = Zero protection", "color": RED, "duration": 3},
-            {"bg": BRAND_BLUE, "text": "Protect yourself!", "sub": "Get proper documents\nat docoga.com.ng", "color": WHITE, "duration": 4},
-            {"bg": NAVY,       "text": "🔔 Follow DocOga!", "sub": "Don't get scammed!", "color": YELLOW, "duration": 3},
+            {"bg": NAVY, "text": "CAUTION FEE?", "sub": "get the details first", "color": SKY_BLUE, "duration": 3},
+            {"bg": DARK, "text": "HOW MUCH IS IT?", "sub": "ask what the payment covers", "color": WHITE, "duration": 4},
+            {"bg": DARK, "text": "WHAT CAN BE DEDUCTED?", "sub": "ask for the conditions in writing", "color": YELLOW, "duration": 4},
+            {"bg": DARK, "text": "WHEN IS IT RETURNED?", "sub": "clarify the process and timeline", "color": SKY_BLUE, "duration": 4},
+            {"bg": BRAND_BLUE, "text": "KEEP A SEPARATE RECEIPT", "sub": "save it with your agreement", "color": WHITE, "duration": 4},
+            {"bg": NAVY, "text": "GENERAL INFO ONLY", "sub": "Rules vary by state and agreement", "color": YELLOW, "duration": 4},
         ],
     },
     {
-        "title": "How to Rent in Lagos",
+        "title": "Tenancy Agreement Checklist",
         "slides": [
-            {"bg": BRAND_BLUE, "text": "🏠 HOW TO RENT\nIN LAGOS", "sub": "2026 Guide", "color": WHITE, "duration": 3},
-            {"bg": DARK,       "text": "Step 1:", "sub": "Find house through\ntrusted agents only", "color": YELLOW, "duration": 4},
-            {"bg": DARK,       "text": "Step 2:", "sub": "Inspect the house\nbefore paying anything!", "color": YELLOW, "duration": 4},
-            {"bg": DARK,       "text": "Step 3:", "sub": "Get tenancy agreement\nBEFORE you pay", "color": YELLOW, "duration": 4},
-            {"bg": DARK,       "text": "Step 4:", "sub": "Pay via bank transfer\nNEVER cash!", "color": YELLOW, "duration": 4},
-            {"bg": DARK,       "text": "Step 5:", "sub": "Collect receipt for\nevery payment!", "color": YELLOW, "duration": 4},
-            {"bg": RED,        "text": "⚠️ If landlord say\nno to any of these...", "sub": "RUN! 🏃‍♂️", "color": YELLOW, "duration": 3},
-            {"bg": BRAND_BLUE, "text": "DocOga has all the\ndocuments you need!", "sub": "docoga.com.ng", "color": WHITE, "duration": 4},
-            {"bg": NAVY,       "text": "🔔 Follow for\nmore Lagos tips!", "sub": "", "color": YELLOW, "duration": 3},
+            {"bg": NAVY, "text": "BEFORE YOU SIGN", "sub": "check the key details", "color": SKY_BLUE, "duration": 3},
+            {"bg": DARK, "text": "NAMES AND CONTACTS", "sub": "are they written correctly?", "color": WHITE, "duration": 4},
+            {"bg": DARK, "text": "PROPERTY AND RENT", "sub": "check the address and amount", "color": YELLOW, "duration": 4},
+            {"bg": DARK, "text": "DATES AND RESPONSIBILITIES", "sub": "who handles what, and when?", "color": SKY_BLUE, "duration": 4},
+            {"bg": BRAND_BLUE, "text": "READ. ASK. KEEP A COPY.", "sub": "clarify anything you do not understand", "color": WHITE, "duration": 4},
+            {"bg": NAVY, "text": "GENERAL INFO ONLY", "sub": "Rules vary by state and agreement", "color": YELLOW, "duration": 4},
+        ],
+    },
+    {
+        "title": "Keep Records of Repairs",
+        "slides": [
+            {"bg": NAVY, "text": "NEED A REPAIR?", "sub": "make the request clear", "color": SKY_BLUE, "duration": 3},
+            {"bg": DARK, "text": "DESCRIBE THE ISSUE", "sub": "what happened and where", "color": WHITE, "duration": 4},
+            {"bg": DARK, "text": "ADD A PHOTO IF USEFUL", "sub": "include the date", "color": YELLOW, "duration": 4},
+            {"bg": DARK, "text": "SEND IT IN WRITING", "sub": "keep your message and reply", "color": SKY_BLUE, "duration": 4},
+            {"bg": BRAND_BLUE, "text": "SAVE THE REPAIR RECORD", "sub": "quotes · receipts · completion date", "color": WHITE, "duration": 4},
+            {"bg": NAVY, "text": "GENERAL INFO ONLY", "sub": "Rules vary by state and agreement", "color": YELLOW, "duration": 4},
         ],
     },
 ]
+
+
+def script_for_date(run_date: date):
+    """Return a repeatable topic for a local calendar date."""
+    return VIDEO_SCRIPTS[(run_date.toordinal() - 1) % len(VIDEO_SCRIPTS)]
 
 
 def get_font(size):
@@ -132,6 +133,17 @@ def get_font(size):
         if os.path.exists(fp):
             return ImageFont.truetype(fp, size)
     return ImageFont.load_default()
+
+
+def fit_font(draw, text, size, max_width, min_size=32):
+    """Shrink a line until it fits the safe area of a portrait slide."""
+    while size > min_size:
+        font = get_font(size)
+        bbox = draw.textbbox((0, 0), text, font=font)
+        if bbox[2] - bbox[0] <= max_width:
+            return font
+        size -= 2
+    return get_font(min_size)
 
 
 def create_slide_image(slide_data, logo_path=None):
@@ -158,12 +170,13 @@ def create_slide_image(slide_data, logo_path=None):
         except Exception:
             pass
 
-    # Main text
-    font_main = get_font(72)
+    # Main text — shrink long lines so mobile viewers never lose cropped words.
     lines = text.split("\n")
     y_start = 700 if (logo_path and os.path.exists(logo_path)) else 600
+    safe_width = WIDTH - 120
 
     for i, line in enumerate(lines):
+        font_main = fit_font(draw, line, 72, safe_width)
         bbox = draw.textbbox((0, 0), line, font=font_main)
         tw = bbox[2] - bbox[0]
         tx = (WIDTH - tw) // 2
@@ -174,10 +187,10 @@ def create_slide_image(slide_data, logo_path=None):
 
     # Subtitle
     if sub:
-        font_sub = get_font(42)
         sub_lines = sub.split("\n")
         sub_y = y_start + len(lines) * 100 + 60
         for i, sline in enumerate(sub_lines):
+            font_sub = fit_font(draw, sline, 42, safe_width, min_size=26)
             bbox = draw.textbbox((0, 0), sline, font=font_sub)
             sw = bbox[2] - bbox[0]
             sx = (WIDTH - sw) // 2
@@ -251,10 +264,10 @@ def add_official_logo(img):
     return img.convert("RGB")
 
 
-def generate_video(script=None):
-    """Generate a short-form video from a script"""
+def generate_video(script=None, output_path=None):
+    """Generate a short-form video from a script."""
     if script is None:
-        script = random.choice(VIDEO_SCRIPTS)
+        script = script_for_date(datetime.now().date())
 
     print(f"🎬 Generating video: {script['title']}")
 
@@ -267,18 +280,13 @@ def generate_video(script=None):
         print(f"   📸 Slide {i+1}: {slide['text'][:30]}... ({slide['duration']}s)")
 
     if not MOVIEPY_AVAILABLE:
-        print("⚠️ moviepy not available, saving as GIF")
-        gif_path = OUTPUT_DIR / f"video_{datetime.now().strftime('%Y%m%d_%H%M%S')}.gif"
-        pil_frames = []
-        for img, duration in slide_images:
-            pil_frames.extend([img] * int(duration * 2))
-        pil_frames[0].save(gif_path, save_all=True, append_images=pil_frames[1:], duration=500, loop=0)
-        print(f"✅ Saved GIF: {gif_path}")
-        return str(gif_path), script["title"]
+        raise RuntimeError("MoviePy is required for YouTube Shorts generation; refusing to emit a GIF.")
 
-    # Generate MP4 with moviepy
+    # Use a date-based name in scheduled runs so a retry overwrites the same
+    # generated file instead of leaving multiple ambiguous outputs.
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    video_path = OUTPUT_DIR / f"docoga_short_{timestamp}.mp4"
+    video_path = Path(output_path) if output_path else OUTPUT_DIR / f"docoga_short_{timestamp}.mp4"
+    video_path.parent.mkdir(parents=True, exist_ok=True)
 
     clips = []
     for img, duration in slide_images:
@@ -316,7 +324,10 @@ if __name__ == "__main__":
     print("🎬 DocOga Short Video Generator")
     print("🎨 Brand: NAVY #002040 | BLUE #0060e0 | SKY #0080e0")
     print("=" * 50)
-    video_path, title = generate_video()
+    run_date = datetime.now().date()
+    script = script_for_date(run_date)
+    output_path = OUTPUT_DIR / f"docoga_short_{run_date:%Y%m%d}.mp4"
+    video_path, title = generate_video(script=script, output_path=output_path)
     print(f"\n📊 Result:")
     print(f"   Title: {title}")
     print(f"   Path: {video_path}")
