@@ -40,5 +40,27 @@ rights, and unsupported statistics. Each Short includes a reminder that rules
 vary by state and agreement and that the content is general information, not
 legal advice.
 
+## Brand rules applied to every frame
+
+These are locked rules from `docs/DESIGN_SYSTEM.md` and
+`docs/SESSION_CONTEXT.md`, and each one is enforced by a test so a future edit
+cannot quietly undo it:
+
+- **No logo on video.** Owner direction 21 Sep 2026: the logo is not stamped
+  on social posts, and `docs/SESSION_CONTEXT.md` is explicit that it is never
+  used on reels or videos. The real logo file is only ever composited onto
+  *static* images, by `tools/add_logo.py`. An earlier revision of
+  `scripts/generate_short_video.py` broke this — it composited the official
+  logo onto every slide, where it also collided with the CTA bar.
+- **Film grain, σ≈2.2** — `BRAND_STYLE.md` §3 lists grain as always present on
+  every finished piece, video included.
+- **CTA present** — `DOCOGA.COM.NG` on every slide, in the locked `BRAND_BLUE`.
+- **Safe areas** — type is centred above the CTA bar with an 84px margin, so
+  nothing is clipped on mobile or hidden behind the platform UI.
+
+`tests` covering these live in
+`tools/tests/test_youtube_short_generation.py` and run on every push and pull
+request via `.github/workflows/verify.yml`.
+
 To pause future uploads, disable **YouTube Shorts Auto-Generate and Publish**
 in the repository's Actions tab. No queue needs to be cleared.

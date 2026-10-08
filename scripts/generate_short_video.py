@@ -4,7 +4,7 @@ DocOga Short-Form Video Generator
 Creates 30-60 second vertical videos (9:16) for Telegram, YouTube Shorts, Reels
 Uses moviepy with FFmpeg for video creation
 
-BRAND COLORS (from official-logo-white.png):
+BRAND COLORS (sampled from the official brand mark, 18 Sep 2026):
   Navy:        #002040  RGB(0, 32, 64)
   Brand Blue:  #0060e0  RGB(0, 96, 224)
   Royal Blue:  #0040c0  RGB(0, 64, 192)
@@ -21,7 +21,7 @@ try:
 except ImportError:
     MOVIEPY_AVAILABLE = False
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageChops, ImageDraw, ImageFont
 
 # ===== CONFIG =====
 WIDTH = 1080
@@ -29,9 +29,31 @@ HEIGHT = 1920
 FPS = 24
 OUTPUT_DIR = Path("assets/videos")
 BRAND_DIR = Path("brand")
-LOGO_PATH = BRAND_DIR / "official-logo-white.png"
 
-# ===== BRAND COLORS (from official-logo-white.png) =====
+# ===== LOCKED BRAND RULES ENCODED HERE =====
+# 🔴 THE OFFICIAL LOGO IS NOT STAMPED ON SOCIAL POSTS — AND NEVER ON VIDEO.
+# Owner direction 21 Sep 2026 (docs/DESIGN_SYSTEM.md §1): the logo is not
+# stamped on social posts. docs/SESSION_CONTEXT.md is explicit for motion:
+# "NEVER stamp the logo on reels or videos. Logo goes on static images only
+# (carousels, status posts). NEVER on video. PERMANENT RULE."
+#
+# Therefore nothing in this module may read brand/*.png into a frame. The one
+# sanctioned way the real logo touches a design is tools/add_logo.py, which
+# pastes the exact pixels onto STATIC images. Regression tests enforce this.
+LOGO_FORBIDDEN_ON_VIDEO = True
+
+# CTA bar — the brand checklist requires "CTA: docoga.com.ng present".
+CTA_TEXT = "DOCOGA.COM.NG"
+CTA_BAR_H = 132
+CTA_FONT_SIZE = 44
+
+# BRAND_STYLE.md §3 "Always present": film grain, σ≈2.2 luminance noise.
+FILM_GRAIN_SIGMA = 2.2
+
+# BRAND_STYLE.md §3 grid: 84px margins / safe areas respected.
+SAFE_MARGIN = 84
+
+# ===== BRAND COLORS (sampled from the official brand mark) =====
 NAVY       = (0, 32, 64)      # #002040
 BRAND_BLUE = (0, 96, 224)     # #0060e0
 ROYAL_BLUE = (0, 64, 192)     # #0040c0
@@ -146,8 +168,28 @@ def fit_font(draw, text, size, max_width, min_size=32):
     return get_font(min_size)
 
 
-def create_slide_image(slide_data, logo_path=None):
-    """Create a single slide as a PIL Image"""
+def add_film_grain(img, sigma=FILM_GRAIN_SIGMA):
+    """Brand texture: zero-mean gaussian luminance noise (σ≈2.2).
+
+    BRAND_STYLE.md §3 lists film grain as "always present" on every finished
+    piece, video included. Pure PIL so the test job stays dependency-light:
+    ImageChops.add(..., offset=-128) is img + (noise - 128) — zero-mean grain.
+    """
+    noise = Image.effect_noise((img.width, img.height), sigma).convert("RGB")
+    return ImageChops.add(img, noise, scale=1.0, offset=-128)
+
+
+def _text_height(draw, line, font):
+    box = draw.textbbox((0, 0), line, font=font)
+    return box[3] - box[1]
+
+
+def create_slide_image(slide_data):
+    """Render one slide.
+
+    Deliberately takes no logo argument: see the locked brand rule at the top
+    of this file. Text and the CTA bar are the only content.
+    """
     bg_color = slide_data.get("bg", DARK)
     text = slide_data.get("text", "")
     sub = slide_data.get("sub", "")
@@ -156,112 +198,64 @@ def create_slide_image(slide_data, logo_path=None):
     img = Image.new("RGB", (WIDTH, HEIGHT), bg_color)
     draw = ImageDraw.Draw(img)
 
-    # Add logo at top if exists
-    if logo_path and os.path.exists(logo_path):
-        try:
-            logo = Image.open(logo_path).convert("RGBA")
-            logo_max = 300
-            ratio = min(logo_max / logo.width, logo_max / logo.height)
-            new_w = int(logo.width * ratio)
-            new_h = int(logo.height * ratio)
-            logo = logo.resize((new_w, new_h), Image.LANCZOS)
-            logo_x = (WIDTH - new_w) // 2
-            img.paste(logo, (logo_x, 80), logo if logo.mode == "RGBA" else None)
-        except Exception:
-            pass
-
     # Main text — shrink long lines so mobile viewers never lose cropped words.
+    safe_width = WIDTH - 2 * SAFE_MARGIN
     lines = text.split("\n")
-    y_start = 700 if (logo_path and os.path.exists(logo_path)) else 600
-    safe_width = WIDTH - 120
+    main_fonts = [fit_font(draw, line, 72, safe_width) for line in lines]
+    sub_lines = sub.split("\n") if sub else []
+    sub_fonts = [fit_font(draw, line, 42, safe_width, min_size=26) for line in sub_lines]
 
-    for i, line in enumerate(lines):
-        font_main = fit_font(draw, line, 72, safe_width)
+    # Lay the block out as one unit and centre it above the CTA bar. The old
+    # fixed y=600 start left every frame top-heavy with a dead gap beneath it.
+    line_stride = 100
+    sub_gap = 60
+    sub_stride = 60
+    block_h = (len(lines) - 1) * line_stride + _text_height(draw, lines[-1], main_fonts[-1])
+    if sub_lines:
+        block_h += sub_gap + (len(sub_lines) - 1) * sub_stride
+        block_h += _text_height(draw, sub_lines[-1], sub_fonts[-1])
+
+    content_h = HEIGHT - CTA_BAR_H
+    y = max(SAFE_MARGIN, (content_h - block_h) // 2)
+
+    for i, (line, font_main) in enumerate(zip(lines, main_fonts)):
         bbox = draw.textbbox((0, 0), line, font=font_main)
         tw = bbox[2] - bbox[0]
-        tx = (WIDTH - tw) // 2
-        ty = y_start + i * 100
+        tx = (WIDTH - tw) // 2 - bbox[0]
+        ty = y + i * line_stride - bbox[1]
         # Shadow
         draw.text((tx + 3, ty + 3), line, fill=(0, 0, 0), font=font_main)
         draw.text((tx, ty), line, fill=text_color, font=font_main)
 
-    # Subtitle
-    if sub:
-        sub_lines = sub.split("\n")
-        sub_y = y_start + len(lines) * 100 + 60
-        for i, sline in enumerate(sub_lines):
-            font_sub = fit_font(draw, sline, 42, safe_width, min_size=26)
+    if sub_lines:
+        sub_y = (
+            y
+            + (len(lines) - 1) * line_stride
+            + _text_height(draw, lines[-1], main_fonts[-1])
+            + sub_gap
+        )
+        for i, (sline, font_sub) in enumerate(zip(sub_lines, sub_fonts)):
             bbox = draw.textbbox((0, 0), sline, font=font_sub)
             sw = bbox[2] - bbox[0]
-            sx = (WIDTH - sw) // 2
-            draw.text((sx, sub_y + i * 60), sline, fill=(200, 200, 200), font=font_sub)
+            sx = (WIDTH - sw) // 2 - bbox[0]
+            draw.text((sx, sub_y + i * sub_stride - bbox[1]), sline, fill=(200, 200, 200), font=font_sub)
 
-    # Bottom bar — BRAND_BLUE
-    draw.rectangle([0, HEIGHT - 100, WIDTH, HEIGHT], fill=BRAND_BLUE)
-    font_brand = get_font(32)
-    bbox = draw.textbbox((0, 0), "DOCOGA.COM.NG", font=font_brand)
-    bw = bbox[2] - bbox[0]
-    draw.text(((WIDTH - bw) // 2, HEIGHT - 70), "DOCOGA.COM.NG", fill=WHITE, font=font_brand)
+    # CTA bar — brand checklist requires "CTA: docoga.com.ng present". Drawn
+    # and centred with the real glyph box so the type never collides with the
+    # bar edges (the old logo chip overlapped this bar on every slide).
+    draw.rectangle([0, HEIGHT - CTA_BAR_H, WIDTH, HEIGHT], fill=BRAND_BLUE)
+    font_cta = get_font(CTA_FONT_SIZE)
+    box = draw.textbbox((0, 0), CTA_TEXT, font=font_cta)
+    cw, ch = box[2] - box[0], box[3] - box[1]
+    draw.text(
+        ((WIDTH - cw) // 2 - box[0], HEIGHT - CTA_BAR_H + (CTA_BAR_H - ch) // 2 - box[1]),
+        CTA_TEXT,
+        fill=WHITE,
+        font=font_cta,
+    )
 
-    return img
-
-
-def add_official_logo(img):
-    """
-    Composite the REAL official logo onto a PIL Image using the same
-    approach as tools/add_logo.py: white rounded chip, bottom center.
-    Never redraws the logo — pastes the exact pixels from brand/official-logo-transparent.png.
-    """
-    from PIL import ImageFilter
-    
-    logo_path = BRAND_DIR / "official-logo-transparent.png"
-    if not logo_path.exists():
-        return img
-    
-    img = img.convert("RGBA")
-    W, H = img.size
-    
-    logo = Image.open(logo_path).convert("RGBA")
-    bbox = logo.getbbox()
-    if bbox:
-        logo = logo.crop(bbox)
-    lw, lh = logo.size
-    
-    # Chip sizing: logo ~26% of image width
-    target_lw = int(W * 0.26)
-    target_lh = int(target_lw * lh / lw)
-    if target_lh > int(H * 0.20):
-        target_lh = int(H * 0.20)
-        target_lw = int(target_lh * lw / lh)
-    pad = int(target_lw * 0.16)
-    chip_w, chip_h = target_lw + 2 * pad, target_lh + 2 * pad
-    chip_x = (W - chip_w) // 2
-    chip_y = H - chip_h - int(H * 0.035)
-    
-    rad = int(chip_h * 0.22)
-    
-    # Shadow
-    sh = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    ds = ImageDraw.Draw(sh)
-    ds.rounded_rectangle(
-        [chip_x, chip_y + 6, chip_x + chip_w, chip_y + chip_h + 6],
-        radius=rad, fill=(0, 0, 30, 110))
-    sh = sh.filter(ImageFilter.GaussianBlur(10))
-    img = Image.alpha_composite(img, sh)
-    
-    # White chip
-    ov = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    d = ImageDraw.Draw(ov)
-    d.rounded_rectangle(
-        [chip_x, chip_y, chip_x + chip_w, chip_y + chip_h],
-        radius=rad, fill=(255, 255, 255, 255))
-    
-    # Paste logo (exact colours, only scaled)
-    logo_scaled = logo.resize((target_lw, target_lh), Image.LANCZOS)
-    ov.alpha_composite(logo_scaled, (chip_x + pad, chip_y + pad))
-    
-    img = Image.alpha_composite(img, ov)
-    return img.convert("RGB")
+    # Grain last, over type and all, so "image + type = one texture".
+    return add_film_grain(img)
 
 
 def generate_video(script=None, output_path=None):
@@ -271,11 +265,10 @@ def generate_video(script=None, output_path=None):
 
     print(f"🎬 Generating video: {script['title']}")
 
-    # Create slide images with official logo composited
+    # No logo on these frames — locked brand rule, see the top of this file.
     slide_images = []
     for i, slide in enumerate(script["slides"]):
-        img = create_slide_image(slide, logo_path=None)  # no inline logo
-        img = add_official_logo(img)  # composite real logo via chip
+        img = create_slide_image(slide)
         slide_images.append((img, slide.get("duration", 3)))
         print(f"   📸 Slide {i+1}: {slide['text'][:30]}... ({slide['duration']}s)")
 

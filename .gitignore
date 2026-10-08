@@ -5,6 +5,10 @@ unlock-codes.txt
 # Generated at runtime by Telegram workflow
 assets/telegram/
 
+# Rendered Shorts are build output, not source: 1–6 MB per render and
+# regenerated from the same date-seeded templates on every run.
+assets/videos/
+
 # Python bytecode
 __pycache__/
 *.py[cod]
@@ -14,5 +18,7 @@ __pycache__/
 Thumbs.db
 *.log
 node_modules/
+# Local virtualenv for the video/test toolchain (moviepy, Pillow, requests)
+.venv/
 docoga-github-repo.zip
 .worker-secrets.env
