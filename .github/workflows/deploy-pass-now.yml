@@ -137,6 +137,13 @@ jobs:
           echo "########## which config does wrangler pick up? ##########" | tee -a "$DEPLOY_LOG"
           ( cd worker && npx --yes wrangler@latest deploy --dry-run --outdir /tmp/probe 2>&1 | grep -iE "config|Reading|services/|name" | head -10 ) | tee -a "$DEPLOY_LOG"
           echo
+          echo "########## secret NAMES present on docoga-pass ##########" | tee -a "$DEPLOY_LOG"
+          # Lists names only; Cloudflare never returns secret values.
+          curl -sS --max-time 25 \
+            -H "Authorization: Bearer $CF_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/workers/scripts/docoga-pass/secrets" \
+            | head -c 1200 | tee -a "$DEPLOY_LOG"
+          echo | tee -a "$DEPLOY_LOG"
           echo "########## wrangler deploy (explicit config) ##########" | tee -a "$DEPLOY_LOG"
           set +e
           ( cd worker && npx --yes wrangler@latest deploy --config wrangler.toml ) > >(tee -a "$DEPLOY_LOG") 2>&1
