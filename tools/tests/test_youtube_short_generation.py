@@ -1,6 +1,8 @@
 """Tests for the unattended Shorts content rotation and safety footer."""
 
+import os
 import sys
+import tempfile
 import unittest
 from datetime import date, timedelta
 from pathlib import Path
@@ -204,6 +206,66 @@ class LayoutTests(unittest.TestCase):
                     self.assertIsNotNone(bbox, "slide rendered no visible type")
                     self.assertGreaterEqual(bbox[1], shorts.SAFE_MARGIN)
                     self.assertLessEqual(bbox[3], shorts.HEIGHT - shorts.CTA_BAR_H)
+
+
+class DailyShortOutputTests(unittest.TestCase):
+    """`youtube_short_daily.py` feeds the scheduled job — and the ledger.
+
+    Every value the workflow reads comes from GITHUB_OUTPUT. A missing key
+    becomes an empty string in the workflow, which is silent: the upload
+    would still run, but the ledger entry would be blank. These tests pin the
+    contract.
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.output_file = Path(self.tmp.name) / "github_output"
+        self.output_file.write_text("", encoding="utf-8")
+        self.video = Path(self.tmp.name) / "docoga_short_20260101.mp4"
+        self.video.write_bytes(b"0" * 20_000)
+
+    def _run_daily(self):
+        import youtube_short_daily as daily
+
+        with patch.object(shorts, "generate_video", return_value=(str(self.video), "Keep a Rent Paper Trail")):
+            with patch.dict(os.environ, {"GITHUB_OUTPUT": str(self.output_file)}):
+                daily.main()
+        return dict(
+            line.split("=", 1)
+            for line in self.output_file.read_text(encoding="utf-8").splitlines()
+            if "=" in line
+        )
+
+    def test_every_value_the_scheduled_workflow_reads_is_written(self):
+        outputs = self._run_daily()
+        for key in ("video_path", "title", "topic", "description", "tags"):
+            self.assertIn(key, outputs, "the workflow reads this from GITHUB_OUTPUT")
+            self.assertTrue(outputs[key].strip(), "%s must never be empty" % key)
+
+    def test_title_carries_the_shorts_suffix_and_topic_does_not(self):
+        # Deliberately does NOT assert a fixed topic string. The topic is chosen
+        # by a date-seeded rotation, so any hardcoded value is a time bomb: it
+        # passes only on the days the rotation happens to land on it. This test
+        # used to hardcode "Keep a Rent Paper Trail" and broke CI on 2026-10-09
+        # when the rotation moved to "Before You Pay an Agent".
+        #
+        # The mock in _run_daily() returns a topic from generate_video(), but
+        # youtube_short_daily.main() discards that second return value and uses
+        # script["title"] instead. In production the two are always identical
+        # (generate_video returns script["title"]), so the mock was decorative —
+        # which is exactly why the hardcoded assertion ever passed.
+        outputs = self._run_daily()
+        self.assertTrue(outputs["title"].endswith("#Shorts"))
+        # The test name promises this; the original never actually checked it.
+        self.assertNotIn("#Shorts", outputs["topic"])
+        self.assertTrue(outputs["topic"].strip(), "topic must never be empty")
+        self.assertEqual(outputs["title"], "%s #Shorts" % outputs["topic"])
+
+    def test_description_points_at_docoga_and_disclaims_legal_advice(self):
+        outputs = self._run_daily()
+        self.assertIn("https://docoga.com.ng", outputs["description"])
+        self.assertIn("not legal advice", outputs["description"].lower())
 
 
 if __name__ == "__main__":

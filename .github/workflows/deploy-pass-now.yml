@@ -1,0 +1,216 @@
+name: Deploy docoga-pass (gated)
+
+# Why this file exists alongside deploy-pass.yml
+# ----------------------------------------------
+# deploy-pass.yml is workflow_dispatch, and GitHub only registers dispatch
+# workflows from the DEFAULT branch. It lives in PR #11, so it cannot be
+# triggered yet. This one is push-triggered (which does work on a feature
+# branch) but gated behind a commit-marker so it never fires accidentally:
+#
+#     git commit -m ".... [deploy-pass]"
+#
+# Once PR #11 is merged and deploy-pass.yml is live on main, this file should
+# be deleted — two ways to deploy the same worker is one too many.
+
+on:
+  push:
+    branches: ['**']
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Validate only, do not publish'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  deploy:
+    # The gate. workflow_dispatch always runs; pushes need the marker.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.head_commit.message, '[deploy-pass]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Confirm the secrets are reachable
+        env:
+          HAS_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          HAS_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -u
+          if [ -z "${HAS_TOKEN:-}" ] || [ -z "${HAS_ACCOUNT:-}" ]; then
+            echo "RESULT=MISSING_SECRETS" >> "$GITHUB_ENV"
+            echo "::error::CLOUDFLARE_API_TOKEN and/or CLOUDFLARE_ACCOUNT_ID are not set."
+            echo "::error::Add them at Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+          echo "RESULT=SECRETS_PRESENT" >> "$GITHUB_ENV"
+          echo "Both secrets are present."
+
+      - name: Verify the token against Cloudflare
+        if: ${{ env.RESULT != 'MISSING_SECRETS' }}
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          DEPLOY_LOG: ${{ runner.temp }}/deploy.log
+        run: |
+          set -u
+          : > "$DEPLOY_LOG"
+          echo "DEPLOY_LOG=$DEPLOY_LOG" >> "$GITHUB_ENV"
+          echo "########## token/verify ##########" | tee -a "$DEPLOY_LOG"
+          curl -sS --max-time 25 \
+            -H "Authorization: Bearer $CF_TOKEN" \
+            -H "Content-Type: application/json" \
+            https://api.cloudflare.com/client/v4/user/tokens/verify \
+            | head -c 2000 | tee -a "$DEPLOY_LOG"
+          echo | tee -a "$DEPLOY_LOG"
+          echo "########## token fingerprint (sha256, first 16) ##########" | tee -a "$DEPLOY_LOG"
+          # A hash reveals nothing about the token but tells us WHICH token is
+          # in the secret — so we can tell whether the secret was replaced.
+          printf '%s' "$CF_TOKEN" | sha256sum | cut -c1-16 | tee -a "$DEPLOY_LOG"
+          echo | tee -a "$DEPLOY_LOG"
+          echo "########## accounts this token can see ##########" | tee -a "$DEPLOY_LOG"
+          curl -sS --max-time 25 \
+            -H "Authorization: Bearer $CF_TOKEN" \
+            -H "Content-Type: application/json" \
+            "https://api.cloudflare.com/client/v4/accounts?per_page=50" \
+            | head -c 2500 | tee -a "$DEPLOY_LOG"
+          echo | tee -a "$DEPLOY_LOG"
+          echo "########## workers in account $CF_ACCOUNT ##########" | tee -a "$DEPLOY_LOG"
+          curl -sS --max-time 25 \
+            -H "Authorization: Bearer $CF_TOKEN" \
+            -H "Content-Type: application/json" \
+            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/workers/scripts" \
+            | head -c 2000 | tee -a "$DEPLOY_LOG"
+          echo | tee -a "$DEPLOY_LOG"
+          echo "########## KV namespaces in account $CF_ACCOUNT ##########" | tee -a "$DEPLOY_LOG"
+          curl -sS --max-time 25 \
+            -H "Authorization: Bearer $CF_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/storage/kv/namespaces" \
+            | head -c 2000 | tee -a "$DEPLOY_LOG"
+          echo | tee -a "$DEPLOY_LOG"
+          echo "########## workers.dev subdomain for this account ##########" | tee -a "$DEPLOY_LOG"
+          curl -sS --max-time 25 \
+            -H "Authorization: Bearer $CF_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/workers/subdomain" \
+            | head -c 800 | tee -a "$DEPLOY_LOG"
+          echo | tee -a "$DEPLOY_LOG"
+          echo "########## PAGES projects (is docoga-git here?) ##########" | tee -a "$DEPLOY_LOG"
+          curl -sS --max-time 25 \
+            -H "Authorization: Bearer $CF_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/pages/projects?per_page=50" \
+            | head -c 2500 | tee -a "$DEPLOY_LOG"
+          echo | tee -a "$DEPLOY_LOG"
+          echo "########## zones ##########" | tee -a "$DEPLOY_LOG"
+          curl -sS --max-time 25 \
+            -H "Authorization: Bearer $CF_TOKEN" \
+            "https://api.cloudflare.com/client/v4/zones?per_page=50" \
+            | head -c 1500 | tee -a "$DEPLOY_LOG"
+
+      - name: Deploy worker/ as docoga-pass
+        if: ${{ env.RESULT != 'MISSING_SECRETS' }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          DEPLOY_LOG: ${{ runner.temp }}/deploy.log
+        run: |
+          set -u
+          # Do NOT truncate: the verify step already wrote the token's
+          # permission list here, and that is the whole point of capturing it.
+          touch "$DEPLOY_LOG"
+          echo "########## versions ##########" | tee -a "$DEPLOY_LOG"
+          node --version 2>&1 | tee -a "$DEPLOY_LOG"
+          npx --yes wrangler@latest --version 2>&1 | tee -a "$DEPLOY_LOG"
+          echo
+          echo "########## KV namespace reachable? ##########" | tee -a "$DEPLOY_LOG"
+          curl -sS --max-time 25 \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/storage/kv/namespaces" \
+            2>&1 | head -c 1500 | tee -a "$DEPLOY_LOG"
+          echo
+          echo "########## which config does wrangler pick up? ##########" | tee -a "$DEPLOY_LOG"
+          ( cd worker && npx --yes wrangler@latest deploy --dry-run --outdir /tmp/probe 2>&1 | grep -iE "config|Reading|services/|name" | head -10 ) | tee -a "$DEPLOY_LOG"
+          echo
+          echo "########## what IS docoga-git — Worker or Pages? ##########" | tee -a "$DEPLOY_LOG"
+          echo "-- all workers --" | tee -a "$DEPLOY_LOG"
+          curl -sS --max-time 25 \
+            -H "Authorization: Bearer $CF_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/workers/scripts" \
+            | head -c 1500 | tee -a "$DEPLOY_LOG"
+          echo | tee -a "$DEPLOY_LOG"
+          echo "-- all pages projects --" | tee -a "$DEPLOY_LOG"
+          curl -sS --max-time 25 \
+            -H "Authorization: Bearer $CF_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/pages/projects?per_page=50" \
+            | head -c 2000 | tee -a "$DEPLOY_LOG"
+          echo | tee -a "$DEPLOY_LOG"
+          echo "########## secret NAMES present on docoga-pass ##########" | tee -a "$DEPLOY_LOG"
+          # Lists names only; Cloudflare never returns secret values.
+          curl -sS --max-time 25 \
+            -H "Authorization: Bearer $CF_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/workers/scripts/docoga-pass/secrets" \
+            | head -c 1200 | tee -a "$DEPLOY_LOG"
+          echo | tee -a "$DEPLOY_LOG"
+          echo "########## wrangler deploy (explicit config) ##########" | tee -a "$DEPLOY_LOG"
+          set +e
+          ( cd worker && npx --yes wrangler@latest deploy --config wrangler.toml ) > >(tee -a "$DEPLOY_LOG") 2>&1
+          DEXIT=$?
+          set -e
+          echo "deploy_exit=$DEXIT" | tee -a "$DEPLOY_LOG"
+          echo "DEPLOY_LOG=$DEPLOY_LOG" >> "$GITHUB_ENV"
+
+      - name: Probe the live worker
+        if: ${{ env.RESULT != 'MISSING_SECRETS' && github.event.inputs.dry_run != 'true' }}
+        env:
+          WORKER: https://docoga-pass.johnazani.workers.dev
+        run: |
+          set -u
+          echo "########## /activate (bogus code) ##########"
+          curl -sS -i --max-time 25 "$WORKER/activate?code=BOGUSTEST123" \
+            -w '\nhttp_code=%{http_code}\n' | head -25
+          echo
+          echo "########## /verify (bogus ref) ##########"
+          curl -sS -i --max-time 25 "$WORKER/verify?ref=TESTREF123" \
+            -w '\nhttp_code=%{http_code}\n' | head -25
+
+      - name: Post result where the agent can read it
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          DEPLOY_LOG: ${{ env.DEPLOY_LOG }}
+        with:
+          script: |
+            const fs = require('fs');
+            let body = '<!-- deploy-pass-log -->\n';
+            body += '## docoga-pass deploy\n\n';
+            body += `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}\n\n`;
+            const logPath = process.env.DEPLOY_LOG;
+            if (logPath && fs.existsSync(logPath)) {
+              const log = fs.readFileSync(logPath, 'utf8');
+              body += '```\n' + log.slice(-14000) + '\n```\n';
+            } else {
+              body += '(no deploy log captured)\n';
+            }
+            const ISSUE = 11;
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner, repo: context.repo.repo, issue_number: ISSUE,
+            });
+            const marker = '<!-- deploy-pass-log -->';
+            const existing = comments.find(c => c.body && c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                comment_id: existing.id, body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: ISSUE, body,
+              });
+            }

@@ -325,7 +325,7 @@ body.has-pass .buy-only{display:none !important}
       <a href="#caution">Caution Fee</a>
       <a href="#demand">Demand Letter</a>
       <a href="#payslip">Payslip</a>
-      <a href="#warning">Warning Letter</a>
+      <a href="#warning">Warning Letter</a> <a href="#poa">Power of Attorney</a>
       <a href="#docs">My Documents</a>
       <a href="#pricing">Pricing</a>
     </nav>
@@ -882,77 +882,147 @@ body.has-pass .buy-only{display:none !important}
   </div>
 </section>
 
+<!-- ======================= POWER OF ATTORNEY ======================= -->
+<section id="page-poa">
+<h2 class="page-title">Power of Attorney</h2>
+<p class="page-sub">Appoint someone you trust in Nigeria to act for you — manage property, let it out, collect rent, sign at the Lands Registry. Built for Nigerians living abroad. <b>Read the execution and registration notes under the preview before you sign.</b></p>
+<div class="tool-grid">
+<div class="panel">
+<h3>📜 The Donor — you, giving the power</h3>
+<form id="form-poa" oninput="renderPoa()">
+<div class="form-grid">
+<div class="full"><label>Donor full name</label><input id="poa_donor" placeholder="e.g. Chinedu Okafor"></div>
+<div class="full"><label>Donor address (where you live abroad)</label><input id="poa_donor_addr" placeholder="e.g. 12 Beckton Road, London, United Kingdom"></div>
+<div><label>Donor passport / NIN</label><input id="poa_donor_id" placeholder="e.g. A12345678"></div>
+<div><label>Occupation</label><input id="poa_donor_occ" placeholder="e.g. Nurse"></div>
+</div>
+</form>
+</div>
+<div>
+<div class="preview-label">LIVE PREVIEW <span id="badge-poa"></span></div>
+<div class="preview-scroll"><div id="preview-poa"></div></div>
+<div class="actions">
+<button class="btn primary" onclick="printCurrent('poa')"><svg class="bi" aria-hidden="true"><use href="#i-print"/></svg>Print / Save PDF</button>
+<button class="btn green" onclick="saveDoc('poa')"><svg class="bi" aria-hidden="true"><use href="#i-save"/></svg>Save</button>
+<button class="btn green" onclick="shareDoc('poa')"><svg class="bi" aria-hidden="true"><use href="#i-chat"/></svg>Share</button>
+</div>
+</div>
+</div>
+<div class="tool-grid" style="margin-top:14px">
+<div class="panel">
+<h3>🤝 The Donee — your attorney in Nigeria</h3>
+<div class="form-grid">
+<div class="full"><label>Donee full name</label><input id="poa_donee" placeholder="e.g. Ngozi Okafor" oninput="renderPoa()"></div>
+<div class="full"><label>Donee address (in Nigeria)</label><input id="poa_donee_addr" placeholder="e.g. 5 Awolowo Road, Ikoyi, Lagos" oninput="renderPoa()"></div>
+<div><label>Donee NIN / ID</label><input id="poa_donee_id" placeholder="e.g. 12345678901" oninput="renderPoa()"></div>
+<div><label>Relationship to donor</label><input id="poa_rel" placeholder="e.g. Sister" oninput="renderPoa()"></div>
+</div>
+</div>
+<div class="panel">
+<h3>🏠 Property, powers and dates</h3>
+<div class="form-grid">
+<div class="full"><label>Property / subject matter</label><input id="poa_prop" placeholder="e.g. 3-bedroom flat, 14 Admiralty Way, Lekki Phase 1, Lagos" oninput="renderPoa()"></div>
+<div class="full"><label>Purpose — what, specifically, must be done</label><input id="poa_purpose" placeholder="e.g. To manage, let and maintain the property and collect rent" oninput="renderPoa()"></div>
+<div><label>Date of execution</label><input id="poa_date" type="date" oninput="renderPoa()"></div>
+<div><label>Expires on (blank = no fixed end)</label><input id="poa_expiry" type="date" oninput="renderPoa()"></div>
+<div><label>Governing law</label><select id="poa_state" oninput="renderPoa()"></select></div>
+<div><label>Witness name</label><input id="poa_witness" placeholder="e.g. Barr. A. Musa" oninput="renderPoa()"></div>
+</div>
+</div>
+</div>
+<div class="panel" style="margin-top:14px">
+<h3>✅ Powers granted — tick only what you actually need</h3>
+<p style="font-size:13px;color:#5B6B85;margin:2px 0 8px">Keep this narrow. Every box you tick is authority you are handing to someone else.</p>
+<div id="poa-powers" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:6px"></div>
+</div>
+</section>
+<!-- ======================= POWER OF ATTORNEY (end) ======================= -->
 <section id="page-docs">
-  <h2 class="page-title">My Documents</h2>
-  <p class="page-sub">Your saved documents live on this device only. Clearing your browser data will delete them — print or save anything important.</p>
-  <div id="docs-list"></div>
+<h2 class="page-title">My Documents</h2>
+<p class="page-sub">Your saved documents live on this device only. Clearing your browser data will delete them — print or save anything important.</p>
+<div id="docs-list"></div>
 </section>
 
 <!-- ======================= PRICING ======================= -->
 <section id="page-pricing">
-  <h2 class="page-title">Simple pricing</h2>
-  <p class="page-sub">Free forever for real. Upgrade only when you want clean, banner-free documents.</p>
-  <div class="price-grid">
-    <div class="price-card">
-      <div class="plan">Free</div>
-      <div class="amount">₦0</div>
-      <div class="per">forever</div>
-      <div class="best-for">Best for one-off, personal needs</div>
-      <ul>
-        <li>All four tools — agreement, notice, receipt, invoice</li>
-        <li>Unlimited documents</li>
-        <li>Print &amp; save as PDF</li>
-        <li>No signup, data stays on your phone</li>
-        <li>Small DocOga banner on documents</li>
-      </ul>
-      <a class="btn green" style="width:100%;justify-content:center" href="#agreement">Start free</a>
-    </div>
-    <div class="price-card hot">
-      <span class="tag">MOST POPULAR</span>
-      <div class="plan">Oga Pass</div>
-      <div class="amount">₦2,000<small> / 30 days</small></div>
-      <div class="best-for">Best for landlords, agents &amp; small businesses</div>
-      <div class="anchor">A lawyer charges <b>₦20,000–₦50,000</b> for one agreement. One Oga Pass = <b>unlimited clean documents</b> for 30 days.</div>
-      <ul>
-        <li>Everything in Free</li>
-        <li><b>No DocOga banner or watermark</b></li>
-        <li>Unlimited clean PDFs &amp; prints</li>
-        <li>Priority WhatsApp support</li>
-        <li>All 9 tools — incl. payslips, warning letters, employment contracts, caution-fee receipts &amp; demand letters</li>
-      </ul>
-      <button class="btn primary" id="buy-btn" style="width:100%;justify-content:center" onclick="buyPass()">Get Oga Pass — ₦2,000</button>
-      <div class="flw-badge buy-only"><span class="dot"></span>Secured by Flutterwave · Card · Transfer · USSD</div>
-      <p class="guarantee buy-only">Your code appears on screen in ~30 seconds — or WhatsApp us and a human sorts it out.</p>
-      <p style="text-align:center;margin-top:8px"><button class="link-btn" onclick="openModal()">Have a code? Activate / extend →</button></p>
-    </div>
-  </div>
+<h2 class="page-title">Simple pricing</h2>
+<p class="page-sub">Free forever for real. Upgrade only when you want clean, banner-free documents.</p>
+<div class="price-grid">
+<div class="price-card">
+<div class="plan">Free</div>
+<div class="amount">₦0</div>
+<div class="per">forever</div>
+<div class="best-for">Best for one-off, personal needs</div>
+<ul>
+<li>All ten tools — agreement, notice, receipt, invoice &amp; more</li>
+<li>Unlimited documents</li>
+<li>Print &amp; save as PDF</li>
+<li>No signup, data stays on your phone</li>
+<li>Small DocOga banner on documents</li>
+</ul>
+<a class="btn green" style="width:100%;justify-content:center" href="#agreement">Start free</a>
+</div>
+<div class="price-card hot">
+<span class="tag">MOST POPULAR</span>
+<div class="plan">Oga Pass</div>
+<div class="amount">₦2,000<small> / 30 days</small></div>
+<div class="best-for">Best for landlords, agents &amp; small businesses</div>
+<div class="anchor">A lawyer charges <b>₦20,000–₦50,000</b> for one agreement. One Oga Pass = <b>unlimited clean documents</b> for 30 days.</div>
+<ul>
+<li>Everything in Free</li>
+<li><b>No DocOga banner or watermark</b></li>
+<li>Unlimited clean PDFs &amp; prints</li>
+<li>Priority WhatsApp support</li>
+<li><b>All 10 tools</b> — incl. power of attorney, payslips, warning letters, employment contracts, caution-fee receipts &amp; demand letters</li>
+</ul>
+<button class="btn primary" id="buy-btn" style="width:100%;justify-content:center" onclick="buyPass()">Get Oga Pass — ₦2,000</button>
+<div class="flw-badge buy-only"><span class="dot"></span>Secured by Flutterwave · Card · Transfer · USSD</div>
+<p class="guarantee buy-only">Your code appears on screen in ~30 seconds — or WhatsApp us and a human sorts it out.</p>
+<p style="text-align:center;margin-top:8px"><button class="link-btn" onclick="openModal()">Have a code? Activate / extend →</button></p>
+</div>
+<div class="price-card">
+<div class="plan">Business</div>
+<div class="amount">Custom</div>
+<div class="per">annual, per team</div>
+<div class="best-for">For estate agents, property managers, landlords &amp; HR teams</div>
+<ul>
+<li>Everything in Oga Pass, for your whole team</li>
+<li><b>Your firm’s name and logo</b> on every document instead of ours</li>
+<li>One shared pass — no per-person codes to chase</li>
+<li>Invoice and bank transfer, no cards, no reimbursements</li>
+<li>A named human on WhatsApp who knows your account</li>
+</ul>
+<a class="btn primary" style="width:100%;justify-content:center" href="https://wa.me/2349021852845?text=Hello%20DocOga%20%E2%80%94%20I%27d%20like%20a%20Business%20quote%20for%20my%20team.">Get a Business quote →</a>
+<p class="guarantee">One annual invoice. Cheaper than a single lawyer-drafted agreement per branch. We quote within one working day.</p>
+</div>
+</div>
 </section>
 
 <div class="sticky-cta no-print" id="sticky-cta"><span><b>Oga Pass</b> — ₦2,000 · 30 days unlimited</span><a class="btn primary sm" href="#pricing">Get the Pass</a></div>
 </main>
 
 <footer>
-  <div class="foot">
-    <b style="color:var(--ink)">DocOga</b> — the Oga of Documents. Made in Abuja, Nigeria 🇳🇬
-    <div class="disc"><b>Disclaimer:</b> DocOga provides self-help document templates based on standard Nigerian practice. It is not a law firm and does not provide legal advice. For complex or high-value transactions, consult a qualified Nigerian lawyer. Documents remain binding only when properly completed, signed and witnessed.</div>
-    <div>© 2026 DocOga. All rights reserved. · <a href="#pricing">Oga Pass</a> · <a href="privacy.html">Privacy Policy</a> · <a href="terms.html">Terms of Use</a> · Support: <a id="foot-wa" href="#" onclick="return false">WhatsApp</a></div>
-  </div>
+<div class="foot">
+<b style="color:var(--ink)">DocOga</b> — the Oga of Documents. Made in Abuja, Nigeria 🇳🇬
+<div class="disc"><b>Disclaimer:</b> DocOga provides self-help document templates based on standard Nigerian practice. It is not a law firm and does not provide legal advice. For complex or high-value transactions, consult a qualified Nigerian lawyer. Documents remain binding only when properly completed, signed and witnessed.</div>
+<div>© 2026 DocOga. All rights reserved. · <a href="#pricing">Oga Pass</a> · <a href="privacy.html">Privacy Policy</a> · <a href="terms.html">Terms of Use</a> · Support: <a id="foot-wa" href="#" onclick="return false">WhatsApp</a></div>
+</div>
 </footer>
 
 <div class="no-print wa-wrap" style="position:fixed;bottom:18px;right:18px;z-index:90">
-  <a id="wa-float" href="#" target="_blank" rel="noopener" title="Chat with DocOga on WhatsApp" aria-label="Chat with DocOga on WhatsApp" style="display:grid;place-items:center;width:54px;height:54px;border-radius:50%;background:#25D366;color:#fff;text-decoration:none;font-size:24px;box-shadow:0 6px 18px rgba(0,0,0,.28)"><svg viewBox="0 0 32 32" width="30" height="30" fill="#fff" aria-hidden="true"><path d="M16.04 4c-6.63 0-12 5.36-12 11.97 0 2.11.55 4.17 1.6 5.99L4 28l6.2-1.62a12 12 0 0 0 5.83 1.49h.01c6.62 0 12-5.36 12-11.97 0-3.2-1.25-6.2-3.52-8.46A11.93 11.93 0 0 0 16.04 4zm0 21.87h-.01a9.9 9.9 0 0 1-5.05-1.38l-.36-.22-3.68.96.98-3.59-.24-.37a9.86 9.86 0 0 1-1.51-5.26c0-5.5 4.47-9.97 9.98-9.97 2.66 0 5.16 1.04 7.04 2.92a9.82 9.82 0 0 1 2.92 7.06c0 5.5-4.48 9.85-9.97 9.85zm5.46-7.4c-.3-.15-1.77-.87-2.04-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.17-.17.2-.35.22-.65.07-.3-.15-1.26-.46-2.4-1.48-.89-.79-1.49-1.77-1.66-2.07-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.07-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.8.37-.27.3-1.04 1.02-1.04 2.49s1.07 2.89 1.22 3.09c.15.2 2.11 3.22 5.1 4.51.71.31 1.27.49 1.7.63.72.23 1.37.2 1.88.12.57-.09 1.77-.72 2.02-1.42.25-.7.25-1.3.17-1.42-.07-.12-.27-.2-.57-.35z"/></svg></a>
+<a id="wa-float" href="#" target="_blank" rel="noopener" title="Chat with DocOga on WhatsApp" aria-label="Chat with DocOga on WhatsApp" style="display:grid;place-items:center;width:54px;height:54px;border-radius:50%;background:#25D366;color:#fff;text-decoration:none;font-size:24px;box-shadow:0 6px 18px rgba(0,0,0,.28)"><svg viewBox="0 0 32 32" width="30" height="30" fill="#fff" aria-hidden="true"><path d="M16.04 4c-6.63 0-12 5.36-12 11.97 0 2.11.55 4.17 1.6 5.99L4 28l6.2-1.62a12 12 0 0 0 5.83 1.49h.01c6.62 0 12-5.36 12-11.97 0-3.2-1.25-6.2-3.52-8.46A11.93 11.93 0 0 0 16.04 4zm0 21.87h-.01a9.9 9.9 0 0 1-5.05-1.38l-.36-.22-3.68.96.98-3.59-.24-.37a9.86 9.86 0 0 1-1.51-5.26c0-5.5 4.47-9.97 9.98-9.97 2.66 0 5.16 1.04 7.04 2.92a9.82 9.82 0 0 1 2.92 7.06c0 5.5-4.48 9.85-9.97 9.85zm5.46-7.4c-.3-.15-1.77-.87-2.04-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.17-.17.2-.35.22-.65.07-.3-.15-1.26-.46-2.4-1.48-.89-.79-1.49-1.77-1.66-2.07-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.07-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.8.37-.27.3-1.04 1.02-1.04 2.49s1.07 2.89 1.22 3.09c.15.2 2.11 3.22 5.1 4.51.71.31 1.27.49 1.7.63.72.23 1.37.2 1.88.12.57-.09 1.77-.72 2.02-1.42.25-.7.25-1.3.17-1.42-.07-.12-.27-.2-.57-.35z"/></svg></a>
 </div>
 
 <!-- modal -->
 <div id="modal-overlay" onclick="if(event.target===this)closeModal()">
-  <div class="modal">
-    <button class="close-x" onclick="closeModal()">✕</button>
-    <h3>Activate Oga Pass</h3>
-    <p id="modal-sub">Enter the code you received after payment to unlock 30 days of clean, watermark-free documents.</p>
-    <input id="pass-input" placeholder="OGA-XXXX-XXXX-XXXX" style="text-transform:uppercase;letter-spacing:1px;font-weight:700" onkeydown="if(event.key==='Enter')submitCode()">
-    <button class="btn green" style="width:100%;justify-content:center" onclick="submitCode()">Activate</button>
-    <p style="margin:14px 0 0;font-size:13px">No code yet? <a href="#" onclick="buyPass();return false">Get the ₦2,000 pass</a></p>
-  </div>
+<div class="modal">
+<button class="close-x" onclick="closeModal()">✕</button>
+<h3>Activate Oga Pass</h3>
+<p id="modal-sub">Enter the code you received after payment to unlock 30 days of clean, watermark-free documents.</p>
+<input id="pass-input" placeholder="OGA-XXXX-XXXX-XXXX" style="text-transform:uppercase;letter-spacing:1px;font-weight:700" onkeydown="if(event.key==='Enter')submitCode()">
+<button class="btn green" style="width:100%;justify-content:center" onclick="submitCode()">Activate</button>
+<p style="margin:14px 0 0;font-size:13px">No code yet? <a href="#" onclick="buyPass();return false">Get the ₦2,000 pass</a></p>
+</div>
 </div>
 
 <div id="toast"></div>
@@ -971,7 +1041,7 @@ const CODE_HASHES = new Set(["3d260bec","5422f3c7","3a5998f8","ed11779f","e07ad8
 
 /* safe storage (works even in restricted previews) */
 const store = (()=>{ try{ localStorage.setItem('_t','1'); localStorage.removeItem('_t'); return localStorage; }
-  catch(e){ const m={}; return {getItem:k=>(k in m?m[k]:null),setItem:(k,v)=>{m[k]=String(v)},removeItem:k=>{delete m[k]}}; } })();
+catch(e){ const m={}; return {getItem:k=>(k in m?m[k]:null),setItem:(k,v)=>{m[k]=String(v)},removeItem:k=>{delete m[k]}}; } })();
 
 /* utils */
 function $(id){ return document.getElementById(id); }
@@ -985,90 +1055,90 @@ function isoOf(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,
 function addMonthsISO(iso,m){ const dt=new Date(String(iso)+'T00:00:00'); if(isNaN(dt)) return ''; const d=new Date(dt.getFullYear(),dt.getMonth()+Number(m||0),dt.getDate()-1); return isoOf(d); }
 function addDaysISO(iso,days){ const dt=new Date(String(iso)+'T00:00:00'); if(isNaN(dt)) return ''; const d=new Date(dt.getFullYear(),dt.getMonth(),dt.getDate()+Number(days||0)); return isoOf(d); }
 function numWords(n){
-  n=Math.floor(Number(n)||0); if(n<0) return '';
-  if(n===0) return 'Zero';
-  const u=['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
-  const t=['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
-  const cap=x=>{ if(!x) return ''; if(x<20) return u[x]; if(x<100) return t[Math.floor(x/10)]+(x%10?'-'+u[x%10]:''); return u[Math.floor(x/100)]+' Hundred'+(x%100?' and '+cap(x%100):''); };
-  const out=[];
-  [[1e9,'Billion'],[1e6,'Million'],[1e3,'Thousand']].forEach(([v,name])=>{ if(n>=v){ out.push(cap(Math.floor(n/v))+' '+name); n%=v; } });
-  if(n) out.push(cap(n));
-  return out.join(', ');
+n=Math.floor(Number(n)||0); if(n<0) return '';
+if(n===0) return 'Zero';
+const u=['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+const t=['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+const cap=x=>{ if(!x) return ''; if(x<20) return u[x]; if(x<100) return t[Math.floor(x/10)]+(x%10?'-'+u[x%10]:''); return u[Math.floor(x/100)]+' Hundred'+(x%100?' and '+cap(x%100):''); };
+const out=[];
+[[1e9,'Billion'],[1e6,'Million'],[1e3,'Thousand']].forEach(([v,name])=>{ if(n>=v){ out.push(cap(Math.floor(n/v))+' '+name); n%=v; } });
+if(n) out.push(cap(n));
+return out.join(', ');
 }
 function nairaWords(n){ return numWords(n)+' ('+fmtN(n)+') Naira Only'; }
 
 /* pass management */
 let pass=null; try{ pass=JSON.parse(store.getItem('docoga_pass')||'null'); }catch(e){}
 /* This device's fingerprint (random ID, kept only in this browser) — powers
-   the server's 3-device fairness fence (one pass = phone + laptop + spare). */
+the server's 3-device fairness fence (one pass = phone + laptop + spare). */
 let DID=''; try{ DID=store.getItem('docoga_did')||('d'+Date.now().toString(36)+Math.random().toString(36).slice(2,10)); store.setItem('docoga_did',DID); }catch(e){}
 /* Server owns the expiry — sync keeps every device on one countdown, adopts
-   renewals made elsewhere, clears expired passes. Silent + fail-safe. */
+renewals made elsewhere, clears expired passes. Silent + fail-safe. */
 function syncPass(){
-  if(!pass||!pass.c||!WORKER_URL) return;
-  fetch(WORKER_URL+'/activate?code='+encodeURIComponent(String(pass.c).replace(/[\s-]/g,''))+(DID?'&did='+encodeURIComponent(DID):'')).then(r=>r.json()).then(j=>{
-    if(j&&(j.ok||(j.renewedCode&&j.exp))){
-      const c=j.code||j.renewedCode;
-      if(c&&j.exp&&(!pass||pass.c!==c||pass.exp!==j.exp)){
-        pass={exp:j.exp,c,h:fnv1a(String(c).replace(/[\s-]/g,'')).toString(16).padStart(8,'0')};
-        store.setItem('docoga_pass',JSON.stringify(pass)); updatePassUI();
-      }
-    } else if(j&&j.error&&/expired/i.test(j.error)&&pass&&pass.exp>Date.now()){
-      store.removeItem('docoga_pass'); pass=null; updatePassUI(); renderAll(); toast('Your Oga Pass has expired.');
-    }
-  }).catch(()=>{});
+if(!pass||!pass.c||!WORKER_URL) return;
+fetch(WORKER_URL+'/activate?code='+encodeURIComponent(String(pass.c).replace(/[\s-]/g,''))+(DID?'&did='+encodeURIComponent(DID):'')).then(r=>r.json()).then(j=>{
+if(j&&(j.ok||(j.renewedCode&&j.exp))){
+const c=j.code||j.renewedCode;
+if(c&&j.exp&&(!pass||pass.c!==c||pass.exp!==j.exp)){
+pass={exp:j.exp,c,h:fnv1a(String(c).replace(/[\s-]/g,'')).toString(16).padStart(8,'0')};
+store.setItem('docoga_pass',JSON.stringify(pass)); updatePassUI();
+}
+} else if(j&&j.error&&/expired/i.test(j.error)&&pass&&pass.exp>Date.now()){
+store.removeItem('docoga_pass'); pass=null; updatePassUI(); renderAll(); toast('Your Oga Pass has expired.');
+}
+}).catch(()=>{});
 }
 syncPass();
 /* Live updates: when the payment tab activates a pass, this tab refreshes
-   itself instantly; coming back to the tab re-syncs (picks up renewals). */
+itself instantly; coming back to the tab re-syncs (picks up renewals). */
 window.addEventListener('storage',e=>{ if(e.key==='docoga_pass'){ try{ pass=JSON.parse(e.newValue||'null'); }catch(err){ pass=null; } updatePassUI(); renderAll(); } });
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') syncPass(); });
 /* Magic pass link: docoga.com.ng/#code=OGA-… (or ?code=) — tap it from WhatsApp
-   on ANY device/browser and DocOga activates itself. No typing, ever.
-   The code is stripped from the address bar immediately after use. */
+on ANY device/browser and DocOga activates itself. No typing, ever.
+The code is stripped from the address bar immediately after use. */
 (function(){
-  const m=(location.hash||'').match(/code=([A-Za-z0-9-]{8,24})/)||(location.search||'').match(/code=([A-Za-z0-9-]{8,24})/);
-  if(!m) return;
-  const c=m[1].toUpperCase();
-  try{ history.replaceState(null,'',location.pathname); }catch(e){}
-  if(pass&&pass.c&&String(pass.c).replace(/-/g,'')===c.replace(/-/g,'')&&pass.exp>Date.now()){ toast('✓ Your Oga Pass is already active on this device.'); return; }
-  submitCode(c);
+const m=(location.hash||'').match(/code=([A-Za-z0-9-]{8,24})/)||(location.search||'').match(/code=([A-Za-z0-9-]{8,24})/);
+if(!m) return;
+const c=m[1].toUpperCase();
+try{ history.replaceState(null,'',location.pathname); }catch(e){}
+if(pass&&pass.c&&String(pass.c).replace(/-/g,'')===c.replace(/-/g,'')&&pass.exp>Date.now()){ toast('✓ Your Oga Pass is already active on this device.'); return; }
+submitCode(c);
 })();
 function passActive(){ return !!(pass && Date.now()<pass.exp); }
 function updatePassUI(){
-  const chip=$('pass-chip');
-  const active=passActive();
-  const days=active?Math.ceil((pass.exp-Date.now())/864e5):0;
-  document.body.classList.toggle('has-pass', active);
-  if(active){ chip.textContent='OGA PASS ✓ '+days+'d'; chip.classList.add('pro'); }
-  else { chip.textContent='FREE PLAN'; chip.classList.remove('pro'); }
-  const bb=$('buy-btn'); if(bb){ bb.disabled=active; bb.textContent=active?('✓ Pass active — '+days+' day'+(days>1?'s':'')+' of clean documents left'):'Get Oga Pass — ₦2,000'; }
-  const ms=$('modal-sub'); if(ms){ ms.textContent=active?('Your pass is active — '+days+'d left. A NEW code adds 30 days on top of your remaining days.'):'Enter the code you received after payment to unlock 30 days of clean, watermark-free documents.'; }
-  ['agreement','notice','receipt','invoice','employment','caution','demand','payslip','warning'].forEach(renderBadge);
+const chip=$('pass-chip');
+const active=passActive();
+const days=active?Math.ceil((pass.exp-Date.now())/864e5):0;
+document.body.classList.toggle('has-pass', active);
+if(active){ chip.textContent='OGA PASS ✓ '+days+'d'; chip.classList.add('pro'); }
+else { chip.textContent='FREE PLAN'; chip.classList.remove('pro'); }
+const bb=$('buy-btn'); if(bb){ bb.disabled=active; bb.textContent=active?('✓ Pass active — '+days+' day'+(days>1?'s':'')+' of clean documents left'):'Get Oga Pass — ₦2,000'; }
+const ms=$('modal-sub'); if(ms){ ms.textContent=active?('Your pass is active — '+days+'d left. A NEW code adds 30 days on top of your remaining days.'):'Enter the code you received after payment to unlock 30 days of clean, watermark-free documents.'; }
+['agreement','notice','receipt','invoice','employment','caution','demand','payslip','warning'].forEach(renderBadge);
 }
 function openModal(){ $('modal-overlay').classList.add('open'); $('pass-input').focus(); }
 function closeModal(){ $('modal-overlay').classList.remove('open'); }
 async function submitCode(codeArg){
-  const code=(codeArg||$('pass-input').value).trim();
-  if(!code){ toast('Enter your code first.'); return; }
-  const norm=code.toUpperCase().replace(/[\s-]/g,'');
-  const h=fnv1a(norm).toString(16).padStart(8,'0');
-  if(pass&&pass.h===h&&pass.exp>Date.now()){ closeModal(); $('pass-input').value=''; toast('✓ This code is already active on this device — '+Math.ceil((pass.exp-Date.now())/864e5)+'d left. Topping up adds 30 days to your remaining time.'); return; }
-  const save=(exp,c)=>{ pass={exp,c,h}; store.setItem('docoga_pass',JSON.stringify(pass)); updatePassUI(); renderAll(); closeModal(); $('pass-input').value=''; const d=Math.max(1,Math.ceil((pass.exp-Date.now())/864e5)); toast('✅ Oga Pass active — '+d+' day'+(d>1?'s':'')+' of clean documents left.'); };
-  // 1) ask the Worker first — it owns the synced expiry and links top-ups (?prev)
-  if(WORKER_URL){
-    try{
-      const prev=(pass&&pass.c)?'&prev='+encodeURIComponent(String(pass.c).replace(/[\s-]/g,'')):'';
-      const r=await fetch(WORKER_URL+'/activate?code='+encodeURIComponent(norm)+prev+(DID?'&did='+encodeURIComponent(DID):''));
-      const j=await r.json();
-      if(j.ok&&j.exp){ save(j.exp, j.code||norm); return; }
-      if(j.renewedCode&&j.exp){ save(j.exp, j.renewedCode); return; } // adopt the newest code
-      if(j&&j.error){ toast('❌ '+j.error); return; }
-    }catch(e){ /* worker unreachable — fall back to offline validation */ }
-  }
-  // 2) fallback: offline codes (unlock-codes.txt) when the Worker is unreachable
-  if(CODE_HASHES.has(h)){ save(Math.max((pass&&pass.exp)||0, Date.now())+30*864e5, norm); return; }
-  toast('❌ Invalid code. Please check and try again.');
+const code=(codeArg||$('pass-input').value).trim();
+if(!code){ toast('Enter your code first.'); return; }
+const norm=code.toUpperCase().replace(/[\s-]/g,'');
+const h=fnv1a(norm).toString(16).padStart(8,'0');
+if(pass&&pass.h===h&&pass.exp>Date.now()){ closeModal(); $('pass-input').value=''; toast('✓ This code is already active on this device — '+Math.ceil((pass.exp-Date.now())/864e5)+'d left. Topping up adds 30 days to your remaining time.'); return; }
+const save=(exp,c)=>{ pass={exp,c,h}; store.setItem('docoga_pass',JSON.stringify(pass)); updatePassUI(); renderAll(); closeModal(); $('pass-input').value=''; const d=Math.max(1,Math.ceil((pass.exp-Date.now())/864e5)); toast('✅ Oga Pass active — '+d+' day'+(d>1?'s':'')+' of clean documents left.'); };
+// 1) ask the Worker first — it owns the synced expiry and links top-ups (?prev)
+if(WORKER_URL){
+try{
+const prev=(pass&&pass.c)?'&prev='+encodeURIComponent(String(pass.c).replace(/[\s-]/g,'')):'';
+const r=await fetch(WORKER_URL+'/activate?code='+encodeURIComponent(norm)+prev+(DID?'&did='+encodeURIComponent(DID):''));
+const j=await r.json();
+if(j.ok&&j.exp){ save(j.exp, j.code||norm); return; }
+if(j.renewedCode&&j.exp){ save(j.exp, j.renewedCode); return; } // adopt the newest code
+if(j&&j.error){ toast('❌ '+j.error); return; }
+}catch(e){ /* worker unreachable — fall back to offline validation */ }
+}
+// 2) fallback: offline codes (unlock-codes.txt) when the Worker is unreachable
+if(CODE_HASHES.has(h)){ save(Math.max((pass&&pass.exp)||0, Date.now())+30*864e5, norm); return; }
+toast('❌ Invalid code. Please check and try again.');
 }
 function buyPass(){ window.open(PAYMENT_URL,'_blank'); toast('Complete payment — you\'ll be returned here and your pass activates automatically.'); }
 
@@ -1082,139 +1152,139 @@ const STATES=["Abia","Adamawa","Akwa Ibom","Anambra","Bauchi","Bayelsa","Benue",
 
 /* ================= TENANCY AGREEMENT ================= */
 function collectAgreement(){
-  return {
-    ll_name:$('ll_name').value, ll_addr:$('ll_addr').value, ll_phone:$('ll_phone').value,
-    tt_name:$('tt_name').value, tt_addr:$('tt_addr').value, tt_phone:$('tt_phone').value,
-    prop_desc:$('prop_desc').value, prop_addr:$('prop_addr').value, prop_state:$('prop_state').value,
-    rent_amt:$('rent_amt').value, rent_period:$('rent_period').value, deposit_amt:$('deposit_amt').value,
-    start_date:$('start_date').value, term_months:$('term_months').value, notice:$('notice').value,
-    prepared_by:$('prepared_by').value, custom_clauses:$('custom_clauses').value
-  };
+return {
+ll_name:$('ll_name').value, ll_addr:$('ll_addr').value, ll_phone:$('ll_phone').value,
+tt_name:$('tt_name').value, tt_addr:$('tt_addr').value, tt_phone:$('tt_phone').value,
+prop_desc:$('prop_desc').value, prop_addr:$('prop_addr').value, prop_state:$('prop_state').value,
+rent_amt:$('rent_amt').value, rent_period:$('rent_period').value, deposit_amt:$('deposit_amt').value,
+start_date:$('start_date').value, term_months:$('term_months').value, notice:$('notice').value,
+prepared_by:$('prepared_by').value, custom_clauses:$('custom_clauses').value
+};
 }
 function applyAgreement(p){
-  [['ll_name','ll_name'],['ll_addr','ll_addr'],['ll_phone','ll_phone'],['tt_name','tt_name'],['tt_addr','tt_addr'],['tt_phone','tt_phone'],
-   ['prop_desc','prop_desc'],['prop_addr','prop_addr'],['rent_amt','rent_amt'],['deposit_amt','deposit_amt'],
-   ['start_date','start_date'],['term_months','term_months'],['prepared_by','prepared_by'],['custom_clauses','custom_clauses']].forEach(([k,id])=>{ $(id).value=p[k]||''; });
-  if(p.prop_state) $('prop_state').value=p.prop_state;
-  if(p.rent_period) $('rent_period').value=p.rent_period;
-  if(p.notice) $('notice').value=p.notice;
+[['ll_name','ll_name'],['ll_addr','ll_addr'],['ll_phone','ll_phone'],['tt_name','tt_name'],['tt_addr','tt_addr'],['tt_phone','tt_phone'],
+['prop_desc','prop_desc'],['prop_addr','prop_addr'],['rent_amt','rent_amt'],['deposit_amt','deposit_amt'],
+['start_date','start_date'],['term_months','term_months'],['prepared_by','prepared_by'],['custom_clauses','custom_clauses']].forEach(([k,id])=>{ $(id).value=p[k]||''; });
+if(p.prop_state) $('prop_state').value=p.prop_state;
+if(p.rent_period) $('rent_period').value=p.rent_period;
+if(p.notice) $('notice').value=p.notice;
 }
 function renderAgreement(){
-  const d=collectAgreement();
-  const periodWord={annum:'annum',quarter:'quarter',month:'month',week:'week'}[d.rent_period]||'annum';
-  const end=addMonthsISO(d.start_date,d.term_months);
-  $('hint-rent_amt').textContent=(d.rent_amt? '= '+numWords(d.rent_amt)+' Naira':'');
-  $('hint-deposit_amt').textContent=(Number(d.deposit_amt)>0? '= '+numWords(d.deposit_amt)+' Naira':'');
-  const c=[];
-  c.push(['TERM','The Landlord agrees to let and the Tenant agrees to take the Demised Premises for a term of <b>'+(esc(d.term_months)||'____')+' month'+((Number(d.term_months)||1)>1?'s':'')+'</b> certain, commencing on <b>'+fmtDateLong(d.start_date)+'</b> and ending on <b>'+fmtDateLong(end)+'</b>, renewable by mutual agreement of the parties.']);
-  c.push(['RENT','The Tenant shall pay to the Landlord a rent of <b>'+ (d.rent_amt?nairaWords(d.rent_amt):'₦____________') +'</b> per '+periodWord+', payable in advance, without deduction except as may be permitted by law.']);
-  if(Number(d.deposit_amt)>0) c.push(['CAUTION FEE / DEPOSIT','The Tenant has paid a caution fee (security deposit) of <b>'+nairaWords(d.deposit_amt)+'</b>, refundable at the expiration or earlier termination of the tenancy, subject to deductions for any damage to the Demised Premises beyond normal wear and tear.']);
-  c.push(['USE OF PREMISES','The Tenant shall use the Demised Premises for residential purposes only and shall not use the Premises or permit it to be used for any illegal, immoral or hazardous purpose.']);
-  c.push(['NO ASSIGNMENT OR SUBLETTING','The Tenant shall not assign, sublet, or part with possession of the Demised Premises or any part thereof without the prior written consent of the Landlord.']);
-  c.push(['REPAIRS AND MAINTENANCE','The Landlord shall keep the roof and external walls of the Demised Premises in good structural repair. The Tenant shall keep the interior, sanitary fittings and installations in good and tenantable condition, and shall be liable for any damage caused by the negligence of the Tenant, his guests or invitees.']);
-  c.push(['UTILITIES','The Tenant shall pay all charges for electricity, water, waste disposal and other utilities consumed on the Demised Premises during the tenancy.']);
-  c.push(['QUIET ENJOYMENT','The Landlord covenants that the Tenant, upon paying the rent and observing the covenants herein, shall peacefully hold and enjoy the Demised Premises during the tenancy without any interruption by the Landlord or any person lawfully claiming under him.']);
-  c.push(['ALTERATIONS','The Tenant shall not make any structural alteration or addition to the Demised Premises without the prior written consent of the Landlord.']);
-  c.push(['INSPECTION','The Landlord or his authorised agent may enter the Demised Premises to inspect its condition upon giving the Tenant reasonable prior notice.']);
-  c.push(['NOTICE TO QUIT','Either party may terminate this tenancy by serving on the other party written notice to quit of <b>'+(esc(d.notice)||'as required by the Tenancy Law applicable in the state')+'</b>, in accordance with the Tenancy Law applicable in '+ (esc(d.prop_state)||'the state where the Premises is situate') +'.']);
-  c.push(['RENEWAL AND RENT REVIEW','The parties may renew this tenancy upon terms to be agreed, and the rent may be reviewed upon renewal by mutual agreement.']);
-  c.push(['GOVERNING LAW AND JURISDICTION','This agreement shall be governed by the laws of the Federal Republic of Nigeria and the tenancy law applicable in '+(esc(d.prop_state)||'the state where the Premises is situate')+', and the parties submit to the jurisdiction of the courts of that state.']);
-  (d.custom_clauses||'').split('\n').map(s=>s.trim()).filter(Boolean).forEach(line=>c.push(['ADDITIONAL COVENANT',esc(line)]));
-  const now=new Date();
-  const html =
-  '<div class="'+sheetClass()+'">'+
-  '<h1>RESIDENTIAL TENANCY AGREEMENT</h1>'+
-  '<div class="doc-meta">Made this '+now.getDate()+' day of '+now.toLocaleDateString('en-GB',{month:'long',year:'numeric'})+'</div>'+
-  '<p><b>THIS TENANCY AGREEMENT</b> is made between</p>'+
-  '<div class="parties">'+
-  '<p><b>'+(esc(d.ll_name)||'________________')+'</b> of '+(esc(d.ll_addr)||'________________')+(d.ll_phone?' (Tel: '+esc(d.ll_phone)+')':'')+' (hereinafter called <b>"the Landlord"</b>, which expression shall where the context so admits include the Landlord\'s heirs, successors-in-title and assigns)</p>'+
-  '<p>AND</p>'+
-  '<p><b>'+(esc(d.tt_name)||'________________')+'</b> of '+(esc(d.tt_addr)||'________________')+(d.tt_phone?' (Tel: '+esc(d.tt_phone)+')':'')+' (hereinafter called <b>"the Tenant"</b>).</p>'+
-  '</div>'+
-  '<p><b>WHEREAS</b> the Landlord is the owner or is lawfully entitled to grant a tenancy of all that property known, described and situate at <b>'+(esc(d.prop_desc)||'____________')+', '+(esc(d.prop_addr)||'____________')+((d.prop_state)?', '+esc(d.prop_state)+' State':'')+'</b> (hereinafter called <b>"the Demised Premises"</b>).</p>'+
-  '<p><b>NOW THIS AGREEMENT WITNESSES</b> as follows:</p>'+
-  c.map((cl,i)=>'<div class="clause"><b>'+ (i+1) +'. '+cl[0]+'</b>'+cl[1]+'</div>').join('')+
-  '<p style="margin-top:18px"><b>IN WITNESS WHEREOF</b> the parties have executed this agreement on the date first above written.</p>'+
-  '<div class="sig-grid">'+
-  '<div><div class="sig-line"></div>LANDLORD: '+(esc(d.ll_name)||'________________')+'<div style="color:#555;font-size:11.5px">Signature / Date</div></div>'+
-  '<div><div class="sig-line"></div>TENANT: '+(esc(d.tt_name)||'________________')+'<div style="color:#555;font-size:11.5px">Signature / Date</div></div>'+
-  '<div><div class="sig-line"></div>WITNESS 1<div style="color:#555;font-size:11.5px">Name / Signature / Date</div></div>'+
-  '<div><div class="sig-line"></div>WITNESS 2<div style="color:#555;font-size:11.5px">Name / Signature / Date</div></div>'+
-  '</div>'+
-  (d.prepared_by?'<p style="margin-top:22px;font-size:12px;color:#444">Prepared by: '+esc(d.prepared_by)+'</p>':'')+
-  freeBanner()+
-  '</div>';
-  $('preview-agreement').innerHTML=html;
-  return html;
+const d=collectAgreement();
+const periodWord={annum:'annum',quarter:'quarter',month:'month',week:'week'}[d.rent_period]||'annum';
+const end=addMonthsISO(d.start_date,d.term_months);
+$('hint-rent_amt').textContent=(d.rent_amt? '= '+numWords(d.rent_amt)+' Naira':'');
+$('hint-deposit_amt').textContent=(Number(d.deposit_amt)>0? '= '+numWords(d.deposit_amt)+' Naira':'');
+const c=[];
+c.push(['TERM','The Landlord agrees to let and the Tenant agrees to take the Demised Premises for a term of <b>'+(esc(d.term_months)||'____')+' month'+((Number(d.term_months)||1)>1?'s':'')+'</b> certain, commencing on <b>'+fmtDateLong(d.start_date)+'</b> and ending on <b>'+fmtDateLong(end)+'</b>, renewable by mutual agreement of the parties.']);
+c.push(['RENT','The Tenant shall pay to the Landlord a rent of <b>'+ (d.rent_amt?nairaWords(d.rent_amt):'₦____________') +'</b> per '+periodWord+', payable in advance, without deduction except as may be permitted by law.']);
+if(Number(d.deposit_amt)>0) c.push(['CAUTION FEE / DEPOSIT','The Tenant has paid a caution fee (security deposit) of <b>'+nairaWords(d.deposit_amt)+'</b>, refundable at the expiration or earlier termination of the tenancy, subject to deductions for any damage to the Demised Premises beyond normal wear and tear.']);
+c.push(['USE OF PREMISES','The Tenant shall use the Demised Premises for residential purposes only and shall not use the Premises or permit it to be used for any illegal, immoral or hazardous purpose.']);
+c.push(['NO ASSIGNMENT OR SUBLETTING','The Tenant shall not assign, sublet, or part with possession of the Demised Premises or any part thereof without the prior written consent of the Landlord.']);
+c.push(['REPAIRS AND MAINTENANCE','The Landlord shall keep the roof and external walls of the Demised Premises in good structural repair. The Tenant shall keep the interior, sanitary fittings and installations in good and tenantable condition, and shall be liable for any damage caused by the negligence of the Tenant, his guests or invitees.']);
+c.push(['UTILITIES','The Tenant shall pay all charges for electricity, water, waste disposal and other utilities consumed on the Demised Premises during the tenancy.']);
+c.push(['QUIET ENJOYMENT','The Landlord covenants that the Tenant, upon paying the rent and observing the covenants herein, shall peacefully hold and enjoy the Demised Premises during the tenancy without any interruption by the Landlord or any person lawfully claiming under him.']);
+c.push(['ALTERATIONS','The Tenant shall not make any structural alteration or addition to the Demised Premises without the prior written consent of the Landlord.']);
+c.push(['INSPECTION','The Landlord or his authorised agent may enter the Demised Premises to inspect its condition upon giving the Tenant reasonable prior notice.']);
+c.push(['NOTICE TO QUIT','Either party may terminate this tenancy by serving on the other party written notice to quit of <b>'+(esc(d.notice)||'as required by the Tenancy Law applicable in the state')+'</b>, in accordance with the Tenancy Law applicable in '+ (esc(d.prop_state)||'the state where the Premises is situate') +'.']);
+c.push(['RENEWAL AND RENT REVIEW','The parties may renew this tenancy upon terms to be agreed, and the rent may be reviewed upon renewal by mutual agreement.']);
+c.push(['GOVERNING LAW AND JURISDICTION','This agreement shall be governed by the laws of the Federal Republic of Nigeria and the tenancy law applicable in '+(esc(d.prop_state)||'the state where the Premises is situate')+', and the parties submit to the jurisdiction of the courts of that state.']);
+(d.custom_clauses||'').split('\n').map(s=>s.trim()).filter(Boolean).forEach(line=>c.push(['ADDITIONAL COVENANT',esc(line)]));
+const now=new Date();
+const html =
+'<div class="'+sheetClass()+'">'+
+'<h1>RESIDENTIAL TENANCY AGREEMENT</h1>'+
+'<div class="doc-meta">Made this '+now.getDate()+' day of '+now.toLocaleDateString('en-GB',{month:'long',year:'numeric'})+'</div>'+
+'<p><b>THIS TENANCY AGREEMENT</b> is made between</p>'+
+'<div class="parties">'+
+'<p><b>'+(esc(d.ll_name)||'________________')+'</b> of '+(esc(d.ll_addr)||'________________')+(d.ll_phone?' (Tel: '+esc(d.ll_phone)+')':'')+' (hereinafter called <b>"the Landlord"</b>, which expression shall where the context so admits include the Landlord\'s heirs, successors-in-title and assigns)</p>'+
+'<p>AND</p>'+
+'<p><b>'+(esc(d.tt_name)||'________________')+'</b> of '+(esc(d.tt_addr)||'________________')+(d.tt_phone?' (Tel: '+esc(d.tt_phone)+')':'')+' (hereinafter called <b>"the Tenant"</b>).</p>'+
+'</div>'+
+'<p><b>WHEREAS</b> the Landlord is the owner or is lawfully entitled to grant a tenancy of all that property known, described and situate at <b>'+(esc(d.prop_desc)||'____________')+', '+(esc(d.prop_addr)||'____________')+((d.prop_state)?', '+esc(d.prop_state)+' State':'')+'</b> (hereinafter called <b>"the Demised Premises"</b>).</p>'+
+'<p><b>NOW THIS AGREEMENT WITNESSES</b> as follows:</p>'+
+c.map((cl,i)=>'<div class="clause"><b>'+ (i+1) +'. '+cl[0]+'</b>'+cl[1]+'</div>').join('')+
+'<p style="margin-top:18px"><b>IN WITNESS WHEREOF</b> the parties have executed this agreement on the date first above written.</p>'+
+'<div class="sig-grid">'+
+'<div><div class="sig-line"></div>LANDLORD: '+(esc(d.ll_name)||'________________')+'<div style="color:#555;font-size:11.5px">Signature / Date</div></div>'+
+'<div><div class="sig-line"></div>TENANT: '+(esc(d.tt_name)||'________________')+'<div style="color:#555;font-size:11.5px">Signature / Date</div></div>'+
+'<div><div class="sig-line"></div>WITNESS 1<div style="color:#555;font-size:11.5px">Name / Signature / Date</div></div>'+
+'<div><div class="sig-line"></div>WITNESS 2<div style="color:#555;font-size:11.5px">Name / Signature / Date</div></div>'+
+'</div>'+
+(d.prepared_by?'<p style="margin-top:22px;font-size:12px;color:#444">Prepared by: '+esc(d.prepared_by)+'</p>':'')+
+freeBanner()+
+'</div>';
+$('preview-agreement').innerHTML=html;
+return html;
 }
 
 /* ================= NOTICE TO QUIT ================= */
 function collectNotice(){
-  return { n_from:$('n_from').value, n_fromaddr:$('n_fromaddr').value, n_to:$('n_to').value, n_toaddr:$('n_toaddr').value,
-    n_prop:$('n_prop').value, n_period:$('n_period').value, n_date:$('n_date').value, n_reason:$('n_reason').value };
+return { n_from:$('n_from').value, n_fromaddr:$('n_fromaddr').value, n_to:$('n_to').value, n_toaddr:$('n_toaddr').value,
+n_prop:$('n_prop').value, n_period:$('n_period').value, n_date:$('n_date').value, n_reason:$('n_reason').value };
 }
 function applyNotice(p){
-  [['n_from','n_from'],['n_fromaddr','n_fromaddr'],['n_to','n_to'],['n_toaddr','n_toaddr'],['n_prop','n_prop'],['n_date','n_date'],['n_reason','n_reason']].forEach(([k,id])=>{ $(id).value=p[k]||''; });
-  if(p.n_period) $('n_period').value=p.n_period;
+[['n_from','n_from'],['n_fromaddr','n_fromaddr'],['n_to','n_to'],['n_toaddr','n_toaddr'],['n_prop','n_prop'],['n_date','n_date'],['n_reason','n_reason']].forEach(([k,id])=>{ $(id).value=p[k]||''; });
+if(p.n_period) $('n_period').value=p.n_period;
 }
 function renderNotice(){
-  const d=collectNotice();
-  const isLaw=(d.n_period==='law');
-  const periodText=isLaw?'the period of notice':({7:'seven (7) days',30:'one (1) month',90:'three (3) months',180:'six (6) months'}[d.n_period]||'the stipulated period of notice');
-  const vacate=isLaw?null:addDaysISO(d.n_date,Number(d.n_period)||0);
-  const html =
-  '<div class="'+sheetClass()+'">'+
-  '<div style="text-align:right;font-size:12.5px;color:#333">'+fmtDateLong(d.n_date)+'</div>'+
-  '<h1 style="text-align:left;margin-top:12px">NOTICE TO QUIT</h1>'+
-  '<p><b>TO:</b> '+(esc(d.n_to)||'________________')+(d.n_toaddr?', of '+esc(d.n_toaddr):'')+'</p>'+
-  '<p><b>FROM:</b> '+(esc(d.n_from)||'________________')+(d.n_fromaddr?', of '+esc(d.n_fromaddr):'')+'</p>'+
-  '<p><b>PROPERTY:</b> '+(esc(d.n_prop)||'________________')+'</p>'+
-  '<hr style="border:none;border-top:1px solid #333;margin:14px 0">'+
-  '<p>TAKE NOTICE that pursuant to the tenancy existing between you and the undersigned in respect of the above-described property, and in accordance with the Tenancy Law applicable in the state where the property is situate, <b>you are hereby required to quit and deliver up possession of the said premises on or before '+(vacate?'<u>'+fmtDateLong(vacate)+'</u>':'<u>________________</u>')+'</b>, being the expiration of '+periodText+' notice from the date of service of this notice upon you.</p>'+
-  (d.n_reason?'<p>This notice is given on the following ground(s): <b>'+esc(d.n_reason)+'</b>.</p>':'')+
-  '<p>Any rent paid by you in advance in respect of any period beyond the date stated above shall be refunded or appropriately applied at the time you deliver up possession of the premises.</p>'+
-  '<p>TAKE FURTHER NOTICE that should you fail, refuse or neglect to comply with this notice, the undersigned shall be entitled to commence proceedings for the recovery of possession of the premises in accordance with the applicable law, at your own risk as to costs and consequences.</p>'+
-  '<p style="margin-top:28px">Yours faithfully,</p>'+
-  '<div style="margin-top:46px;border-bottom:1px solid #333;width:240px"></div>'+
-  '<p style="margin-bottom:0"><b>'+(esc(d.n_from)||'________________')+'</b><br><span style="font-size:12px;color:#444">For and on behalf of the Landlord</span></p>'+
-  freeBanner()+
-  '</div>';
-  $('preview-notice').innerHTML=html;
-  return html;
+const d=collectNotice();
+const isLaw=(d.n_period==='law');
+const periodText=isLaw?'the period of notice':({7:'seven (7) days',30:'one (1) month',90:'three (3) months',180:'six (6) months'}[d.n_period]||'the stipulated period of notice');
+const vacate=isLaw?null:addDaysISO(d.n_date,Number(d.n_period)||0);
+const html =
+'<div class="'+sheetClass()+'">'+
+'<div style="text-align:right;font-size:12.5px;color:#333">'+fmtDateLong(d.n_date)+'</div>'+
+'<h1 style="text-align:left;margin-top:12px">NOTICE TO QUIT</h1>'+
+'<p><b>TO:</b> '+(esc(d.n_to)||'________________')+(d.n_toaddr?', of '+esc(d.n_toaddr):'')+'</p>'+
+'<p><b>FROM:</b> '+(esc(d.n_from)||'________________')+(d.n_fromaddr?', of '+esc(d.n_fromaddr):'')+'</p>'+
+'<p><b>PROPERTY:</b> '+(esc(d.n_prop)||'________________')+'</p>'+
+'<hr style="border:none;border-top:1px solid #333;margin:14px 0">'+
+'<p>TAKE NOTICE that pursuant to the tenancy existing between you and the undersigned in respect of the above-described property, and in accordance with the Tenancy Law applicable in the state where the property is situate, <b>you are hereby required to quit and deliver up possession of the said premises on or before '+(vacate?'<u>'+fmtDateLong(vacate)+'</u>':'<u>________________</u>')+'</b>, being the expiration of '+periodText+' notice from the date of service of this notice upon you.</p>'+
+(d.n_reason?'<p>This notice is given on the following ground(s): <b>'+esc(d.n_reason)+'</b>.</p>':'')+
+'<p>Any rent paid by you in advance in respect of any period beyond the date stated above shall be refunded or appropriately applied at the time you deliver up possession of the premises.</p>'+
+'<p>TAKE FURTHER NOTICE that should you fail, refuse or neglect to comply with this notice, the undersigned shall be entitled to commence proceedings for the recovery of possession of the premises in accordance with the applicable law, at your own risk as to costs and consequences.</p>'+
+'<p style="margin-top:28px">Yours faithfully,</p>'+
+'<div style="margin-top:46px;border-bottom:1px solid #333;width:240px"></div>'+
+'<p style="margin-bottom:0"><b>'+(esc(d.n_from)||'________________')+'</b><br><span style="font-size:12px;color:#444">For and on behalf of the Landlord</span></p>'+
+freeBanner()+
+'</div>';
+$('preview-notice').innerHTML=html;
+return html;
 }
 
 /* ================= RENT RECEIPT ================= */
 function collectReceipt(){
-  return { r_no:$('r_no').value, r_date:$('r_date').value, r_from:$('r_from').value, r_amt:$('r_amt').value,
-    r_method:$('r_method').value, r_purpose:$('r_purpose').value, r_prop:$('r_prop').value, r_period:$('r_period').value,
-    r_bal:$('r_bal').value, r_issuer:$('r_issuer').value, r_phone:$('r_phone').value };
+return { r_no:$('r_no').value, r_date:$('r_date').value, r_from:$('r_from').value, r_amt:$('r_amt').value,
+r_method:$('r_method').value, r_purpose:$('r_purpose').value, r_prop:$('r_prop').value, r_period:$('r_period').value,
+r_bal:$('r_bal').value, r_issuer:$('r_issuer').value, r_phone:$('r_phone').value };
 }
 function applyReceipt(p){
-  [['r_no','r_no'],['r_date','r_date'],['r_from','r_from'],['r_amt','r_amt'],['r_purpose','r_purpose'],['r_prop','r_prop'],['r_period','r_period'],['r_bal','r_bal'],['r_issuer','r_issuer'],['r_phone','r_phone']].forEach(([k,id])=>{ $(id).value=p[k]||''; });
-  if(p.r_method) $('r_method').value=p.r_method;
+[['r_no','r_no'],['r_date','r_date'],['r_from','r_from'],['r_amt','r_amt'],['r_purpose','r_purpose'],['r_prop','r_prop'],['r_period','r_period'],['r_bal','r_bal'],['r_issuer','r_issuer'],['r_phone','r_phone']].forEach(([k,id])=>{ $(id).value=p[k]||''; });
+if(p.r_method) $('r_method').value=p.r_method;
 }
 function renderReceipt(){
-  const d=collectReceipt();
-  $('hint-r_amt').textContent=(d.r_amt? '= '+numWords(d.r_amt)+' Naira':'');
-  const html =
-  '<div class="'+sheetClass()+'">'+
-  '<div class="receipt-box">'+
-  '<h1>RECEIPT</h1>'+
-  '<div class="doc-meta">No: '+(esc(d.r_no)||'____')+' &nbsp;·&nbsp; Date: '+fmtDateLong(d.r_date)+'</div>'+
-  '<p><b>RECEIVED</b> with thanks from <b>'+(esc(d.r_from)||'________________')+'</b> the sum of <b>'+(d.r_amt?nairaWords(d.r_amt):'₦______________')+'</b></p>'+
-  '<p>by <b>'+(esc(d.r_method)||'____')+'</b>, being payment for <b>'+(esc(d.r_purpose)||'________________')+'</b>'+(d.r_period?' covering <b>'+esc(d.r_period)+'</b>':'')+'.</p>'+
-  (d.r_prop?'<p>In respect of the property at: <b>'+esc(d.r_prop)+'</b></p>':'')+
-  '<p>Balance outstanding: <b>'+((d.r_bal!==''&&d.r_bal!=null)?fmtN(d.r_bal):'NIL')+'</b></p>'+
-  '<hr>'+
-  '<div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px">'+
-  '<div><div style="border-bottom:1px solid #333;width:200px;height:34px"></div><b>'+(esc(d.r_issuer)||'________________')+'</b><div style="font-size:12px;color:#444">'+(d.r_phone?'Tel: '+esc(d.r_phone):'')+'</div></div>'+
-  '<div style="font-size:11.5px;color:#444;text-align:right">Keep this receipt safe.<br>It is your proof of payment.</div>'+
-  '</div>'+
-  '</div>'+
-  freeBanner()+
-  '</div>';
-  $('preview-receipt').innerHTML=html;
-  return html;
+const d=collectReceipt();
+$('hint-r_amt').textContent=(d.r_amt? '= '+numWords(d.r_amt)+' Naira':'');
+const html =
+'<div class="'+sheetClass()+'">'+
+'<div class="receipt-box">'+
+'<h1>RECEIPT</h1>'+
+'<div class="doc-meta">No: '+(esc(d.r_no)||'____')+' &nbsp;·&nbsp; Date: '+fmtDateLong(d.r_date)+'</div>'+
+'<p><b>RECEIVED</b> with thanks from <b>'+(esc(d.r_from)||'________________')+'</b> the sum of <b>'+(d.r_amt?nairaWords(d.r_amt):'₦______________')+'</b></p>'+
+'<p>by <b>'+(esc(d.r_method)||'____')+'</b>, being payment for <b>'+(esc(d.r_purpose)||'________________')+'</b>'+(d.r_period?' covering <b>'+esc(d.r_period)+'</b>':'')+'.</p>'+
+(d.r_prop?'<p>In respect of the property at: <b>'+esc(d.r_prop)+'</b></p>':'')+
+'<p>Balance outstanding: <b>'+((d.r_bal!==''&&d.r_bal!=null)?fmtN(d.r_bal):'NIL')+'</b></p>'+
+'<hr>'+
+'<div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px">'+
+'<div><div style="border-bottom:1px solid #333;width:200px;height:34px"></div><b>'+(esc(d.r_issuer)||'________________')+'</b><div style="font-size:12px;color:#444">'+(d.r_phone?'Tel: '+esc(d.r_phone):'')+'</div></div>'+
+'<div style="font-size:11.5px;color:#444;text-align:right">Keep this receipt safe.<br>It is your proof of payment.</div>'+
+'</div>'+
+'</div>'+
+freeBanner()+
+'</div>';
+$('preview-receipt').innerHTML=html;
+return html;
 }
 
 /* ================= INVOICE ================= */
@@ -1222,319 +1292,410 @@ let invItems=[{desc:'',qty:1,price:null}];
 function addInvItem(){ invItems.push({desc:'',qty:1,price:null}); renderInvItems(); renderInvoice(); }
 function removeInvItem(i){ invItems.splice(i,1); if(!invItems.length) invItems.push({desc:'',qty:1,price:null}); renderInvItems(); renderInvoice(); }
 function renderInvItems(){
-  $('inv-items').innerHTML=invItems.map((it,i)=>
-    '<tr><td class="desc"><input data-i="'+i+'" data-f="desc" value="'+esc(it.desc||'')+'" placeholder="Description of work / goods"></td>'+
-    '<td><input class="qty" type="number" inputmode="numeric" min="1" data-i="'+i+'" data-f="qty" value="'+(it.qty||1)+'"></td>'+
-    '<td><input class="price" type="number" inputmode="numeric" min="0" data-i="'+i+'" data-f="price" value="'+(it.price!=null?esc(String(it.price)):'')+'" placeholder="0"></td>'+
-    '<td><button type="button" class="x-btn" onclick="removeInvItem('+i+')">✕</button></td></tr>').join('');
+$('inv-items').innerHTML=invItems.map((it,i)=>
+'<tr><td class="desc"><input data-i="'+i+'" data-f="desc" value="'+esc(it.desc||'')+'" placeholder="Description of work / goods"></td>'+
+'<td><input class="qty" type="number" inputmode="numeric" min="1" data-i="'+i+'" data-f="qty" value="'+(it.qty||1)+'"></td>'+
+'<td><input class="price" type="number" inputmode="numeric" min="0" data-i="'+i+'" data-f="price" value="'+(it.price!=null?esc(String(it.price)):'')+'" placeholder="0"></td>'+
+'<td><button type="button" class="x-btn" onclick="removeInvItem('+i+')">✕</button></td></tr>').join('');
 }
 function collectInvoice(){
-  document.querySelectorAll('#inv-items input').forEach(inp=>{ invItems[+inp.dataset.i][inp.dataset.f]=inp.value; });
-  return { i_biz:$('i_biz').value, i_bizphone:$('i_bizphone').value, i_no:$('i_no').value, i_date:$('i_date').value,
-    i_due:$('i_due').value, i_client:$('i_client').value, i_vat:$('i_vat').value, i_disc:$('i_disc').value, i_notes:$('i_notes').value,
-    items:invItems.map(x=>({...x})) };
+document.querySelectorAll('#inv-items input').forEach(inp=>{ invItems[+inp.dataset.i][inp.dataset.f]=inp.value; });
+return { i_biz:$('i_biz').value, i_bizphone:$('i_bizphone').value, i_no:$('i_no').value, i_date:$('i_date').value,
+i_due:$('i_due').value, i_client:$('i_client').value, i_vat:$('i_vat').value, i_disc:$('i_disc').value, i_notes:$('i_notes').value,
+items:invItems.map(x=>({...x})) };
 }
 function applyInvoice(p){
-  [['i_biz','i_biz'],['i_bizphone','i_bizphone'],['i_no','i_no'],['i_date','i_date'],['i_due','i_due'],['i_client','i_client'],['i_disc','i_disc'],['i_notes','i_notes']].forEach(([k,id])=>{ $(id).value=p[k]||''; });
-  if(p.i_vat!=null) $('i_vat').value=p.i_vat;
-  if(p.items&&p.items.length){ invItems=p.items.map(x=>({...x})); renderInvItems(); }
+[['i_biz','i_biz'],['i_bizphone','i_bizphone'],['i_no','i_no'],['i_date','i_date'],['i_due','i_due'],['i_client','i_client'],['i_disc','i_disc'],['i_notes','i_notes']].forEach(([k,id])=>{ $(id).value=p[k]||''; });
+if(p.i_vat!=null) $('i_vat').value=p.i_vat;
+if(p.items&&p.items.length){ invItems=p.items.map(x=>({...x})); renderInvItems(); }
 }
 function renderInvoice(){
-  const d=collectInvoice();
-  const rows=invItems.map(it=>{ const amt=(Number(it.qty)||0)*(Number(it.price)||0); return '<tr><td>'+esc(it.desc||'—')+'</td><td>'+esc(it.qty||1)+'</td><td>'+fmtN(Number(it.price)||0)+'</td><td>'+fmtN(amt)+'</td></tr>'; });
-  const sub=invItems.reduce((s,it)=>s+(Number(it.qty)||0)*(Number(it.price)||0),0);
-  const disc=Number(d.i_disc)||0;
-  const vatRate=Number(d.i_vat)||0;
-  const vatAmt=(sub-disc)*vatRate/100;
-  const total=(sub-disc)+vatAmt;
-  const html =
-  '<div class="'+sheetClass()+'">'+
-  '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px">'+
-  '<div><h1 style="text-align:left;margin:0">'+esc(d.i_biz||'Your Business')+'</h1>'+(d.i_bizphone?'<div style="font-size:12.5px;color:#444">Tel: '+esc(d.i_bizphone)+'</div>':'')+'</div>'+
-  '<div class="right"><h1 style="text-align:left;margin:0">INVOICE</h1><div style="font-size:12.5px;color:#444">#'+(esc(d.i_no)||'____')+'<br>Date: '+fmtDateLong(d.i_date)+'<br>Due: '+fmtDateLong(d.i_due)+'</div></div>'+
-  '</div>'+
-  '<p style="margin-top:14px"><b>BILL TO:</b><br>'+esc(d.i_client||'________________')+'</p>'+
-  '<table class="doc-table"><thead><tr><th>Description</th><th>Qty</th><th>Unit Price</th><th>Amount</th></tr></thead><tbody>'+rows.join('')+
-  '<tr><td colspan="3" style="text-align:right">Subtotal</td><td>'+fmtN(sub)+'</td></tr>'+
-  (disc?'<tr><td colspan="3" style="text-align:right">Discount</td><td>-'+fmtN(disc)+'</td></tr>':'')+
-  (vatRate?'<tr><td colspan="3" style="text-align:right">VAT '+vatRate+'%</td><td>'+fmtN(vatAmt)+'</td></tr>':'')+
-  '<tr class="tot-row"><td colspan="3" style="text-align:right">TOTAL DUE</td><td>'+fmtN(total)+'</td></tr>'+
-  '</tbody></table>'+
-  (d.i_notes?'<p><b>Notes:</b> '+esc(d.i_notes)+'</p>':'')+
-  '<p style="margin-top:20px;font-size:12.5px;color:#444">Thank you for your business.</p>'+
-  freeBanner()+
-  '</div>';
-  $('preview-invoice').innerHTML=html;
-  return html;
+const d=collectInvoice();
+const rows=invItems.map(it=>{ const amt=(Number(it.qty)||0)*(Number(it.price)||0); return '<tr><td>'+esc(it.desc||'—')+'</td><td>'+esc(it.qty||1)+'</td><td>'+fmtN(Number(it.price)||0)+'</td><td>'+fmtN(amt)+'</td></tr>'; });
+const sub=invItems.reduce((s,it)=>s+(Number(it.qty)||0)*(Number(it.price)||0),0);
+const disc=Number(d.i_disc)||0;
+const vatRate=Number(d.i_vat)||0;
+const vatAmt=(sub-disc)*vatRate/100;
+const total=(sub-disc)+vatAmt;
+const html =
+'<div class="'+sheetClass()+'">'+
+'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px">'+
+'<div><h1 style="text-align:left;margin:0">'+esc(d.i_biz||'Your Business')+'</h1>'+(d.i_bizphone?'<div style="font-size:12.5px;color:#444">Tel: '+esc(d.i_bizphone)+'</div>':'')+'</div>'+
+'<div class="right"><h1 style="text-align:left;margin:0">INVOICE</h1><div style="font-size:12.5px;color:#444">#'+(esc(d.i_no)||'____')+'<br>Date: '+fmtDateLong(d.i_date)+'<br>Due: '+fmtDateLong(d.i_due)+'</div></div>'+
+'</div>'+
+'<p style="margin-top:14px"><b>BILL TO:</b><br>'+esc(d.i_client||'________________')+'</p>'+
+'<table class="doc-table"><thead><tr><th>Description</th><th>Qty</th><th>Unit Price</th><th>Amount</th></tr></thead><tbody>'+rows.join('')+
+'<tr><td colspan="3" style="text-align:right">Subtotal</td><td>'+fmtN(sub)+'</td></tr>'+
+(disc?'<tr><td colspan="3" style="text-align:right">Discount</td><td>-'+fmtN(disc)+'</td></tr>':'')+
+(vatRate?'<tr><td colspan="3" style="text-align:right">VAT '+vatRate+'%</td><td>'+fmtN(vatAmt)+'</td></tr>':'')+
+'<tr class="tot-row"><td colspan="3" style="text-align:right">TOTAL DUE</td><td>'+fmtN(total)+'</td></tr>'+
+'</tbody></table>'+
+(d.i_notes?'<p><b>Notes:</b> '+esc(d.i_notes)+'</p>':'')+
+'<p style="margin-top:20px;font-size:12.5px;color:#444">Thank you for your business.</p>'+
+freeBanner()+
+'</div>';
+$('preview-invoice').innerHTML=html;
+return html;
 }
 
 
 /* ================= EMPLOYMENT CONTRACT ================= */
 function collectEmployment(){
-  return { e_biz:$('e_biz').value, e_addr:$('e_addr').value, e_emp:$('e_emp').value, e_role:$('e_role').value,
-    e_start:$('e_start').value, e_sal:$('e_sal').value, e_prob:$('e_prob').value, e_leave:$('e_leave').value,
-    e_notice:$('e_notice').value, e_hours:$('e_hours').value, e_loc:$('e_loc').value, e_duties:$('e_duties').value };
+return { e_biz:$('e_biz').value, e_addr:$('e_addr').value, e_emp:$('e_emp').value, e_role:$('e_role').value,
+e_start:$('e_start').value, e_sal:$('e_sal').value, e_prob:$('e_prob').value, e_leave:$('e_leave').value,
+e_notice:$('e_notice').value, e_hours:$('e_hours').value, e_loc:$('e_loc').value, e_duties:$('e_duties').value };
 }
 function applyEmployment(p){
-  [['e_biz','e_biz'],['e_addr','e_addr'],['e_emp','e_emp'],['e_role','e_role'],['e_start','e_start'],['e_sal','e_sal'],
-   ['e_prob','e_prob'],['e_leave','e_leave'],['e_hours','e_hours'],['e_loc','e_loc'],['e_duties','e_duties']].forEach(([k,id])=>{ $(id).value=p[k]||''; });
-  if(p.e_notice) $('e_notice').value=p.e_notice;
+[['e_biz','e_biz'],['e_addr','e_addr'],['e_emp','e_emp'],['e_role','e_role'],['e_start','e_start'],['e_sal','e_sal'],
+['e_prob','e_prob'],['e_leave','e_leave'],['e_hours','e_hours'],['e_loc','e_loc'],['e_duties','e_duties']].forEach(([k,id])=>{ $(id).value=p[k]||''; });
+if(p.e_notice) $('e_notice').value=p.e_notice;
 }
 function renderEmployment(){
-  const d=collectEmployment();
-  $('hint-e_sal').textContent=(Number(d.e_sal)>0? '= '+numWords(d.e_sal)+' Naira monthly':'');
-  const html =
-  '<div class="'+sheetClass()+'">'+
-  '<h1>EMPLOYMENT CONTRACT</h1>'+
-  '<div class="doc-meta">Private &amp; Confidential</div>'+
-  '<div class="parties">'+
-  '<p><b>BETWEEN:</b> '+esc(d.e_biz||'________________')+' of '+esc(d.e_addr||'________________')+' ("<b>the Employer</b>") of the one part;</p>'+
-  '<p><b>AND:</b> '+esc(d.e_emp||'________________')+' ("<b>the Employee</b>") of the other part.</p>'+
-  '</div>'+
-  '<div class="clause"><b>1. POSITION AND DUTIES</b>The Employer hereby employs the Employee as <b>'+esc(d.e_role||'________________')+'</b>, and the Employee accepts such employment. '+(d.e_duties?'The Employee shall: '+esc(d.e_duties)+'. ':'The Employee shall perform such duties as are reasonably assigned in connection with the position.')+'</div>'+
-  '<div class="clause"><b>2. COMMENCEMENT AND PROBATION</b>Employment commences on <b>'+fmtDateLong(d.e_start)+'</b>. The first '+(esc(d.e_prob)||'3')+' months constitute a period of probation, during which either party may terminate this contract with '+(Number(d.e_prob)<=1?'one (1) day':'seven (7) days')+' written notice. Confirmation of employment shall be issued in writing upon satisfactory completion of probation.</div>'+
-  '<div class="clause"><b>3. REMUNERATION</b>The Employer shall pay the Employee a salary of <b>'+nairaWords(d.e_sal||0)+'</b> per month, payable not later than the '+(Number(d.e_sal)>0?'28th':'____')+' day of each month, subject to statutory deductions (including PAYE tax and pension contributions where applicable).</div>'+
-  '<div class="clause"><b>4. HOURS AND PLACE OF WORK</b>The normal working hours shall be '+esc(d.e_hours||'as reasonably required by the Employer')+'. The principal place of work shall be '+esc(d.e_loc||'________________')+', and the Employee may be required to work at such other locations as the business of the Employer may reasonably require.</div>'+
-  '<div class="clause"><b>5. ANNUAL LEAVE</b>The Employee shall be entitled to '+(esc(d.e_leave)||'15')+' working days of annual leave for each completed year of service, to be taken at times approved by the Employer.</div>'+
-  '<div class="clause"><b>6. CONFIDENTIALITY</b>The Employee shall not, during or after the termination of this employment, disclose to any person any confidential information relating to the business, affairs, customers or finances of the Employer, except as required by law.</div>'+
-  '<div class="clause"><b>7. TERMINATION AND NOTICE</b>After probation, either party may terminate this employment by giving '+(esc(d.e_notice)||'one month')+"'s written notice (or payment in lieu). The Employer may terminate summarily for gross misconduct. All Employer property shall be returned upon termination.</div>"+
-  '<div class="clause"><b>8. GOVERNING LAW</b>This contract shall be governed by the laws of the Federal Republic of Nigeria.</div>'+
-  '<p style="margin-top:10px;font-size:12.5px;color:#444">IN WITNESS WHEREOF the parties have executed this contract on the date first written above.</p>'+
-  '<div class="sig-grid"><div><div class="sig-line"></div>For: '+esc(d.e_biz||'the Employer')+'<br><small>Employer — signature &amp; date</small></div><div><div class="sig-line"></div>'+esc(d.e_emp||'the Employee')+'<br><small>Employee — signature &amp; date</small></div></div>'+
-  freeBanner()+
-  '</div>';
-  $('preview-employment').innerHTML=html;
-  return html;
+const d=collectEmployment();
+$('hint-e_sal').textContent=(Number(d.e_sal)>0? '= '+numWords(d.e_sal)+' Naira monthly':'');
+const html =
+'<div class="'+sheetClass()+'">'+
+'<h1>EMPLOYMENT CONTRACT</h1>'+
+'<div class="doc-meta">Private &amp; Confidential</div>'+
+'<div class="parties">'+
+'<p><b>BETWEEN:</b> '+esc(d.e_biz||'________________')+' of '+esc(d.e_addr||'________________')+' ("<b>the Employer</b>") of the one part;</p>'+
+'<p><b>AND:</b> '+esc(d.e_emp||'________________')+' ("<b>the Employee</b>") of the other part.</p>'+
+'</div>'+
+'<div class="clause"><b>1. POSITION AND DUTIES</b>The Employer hereby employs the Employee as <b>'+esc(d.e_role||'________________')+'</b>, and the Employee accepts such employment. '+(d.e_duties?'The Employee shall: '+esc(d.e_duties)+'. ':'The Employee shall perform such duties as are reasonably assigned in connection with the position.')+'</div>'+
+'<div class="clause"><b>2. COMMENCEMENT AND PROBATION</b>Employment commences on <b>'+fmtDateLong(d.e_start)+'</b>. The first '+(esc(d.e_prob)||'3')+' months constitute a period of probation, during which either party may terminate this contract with '+(Number(d.e_prob)<=1?'one (1) day':'seven (7) days')+' written notice. Confirmation of employment shall be issued in writing upon satisfactory completion of probation.</div>'+
+'<div class="clause"><b>3. REMUNERATION</b>The Employer shall pay the Employee a salary of <b>'+nairaWords(d.e_sal||0)+'</b> per month, payable not later than the '+(Number(d.e_sal)>0?'28th':'____')+' day of each month, subject to statutory deductions (including PAYE tax and pension contributions where applicable).</div>'+
+'<div class="clause"><b>4. HOURS AND PLACE OF WORK</b>The normal working hours shall be '+esc(d.e_hours||'as reasonably required by the Employer')+'. The principal place of work shall be '+esc(d.e_loc||'________________')+', and the Employee may be required to work at such other locations as the business of the Employer may reasonably require.</div>'+
+'<div class="clause"><b>5. ANNUAL LEAVE</b>The Employee shall be entitled to '+(esc(d.e_leave)||'15')+' working days of annual leave for each completed year of service, to be taken at times approved by the Employer.</div>'+
+'<div class="clause"><b>6. CONFIDENTIALITY</b>The Employee shall not, during or after the termination of this employment, disclose to any person any confidential information relating to the business, affairs, customers or finances of the Employer, except as required by law.</div>'+
+'<div class="clause"><b>7. TERMINATION AND NOTICE</b>After probation, either party may terminate this employment by giving '+(esc(d.e_notice)||'one month')+"'s written notice (or payment in lieu). The Employer may terminate summarily for gross misconduct. All Employer property shall be returned upon termination.</div>"+
+'<div class="clause"><b>8. GOVERNING LAW</b>This contract shall be governed by the laws of the Federal Republic of Nigeria.</div>'+
+'<p style="margin-top:10px;font-size:12.5px;color:#444">IN WITNESS WHEREOF the parties have executed this contract on the date first written above.</p>'+
+'<div class="sig-grid"><div><div class="sig-line"></div>For: '+esc(d.e_biz||'the Employer')+'<br><small>Employer — signature &amp; date</small></div><div><div class="sig-line"></div>'+esc(d.e_emp||'the Employee')+'<br><small>Employee — signature &amp; date</small></div></div>'+
+freeBanner()+
+'</div>';
+$('preview-employment').innerHTML=html;
+return html;
 }
 
 /* ================= CAUTION FEE RECEIPT ================= */
 function collectCaution(){
-  return { c_no:$('c_no').value, c_date:$('c_date').value, c_from:$('c_from').value, c_amt:$('c_amt').value,
-    c_method:$('c_method').value, c_prop:$('c_prop').value, c_period:$('c_period').value, c_issuer:$('c_issuer').value, c_phone:$('c_phone').value };
+return { c_no:$('c_no').value, c_date:$('c_date').value, c_from:$('c_from').value, c_amt:$('c_amt').value,
+c_method:$('c_method').value, c_prop:$('c_prop').value, c_period:$('c_period').value, c_issuer:$('c_issuer').value, c_phone:$('c_phone').value };
 }
 function applyCaution(p){
-  [['c_no','c_no'],['c_date','c_date'],['c_from','c_from'],['c_amt','c_amt'],['c_prop','c_prop'],['c_period','c_period'],['c_issuer','c_issuer'],['c_phone','c_phone']].forEach(([k,id])=>{ $(id).value=p[k]||''; });
-  if(p.c_method) $('c_method').value=p.c_method;
+[['c_no','c_no'],['c_date','c_date'],['c_from','c_from'],['c_amt','c_amt'],['c_prop','c_prop'],['c_period','c_period'],['c_issuer','c_issuer'],['c_phone','c_phone']].forEach(([k,id])=>{ $(id).value=p[k]||''; });
+if(p.c_method) $('c_method').value=p.c_method;
 }
 function renderCaution(){
-  const d=collectCaution();
-  $('hint-c_amt').textContent=(Number(d.c_amt)>0? '= '+numWords(d.c_amt)+' Naira':'');
-  const html =
-  '<div class="'+sheetClass()+'">'+
-  '<div class="receipt-box">'+
-  '<h1 style="margin-bottom:2px">CAUTION FEE RECEIPT</h1>'+
-  '<div class="doc-meta">No. '+esc(d.c_no||'____')+' · '+fmtDateLong(d.c_date)+'</div>'+
-  '<p><b>Received from:</b> '+esc(d.c_from||'________________')+'</p>'+
-  '<p><b>The sum of:</b> '+nairaWords(d.c_amt||0)+'</p>'+
-  '<p><b>Being:</b> a refundable caution fee / security deposit in respect of <b>'+esc(d.c_prop||'________________')+'</b>'+(d.c_period?', tenancy period: '+esc(d.c_period):'')+'.</p>'+
-  '<p><b>Payment method:</b> '+esc(d.c_method||'____')+'</p>'+
-  '<hr>'+
-  '<p style="font-size:12.5px"><b>REFUND TERMS:</b> This deposit is refundable at the end of the tenancy, provided the property is returned in good condition (fair wear and tear excepted) and all rent and lawful charges have been fully paid. Any deduction shall be itemised in writing with evidence.</p>'+
-  '<hr>'+
-  '<div class="sig-grid" style="margin-top:18px"><div><div class="sig-line"></div>'+esc(d.c_issuer||'Issued by')+'<br><small>Landlord / Agent — signature</small></div><div><div class="sig-line"></div>'+esc(d.c_from||'Tenant')+'<br><small>Tenant — acknowledgement</small></div></div>'+
-  (d.c_phone?'<p style="font-size:12px;color:#444;margin-top:8px">Contact: '+esc(d.c_phone)+'</p>':'')+
-  '</div>'+
-  freeBanner()+
-  '</div>';
-  $('preview-caution').innerHTML=html;
-  return html;
+const d=collectCaution();
+$('hint-c_amt').textContent=(Number(d.c_amt)>0? '= '+numWords(d.c_amt)+' Naira':'');
+const html =
+'<div class="'+sheetClass()+'">'+
+'<div class="receipt-box">'+
+'<h1 style="margin-bottom:2px">CAUTION FEE RECEIPT</h1>'+
+'<div class="doc-meta">No. '+esc(d.c_no||'____')+' · '+fmtDateLong(d.c_date)+'</div>'+
+'<p><b>Received from:</b> '+esc(d.c_from||'________________')+'</p>'+
+'<p><b>The sum of:</b> '+nairaWords(d.c_amt||0)+'</p>'+
+'<p><b>Being:</b> a refundable caution fee / security deposit in respect of <b>'+esc(d.c_prop||'________________')+'</b>'+(d.c_period?', tenancy period: '+esc(d.c_period):'')+'.</p>'+
+'<p><b>Payment method:</b> '+esc(d.c_method||'____')+'</p>'+
+'<hr>'+
+'<p style="font-size:12.5px"><b>REFUND TERMS:</b> This deposit is refundable at the end of the tenancy, provided the property is returned in good condition (fair wear and tear excepted) and all rent and lawful charges have been fully paid. Any deduction shall be itemised in writing with evidence.</p>'+
+'<hr>'+
+'<div class="sig-grid" style="margin-top:18px"><div><div class="sig-line"></div>'+esc(d.c_issuer||'Issued by')+'<br><small>Landlord / Agent — signature</small></div><div><div class="sig-line"></div>'+esc(d.c_from||'Tenant')+'<br><small>Tenant — acknowledgement</small></div></div>'+
+(d.c_phone?'<p style="font-size:12px;color:#444;margin-top:8px">Contact: '+esc(d.c_phone)+'</p>':'')+
+'</div>'+
+freeBanner()+
+'</div>';
+$('preview-caution').innerHTML=html;
+return html;
 }
 
 /* ================= LETTER OF DEMAND ================= */
 function collectDemand(){
-  return { d_from:$('d_from').value, d_addr:$('d_addr').value, d_to:$('d_to').value, d_toaddr:$('d_toaddr').value,
-    d_date:$('d_date').value, d_amt:$('d_amt').value, d_debt:$('d_debt').value, d_due:$('d_due').value, d_days:$('d_days').value };
+return { d_from:$('d_from').value, d_addr:$('d_addr').value, d_to:$('d_to').value, d_toaddr:$('d_toaddr').value,
+d_date:$('d_date').value, d_amt:$('d_amt').value, d_debt:$('d_debt').value, d_due:$('d_due').value, d_days:$('d_days').value };
 }
 function applyDemand(p){
-  [['d_from','d_from'],['d_addr','d_addr'],['d_to','d_to'],['d_toaddr','d_toaddr'],['d_date','d_date'],['d_amt','d_amt'],['d_debt','d_debt'],['d_due','d_due'],['d_days','d_days']].forEach(([k,id])=>{ $(id).value=p[k]||''; });
+[['d_from','d_from'],['d_addr','d_addr'],['d_to','d_to'],['d_toaddr','d_toaddr'],['d_date','d_date'],['d_amt','d_amt'],['d_debt','d_debt'],['d_due','d_due'],['d_days','d_days']].forEach(([k,id])=>{ $(id).value=p[k]||''; });
 }
 function renderDemand(){
-  const d=collectDemand();
-  $('hint-d_amt').textContent=(Number(d.d_amt)>0? '= '+numWords(d.d_amt)+' Naira':'');
-  const html =
-  '<div class="'+sheetClass()+'">'+
-  '<p style="margin:0"><b>'+esc(d.d_from||'________________')+'</b><br>'+esc(d.d_addr||'')+'</p>'+
-  '<p class="right" style="margin:8px 0">'+fmtDateLong(d.date||d.d_date)+'</p>'+
-  '<p style="margin:8px 0"><b>'+esc(d.d_to||'________________')+'</b><br>'+esc(d.d_toaddr||'')+'</p>'+
-  '<p style="margin:14px 0 4px"><b>Dear Sir/Madam,</b></p>'+
-  '<p style="margin:10px 0"><u><b>RE: DEMAND FOR PAYMENT OF '+nairaWords(d.d_amt||0)+'</u></b></p>'+
-  '<p style="margin:10px 0">We refer to '+esc(d.d_debt||'the outstanding sum stated above')+', which fell due on <b>'+fmtDateLong(d.d_due)+'</b>. Despite the passage of time, the said sum remains wholly unpaid.</p>'+
-  '<p style="margin:10px 0"><b>DEMAND is hereby made</b> for the immediate payment of the sum of <b>'+nairaWords(d.d_amt||0)+'</b>, being the amount outstanding and owed to us.</p>'+
-  '<p style="margin:10px 0"><b>TAKE NOTICE</b> that if the said sum is not paid within <b>'+(esc(d.d_days)||'14')+' days</b> of the date of this letter, we shall, without further reference to you, instruct our solicitors to commence legal proceedings for the recovery of the debt, plus interest and costs, to the full extent permitted by law.</p>'+
-  '<p style="margin:10px 0">We look forward to your prompt settlement.</p>'+
-  '<p style="margin:22px 0 4px">Yours faithfully,</p>'+
-  '<div class="sig-line" style="max-width:280px"></div>'+
-  '<p style="margin:0"><b>'+esc(d.d_from||'________________')+'</b></p>'+
-  freeBanner()+
-  '</div>';
-  $('preview-demand').innerHTML=html;
-  return html;
+const d=collectDemand();
+$('hint-d_amt').textContent=(Number(d.d_amt)>0? '= '+numWords(d.d_amt)+' Naira':'');
+const html =
+'<div class="'+sheetClass()+'">'+
+'<p style="margin:0"><b>'+esc(d.d_from||'________________')+'</b><br>'+esc(d.d_addr||'')+'</p>'+
+'<p class="right" style="margin:8px 0">'+fmtDateLong(d.date||d.d_date)+'</p>'+
+'<p style="margin:8px 0"><b>'+esc(d.d_to||'________________')+'</b><br>'+esc(d.d_toaddr||'')+'</p>'+
+'<p style="margin:14px 0 4px"><b>Dear Sir/Madam,</b></p>'+
+'<p style="margin:10px 0"><u><b>RE: DEMAND FOR PAYMENT OF '+nairaWords(d.d_amt||0)+'</u></b></p>'+
+'<p style="margin:10px 0">We refer to '+esc(d.d_debt||'the outstanding sum stated above')+', which fell due on <b>'+fmtDateLong(d.d_due)+'</b>. Despite the passage of time, the said sum remains wholly unpaid.</p>'+
+'<p style="margin:10px 0"><b>DEMAND is hereby made</b> for the immediate payment of the sum of <b>'+nairaWords(d.d_amt||0)+'</b>, being the amount outstanding and owed to us.</p>'+
+'<p style="margin:10px 0"><b>TAKE NOTICE</b> that if the said sum is not paid within <b>'+(esc(d.d_days)||'14')+' days</b> of the date of this letter, we shall, without further reference to you, instruct our solicitors to commence legal proceedings for the recovery of the debt, plus interest and costs, to the full extent permitted by law.</p>'+
+'<p style="margin:10px 0">We look forward to your prompt settlement.</p>'+
+'<p style="margin:22px 0 4px">Yours faithfully,</p>'+
+'<div class="sig-line" style="max-width:280px"></div>'+
+'<p style="margin:0"><b>'+esc(d.d_from||'________________')+'</b></p>'+
+freeBanner()+
+'</div>';
+$('preview-demand').innerHTML=html;
+return html;
 }
 
 /* ================= print / share / save ================= */
 function printCurrent(type){
-  const html={agreement:renderAgreement,notice:renderNotice,receipt:renderReceipt,invoice:renderInvoice,employment:renderEmployment,caution:renderCaution,demand:renderDemand,payslip:renderPayslip,warning:renderWarning}[type]();
-  const pr=$('print-root');
-  pr.innerHTML=html;
-  document.body.classList.add('printing');
-  try{ window.print(); toast(passActive()?'Sending to printer — choose "Save as PDF" for a digital copy.':'Printing free copy — Oga Pass removes the banner.'); }
-  catch(e){ toast('Printing is blocked in this preview. Open the live site to print or save as PDF.'); }
-  setTimeout(()=>{ document.body.classList.remove('printing'); pr.innerHTML=''; }, 2500);
+const html=RENDERERS[type](); // single source of truth — do not re-list renderers here
+const pr=$('print-root');
+pr.innerHTML=html;
+document.body.classList.add('printing');
+try{ window.print(); toast(passActive()?'Sending to printer — choose "Save as PDF" for a digital copy.':'Printing free copy — Oga Pass removes the banner.'); }
+catch(e){ toast('Printing is blocked in this preview. Open the live site to print or save as PDF.'); }
+setTimeout(()=>{ document.body.classList.remove('printing'); pr.innerHTML=''; }, 2500);
 }
 function shareDoc(type){
-  const msgs={
-    agreement:'I just drafted a tenancy agreement in 2 minutes with DocOga — free Nigerian document maker 📄',
-    notice:'Served a proper notice to quit in 1 minute with DocOga 📮 — free Nigerian document maker',
-    receipt:'Issuing rent receipts in seconds with DocOga 🧾 — free Nigerian document maker',
-    invoice:'Creating clean naira invoices with DocOga 💼 — free Nigerian document maker',
-    employment:'Hiring properly with a clean employment contract from DocOga 💼 — free Nigerian document maker',
-    caution:'Documenting caution fees properly with DocOga 🇳🇬 — free Nigerian document maker',
-    demand:'Sent a firm letter of demand with DocOga ⚖ — free Nigerian document maker',
-    payslip:'Paying my staff properly with clean payslips from DocOga 🧾 — free Nigerian document maker',
-    warning:'Issued a formal written warning the right way with DocOga 🇳🇬 — free Nigerian document maker'
-  };
-  const url='https://wa.me/?text='+encodeURIComponent(msgs[type]+' → '+SITE_URL);
-  try{ window.open(url,'_blank'); }catch(e){ toast('Open the live site to share on WhatsApp.'); }
+const msgs={
+agreement:'I just drafted a tenancy agreement in 2 minutes with DocOga — free Nigerian document maker 📄',
+notice:'Served a proper notice to quit in 1 minute with DocOga 📮 — free Nigerian document maker',
+receipt:'Issuing rent receipts in seconds with DocOga 🧾 — free Nigerian document maker',
+invoice:'Creating clean naira invoices with DocOga 💼 — free Nigerian document maker',
+employment:'Hiring properly with a clean employment contract from DocOga 💼 — free Nigerian document maker',
+caution:'Documenting caution fees properly with DocOga 🇳🇬 — free Nigerian document maker',
+demand:'Sent a firm letter of demand with DocOga ⚖ — free Nigerian document maker',
+payslip:'Paying my staff properly with clean payslips from DocOga 🧾 — free Nigerian document maker',
+warning:'Issued a formal written warning the right way with DocOga 🇳🇬 — free Nigerian document maker',
+poa:'Drafted a Power of Attorney for my Nigerian property with DocOga — from abroad, in minutes 🇳🇬'
+};
+const url='https://wa.me/?text='+encodeURIComponent(msgs[type]+' → '+SITE_URL);
+try{ window.open(url,'_blank'); }catch(e){ toast('Open the live site to share on WhatsApp.'); }
 }
 /* ================= PAYSLIP ================= */
 function collectPayslip(){ return { p_biz:$('p_biz').value,p_addr:$('p_addr').value,p_emp:$('p_emp').value,p_role:$('p_role').value,p_id:$('p_id').value,
-  p_period:$('p_period').value,p_date:$('p_date').value,p_basic:$('p_basic').value,p_house:$('p_house').value,p_trans:$('p_trans').value,
-  p_other:$('p_other').value,p_paye:$('p_paye').value,p_pen:$('p_pen').value,p_nhf:$('p_nhf').value,p_ded:$('p_ded').value,
-  p_bank:$('p_bank').value,p_acct:$('p_acct').value,p_note:$('p_note').value }; }
+p_period:$('p_period').value,p_date:$('p_date').value,p_basic:$('p_basic').value,p_house:$('p_house').value,p_trans:$('p_trans').value,
+p_other:$('p_other').value,p_paye:$('p_paye').value,p_pen:$('p_pen').value,p_nhf:$('p_nhf').value,p_ded:$('p_ded').value,
+p_bank:$('p_bank').value,p_acct:$('p_acct').value,p_note:$('p_note').value }; }
 function applyPayslip(p){ ['p_biz','p_addr','p_emp','p_role','p_id','p_period','p_date','p_basic','p_house','p_trans','p_other','p_paye','p_pen','p_nhf','p_ded','p_bank','p_acct','p_note'].forEach(id=>{ $(id).value=p[id]||''; }); }
 function renderPayslip(){
-  const d=collectPayslip();
-  const N=x=>Number(String(x).replace(/[₦,\s]/g,''))||0;
-  const g=N(d.p_basic)+N(d.p_house)+N(d.p_trans)+N(d.p_other);
-  const dd=N(d.p_paye)+N(d.p_pen)+N(d.p_nhf)+N(d.p_ded);
-  const net=g-dd;
-  $('hint-p_basic').textContent=(N(d.p_basic)>0? '= '+numWords(N(d.p_basic))+' Naira basic monthly':'');
-  $('hint-p_net').textContent=(g>0?(net>=0?('NET PAY: '+fmtN(net)+' ('+nairaWords(net)+')'):'⚠ Deductions exceed total earnings — check the entries.'):'');
-  const row=(l,v)=>'<tr><td style="padding:5px 8px;border:1px solid #D8E0EC">'+l+'</td><td style="padding:5px 8px;border:1px solid #D8E0EC;text-align:right;white-space:nowrap">'+fmtN(v)+'</td></tr>';
-  const th='<tr style="background:#F0F4FA"><th style="padding:6px 8px;border:1px solid #D8E0EC;text-align:left">EARNINGS</th><th style="padding:6px 8px;border:1px solid #D8E0EC;text-align:right">₦</th></tr>';
-  const thd='<tr style="background:#F0F4FA"><th style="padding:6px 8px;border:1px solid #D8E0EC;text-align:left">DEDUCTIONS</th><th style="padding:6px 8px;border:1px solid #D8E0EC;text-align:right">₦</th></tr>';
-  const html =
-  '<div class="'+sheetClass()+'">'+
-  '<h1 style="margin-bottom:2px">PAYSLIP</h1>'+
-  '<div class="doc-meta">'+esc(d.p_period||'Pay period: ____________')+(d.p_date?' &middot; Paid '+fmtDateLong(d.p_date):'')+'</div>'+
-  '<table style="width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px">'+
-  '<tr><td style="padding:2px 0;width:100px;vertical-align:top"><b>Employer</b></td><td><b>'+esc(d.p_biz||'________________')+'</b>'+(d.p_addr?'<br><small>'+esc(d.p_addr)+'</small>':'')+'</td></tr>'+
-  '<tr><td style="padding:2px 0;vertical-align:top"><b>Employee</b></td><td><b>'+esc(d.p_emp||'________________')+'</b>'+(d.p_role?' &mdash; '+esc(d.p_role):'')+(d.p_id?' &middot; ID: '+esc(d.p_id):'')+'</td></tr>'+
-  '</table>'+
-  '<table style="width:100%;border-collapse:collapse;font-size:13.5px;margin-bottom:10px">'+th+
-  row('Basic salary',N(d.p_basic))+row('Housing allowance',N(d.p_house))+row('Transport allowance',N(d.p_trans))+row('Other allowances',N(d.p_other))+
-  '<tr><td style="padding:6px 8px;border:1px solid #D8E0EC"><b>GROSS PAY</b></td><td style="padding:6px 8px;border:1px solid #D8E0EC;text-align:right"><b>'+fmtN(g)+'</b></td></tr></table>'+
-  '<table style="width:100%;border-collapse:collapse;font-size:13.5px">'+thd+
-  row('PAYE (income tax)',N(d.p_paye))+row('Pension (employee)',N(d.p_pen))+row('National Housing Fund',N(d.p_nhf))+row('Other deductions',N(d.p_ded))+
-  '<tr><td style="padding:6px 8px;border:1px solid #D8E0EC"><b>TOTAL DEDUCTIONS</b></td><td style="padding:6px 8px;border:1px solid #D8E0EC;text-align:right"><b>'+fmtN(dd)+'</b></td></tr></table>'+
-  '<div style="background:#EAF6EF;border:1.5px solid #066A38;border-radius:8px;padding:10px 14px;margin:14px 0;display:flex;justify-content:space-between;align-items:center">'+
-  '<b style="font-size:15px">NET PAY</b><b style="font-size:19px;white-space:nowrap">'+fmtN(net)+'</b></div>'+
-  '<p style="font-size:13px"><b>Amount in words:</b> '+nairaWords(Math.max(net,0))+(net<0?' (negative &mdash; check entries)':'')+'.</p>'+
-  ((d.p_bank||d.p_acct)?'<p style="font-size:12.5px">Paid via: '+esc(d.p_bank||'')+(d.p_acct?' &middot; A/C '+esc(d.p_acct):'')+'</p>':'')+
-  (d.p_note?'<p style="font-size:12.5px">Note: '+esc(d.p_note)+'</p>':'')+
-  '<p style="font-size:11.5px;color:#555;margin-top:14px">This is a computer-generated payslip and does not require a signature. Generated with DocOga.</p>'+
-  freeBanner()+
-  '</div>';
-  $('preview-payslip').innerHTML=html;
-  return html;
+const d=collectPayslip();
+const N=x=>Number(String(x).replace(/[₦,\s]/g,''))||0;
+const g=N(d.p_basic)+N(d.p_house)+N(d.p_trans)+N(d.p_other);
+const dd=N(d.p_paye)+N(d.p_pen)+N(d.p_nhf)+N(d.p_ded);
+const net=g-dd;
+$('hint-p_basic').textContent=(N(d.p_basic)>0? '= '+numWords(N(d.p_basic))+' Naira basic monthly':'');
+$('hint-p_net').textContent=(g>0?(net>=0?('NET PAY: '+fmtN(net)+' ('+nairaWords(net)+')'):'⚠ Deductions exceed total earnings — check the entries.'):'');
+const row=(l,v)=>'<tr><td style="padding:5px 8px;border:1px solid #D8E0EC">'+l+'</td><td style="padding:5px 8px;border:1px solid #D8E0EC;text-align:right;white-space:nowrap">'+fmtN(v)+'</td></tr>';
+const th='<tr style="background:#F0F4FA"><th style="padding:6px 8px;border:1px solid #D8E0EC;text-align:left">EARNINGS</th><th style="padding:6px 8px;border:1px solid #D8E0EC;text-align:right">₦</th></tr>';
+const thd='<tr style="background:#F0F4FA"><th style="padding:6px 8px;border:1px solid #D8E0EC;text-align:left">DEDUCTIONS</th><th style="padding:6px 8px;border:1px solid #D8E0EC;text-align:right">₦</th></tr>';
+const html =
+'<div class="'+sheetClass()+'">'+
+'<h1 style="margin-bottom:2px">PAYSLIP</h1>'+
+'<div class="doc-meta">'+esc(d.p_period||'Pay period: ____________')+(d.p_date?' &middot; Paid '+fmtDateLong(d.p_date):'')+'</div>'+
+'<table style="width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px">'+
+'<tr><td style="padding:2px 0;width:100px;vertical-align:top"><b>Employer</b></td><td><b>'+esc(d.p_biz||'________________')+'</b>'+(d.p_addr?'<br><small>'+esc(d.p_addr)+'</small>':'')+'</td></tr>'+
+'<tr><td style="padding:2px 0;vertical-align:top"><b>Employee</b></td><td><b>'+esc(d.p_emp||'________________')+'</b>'+(d.p_role?' &mdash; '+esc(d.p_role):'')+(d.p_id?' &middot; ID: '+esc(d.p_id):'')+'</td></tr>'+
+'</table>'+
+'<table style="width:100%;border-collapse:collapse;font-size:13.5px;margin-bottom:10px">'+th+
+row('Basic salary',N(d.p_basic))+row('Housing allowance',N(d.p_house))+row('Transport allowance',N(d.p_trans))+row('Other allowances',N(d.p_other))+
+'<tr><td style="padding:6px 8px;border:1px solid #D8E0EC"><b>GROSS PAY</b></td><td style="padding:6px 8px;border:1px solid #D8E0EC;text-align:right"><b>'+fmtN(g)+'</b></td></tr></table>'+
+'<table style="width:100%;border-collapse:collapse;font-size:13.5px">'+thd+
+row('PAYE (income tax)',N(d.p_paye))+row('Pension (employee)',N(d.p_pen))+row('National Housing Fund',N(d.p_nhf))+row('Other deductions',N(d.p_ded))+
+'<tr><td style="padding:6px 8px;border:1px solid #D8E0EC"><b>TOTAL DEDUCTIONS</b></td><td style="padding:6px 8px;border:1px solid #D8E0EC;text-align:right"><b>'+fmtN(dd)+'</b></td></tr></table>'+
+'<div style="background:#EAF6EF;border:1.5px solid #066A38;border-radius:8px;padding:10px 14px;margin:14px 0;display:flex;justify-content:space-between;align-items:center">'+
+'<b style="font-size:15px">NET PAY</b><b style="font-size:19px;white-space:nowrap">'+fmtN(net)+'</b></div>'+
+'<p style="font-size:13px"><b>Amount in words:</b> '+nairaWords(Math.max(net,0))+(net<0?' (negative &mdash; check entries)':'')+'.</p>'+
+((d.p_bank||d.p_acct)?'<p style="font-size:12.5px">Paid via: '+esc(d.p_bank||'')+(d.p_acct?' &middot; A/C '+esc(d.p_acct):'')+'</p>':'')+
+(d.p_note?'<p style="font-size:12.5px">Note: '+esc(d.p_note)+'</p>':'')+
+'<p style="font-size:11.5px;color:#555;margin-top:14px">This is a computer-generated payslip and does not require a signature. Generated with DocOga.</p>'+
+freeBanner()+
+'</div>';
+$('preview-payslip').innerHTML=html;
+return html;
 }
 
 /* ================= WARNING LETTER ================= */
 function collectWarning(){ return { w_biz:$('w_biz').value,w_addr:$('w_addr').value,w_emp:$('w_emp').value,w_role:$('w_role').value,w_date:$('w_date').value,
-  w_count:$('w_count').value,w_incident:$('w_incident').value,w_offence:$('w_offence').value,w_prior:$('w_prior').value,w_expect:$('w_expect').value,
-  w_deadline:$('w_deadline').value,w_signer:$('w_signer').value }; }
+w_count:$('w_count').value,w_incident:$('w_incident').value,w_offence:$('w_offence').value,w_prior:$('w_prior').value,w_expect:$('w_expect').value,
+w_deadline:$('w_deadline').value,w_signer:$('w_signer').value }; }
 function applyWarning(p){ ['w_biz','w_addr','w_emp','w_role','w_date','w_incident','w_offence','w_prior','w_expect','w_deadline','w_signer'].forEach(id=>{ $(id).value=p[id]||''; }); if(p.w_count) $('w_count').value=p.w_count; }
 function renderWarning(){
-  const d=collectWarning();
-  const count=d.w_count||'First written warning';
-  const html =
-  '<div class="'+sheetClass()+'">'+
-  '<p style="margin:0"><b>'+esc(d.w_biz||'________________')+'</b>'+(d.w_addr?'<br><small>'+esc(d.w_addr)+'</small>':'')+'</p>'+
-  '<p style="text-align:right;margin:6px 0">'+fmtDateLong(d.w_date)+'</p>'+
-  '<hr>'+
-  '<p><b>To:</b> '+esc(d.w_emp||'________________')+(d.w_role?', '+esc(d.w_role):'')+'</p>'+
-  '<p style="margin-bottom:14px"><b>RE: '+count.toUpperCase()+'</b></p>'+
-  '<p>Dear '+esc((d.w_emp||'Employee').split(' ').slice(0,2).join(' '))+',</p>'+
-  '<p>This letter serves as your <b>'+count.toLowerCase()+'</b> in respect of '+esc(d.w_offence||'the conduct described below')+(d.w_incident?' (incident date(s): <b>'+esc(d.w_incident)+'</b>)':'')+', which is contrary to the terms of your employment and company policy.</p>'+
-  (d.w_prior?'<p>Reference is made to '+esc(d.w_prior)+'.</p>':'')+
-  '<p><b>EXPECTED IMPROVEMENT:</b> You are required to '+esc(d.w_expect||'correct the conduct described above')+(d.w_deadline?' on or before <b>'+fmtDateLong(d.w_deadline)+'</b>':' without delay')+'.</p>'+
-  '<p>Be advised that failure to show the required improvement may result in further disciplinary action, up to and including the termination of your employment, in accordance with your employment contract and applicable labour laws.</p>'+
-  '<p style="margin-top:26px">Yours faithfully,</p>'+
-  '<div class="sig-grid" style="margin-top:14px"><div><div class="sig-line"></div>'+esc(d.w_signer||'Authorised manager')+'<br><small>For '+esc(d.w_biz||'the company')+'</small></div><div><div class="sig-line"></div>'+esc(d.w_emp||'Employee')+'<br><small>Date</small></div></div>'+
-  '<hr style="margin-top:24px">'+
-  '<p style="font-size:12px"><b>ACKNOWLEDGEMENT:</b> I, '+esc(d.w_emp||'the employee')+', acknowledge receipt of this letter. Receipt does not necessarily indicate agreement with its contents.</p>'+
-  '<div class="sig-grid" style="margin-top:8px"><div><div class="sig-line"></div>'+esc(d.w_emp||'Employee')+'<br><small>Signature &amp; date</small></div><div><div class="sig-line"></div>'+esc(d.w_signer||'Manager')+'<br><small>Signature &amp; date</small></div></div>'+
-  freeBanner()+
-  '</div>';
-  $('preview-warning').innerHTML=html;
-  return html;
+const d=collectWarning();
+const count=d.w_count||'First written warning';
+const html =
+'<div class="'+sheetClass()+'">'+
+'<p style="margin:0"><b>'+esc(d.w_biz||'________________')+'</b>'+(d.w_addr?'<br><small>'+esc(d.w_addr)+'</small>':'')+'</p>'+
+'<p style="text-align:right;margin:6px 0">'+fmtDateLong(d.w_date)+'</p>'+
+'<hr>'+
+'<p><b>To:</b> '+esc(d.w_emp||'________________')+(d.w_role?', '+esc(d.w_role):'')+'</p>'+
+'<p style="margin-bottom:14px"><b>RE: '+count.toUpperCase()+'</b></p>'+
+'<p>Dear '+esc((d.w_emp||'Employee').split(' ').slice(0,2).join(' '))+',</p>'+
+'<p>This letter serves as your <b>'+count.toLowerCase()+'</b> in respect of '+esc(d.w_offence||'the conduct described below')+(d.w_incident?' (incident date(s): <b>'+esc(d.w_incident)+'</b>)':'')+', which is contrary to the terms of your employment and company policy.</p>'+
+(d.w_prior?'<p>Reference is made to '+esc(d.w_prior)+'.</p>':'')+
+'<p><b>EXPECTED IMPROVEMENT:</b> You are required to '+esc(d.w_expect||'correct the conduct described above')+(d.w_deadline?' on or before <b>'+fmtDateLong(d.w_deadline)+'</b>':' without delay')+'.</p>'+
+'<p>Be advised that failure to show the required improvement may result in further disciplinary action, up to and including the termination of your employment, in accordance with your employment contract and applicable labour laws.</p>'+
+'<p style="margin-top:26px">Yours faithfully,</p>'+
+'<div class="sig-grid" style="margin-top:14px"><div><div class="sig-line"></div>'+esc(d.w_signer||'Authorised manager')+'<br><small>For '+esc(d.w_biz||'the company')+'</small></div><div><div class="sig-line"></div>'+esc(d.w_emp||'Employee')+'<br><small>Date</small></div></div>'+
+'<hr style="margin-top:24px">'+
+'<p style="font-size:12px"><b>ACKNOWLEDGEMENT:</b> I, '+esc(d.w_emp||'the employee')+', acknowledge receipt of this letter. Receipt does not necessarily indicate agreement with its contents.</p>'+
+'<div class="sig-grid" style="margin-top:8px"><div><div class="sig-line"></div>'+esc(d.w_emp||'Employee')+'<br><small>Signature &amp; date</small></div><div><div class="sig-line"></div>'+esc(d.w_signer||'Manager')+'<br><small>Signature &amp; date</small></div></div>'+
+freeBanner()+
+'</div>';
+$('preview-warning').innerHTML=html;
+return html;
 }
 
-const DOC_TITLES={agreement:'Tenancy Agreement',notice:'Notice to Quit',receipt:'Rent Receipt',invoice:'Invoice',employment:'Employment Contract',caution:'Caution Fee Receipt',demand:'Letter of Demand',payslip:'Payslip',warning:'Warning Letter'};
-const RENDERERS={agreement:renderAgreement,notice:renderNotice,receipt:renderReceipt,invoice:renderInvoice,employment:renderEmployment,caution:renderCaution,demand:renderDemand,payslip:renderPayslip,warning:renderWarning};
-const COLLECTORS={agreement:collectAgreement,notice:collectNotice,receipt:collectReceipt,invoice:collectInvoice,employment:collectEmployment,caution:collectCaution,demand:collectDemand,payslip:collectPayslip,warning:collectWarning};
-const APPLIERS={agreement:applyAgreement,notice:applyNotice,receipt:applyReceipt,invoice:applyInvoice,employment:applyEmployment,caution:applyCaution,demand:applyDemand,payslip:applyPayslip,warning:applyWarning};
+const DOC_TITLES={agreement:'Tenancy Agreement',notice:'Notice to Quit',receipt:'Rent Receipt',invoice:'Invoice',employment:'Employment Contract',caution:'Caution Fee Receipt',demand:'Letter of Demand',payslip:'Payslip',warning:'Warning Letter',poa:'Power of Attorney'};
+const RENDERERS={agreement:renderAgreement,notice:renderNotice,receipt:renderReceipt,invoice:renderInvoice,employment:renderEmployment,caution:renderCaution,demand:renderDemand,payslip:renderPayslip,warning:renderWarning,poa:renderPoa};
+const COLLECTORS={agreement:collectAgreement,notice:collectNotice,receipt:collectReceipt,invoice:collectInvoice,employment:collectEmployment,caution:collectCaution,demand:collectDemand,payslip:collectPayslip,warning:collectWarning,poa:collectPoa};
+const APPLIERS={agreement:applyAgreement,notice:applyNotice,receipt:applyReceipt,invoice:applyInvoice,employment:applyEmployment,caution:applyCaution,demand:applyDemand,payslip:applyPayslip,warning:applyWarning,poa:applyPoa};
 /* Always returns an array. A stored 'null'/object/string (interrupted write,
-   quota error, another tab) used to return null and make init() throw TypeError
-   on every load — a permanently dead app for that visitor. Guard here, once. */
+quota error, another tab) used to return null and make init() throw TypeError
+on every load — a permanently dead app for that visitor. Guard here, once. */
 function getDocs(){ try{ const d=JSON.parse(store.getItem('docoga_docs')||'[]'); return Array.isArray(d)?d:[]; }catch(e){ return []; } }
 function saveDoc(type){
-  const payload=COLLECTORS[type]();
-  let title=DOC_TITLES[type];
-  if(type==='agreement'&&payload.ll_name) title='Agreement — '+payload.ll_name+(payload.tt_name?' × '+payload.tt_name:'');
-  if(type==='notice'&&payload.n_to) title='Notice — '+payload.n_to;
-  if(type==='receipt'&&payload.r_from) title='Receipt — '+payload.r_from;
-  if(type==='invoice'&&payload.i_client) title='Invoice — '+payload.i_client;
-  if(type==='employment'&&payload.e_emp) title='Contract — '+payload.e_emp;
-  if(type==='caution'&&payload.c_from) title='Caution Fee — '+payload.c_from;
-  if(type==='demand'&&payload.d_to) title='Demand — '+payload.d_to;
-  if(type==='payslip'&&payload.p_emp) title='Payslip — '+payload.p_emp;
-  if(type==='warning'&&payload.w_emp) title='Warning — '+payload.w_emp;
-  const docs=getDocs(); docs.unshift({id:Date.now(),type,title,ts:Date.now(),payload});
-  store.setItem('docoga_docs',JSON.stringify(docs.slice(0,60)));
-  try{ store.removeItem(DRAFT_KEY(type)); }catch(e){}
-  renderDocs(); toast('💾 Saved to My Documents (on this device).');
+const payload=COLLECTORS[type]();
+let title=DOC_TITLES[type];
+if(type==='agreement'&&payload.ll_name) title='Agreement — '+payload.ll_name+(payload.tt_name?' × '+payload.tt_name:'');
+if(type==='notice'&&payload.n_to) title='Notice — '+payload.n_to;
+if(type==='receipt'&&payload.r_from) title='Receipt — '+payload.r_from;
+if(type==='invoice'&&payload.i_client) title='Invoice — '+payload.i_client;
+if(type==='employment'&&payload.e_emp) title='Contract — '+payload.e_emp;
+if(type==='caution'&&payload.c_from) title='Caution Fee — '+payload.c_from;
+if(type==='demand'&&payload.d_to) title='Demand — '+payload.d_to;
+if(type==='payslip'&&payload.p_emp) title='Payslip — '+payload.p_emp;
+if(type==='warning'&&payload.w_emp) title='Warning — '+payload.w_emp;
+if(type==='poa'&&payload.poa_donee) title='Power of Attorney — '+payload.poa_donee;
+const docs=getDocs(); docs.unshift({id:Date.now(),type,title,ts:Date.now(),payload});
+store.setItem('docoga_docs',JSON.stringify(docs.slice(0,60)));
+try{ store.removeItem(DRAFT_KEY(type)); }catch(e){}
+renderDocs(); toast('💾 Saved to My Documents (on this device).');
 }
 function openDoc(id){
-  const doc=getDocs().find(d=>d.id===id); if(!doc) return;
-  location.hash='#'+doc.type;
-  setTimeout(()=>{ APPLIERS[doc.type](doc.payload); RENDERERS[doc.type](); toast('Loaded "'+doc.title+'".'); }, 60);
+const doc=getDocs().find(d=>d.id===id); if(!doc) return;
+location.hash='#'+doc.type;
+setTimeout(()=>{ APPLIERS[doc.type](doc.payload); RENDERERS[doc.type](); toast('Loaded "'+doc.title+'".'); }, 60);
 }
 function delDoc(id){
-  store.setItem('docoga_docs',JSON.stringify(getDocs().filter(d=>d.id!==id)));
-  renderDocs(); toast('Deleted.');
+store.setItem('docoga_docs',JSON.stringify(getDocs().filter(d=>d.id!==id)));
+renderDocs(); toast('Deleted.');
 }
 function renderDocs(){
-  const docs=getDocs();
-  $('docs-list').innerHTML = docs.length ? docs.map(d=>
-    '<div class="doc-item"><div class="grow"><div class="t"><svg class="bi" aria-hidden="true"><use href="#i-file"/></svg> '+esc(d.title)+'</div><div class="m">'+new Date(d.ts).toLocaleString('en-NG')+'</div></div>'+
-    '<button class="link-btn" onclick="openDoc('+d.id+')">Open</button>'+
-    '<button class="link-btn" onclick="RENDERERS.'+d.type+'();printCurrent(\''+d.type+'\')">Print</button>'+
-    '<button class="link-btn danger" onclick="delDoc('+d.id+')">Delete</button></div>').join('')
-    : '<div class="panel" style="text-align:center;color:var(--muted)">No saved documents yet. Create one and tap <b>Save</b>.</div>';
+const docs=getDocs();
+$('docs-list').innerHTML = docs.length ? docs.map(d=>
+'<div class="doc-item"><div class="grow"><div class="t"><svg class="bi" aria-hidden="true"><use href="#i-file"/></svg> '+esc(d.title)+'</div><div class="m">'+new Date(d.ts).toLocaleString('en-NG')+'</div></div>'+
+'<button class="link-btn" onclick="openDoc('+d.id+')">Open</button>'+
+'<button class="link-btn" onclick="RENDERERS.'+d.type+'();printCurrent(\''+d.type+'\')">Print</button>'+
+'<button class="link-btn danger" onclick="delDoc('+d.id+')">Delete</button></div>').join('')
+: '<div class="panel" style="text-align:center;color:var(--muted)">No saved documents yet. Create one and tap <b>Save</b>.</div>';
 }
 
 /* v1.2: auto-save drafts & business profile */
 const DRAFT_KEY=t=>'docoga_draft_'+t;
 function saveDraft(type){ try{ store.setItem(DRAFT_KEY(type), JSON.stringify(COLLECTORS[type]())); }catch(e){} }
 function loadDrafts(){
-  let restored=false;
-  ['agreement','notice','receipt','invoice','employment','caution','demand','payslip','warning'].forEach(t=>{
-    try{
-      const raw=store.getItem(DRAFT_KEY(t)); if(!raw) return;
-      const p=JSON.parse(raw);
-      const has=Object.values(p||{}).some(v=>v!==''&&v!=null&&!(Array.isArray(v)&&!v.length));
-      if(!has) return;
-      APPLIERS[t](p); restored=true;
-    }catch(e){}
-  });
-  if(restored) toast('Your unfinished drafts were restored. 📝');
+let restored=false;
+['agreement','notice','receipt','invoice','employment','caution','demand','payslip','warning'].forEach(t=>{
+try{
+const raw=store.getItem(DRAFT_KEY(t)); if(!raw) return;
+const p=JSON.parse(raw);
+const has=Object.values(p||{}).some(v=>v!==''&&v!=null&&!(Array.isArray(v)&&!v.length));
+if(!has) return;
+APPLIERS[t](p); restored=true;
+}catch(e){}
+});
+if(restored) toast('Your unfinished drafts were restored. 📝');
 }
 function saveProfile(){ try{ store.setItem('docoga_profile', JSON.stringify({i_biz:$('i_biz').value,i_bizphone:$('i_bizphone').value})); }catch(e){} }
 function loadProfile(){ try{ const p=JSON.parse(store.getItem('docoga_profile')||'null'); if(p){ if(p.i_biz&&!$('i_biz').value) $('i_biz').value=p.i_biz; if(p.i_bizphone&&!$('i_bizphone').value) $('i_bizphone').value=p.i_bizphone; } }catch(e){} }
 
+/* ================= POWER OF ATTORNEY ================= */
+const POA_POWERS=[
+['poa_k1','Manage, supervise and maintain the property'],
+['poa_k2','Let or lease the property and sign tenancy agreements'],
+['poa_k3','Demand, collect and recover rent and rent arrears, and issue receipts'],
+['poa_k4','Institute, conduct or defend legal proceedings in the name of the Donor'],
+['poa_k5','Execute, stamp and register documents at the Lands Registry'],
+['poa_k6','Pay rates, taxes, ground rent, levies and service charges'],
+['poa_k7','Operate the designated account for the property only'],
+['poa_k8','Sell, assign or transfer the property']
+];
+const POA_STATES=['Lagos State', 'Federal Capital Territory, Abuja', 'Abia State', 'Adamawa State', 'Akwa Ibom State', 'Anambra State', 'Bauchi State', 'Bayelsa State', 'Benue State', 'Borno State', 'Cross River State', 'Delta State', 'Ebonyi State', 'Edo State', 'Ekiti State', 'Enugu State', 'Gombe State', 'Imo State', 'Jigawa State', 'Kaduna State', 'Kano State', 'Katsina State', 'Kebbi State', 'Kogi State', 'Kwara State', 'Nasarawa State', 'Niger State', 'Ogun State', 'Ondo State', 'Osun State', 'Oyo State', 'Plateau State', 'Rivers State', 'Sokoto State', 'Taraba State', 'Yobe State', 'Zamfara State'];
+(function buildPoaStates(){const s=$('poa_state');if(s)s.innerHTML=POA_STATES.map(x=>'<option>'+x+'</option>').join('');})();
+(function buildPoaPowers(){
+const box=document.getElementById('poa-powers'); if(!box) return;
+box.innerHTML=POA_POWERS.map(([k,label])=>
+'<label style="display:flex;gap:8px;align-items:flex-start;font-size:13.5px;background:#F7F9FC;border:1px solid #DCE4F0;border-radius:9px;padding:9px 11px;cursor:pointer">'+
+'<input type="checkbox" id="'+k+'" onchange="renderPoa()" style="margin-top:3px;flex:none"><span>'+label+'</span></label>'
+).join('');
+})();
+function collectPoa(){
+const o={};
+['poa_donor','poa_donor_addr','poa_donor_id','poa_donor_occ','poa_donee','poa_donee_addr','poa_donee_id','poa_rel','poa_prop','poa_purpose','poa_date','poa_expiry','poa_state','poa_witness'].forEach(id=>{ o[id]=$(id)?$(id).value:''; });
+POA_POWERS.forEach(([k])=>{ const el=$(k); o[k]= el? el.checked : false; });
+return o;
+}
+function applyPoa(p){
+['poa_donor','poa_donor_addr','poa_donor_id','poa_donor_occ','poa_donee','poa_donee_addr','poa_donee_id','poa_rel','poa_prop','poa_purpose','poa_date','poa_expiry','poa_state','poa_witness'].forEach(id=>{ if(p[id] && $(id)) $(id).value=p[id]; });
+POA_POWERS.forEach(([k])=>{ if($(k)) $(k).checked=!!p[k]; });
+}
+function renderPoa(){
+const d=collectPoa();
+const chosen=POA_POWERS.filter(([k])=>d[k]);
+const alpha=['(a)','(b)','(c)','(d)','(e)','(f)','(g)','(h)','(i)','(j)'];
+const powersHtml = chosen.length
+? chosen.map(([k,label],i)=>'<div style="margin:7px 0 7px 14px;font-size:14px"><b>'+alpha[i]+'</b> '+esc(label)+'.</div>').join('')
+: '<div style="margin:7px 0 7px 14px;color:#8A97AC;font-size:14px">No powers selected yet — tick the boxes below.</div>';
+const sellNote = d.poa_k8
+? '<div style="margin-top:9px;padding:9px 11px;background:#FFF7E6;border:1px solid #F0D9A8;border-radius:9px;font-size:13px"><b>Sale power selected.</b> A power of attorney does not itself transfer ownership. A sale still needs a Deed of Assignment and, by <b>section 22 of the Land Use Act</b>, the Governor’s Consent. An "irrevocable" power of attorney is not a substitute for either.</div>'
+: '';
+const html =
+'<div class="'+sheetClass()+'">'+
+'<div class="receipt-box">'+
+'<h1 style="margin-bottom:2px;text-align:center">DEED OF POWER OF ATTORNEY</h1>'+
+'<div class="doc-meta" style="text-align:center">Made this '+fmtDateLong(d.poa_date)+' · Governed by the laws of '+esc(d.poa_state||'________________')+'</div>'+
+'<hr>'+
+'<p><b>THIS DEED OF POWER OF ATTORNEY</b> is made the day and year first above written.</p>'+
+'<p><b>BY</b> <b>'+esc(d.poa_donor||'________________')+'</b> of '+esc(d.poa_donor_addr||'________________')+(d.poa_donor_occ?', '+esc(d.poa_donor_occ):'')+(d.poa_donor_id?' (ID: '+esc(d.poa_donor_id)+')':'')+' (hereinafter called <b>“the Donor”</b>, which expression shall where the context admits include the Donor’s personal representatives);</p>'+
+'<p><b>IN FAVOUR OF</b> <b>'+esc(d.poa_donee||'________________')+'</b> of '+esc(d.poa_donee_addr||'________________')+(d.poa_rel?', '+esc(d.poa_rel)+' of the Donor':'')+(d.poa_donee_id?' (ID: '+esc(d.poa_donee_id)+')':'')+' (hereinafter called <b>“the Donee”</b> or <b>“the Attorney”</b>).</p>'+
+'<p><b>WHEREAS</b> the Donor is entitled to the property situate at <b>'+esc(d.poa_prop||'________________')+'</b> (hereinafter called <b>“the Property”</b>);</p>'+
+'<p><b>AND WHEREAS</b> the Donor is presently resident outside Nigeria and is desirous of appointing the Donee to act for and in the name of the Donor in respect of the Property upon the terms hereinafter contained;</p>'+
+'<p><b>NOW THIS DEED WITNESSETH</b> that the Donor hereby <b>APPOINTS</b> the Donee to be the true and lawful Attorney of the Donor, for the Donor and in the Donor’s name, to do the following acts and things:</p>'+
+'<div style="margin:12px 0"><div style="font-weight:800;margin-bottom:2px">1. POWERS GRANTED</div>'+powersHtml+'</div>'+
+(d.poa_purpose?'<div style="margin:10px 0"><div style="font-weight:800;margin-bottom:2px">2. PURPOSE</div><div style="font-size:14px">The authority hereby conferred is given for the following purpose and no other: <b>'+esc(d.poa_purpose)+'</b>.</div></div>':'')+
+sellNote+
+'<div style="margin:12px 0"><div style="font-weight:800;margin-bottom:2px">'+(d.poa_purpose?'3':'2')+'. LIMITATION — THIS IS NOT A TRANSFER OF OWNERSHIP</div>'+
+'<div style="font-size:13.5px">This Deed authorises the Donee to <b>deal with</b> the Property on the Donor’s behalf. It does <b>not</b> convey, assign or transfer any estate or interest in land to the Donee. Ownership passes only by a duly executed and registered instrument. The Donee shall not use this Deed for any purpose outside the powers granted above.</div></div>'+
+'<div style="margin:12px 0"><div style="font-weight:800;margin-bottom:2px">'+(d.poa_purpose?'4':'3')+'. DURATION</div>'+
+'<div style="font-size:13.5px">'+(d.poa_expiry
+? 'This Power of Attorney shall remain in force until <b>'+fmtDateLong(d.poa_expiry)+'</b>, unless earlier revoked in writing by the Donor.'
+: 'This Power of Attorney shall remain in force until revoked in writing by the Donor.')+'</div></div>'+
+'<div style="margin:12px 0"><div style="font-weight:800;margin-bottom:2px">'+(d.poa_purpose?'5':'4')+'. GOVERNING LAW</div>'+
+'<div style="font-size:13.5px">This Deed is executed in Nigeria and shall be governed by and construed in accordance with the laws of <b>'+esc(d.poa_state||'________________')+'</b> and the laws of the Federal Republic of Nigeria.</div></div>'+
+'<p style="margin-top:14px"><b>IN WITNESS WHEREOF</b> the parties have hereunto set their hands the day and year first above written.</p>'+
+'<div class="sig-grid" style="margin-top:20px">'+
+'<div><div class="sig-line"></div>'+esc(d.poa_donor||'The Donor')+'<br><small>The Donor — signature</small></div>'+
+'<div><div class="sig-line"></div>'+esc(d.poa_donee||'The Donee')+'<br><small>The Donee — signature</small></div>'+
+'</div>'+
+'<div class="sig-grid" style="margin-top:18px">'+
+'<div><div class="sig-line"></div>'+esc(d.poa_witness||'Witness')+'<br><small>Witness — name, address, signature</small></div>'+
+'<div><div class="sig-line"></div>Notary Public<br><small>Notarial attestation — seal</small></div>'+
+'</div>'+
+'<hr>'+
+'<div style="font-size:12px;color:#444">'+
+'<b>BEFORE YOU SIGN — EXECUTION AND REGISTRATION</b><br>'+
+'1. <b>Sign and witness.</b> A power of attorney must be properly signed and witnessed. Where the Donor is illiterate or blind, the document must be attested by a judge, magistrate, JP, Notary Public or Commissioner for Oaths.<br>'+
+'2. <b>Register it if it concerns land.</b> A power of attorney authorising any person to deal with land must be delivered to the appropriate Lands Registry for registration. In <i>Ojugbele v. Olasoji</i> (1982) SC 71 the Supreme Court held that a registrable power of attorney which is not registered is <b>inadmissible as evidence</b> in court. Registration fees vary by state — confirm the current fee with the registry.<br>'+
+'3. <b>Stamp it.</b> Stamp duty is payable before the instrument can be used in evidence.<br>'+
+'4. <b>For use outside Nigeria,</b> have it attested before a Notary Public; where a foreign authority requires it, authenticate at the Ministry of Foreign Affairs and legalise at the relevant embassy or high commission. Nigeria is not a party to the Hague Apostille Convention, so consular legalisation — not apostille — is the route.<br>'+
+'5. <b>Keep it narrow.</b> Do not grant authority to sell or to withdraw money unless the transaction genuinely requires it.'+
+'</div>'+
+'<p style="font-size:11.5px;color:#6B7A93;margin-top:10px"><i>This is a document template and general information about Nigerian practice. It is not legal advice and no lawyer–client relationship is created. Because a power of attorney can be used to dispose of property, have a Nigerian lawyer review it before you sign.</i></p>'+
+'</div>'+
+freeBanner()+
+'</div>';
+$('preview-poa').innerHTML=html;
+return html;
+}
+
 /* ================= router & init ================= */
-const PAGES=['home','agreement','notice','receipt','invoice','employment','caution','demand','payslip','warning','docs','pricing'];
+const PAGES=['home','agreement','notice','receipt','invoice','employment','caution','demand','payslip','warning','poa','docs','pricing'];
 function route(){
   let h=(location.hash||'#home').slice(1).split('?')[0];
   if(!PAGES.includes(h)) h='home';
@@ -1542,7 +1703,7 @@ function route(){
   document.querySelectorAll('header nav a').forEach(a=>a.classList.toggle('active',a.getAttribute('href')==='#'+h));
   window.scrollTo(0,0);
 }
-function renderAll(){ renderAgreement(); renderNotice(); renderReceipt(); renderInvoice(); renderEmployment(); renderCaution(); renderDemand(); renderPayslip(); renderWarning(); renderDocs(); updatePassUI(); }
+function renderAll(){ renderAgreement(); renderNotice(); renderReceipt(); renderInvoice(); renderEmployment(); renderCaution(); renderDemand(); renderPayslip(); renderWarning(); renderPoa(); renderDocs(); updatePassUI(); }
 
 (function init(){
   // states select

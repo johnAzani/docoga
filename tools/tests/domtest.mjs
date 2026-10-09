@@ -2,7 +2,7 @@
  * DocOga FULL-APP EXECUTION TEST (jsdom — no browser, no network required)
  * ============================================================================
  * Runs the REAL site/index.html, executes its REAL scripts, and drives the REAL
- * user flows: all 12 routes, all 9 document tools, hostile input, pass
+ * user flows: all 13 routes, all 10 document tools, hostile input, pass
  * activation (mocked worker), top-up carry-over, device fence, offline codes,
  * magic links, draft auto-save, saved documents, print path.
  *
@@ -128,9 +128,9 @@ const win = w(dom);
 await wait(120); // let init() + inline scripts settle
 check('page loads with zero uncaught errors', dom.__errs().length === 0, dom.__errs().join(' | ').slice(0, 200));
 check('localStorage store wrapper present', typeof lex(dom, 'store') === 'object' && typeof lex(dom, 'store').getItem === 'function');
-check('router knows 12 pages', lex(dom, 'PAGES.length') === 12, 'PAGES=' + lex(dom, 'PAGES.length'));
+check('router knows 13 pages', lex(dom, 'PAGES.length') === 13, 'PAGES=' + lex(dom, 'PAGES.length'));
 
-const PAGES = ['home', 'agreement', 'notice', 'receipt', 'invoice', 'employment', 'caution', 'demand', 'payslip', 'warning', 'docs', 'pricing'];
+const PAGES = ['home', 'agreement', 'notice', 'receipt', 'invoice', 'employment', 'caution', 'demand', 'payslip', 'warning', 'poa', 'docs', 'pricing'];
 let routeOk = 0, routeBad = [];
 for (const p of PAGES) {
   win.location.hash = '#' + p;
@@ -139,10 +139,111 @@ for (const p of PAGES) {
   if (el && el.style.display === 'block') routeOk++;
   else routeBad.push(p);
 }
-check('all 12 routes render their page', routeOk === 12, 'broken: ' + routeBad.join(','));
+check('all 13 routes render their page', routeOk === 13, 'broken: ' + routeBad.join(','));
 win.location.hash = '#not-a-real-page';
 win.dispatchEvent(new win.Event('hashchange'));
 check('unknown hash falls back to home', $(dom, 'page-home').style.display === 'block');
+
+/* ---------- pricing page is a revenue surface — guard its copy ---------- */
+section('pricing page (revenue surface)');
+win.location.hash = '#pricing';
+win.dispatchEvent(new win.Event('hashchange'));
+const priceSec = $(dom, 'page-pricing');
+check('pricing route renders', priceSec.style.display === 'block');
+
+const priceText = priceSec.textContent;
+const cards = priceSec.querySelectorAll('.price-card');
+check('pricing shows all 3 tiers', cards.length === 3, 'cards=' + cards.length);
+
+// The tool count is stated in marketing copy. It must match the real tool count,
+// or we advertise fewer tools than we ship.
+const realToolCount = lex(dom, 'Object.keys(RENDERERS).length');
+for (const stale of ['All four tools', 'All 9 tools', 'All nine tools', 'All 4 tools']) {
+  check('pricing copy is not stale: "' + stale + '"', !priceText.includes(stale), 'found stale copy');
+}
+check('pricing states the real tool count on Oga Pass',
+      priceText.includes('All ' + realToolCount + ' tools') || priceText.includes('All ten tools'),
+      'RENDERERS has ' + realToolCount + ' tools');
+
+// The newest, highest-value tool must be named on the paid tier.
+check('Oga Pass names Power of Attorney', /power of attorney/i.test(priceText));
+
+// Business tier must exist and must be contactable.
+check('Business tier present', priceText.includes('Business'));
+const bizLink = priceSec.querySelector('a[href*="wa.me"]');
+check('Business tier links to WhatsApp', !!bizLink, bizLink ? bizLink.getAttribute('href').slice(0, 40) : 'none');
+check('Business WhatsApp uses the configured support number',
+      !!bizLink && bizLink.getAttribute('href').includes(lex(dom, 'SUPPORT_WHATSAPP')));
+
+// The buy button must still be wired.
+check('Oga Pass buy button present and wired',
+      !!$(dom, 'buy-btn') && /buyPass\(/.test($(dom, 'buy-btn').getAttribute('onclick') || ''));
+
+
+section('Power of Attorney (diaspora tool)');
+const POWERS_KEYS = ['poa_k1','poa_k2','poa_k3','poa_k4','poa_k5','poa_k6','poa_k7','poa_k8'];
+
+/* ---------- Power of Attorney (diaspora tool, added 8 Oct 2026) ---------- */
+win.location.hash = '#poa';
+win.dispatchEvent(new win.Event('hashchange'));
+check('poa route renders its page', $(dom, 'page-poa').style.display === 'block');
+
+// the 8 selectable powers must exist as real checkboxes
+const poaBoxes = POWERS_KEYS.map(k => $(dom, k));
+check('all 8 power checkboxes rendered', poaBoxes.every(Boolean), 'missing: ' + POWERS_KEYS.filter((k, i) => !poaBoxes[i]).join(','));
+
+// fill the donor/donee and confirm the deed carries them
+$(dom, 'poa_donor').value = 'Chinedu Okafor';
+$(dom, 'poa_donee').value = 'Ngozi Okafor';
+$(dom, 'poa_prop').value  = '14 Admiralty Way, Lekki Phase 1, Lagos';
+$(dom, 'poa_state').value = 'Lagos State';
+win.renderPoa();
+
+const deed = $(dom, 'preview-poa').textContent;
+check('deed is titled DEED OF POWER OF ATTORNEY', /DEED OF POWER OF ATTORNEY/.test(deed));
+check('donor name flows into the deed',  deed.includes('Chinedu Okafor'), deed.slice(0, 120));
+check('donee name flows into the deed',  deed.includes('Ngozi Okafor'));
+check('property flows into the deed',    deed.includes('14 Admiralty Way'));
+check('governing law flows into the deed', deed.includes('Lagos State'));
+check('deed states it is NOT a transfer of ownership',
+      /does\s+not\s+convey|not a transfer of ownership/i.test(deed));
+
+// ticking a power must add it to the deed
+$(dom, 'poa_k2').checked = true;
+win.renderPoa();
+check('ticked power appears in the deed', $(dom, 'preview-poa').textContent.includes('Let or lease the property'));
+$(dom, 'poa_k2').checked = false;
+win.renderPoa();
+check('unticked power leaves the deed', !$(dom, 'preview-poa').textContent.includes('Let or lease the property'));
+
+// sale power must trigger the Land Use Act s.22 warning
+$(dom, 'poa_k8').checked = true;
+win.renderPoa();
+const sellTxt = $(dom, 'preview-poa').textContent;
+check('sale power warns about Governor\'s Consent', /Governor.s Consent/.test(sellTxt));
+check('sale power cites Land Use Act s.22', /section 22 of the Land Use Act/.test(sellTxt));
+$(dom, 'poa_k8').checked = false;
+win.renderPoa();
+
+// the two load-bearing legal warnings must always be present
+const base = $(dom, 'preview-poa').textContent;
+check('registration warning cites Ojugbele v Olasoji (1982) SC 71', /Ojugbele v. Olasoji/.test(base) && /1982/.test(base));
+check('warning says unregistered POA is inadmissible', /inadmissible/.test(base));
+check('warning says Nigeria is not on the Hague Apostille Convention', /Hague Apostille Convention/.test(base));
+check('not-legal-advice disclaimer present', /not legal advice/i.test(base));
+
+// collect/apply round-trip
+const snap = win.collectPoa();
+check('collectPoa captures donor', snap.poa_donor === 'Chinedu Okafor');
+win.applyPoa(Object.assign({}, snap, { poa_donor: 'Amaka Balogun' }));
+check('applyPoa restores a saved draft', $(dom, 'poa_donor').value === 'Amaka Balogun');
+win.applyPoa(snap);
+
+// renderAll must not throw with the new tool in the chain
+let allOk = true; try { win.renderAll(); } catch (e) { allOk = false; }
+check('renderAll runs cleanly with the poa tool', allOk);
+check('no uncaught errors from the poa tool', dom.__errs().length === 0, dom.__errs().join(' | ').slice(0, 200));
+
 
 /* ============================ 2. NUMBER WORDS ============================ */
 section('naira amount-in-words (legal documents)');
@@ -160,7 +261,7 @@ check('nairaWords wraps amount + ₦ value', /^Two Thousand \(₦2,000\) Naira O
 check('nairaWords(1500000) has naira formatting', win.nairaWords(1500000).includes('₦1,500,000'));
 
 /* ============================ 3. ALL 9 TOOLS ============================ */
-section('all 9 document tools (fill → render → hostile input)');
+section('all 10 document tools (fill → render → hostile input)');
 const HOSTILE = '<img src=x onerror=window.__xss=1><script>window.__xss=1</script>"\'';
 const FIELDS = {
   agreement: ['ll_name', 'll_addr', 'll_phone', 'tt_name', 'tt_addr', 'tt_phone', 'prop_desc', 'prop_state', 'prop_addr', 'rent_amt', 'rent_period', 'deposit_amt', 'start_date', 'term_months', 'notice', 'prepared_by', 'custom_clauses'],
@@ -172,9 +273,10 @@ const FIELDS = {
   demand: ['d_from', 'd_addr', 'd_to', 'd_toaddr', 'd_date', 'd_amt', 'd_debt', 'd_due', 'd_days'],
   payslip: ['p_biz', 'p_addr', 'p_emp', 'p_role', 'p_id', 'p_period', 'p_date', 'p_basic', 'p_house', 'p_trans', 'p_other', 'p_paye', 'p_pen', 'p_nhf', 'p_ded', 'p_bank', 'p_acct', 'p_note'],
   warning: ['w_biz', 'w_addr', 'w_emp', 'w_role', 'w_date', 'w_count', 'w_incident', 'w_offence', 'w_prior', 'w_expect', 'w_deadline', 'w_signer'],
+  poa: ['poa_donor', 'poa_donor_addr', 'poa_donor_id', 'poa_donor_occ', 'poa_donee', 'poa_donee_addr', 'poa_donee_id', 'poa_rel', 'poa_prop', 'poa_purpose', 'poa_date', 'poa_expiry', 'poa_state', 'poa_witness'],
 };
-const RENDERERS = ['agreement', 'notice', 'receipt', 'invoice', 'employment', 'caution', 'demand', 'payslip', 'warning'];
-const PREVIEW = { agreement: 'preview-agreement', notice: 'preview-notice', receipt: 'preview-receipt', invoice: 'preview-invoice', employment: 'preview-employment', caution: 'preview-caution', demand: 'preview-demand', payslip: 'preview-payslip', warning: 'preview-warning' };
+const RENDERERS = ['agreement', 'notice', 'receipt', 'invoice', 'employment', 'caution', 'demand', 'payslip', 'warning', 'poa'];
+const PREVIEW = { agreement: 'preview-agreement', notice: 'preview-notice', receipt: 'preview-receipt', invoice: 'preview-invoice', employment: 'preview-employment', caution: 'preview-caution', demand: 'preview-demand', payslip: 'preview-payslip', warning: 'preview-warning', poa: 'preview-poa' };
 
 let fillOk = 0, missing = [];
 for (const t of RENDERERS) {
@@ -197,7 +299,7 @@ for (const t of RENDERERS) {
     else renderBad.push(t + '(len=' + html.length + ',live=' + live.length + ')');
   } catch (e) { renderBad.push(t + ' threw ' + e.message); }
 }
-check('all 9 tools render documents with hostile input inert', renderOk === 9, renderBad.join(' ; '));
+check('all 10 tools render documents with hostile input inert', renderOk === 10, renderBad.join(' ; '));
 check('XSS payload did not execute anywhere', !win.__xss);
 check('hostile text is escaped in output', $(dom, PREVIEW.agreement).innerHTML.includes('&lt;img') && !$(dom, PREVIEW.agreement).innerHTML.includes('<img'));
 
@@ -219,7 +321,7 @@ for (const t of RENDERERS) {
   win.document.body.classList.remove('printing');
   $(dom, 'print-root').innerHTML = '';
 }
-check('printCurrent works for all 9 tools (7-tool-map regression guard)', printOk === 9, 'failed: ' + printBad.join(','));
+check('printCurrent works for all 10 tools (7-tool-map regression guard)', printOk === 10, 'failed: ' + printBad.join(','));
 check('window.print() was called', (win.__printed || 0) > 0);
 
 /* ============================ 5. SHARE / WHATSAPP ============================ */
@@ -234,7 +336,7 @@ for (const t of RENDERERS) {
     else shareBad.push(t + '→' + url.slice(0, 40));
   } catch (e) { shareBad.push(t + ':' + e.message); }
 }
-check('shareDoc builds a WhatsApp link for all 9 tools', shareOk === 9, shareBad.join(' ; '));
+check('shareDoc builds a WhatsApp link for all 10 tools', shareOk === 10, shareBad.join(' ; '));
 
 /* ============================ 6. DOCUMENTS STORE ============================ */
 section('saved documents (My Documents)');

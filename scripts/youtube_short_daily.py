@@ -27,6 +27,9 @@ def main():
     outputs = {
         "video_path": str(video),
         "title": f"{script['title']} #Shorts",
+        # The rotation topic without the #Shorts suffix — this is what the
+        # publish ledger records, so the ledger reads as plain English.
+        "topic": script["title"],
         "description": (
             "Practical document-keeping tips for Nigerian tenants and landlords. "
             "General information only; rules vary by state and agreement. "

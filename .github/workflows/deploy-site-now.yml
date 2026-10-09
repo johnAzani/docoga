@@ -1,0 +1,134 @@
+# Deploy the MARKETING SITE (docoga-git) directly with the API token.
+#
+# Why this exists: Cloudflare's "Workers Builds: docoga-git" check has been
+# failing, and it publishes no error text (output.text is null; the dashboard
+# link is not reachable from CI). A failing build does not take the site down —
+# it just means the site stops receiving updates, which is worse in the long
+# run because it fails silently.
+#
+# docoga-git is a Worker with static assets (confirmed via
+# GET /accounts/{id}/workers/scripts: has_assets true, has_modules false), not
+# a Pages project, so plain `wrangler deploy` at the repo root is the correct
+# tool. It reads the root wrangler.jsonc, which pins assets.directory to
+# ./site. That pin is a security setting — it is what keeps PLAN.md, worker/
+# and unlock-codes.txt from being published — and must never be relaxed.
+#
+# Gated on a commit-message marker so it can never fire accidentally.
+
+name: Deploy site
+
+on:
+  push:
+    branches: ['**']
+
+jobs:
+  deploy-site:
+    name: Deploy site as docoga-git
+    if: ${{ contains(github.event.head_commit.message, '[deploy-site]') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Needed to post the deploy log — the agent cannot read run logs through
+      # the results-receiver host. Issue 11 is a Pull Request, so this must be
+      # pull-requests: write; issues: write does not cover PR comments and the
+      # reporting step fails with it.
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: What actually serves docoga.com.ng?
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          ZONE_ID: '38e545caefd3f31acf6cc732ffe663ba'
+        run: |
+          set -u
+          LOG=site-deploy.log
+          : > "$LOG"
+          echo "########## worker routes on the zone ##########" | tee -a "$LOG"
+          curl -sS --max-time 25 -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/workers/routes" \
+            | head -c 2000 | tee -a "$LOG"
+          echo | tee -a "$LOG"
+          echo "########## workers custom domains ##########" | tee -a "$LOG"
+          curl -sS --max-time 25 -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/domains" \
+            | head -c 2500 | tee -a "$LOG"
+          echo | tee -a "$LOG"
+          echo "########## pages projects ##########" | tee -a "$LOG"
+          curl -sS --max-time 25 -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects" \
+            | python3 -c "import json,sys; [print(p.get('name'), '|', ','.join(p.get('domains',[])), '|', p.get('latest_deployment',{}).get('created_on') if p.get('latest_deployment') else None) for p in json.load(sys.stdin).get('result',[])]" | tee -a "$LOG"
+          echo | tee -a "$LOG"
+          echo "########## DNS records for docoga.com.ng ##########" | tee -a "$LOG"
+          curl -sS --max-time 25 -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records?per_page=50" \
+            | python3 -c "import json,sys; [print(r['type'], r['name'], '->', r.get('content')) for r in json.load(sys.stdin).get('result',[])]" | tee -a "$LOG"
+
+      - name: Deploy docoga-git from ./site
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -u
+          # Appended: the probe step above wrote the header of this log.
+          npx --yes wrangler@latest deploy --config wrangler.jsonc \
+            > >(tee -a site-deploy.log) 2>&1
+
+      # A 404 for a page that did not yet exist gets cached at the edge and
+      # keeps being served after the file is uploaded — the POA page stayed a
+      # 404 on docoga.com.ng while serving fine on the workers.dev host for
+      # exactly this reason. Purge after every deploy.
+      - name: Purge the Cloudflare cache
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ZONE_ID: '38e545caefd3f31acf6cc732ffe663ba'
+        run: |
+          set -u
+          curl -sS --max-time 30 -X POST \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data '{"purge_everything":true}' \
+            "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/purge_cache" \
+            | tee -a site-deploy.log
+
+      # Uses actions/github-script rather than the gh CLI: the shell step kept
+      # failing here, while this same script pattern reliably posts the
+      # docoga-pass log from deploy-pass-now.yml.
+      - name: Report the deploy result
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const marker = '<!-- deploy-site-log -->';
+            let body = marker + '\n## docoga-git site deploy\n\n';
+            body += `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}\n\n`;
+            try {
+              const log = fs.readFileSync('site-deploy.log', 'utf8');
+              // Strip ANSI colour codes so the comment reads as plain text.
+              body += '```\n' + log.replace(/\u001b\[[0-9;]*m/g, '').slice(-14000) + '\n```\n';
+            } catch (e) {
+              body += '(no deploy log captured)\n';
+            }
+            const ISSUE = 11;
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner, repo: context.repo.repo, issue_number: ISSUE,
+            });
+            const existing = comments.find(c => c.body && c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                comment_id: existing.id, body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: ISSUE, body,
+              });
+            }

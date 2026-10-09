@@ -3,6 +3,53 @@
 
 ---
 
+## 🔴 RULE ZERO — RESEARCH BEFORE ACTION (LOCKED 8 Oct 2026 — NEVER IGNORE)
+
+**"I want you to always do a very very indepth research to the thinnest details
+first, before answering any question or doing anything. Lock it in."** — the user,
+stated twice in one session, so it is permanent.
+
+This outranks every other rule in this file. It is the user's explicit standing
+order, not a preference, and it applies to:
+
+1. **Every question**, however small. Do not answer from memory or from a
+   plausible-sounding pattern. Go and check.
+2. **Every change**, before a line of it is written. Measure or source the
+   current state first; then act.
+3. **Every plan** inherited from a previous session. Session 19 proved why:
+   the plan said "expand state pages 12 → 37". Researching first showed the 48
+   existing pages were 94.2% duplicates of each other and would have been
+   deindexed. **The research reversed the plan.** Had the plan been executed
+   first and researched second, it would have been the most damaging thing
+   available to do to this site.
+
+### What "to the thinnest details" means here, concretely
+
+- **Go to the primary source.** A state's own judiciary site or official laws
+  portal beats a blog, a law-firm explainer, and an academic footnote. In
+  session 19 this produced section-level text for Lagos (No. 14 of 2011),
+  Edo (Edict No. 4 of 1977), Cross River (Cap. R3) and Kwara (1995).
+- **Quote the section, not the summary.** "Six months" is a summary. "six (6)
+  months notice for a yearly tenant — s.13(1)(e)" is a detail.
+- **Tier every claim by confidence** (A: primary statute + sections; B: named
+  statute from practitioner/academic source; C: single source; D: verified
+  negative; E: nothing verified) and publish the tier, not just the claim.
+- **Record the disagreements.** Where sources conflict, say so and say which
+  is preferred and why. Do not silently pick one.
+- **Write down what you could NOT verify.** A dossier with 20 honest
+  "nothing found" entries is worth more than 37 confident guesses.
+- **Measure before building.** If the task is "add more X", measure the X that
+  already exists (`tools/audit_state_pages.py` exists for exactly this).
+
+### Operational consequence
+
+Research happens in the **same turn**, before the tool call that builds. If
+research is still incomplete, the correct output is "here is what I have
+verified so far, and here is what is still open" — not a confident answer
+filling the gaps with invention.
+
+---
+
 ## 🔴 CRITICAL INSTRUCTION (LOCKED — NEVER IGNORE)
 
 **This file is a LIVING DOCUMENT. It MUST be updated at the end of EVERY work session.**
@@ -14,8 +61,40 @@ Rules:
 4. **NEVER** say "let me check the repo" — you already know everything here.
 5. **ALWAYS** update the "Last Session" section, "What's Been Built" section, and "What's Next" section.
 6. **ALWAYS** commit the update: `git add docs/SESSION_CONTEXT.md && git commit -m "Update SESSION_CONTEXT.md — [summary]" && git push origin main`
+7. **FIRST, CHECK THE BRANCH IS WHERE YOU LEFT IT.** See the incident note below.
+   The sandbox can reset the local branch pointer to the base commit between
+   sessions while keeping the working tree. Recover with
+   `git fetch origin && git reset --mixed origin/<branch>` before doing anything
+   else — and never force-push to "fix" it.
 
 This ensures the next session feels like the same person continuing.
+
+---
+
+## 🚨 OPERATIONAL NOTE — 8 Oct 2026: the sandbox can reset the local branch
+
+Between turns the local branch pointer was rolled back from `ec97606` to the
+base commit `b84ecfb`. **The working tree kept every file**, so nothing was
+lost on disk, and **all commits were still on GitHub** — but the local branch
+looked like the session's work had never happened.
+
+**Do not "fix" this by force-pushing.** That would have destroyed the work.
+
+Recovery, in this order:
+
+```
+git fetch origin
+git reset --mixed origin/arena/b51ecc68-docoga   # HEAD + index; working tree untouched
+git status                                       # should be clean
+```
+
+`--soft` is not enough: it moves HEAD but leaves the index holding the old
+base state, which makes git report your new files as staged deletions. `--mixed`
+resets HEAD and index together and leaves the working tree alone, which is
+exactly right when the files on disk are the ones you want.
+
+**Verify before you act.** `git log --oneline -1` at the start of a turn is
+worth two seconds.
 
 ---
 
@@ -441,64 +520,92 @@ Documented in `docs/GROWTH_JOURNAL.md`. Key milestones:
 
 ## Last Session (LIVING — Update This Every Time)
 
-**Date:** 8 Oct 2026
+**Date:** 8 Oct 2026 (second session of the day)
+**Branch:** `arena/b51ecc68-docoga` (branched from `main` at `b84ecfb`)
 **What was done:**
-- **Found and fixed a locked-brand-rule violation that was about to ship.**
-  PR #8 (opened 7 Oct, *Automate scheduled YouTube Shorts generation and
-  publishing*) was built to render a Short and upload it **public**, unattended,
-  twice a week — and the frames it rendered had **the official logo composited
-  onto every slide**. That breaks the owner's 21 Sep 2026 direction
-  (`docs/DESIGN_SYSTEM.md` §1: *"the logo is NOT stamped on social posts"*) and
-  the explicit motion rule in this file: *"NEVER stamp the logo on reels or
-  videos. Logo goes on static images only. NEVER on video. PERMANENT RULE."*
-  The chip also physically **collided with the `DOCOGA.COM.NG` CTA bar** on
-  every slide. The Shorts pipeline has **never run** (0 runs in the workflow's
-  history), so nothing had ever been published this way — the defect was
-  caught before it could reach the channel, not after.
-- **Proved it by rendering the real thing, not by reading code.** Rendered the
-  8 Oct topic (`Keep a Rent Paper Trail`) to a real 1080×1920 H.264 MP4 and
-  inspected frames at 1s and 13s. The logo chip + CTA collision was visible in
-  both. Fix re-rendered; frames are clean.
-- **Fixed `scripts/generate_short_video.py`:** the logo compositor and its call
-  site are gone (`create_slide_image()` no longer takes a logo argument at all,
-  so the rule cannot be reintroduced by passing a different path). The
-  type block is now measured and centred as one unit above the CTA bar instead
-  of starting at a fixed y=600, which was the cause of the collision.
-- **Restored a brand element that was missing on video:** film grain, σ≈2.2 —
-  `BRAND_STYLE.md` §3 lists it as *always present* on every finished piece.
-  Implemented with pure PIL (`Image.effect_noise` + `ImageChops.add`) so the CI
-  test job stays dependency-light.
-- **Gave the rule teeth — 8 new regression tests** in
-  `tools/tests/test_youtube_short_generation.py`: the video module may not name
-  a logo file or call the compositor; no solid near-white block may appear above
-  the CTA bar; frames must be **byte-comparable when `brand/` is absent**;
-  grain must be present and on-strength; type must stay inside the safe area.
-  **Verified the detector actually fails on the regression** (re-pasted the old
-  chip geometry: clean frame = 0px solid run, chipped = 438px, threshold 150).
-  A test that cannot fail is not a test.
-- Also: `assets/videos/` is now gitignored (1–6 MB per render is build output,
-  not source) and `YOUTUBE_AUTOMATION.md` documents the locked brand rules.
-- **Merged PR #8's commits into this branch** so the fix ships with them — the
-  PR opened from this session is stacked on top of #8 (see What's Next for how
-  to merge the pair).
 
-**Verification (all green on the merged tree):** 12/12 Python automation tests,
-`qa.py` 🏆 (2 pre-existing warnings, 0 errors), `pre_push_verify.sh` ✅,
-`npm test` worker suite ✅, plus a real end-to-end render + frame inspection.
+**The armed pipeline had no memory and no alarm. It now has both.**
 
-**Shipped:** PR #9 merged to `main` as merge commit **`72ec955`**; PR #8
-auto-marked merged two seconds later (its head `42e4031` is now an ancestor of
-`main`). CI `Verify` green on the merge push. Verified the merged tree
-independently from a clean `origin/main` worktree, not just on the branch.
+Item 9 below says it plainly: from Friday 9 Oct the Shorts workflow renders and
+uploads **public, twice a week, with nobody watching**. Reading it end to end
+raised three questions the pipeline could not answer, and none of them was
+fixable by a human on the day:
 
-**What's next:** **YouTube is armed and fires Friday 9 Oct, 18:00 WAT** — read
-item 9 in What's Next before then. The owner's YouTube secrets are the only
-thing that decides whether that run publishes a Short or fails red.
+1. *If the run fails, who finds out?* Nobody. It was a red dot in a repo
+   nobody opens.
+2. *If a re-run, a GitHub retry or two dispatches land on the same day, what
+   stops a duplicate Short?* Nothing. The rotation is deterministic and
+   date-seeded, so the same topic would be rendered and uploaded again.
+3. *What did we actually publish?* Nothing in the repo said. You had to open
+   YouTube and read the channel.
 
-**Branch:** `arena/10e42594-docoga` (branched from `main` at `ec5b7a7`)
-**Last commit:** PR #8's `42e4031` (merged in) + this session's commit
+**What shipped:**
 
----
+- **`tools/youtube_ledger.py`** (new) — `logs/youtube_published.json`, a
+  publish ledger: title, topic, video id, URL, privacy, WAT date, run id, size.
+  Sub-commands `check` / `record` / `show`. stdlib only; a missing or corrupt
+  ledger never blocks publishing (a damaged file is backed up as
+  `.corrupt-<timestamp>`, not overwritten); newest first and capped at 200
+  entries so a file we push to twice a week cannot grow forever.
+- **Duplicate guard** in the workflow: `check` exits 3 inside a 7-day window.
+  Six topics x two runs a week means a title returns after ~3 weeks — that
+  repeat is intended and is *not* blocked; a same-day re-run is. A skipped run
+  is **green** with a notice. `force=true` overrides, deliberately.
+- **Preflight step** — the three secrets are checked in the first 30 seconds
+  and the error names the missing one. Previously the failure appeared after a
+  ten-minute render, from inside the uploader, without saying which secret.
+- **Failure visibility** — a failed run opens an issue labelled
+  `youtube-automation` (or comments on the one already open for that date)
+  with the run link and a 4-step triage list: secrets → revoked token →
+  YouTube audit → quota.
+- **Owner-side privacy switch** — repository **variable** `YT_PRIVACY`
+  (`unlisted`/`private`) changes every future run with no code change, for
+  anyone who wants to watch the first ones land before they go public. An
+  invalid value fails loudly rather than publishing at the wrong privacy.
+  Manual dispatch also takes `privacy` and `force`.
+- **Run summary** on every run — topic, title, privacy, result, link, size.
+- `tools/yt_publish.py` now prints `VIDEO_ID=<id>`, and the workflow refuses to
+  record a publish when that line is missing (an unverified ledger entry is
+  worse than a red run). `scripts/youtube_short_daily.py` gained a `topic`
+  output so the ledger reads as plain English.
+
+**Verification — the workflow was run, not just read.** The token cannot
+dispatch workflows (403), so the job was simulated on this machine: the real
+step scripts from the YAML, through `bash -e`, with the same `GITHUB_OUTPUT`
+plumbing, against a real git remote (the ledger commit is a real pull --rebase
++ push), a fake `gh`, and stubs only for ffmpeg and the YouTube network. The
+logic under test was never stubbed. **Nine scenarios:**
+
+| # | Scenario | Result |
+|---|---|---|
+| 1 | Happy path, empty ledger, secrets present | GREEN — published, recorded, ledger committed and pushed |
+| 2 | Secrets missing | FAILED at preflight, nothing rendered, issue opened |
+| 3 | Same title already in the ledger | GREEN, skipped with a notice, ledger untouched |
+| 4 | Duplicate + `force=true` | GREEN, published anyway, ledger 2 entries |
+| 5 | `YT_PRIVACY=unlisted` | `--privacy unlisted` reached the uploader |
+| 6 | Typo in `YT_PRIVACY` | FAILED at settings, nothing published |
+| 7 | Upload exits 0 but prints no `VIDEO_ID` | FAILED, **no** ledger entry recorded |
+| 8 | Upload rejected by YouTube | FAILED, no ledger entry, issue opened |
+| 9 | Second failure the same day | Commented on the open issue instead of opening a second |
+
+**One real bug was caught by simulating it, and it would have shipped.** The
+`force` path in the duplicate guard was written as
+`if code == 3 && FORCE != "true" { skip } elif code != 0 { exit code }`, so
+asking to force a re-publish took the `elif` and **exited 3 — failing the run
+instead of publishing**. Reading the YAML does not show this; only running it
+does. Fixed, and pinned by a regression test.
+
+**Tests:** 48 pass (was 30). New `tools/tests/test_youtube_ledger.py` (17) and
+`tools/tests/test_workflow_contract.py` (18), which statically checks every
+`steps.<id>.outputs.<key>` reference in every workflow points at a real,
+preceding step — an unknown id resolves to `""` at run time, which is the
+silent failure mode this repo keeps getting bitten by. `PyYAML` added to the
+CI test dependencies. `qa.py` 🏆 and `pre_push_verify.sh` ✅ green.
+
+**What's next:** the Friday 18:00 WAT run is still the open question, but it is
+now a *safe* one to let happen: a missing secret fails in 30 seconds with a
+named cause and an issue, and a successful publish is recorded in the repo. See
+item 9.
 
 ## How to Continue in a New Session
 
@@ -532,6 +639,15 @@ thing that decides whether that run publishes a Short or fails red.
 | 14 | 7 Oct 2026 | **PR #5 merged** — recovery landed on `main` (`bfa555b`); independently verified depth 138, zero files dropped, QA + integrity green, merge push CI green | `bfa555b` |
 | 15 | 7 Oct 2026 | Fixed `youtube_queue.yml`: empty queue now skips with a notice instead of failing red (mirrors the scheduler) | PR #6 |
 | 16 | 8 Oct 2026 | **Caught a locked-brand-rule violation before it shipped:** the new unattended Shorts pipeline stamped the official logo on every video frame (banned) and collided with the CTA bar. Removed the logo from video, rebuilt the layout, restored film grain σ≈2.2, added 8 regression tests and proved the detector fails on the regression | `945b28e` |
+| 21 | 8 Oct 2026 | **Kano and Anambra published — and Anambra turned out to be an error in our own research.** The Court of Appeal in *Amah v. Ozouli* [2010] NGCA 6 identifies the **Landlord and Tenant Law, Cap. 76, Laws of Anambra State** (ss.172–174: no possession order unless the court is satisfied **suitable alternative accommodation** is available, with a s.174 exception; s.144 channels to the Magistrate Court, limited by **s.272 of the 1999 Constitution**). We had recorded Anambra as "none in force, bill pending" — wrong. The judgment also resolves Enugu: **Cap. 101, Revised Laws of Enugu State, in operation 27 August 1991**. Kano: a second search pass found **no Nigerian authority at all**, so the verified negative stands — no rent-control statute, no standard rent, no identifiable tribunal, no advance-rent cap — with the Northern-Nigeria inheritance (Cap. 113 Vol. 3 vs Cap. 115, unresolved) published as labelled inference. Also fixed a bug where unverified states still asserted specific courts: the Ogun page said "Disputes go to the Magistrates' Courts in Ogun State" above its own tier-E disclaimer. **6 of 12 published states now verified; median similarity 50.6–53.9% (was 94.2%)** | PR #11 |
+| 22 | 8 Oct 2026 | **Full handover: owner gave me the whole app to run for revenue** (`docs/MANDATE.md`). Established the business baseline — and the big surprise is that **the app is already monetised and has already settled real money**. The worker at `https://docoga-pass.johnazani.workers.dev` takes payment and issues codes; `logs/2026-09-19-first-real-payment-webhook.json` is a real Flutterwave `charge.completed` — ₦100 charged, ₦2 fee, status `successful`, bank transfer, 19 Sep 2026. `worker/index.js` carries `PRICE_NGN = 2000`, routes `/issue`, `/flw-webhook`, `/verify`, `/activate`, plus Paystack and Selar fallbacks. **So the gap was never technology — it was leakage.** Only 2 of 59 pages could take money; all 48 state/SEO pages (the entire organic-traffic asset) had no buy button, no sticky bar and no link to pricing. Fixed: every generated page now carries a fixed bottom bar and an inline CTA to `#pricing`, print-hidden, footer padding 60→110px. **48/59 pages now carry a pay path.** Corrected two of my own earlier errors: the site is *not* JS-free (index.html has 9 working tools with `renderX()` handlers), and the state pages *do* deep-link into the app (`/#agreement`) — my first two greps measured the wrong strings. Documented the honest arithmetic in `docs/REVENUE.md`: net ₦1,960/pass means ₦1bn/month needs 510,204 passes/month ≈ 17,000 paying customers a day, which is **not reachable at ₦2,000** — it needs a different model, not more pages. Recommended: USD diaspora pricing (~15M abroad, $21.8bn remittances 2025 → ~15× revenue per customer) plus B2B. **Blocking unknown: traffic and conversion rate (GA `G-GO8VZB3R28`) — I cannot read it from the sandbox.** | pushed `43c7542` |
+| 23 | 8 Oct 2026 | **Built the document the diaspora actually buys.** Research first: a Power of Attorney is *"by far the most common use among diaspora Nigerians"* (legaldoc.ng), it is what a Nigerian lawyer needs to act for someone abroad (olamideoyetayolegal.com), registration alone runs **₦50,000** (nigisservices.com), and demand is fear-driven — the Guardian reported a UK-based Nigerian who sent money to build in Enugu and found the land did not exist. **DocOga had zero mentions of "power of attorney" anywhere in the site.** Shipped it as the **10th tool** (`9f41acd`): 8 tick-box powers (manage, let, collect rent, sue, register at Lands Registry, pay rates, operate account, sell), donor/donee/property/purpose/duration/governing-state fields, and a full Deed of Power of Attorney. Legal content is sourced, not invented: POA authorises *dealing with* property but does not transfer ownership; ticking "sell" surfaces **s.22 Land Use Act** (Governor's Consent) and warns an "irrevocable" POA is not a substitute for a deed; registration warning cites ***Ojugbele v. Olasoji* (1982) SC 71** (unregistered registrable POA is inadmissible); plus stamp duty, Notary Public attestation, and that Nigeria is **not** on the Hague Apostille Convention so consular legalisation — not apostille — is the route. Registered in all six maps (TITLES, RENDERERS, COLLECTORS, APPLIERS, PAGES, renderAll) plus nav, printCurrent, shareDoc, saveDoc. **Two guards earned their keep:** the DOM suite's "7-tool-map regression guard" caught that printCurrent kept a *duplicated* renderer map — replaced with `RENDERERS[type]()`, removing the duplication the guard exists to catch; and index.html crossed the 135KB size guard, so rather than raise a ceiling I had written deliberately ("Do NOT raise past 135k"), the 37 state `<option>` tags are now built from a JS array → **134,913 bytes**. Added 20 DOM assertions for the POA tool; tool guards 9→10, routes 12→13. **QA green, DOM suite 85 checks / 0 failed.** | pushed `9f41acd` |
+| 24 | 8 Oct 2026 | **Closed the last pay-path leaks and published the diaspora page.** Found two things the earlier pass missed. (1) **The seven national pages had no pay path at all** — `tenancy-agreement-nigeria`, `notice-to-quit-nigeria`, `tenant-rights-nigeria`, `caution-fee-nigeria`, `invoice-format-nigeria`, `rent-receipt-format-nigeria`, `shop-tenancy-agreement-nigeria`. These rank for the *head* terms and carry far more search volume than any state page, yet they had neither the sticky bar nor the pricing link the state pages got. Fixed: **coverage now 56/60 pages**, the four remaining being index (which *is* the app), privacy, terms and success — correctly excluded. (2) Those same pages listed "All DocOga tools" as **9** items, so the new POA tool was invisible site-wide. Added. Then published **`site/power-of-attorney-nigeria.html`** — the diaspora landing page. It was needed because the POA tool lives on a hash route (`#poa`) that search engines index poorly, so the highest-value product in the business had no page that could rank. Content is sourced with an explicit Sources-and-confidence box and a "what we could not confirm" list: POA is not a conveyance (needs a deed of assignment + Governor's Consent, **s.22 Land Use Act**); ***Ojugbele v. Olasoji* (1982) SC 71** (unregistered registrable POA inadmissible; Lagos Registrar requirement; irrevocable void unregistered); illiterate/blind grantor attestation; stamp duty before admissibility; **Nigeria is not a party to the Hague Apostille Convention** so consular legalisation (notary → MFA Abuja → embassy) is the only route; indicative costs (~₦50,000 registration) flagged as practitioner figures not statute; and diaspora fraud patterns (fake titles, double sales, land that does not exist, family who "help" until the money goes). FAQPage JSON-LD, canonical, sticky CTA, sitemap (59 URLs). **QA green 0 errors; DOM 85/85; worker suite green.** | pushed `41101d2` |
+| 25 | 8 Oct 2026 | **Business tier shipped; two live bugs on the money page fixed.** Asked "what next", I sequenced on one criterion — *least blocked*. SEO pays off in months and I still cannot forecast it without traffic data; the diaspora/USD play is gated on Flutterwave international approval. **B2B is blocked by nothing I don't control**: no new product needed (the 10 tools exist), no traffic needed (50 conversations beat 50,000 visitors), no international payments needed (businesses pay by transfer), and one estate agency is worth ~1,000× a ₦2,000 pass. There was no B2B entry point anywhere — no page, no link, no price. Added as a third pricing card with a WhatsApp quote link. **Deliberately not priced**: Rule Zero, I have no data that justifies a B2B number, so it says "Custom" and opens a conversation — inventing an anchor is worse than not having one. **Also fixed two live bugs on the page that takes money:** the pricing section told customers we had *fewer* tools than we ship — Free said "All four tools", Oga Pass said "All 9 tools", and **Power of Attorney was named on neither tier**. The conversion surface was underselling the product to everyone who reached it. **Page-weight guard now measures the right thing.** The old 60–135KB *raw* window was a proxy that punishes adding tools without tracking load time; its own comment invited this ("Do NOT raise past 135k without new gzip math"). New math: 135,856 raw → **38,217 gzipped (28.1%)** = 37.3KB over the wire, up from 33.3KB at the 9-tool baseline, ~7.5% of the 500KB Nigerian-mobile guidance. Now gates on gzip (48KB ceiling) with raw kept purely as a corruption tripwire; reasoning recorded in the comment. **12 new DOM tests** guard pricing as a revenue surface — 3 tiers, no stale tool-count copy, real RENDERERS count stated, POA named on the paid tier, Business link uses the configured number, buy button wired. Adding tool 11 without updating the copy now fails the suite. **QA green, DOM 97/97.** | pushed `c8b19c8` |
+| 26 | 9 Oct 2026 | **The payment worker is deployed and the site is live again. Both had been silently broken.** **docoga-pass:** `WORKER_URL` in `site/index.html` was never wrong — that worker simply did not exist. Getting it deployed took four API tokens. A token fingerprint (sha256[:16], logged from CI) proved which token was actually in the secret: attempt 2 changed it but perms were unchanged, attempt 3 changed nothing at all. `GET /zones` then handed over the token's own permission list, showing **zone/DNS permissions only** — no Workers, no KV — twice in a row. It succeeded on the fourth token with `Account → Workers Scripts → Write` and `Account → Workers KV Storage → Write`. Deployed: `https://docoga-pass.johnazani.workers.dev`, version `f6370c2d-853d`, KV `docoga-kv` bound, cron `0 7 * * *`. `/activate` and `/verify` both answer correctly where they previously 404'd. **Also fixed a latent deploy bug:** `wrangler deploy` run from `worker/` was picking up the *root* `wrangler.jsonc` and deploying to **docoga-git** (the site) instead of docoga-pass — plausibly how the payment worker got clobbered. Now passes `--config wrangler.toml` explicitly. **The site:** Workers Builds has been failing since session 25 with no error text, so the site silently stopped updating — sessions 24–25 were merged but never live. `docoga-git` is a **Worker with static assets**, not Pages, so `wrangler deploy` at the root works and the working token can run it: `deploy-site-now.yml` now does that, gated on `[deploy-site]`, and **Workers Builds is no longer a blocker**. `docoga.com.ng` is attached as a Workers custom domain pointing at docoga-git (no Worker routes; DNS holds only `AAAA -> 100::`, Cloudflare's placeholder for hostnames it answers itself). **The 404 that was really a cache:** after deploying, the POA page served fine on the workers.dev host but still 404'd on docoga.com.ng from the same worker — a 404 cached at the edge before the file existed. `purge_cache` fixed it instantly and is now a permanent deploy step. Verified live: the POA generator and all three pricing tiers including **Business (Custom, annual, per team)**. **Also fixed a CI regression I had introduced:** `QA + repo integrity` was failing. `test_title_carries_the_shorts_suffix_and_topic_does_not` asserted a hardcoded topic from a **date-seeded rotation** — a time bomb that broke on 9 Oct. Worse, its mock patched `generate_video`, but `youtube_short_daily.main()` **discards** that return value and uses `script["title"]`; production is identical because `generate_video` returns `script["title"]`, so the mock was decorative and the assertion only ever held by coincidence. The test now asserts the real contract date-independently and adds the "topic must not contain #Shorts" check its name promised. (The `09-10-2026` stderr line is a deliberate passing test, not a bug.) All 48 tests, pre_push_verify and qa.py green. **Still blocking revenue:** the fresh Worker has **zero secrets** — `FLW_CLIENT_ID`/`FLW_CLIENT_SECRET` (or `FLW_SECRET_KEY`), `ISSUE_SECRET`, and an email key — so `/issue` 401s and codes cannot be delivered. These are live payment credentials: they belong in the Cloudflare dashboard, never in chat or git. The offline batch is unaffected (hardcoded FNV-1a hashes, not ISSUE_SECRET). | pushed `28b9fd9` |
+| 20 | 8 Oct 2026 | **Rule Zero enforced on the build: the verified law is now wired into the pages.** `tools/state_law_data.py` (6 jurisdictions, 20 open questions) drives `tools/gen_state_pages.py`. Three live factual errors fixed: (1) the hard-coded notice table printed "Half-yearly — 3 months" on all 48 pages when that is Lagos s.13(1)(d) and essentially nowhere else — the FCT Act, Cross River s.15 and Kwara s.17 have no half-yearly tier; (2) the four Edo pages said "Magistrates' Courts in Edo State" and "recovery-of-premises legislation" when s.4 of the Edict establishes **Rent Tribunals** and s.41(2) repealed the Recovery of Premises Law for residential accommodation; (3) every page now carries a Sources-and-confidence box with its tier and a "What we could not confirm" list. Rivers added at tier B on the strength of Cap. 109 s.7 (quit notice must expire on the **eve of the anniversary**, the opposite of Lagos s.13(4)) and Landlord & Tenant Law Cap. 75 s.75(1) (rent payable **in arrears**) | PR #11 |
+| 19 | 8 Oct 2026 | **Research before building: measured the state pages and found they fail Google's doorway-page test — median 94.2% similarity between same-tool state pages, median 3 unique words each (worst pairs 99.6%).** So "expand 12 states to 37" was the wrong next move. Wrote `docs/STATE_TENANCY_RESEARCH.md`: verified statute names, sections and sources for 17 of 37 jurisdictions, tiered A-E, with everything unverified listed and three pending bills flagged as NOT law. Added `tools/audit_state_pages.py` to measure and later enforce (80% / 250 unique words / 500 body words) | PR #12 |
+| 18 | 8 Oct 2026 | **Gave the armed Shorts pipeline a memory and an alarm:** publish ledger (`tools/youtube_ledger.py`) + duplicate guard, a secrets preflight that names what is missing, a `YT_PRIVACY` repo-variable switch, a run summary, and a labelled issue opened on any failed run. Verified by simulating all nine scenarios locally (the token cannot dispatch), which caught a real bug: `force=true` exited 3 and failed the run instead of publishing. 48 tests green | PR #11 |
 | 17 | 8 Oct 2026 | Merged PR #9 to `main` (`72ec955`) — the pipeline plus the brand fix; PR #8 auto-merged. **This armed the YouTube scheduler: next public upload attempt Friday 9 Oct, 18:00 WAT, and the old empty-queue safety no longer applies** | `72ec955` |
 
 ---
@@ -588,8 +704,27 @@ thing that decides whether that run publishes a Short or fails red.
    workflows (`youtube_scheduled.yml`, `telegram_autopost.yml`) commit and push
    to `main` with `GITHUB_TOKEN`, and that rule would block every one of them.
 
-5. The Cloudflare Workers build fails on every non-`main` branch
+5. **The Cloudflare Workers build fails on every non-`main` branch**
    (pre-existing; it succeeds on `main`). PRs therefore get no Workers signal.
+
+   **Diagnosed 8 Oct 2026 — and the obvious theory was wrong.** Workers Builds
+   derives a preview URL from the branch name, so the `/` in
+   `arena/b51ecc68-docoga` was the prime suspect (a slash cannot appear in a
+   hostname). Tested against the check-runs API: `main` ✅ success,
+   `arena/b51ecc68-docoga` ❌, **`Zip` ❌ — and `Zip` has no slash.** So the
+   branch name is not the cause. What is left is the only remaining difference:
+   `main` is a *production* deployment, every other branch a *preview* one. The
+   deploy target is byte-identical in all three cases (`wrangler.jsonc`
+   publishes `./site`; no bindings, no secrets, no build command), so nothing in
+   the repo can make a preview deploy succeed — it is the account's preview
+   configuration.
+
+   **Owner fix, dashboard only:** Workers & Pages → `docoga-git` → Settings →
+   Builds → production branch `main`, and turn **off** non-production branch
+   builds. That is the right setting here anyway: every non-`main` branch is a
+   throwaway, there is one deployable target, and no preview URL is ever
+   shared. Full write-up in `GITHUB-CLOUDFLARE.md`. The failure is cosmetic —
+   `main` deploys fine and the repo's own `Verify` gate is authoritative.
 
 6. **Token limits worth knowing before the next session:** the agent's token
    cannot read or list secrets, cannot set branch protection, and cannot
@@ -647,6 +782,71 @@ thing that decides whether that run publishes a Short or fails red.
    **To hold it back** until you have watched one land: disable **YouTube
    Shorts Auto-Generate and Publish** in the Actions tab — no code change and
    no queue to clear — or ask for `--privacy unlisted` for the first few.
+
+   **Updated 8 Oct (second session) — the run is now safe either way.**
+   `youtube_scheduled.yml` gained: a preflight that names the missing secret
+   and stops before rendering; a duplicate guard backed by
+   `logs/youtube_published.json` so a re-run cannot publish the same Short
+   twice (a skip is green, and `force=true` overrides); a job summary; a
+   `YT_PRIVACY` repository variable for owner-side privacy control; and a
+   labelled issue opened (or commented on) whenever a run fails. A successful
+   publish is committed back to the repo, so the channel's history is readable
+   without opening YouTube. Full detail in `YOUTUBE_AUTOMATION.md`.
+
+10. **`tools/verify_live.py` cannot run from the sandbox** (unchanged): it
+    reaches `docoga.com.ng` over the network and fails with
+    `URLError: TLS/SSL connection has been closed (EOF)`. The 1 Oct question
+    (*is the live build the v2 pass model?*) is still unanswered and needs the
+    owner's machine.
+
+11. **State SEO pages stand at 12 of 37** (36 states + FCT), 48 pages — and
+    **they were measured before anything was added to them** (8 Oct 2026). The
+    result is in `docs/STATE_TENANCY_RESEARCH.md` §1: same-tool state pages are
+    a median of **94.2% identical**, with a median of **3 unique words** per
+    page; the worst pairs (Enugu/Oyo/Kano) are 99.6% identical. That is
+    Google's doorway-page pattern almost verbatim ("pages targeted at specific
+    regions or cities that funnel users to one page"), and the failure mode is
+    deindexing, not a ranking slip.
+
+    **So expanding to 37 is not the next step — earning the existing 48 is.**
+    Adding ~100 more pages like these would have been the single most damaging
+    thing available to do to the site's search traffic.
+
+    The research that replaces the guesswork is done (`STATE_TENANCY_RESEARCH.md`):
+    17 of 37 jurisdictions now have a named, sourced statute or an honest
+    negative finding (Lagos and Edo down to section level from primary state
+    sources; Cross River and Kwara from official state law portals; Rivers has
+    \*two\* statutes and its Landlord & Tenant Law Cap 75 s.75(1) makes rent
+    payable **in arrears** by default — the reverse of the national assumption).
+    Three pending bills must stay labelled as bills. One state we already
+    publish four pages for (Ogun) has nothing verifiable behind it.
+
+    `tools/audit_state_pages.py` measures it and will enforce it (≤80%
+    similarity, ≥250 unique words, ≥500 body words) — **deliberately not wired
+    into `qa.py` yet**, because a gate that fails all 48 pages gets deleted
+    rather than obeyed. It gets wired the moment the enrichment lands.
+
+    **Where it actually stands after session 20 — measured, not estimated:**
+
+    | pair type | similarity | vs target (≤80%) |
+    |---|---|---|
+    | both pages for a verified state | **44–46%** | inside |
+    | one verified, one not | 49–54% | inside |
+    | both pages for an unverified state | **93%** | outside |
+    | **overall median** | **53%** (was 94.2%) | — |
+
+    The method works. The doorway risk is now **co-located with the eight
+    states that have not been researched**: anambra, delta, enugu, kaduna,
+    kano, ogun, oyo, plateau. Two of them — **ogun and plateau** — have
+    nothing verified behind them at all and, per the publication rule in
+    `docs/STATE_TENANCY_RESEARCH.md` §10, arguably should not have four-tool
+    pages.
+
+    One target is still missed even by the verified pages: **unique words per
+    page runs 72–211 against a target of 250** (Lagos is highest at ~200).
+    Closing that needs more genuinely local content per state — courts, areas,
+    LGAs, zones, local practice — which means more research per state, not more
+    template.
 
 ---
 

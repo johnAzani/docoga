@@ -132,6 +132,10 @@ def main(argv=None):
         )
         return 1
 
+    # Machine-readable id for the scheduled workflow's publish ledger. The
+    # human line above stays first for anyone reading the run log.
+    print(f"VIDEO_ID={video_id}")
+
     return 0
 
 

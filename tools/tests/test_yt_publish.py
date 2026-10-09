@@ -4,7 +4,7 @@ import io
 import sys
 import tempfile
 import unittest
-from contextlib import redirect_stderr
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from unittest.mock import patch
 
@@ -36,10 +36,26 @@ class PublisherExitStatusTests(unittest.TestCase):
         upload.assert_called_once()
 
     def test_successful_upload_returns_zero(self):
+        out = io.StringIO()
         with patch.object(yt_publish, "upload_video", return_value="video123"):
-            exit_code = yt_publish.main(self._args())
+            with redirect_stdout(out):
+                exit_code = yt_publish.main(self._args())
 
         self.assertEqual(exit_code, 0)
+
+    def test_successful_upload_emits_a_machine_readable_video_id(self):
+        """The scheduled workflow greps this to record the publish in the ledger.
+
+        Without it a Short can go live with no id captured, so the ledger
+        entry — and the duplicate guard that depends on it — is lost.
+        """
+        out = io.StringIO()
+        with patch.object(yt_publish, "upload_video", return_value="video123"):
+            with redirect_stdout(out):
+                exit_code = yt_publish.main(self._args())
+
+        self.assertEqual(exit_code, 0)
+        self.assertIn("VIDEO_ID=video123", out.getvalue())
 
 
 if __name__ == "__main__":
