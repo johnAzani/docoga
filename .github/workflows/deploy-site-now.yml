@@ -80,6 +80,23 @@ jobs:
           npx --yes wrangler@latest deploy --config wrangler.jsonc \
             > >(tee -a site-deploy.log) 2>&1
 
+      # A 404 for a page that did not yet exist gets cached at the edge and
+      # keeps being served after the file is uploaded — the POA page stayed a
+      # 404 on docoga.com.ng while serving fine on the workers.dev host for
+      # exactly this reason. Purge after every deploy.
+      - name: Purge the Cloudflare cache
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ZONE_ID: '38e545caefd3f31acf6cc732ffe663ba'
+        run: |
+          set -u
+          curl -sS --max-time 30 -X POST \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data '{"purge_everything":true}' \
+            "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/purge_cache" \
+            | tee -a site-deploy.log
+
       # Uses actions/github-script rather than the gh CLI: the shell step kept
       # failing here, while this same script pattern reliably posts the
       # docoga-pass log from deploy-pass-now.yml.
