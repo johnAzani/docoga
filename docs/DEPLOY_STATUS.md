@@ -137,6 +137,27 @@ from GitHub Actions. Result per endpoint:
 Workers KV Storage:Edit. The KV permission is mandatory here — `worker/wrangler.toml`
 binds namespace `f3a5afebe7d04bb0a6018c0d7d355253`.
 
+### Proof, from 8 Oct 2026 (second token attempt)
+
+A second token was created and stored. Fingerprint changed
+(`e3d59debf81e1f1b` → `dc47a19ec3bd664a`), so the secret *was* replaced — but every
+Workers call failed identically. `GET /zones` then succeeded and returned the
+token's own permission set:
+
+```
+permissions: ["#zone_settings:edit","#zone_settings:read","#dns_records:read",
+              "#dns_records:edit","#page_shield:read","#ssl:read","#page_shield:edit",
+              "#zone:edit","#zone:read","#cache_purge:edit","#analytics:read"]
+```
+
+**Zone/DNS permissions only — nothing for Workers, KV or Pages.** That is the whole
+problem. Two tokens in a row were created from a zone-scoped template.
+
+Also confirmed correct, so stop re-checking these:
+- Account `276c50d7329e162bd36d1ef8eb3e7566` ("Azanijohn2017@gmail.com's Account")
+- Zone `docoga.com.ng` (`38e545caefd3f31acf6cc732ffe663ba`), status **active**,
+  on the Free plan, nameservers `beau.ns.cloudflare.com` / `elly.ns.cloudflare.com`
+
 Separate bug found and fixed in passing: `npx wrangler deploy` run from `worker/`
 was picking up the **root `wrangler.jsonc`** and targeting `docoga-git` instead of
 `worker/wrangler.toml` / `docoga-pass`. Fixed by passing `--config wrangler.toml`
