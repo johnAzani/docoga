@@ -435,3 +435,72 @@ tests), DOM suite 97/97, Python suite 52/52, `qa.py` 0 errors, `pre_push_verify.
 ✅. `RESEND_EMAIL_ENABLED` is not set anywhere in the repo; it can only be enabled as
 a Worker runtime variable in the dashboard. No deploy, resend, or payment was performed,
 and the owner-side gates above are unchanged.
+
+## 12. Owner-side checklist — researched 9 Oct 2026
+
+Everything below is sourced to the vendor's own documentation (fetched 9 Oct 2026).
+The agent cannot perform any of it from this session, and none of it has been done
+or verified by the agent.
+
+### 12.1 Brevo: authenticate `docoga.com.ng` (gates `RESEND_EMAIL_ENABLED`)
+
+1. Brevo → **Settings → Senders, Domains, IPs → Domains → Add a domain** → enter
+   `docoga.com.ng`. (Some accounts have a newer guided "Set up your domain" flow;
+   the manual route below works regardless.)
+2. Choose **manual** authentication ("Authenticate the domain yourself"). Automatic
+   setup will offer to **replace** an existing DMARC record — manual is the route
+   that preserves the current policy. [Brevo help, art. 12163873383186]
+3. Add exactly the records Brevo generates — typically **3–4**: **Brevo code (TXT)**,
+   **DKIM (1 TXT or 2 CNAME)**, **DMARC (TXT)**. Copy Brevo's names/values; do not
+   guess. [Brevo help]
+4. Keep **exactly one** DMARC record. Multiple DMARC records are a documented
+   Brevo failure mode. If Brevo's DMARC value differs from the existing policy,
+   preserve the existing policy first — Brevo's own troubleshooting frames the
+   requirement as detecting *a* DMARC policy. Only if Brevo still reports the
+   domain unauthenticated after the propagation window should the conflict be
+   escalated (owner decision, not agent).
+5. In Cloudflare, add the Brevo DKIM CNAMEs **DNS-only (grey cloud, not proxied)**
+   and turn **CNAME flattening off** — both zone-wide (zone DNS settings → "CNAME
+   flattening for all CNAME records") and per-record ("Flatten" off). A proxied
+   CNAME, zone-wide flattening, per-record flattening, or a stray NS record all
+   break CNAME verification. [Cloudflare DNS docs]
+6. Wait **up to 48 hours** for propagation and verification. Check public DNS with
+   Google Admin Toolbox Dig or MX Toolbox before expecting delivery. [Brevo
+   troubleshooting]
+7. Once the domain shows authenticated, confirm the **sender** — the exact
+   `MAIL_FROM` identity the Worker sends as — is present and compliant under
+   Brevo → Senders. A sender on an unauthenticated domain is rejected, and Brevo
+   auto-replaces unauthenticated sender domains with `@brevosend.com`; the
+   sender-invalid rejection already observed is consistent with this. [Brevo
+   troubleshooting]
+8. Only then may `RESEND_EMAIL_ENABLED` be set to exactly `true` as a Worker
+   runtime variable — in the intentional gated release, never before.
+
+### 12.2 Cloudflare Worker secrets + Flutterwave webhook hash (gates deploy)
+
+- Workers & Pages → `docoga-pass` → Settings → Variables and Secrets: confirm
+  `FLW_SECRET_KEY` (or `FLW_CLIENT_ID`/`FLW_CLIENT_SECRET`), `ISSUE_SECRET`,
+  `BREVO_API_KEY`, and `FLW_WEBHOOK_HASH` are present. Names only — never values in
+  chat, git, or logs.
+- Flutterwave dashboard → **Settings → Webhooks** → the **secret hash** field is
+  what the Worker's `FLW_WEBHOOK_HASH` must equal. **Live and test environments
+  have separate hashes** — the Worker needs the **live** one. [Flutterwave support,
+  "What is a Secret Hash?"]
+- The earlier deploy log exposed these values; the owner reports rotating them.
+  That rotation is **owner-reported and not independently verified**. Confirm the
+  Worker holds the *current* dashboard values — compare in the dashboards, do not
+  retype values into chat.
+
+### 12.3 GitHub Actions run `37890401771` — log cleanup
+
+- Best-effort deletion of the run and its logs (Actions → the run → delete run /
+  log-retention settings). The integration received 403 when attempting this; the
+  owner UI can do it. Until deletion is confirmed, treat the exposed values as
+  compromised and rely on the completed rotation.
+
+### 12.4 GA baseline (gates every revenue number)
+
+Pull from GA `G-GO8VZB3R28`: monthly sessions and users; top 10 landing pages by
+sessions; traffic sources; the pricing → Flutterwave redirect → success-page
+funnel; free→paid conversion rate; for a date range covering Sep–Oct 2026. The
+agent cannot read GA from the sandbox.

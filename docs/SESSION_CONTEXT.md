@@ -520,7 +520,41 @@ Documented in `docs/GROWTH_JOURNAL.md`. Key milestones:
 
 ## Last Session (LIVING — Update This Every Time)
 
-### Current session — 9 Oct 2026 (continuation)
+### Current session — 9 Oct 2026 (research: what next)
+
+**Branch:** `arena/47d148f1-docoga` @ `4257cdc` (pushed). Asked "research what next",
+so per Rule Zero the research happened first, in the same turn, before any answer.
+
+**Findings:**
+
+1. **The critical path is unchanged and owner-gated.** Nothing app-side can
+   substitute: run `37890401771` log cleanup; Worker secrets + **live** webhook-hash
+   confirmation (Flutterwave: Settings → Webhooks — live and test hashes differ);
+   Brevo domain authentication (manual route preserves the existing DMARC; 3–4
+   records; up to 48 h propagation; DKIM CNAMEs DNS-only with flattening off both
+   zone-wide and per-record; then confirm the sender); then the gated release —
+   Worker `[deploy-pass]` → site `[deploy-site]` → enable the flag → button → check
+   the new Brevo event. No payment anywhere in this path.
+2. **The unblocked revenue lane is B2B discovery.** Competitors price per document
+   (LawBridge ₦2–3k, LegalDoc from ₦5k, LawDepot ₦8.5k) or 10%-of-rent via
+   lawyers (₦90k–₦300k on a ₦1.8M rental); the ₦2,000/30-day pass undercuts both.
+   Targets: Lagos-first estate agencies/property managers (LASRERA/ESVARBON-regulated,
+   WhatsApp-native, ~95% penetration), landlord bodies (LTR Initiative, TRAs), then
+   HR-adjacent SMEs (FormWork ₦30k bundle proves document-bundle WTP). Local SaaS
+   anchors: Canva Pro ₦5,500/mo, HRPayHub ₦499/user/mo, LawBridge Pro ₦5,000/mo.
+   **No price published; Business stays Custom** — discovery produces the WTP
+   evidence first.
+3. **Diaspora USD stays gated.** Flutterwave international acceptance is an
+   account enablement; international settlement is T+5; USD settles to a corporate
+   domiciliary account ($1,000 minimum threshold); naira-card settlements stay in
+   naira. `$20` remains illustrative only.
+
+**Written down:** `docs/B2B_DISCOVERY.md` (segments, tiered pricing evidence,
+discovery question set, DRAFT WhatsApp outreach — not sent) and `DEPLOY_STATUS.md`
+§12 (owner-side checklist, sourced to vendor docs). QA + pre_push green. **No
+deploy, no resend, no payment.**
+
+### Previous session — 9 Oct 2026 (continuation)
 
 **Branch:** `arena/47d148f1-docoga` — this Arena session's fixed branch. The sandbox
 had reset the local pointer to the base commit `7ee8d79` (see the operational note
@@ -793,6 +827,12 @@ item 9.
    and buyer willingness-to-pay before selecting a price. The `$20` in
    `docs/REVENUE.md` remains an illustrative calculation only.
 7. **Read GA baseline** (`G-GO8VZB3R28`) in parallel; the agent cannot access it.
+   Exact pull list: `DEPLOY_STATUS.md` §12.4.
+8. **Owner-side checklist is written down and sourced** — `DEPLOY_STATUS.md` §12:
+   Brevo manual authentication (preserves the existing DMARC; 3–4 records; up to
+   48 h), Cloudflare DNS-only + flattening off for the DKIM CNAMEs, Flutterwave
+   secret hash (Settings → Webhooks; live and test differ), Worker secret names to
+   confirm, run `37890401771` log cleanup. Nothing app-side can substitute for these.
 
 ### Historical backlog
 
