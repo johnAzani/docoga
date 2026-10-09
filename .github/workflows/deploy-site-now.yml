@@ -28,9 +28,11 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      # Needed to post the deploy log as a PR comment — the agent cannot read
-      # run logs through the results-receiver host.
-      issues: write
+      # Needed to post the deploy log — the agent cannot read run logs through
+      # the results-receiver host. Issue 11 is a Pull Request, so this must be
+      # pull-requests: write; issues: write does not cover PR comments and the
+      # reporting step fails with it.
+      pull-requests: write
 
     steps:
       - uses: actions/checkout@v4
