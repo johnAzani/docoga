@@ -55,10 +55,15 @@ jobs:
             "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/workers/routes" \
             | head -c 2000 | tee -a "$LOG"
           echo | tee -a "$LOG"
+          echo "########## workers custom domains ##########" | tee -a "$LOG"
+          curl -sS --max-time 25 -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/domains" \
+            | head -c 2500 | tee -a "$LOG"
+          echo | tee -a "$LOG"
           echo "########## pages projects ##########" | tee -a "$LOG"
           curl -sS --max-time 25 -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects?per_page=50" \
-            | head -c 2500 | tee -a "$LOG"
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects" \
+            | python3 -c "import json,sys; [print(p.get('name'), '|', ','.join(p.get('domains',[])), '|', p.get('latest_deployment',{}).get('created_on') if p.get('latest_deployment') else None) for p in json.load(sys.stdin).get('result',[])]" | tee -a "$LOG"
           echo | tee -a "$LOG"
           echo "########## DNS records for docoga.com.ng ##########" | tee -a "$LOG"
           curl -sS --max-time 25 -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
