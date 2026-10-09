@@ -1,10 +1,10 @@
 # Deploy the MARKETING SITE (docoga-git) directly with the API token.
 #
 # Why this exists: Cloudflare's "Workers Builds: docoga-git" check has been
-# failing since session 25, and it publishes no error text (output.text is
-# null; the dashboard link is not reachable from CI). A failing build does not
-# take the site down — it just means the site stops receiving updates, which is
-# worse in the long run because it fails silently.
+# failing, and it publishes no error text (output.text is null; the dashboard
+# link is not reachable from CI). A failing build does not take the site down —
+# it just means the site stops receiving updates, which is worse in the long
+# run because it fails silently.
 #
 # docoga-git is a Worker with static assets (confirmed via
 # GET /accounts/{id}/workers/scripts: has_assets true, has_modules false), not
@@ -39,43 +39,47 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Deploy docoga-git from ./site
+      # Deploy and report in ONE step: passing a temp path between steps via
+      # GITHUB_ENV proved unreliable, and collapsing it removes that variable.
+      - name: Deploy docoga-git from ./site and report
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          DEPLOY_LOG: ${{ runner.temp }}/site-deploy.log
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -u
+          LOG=site-deploy.log
+          : > "$LOG"
+
           # Explicit config: without it wrangler can pick up a neighbouring
           # config and deploy the wrong project.
+          set +e
           npx --yes wrangler@latest deploy --config wrangler.jsonc \
-            > >(tee -a "$DEPLOY_LOG") 2>&1
-          echo "deploy_exit=$?" | tee -a "$DEPLOY_LOG"
-          echo "DEPLOY_LOG=$DEPLOY_LOG" >> "$GITHUB_ENV"
+            > >(tee -a "$LOG") 2>&1
+          DEXIT=$?
+          set -e
+          echo "deploy_exit=$DEXIT" | tee -a "$LOG"
 
-      # gh run view --log cannot reach the results-receiver host from this
-      # sandbox, so post the output where it can be read via the issues API.
-      - name: Report the deploy result
-        if: always()
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DEPLOY_LOG: ${{ env.DEPLOY_LOG }}
-        run: |
-          set -u
           {
             echo '<!-- deploy-site-log -->'
             echo '## docoga-git site deploy'
             echo
             echo "Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
             echo '```'
-            sed -e 's/\x1b\[[0-9;]*m//g' "$DEPLOY_LOG" 2>/dev/null | tail -40 || echo "(no log)"
+            sed -e 's/\x1b\[[0-9;]*m//g' "$LOG" | tail -40
             echo '```'
-          } > /tmp/site-report.md
-          BODY=$(cat /tmp/site-report.md)
+          } > site-report.md
+
           CID=$(gh api "repos/$GITHUB_REPOSITORY/issues/11/comments" \
-                  --jq '.[]|select(.body|startswith("<!-- deploy-site-log -->"))|.id' | head -1)
+                  --jq '.[]|select(.body|startswith("<!-- deploy-site-log -->"))|.id' \
+                  | head -1)
+          # -f body=@file reads the file as a form value; --input would be
+          # parsed as a JSON request body, which is not what this endpoint wants.
           if [ -n "${CID:-}" ]; then
-            gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$CID" -f body="$BODY" > /dev/null
+            gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$CID" \
+              -f body=@site-report.md > /dev/null
           else
-            gh api -X POST "repos/$GITHUB_REPOSITORY/issues/11/comments" -f body="$BODY" > /dev/null
+            gh api -X POST "repos/$GITHUB_REPOSITORY/issues/11/comments" \
+              -f body=@site-report.md > /dev/null
           fi
+          echo "posted report (existing comment id: ${CID:-none})"
