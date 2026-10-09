@@ -349,7 +349,8 @@ All in `tools/`. Key tools:
 
 ## Documentation Suite (16 Documents)
 
-All in `docs/`. All committed to `main`.
+All in `docs/`. Historical documents are on `main`; new session research and
+click guides are on the Arena branch until explicitly released.
 
 | # | Document | Purpose |
 |---|----------|---------|
@@ -370,6 +371,8 @@ All in `docs/`. All committed to `main`.
 | 14 | `QA_PROTOCOL.md` | QA rules |
 | 15 | `TOOLS_MANIFEST.md` | Tool documentation |
 | 16 | `EPISODE_BLUEPRINT.md` | Episode template |
+| 17 | `B2B_DISCOVERY.md` | Discovery research; pricing/claims require buyer and primary-source validation |
+| 18 | `OWNER_CLICK_GUIDE.md` | Official-source click paths, safety checkpoints and account gates |
 
 ---
 
@@ -520,7 +523,52 @@ Documented in `docs/GROWTH_JOURNAL.md`. Key milestones:
 
 ## Last Session (LIVING — Update This Every Time)
 
-### Current session — 9 Oct 2026 (research: what next)
+### Current session — 9 Oct 2026 (owner click-by-click guide)
+
+**Branch:** `arena/47d148f1-docoga`; recovered the local base pointer to the
+measured remote head `fca8025` using `git reset --mixed` (working files retained;
+no branch switch or force-push). Older branch remains `5cc840e`.
+
+**Built:** `docs/OWNER_CLICK_GUIDE.md`, researched from official GitHub, Brevo,
+Cloudflare, Flutterwave and Google docs. Includes direct links, classic/new Brevo
+UI branches, field mapping, expected results, and explicit STOP points. It covers
+best-effort log deletion, read-only production Secret-name/type inspection, LIVE
+webhook setup confirmation, account-generated Brevo DNS records, DNS-only DKIM,
+single preserved DMARC, sender verification, private recipient comparison, then
+only a later intentional Worker-first/site-second release and ONE existing-pass
+resend. No account/DNS changes were performed or independently verified.
+
+**Corrections from deeper research:** Cloudflare Secret edits use a Deploy button
+that applies production changes; do not re-enter rotated credentials needlessly
+or treat presence as proof of correctness. Do not change ISSUE_SECRET without
+updating its bridge. Flattening returns IP addresses instead of the CNAME, NOT a
+TXT record (Cloudflare's authoritative description corrects the Brevo article's
+wording). Paid flattening controls may be absent on Free; no upgrade. Preserve
+existing DMARC policy and reporting destination, avoid duplicate rua tags/records,
+and use account-generated instructions, not a generic example. Delivered means
+recipient-server handoff, not guaranteed inbox delivery; Error has multiple causes.
+
+**App-side observations to resolve before release:** the Worker deploy workflow
+logs DEXIT but does not exit with it, so a green run can hide deploy failure;
+its manual dry_run input does not suppress the deploy step. Do not dispatch or
+re-run it; fix/test those contracts locally before gated release. `success.html`
+has NO GA tag or verified-purchase event. Pages and screens is NOT the landing
+page report; success URL visits are not payment proof. A previously suggested
+GA click-to-success conversion funnel cannot currently be measured accurately.
+Proper privacy-safe verified-payment analytics is a follow-up, not historical data.
+Reopening success.html calls /verify and may issue/mail for an unknown verified
+purchase; it is not a harmless pre-gate inspection. KV throttling is not atomic
+against simultaneous requests; stop after one intentional resend.
+
+**Checks:** `qa.py` green, 0 errors/1 environment warning (no local secret
+file, scan skipped); worker + DOM suites pass through QA. Integrity check passes.
+No claim of production secrets or sender/DNS validation.
+
+**Status:** documentation changes only; no deploy, resend, payment, credential
+change, DNS change, pass-link/price change, or recipient/pass-code recording.
+Account gates remain unconfirmed; report statuses only.
+
+### Previous session — 9 Oct 2026 (research: what next)
 
 **Branch:** `arena/47d148f1-docoga` @ `4257cdc` (pushed). Asked "research what next",
 so per Rule Zero the research happened first, in the same turn, before any answer.
@@ -782,6 +830,8 @@ item 9.
 | 30 | 9 Oct 2026 | Owner confirmed the earlier 11-day pass chip was in the purchase browser; found `syncPass()` kept an invalid cached code visible. Site now clears cached state on explicit Worker `invalid code` or `expired`; this does not restore days and awaits a safe site deploy. | `805f8a4` |
 | 31 | 9 Oct 2026 | Brevo event confirms sender rejection for the default `noreply@docoga.com.ng` identity (0% delivered); added a fail-closed, rate-limited, no-charge resend endpoint/button for the existing active pass plus tests. Sender authentication and security gates remain before enable/deploy. | `2cbda5f` |
 | 32 | 9 Oct 2026 | **Continuation on the Arena-fixed branch `arena/47d148f1-docoga`:** recovered the reset local pointer by fast-forward to `5cc840e` (the full `arena/b9e4e9d2-docoga` work; old remote branch untouched; no branch switch, no force-push). Re-verified app-side: `c5283e1` absent (`git cat-file`); §11 deployment gate present at head; resend contract confirmed in code + tests (fail-closed unless `RESEND_EMAIL_ENABLED` is exactly `true`, stored-email-only, follows renewals to the newest active code, never returns the code, 60s + 3-per-UTC-day per-pass throttle shared across aliases); the flag is not set anywhere in the repo; the success-page button posts references only; the cache-clear fix is in place. All gates re-run green locally: worker suite (incl. 6 resend tests), DOM 97/97, Python 52/52, qa.py 0 errors, pre_push_verify ✅; CI at `5cc840e`: Verify + build check ✅, both deploys skipped. **No deploy, no resend, no payment, no change to the pass link or price.** Owner-side gates unchanged: run `37890401771` log cleanup, Worker secrets + webhook-hash confirmation, Brevo sender/domain authentication (DNS-only, CNAME flattening off, preserve the single DMARC record). | pushed `arena/47d148f1-docoga` |
+| 33 | 9 Oct 2026 | Historical research summary is in Last Session and `B2B_DISCOVERY.md` at `fca8025`; a prior reply reported this table row but it was absent at the measured remote head. Recorded here without inventing a missing commit. Competitor/vendor claims remain listed prices or hypotheses, not validated DocOga buyer willingness to pay; Business remains Custom. | `fca8025` |
+| 34 | 9 Oct 2026 | Official-source click guide with classic/new Brevo UI, private Secret inspection, live webhook confirmation, DNS-only DKIM, single preserved DMARC, sender/recipient checks, best-effort log cleanup and STOP-before-release. Corrected flattening semantics, needless Secret overwrites, unsafe ISSUE_SECRET change, green-run/dry_run deploy assumptions, and unmeasurable GA success funnel. No deploy/resend/payment/account action. | session branch |
 | 20 | 8 Oct 2026 | **Rule Zero enforced on the build: the verified law is now wired into the pages.** `tools/state_law_data.py` (6 jurisdictions, 20 open questions) drives `tools/gen_state_pages.py`. Three live factual errors fixed: (1) the hard-coded notice table printed "Half-yearly — 3 months" on all 48 pages when that is Lagos s.13(1)(d) and essentially nowhere else — the FCT Act, Cross River s.15 and Kwara s.17 have no half-yearly tier; (2) the four Edo pages said "Magistrates' Courts in Edo State" and "recovery-of-premises legislation" when s.4 of the Edict establishes **Rent Tribunals** and s.41(2) repealed the Recovery of Premises Law for residential accommodation; (3) every page now carries a Sources-and-confidence box with its tier and a "What we could not confirm" list. Rivers added at tier B on the strength of Cap. 109 s.7 (quit notice must expire on the **eve of the anniversary**, the opposite of Lagos s.13(4)) and Landlord & Tenant Law Cap. 75 s.75(1) (rent payable **in arrears**) | PR #11 |
 | 19 | 8 Oct 2026 | **Research before building: measured the state pages and found they fail Google's doorway-page test — median 94.2% similarity between same-tool state pages, median 3 unique words each (worst pairs 99.6%).** So "expand 12 states to 37" was the wrong next move. Wrote `docs/STATE_TENANCY_RESEARCH.md`: verified statute names, sections and sources for 17 of 37 jurisdictions, tiered A-E, with everything unverified listed and three pending bills flagged as NOT law. Added `tools/audit_state_pages.py` to measure and later enforce (80% / 250 unique words / 500 body words) | PR #12 |
 | 18 | 8 Oct 2026 | **Gave the armed Shorts pipeline a memory and an alarm:** publish ledger (`tools/youtube_ledger.py`) + duplicate guard, a secrets preflight that names what is missing, a `YT_PRIVACY` repo-variable switch, a run summary, and a labelled issue opened on any failed run. Verified by simulating all nine scenarios locally (the token cannot dispatch), which caught a real bug: `force=true` exited 3 and failed the run instead of publishing. 48 tests green | PR #11 |
@@ -822,17 +872,22 @@ item 9.
    cannot restore days; do not repurchase.
 5. **B2B discovery/outreach.** The Business tier is live and deliberately unpriced.
    Collect requirements and willingness-to-pay evidence; do not invent or publish a
-   number.
+   number. Research kit: `docs/B2B_DISCOVERY.md`; vendor prices are not buyer WTP.
 6. **Diaspora USD pricing.** Research Flutterwave international approval, settlement
    and buyer willingness-to-pay before selecting a price. The `$20` in
    `docs/REVENUE.md` remains an illustrative calculation only.
 7. **Read GA baseline** (`G-GO8VZB3R28`) in parallel; the agent cannot access it.
-   Exact pull list: `DEPLOY_STATUS.md` §12.4.
+   Corrected pull list: `OWNER_CLICK_GUIDE.md` (Parallel). No success-page GA tag
+   or verified-purchase event exists; do not report a conversion funnel as measurable.
 8. **Owner-side checklist is written down and sourced** — `DEPLOY_STATUS.md` §12:
    Brevo manual authentication (preserves the existing DMARC; 3–4 records; up to
    48 h), Cloudflare DNS-only + flattening off for the DKIM CNAMEs, Flutterwave
    secret hash (Settings → Webhooks; live and test differ), Worker secret names to
    confirm, run `37890401771` log cleanup. Nothing app-side can substitute for these.
+
+9. **Use `OWNER_CLICK_GUIDE.md` for the precise clicks and STOP points.** No
+   unnecessary Secret re-entry or Deploy during inspection; fix/test Worker workflow
+   exit-code and dry_run contracts locally before release. Account gates remain.
 
 ### Historical backlog
 

@@ -469,10 +469,9 @@ or verified by the agent.
    troubleshooting]
 7. Once the domain shows authenticated, confirm the **sender** — the exact
    `MAIL_FROM` identity the Worker sends as — is present and compliant under
-   Brevo → Senders. A sender on an unauthenticated domain is rejected, and Brevo
-   auto-replaces unauthenticated sender domains with `@brevosend.com`; the
-   sender-invalid rejection already observed is consistent with this. [Brevo
-   troubleshooting]
+   Brevo → Senders. Unauthenticated/unverified senders may be rejected or Brevo
+   may substitute a sender domain; neither behavior proves inbox delivery. The
+   observed event specifically reported sender-invalid. [Brevo troubleshooting]
 8. Only then may `RESEND_EMAIL_ENABLED` be set to exactly `true` as a Worker
    runtime variable — in the intentional gated release, never before.
 
@@ -488,19 +487,38 @@ or verified by the agent.
   "What is a Secret Hash?"]
 - The earlier deploy log exposed these values; the owner reports rotating them.
   That rotation is **owner-reported and not independently verified**. Confirm the
-  Worker holds the *current* dashboard values — compare in the dashboards, do not
-  retype values into chat.
+  Worker holds the *current* dashboard values based on completed setup. Saved
+  Secrets are hidden, so presence alone is not correctness proof; do not overwrite
+  rotated credentials needlessly. Secret edits use Deploy and are production
+  changes. Never retype values into chat.
 
 ### 12.3 GitHub Actions run `37890401771` — log cleanup
 
 - Best-effort deletion of the run and its logs (Actions → the run → delete run /
-  log-retention settings). The integration received 403 when attempting this; the
-  owner UI can do it. Until deletion is confirmed, treat the exposed values as
-  compromised and rely on the completed rotation.
+  **⋯ → Delete all logs**). The integration received 403 when attempting this;
+  owner-side write permissions are required. Report success or best-effort failure
+  honestly. Deletion is not credential revocation; the rotation remains owner-
+  reported, not independently verified.
 
-### 12.4 GA baseline (gates every revenue number)
+### 12.4 GA baseline (corrected after code inspection)
 
-Pull from GA `G-GO8VZB3R28`: monthly sessions and users; top 10 landing pages by
-sessions; traffic sources; the pricing → Flutterwave redirect → success-page
-funnel; free→paid conversion rate; for a date range covering Sep–Oct 2026. The
-agent cannot read GA from the sandbox.
+Pull sessions/users, channels and **Engagement → Landing page** by sessions from
+GA `G-GO8VZB3R28`. Pages and screens reports views, not entry pages. The repo has
+homepage analytics but NO GA tag or verified-payment event in success.html.
+Success-page visits would not prove payment even if tagged. Do not call a proposed
+pricing/click/success funnel or views/sessions a measured purchase conversion rate.
+Proper privacy-safe verified-payment tracking is an app-side follow-up.
+
+### 12.5 Exact owner clicks and pre-release caveats
+
+See `docs/OWNER_CLICK_GUIDE.md` for researched direct links, classic/new Brevo UI,
+field mapping, Free-plan flattening controls, single preserved DMARC/reporting tags,
+private recipient comparison, and STOP-before-release checkpoints. Cloudflare
+flattening returns IP addresses instead of the CNAME; it does NOT convert to TXT.
+Do not use a generic DMARC reporting value in place of account instructions.
+
+Code inspection found that deploy-pass-now.yml records but does not propagate a
+nonzero DEXIT, and its manual dry_run input does not prevent deployment. A green
+historical workflow result is not sufficient deploy proof. Repair/test these
+contracts locally before any marker-gated release. Do not dispatch/re-run workflows
+or use dashboard Deploy as a read-only inspection. Owner gates still apply.
