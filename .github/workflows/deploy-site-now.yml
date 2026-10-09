@@ -28,6 +28,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      # Needed to post the deploy log as a PR comment — the agent cannot read
+      # run logs through the results-receiver host.
+      issues: write
 
     steps:
       - uses: actions/checkout@v4
