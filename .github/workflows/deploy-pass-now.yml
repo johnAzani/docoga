@@ -70,6 +70,11 @@ jobs:
             https://api.cloudflare.com/client/v4/user/tokens/verify \
             | head -c 2000 | tee -a "$DEPLOY_LOG"
           echo | tee -a "$DEPLOY_LOG"
+          echo "########## token fingerprint (sha256, first 16) ##########" | tee -a "$DEPLOY_LOG"
+          # A hash reveals nothing about the token but tells us WHICH token is
+          # in the secret — so we can tell whether the secret was replaced.
+          printf '%s' "$CF_TOKEN" | sha256sum | cut -c1-16 | tee -a "$DEPLOY_LOG"
+          echo | tee -a "$DEPLOY_LOG"
           echo "########## accounts this token can see ##########" | tee -a "$DEPLOY_LOG"
           curl -sS --max-time 25 \
             -H "Authorization: Bearer $CF_TOKEN" \
