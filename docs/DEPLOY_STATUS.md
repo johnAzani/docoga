@@ -270,10 +270,14 @@ proof of inbox placement, and the log details supplied so far do not show the
 recipient or final delivery/bounce event. Do not repeat the purchase. Check the
 Brevo recipient and event timeline; check spam/quarantine if Brevo records delivery.
 
-The pass chip showed 30 days after purchase. If the earlier 11-day pass was in
-the same browser profile, expected carry-over should be investigated; it may have
-been stale, offline, or from a different profile. No pass code, recipient address,
-or transaction identifier is recorded here.
+The pass chip showed 30 days after purchase. The owner confirms the earlier
+11-day chip was in the same browser. The top-up path should carry remaining days
+when the Worker recognizes the previous code. Code inspection found the site kept
+a cached pass displayed if `/activate` explicitly returned `invalid code` (it only
+cleared on `expired`); the site now clears cache on either definitive response.
+This makes a stale 11-day badge a plausible explanation, but does not prove it was
+the cause or restore any lost days. The client-side fix needs a future site deploy.
+No pass code, recipient address, or transaction identifier is recorded here.
 
 A qualifying webhook still requires a matching `verif-hash` (or valid v4 HMAC),
 `charge.completed`, a successful/succeeded status, `NGN`, and amount ≥ ₦2,000. An

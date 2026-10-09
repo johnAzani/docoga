@@ -110,6 +110,13 @@ class DeployLogRedactionTests(unittest.TestCase):
         self.assertEqual(result.stdout.count(opaque_hash), 1)
 
 
+class PassCacheContractTests(unittest.TestCase):
+    def test_server_rejection_clears_a_cached_pass(self):
+        source = (ROOT / "site" / "index.html").read_text(encoding="utf-8")
+        self.assertIn("/(expired|invalid code)/i.test(j.error)", source)
+        self.assertIn("store.removeItem('docoga_pass'); pass=null;", source)
+
+
 @unittest.skipIf(yaml is None, "PyYAML is required for the workflow contract tests")
 class CloudflareDeploySafetyTests(unittest.TestCase):
     def test_worker_deploy_preserves_vars_and_sanitizes_raw_wrangler_output(self):

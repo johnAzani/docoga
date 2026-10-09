@@ -543,16 +543,22 @@ and the browser success page auto-activated it for 30 days. The Worker root late
 showed `lastWebhookMinutesAgo: 6`, supporting a recent signature-validated webhook
 but not identifying this transaction by itself. Brevo showed a transactional
 message as `Sent`, while the buyer did not receive it. Email inbox delivery is
-unresolved; do not make another purchase to investigate. The earlier `11d` pass
-was not carried into the displayed 30 days if it was the same browser; confirm
-whether it was the same browser profile before concluding rollover failed.
+unresolved; do not make another purchase to investigate. The owner confirms the
+earlier `11d` chip was in the same browser. The top-up path should carry remaining
+days when the Worker recognizes the previous code. Code review found `syncPass()`
+left a cached pass visible when `/activate` explicitly returned `invalid code` (it
+only cleared on `expired`); the site now clears local state on either definitive
+response. Stale cache is a plausible, unconfirmed explanation; this does not
+restore any days, and the client fix needs a future site deploy.
 
-**Code-side diagnostic fix in progress:** Worker mail providers' HTTP response
-status is now checked; safe logs report provider/status only and never recipient,
-pass code, response body, or secret. Tests cover Brevo HTTP rejection without
-blocking code issuance. This needs a future hardened deploy to affect production;
-it cannot retrieve or resend the already-sent email. No pass code, recipient
-address, or transaction identifier is stored in this handover.
+**Code-side fixes in progress:** Worker mail providers' HTTP response status is
+now checked; safe logs report provider/status only and never recipient, pass code,
+response body, or secret. Tests cover Brevo HTTP rejection without blocking code
+issuance. `site/index.html` now clears a cached pass when `/activate` explicitly
+returns `invalid code` or `expired`; this prevents an unverified local pass from
+remaining displayed. Both changes need future hardened deploys to affect production.
+The mail diagnostic cannot retrieve or resend the already-sent email. No pass code,
+recipient address, or transaction identifier is stored in this handover.
 
 ### Previous session — 8 Oct 2026
 
@@ -707,10 +713,11 @@ item 9.
    the old Actions log deletion and confirms the rotated secrets are in Production,
    deploy through the hardened marker-gated Worker workflow; no further payment is
    needed for this diagnostic release.
-3. **Check the earlier 11-day pass rollover.** If it was active in the same browser
-   profile used for the purchase, confirm why the new display is 30 days rather than
-   the expected remaining days plus 30. Do not repurchase; retain the receipt and
-   browser state while investigating.
+3. **Investigate the 11-day rollover without charging again.** Same browser is
+   confirmed. The Worker should add the previous pass's remaining days only if that
+   old code exists and is valid in KV; the prior local chip could have been stale.
+   The client now clears explicit invalid/expired cached codes, pending a site deploy.
+   Do not repurchase; recover remaining time only if the server record confirms it.
 4. **B2B discovery/outreach.** The Business tier is live and deliberately unpriced.
    Collect requirements and willingness-to-pay evidence; do not invent or publish a
    number.

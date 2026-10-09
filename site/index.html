@@ -1083,8 +1083,9 @@ if(c&&j.exp&&(!pass||pass.c!==c||pass.exp!==j.exp)){
 pass={exp:j.exp,c,h:fnv1a(String(c).replace(/[\s-]/g,'')).toString(16).padStart(8,'0')};
 store.setItem('docoga_pass',JSON.stringify(pass)); updatePassUI();
 }
-} else if(j&&j.error&&/expired/i.test(j.error)&&pass&&pass.exp>Date.now()){
-store.removeItem('docoga_pass'); pass=null; updatePassUI(); renderAll(); toast('Your Oga Pass has expired.');
+} else if(j&&j.error&&/(expired|invalid code)/i.test(j.error)&&pass){
+store.removeItem('docoga_pass'); pass=null; updatePassUI(); renderAll();
+toast('Your saved Oga Pass could not be verified. Please contact support if you believe it is still active.');
 }
 }).catch(()=>{});
 }
