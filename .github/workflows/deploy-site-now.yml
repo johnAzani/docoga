@@ -41,15 +41,42 @@ jobs:
         with:
           node-version: '22'
 
+      - name: What actually serves docoga.com.ng?
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          ZONE_ID: '38e545caefd3f31acf6cc732ffe663ba'
+        run: |
+          set -u
+          LOG=site-deploy.log
+          : > "$LOG"
+          echo "########## worker routes on the zone ##########" | tee -a "$LOG"
+          curl -sS --max-time 25 -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/workers/routes" \
+            | head -c 2000 | tee -a "$LOG"
+          echo | tee -a "$LOG"
+          echo "########## pages projects ##########" | tee -a "$LOG"
+          curl -sS --max-time 25 -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects?per_page=50" \
+            | head -c 2500 | tee -a "$LOG"
+          echo | tee -a "$LOG"
+          echo "########## DNS records for docoga.com.ng ##########" | tee -a "$LOG"
+          curl -sS --max-time 25 -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records?per_page=50" \
+            | python3 -c 'import json,sys
+d=json.load(sys.stdin)
+for r in d.get("result",[]):
+    print(r["type"], r["name"], "->", r.get("content"))' | tee -a "$LOG"
+
       - name: Deploy docoga-git from ./site
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           set -u
-          # Written into the workspace so the next step can read it.
+          # Appended: the probe step above wrote the header of this log.
           npx --yes wrangler@latest deploy --config wrangler.jsonc \
-            > >(tee site-deploy.log) 2>&1
+            > >(tee -a site-deploy.log) 2>&1
 
       # Uses actions/github-script rather than the gh CLI: the shell step kept
       # failing here, while this same script pattern reliably posts the
