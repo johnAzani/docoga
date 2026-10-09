@@ -63,10 +63,7 @@ jobs:
           echo "########## DNS records for docoga.com.ng ##########" | tee -a "$LOG"
           curl -sS --max-time 25 -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
             "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records?per_page=50" \
-            | python3 -c 'import json,sys
-d=json.load(sys.stdin)
-for r in d.get("result",[]):
-    print(r["type"], r["name"], "->", r.get("content"))' | tee -a "$LOG"
+            | python3 -c "import json,sys; [print(r['type'], r['name'], '->', r.get('content')) for r in json.load(sys.stdin).get('result',[])]" | tee -a "$LOG"
 
       - name: Deploy docoga-git from ./site
         env:
