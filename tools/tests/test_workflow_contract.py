@@ -85,24 +85,29 @@ class DeployLogRedactionTests(unittest.TestCase):
     """Remote Wrangler config diffs must never publish dashboard secret values."""
 
     def test_secret_like_values_are_redacted_but_public_config_survives(self):
+        # Same opaque value under a sensitive name and a harmless name proves
+        # redaction is driven by the key, not by a recognizable value pattern.
+        opaque_hash = "N7!q4L#z2vP8_x"
         sample = (
             '  - BREVO_API_KEY: "fake-brevo-secret"\n'
-            '  - FLW_WEBHOOK_HASH: fake-webhook-hash\n'
+            f'  - FLW_WEBHOOK_HASH: "{opaque_hash}"\n'
             '  - FLW_SECRET_KEY:\n'
             '    fake-flutterwave-secret\n'
             '  - SITE_URL: "https://docoga.com.ng"\n'
+            f'  - PUBLIC_NOTE: "{opaque_hash}"\n'
         )
         result = subprocess.run(
             [sys.executable, str(ROOT / "tools" / "redact_deploy_log.py")],
             input=sample, text=True, capture_output=True, check=True,
         )
         self.assertNotIn("fake-brevo-secret", result.stdout)
-        self.assertNotIn("fake-webhook-hash", result.stdout)
         self.assertNotIn("fake-flutterwave-secret", result.stdout)
         self.assertIn("BREVO_API_KEY: [REDACTED]", result.stdout)
         self.assertIn("FLW_WEBHOOK_HASH: [REDACTED]", result.stdout)
         self.assertIn("FLW_SECRET_KEY: [REDACTED]", result.stdout)
         self.assertIn('SITE_URL: "https://docoga.com.ng"', result.stdout)
+        self.assertIn(f'PUBLIC_NOTE: "{opaque_hash}"', result.stdout)
+        self.assertEqual(result.stdout.count(opaque_hash), 1)
 
 
 @unittest.skipIf(yaml is None, "PyYAML is required for the workflow contract tests")
