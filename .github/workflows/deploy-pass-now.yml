@@ -1,16 +1,15 @@
 name: Deploy docoga-pass (gated)
 
-# Why this file exists alongside deploy-pass.yml
-# ----------------------------------------------
-# deploy-pass.yml is workflow_dispatch, and GitHub only registers dispatch
-# workflows from the DEFAULT branch. It lives in PR #11, so it cannot be
-# triggered yet. This one is push-triggered (which does work on a feature
-# branch) but gated behind a commit-marker so it never fires accidentally:
+# Why this marker-gated path exists alongside deploy-pass.yml
+# -----------------------------------------------------------
+# Arena's GitHub integration cannot reliably dispatch Actions workflows, so use
+# a push with an explicit commit marker from the session branch instead. The
+# gate prevents normal documentation/code pushes from deploying accidentally:
 #
 #     git commit -m ".... [deploy-pass]"
 #
-# Once PR #11 is merged and deploy-pass.yml is live on main, this file should
-# be deleted — two ways to deploy the same worker is one too many.
+# Keep this route until workflow dispatch is verified usable from the agent; the
+# default-branch workflow is not a substitute when dispatch returns 403.
 
 on:
   push:

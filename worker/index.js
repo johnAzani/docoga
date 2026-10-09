@@ -33,7 +33,9 @@
  * KV binding: must be named KV (see wrangler.toml)
  */
 
-const PRICE_NGN = 2000; // Oga Pass price — proven end-to-end with real ₦100 rehearsal 19 Sep (logs/)
+// ₦2,000 is the minimum qualifying Oga Pass payment. The 19 Sep ₦100 rehearsal
+// was below this gate and did not test code issuance.
+const PRICE_NGN = 2000;
 const ALPHA = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
 function makeCode() {
@@ -95,7 +97,7 @@ function mailShell(inner) {
   `<tr><td style="padding:28px;">` + inner +
   `</td></tr>` +
   `<tr><td style="background:#F0F4FA;padding:16px 28px;border-top:1px solid #DCE4F0;">` +
-  `<p style="margin:0;font-size:12px;color:#5B6B85;line-height:1.5;">DocOga — free Nigerian document tools: tenancy agreement, notice to quit, rent receipt, invoice, employment contract, caution fee, letter of demand, payslip, warning letter.<br>Abuja, Nigeria · <a href="https://docoga.com.ng" style="color:#0040E0;">docoga.com.ng</a></p>` +
+  `<p style="margin:0;font-size:12px;color:#5B6B85;line-height:1.5;">DocOga — free Nigerian document tools: tenancy agreement, notice to quit, rent receipt, invoice, employment contract, caution fee, letter of demand, payslip, warning letter, power of attorney.<br>Abuja, Nigeria · <a href="https://docoga.com.ng" style="color:#0040E0;">docoga.com.ng</a></p>` +
   `</td></tr></table></td></tr></table></body></html>`;
 }
 
@@ -108,13 +110,13 @@ async function emailCode(env, to, code) {
     `Thank you for your purchase!\n\n` +
     `ACTIVATE ON ANY DEVICE — tap this link:\n${link}\n\n` +
     `Your pass code (if you ever need to type it): ${code}\n\n` +
-    `What you got: clean, watermark-free documents for 30 days — all 9 tools.\n\n` +
+    `What you got: clean, watermark-free documents for 30 days — all 10 tools, including Power of Attorney.\n\n` +
     `Keep this email — the link keeps working for the whole life of your pass.\n\n` +
     `Need help? WhatsApp us: +234 902 185 2845\n\n` +
     `— The DocOga Team, Abuja, Nigeria`;
   const inner =
   `<p style="margin:0 0 14px;font-size:17px;color:#141F33;font-weight:700;">Thank you for your purchase! 🎉</p>` +
-  `<p style="margin:0 0 20px;font-size:15px;color:#37455E;line-height:1.6;">Your <b>Oga Pass</b> is ready — <b>all 9 document tools</b>, clean and watermark-free, for <b>30 days</b>.</p>` +
+  `<p style="margin:0 0 20px;font-size:15px;color:#37455E;line-height:1.6;">Your <b>Oga Pass</b> is ready — <b>all 10 document tools, including Power of Attorney</b>, clean and watermark-free, for <b>30 days</b>.</p>` +
   `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto 8px;"><tr>` +
   `<td style="background:#0040E0;border-radius:10px;">` +
   `<a href="${link}" style="display:inline-block;padding:15px 34px;font-size:16px;font-weight:800;color:#ffffff;text-decoration:none;">Activate my pass →</a>` +
@@ -150,7 +152,7 @@ async function emailRenewalReminder(env, to, code, exp) {
     `— The DocOga Team, Abuja, Nigeria`;
   const inner =
   `<p style="margin:0 0 14px;font-size:17px;color:#141F33;font-weight:700;">Your Oga Pass expires on ${when}</p>` +
-  `<p style="margin:0 0 20px;font-size:15px;color:#37455E;line-height:1.6;">Renew in one tap and keep making clean, watermark-free documents with all 9 tools.</p>` +
+  `<p style="margin:0 0 20px;font-size:15px;color:#37455E;line-height:1.6;">Renew in one tap and keep making clean, watermark-free documents with all 10 tools, including Power of Attorney.</p>` +
   `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto 8px;"><tr>` +
   `<td style="background:#0040E0;border-radius:10px;">` +
   `<a href="${pay}" style="display:inline-block;padding:15px 34px;font-size:16px;font-weight:800;color:#ffffff;text-decoration:none;">Renew my pass — ₦2,000 →</a>` +

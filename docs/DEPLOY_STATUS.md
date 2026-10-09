@@ -1,7 +1,14 @@
-# Deployment status — measured 8 Oct 2026
+# Deployment status — measured 8–9 Oct 2026
 
 Rule Zero: everything below is measured, with the method stated. Where I could
 not determine a cause, it says so rather than guessing.
+
+**Current status — 9 Oct:** §§1–7 below preserve the 8 Oct pre-deployment
+snapshot. Their statements that the payment worker and recent site work were not
+live are historical and are superseded by §§8–9. `docoga-pass` is now live at
+version `f6370c2d`; PR #11 merged as `7ee8d79`, and the site serves the Business
+tier and POA page. The owner reports the Worker secrets and Flutterwave webhook
+URL configured; one real ₦2,000 purchase is still required to prove delivery.
 
 ## 1. Can the agent reach workers.dev?
 
@@ -23,7 +30,7 @@ a name problem. The `fetch_page` tool runs on different infrastructure and is
 **Proof it works:** `https://docoga-git.johnazani.workers.dev/` returned the full
 live DocOga homepage.
 
-## 2. The payment worker is NOT deployed
+## 2. 8 Oct snapshot: the payment worker was not deployed
 
 `https://docoga-pass.johnazani.workers.dev` returns Cloudflare's empty
 "There is nothing here yet" page on **all three** of:
@@ -57,10 +64,12 @@ offline path — 200 pre-generated hashes hard-coded in `worker/index.js`
 (`site/index.html:1137`). So manual selling with those codes still works;
 automatic payment→code does not.
 
-Note the tension: a real ₦100 Flutterwave webhook was logged on 19 Sep 2026
-(`logs/2026-09-19-first-real-payment-webhook.json`), so this *was* working.
+The 19 Sep 2026 log (`logs/2026-09-19-first-real-payment-webhook.json`) records a
+successful ₦100 Flutterwave charge. That proves a payment settled, **not** that a
+pass was issued: `PRICE_NGN` is ₦2,000, so this underpayment is intentionally
+ignored by the webhook and cannot serve as an end-to-end test.
 
-## 3. None of the recent revenue work is live
+## 3. 8 Oct snapshot: recent revenue work was not yet live
 
 - The live site lists **9 tools** — the Power of Attorney tool is absent.
 - `docoga.com.ng/power-of-attorney-nigeria.html` returns **404**.
@@ -68,7 +77,7 @@ Note the tension: a real ₦100 Flutterwave webhook was logged on 19 Sep 2026
 So the sticky bars on 56 pages, the POA tool, the Business tier and the POA
 landing page are all in the repo and passing tests, but not on the internet.
 
-## 4. Why: PR #11's Cloudflare build fails
+## 4. 8 Oct diagnosis: why PR #11's Cloudflare build failed
 
 | Commit | Workers Builds |
 |---|---|
@@ -104,11 +113,12 @@ is not fetchable as a page. Everything above is inference from controls.
   (`results-receiver.actions.githubusercontent.com` is not allowlisted) but can
   read PR comments via `api.github.com`. Currently: **pass**.
 - **`.github/workflows/net-probe.yml`** — `workflow_dispatch` with a URL,
-  method and body; curls any host and returns status, headers and body. GitHub
-  only registers `workflow_dispatch` from the **default branch**, so this is
-  dispatchable once it lands on `main` (it is in PR #11).
+  method and body; curls any host and returns status, headers and body. PR #11
+  has since merged as `7ee8d79`, so the workflow is on the default branch;
+  however, the Arena integration still cannot dispatch Actions when GitHub
+  returns 403. The marker-gated deploy workflows in §11 are the reliable route.
 
-## 8. Token diagnosis — measured 8 Oct 2026
+## 8. Token diagnosis and live state — measured 8–9 Oct 2026
 
 A Cloudflare API token was added to the repo as `CLOUDFLARE_API_TOKEN` and used
 from GitHub Actions. Result per endpoint:
@@ -206,38 +216,59 @@ worker simply had never been deployed under that name.
 Both were 404 before. `/activate` is the endpoint the storefront actually calls
 (`site/index.html:1132`), so **activation is restored**.
 
-### Remaining: the worker has zero secrets
+### Runtime secrets and webhook — updated 9 Oct 2026
 
-A fresh Worker starts with no secrets, and `wrangler deploy` never sets them.
-Confirmed empty via `GET .../workers/scripts/docoga-pass/secrets`.
+The original empty-secret probe was correct on the deploy date, but is now stale.
+The owner reports these Cloudflare Worker runtime secrets are set on `docoga-pass`
+(values are deliberately not recorded):
 
-What each gates:
+- `FLW_SECRET_KEY` — classic Flutterwave v3 verification used by `/verify`.
+- `FLW_WEBHOOK_HASH` — webhook authentication (`verif-hash` header, or v4 HMAC).
+- `BREVO_API_KEY` — pass-email delivery via Brevo.
 
-| Secret | Gates | Status without it |
+`FLW_CLIENT_ID` / `FLW_CLIENT_SECRET` are an alternative v4 verification pair;
+they are not needed for the configured classic-key path. `ISSUE_SECRET` was not
+among the secrets reported as set, so `POST /issue` may still return 401; that
+Selar/Zapier bridge is separate from direct Flutterwave checkout and webhooks.
+
+The Flutterwave dashboard now has the webhook URL
+`https://docoga-pass.johnazani.workers.dev/flw-webhook` saved with its secret hash.
+**Configuration is recorded; end-to-end delivery has not yet been verified.** A
+valid event must have a matching `verif-hash` (or a valid v4 HMAC), be
+`charge.completed`, have a successful or succeeded status, use `NGN`, and be at
+least ₦2,000.
+An authenticated ₦100 event is intentionally acknowledged with HTTP 200 and body
+`ignored`; it creates no code and must not be mistaken for a webhook failure.
+The next verification is one real ₦2,000 purchase, then confirm the webhook was
+accepted, the pass was emailed, and its reference can retrieve the same code via
+`/verify`.
+
+| Secret | Gates | Current note |
 |---|---|---|
-| `FLW_CLIENT_ID` + `FLW_CLIENT_SECRET` (v4), or `FLW_SECRET_KEY` (v3) | `/verify` confirming payment with Flutterwave | `/verify` cannot confirm payment |
-| `ISSUE_SECRET` | `POST /issue` (Selar/Zapier bridge, line 197) | returns 401 `unauthorized` |
-| `BREVO_API_KEY` / `RESEND_API_KEY` | `emailCode()` delivering the pass | code issued but never emailed |
+| `FLW_SECRET_KEY` | `/verify` payment lookup (classic v3) | reported set |
+| `FLW_WEBHOOK_HASH` | `POST /flw-webhook` authentication | reported set; endpoint saved in Flutterwave |
+| `BREVO_API_KEY` | `emailCode()` pass delivery | reported set; delivery still needs live purchase verification |
+| `ISSUE_SECRET` | `POST /issue` (Selar/Zapier bridge) | not reported set; may return 401 |
 
 Not needed: the offline-batch path is unaffected. Those codes are validated by a
 hardcoded set of **FNV-1a** hashes (`OFFLINE_HASHES` in `worker/index.js:49`), not by
 `ISSUE_SECRET`, so they work with no secrets at all. `unlock-codes.txt` is
 gitignored on purpose (paid-product inventory) and must stay out of git.
 
-These are live financial credentials: set them in the **Cloudflare dashboard**, not in
-chat and not in GitHub. Workers & Pages → docoga-pass → Settings → Variables and
-Secrets.
+These are live financial credentials: set or rotate Worker secrets in the
+**Cloudflare dashboard**, not in chat or GitHub. Workers & Pages → docoga-pass →
+Settings → Variables and Secrets. Repository Actions secrets are separate; the
+Arena agent cannot write those (see §11).
 
 Also confirmed correct, so stop re-checking these:
 - Account `276c50d7329e162bd36d1ef8eb3e7566` ("Azanijohn2017@gmail.com's Account")
 - Zone `docoga.com.ng` (`38e545caefd3f31acf6cc732ffe663ba`), status **active**,
   on the Free plan, nameservers `beau.ns.cloudflare.com` / `elly.ns.cloudflare.com`
 
-Separate bug found and fixed in passing: `npx wrangler deploy` run from `worker/`
-was picking up the **root `wrangler.jsonc`** and targeting `docoga-git` instead of
-`worker/wrangler.toml` / `docoga-pass`. Fixed by passing `--config wrangler.toml`
-explicitly. After that the deploy targeted `docoga-pass` correctly and failed only
-on permissions.
+Separate deploy bug: `npx wrangler deploy` run from `worker/` picked up the root
+`wrangler.jsonc` and targeted `docoga-git` instead of `worker/wrangler.toml` /
+`docoga-pass`. Passing `--config wrangler.toml` fixed the target; `docoga-pass`
+was subsequently deployed successfully.
 
 ## 9. The site: deployed, and the 404 that was really a cache
 
@@ -306,15 +337,27 @@ just noisy.
 
 All 48 unit tests, `pre_push_verify.sh` and `qa.py` pass.
 
-## 11. To let the agent fix this itself
+## 11. Agent limits, deploy routes, and run-result reporting
 
-Give the repo a Cloudflare API token as a secret:
+**The Arena agent cannot write repository Actions secrets.** `gh secret set`
+returns `403 Resource not accessible by integration` for this integration. Do
+not ask the agent to run it or assume a secret was saved. When deploy credentials
+are absent, the owner must add `CLOUDFLARE_API_TOKEN` and
+`CLOUDFLARE_ACCOUNT_ID` in GitHub → repository **Settings → Secrets and
+variables → Actions**. These repository secrets are separate from Cloudflare
+Worker runtime secrets such as `FLW_SECRET_KEY`, `FLW_WEBHOOK_HASH`, and
+`BREVO_API_KEY`.
 
-```
-gh secret set CLOUDFLARE_API_TOKEN
-gh secret set CLOUDFLARE_ACCOUNT_ID
-```
+Deploys use the marker-gated workflows already in the repo:
 
-With those, the agent can (a) read the real build log, (b) deploy
-`worker/` as `docoga-pass`, and (c) redeploy the site — all by triggering
-workflows, with no dashboard access.
+- **Worker:** `.github/workflows/deploy-pass-now.yml`, triggered by a commit
+  message containing **`[deploy-pass]`**.
+- **Marketing site:** `.github/workflows/deploy-site-now.yml`, triggered by a
+  commit message containing **`[deploy-site]`**.
+
+The Arena session cannot read GitHub Actions run logs directly. Both workflows
+therefore post their captured output as a comment on **PR #11**; use that comment
+as the result record, not the unreadable run log. The workflow token must have
+**`pull-requests: write`** for this comment. **`issues: write` alone is not the
+right permission** for commenting on a pull request (even though the workflow
+uses GitHub's issues-comment REST endpoint).

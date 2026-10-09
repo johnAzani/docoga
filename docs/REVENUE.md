@@ -2,7 +2,7 @@
 
 Owner: John Azani (johnAzani). Operator: Arena agent, under `docs/MANDATE.md`.
 
-**Status: this is the operating document for revenue.** First baseline 8 Oct 2026.
+**Status: this is the operating document for revenue.** Baseline 8 Oct 2026; payment and sequencing state updated 9 Oct 2026.
 
 Rule Zero applies to strategy and pricing: every number below is *measured from this
 repo* or *cited to a source*. Where I could not verify something, it is marked
@@ -12,25 +12,32 @@ repo* or *cited to a source*. Where I could not verify something, it is marked
 
 ## 1. What already works — measured, not assumed
 
-This is the most important section. The app is **not** unmonetised. The money path
-was built and tested before this session.
+This is the most important section. The app is **not** unmonetised: the Worker,
+checkout, webhook and code-issuance paths exist, and local unit tests cover them.
+However, the historical ₦100 charge was below the Worker’s ₦2,000 gate, so the
+live payment-to-pass-and-email path still needs one qualifying purchase.
 
 | Fact | Value | Source |
 |---|---|---|
 | Payment worker deployed | `https://docoga-pass.johnazani.workers.dev` | `site/index.html` (`WORKER_URL`) |
-| Real money, end-to-end | `charge.completed`, **₦100 charged, ₦2 fee, status `successful`**, bank transfer, 19 Sep 2026 | `logs/2026-09-19-first-real-payment-webhook.json` |
+| Real payment settlement | `charge.completed`, **₦100 charged, ₦2 fee, status `successful`**, bank transfer, 19 Sep 2026 | `logs/2026-09-19-first-real-payment-webhook.json` |
 | Payment link | `https://flutterwave.com/pay/ynznvgof2r21` | log `meta_data.__CheckoutInitAddress`, gated in `tools/qa.py:84` |
-| Price | `PRICE_NGN = 2000` — Oga Pass, 30 days, all 9 tools | `worker/index.js` |
+| Price | `PRICE_NGN = 2000` — Oga Pass, 30 days; the live site advertises 10 tools | `worker/index.js` (price) and `site/index.html` (tier copy) |
 | Endpoints | `POST /issue`, `POST /flw-webhook`, `GET /verify`, `GET /activate` | `worker/index.js` |
 | Fallbacks already coded | Flutterwave v4 OAuth + v3 verify; Paystack ("Path C — after CAC"); Selar→Zapier bridge | `worker/index.js` |
-| Tools shipping | 9: agreement, notice, receipt, invoice, employment, caution, demand, payslip, warning | `site/index.html` (9 `<form>` + `renderX()` handlers) |
+| Tools shipping | 10: agreement, notice, receipt, invoice, employment, caution, demand, payslip, warning, power of attorney | `site/index.html` (10 renderer types) |
 | SEO surface | 48 state pages | `tools/gen_state_pages.py` |
 | Analytics | GA property `G-GO8VZB3R28` | `site/index.html` (`ANALYTICS_ID`) |
 | Support | WhatsApp `2349021852845` | `site/index.html` (`SUPPORT_WHATSAPP`) |
 
-**Conclusion: the gap is not technology. It is distribution and price.** A working
-card-to-code pipeline that has already settled real money does not need rebuilding —
-it needs customers pointed at it.
+**Conclusion: distribution and pricing are the growth gaps, but the live
+₦2,000 payment-to-pass path still needs one end-to-end proof.** The 19 Sep log
+proves Flutterwave completed a real **₦100** payment; it does **not** prove code
+issuance because the Worker requires `amount >= ₦2,000`. A signed ₦100 webhook is
+intentionally acknowledged with HTTP 200 and ignored. The owner has now reported
+`FLW_SECRET_KEY`, `FLW_WEBHOOK_HASH`, and `BREVO_API_KEY` set and the Flutterwave
+webhook URL saved. Verify with one real ₦2,000 purchase before calling the live
+card-to-code-and-email path proven.
 
 ---
 
@@ -83,16 +90,17 @@ Three changes make billions arithmetically reachable. They are not mutually excl
   attorney, affidavit, tenancy, land/property, next-of-kin. Today they pay an agent or
   lawyer. They earn in dollars.
 
-**Arithmetic.** At $20 per pass (~₦31,000 at ₦1,550/$, **UNVERIFIED** exchange rate —
-confirm at launch):
+**Illustrative arithmetic only — $20 is not an adopted price.** At $20 per pass
+(~₦31,000 at ₦1,550/$, **UNVERIFIED** exchange rate; confirm at launch):
 
 > ₦1bn/month ÷ ₦31,000 ≈ **32,000 diaspora passes per month**
 > ≈ **0.2% of a 15M diaspora.**
 
-**That is ~15× the revenue per customer for the same product, and a 32,000-customer
-problem instead of a 510,204-customer problem.** Flutterwave already supports the
-collection and USD settlement; the fee is 4.8% instead of 2.0%, which is irrelevant
-against a 15× price.
+This is a sensitivity example, not a forecast or price recommendation. The 15×
+revenue-per-customer comparison and 32,000-customer count depend on that
+unvalidated assumption. Research the diaspora offer, international-payment
+approval, settlement and current exchange rate before choosing a USD price.
+It remains a different-volume model than 510,204 local passes.
 
 ### Path A is only real if we sell what the diaspora actually buys
 
@@ -122,37 +130,56 @@ notarisation; Nigeria is not on the Hague Apostille Convention, so consular
 legalisation not apostille).
 
 **This is the product to put in front of the diaspora**, not the tenancy agreement.
-Next step is a POA landing page aimed at diaspora search intent and a USD price.
+The POA landing page is live (8 Oct); what remains is evidence-backed USD pricing
+and confirmation that international collection/settlement is enabled.
 
 ### Path B — B2B / bulk / API
 
 Estate agents, property managers, landlords' associations, HR platforms, co-working
-operators, SMEs. Per-seat or per-document bulk.
+operators, SMEs. The **Business tier is live and deliberately unpriced** (Custom,
+annual, per team; WhatsApp quote). Do not invent or publish a price. Start with
+outreach and discovery: document team size, document volume, current workflow,
+procurement constraints, required support/integrations, and willingness to pay.
+Set a quote only after evidence from real conversations.
 
-> 500 business accounts × ₦2,000,000/month = **₦1bn/month.**
-
-Nigeria has tens of thousands of estate agencies (**UNVERIFIED** exact count). Fewer
-customers, bigger cheques, far stickier, and — critically — **no per-customer
-acquisition cost**, because these are sales conversations, not ad spend.
+No sourced count of addressable Nigerian businesses or validated monthly account
+value is available, so there is no honest customer-count forecast yet. Once the
+account value is measured, the target arithmetic is `₦1bn ÷ validated monthly
+account value`; until then, do not turn a hypothetical price into a forecast.
 
 ### Path C — Local volume at ₦2,000
 
-Keep it. It is real money now, it validates the product, and it feeds A and B. But it
-is the funnel, not the destination.
+Keep it as the local entry product, and use it to validate real checkout-to-pass
+conversion only after a qualifying ₦2,000 purchase succeeds end to end. The ₦100
+September charge proves payment settlement, not pass issuance. Local volume can feed
+A and B, but it is the funnel, not the destination.
 
 ---
 
-## 4. Sequencing — shortest time to first revenue
+## 4. Sequencing — next revenue actions
 
-1. **Ship the conversion fix.** ✅ **DONE 8 Oct 2026.** Only 2 of 59 pages could take
-   money; all 48 traffic pages had no pay path at all. Now 48/59 carry a pay path
-   (sticky bar + inline CTA → `https://docoga.com.ng/#pricing`).
-2. **Measure the baseline.** Read GA (`G-GO8VZB3R28`): sessions/month, top landing
-   pages, current conversion rate. **I cannot read GA from this sandbox** — owner must.
-   Every number after this depends on it.
-3. **Add the USD/diaspora tier.** Highest revenue-per-customer move available, and the
-   product already exists. Needs: a diaspora landing page + a USD price in Flutterwave.
-4. **B2B outreach.** Sales, not code.
+1. **Conversion surface.** ✅ **DONE 8 Oct 2026.** 48/59 pages carry a pay path
+   (sticky bar + inline CTA → `https://docoga.com.ng/#pricing`); the POA page and
+   Business tier are live.
+2. **Verify the direct payment path before treating it as proven.** The owner has
+   saved `https://docoga-pass.johnazani.workers.dev/flw-webhook` in Flutterwave and
+   reports `FLW_SECRET_KEY`, `FLW_WEBHOOK_HASH`, and `BREVO_API_KEY` set on the Worker.
+   Make one real successful **₦2,000** purchase and confirm the code email and
+   reference lookup. A ₦100 event is below `PRICE_NGN` and is silently acknowledged
+   as `ignored`; it is not a valid pass test. The Arena session cannot initiate a
+   real-money purchase or reach the live Worker from this sandbox.
+3. **B2B outreach first.** The Business tier is live, deliberately unpriced, and
+   available by WhatsApp quote. Start discovery conversations; record buyer needs,
+   team/document volume, procurement and willingness-to-pay evidence. Do not invent
+   or publish a Business price.
+4. **Diaspora USD pricing second.** The POA landing page is live. Research what
+   diaspora buyers need and what they pay, confirm Flutterwave international-payment
+   approval and settlement details, then recommend a USD price. The `$20` figure in
+   §3 is an illustrative sensitivity case only, not a selected price.
+5. **Measure the baseline in parallel.** The owner must read GA (`G-GO8VZB3R28`):
+   sessions/month, top landing pages and current conversion rate. The Arena session
+   cannot read GA; traffic data is essential for forecasting volume, though it does
+   not block B2B discovery.
 
 ---
 
@@ -162,9 +189,10 @@ Rule Zero: these are unknowns, not assumptions.
 
 - **Traffic.** How many sessions/month, and what is the current free→paid conversion?
   Cannot be read from the repo. **Owner must check GA.**
-- **Is the worker still live and are its secrets still set?** The URL is in the code and
-  a real payment cleared on 19 Sep, but I cannot reach `workers.dev` from this sandbox
-  to re-test. A dead worker means every CTA I just shipped points at a broken checkout.
+- **Does the saved Flutterwave webhook work end to end at the paid threshold?** The
+  owner reports the Worker is live and the three required runtime secrets are set;
+  sandbox network restrictions prevent a live probe. Only a real successful ₦2,000
+  purchase can confirm webhook acceptance, code issuance and email delivery.
 - **Is the Flutterwave account approved for international payments?** Required for Path A
   [7](https://etestweb.com/blog/accept-dollar-payment-nigerian-website).
 - **Is the ₦2,000 price tested?** No evidence of a conversion test at any other price.
