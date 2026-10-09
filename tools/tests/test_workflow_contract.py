@@ -15,6 +15,7 @@ point at something that isn't there.
 """
 import os
 import re
+import subprocess
 import sys
 import unittest
 from pathlib import Path
@@ -78,6 +79,52 @@ class WorkflowReferenceTests(unittest.TestCase):
                                     step["uses"].startswith(("actions/checkout@", "actions/setup-python@")),
                                     "%s: %s is an action with no outputs.%s" % (path.name, step["uses"], key),
                                 )
+
+
+class DeployLogRedactionTests(unittest.TestCase):
+    """Remote Wrangler config diffs must never publish dashboard secret values."""
+
+    def test_secret_like_values_are_redacted_but_public_config_survives(self):
+        sample = (
+            '  - BREVO_API_KEY: "fake-brevo-secret"\n'
+            '  - FLW_WEBHOOK_HASH: fake-webhook-hash\n'
+            '  - FLW_SECRET_KEY:\n'
+            '    fake-flutterwave-secret\n'
+            '  - SITE_URL: "https://docoga.com.ng"\n'
+        )
+        result = subprocess.run(
+            [sys.executable, str(ROOT / "tools" / "redact_deploy_log.py")],
+            input=sample, text=True, capture_output=True, check=True,
+        )
+        self.assertNotIn("fake-brevo-secret", result.stdout)
+        self.assertNotIn("fake-webhook-hash", result.stdout)
+        self.assertNotIn("fake-flutterwave-secret", result.stdout)
+        self.assertIn("BREVO_API_KEY: [REDACTED]", result.stdout)
+        self.assertIn("FLW_WEBHOOK_HASH: [REDACTED]", result.stdout)
+        self.assertIn("FLW_SECRET_KEY: [REDACTED]", result.stdout)
+        self.assertIn('SITE_URL: "https://docoga.com.ng"', result.stdout)
+
+
+@unittest.skipIf(yaml is None, "PyYAML is required for the workflow contract tests")
+class CloudflareDeploySafetyTests(unittest.TestCase):
+    def test_worker_deploy_preserves_vars_and_sanitizes_raw_wrangler_output(self):
+        doc = yaml.safe_load((WORKFLOWS / "deploy-pass-now.yml").read_text(encoding="utf-8"))
+        job = doc["jobs"]["deploy"]
+        deploy = next(step for step in job["steps"] if step.get("name") == "Deploy worker/ as docoga-pass")
+        self.assertIn("--keep-vars", deploy["run"])
+        self.assertIn('>"$RAW_WRANGLER_LOG" 2>&1', deploy["run"])
+        self.assertIn("tools/redact_deploy_log.py", deploy["run"])
+        self.assertNotIn('> >(tee -a "$DEPLOY_LOG")', deploy["run"])
+        self.assertEqual(doc["permissions"].get("pull-requests"), "write")
+
+    def test_site_deploy_preserves_vars_and_sanitizes_raw_wrangler_output(self):
+        doc = yaml.safe_load((WORKFLOWS / "deploy-site-now.yml").read_text(encoding="utf-8"))
+        job = doc["jobs"]["deploy-site"]
+        deploy = next(step for step in job["steps"] if step.get("name") == "Deploy docoga-git from ./site")
+        self.assertIn("--keep-vars", deploy["run"])
+        self.assertIn('>"$RAW_WRANGLER_LOG" 2>&1', deploy["run"])
+        self.assertIn("tools/redact_deploy_log.py", deploy["run"])
+        self.assertEqual(job["permissions"].get("pull-requests"), "write")
 
 
 @unittest.skipIf(yaml is None, "PyYAML is required for the workflow contract tests")

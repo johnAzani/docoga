@@ -31,13 +31,15 @@ live payment-to-pass-and-email path still needs one qualifying purchase.
 | Support | WhatsApp `2349021852845` | `site/index.html` (`SUPPORT_WHATSAPP`) |
 
 **Conclusion: distribution and pricing are the growth gaps, but the live
-₦2,000 payment-to-pass path still needs one end-to-end proof.** The 19 Sep log
-proves Flutterwave completed a real **₦100** payment; it does **not** prove code
+₦2,000 payment-to-pass path is not ready for its end-to-end proof yet.** The 19 Sep
+log proves Flutterwave completed a real **₦100** payment; it does **not** prove code
 issuance because the Worker requires `amount >= ₦2,000`. A signed ₦100 webhook is
-intentionally acknowledged with HTTP 200 and ignored. The owner has now reported
-`FLW_SECRET_KEY`, `FLW_WEBHOOK_HASH`, and `BREVO_API_KEY` set and the Flutterwave
-webhook URL saved. Verify with one real ₦2,000 purchase before calling the live
-card-to-code-and-email path proven.
+intentionally acknowledged with HTTP 200 and ignored. Although the owner reported
+`FLW_SECRET_KEY`, `FLW_WEBHOOK_HASH`, and `BREVO_API_KEY` set, deploy run
+`37890401771` exposed dashboard variable values and Wrangler's default deployment
+may have removed them. The PR comment was redacted, but the run log could not be
+deleted through the Arena integration. Treat those credentials as compromised;
+rotate and restore them as Cloudflare Worker Secrets before attempting a purchase.
 
 ---
 
@@ -161,22 +163,27 @@ A and B, but it is the funnel, not the destination.
 1. **Conversion surface.** ✅ **DONE 8 Oct 2026.** 48/59 pages carry a pay path
    (sticky bar + inline CTA → `https://docoga.com.ng/#pricing`); the POA page and
    Business tier are live.
-2. **Verify the direct payment path before treating it as proven.** The owner has
-   saved `https://docoga-pass.johnazani.workers.dev/flw-webhook` in Flutterwave and
-   reports `FLW_SECRET_KEY`, `FLW_WEBHOOK_HASH`, and `BREVO_API_KEY` set on the Worker.
-   Make one real successful **₦2,000** purchase and confirm the code email and
-   reference lookup. A ₦100 event is below `PRICE_NGN` and is silently acknowledged
-   as `ignored`; it is not a valid pass test. The Arena session cannot initiate a
-   real-money purchase or reach the live Worker from this sandbox.
-3. **B2B outreach first.** The Business tier is live, deliberately unpriced, and
+2. **Recover the payment credentials before testing.** The Flutterwave webhook URL
+   is saved, but deploy run `37890401771` exposed the dashboard values for
+   `BREVO_API_KEY`, `FLW_SECRET_KEY`, and `FLW_WEBHOOK_HASH`; the deploy may also have
+   removed those vars. Delete the run log in GitHub Actions if possible, revoke/rotate
+   the Brevo key, create a genuine Flutterwave secret key, generate a fresh webhook
+   hash, remove any stale plain-text vars, and save the new values as Cloudflare
+   Worker **Secrets**. Do not take a payment until this is complete. The Arena session cannot delete the
+   run log or write repo secrets.
+3. **Verify the direct payment path.** After credential recovery, make one real
+   successful **₦2,000** purchase and confirm webhook acceptance, pass email, and
+   reference lookup. An authenticated ₦100 event is below `PRICE_NGN` and is silently
+   acknowledged as `ignored`; it is not a valid pass test. Local mocks are not proof.
+4. **B2B outreach first.** The Business tier is live, deliberately unpriced, and
    available by WhatsApp quote. Start discovery conversations; record buyer needs,
    team/document volume, procurement and willingness-to-pay evidence. Do not invent
    or publish a Business price.
-4. **Diaspora USD pricing second.** The POA landing page is live. Research what
+5. **Diaspora USD pricing second.** The POA landing page is live. Research what
    diaspora buyers need and what they pay, confirm Flutterwave international-payment
    approval and settlement details, then recommend a USD price. The `$20` figure in
    §3 is an illustrative sensitivity case only, not a selected price.
-5. **Measure the baseline in parallel.** The owner must read GA (`G-GO8VZB3R28`):
+6. **Measure the baseline in parallel.** The owner must read GA (`G-GO8VZB3R28`):
    sessions/month, top landing pages and current conversion rate. The Arena session
    cannot read GA; traffic data is essential for forecasting volume, though it does
    not block B2B discovery.
@@ -189,10 +196,11 @@ Rule Zero: these are unknowns, not assumptions.
 
 - **Traffic.** How many sessions/month, and what is the current free→paid conversion?
   Cannot be read from the repo. **Owner must check GA.**
-- **Does the saved Flutterwave webhook work end to end at the paid threshold?** The
-  owner reports the Worker is live and the three required runtime secrets are set;
-  sandbox network restrictions prevent a live probe. Only a real successful ₦2,000
-  purchase can confirm webhook acceptance, code issuance and email delivery.
+- **Are the payment credentials restored safely, and does the webhook work at the
+  paid threshold?** Run `37890401771` exposed remote dashboard vars, and the worker
+  deploy may have removed them. The PR comment is redacted; run-log deletion is an
+  owner action. Rotate/re-add them as Worker Secrets first. Only then can one real
+  successful ₦2,000 purchase confirm webhook acceptance, code issuance and email.
 - **Is the Flutterwave account approved for international payments?** Required for Path A
   [7](https://etestweb.com/blog/accept-dollar-payment-nigerian-website).
 - **Is the ₦2,000 price tested?** No evidence of a conversion test at any other price.

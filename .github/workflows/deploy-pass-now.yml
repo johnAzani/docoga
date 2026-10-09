@@ -117,6 +117,8 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           DEPLOY_LOG: ${{ runner.temp }}/deploy.log
         run: |
           set -u
@@ -156,11 +158,17 @@ jobs:
             "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/workers/scripts/docoga-pass/secrets" \
             | head -c 1200 | tee -a "$DEPLOY_LOG"
           echo | tee -a "$DEPLOY_LOG"
-          echo "########## wrangler deploy (explicit config) ##########" | tee -a "$DEPLOY_LOG"
+          echo "########## wrangler deploy (explicit config; preserve dashboard vars) ##########" | tee -a "$DEPLOY_LOG"
+          # Wrangler's default deploy removes dashboard-set vars that are absent
+          # from wrangler.toml. Keep them, and never stream raw Wrangler output:
+          # its remote/local config diff can print values for dashboard vars.
+          RAW_WRANGLER_LOG="${RUNNER_TEMP}/wrangler-deploy.raw.log"
           set +e
-          ( cd worker && npx --yes wrangler@latest deploy --config wrangler.toml ) > >(tee -a "$DEPLOY_LOG") 2>&1
+          ( cd worker && npx --yes wrangler@latest deploy --config wrangler.toml --keep-vars ) >"$RAW_WRANGLER_LOG" 2>&1
           DEXIT=$?
           set -e
+          python3 tools/redact_deploy_log.py "$RAW_WRANGLER_LOG" | tee -a "$DEPLOY_LOG"
+          rm -f "$RAW_WRANGLER_LOG"
           echo "deploy_exit=$DEXIT" | tee -a "$DEPLOY_LOG"
           echo "DEPLOY_LOG=$DEPLOY_LOG" >> "$GITHUB_ENV"
 

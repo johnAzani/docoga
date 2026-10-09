@@ -5,10 +5,14 @@ not determine a cause, it says so rather than guessing.
 
 **Current status — 9 Oct:** §§1–7 below preserve the 8 Oct pre-deployment
 snapshot. Their statements that the payment worker and recent site work were not
-live are historical and are superseded by §§8–9. `docoga-pass` is now live at
-version `f6370c2d`; PR #11 merged as `7ee8d79`, and the site serves the Business
-tier and POA page. The owner reports the Worker secrets and Flutterwave webhook
-URL configured; one real ₦2,000 purchase is still required to prove delivery.
+live are historical and are superseded by §§8–9. PR #11 merged as `7ee8d79`, and
+the site serves the Business tier and POA page. Worker deploy run `37890401771`
+succeeded as version `2ddb599e-ef40-4b6a-a789-bf5742c97874`, but its Wrangler
+output exposed values from Cloudflare dashboard `vars`; the PR comment was
+redacted, while deleting the run log was denied to this integration. Treat the
+payment/email configuration as compromised and unavailable until the owner
+rotates and re-adds credentials as actual Worker Secrets. **Do not take a test
+payment yet.** Then verify with one real ₦2,000 purchase.
 
 ## 1. Can the agent reach workers.dev?
 
@@ -187,7 +191,7 @@ that would need `/pages/projects`, which needs a Pages permission this token lac
 `docoga-pass` will be this account's first actual Worker, so wrangler's secrets probe
 hits a script that does not exist yet — with Edit it will create it rather than 403.
 
-### LIVE — deployed 9 Oct 2026
+### Initial deployment — 9 Oct 2026 (version superseded by run 37890401771)
 
 Fourth token attempt, fingerprint `f3f99ca0ab153423`, finally had both
 `Account → Workers Scripts → Write` and `Account → Workers KV Storage → Write`.
@@ -197,7 +201,7 @@ Deploy succeeded on the first try:
 Deployed docoga-pass triggers (0.74 sec)
   https://docoga-pass.johnazani.workers.dev
   schedule: 0 7 * * *
-Current Version ID: f6370c2d-853d-46db-8aa6-d2754fb9dc88
+Initial Version ID: f6370c2d-853d-46db-8aa6-d2754fb9dc88 (superseded by run 37890401771)
 ```
 
 Bindings confirmed live: `env.KV` → `f3a5afebe7d04bb0a6018c0d7d355253` ("docoga-kv"),
@@ -216,59 +220,55 @@ worker simply had never been deployed under that name.
 Both were 404 before. `/activate` is the endpoint the storefront actually calls
 (`site/index.html:1132`), so **activation is restored**.
 
-### Runtime secrets and webhook — updated 9 Oct 2026
+### Runtime credentials and webhook — incident update, 9 Oct 2026
 
-The original empty-secret probe was correct on the deploy date, but is now stale.
-The owner reports these Cloudflare Worker runtime secrets are set on `docoga-pass`
-(values are deliberately not recorded):
+The owner had reported `FLW_SECRET_KEY`, `FLW_WEBHOOK_HASH`, and `BREVO_API_KEY`
+set in Cloudflare, and saved
+`https://docoga-pass.johnazani.workers.dev/flw-webhook` in Flutterwave. A later
+`[deploy-pass]` run (`37890401771`) deployed successfully as version
+`2ddb599e-ef40-4b6a-a789-bf5742c97874`, but its Wrangler config diff exposed the
+values for those three names. The values were reported under remote dashboard
+`vars`, not as Worker Secrets. Wrangler's default deploy removes dashboard vars
+missing from `wrangler.toml`; this deployment did not use `--keep-vars`, so treat
+the payment/email configuration as absent until the owner restores it. The value
+under `FLW_SECRET_KEY` was also the wrong Flutterwave key type (public key, not a
+secret key), so it would not authenticate the v3 `/verify` call.
 
-- `FLW_SECRET_KEY` — classic Flutterwave v3 verification used by `/verify`.
-- `FLW_WEBHOOK_HASH` — webhook authentication (`verif-hash` header, or v4 HMAC).
-- `BREVO_API_KEY` — pass-email delivery via Brevo.
+**Security response:** the PR #11 deploy comment has been replaced with a
+redacted warning. The Arena integration received 403 when asked to delete the
+workflow run/log; the owner must use GitHub Actions → run `37890401771` → delete
+run/logs if available. Treat the exposed credentials as compromised regardless
+of the repo's private visibility. The owner must revoke/rotate the Brevo key,
+create a genuine Flutterwave secret key, generate a fresh webhook hash, remove
+any stale plain-text vars, and add the new values in Cloudflare as **Worker
+Secrets**. Do not put values
+in this repo, a PR comment, or chat. Restore the same new hash in Flutterwave's
+webhook settings. Do not take a test payment until this is done.
 
-`FLW_CLIENT_ID` / `FLW_CLIENT_SECRET` are an alternative v4 verification pair;
-they are not needed for the configured classic-key path. `ISSUE_SECRET` was not
-among the secrets reported as set, so `POST /issue` may still return 401; that
-Selar/Zapier bridge is separate from direct Flutterwave checkout and webhooks.
-
-The Flutterwave dashboard now has the webhook URL
-`https://docoga-pass.johnazani.workers.dev/flw-webhook` saved with its secret hash.
-**Configuration is recorded; end-to-end delivery has not yet been verified.** A
-valid event must have a matching `verif-hash` (or a valid v4 HMAC), be
-`charge.completed`, have a successful or succeeded status, use `NGN`, and be at
-least ₦2,000.
-An authenticated ₦100 event is intentionally acknowledged with HTTP 200 and body
-`ignored`; it creates no code and must not be mistaken for a webhook failure.
-The next verification is one real ₦2,000 purchase, then confirm the webhook was
-accepted, the pass was emailed, and its reference can retrieve the same code via
-`/verify`.
-
-| Secret | Gates | Current note |
+| Name | Purpose | Current state / required action |
 |---|---|---|
-| `FLW_SECRET_KEY` | `/verify` payment lookup (classic v3) | reported set |
-| `FLW_WEBHOOK_HASH` | `POST /flw-webhook` authentication | reported set; endpoint saved in Flutterwave |
-| `BREVO_API_KEY` | `emailCode()` pass delivery | reported set; delivery still needs live purchase verification |
-| `ISSUE_SECRET` | `POST /issue` (Selar/Zapier bridge) | not reported set; may return 401 |
+| `FLW_SECRET_KEY` | Classic v3 `/verify` lookup | exposed value was the wrong key type; create/rotate a real secret key and store as a Worker Secret |
+| `FLW_WEBHOOK_HASH` | `POST /flw-webhook` authentication | exposed; rotate, store as a Worker Secret, and match Flutterwave's saved hash |
+| `BREVO_API_KEY` | `emailCode()` pass delivery | exposed; revoke/rotate and store as a Worker Secret |
+| `ISSUE_SECRET` | `POST /issue` (Selar/Zapier bridge) | not reported; separate from direct Flutterwave checkout |
+
+A qualifying webhook still requires a matching `verif-hash` (or valid v4 HMAC),
+`charge.completed`, a successful/succeeded status, `NGN`, and amount ≥ ₦2,000. An
+authenticated ₦100 event intentionally returns HTTP 200 with body `ignored` and
+issues no code. After credential recovery, verify the path with one real ₦2,000
+purchase; confirm webhook acceptance, email delivery, and the same code by
+reference lookup. Local tests are not live-payment proof.
 
 Not needed: the offline-batch path is unaffected. Those codes are validated by a
 hardcoded set of **FNV-1a** hashes (`OFFLINE_HASHES` in `worker/index.js:49`), not by
 `ISSUE_SECRET`, so they work with no secrets at all. `unlock-codes.txt` is
 gitignored on purpose (paid-product inventory) and must stay out of git.
 
-These are live financial credentials: set or rotate Worker secrets in the
-**Cloudflare dashboard**, not in chat or GitHub. Workers & Pages → docoga-pass →
-Settings → Variables and Secrets. Repository Actions secrets are separate; the
-Arena agent cannot write those (see §11).
-
-Also confirmed correct, so stop re-checking these:
-- Account `276c50d7329e162bd36d1ef8eb3e7566` ("Azanijohn2017@gmail.com's Account")
-- Zone `docoga.com.ng` (`38e545caefd3f31acf6cc732ffe663ba`), status **active**,
-  on the Free plan, nameservers `beau.ns.cloudflare.com` / `elly.ns.cloudflare.com`
-
-Separate deploy bug: `npx wrangler deploy` run from `worker/` picked up the root
-`wrangler.jsonc` and targeted `docoga-git` instead of `worker/wrangler.toml` /
-`docoga-pass`. Passing `--config wrangler.toml` fixed the target; `docoga-pass`
-was subsequently deployed successfully.
+The deploy itself still uses the explicit `worker/wrangler.toml` config and
+reached `docoga-pass`. The deployment workflow is being hardened to preserve
+Dashboard vars and redact Wrangler output before the next permitted deploy (see
+§11). Repository Actions secrets are separate; the Arena agent cannot write
+them.
 
 ## 9. The site: deployed, and the 404 that was really a cache
 
@@ -356,8 +356,17 @@ Deploys use the marker-gated workflows already in the repo:
   commit message containing **`[deploy-site]`**.
 
 The Arena session cannot read GitHub Actions run logs directly. Both workflows
-therefore post their captured output as a comment on **PR #11**; use that comment
-as the result record, not the unreadable run log. The workflow token must have
+therefore post captured output as a comment on **PR #11**; use that comment as
+the result record, not the unreadable run log. The workflow token must have
 **`pull-requests: write`** for this comment. **`issues: write` alone is not the
 right permission** for commenting on a pull request (even though the workflow
 uses GitHub's issues-comment REST endpoint).
+
+**Log hygiene is mandatory.** Run `37890401771` exposed dashboard `vars` in
+Wrangler's config diff. Its PR comment has been replaced with a redacted warning;
+this integration received 403 when attempting to delete the Actions log. The
+owner must delete the run/log in GitHub Actions if available and rotate the
+exposed credentials before another purchase. The current branch hardens both marker-gated deploy workflows to pass
+`--keep-vars` and capture/sanitize raw Wrangler output before it reaches Actions
+logs or PR comments. Do not deploy again until the rotated values are stored as
+Cloudflare Worker Secrets.

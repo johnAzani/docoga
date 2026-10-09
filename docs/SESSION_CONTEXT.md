@@ -523,23 +523,34 @@ Documented in `docs/GROWTH_JOURNAL.md`. Key milestones:
 ### Current session — 9 Oct 2026
 
 **Branch:** `arena/b9e4e9d2-docoga`, based on `7ee8d79`.
-**What was done:** `git log --oneline -3` showed only `7ee8d79`; `c5283e1`
-("Correct the agent handover notes") was absent, so it was not pushed. Corrected
-`docs/DEPLOY_STATUS.md` §8 and §11 for the reported Worker secrets/webhook state,
-agent repo-secret limits, marker-gated deploy workflows, unreadable run logs, PR
-#11 comments, and the required `pull-requests: write` permission. Updated
-`docs/REVENUE.md` to put B2B discovery before diaspora USD pricing, keep Business
-unpriced, mark the `$20` scenario as illustrative, and distinguish the historical
-₦100 settlement from a qualifying ₦2,000 pass. Added local webhook tests for the
-valid secret hash, a ₦2,000 charge, idempotency, aliases, email hand-off, and the
-intentional ₦100 ignore; corrected buyer email copy to include all 10 tools,
-including Power of Attorney.
+**Handover:** `git log --oneline -3` showed only `7ee8d79`; `c5283e1`
+("Correct the agent handover notes") was absent, so it was not pushed. Updated
+`docs/DEPLOY_STATUS.md` §8/§11 and `docs/REVENUE.md`: no invented Business price,
+B2B discovery before diaspora USD pricing, the $20 example is illustrative, and
+₦100 proves settlement only—not a paid pass. Added local tests for v3 `/verify`,
+signed webhook issuance at ₦2,000, underpayment rejection/ignore at ₦100,
+idempotency, aliases, and the Brevo hand-off. Corrected buyer email copy for all
+10 tools, including Power of Attorney.
 
-**Live verification is still pending:** the owner reports the Flutterwave webhook
-URL and three Worker secrets saved, but this sandbox cannot reach the live Worker
-or initiate a real-money purchase. One real successful ₦2,000 purchase is needed;
-B2B outreach is next, followed by evidence-backed diaspora USD pricing. Do not
-invent a Business price or claim the webhook is proven from local mocks.
+**Deployment and security incident:** pushed `d1a3cfe` with `[deploy-pass]` to
+publish the email-copy correction. Run `37890401771` succeeded as Worker version
+`2ddb599e-ef40-4b6a-a789-bf5742c97874`. Wrangler unexpectedly printed remote
+Cloudflare dashboard `vars` for `BREVO_API_KEY`, `FLW_SECRET_KEY`, and
+`FLW_WEBHOOK_HASH`; the PR #11 comment was immediately replaced with a redacted
+warning. GitHub denied this integration's attempts to delete the Actions log
+(403). Wrangler's default deploy removes remote vars missing from local config,
+so treat the payment/email settings as unavailable until restored. The value
+under `FLW_SECRET_KEY` was also the wrong Flutterwave key type (public, not
+secret). The current branch hardens both marker-gated deploy workflows with `--keep-vars`
+and a raw-Wrangler-log redactor; do not deploy or take a payment until the owner
+rotates credentials, deletes the run log if possible, and stores fresh values as
+Cloudflare Worker Secrets.
+
+**Live purchase is not yet verified.** After credential recovery, one real
+successful ₦2,000 purchase is required; a ₦100 event is intentionally ignored.
+Then B2B outreach/discovery comes first (Business remains unpriced), followed by
+evidence-backed diaspora USD pricing. Do not claim local mocks prove the live
+webhook or invent a Business price.
 
 ### Previous session — 8 Oct 2026
 
@@ -668,7 +679,8 @@ item 9.
 | 24 | 8 Oct 2026 | **Closed the last pay-path leaks and published the diaspora page.** Found two things the earlier pass missed. (1) **The seven national pages had no pay path at all** — `tenancy-agreement-nigeria`, `notice-to-quit-nigeria`, `tenant-rights-nigeria`, `caution-fee-nigeria`, `invoice-format-nigeria`, `rent-receipt-format-nigeria`, `shop-tenancy-agreement-nigeria`. These rank for the *head* terms and carry far more search volume than any state page, yet they had neither the sticky bar nor the pricing link the state pages got. Fixed: **coverage now 56/60 pages**, the four remaining being index (which *is* the app), privacy, terms and success — correctly excluded. (2) Those same pages listed "All DocOga tools" as **9** items, so the new POA tool was invisible site-wide. Added. Then published **`site/power-of-attorney-nigeria.html`** — the diaspora landing page. It was needed because the POA tool lives on a hash route (`#poa`) that search engines index poorly, so the highest-value product in the business had no page that could rank. Content is sourced with an explicit Sources-and-confidence box and a "what we could not confirm" list: POA is not a conveyance (needs a deed of assignment + Governor's Consent, **s.22 Land Use Act**); ***Ojugbele v. Olasoji* (1982) SC 71** (unregistered registrable POA inadmissible; Lagos Registrar requirement; irrevocable void unregistered); illiterate/blind grantor attestation; stamp duty before admissibility; **Nigeria is not a party to the Hague Apostille Convention** so consular legalisation (notary → MFA Abuja → embassy) is the only route; indicative costs (~₦50,000 registration) flagged as practitioner figures not statute; and diaspora fraud patterns (fake titles, double sales, land that does not exist, family who "help" until the money goes). FAQPage JSON-LD, canonical, sticky CTA, sitemap (59 URLs). **QA green 0 errors; DOM 85/85; worker suite green.** | pushed `41101d2` |
 | 25 | 8 Oct 2026 | **Business tier shipped; two live bugs on the money page fixed.** Asked "what next", I sequenced on one criterion — *least blocked*. SEO pays off in months and I still cannot forecast it without traffic data; the diaspora/USD play is gated on Flutterwave international approval. **B2B is blocked by nothing I don't control**: no new product needed (the 10 tools exist), no traffic needed (50 conversations beat 50,000 visitors), no international payments needed (businesses pay by transfer), and one estate agency is worth ~1,000× a ₦2,000 pass. There was no B2B entry point anywhere — no page, no link, no price. Added as a third pricing card with a WhatsApp quote link. **Deliberately not priced**: Rule Zero, I have no data that justifies a B2B number, so it says "Custom" and opens a conversation — inventing an anchor is worse than not having one. **Also fixed two live bugs on the page that takes money:** the pricing section told customers we had *fewer* tools than we ship — Free said "All four tools", Oga Pass said "All 9 tools", and **Power of Attorney was named on neither tier**. The conversion surface was underselling the product to everyone who reached it. **Page-weight guard now measures the right thing.** The old 60–135KB *raw* window was a proxy that punishes adding tools without tracking load time; its own comment invited this ("Do NOT raise past 135k without new gzip math"). New math: 135,856 raw → **38,217 gzipped (28.1%)** = 37.3KB over the wire, up from 33.3KB at the 9-tool baseline, ~7.5% of the 500KB Nigerian-mobile guidance. Now gates on gzip (48KB ceiling) with raw kept purely as a corruption tripwire; reasoning recorded in the comment. **12 new DOM tests** guard pricing as a revenue surface — 3 tiers, no stale tool-count copy, real RENDERERS count stated, POA named on the paid tier, Business link uses the configured number, buy button wired. Adding tool 11 without updating the copy now fails the suite. **QA green, DOM 97/97.** | pushed `c8b19c8` |
 | 26 | 9 Oct 2026 | **The payment worker is deployed and the site is live again. Both had been silently broken.** **docoga-pass:** `WORKER_URL` in `site/index.html` was never wrong — that worker simply did not exist. Getting it deployed took four API tokens. A token fingerprint (sha256[:16], logged from CI) proved which token was actually in the secret: attempt 2 changed it but perms were unchanged, attempt 3 changed nothing at all. `GET /zones` then handed over the token's own permission list, showing **zone/DNS permissions only** — no Workers, no KV — twice in a row. It succeeded on the fourth token with `Account → Workers Scripts → Write` and `Account → Workers KV Storage → Write`. Deployed: `https://docoga-pass.johnazani.workers.dev`, version `f6370c2d-853d`, KV `docoga-kv` bound, cron `0 7 * * *`. `/activate` and `/verify` both answer correctly where they previously 404'd. **Also fixed a latent deploy bug:** `wrangler deploy` run from `worker/` was picking up the *root* `wrangler.jsonc` and deploying to **docoga-git** (the site) instead of docoga-pass — plausibly how the payment worker got clobbered. Now passes `--config wrangler.toml` explicitly. **The site:** Workers Builds has been failing since session 25 with no error text, so the site silently stopped updating — sessions 24–25 were merged but never live. `docoga-git` is a **Worker with static assets**, not Pages, so `wrangler deploy` at the root works and the working token can run it: `deploy-site-now.yml` now does that, gated on `[deploy-site]`, and **Workers Builds is no longer a blocker**. `docoga.com.ng` is attached as a Workers custom domain pointing at docoga-git (no Worker routes; DNS holds only `AAAA -> 100::`, Cloudflare's placeholder for hostnames it answers itself). **The 404 that was really a cache:** after deploying, the POA page served fine on the workers.dev host but still 404'd on docoga.com.ng from the same worker — a 404 cached at the edge before the file existed. `purge_cache` fixed it instantly and is now a permanent deploy step. Verified live: the POA generator and all three pricing tiers including **Business (Custom, annual, per team)**. **Also fixed a CI regression I had introduced:** `QA + repo integrity` was failing. `test_title_carries_the_shorts_suffix_and_topic_does_not` asserted a hardcoded topic from a **date-seeded rotation** — a time bomb that broke on 9 Oct. Worse, its mock patched `generate_video`, but `youtube_short_daily.main()` **discards** that return value and uses `script["title"]`; production is identical because `generate_video` returns `script["title"]`, so the mock was decorative and the assertion only ever held by coincidence. The test now asserts the real contract date-independently and adds the "topic must not contain #Shorts" check its name promised. (The `09-10-2026` stderr line is a deliberate passing test, not a bug.) All 48 tests, pre_push_verify and qa.py green. **Still blocking revenue:** the fresh Worker has **zero secrets** — `FLW_CLIENT_ID`/`FLW_CLIENT_SECRET` (or `FLW_SECRET_KEY`), `ISSUE_SECRET`, and an email key — so `/issue` 401s and codes cannot be delivered. These are live payment credentials: they belong in the Cloudflare dashboard, never in chat or git. The offline batch is unaffected (hardcoded FNV-1a hashes, not ISSUE_SECRET). | pushed `28b9fd9` |
-| 27 | 9 Oct 2026 | Corrected deployment handover and revenue sequence; documented Worker secrets/webhook as owner-reported and live test pending; added signed webhook tests for the ₦2,000 acceptance and ₦100 ignore, idempotency, aliases, and Brevo hand-off; updated pass email copy for all 10 tools. | pending |
+| 27 | 9 Oct 2026 | Corrected deploy handover and revenue sequence; added v3/webhook tests and all-10-tools email copy; `[deploy-pass]` run `37890401771` deployed version `2ddb599e`, but Wrangler exposed remote dashboard vars in its log. PR #11 comment redacted; log deletion 403. Owner must rotate/restore credentials as Worker Secrets before any purchase. | `d1a3cfe` |
+| 28 | 9 Oct 2026 | Hardened both Cloudflare deploy workflows to preserve dashboard vars and redact raw Wrangler logs; added regression tests and the redaction helper. No new deploy triggered pending credential rotation/recovery. | pending |
 | 20 | 8 Oct 2026 | **Rule Zero enforced on the build: the verified law is now wired into the pages.** `tools/state_law_data.py` (6 jurisdictions, 20 open questions) drives `tools/gen_state_pages.py`. Three live factual errors fixed: (1) the hard-coded notice table printed "Half-yearly — 3 months" on all 48 pages when that is Lagos s.13(1)(d) and essentially nowhere else — the FCT Act, Cross River s.15 and Kwara s.17 have no half-yearly tier; (2) the four Edo pages said "Magistrates' Courts in Edo State" and "recovery-of-premises legislation" when s.4 of the Edict establishes **Rent Tribunals** and s.41(2) repealed the Recovery of Premises Law for residential accommodation; (3) every page now carries a Sources-and-confidence box with its tier and a "What we could not confirm" list. Rivers added at tier B on the strength of Cap. 109 s.7 (quit notice must expire on the **eve of the anniversary**, the opposite of Lagos s.13(4)) and Landlord & Tenant Law Cap. 75 s.75(1) (rent payable **in arrears**) | PR #11 |
 | 19 | 8 Oct 2026 | **Research before building: measured the state pages and found they fail Google's doorway-page test — median 94.2% similarity between same-tool state pages, median 3 unique words each (worst pairs 99.6%).** So "expand 12 states to 37" was the wrong next move. Wrote `docs/STATE_TENANCY_RESEARCH.md`: verified statute names, sections and sources for 17 of 37 jurisdictions, tiered A-E, with everything unverified listed and three pending bills flagged as NOT law. Added `tools/audit_state_pages.py` to measure and later enforce (80% / 250 unique words / 500 body words) | PR #12 |
 | 18 | 8 Oct 2026 | **Gave the armed Shorts pipeline a memory and an alarm:** publish ledger (`tools/youtube_ledger.py`) + duplicate guard, a secrets preflight that names what is missing, a `YT_PRIVACY` repo-variable switch, a run summary, and a labelled issue opened on any failed run. Verified by simulating all nine scenarios locally (the token cannot dispatch), which caught a real bug: `force=true` exited 3 and failed the run instead of publishing. 48 tests green | PR #11 |
@@ -680,19 +692,24 @@ item 9.
 
 ### Current revenue priority — 9 Oct 2026
 
-1. **Verify the live Flutterwave webhook with one real successful ₦2,000 purchase.**
-   The owner reports `FLW_SECRET_KEY`, `FLW_WEBHOOK_HASH`, and `BREVO_API_KEY` set
-   on `docoga-pass`, and the URL saved in Flutterwave. A ₦100 test is expected to
-   be ignored because every issuance path requires at least ₦2,000. Confirm the
-   payment, webhook acceptance, email delivery, and reference lookup before calling
-   the live payment-to-pass flow proven. This agent cannot initiate the purchase.
-2. **B2B discovery/outreach.** The Business tier is live and intentionally unpriced.
+1. **Credential incident response first.** Delete Actions run/log `37890401771` in
+   the GitHub UI if possible. Revoke/rotate the exposed Brevo key; create a genuine
+   Flutterwave secret key (the old value had the public-key type); generate a fresh
+   webhook hash; remove stale plain-text vars and store the new values as Cloudflare
+   Worker **Secrets**. Restore the matching hash in Flutterwave. Never paste credentials
+   into chat or git.
+2. **Then verify the live webhook.** After the secrets are restored and the safe
+   `[deploy-pass]` workflow is used, make one real successful **₦2,000** purchase and
+   confirm webhook acceptance, pass email, and reference lookup. A ₦100 event is
+   intentionally ignored; it is not a valid test. This agent cannot initiate the
+   purchase or delete the prior run log.
+3. **B2B discovery/outreach.** The Business tier is live and intentionally unpriced.
    Collect requirements and willingness-to-pay evidence; do not invent or publish a
    number.
-3. **Diaspora USD pricing.** Research and confirm Flutterwave international approval,
+4. **Diaspora USD pricing.** Research and confirm Flutterwave international approval,
    settlement and buyer willingness to pay before selecting a price. The `$20` in
    `docs/REVENUE.md` is an illustrative calculation only, not an adopted price.
-4. **Read GA baseline** (`G-GO8VZB3R28`) in parallel; the agent cannot access it.
+5. **Read GA baseline** (`G-GO8VZB3R28`) in parallel; the agent cannot access it.
 
 ### Historical backlog
 
