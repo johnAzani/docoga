@@ -153,6 +153,30 @@ permissions: ["#zone_settings:edit","#zone_settings:read","#dns_records:read",
 **Zone/DNS permissions only — nothing for Workers, KV or Pages.** That is the whole
 problem. Two tokens in a row were created from a zone-scoped template.
 
+### Third token attempt, same day — down to two missing rows
+
+Fingerprint `030093fa0b41d28d`. Now partially working, which pinpoints the gap:
+
+| Endpoint | Result | Meaning |
+|---|---|---|
+| `GET /accounts/{id}/workers/scripts` | **`success: true`, `result: []`** | Workers Scripts **Read** is granted |
+| `GET /accounts/{id}/workers/scripts/docoga-pass/secrets` | `No access to the specified resource` | Workers Scripts **Edit** is missing |
+| `GET /accounts/{id}/storage/kv/namespaces` | `Authentication error` | Workers KV Storage missing entirely |
+| Zone permission list | now contains `#worker:edit`, `#worker:read` | Zone-level Workers Routes granted |
+
+So the token has the **Read** level on Workers Scripts where the deploy needs **Edit**,
+and has no KV permission at all. The third dropdown in the permission row reads
+"Read" and must read "Edit".
+
+**The account contains zero Workers.** `/workers/scripts` returned an empty list with
+`success: true` — a genuine empty, not a permissions empty (compare: KV returns an
+authentication error on the same token). The live site `docoga-git` is therefore a
+**Pages project**, not a Workers script; Cloudflare surfaces Pages builds as
+"Workers Builds" and does not list Pages projects under `/workers/scripts` (verifying
+that would need `/pages/projects`, which needs a Pages permission this token lacks).
+`docoga-pass` will be this account's first actual Worker, so wrangler's secrets probe
+hits a script that does not exist yet — with Edit it will create it rather than 403.
+
 Also confirmed correct, so stop re-checking these:
 - Account `276c50d7329e162bd36d1ef8eb3e7566` ("Azanijohn2017@gmail.com's Account")
 - Zone `docoga.com.ng` (`38e545caefd3f31acf6cc732ffe663ba`), status **active**,
