@@ -244,9 +244,22 @@ class DailyShortOutputTests(unittest.TestCase):
             self.assertTrue(outputs[key].strip(), "%s must never be empty" % key)
 
     def test_title_carries_the_shorts_suffix_and_topic_does_not(self):
+        # Deliberately does NOT assert a fixed topic string. The topic is chosen
+        # by a date-seeded rotation, so any hardcoded value is a time bomb: it
+        # passes only on the days the rotation happens to land on it. This test
+        # used to hardcode "Keep a Rent Paper Trail" and broke CI on 2026-10-09
+        # when the rotation moved to "Before You Pay an Agent".
+        #
+        # The mock in _run_daily() returns a topic from generate_video(), but
+        # youtube_short_daily.main() discards that second return value and uses
+        # script["title"] instead. In production the two are always identical
+        # (generate_video returns script["title"]), so the mock was decorative —
+        # which is exactly why the hardcoded assertion ever passed.
         outputs = self._run_daily()
         self.assertTrue(outputs["title"].endswith("#Shorts"))
-        self.assertEqual(outputs["topic"], "Keep a Rent Paper Trail")
+        # The test name promises this; the original never actually checked it.
+        self.assertNotIn("#Shorts", outputs["topic"])
+        self.assertTrue(outputs["topic"].strip(), "topic must never be empty")
         self.assertEqual(outputs["title"], "%s #Shorts" % outputs["topic"])
 
     def test_description_points_at_docoga_and_disclaims_legal_advice(self):
