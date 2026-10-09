@@ -94,6 +94,24 @@ jobs:
             -H "Authorization: Bearer $CF_TOKEN" \
             "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/storage/kv/namespaces" \
             | head -c 2000 | tee -a "$DEPLOY_LOG"
+          echo | tee -a "$DEPLOY_LOG"
+          echo "########## workers.dev subdomain for this account ##########" | tee -a "$DEPLOY_LOG"
+          curl -sS --max-time 25 \
+            -H "Authorization: Bearer $CF_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/workers/subdomain" \
+            | head -c 800 | tee -a "$DEPLOY_LOG"
+          echo | tee -a "$DEPLOY_LOG"
+          echo "########## PAGES projects (is docoga-git here?) ##########" | tee -a "$DEPLOY_LOG"
+          curl -sS --max-time 25 \
+            -H "Authorization: Bearer $CF_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/pages/projects?per_page=50" \
+            | head -c 2500 | tee -a "$DEPLOY_LOG"
+          echo | tee -a "$DEPLOY_LOG"
+          echo "########## zones ##########" | tee -a "$DEPLOY_LOG"
+          curl -sS --max-time 25 \
+            -H "Authorization: Bearer $CF_TOKEN" \
+            "https://api.cloudflare.com/client/v4/zones?per_page=50" \
+            | head -c 1500 | tee -a "$DEPLOY_LOG"
 
       - name: Deploy worker/ as docoga-pass
         if: ${{ env.RESULT != 'MISSING_SECRETS' }}
