@@ -177,6 +177,57 @@ that would need `/pages/projects`, which needs a Pages permission this token lac
 `docoga-pass` will be this account's first actual Worker, so wrangler's secrets probe
 hits a script that does not exist yet — with Edit it will create it rather than 403.
 
+### LIVE — deployed 9 Oct 2026
+
+Fourth token attempt, fingerprint `f3f99ca0ab153423`, finally had both
+`Account → Workers Scripts → Write` and `Account → Workers KV Storage → Write`.
+Deploy succeeded on the first try:
+
+```
+Deployed docoga-pass triggers (0.74 sec)
+  https://docoga-pass.johnazani.workers.dev
+  schedule: 0 7 * * *
+Current Version ID: f6370c2d-853d-46db-8aa6-d2754fb9dc88
+```
+
+Bindings confirmed live: `env.KV` → `f3a5afebe7d04bb0a6018c0d7d355253` ("docoga-kv"),
+`env.PROVIDER` = `flw`, `env.SITE_URL` = `https://docoga.com.ng`. Account
+workers.dev subdomain is `johnazani`.
+
+`WORKER_URL` in `site/index.html` (`https://docoga-pass.johnazani.workers.dev`)
+matches the deployed worker exactly — that constant was right all along; the
+worker simply had never been deployed under that name.
+
+**Endpoint probes after deploy:**
+
+- `GET /verify?ref=DOCOGA-PROBE-1` → `{"ok":false,"error":"payment not found or not successful yet"}`
+- `GET /activate?code=PROBE-CODE-1` → `{"ok":false,"error":"invalid code"}`
+
+Both were 404 before. `/activate` is the endpoint the storefront actually calls
+(`site/index.html:1132`), so **activation is restored**.
+
+### Remaining: the worker has zero secrets
+
+A fresh Worker starts with no secrets, and `wrangler deploy` never sets them.
+Confirmed empty via `GET .../workers/scripts/docoga-pass/secrets`.
+
+What each gates:
+
+| Secret | Gates | Status without it |
+|---|---|---|
+| `FLW_CLIENT_ID` + `FLW_CLIENT_SECRET` (v4), or `FLW_SECRET_KEY` (v3) | `/verify` confirming payment with Flutterwave | `/verify` cannot confirm payment |
+| `ISSUE_SECRET` | `POST /issue` (Selar/Zapier bridge, line 197) | returns 401 `unauthorized` |
+| `BREVO_API_KEY` / `RESEND_API_KEY` | `emailCode()` delivering the pass | code issued but never emailed |
+
+Not needed: the offline-batch path is unaffected. Those codes are validated by a
+hardcoded set of **FNV-1a** hashes (`OFFLINE_HASHES` in `worker/index.js:49`), not by
+`ISSUE_SECRET`, so they work with no secrets at all. `unlock-codes.txt` is
+gitignored on purpose (paid-product inventory) and must stay out of git.
+
+These are live financial credentials: set them in the **Cloudflare dashboard**, not in
+chat and not in GitHub. Workers & Pages → docoga-pass → Settings → Variables and
+Secrets.
+
 Also confirmed correct, so stop re-checking these:
 - Account `276c50d7329e162bd36d1ef8eb3e7566` ("Azanijohn2017@gmail.com's Account")
 - Zone `docoga.com.ng` (`38e545caefd3f31acf6cc732ffe663ba`), status **active**,
