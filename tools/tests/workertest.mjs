@@ -198,6 +198,87 @@ globalThis.fetch = async (url, init = {}) => {
   return new Response(null, { status: 201 });
 };
 
+console.log('— /resend-email (no-charge recovery path) —');
+const resendCode = 'OGA-RESN-TEST-8236';
+const resendRequests = [];
+const disabledResendEnv = makeEnv({
+  'ref:FLW-REF-RESEND-A': resendCode,
+  ['code:' + resendCode]: rec(resendCode, { email: 'resend-buyer@example.com', exp: NOW + 30 * 864e5 }),
+});
+disabledResendEnv.BREVO_API_KEY = 'test-brevo-key';
+r = await hit(disabledResendEnv, '/resend-email', {
+  method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ids: ['FLW-REF-RESEND-A'] }),
+});
+ok('resend is fail-closed until explicitly enabled after sender authentication', r.status === 503 && r.j.error === 'resend_disabled' && resendRequests.length === 0);
+const resendEnv = makeEnv({
+  'ref:FLW-REF-RESEND-A': resendCode,
+  'ref:FLW-REF-RESEND-B': resendCode, // aliases for the same purchase must share a throttle
+  ['code:' + resendCode]: rec(resendCode, { email: 'resend-buyer@example.com', exp: NOW + 30 * 864e5 }),
+});
+resendEnv.BREVO_API_KEY = 'test-brevo-key';
+resendEnv.RESEND_EMAIL_ENABLED = 'true';
+globalThis.fetch = async (url, init = {}) => {
+  resendRequests.push({ url: String(url), body: JSON.parse(init.body || '{}') });
+  return new Response(null, { status: 201 });
+};
+r = await hit(resendEnv, '/resend-email', {
+  method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ids: ['FLW-REF-RESEND-A'] }),
+});
+ok('resend sends the stored pass to its stored email without returning the code', r.status === 200 && r.j.ok === true && !JSON.stringify(r.j).includes(resendCode) && resendRequests.length === 1 && resendRequests[0].body.to?.[0]?.email === 'resend-buyer@example.com' && resendRequests[0].body.textContent.includes(resendCode));
+r = await hit(resendEnv, '/resend-email', {
+  method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ids: ['FLW-REF-RESEND-B'] }),
+});
+ok('resend throttle covers reference aliases for the same pass', r.status === 429 && r.j.error === 'resend_wait' && resendRequests.length === 1);
+
+const topupOldCode = 'OGA-OLDP-PLAN-8234';
+const topupNewCode = 'OGA-NEWP-PLAN-8235';
+const topupResendEnv = makeEnv({
+  'ref:FLW-REF-RESEND-TOPUP': topupOldCode,
+  ['code:' + topupOldCode]: rec(topupOldCode, { email: 'old-buyer@example.com', succ: topupNewCode, exp: NOW + 10 * 864e5 }),
+  ['code:' + topupNewCode]: rec(topupNewCode, { email: 'current-buyer@example.com', exp: NOW + 40 * 864e5 }),
+});
+topupResendEnv.BREVO_API_KEY = 'test-brevo-key';
+topupResendEnv.RESEND_EMAIL_ENABLED = 'true';
+r = await hit(topupResendEnv, '/resend-email', {
+  method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ref: 'FLW-REF-RESEND-TOPUP' }),
+});
+ok('top-up reference resends only the newest active code to its stored email', r.status === 200 && !JSON.stringify(r.j).includes(topupNewCode) && resendRequests.length === 2 && resendRequests[1].body.to?.[0]?.email === 'current-buyer@example.com' && resendRequests[1].body.textContent.includes(topupNewCode) && !resendRequests[1].body.textContent.includes(topupOldCode));
+const expiredResendCode = 'OGA-EXPR-PLAN-8234';
+const expiredResendEnv = makeEnv({
+  'ref:FLW-REF-RESEND-EXPIRED': expiredResendCode,
+  ['code:' + expiredResendCode]: rec(expiredResendCode, { email: 'expired-buyer@example.com', exp: NOW - 864e5 }),
+});
+expiredResendEnv.BREVO_API_KEY = 'test-brevo-key';
+expiredResendEnv.RESEND_EMAIL_ENABLED = 'true';
+r = await hit(expiredResendEnv, '/resend-email', {
+  method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ref: 'FLW-REF-RESEND-EXPIRED' }),
+});
+ok('expired passes cannot be resent', r.status === 410 && r.j.error === 'pass_expired' && resendRequests.length === 2);
+
+const failedResendCode = 'OGA-FALX-RESE-8237';
+const failedResendEnv = makeEnv({
+  'ref:FLW-REF-RESEND-FAIL': failedResendCode,
+  ['code:' + failedResendCode]: rec(failedResendCode, { email: 'private-resend@example.com', exp: NOW + 30 * 864e5 }),
+});
+failedResendEnv.BREVO_API_KEY = 'test-brevo-key';
+failedResendEnv.RESEND_EMAIL_ENABLED = 'true';
+let resendFailureLogs = [];
+const originalConsoleError = console.error;
+console.error = (...args) => resendFailureLogs.push(args.join(' '));
+globalThis.fetch = async () => new Response('private provider response body', { status: 401 });
+r = await hit(failedResendEnv, '/resend-email', {
+  method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ref: 'FLW-REF-RESEND-FAIL' }),
+});
+console.error = originalConsoleError;
+const resendFailureLog = resendFailureLogs.join(' ');
+ok('provider rejection fails the resend without exposing the code', r.status === 502 && r.j.error === 'email_send_failed' && !JSON.stringify(r.j).includes(failedResendCode));
+ok('resend failure diagnostic excludes recipient and provider body', resendFailureLog.includes('BREVO_HTTP_401') && !resendFailureLog.includes('private-resend@example.com') && !resendFailureLog.includes('private provider response body') && !resendFailureLog.includes(failedResendCode));
+
+globalThis.fetch = async (url, init = {}) => {
+  webhookMailRequests.push({ url: String(url), body: JSON.parse(init.body || '{}') });
+  return new Response(null, { status: 201 });
+};
+
 const underpaidEnv = makeEnv({});
 underpaidEnv.FLW_WEBHOOK_HASH = webhookHash;
 underpaidEnv.BREVO_API_KEY = 'test-brevo-key';

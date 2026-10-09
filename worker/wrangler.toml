@@ -24,7 +24,8 @@ id = "f3a5afebe7d04bb0a6018c0d7d355253"
 #   wrangler secret put RESEND_API_KEY          (optional fallback)
 # Plain (non-secret) variables can also be set in the dashboard:
 #   PROVIDER = "flw" or "paystack"
-#   MAIL_FROM = "DocOga <passes@docoga.com.ng>"
+#   MAIL_FROM = "DocOga <passes@docoga.com.ng>" (must be verified by the active mail provider)
+#   RESEND_EMAIL_ENABLED = "true" (only after sender/domain authentication; unset means disabled)
 #   SITE_URL = "https://docoga.com.ng"
 
 [triggers]

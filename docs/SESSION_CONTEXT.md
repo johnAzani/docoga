@@ -541,24 +541,34 @@ key type, not the required secret-key type.
 **Owner-reported live check:** a qualifying Flutterwave payment returned a pass
 and the browser success page auto-activated it for 30 days. The Worker root later
 showed `lastWebhookMinutesAgo: 6`, supporting a recent signature-validated webhook
-but not identifying this transaction by itself. Brevo showed a transactional
-message as `Sent`, while the buyer did not receive it. Email inbox delivery is
-unresolved; do not make another purchase to investigate. The owner confirms the
-earlier `11d` chip was in the same browser. The top-up path should carry remaining
-days when the Worker recognizes the previous code. Code review found `syncPass()`
-left a cached pass visible when `/activate` explicitly returned `invalid code` (it
-only cleared on `expired`); the site now clears local state on either definitive
-response. Stale cache is a plausible, unconfirmed explanation; this does not
-restore any days, and the client fix needs a future site deploy.
+but not identifying this transaction by itself. The detailed Brevo event shows one
+attempt, 0% delivered, and an `Error` rejecting the default sender
+`noreply@docoga.com.ng` as invalid until the sender is validated or the domain
+authenticated. This is a sender-identity rejection, not evidence of spam placement
+or a recipient-server bounce. The log's recipient has not been explicitly compared
+with checkout. No address, code, or transaction identifier is stored here. Do not
+make another purchase or blindly resend. Brevo and Cloudflare account actions are
+not accessible from this session.
 
-**Code-side fixes in progress:** Worker mail providers' HTTP response status is
-now checked; safe logs report provider/status only and never recipient, pass code,
-response body, or secret. Tests cover Brevo HTTP rejection without blocking code
-issuance. `site/index.html` now clears a cached pass when `/activate` explicitly
-returns `invalid code` or `expired`; this prevents an unverified local pass from
-remaining displayed. Both changes need future hardened deploys to affect production.
-The mail diagnostic cannot retrieve or resend the already-sent email. No pass code,
-recipient address, or transaction identifier is stored in this handover.
+The owner confirms the earlier `11d` chip and purchase were in the same browser.
+The top-up path should carry remaining days when the Worker recognizes the previous
+code. The site now clears local state when `/activate` explicitly returns
+`invalid code` or `expired`. Stale cache remains a plausible, unconfirmed
+explanation; it does not restore any days, and this fix needs a future hardened
+site deploy.
+
+**Code-side state:** Worker provider HTTP-status checks and safe diagnostics are
+pushed but not deployed. The no-charge `/resend-email` flow and explicit button on
+`site/success.html` are now implemented locally and tested: it resolves the
+purchase's existing code from stored reference aliases, follows top-ups to the
+newest active code, sends only to the stored checkout email, never returns the
+code, and throttles by pass to one attempt per 60 seconds and three per UTC day.
+It is fail-closed unless Worker runtime variable `RESEND_EMAIL_ENABLED` is exactly
+`true`; leave it disabled until Brevo authenticates `docoga.com.ng` or a verified
+sender is configured. These new Worker/UI changes are branch-only and not
+deployed. The agent owns app-side tests; account/DNS changes must be made outside
+this workspace. No pass code, recipient address, or transaction
+identifier is stored in this handover.
 
 ### Previous session — 8 Oct 2026
 
@@ -691,6 +701,7 @@ item 9.
 | 28 | 9 Oct 2026 | Hardened both Cloudflare deploy workflows to preserve dashboard vars and redact raw Wrangler logs; added regression tests and the redaction helper. No new deploy triggered pending credential rotation/recovery. | `3f72d0a` |
 | 29 | 9 Oct 2026 | Owner-reported qualifying purchase returned/activated a pass; root showed a recent valid-signature webhook timestamp. Brevo marked the message `Sent`, but inbox delivery failed. Added safe provider-status checks/logging in Worker code; diagnose recipient/delivery status without another charge. | `44ac1e5` |
 | 30 | 9 Oct 2026 | Owner confirmed the earlier 11-day pass chip was in the purchase browser; found `syncPass()` kept an invalid cached code visible. Site now clears cached state on explicit Worker `invalid code` or `expired`; this does not restore days and awaits a safe site deploy. | `805f8a4` |
+| 31 | 9 Oct 2026 | Brevo event confirms sender rejection for the default `noreply@docoga.com.ng` identity (0% delivered); added a fail-closed, rate-limited, no-charge resend endpoint/button for the existing active pass plus tests. Local only; sender authentication and security gates remain before enable/deploy. | pending |
 | 20 | 8 Oct 2026 | **Rule Zero enforced on the build: the verified law is now wired into the pages.** `tools/state_law_data.py` (6 jurisdictions, 20 open questions) drives `tools/gen_state_pages.py`. Three live factual errors fixed: (1) the hard-coded notice table printed "Half-yearly — 3 months" on all 48 pages when that is Lagos s.13(1)(d) and essentially nowhere else — the FCT Act, Cross River s.15 and Kwara s.17 have no half-yearly tier; (2) the four Edo pages said "Magistrates' Courts in Edo State" and "recovery-of-premises legislation" when s.4 of the Edict establishes **Rent Tribunals** and s.41(2) repealed the Recovery of Premises Law for residential accommodation; (3) every page now carries a Sources-and-confidence box with its tier and a "What we could not confirm" list. Rivers added at tier B on the strength of Cap. 109 s.7 (quit notice must expire on the **eve of the anniversary**, the opposite of Lagos s.13(4)) and Landlord & Tenant Law Cap. 75 s.75(1) (rent payable **in arrears**) | PR #11 |
 | 19 | 8 Oct 2026 | **Research before building: measured the state pages and found they fail Google's doorway-page test — median 94.2% similarity between same-tool state pages, median 3 unique words each (worst pairs 99.6%).** So "expand 12 states to 37" was the wrong next move. Wrote `docs/STATE_TENANCY_RESEARCH.md`: verified statute names, sections and sources for 17 of 37 jurisdictions, tiered A-E, with everything unverified listed and three pending bills flagged as NOT law. Added `tools/audit_state_pages.py` to measure and later enforce (80% / 250 unique words / 500 body words) | PR #12 |
 | 18 | 8 Oct 2026 | **Gave the armed Shorts pipeline a memory and an alarm:** publish ledger (`tools/youtube_ledger.py`) + duplicate guard, a secrets preflight that names what is missing, a `YT_PRIVACY` repo-variable switch, a run summary, and a labelled issue opened on any failed run. Verified by simulating all nine scenarios locally (the token cannot dispatch), which caught a real bug: `force=true` exited 3 and failed the run instead of publishing. 48 tests green | PR #11 |
@@ -702,30 +713,40 @@ item 9.
 
 ### Current revenue priority — 9 Oct 2026
 
-1. **Resolve email delivery; no second purchase.** Brevo shows `Sent`, but the buyer
-   inbox did not receive the pass email. In Brevo's message details, check privately
-   whether the recipient matches the email used at Flutterwave and whether the final
-   event is delivered, deferred, blocked, or bounced. If delivered, check spam/all
-   mail/quarantine; if rejected, use the provider's failure reason. Do not paste the
-   address, pass code, response body, or credentials into chat. Arena has no Brevo
-   connector, so the agent cannot inspect those account-only details directly.
-2. **Apply the Worker mail diagnostics safely.** Code now checks mail-provider HTTP
-   status and logs only a safe provider/status reason. Once the owner has attempted
-   the old Actions log deletion and confirms the rotated secrets are in Production,
-   deploy through the hardened marker-gated Worker workflow; no further payment is
-   needed for this diagnostic release.
-3. **Investigate the 11-day rollover without charging again.** Same browser is
-   confirmed. The Worker should add the previous pass's remaining days only if that
-   old code exists and is valid in KV; the prior local chip could have been stale.
-   The client now clears explicit invalid/expired cached codes, pending a site deploy.
-   Do not repurchase; recover remaining time only if the server record confirms it.
-4. **B2B discovery/outreach.** The Business tier is live and deliberately unpriced.
+1. **Authenticate the sender in Brevo; no second purchase.** Brevo's detailed log
+   shows 0% delivered and an `Error` rejecting `noreply@docoga.com.ng` as an invalid
+   sender. Authenticate `docoga.com.ng` in Brevo, or select a sender Brevo already
+   verifies. In Brevo, copy the exact DNS records it supplies into Cloudflare DNS;
+   do not guess record names/values. Wait for Brevo to mark the domain/sender
+   authenticated. The event recipient has not been compared with checkout; do not
+   share either address or any key. Brevo/Cloudflare access is unavailable to this
+   session, so the owner must perform this account-side step.
+2. **Enable and deliberately resend the existing pass only after authentication.**
+   Local code adds `POST /resend-email` and a button on the success page. It targets
+   only the email stored with the active purchased pass, does not issue a code or
+   return one in the HTTP response, and throttles per pass (60 seconds, three per
+   UTC day). It fails closed until the Cloudflare Worker runtime variable
+   `RESEND_EMAIL_ENABLED` is exactly `true`. If choosing a different verified
+   sender, configure `MAIL_FROM` to that exact identity. Do not use the button until
+   sender authentication is complete.
+3. **Honor deployment security gates.** Before any deploy, the owner must attempt
+   the best-effort deletion of run `37890401771` and confirm the production Worker
+   secrets are in place; the agent cannot independently verify either. Then use
+   only the hardened, marker-gated workflow. Do not deploy this branch before both
+   conditions are met. No additional payment is required or permitted for this
+   email investigation.
+4. **Investigate the 11-day rollover without charging again.** Same browser is
+   confirmed. The Worker carries remaining time only if the old code exists and is
+   valid in KV; the old local chip could have been stale. The client now clears
+   explicit invalid/expired cached codes, pending a safe site deploy. The cache fix
+   cannot restore days; do not repurchase.
+5. **B2B discovery/outreach.** The Business tier is live and deliberately unpriced.
    Collect requirements and willingness-to-pay evidence; do not invent or publish a
    number.
-5. **Diaspora USD pricing.** Research Flutterwave international approval, settlement
+6. **Diaspora USD pricing.** Research Flutterwave international approval, settlement
    and buyer willingness-to-pay before selecting a price. The `$20` in
    `docs/REVENUE.md` remains an illustrative calculation only.
-6. **Read GA baseline** (`G-GO8VZB3R28`) in parallel; the agent cannot access it.
+7. **Read GA baseline** (`G-GO8VZB3R28`) in parallel; the agent cannot access it.
 
 ### Historical backlog
 

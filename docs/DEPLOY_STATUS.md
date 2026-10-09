@@ -13,10 +13,12 @@ redacted, while deleting the run log was denied to this integration. The owner
 now reports replacing the exposed credentials as Worker Secrets. A subsequent
 qualifying live payment returned a pass code and activated it for 30 days. The
 Worker root showed `lastWebhookMinutesAgo: 6` when checked, which supports a
-recent authenticated webhook but does not by itself identify the event. Brevo
-history showed a transactional email as `Sent`, while the buyer did not receive
-it; inbox delivery remains unresolved. **Do not take another payment to debug
-email.**
+recent authenticated webhook but does not by itself identify the event. Brevo's
+detailed event now identifies the email failure: one attempt, 0% delivered, and
+an `Error` rejecting the default sender `noreply@docoga.com.ng` as invalid until
+the sender is validated or the domain authenticated. This is a sender-identity
+rejection, not a spam-folder or recipient-server bounce diagnosis. **Do not take
+another payment or blindly resend.**
 
 ## 1. Can the agent reach workers.dev?
 
@@ -233,27 +235,29 @@ set in Cloudflare, and saved
 `2ddb599e-ef40-4b6a-a789-bf5742c97874`, but its Wrangler config diff exposed the
 values for those three names. The values were reported under remote dashboard
 `vars`, not as Worker Secrets. Wrangler's default deploy removes dashboard vars
-missing from `wrangler.toml`; this deployment did not use `--keep-vars`, so treat
-the payment/email configuration as absent until the owner restores it. The value
-under `FLW_SECRET_KEY` was also the wrong Flutterwave key type (public key, not a
-secret key), so it would not authenticate the v3 `/verify` call.
+missing from `wrangler.toml`; this deployment did not use `--keep-vars`, so at that
+time the payment/email configuration had to be treated as absent. The owner now
+reports replacing the exposed values as Worker Secrets, but that restoration, the
+active key types, and the match between the active webhook hash and Flutterwave's
+saved hash are not independently verified here. The exposed `FLW_SECRET_KEY` was
+the wrong key type (public key, not a secret key), so it would not authenticate the
+v3 `/verify` call.
 
 **Security response:** the PR #11 deploy comment has been replaced with a
 redacted warning. The Arena integration received 403 when asked to delete the
-workflow run/log; the owner must use GitHub Actions → run `37890401771` → delete
-run/logs if available. Treat the exposed credentials as compromised regardless
-of the repo's private visibility. The owner must revoke/rotate the Brevo key,
-create a genuine Flutterwave secret key, generate a fresh webhook hash, remove
-any stale plain-text vars, and add the new values in Cloudflare as **Worker
-Secrets**. Do not put values
-in this repo, a PR comment, or chat. Restore the same new hash in Flutterwave's
-webhook settings. Do not take a test payment until this is done.
+workflow run/log; the owner still needs to attempt deletion of run `37890401771`
+from GitHub Actions and report whether it succeeded. Treat the exposed credentials
+as compromised regardless of the repo's private visibility. The owner reports
+rotating/replacing the Worker secrets; this is not independently verified. Never
+put values in this repo, a PR comment, or chat. Before any further deploy, the
+owner must confirm current production secrets are in place and the webhook hash
+matches Flutterwave's saved setting. Do not take a payment to test this.
 
 | Name | Purpose | Current state / required action |
 |---|---|---|
-| `FLW_SECRET_KEY` | Classic v3 `/verify` lookup | exposed value was the wrong key type; create/rotate a real secret key and store as a Worker Secret |
-| `FLW_WEBHOOK_HASH` | `POST /flw-webhook` authentication | exposed; rotate, store as a Worker Secret, and match Flutterwave's saved hash |
-| `BREVO_API_KEY` | `emailCode()` pass delivery | exposed; revoke/rotate and store as a Worker Secret |
+| `FLW_SECRET_KEY` | Classic v3 `/verify` lookup | owner reports replacement; confirm the active Worker Secret is a genuine secret key, not the exposed public key |
+| `FLW_WEBHOOK_HASH` | `POST /flw-webhook` authentication | owner reports replacement; confirm the active Worker Secret matches Flutterwave's saved hash |
+| `BREVO_API_KEY` | `emailCode()` pass delivery | owner reports replacement; confirm the active Worker Secret is the rotated key |
 | `ISSUE_SECRET` | `POST /issue` (Selar/Zapier bridge) | not reported; separate from direct Flutterwave checkout |
 
 ### Post-rotation live check — owner-reported, 9 Oct 2026
@@ -264,11 +268,14 @@ for 30 days, confirming the browser `/verify` path for this transaction. The
 Worker root later showed `lastWebhookMinutesAgo: 6`; the webhook handler updates
 that timestamp only after signature validation, so this supports a recent validly
 signed webhook, though it is not transaction-specific without the prior timestamp
-or provider delivery record. Brevo showed a matching-looking transactional send
-as `Sent`, but the buyer did not see the message in their inbox. `Sent` is not
-proof of inbox placement, and the log details supplied so far do not show the
-recipient or final delivery/bounce event. Do not repeat the purchase. Check the
-Brevo recipient and event timeline; check spam/quarantine if Brevo records delivery.
+or provider delivery record. The detailed Brevo event shows one attempt, 0%
+delivered, and an `Error`: the configured sender `noreply@docoga.com.ng` is not
+valid; Brevo instructs validating the sender or authenticating its domain. This
+confirms rejection at sender validation, not a recipient-server bounce or spam
+placement issue. The event's recipient has not been explicitly compared with the
+checkout address; do not record or repeat either address. No code-only change to
+an unverified sender will fix this. Authenticate `docoga.com.ng` in Brevo or use a
+sender Brevo already verifies. Do not repeat the purchase or blindly resend.
 
 The pass chip showed 30 days after purchase. The owner confirms the earlier
 11-day chip was in the same browser. The top-up path should carry remaining days
@@ -279,23 +286,36 @@ This makes a stale 11-day badge a plausible explanation, but does not prove it w
 the cause or restore any lost days. The client-side fix needs a future site deploy.
 No pass code, recipient address, or transaction identifier is recorded here.
 
+A local no-charge `/resend-email` recovery path is now implemented: it resolves the
+existing issued pass from its stored purchase reference, follows top-ups to the
+newest active code, sends only to the email stored with that code, never returns
+the code, and throttles by pass (one attempt per 60 seconds, at most three per
+UTC day). It is **fail-closed** unless the Worker runtime variable
+`RESEND_EMAIL_ENABLED` is exactly `true`; leave it unset/false until Brevo confirms
+the sender/domain is authenticated. The success page now offers an explicit
+customer-initiated resend button. The Worker/UI changes are local, tested, and not
+deployed; any mail-provider acceptance is not proof of inbox delivery.
+
 A qualifying webhook still requires a matching `verif-hash` (or valid v4 HMAC),
 `charge.completed`, a successful/succeeded status, `NGN`, and amount ≥ ₦2,000. An
 authenticated ₦100 event intentionally returns HTTP 200 with body `ignored` and
-issues no code. After credential recovery, verify the path with one real ₦2,000
-purchase; confirm webhook acceptance, email delivery, and the same code by
-reference lookup. Local tests are not live-payment proof.
+issues no code. A qualifying live purchase has already confirmed the redirect
+issuance path; do not take another payment. After the sender is authenticated and
+the security/deployment gates are satisfied, use the existing pass's explicit
+resend control and verify the provider's delivery event. Local tests are not
+live-delivery proof.
 
 Not needed: the offline-batch path is unaffected. Those codes are validated by a
 hardcoded set of **FNV-1a** hashes (`OFFLINE_HASHES` in `worker/index.js:49`), not by
 `ISSUE_SECRET`, so they work with no secrets at all. `unlock-codes.txt` is
 gitignored on purpose (paid-product inventory) and must stay out of git.
 
-The deploy itself still uses the explicit `worker/wrangler.toml` config and
-reached `docoga-pass`. The deployment workflow is being hardened to preserve
-Dashboard vars and redact Wrangler output before the next permitted deploy (see
-§11). Repository Actions secrets are separate; the Arena agent cannot write
-them.
+The deploy itself uses the explicit `worker/wrangler.toml` config and reached
+`docoga-pass`. Both marker-gated workflows already preserve dashboard vars and
+redact Wrangler output; no deployment has been run for the current local changes.
+Do not deploy until the owner has attempted the old-log cleanup and confirms
+production secrets are in place (see §11). Repository Actions secrets are separate;
+the Arena agent cannot write them.
 
 ## 9. The site: deployed, and the 404 that was really a cache
 
@@ -398,3 +418,11 @@ pass `--keep-vars` and sanitize captured Wrangler output before it reaches Actio
 logs or PR comments. The payment-to-code path has since passed once; do not make
 another purchase to debug email. Any future deploy must use the hardened workflow
 and preserve fresh Worker Secrets.
+
+**Current deployment gate:** do not deploy this branch's local Worker/site changes
+until the owner has (1) attempted best-effort deletion of run `37890401771` and
+(2) confirmed the required production Worker secrets are present and correctly
+configured. That confirmation remains owner-reported, not independently verified
+by this session. The Brevo sender/domain must also be authenticated before anyone
+sets `RESEND_EMAIL_ENABLED=true`; keep the resend path disabled otherwise. No
+payment or blind resend is part of verification.

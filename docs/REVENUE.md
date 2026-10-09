@@ -15,10 +15,14 @@ repo* or *cited to a source*. Where I could not verify something, it is marked
 This is the most important section. The app is **not** unmonetised: the Worker,
 checkout, webhook and code-issuance paths exist, and local unit tests cover them.
 A qualifying live purchase has now returned a code and auto-activated a 30-day pass
-through the success page. Brevo recorded a transactional email as `Sent`, but the
-buyer did not receive it; inbox delivery remains unverified and is the open runtime
-issue. The historical ₦100 charge was below the Worker’s ₦2,000 gate and is not
-valid evidence for pass issuance.
+through the success page. Brevo's detailed event reports one attempt, 0% delivered,
+and an `Error` rejecting the configured sender `noreply@docoga.com.ng` as invalid
+until the sender is validated or the domain authenticated. This is a sender
+identity rejection, not evidence of spam placement or recipient-server bounce.
+Authenticate `docoga.com.ng` in Brevo or select a sender Brevo already verifies;
+no code-only sender change will fix an unverified identity. Do not repeat the
+purchase or blindly resend. The historical ₦100 charge was below the Worker’s
+₦2,000 gate and is not valid evidence for pass issuance.
 
 | Fact | Value | Source |
 |---|---|---|
@@ -26,22 +30,24 @@ valid evidence for pass issuance.
 | Real payment settlement | `charge.completed`, **₦100 charged, ₦2 fee, status `successful`**, bank transfer, 19 Sep 2026 | `logs/2026-09-19-first-real-payment-webhook.json` |
 | Payment link | `https://flutterwave.com/pay/ynznvgof2r21` | log `meta_data.__CheckoutInitAddress`, gated in `tools/qa.py:84` |
 | Price | `PRICE_NGN = 2000` — Oga Pass, 30 days; the live site advertises 10 tools | `worker/index.js` (price) and `site/index.html` (tier copy) |
-| Endpoints | `POST /issue`, `POST /flw-webhook`, `GET /verify`, `GET /activate` | `worker/index.js` |
+| Endpoints | `POST /issue`, `POST /flw-webhook`, `GET /verify`, `GET /activate`; `POST /resend-email` is implemented in this branch but disabled until sender authentication and not deployed | `worker/index.js` |
 | Fallbacks already coded | Flutterwave v4 OAuth + v3 verify; Paystack ("Path C — after CAC"); Selar→Zapier bridge | `worker/index.js` |
 | Tools shipping | 10: agreement, notice, receipt, invoice, employment, caution, demand, payslip, warning, power of attorney | `site/index.html` (10 renderer types) |
 | SEO surface | 48 state pages | `tools/gen_state_pages.py` |
 | Analytics | GA property `G-GO8VZB3R28` | `site/index.html` (`ANALYTICS_ID`) |
 | Support | WhatsApp `2349021852845` | `site/index.html` (`SUPPORT_WHATSAPP`) |
 
-**Conclusion: the live payment-to-code path has passed once; email inbox delivery
-has not.** The owner reports a qualifying Flutterwave payment and the success page
-returned and activated a pass for 30 days, which confirms the browser `/verify`
-path. The Worker root subsequently reported `lastWebhookMinutesAgo: 6`; this is
-consistent with a recent signature-validated webhook, but does not identify the
-transaction without the Flutterwave delivery detail. Brevo recorded a
-transactional email as `Sent`; the buyer reports no inbox message. Confirm the
-recipient and final delivery/bounce status in Brevo, then check spam/quarantine if
-the provider says delivered. Do not make another purchase to diagnose email.
+**Conclusion: the live payment-to-code path passed once; the email was rejected
+before delivery.** The owner reports a qualifying Flutterwave payment and the
+success page returned and activated a pass for 30 days, confirming the browser
+`/verify` path. The Worker root subsequently reported `lastWebhookMinutesAgo: 6`;
+this is consistent with a recent signature-validated webhook, but does not identify
+the transaction without the Flutterwave delivery detail. Brevo's detailed event
+reports 0% delivered and rejects `noreply@docoga.com.ng` as an invalid sender,
+instructing sender validation or domain authentication. The logged recipient has
+not been explicitly compared with checkout, and no address is recorded here. Do
+not infer a spam/bounce issue, repeat the purchase, or blindly resend. Authenticate
+the domain or use a verified sender first.
 
 The 19 Sep log proves settlement of ₦100 only; a signed sub-₦2,000 event is
 intentionally acknowledged with HTTP 200 and ignored. Run `37890401771` previously
@@ -160,11 +166,13 @@ account value`; until then, do not turn a hypothetical price into a forecast.
 
 ### Path C — Local volume at ₦2,000
 
-Keep it as the local entry product. One qualifying live purchase has now returned
-and activated a pass via the browser verification path; the buyer's inbox did not
-receive the transactional email, so email delivery is not yet end-to-end verified.
-The ₦100 September charge proves settlement only, not pass issuance. Local volume
-can feed A and B, but it is the funnel, not the destination.
+Keep it as the local entry product. One qualifying live purchase returned and
+activated a pass via the browser verification path. Brevo's detailed event says
+0% delivered and rejects the configured sender as invalid, so the email failed at
+sender validation; authenticate the domain or use a verified sender before a
+no-charge resend. Do not make another purchase. The ₦100 September charge proves
+settlement only, not pass issuance. Local volume can feed A and B, but it is the
+funnel, not the destination.
 
 ---
 
@@ -179,12 +187,15 @@ can feed A and B, but it is the funnel, not the destination.
    owner-side best effort. The owner reports replacing these as Cloudflare Worker
    **Secrets** and completing a qualifying purchase. Do not repeat credential rotation
    without a diagnosed need; never put values in chat or Git.
-3. **Finish live delivery verification—no second purchase.** The success page
-   returned and activated a 30-day pass, and the Worker root showed
+3. **Resolve sender rejection, then verify delivery—no second purchase.** The
+   success page returned and activated a 30-day pass, and the Worker root showed
    `lastWebhookMinutesAgo: 6`; the latter supports, but does not identify, a recent
-   authenticated webhook. Brevo marked a transactional email `Sent`, but the buyer
-   did not receive it. Confirm Brevo's recipient and final delivery/bounce event;
-   check spam/quarantine if delivered. Local mocks still do not prove inbox delivery.
+   authenticated webhook. Brevo's detailed event says 0% delivered and rejects the
+   configured `noreply@docoga.com.ng` sender as invalid. Authenticate `docoga.com.ng`
+   in Brevo or choose an already verified sender; only after that, enable the
+   fail-closed resend path and deliberately request a resend of the existing pass.
+   Provider acceptance is not inbox-delivery proof. The event recipient has not
+   been compared with checkout; no recipient address is stored here.
 4. **B2B outreach first.** The Business tier is live, deliberately unpriced, and
    available by WhatsApp quote. Start discovery conversations; record buyer needs,
    team/document volume, procurement and willingness-to-pay evidence. Do not invent
@@ -206,11 +217,13 @@ Rule Zero: these are unknowns, not assumptions.
 
 - **Traffic.** How many sessions/month, and what is the current free→paid conversion?
   Cannot be read from the repo. **Owner must check GA.**
-- **Was the pass email delivered to the right mailbox?** The owner-reported live
-  transaction returned an activated code; the Worker root showed a recent webhook
-  timestamp. Brevo shows `Sent`, but the inbox did not receive the message. The
-  recipient and terminal delivery/bounce event have not yet been confirmed. Check
-  Brevo's message details and mailbox spam/quarantine; do not repeat the purchase.
+- **Has the sender been authenticated and the existing pass email delivered?**
+  Brevo's detailed event reports 0% delivered and an `Error` rejecting
+  `noreply@docoga.com.ng` because it is not a valid sender. The recipient in the
+  log has not been explicitly compared with checkout. Authenticate the domain or
+  select an already verified sender; only then enable and deliberately use the
+  no-charge resend path. Check the terminal provider event after that. Do not
+  repeat the purchase or blindly resend.
 - **Is the Flutterwave account approved for international payments?** Required for Path A
   [7](https://etestweb.com/blog/accept-dollar-payment-nigerian-website).
 - **Is the ₦2,000 price tested?** No evidence of a conversion test at any other price.

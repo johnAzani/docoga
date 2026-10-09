@@ -6,6 +6,9 @@
  *   POST /issue         Bridge for Selar→Zapier/Make (auth: X-DocOga-Key header)
  *                       Body: {"email":"buyer@mail.com","ref":"optional-sale-id"}
  *                       → generates a unique code, stores it in KV, emails the buyer.
+ *   POST /resend-email  No-charge resend by stored purchase reference; sends only to
+ *                       the stored email, returns no code, disabled unless
+ *                       RESEND_EMAIL_ENABLED is exactly "true".
  *   POST /flw-webhook   Flutterwave webhook (auth: v3 verif-hash OR v4 flutterwave-signature HMAC)
  *                       → verifies amount & status, issues + emails code, aliases it under
  *                       every id (reference/tx_ref/id) so /verify matches. Idempotent.
@@ -28,7 +31,8 @@
  *   PAYSTACK_SECRET_KEY Paystack secret key (Path C — after CAC)
  *   PROVIDER            "flw" (default) or "paystack" — which API /verify should call
  *   RESEND_API_KEY      free key from resend.com (email delivery — optional)
- *   MAIL_FROM           e.g. "DocOga <passes@docoga.com.ng>" (requires verified domain in Resend)
+ *   MAIL_FROM           optional sender identity; must be verified by active mail provider
+ *   RESEND_EMAIL_ENABLED set exactly to "true" only after authenticating the sender
  *   SITE_URL            e.g. https://docoga.com.ng (used inside the email)
  * KV binding: must be named KV (see wrangler.toml)
  */
@@ -227,6 +231,63 @@ async function handleIssue(request, env, cors) {
   const existing = await env.KV.get("ref:" + ref);
   const code = existing || (await issueCode(env, { email, ref }));
   return json({ ok: true, code, alreadyIssued: !!existing }, cors);
+}
+
+/* Customer-initiated, no-charge resend for a previously verified purchase.
+   It sends only to the email stored with the issued code, never returns the code,
+   and is throttled by code so reference aliases cannot bypass the limit. */
+async function handleResendEmail(request, env, cors) {
+  // Fail closed until the owner authenticates the sender in the provider and explicitly enables resends.
+  if (env.RESEND_EMAIL_ENABLED !== "true") return json({ ok: false, error: "resend_disabled" }, cors, 503);
+  const body = await request.json().catch(() => ({}));
+  const rawIds = Array.isArray(body.ids) ? body.ids : [body.ref || body.reference];
+  const ids = [...new Set(rawIds.map((value) => String(value || "").trim()).filter((value) => value && value.length <= 200))].slice(0, 8);
+  if (!ids.length) return json({ ok: false, error: "ref_required" }, cors, 400);
+
+  let code = "";
+  for (const id of ids) {
+    code = await env.KV.get("ref:" + id) || "";
+    if (code) break;
+  }
+  if (!code) return json({ ok: false, error: "purchase_not_found" }, cors, 404);
+
+  let record = await readCode(env, normalizeCode(String(code).toUpperCase().replace(/[\s-]/g, "")));
+  if (!record && String(code).includes("-")) record = await readCode(env, String(code).replace(/-/g, ""));
+  // A topped-up reference should resend only the newest, currently active code.
+  const visitedCodes = new Set();
+  for (let depth = 0; record && record.succ; depth++) {
+    if (depth >= 64) return json({ ok: false, error: "pass_unavailable" }, cors, 409);
+    const successorKey = normalizeCode(String(record.succ).toUpperCase().replace(/[\s-]/g, ""));
+    if (!successorKey || visitedCodes.has(successorKey)) return json({ ok: false, error: "pass_unavailable" }, cors, 409);
+    visitedCodes.add(successorKey);
+    const newest = await readCode(env, successorKey);
+    if (!newest) return json({ ok: false, error: "pass_unavailable" }, cors, 409);
+    record = newest;
+  }
+  if (!record || !record.email) return json({ ok: false, error: "email_unavailable" }, cors, 409);
+  const expiry = Number(record.exp);
+  if (!Number.isFinite(expiry) || expiry <= Date.now()) return json({ ok: false, error: "pass_expired" }, cors, 410);
+
+  const codeKey = fnv1a(String(record.code || code).toUpperCase()).toString(16).padStart(8, "0");
+  const throttleKey = "email-resend:" + codeKey;
+  const now = Date.now();
+  const day = Math.floor(now / 864e5);
+  let throttle = { day, count: 0, last: 0 };
+  try { throttle = JSON.parse(await env.KV.get(throttleKey) || "null") || throttle; } catch (e) {}
+  if (throttle.day === day && throttle.count >= 3)
+    return json({ ok: false, error: "resend_limit_reached" }, cors, 429);
+  if (throttle.last && now - throttle.last < 60000)
+    return json({ ok: false, error: "resend_wait" }, cors, 429);
+  throttle = { day, count: throttle.day === day ? throttle.count + 1 : 1, last: now };
+  await env.KV.put(throttleKey, JSON.stringify(throttle), { expirationTtl: 172800 });
+
+  try {
+    await emailCode(env, record.email, record.code || code);
+  } catch (e) {
+    console.error(`[docoga-mail] resend_not_accepted reason=${safeMailFailureReason(e)}`);
+    return json({ ok: false, error: "email_send_failed" }, cors, 502);
+  }
+  return json({ ok: true, message: "email_request_accepted" }, cors);
 }
 
 /* ---------- Flutterwave webhook — PRIMARY instant-delivery path for payment links ---------- */
@@ -545,6 +606,7 @@ export default {
       return json({ ok: true, service: "docoga-pass", lastWebhookMinutesAgo: lw, priceNGN: PRICE_NGN }, cors);
     }
       if (url.pathname === "/issue" && request.method === "POST") return await handleIssue(request, env, cors);
+      if (url.pathname === "/resend-email" && request.method === "POST") return await handleResendEmail(request, env, cors);
       if (url.pathname === "/flw-webhook" && request.method === "POST") return await handleFlwWebhook(request, env, cors);
       if (url.pathname === "/verify" && request.method === "GET") return await handleVerify(url, env, cors);
       if (url.pathname === "/activate" && request.method === "GET") return await handleActivate(url, env, cors);
