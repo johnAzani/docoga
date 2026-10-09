@@ -520,7 +520,52 @@ Documented in `docs/GROWTH_JOURNAL.md`. Key milestones:
 
 ## Last Session (LIVING — Update This Every Time)
 
-### Current session — 9 Oct 2026
+### Current session — 9 Oct 2026 (continuation)
+
+**Branch:** `arena/47d148f1-docoga` — this Arena session's fixed branch. The sandbox
+had reset the local pointer to the base commit `7ee8d79` (see the operational note
+above); recovered by **fast-forwarding to `5cc840e`**, which carries the complete
+`arena/b9e4e9d2-docoga` work with full history. That remote branch is untouched and
+nothing was lost; no branch was switched and nothing was force-pushed. Arena tracks
+this session by `arena/47d148f1-docoga`, so all further work lands here.
+
+**What was done — app-side re-verification at `5cc840e`. No deploy, no resend, no payment.**
+
+- **Docs read in order:** Session Log row 26, `DEPLOY_STATUS.md` §§8–11, `REVENUE.md`.
+- **`c5283e1` confirmed absent** (`git cat-file -t` — no such object), matching the
+  earlier check; the §11 deployment gate is present at the branch head.
+- **Resend endpoint contract confirmed in code and tests:** fail-closed unless
+  `RESEND_EMAIL_ENABLED` is exactly `true` (503 `resend_disabled`); accepts purchase
+  references only (no client-supplied email); sends only to the email stored with the
+  pass; follows top-up `succ` chains to the newest active code; never returns the code;
+  per-pass throttle of one attempt per 60 seconds and three per UTC day, shared across
+  reference aliases. `RESEND_EMAIL_ENABLED` is **not set anywhere in the repo** — it can
+  only be enabled as a Worker runtime variable in the dashboard.
+- **Success-page button confirmed:** posts only the payment reference ids to
+  `POST /resend-email`; handles 429 / `resend_disabled` / failure states.
+- **Client rollover fix confirmed** (`805f8a4`): cached pass state is cleared on
+  explicit Worker `invalid code` or `expired`.
+- **Gates re-run locally, all green:** worker unit suite (incl. the six `/resend-email`
+  tests), DOM suite 97/97, Python suite **52/52**, `qa.py` **0 errors** (1 local
+  environment warning: no `.worker-secrets.env`, secret scan skipped),
+  `pre_push_verify.sh` ✅.
+- **CI at `5cc840e` re-checked via API:** Verify ✅, Cloudflare build check ✅, both
+  marker-gated deploy jobs ⏭ skipped — as reported.
+- **Not done, by design:** no deploy, no resend, no payment, no change to the public
+  pass link or price. No recipient address, pass code, or secret value is recorded here.
+
+**Still owner-side (unchanged):** (1) best-effort deletion/cleanup of Actions run
+`37890401771` logs; (2) confirm production Worker secrets are present and the webhook
+hash matches Flutterwave — the owner-reported rotation is not independently verifiable
+from this session; (3) authenticate `docoga.com.ng` in Brevo (or use an already-verified
+sender) using only the DNS records Brevo generates — DNS-only in Cloudflare, CNAME
+flattening off for the Brevo DKIM CNAMEs, preserve the existing DMARC policy with a
+single record, no SPF/MX changes unless Brevo's account-specific setup requires them.
+Only then: gated release — Worker first `[deploy-pass]`, then site `[deploy-site]`,
+enable `RESEND_EMAIL_ENABLED=true` only in that release, use the button for the existing
+pass, and check the new Brevo event. No additional payment.
+
+### Previous session — 9 Oct 2026
 
 **Branch:** `arena/b9e4e9d2-docoga`, originally based on `7ee8d79`.
 **Revenue guardrails:** B2B discovery/outreach precedes diaspora USD pricing;
@@ -702,6 +747,7 @@ item 9.
 | 29 | 9 Oct 2026 | Owner-reported qualifying purchase returned/activated a pass; root showed a recent valid-signature webhook timestamp. Brevo marked the message `Sent`, but inbox delivery failed. Added safe provider-status checks/logging in Worker code; diagnose recipient/delivery status without another charge. | `44ac1e5` |
 | 30 | 9 Oct 2026 | Owner confirmed the earlier 11-day pass chip was in the purchase browser; found `syncPass()` kept an invalid cached code visible. Site now clears cached state on explicit Worker `invalid code` or `expired`; this does not restore days and awaits a safe site deploy. | `805f8a4` |
 | 31 | 9 Oct 2026 | Brevo event confirms sender rejection for the default `noreply@docoga.com.ng` identity (0% delivered); added a fail-closed, rate-limited, no-charge resend endpoint/button for the existing active pass plus tests. Sender authentication and security gates remain before enable/deploy. | `2cbda5f` |
+| 32 | 9 Oct 2026 | **Continuation on the Arena-fixed branch `arena/47d148f1-docoga`:** recovered the reset local pointer by fast-forward to `5cc840e` (the full `arena/b9e4e9d2-docoga` work; old remote branch untouched; no branch switch, no force-push). Re-verified app-side: `c5283e1` absent (`git cat-file`); §11 deployment gate present at head; resend contract confirmed in code + tests (fail-closed unless `RESEND_EMAIL_ENABLED` is exactly `true`, stored-email-only, follows renewals to the newest active code, never returns the code, 60s + 3-per-UTC-day per-pass throttle shared across aliases); the flag is not set anywhere in the repo; the success-page button posts references only; the cache-clear fix is in place. All gates re-run green locally: worker suite (incl. 6 resend tests), DOM 97/97, Python 52/52, qa.py 0 errors, pre_push_verify ✅; CI at `5cc840e`: Verify + build check ✅, both deploys skipped. **No deploy, no resend, no payment, no change to the pass link or price.** Owner-side gates unchanged: run `37890401771` log cleanup, Worker secrets + webhook-hash confirmation, Brevo sender/domain authentication (DNS-only, CNAME flattening off, preserve the single DMARC record). | pushed `arena/47d148f1-docoga` |
 | 20 | 8 Oct 2026 | **Rule Zero enforced on the build: the verified law is now wired into the pages.** `tools/state_law_data.py` (6 jurisdictions, 20 open questions) drives `tools/gen_state_pages.py`. Three live factual errors fixed: (1) the hard-coded notice table printed "Half-yearly — 3 months" on all 48 pages when that is Lagos s.13(1)(d) and essentially nowhere else — the FCT Act, Cross River s.15 and Kwara s.17 have no half-yearly tier; (2) the four Edo pages said "Magistrates' Courts in Edo State" and "recovery-of-premises legislation" when s.4 of the Edict establishes **Rent Tribunals** and s.41(2) repealed the Recovery of Premises Law for residential accommodation; (3) every page now carries a Sources-and-confidence box with its tier and a "What we could not confirm" list. Rivers added at tier B on the strength of Cap. 109 s.7 (quit notice must expire on the **eve of the anniversary**, the opposite of Lagos s.13(4)) and Landlord & Tenant Law Cap. 75 s.75(1) (rent payable **in arrears**) | PR #11 |
 | 19 | 8 Oct 2026 | **Research before building: measured the state pages and found they fail Google's doorway-page test — median 94.2% similarity between same-tool state pages, median 3 unique words each (worst pairs 99.6%).** So "expand 12 states to 37" was the wrong next move. Wrote `docs/STATE_TENANCY_RESEARCH.md`: verified statute names, sections and sources for 17 of 37 jurisdictions, tiered A-E, with everything unverified listed and three pending bills flagged as NOT law. Added `tools/audit_state_pages.py` to measure and later enforce (80% / 250 unique words / 500 body words) | PR #12 |
 | 18 | 8 Oct 2026 | **Gave the armed Shorts pipeline a memory and an alarm:** publish ledger (`tools/youtube_ledger.py`) + duplicate guard, a secrets preflight that names what is missing, a `YT_PRIVACY` repo-variable switch, a run summary, and a labelled issue opened on any failed run. Verified by simulating all nine scenarios locally (the token cannot dispatch), which caught a real bug: `force=true` exited 3 and failed the run instead of publishing. 48 tests green | PR #11 |

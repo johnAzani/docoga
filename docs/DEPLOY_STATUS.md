@@ -426,3 +426,12 @@ configured. That confirmation remains owner-reported, not independently verified
 by this session. The Brevo sender/domain must also be authenticated before anyone
 sets `RESEND_EMAIL_ENABLED=true`; keep the resend path disabled otherwise. No
 payment or blind resend is part of verification.
+
+**Re-verified 9 Oct 2026 (continuation session — branch `arena/47d148f1-docoga` at
+`5cc840e`):** this gate is present at the branch head, and commit `c5283e1` does not
+exist in the repository (`git cat-file -t` → not a valid object). All app-side suites
+were re-run locally and are green: worker unit suite (including the six `/resend-email`
+tests), DOM suite 97/97, Python suite 52/52, `qa.py` 0 errors, `pre_push_verify.sh`
+✅. `RESEND_EMAIL_ENABLED` is not set anywhere in the repo; it can only be enabled as
+a Worker runtime variable in the dashboard. No deploy, resend, or payment was performed,
+and the owner-side gates above are unchanged.
