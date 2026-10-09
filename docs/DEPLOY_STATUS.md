@@ -239,7 +239,74 @@ was picking up the **root `wrangler.jsonc`** and targeting `docoga-git` instead 
 explicitly. After that the deploy targeted `docoga-pass` correctly and failed only
 on permissions.
 
-## 9. To let the agent fix this itself
+## 9. The site: deployed, and the 404 that was really a cache
+
+Sessions 24–25 (B2B pricing tier, Power of Attorney page and generator) were merged
+to `main` but never went live, because **Workers Builds: docoga-git** has been failing
+and publishes no error text — `output.text` is null and the dashboard link is not
+reachable from CI. A failing build does not take the site down; it just silently stops
+the site receiving updates, which is worse.
+
+**What the site actually is:** `docoga-git` is a **Worker with static assets**
+(`has_assets: true`, `has_modules: false` per `GET /accounts/{id}/workers/scripts`),
+**not** a Pages project. So plain `wrangler deploy` at the repo root is the correct
+tool, and the working token can run it. `.github/workflows/deploy-site-now.yml` now
+does exactly that, gated on a `[deploy-site]` commit marker, and purges the cache
+afterwards. Workers Builds is therefore no longer a blocker.
+
+**How the custom domain reaches it:** `GET /accounts/{id}/workers/domains` shows
+
+```
+hostname docoga.com.ng     -> service docoga-git, environment production, enabled true
+hostname www.docoga.com.ng -> service docoga-git, environment production, enabled true
+```
+
+There are **no Worker routes** on the zone; the domain is attached as a custom domain.
+DNS holds only `AAAA docoga.com.ng -> 100::` and `AAAA www.docoga.com.ng -> 100::` —
+`100::/64` is Cloudflare's placeholder for hostnames it answers for itself, so those
+records are expected and are not the problem.
+
+**The 404 that was really a cache.** After deploying, `power-of-attorney-nigeria.html`
+served correctly on `docoga-git.johnazani.workers.dev` but still 404'd on
+`docoga.com.ng` — same worker, same files. Cause: a 404 for a page that did not yet
+exist had been cached at the edge and kept being served after the file arrived.
+`POST /zones/{id}/purge_cache` with `{"purge_everything":true}` fixed it immediately.
+Purging is now a permanent step in the site deploy workflow.
+
+Verified live on `docoga.com.ng` afterwards: the Power of Attorney generator with its
+full preview, the *Ojugbele v. Olasoji* (1982) SC 71 registration warning and the
+no-Hague-Apostille note; and all three pricing tiers — Free, Oga Pass (₦2,000 / 30
+days, MOST POPULAR) and Business (Custom, annual, per team, WhatsApp quote).
+
+## 10. CI regression fixed the same day
+
+`QA + repo integrity` had started failing. Step-level conclusions showed the failure
+was **"YouTube automation regression tests"**; repo integrity and the QA gate were
+skipped because of it.
+
+The real failure was one date-fragile test:
+`test_title_carries_the_shorts_suffix_and_topic_does_not` asserted the topic equalled a
+hardcoded `"Keep a Rent Paper Trail"`. The topic comes from a **date-seeded rotation**
+— the next five days are *Before You Pay an Agent*, *Moving In? Record the Condition*,
+*Caution Fee: Ask These Questions*, *Tenancy Agreement Checklist*, *Keep Records of
+Repairs* — so that assertion was a time bomb that broke on 2026-10-09.
+
+It was worse than it looked. The mock in `_run_daily()` patched `generate_video` to
+return that topic, but `youtube_short_daily.main()` **discards** the second return
+value and uses `script["title"]`. In production the two are always identical because
+`generate_video` returns `script["title"]`, so the mock was decorative and the
+hardcoded assertion only ever held by coincidence. The test now asserts the real
+contract without naming a topic, and adds the `topic` must not contain `#Shorts`
+check its name always promised but never made.
+
+Not a bug: `error: time data '09-10-2026' does not match format '%Y-%m-%d'` on stderr
+comes from `test_a_bad_date_is_a_usage_error_not_a_duplicate`, which deliberately
+feeds a DD-MM-YYYY date and asserts it exits as a usage error. Correct behaviour,
+just noisy.
+
+All 48 unit tests, `pre_push_verify.sh` and `qa.py` pass.
+
+## 11. To let the agent fix this itself
 
 Give the repo a Cloudflare API token as a secret:
 
