@@ -14,8 +14,11 @@ repo* or *cited to a source*. Where I could not verify something, it is marked
 
 This is the most important section. The app is **not** unmonetised: the Worker,
 checkout, webhook and code-issuance paths exist, and local unit tests cover them.
-However, the historical ₦100 charge was below the Worker’s ₦2,000 gate, so the
-live payment-to-pass-and-email path still needs one qualifying purchase.
+A qualifying live purchase has now returned a code and auto-activated a 30-day pass
+through the success page. Brevo recorded a transactional email as `Sent`, but the
+buyer did not receive it; inbox delivery remains unverified and is the open runtime
+issue. The historical ₦100 charge was below the Worker’s ₦2,000 gate and is not
+valid evidence for pass issuance.
 
 | Fact | Value | Source |
 |---|---|---|
@@ -30,16 +33,22 @@ live payment-to-pass-and-email path still needs one qualifying purchase.
 | Analytics | GA property `G-GO8VZB3R28` | `site/index.html` (`ANALYTICS_ID`) |
 | Support | WhatsApp `2349021852845` | `site/index.html` (`SUPPORT_WHATSAPP`) |
 
-**Conclusion: distribution and pricing are the growth gaps, but the live
-₦2,000 payment-to-pass path is not ready for its end-to-end proof yet.** The 19 Sep
-log proves Flutterwave completed a real **₦100** payment; it does **not** prove code
-issuance because the Worker requires `amount >= ₦2,000`. A signed ₦100 webhook is
-intentionally acknowledged with HTTP 200 and ignored. Although the owner reported
-`FLW_SECRET_KEY`, `FLW_WEBHOOK_HASH`, and `BREVO_API_KEY` set, deploy run
-`37890401771` exposed dashboard variable values and Wrangler's default deployment
-may have removed them. The PR comment was redacted, but the run log could not be
-deleted through the Arena integration. Treat those credentials as compromised;
-rotate and restore them as Cloudflare Worker Secrets before attempting a purchase.
+**Conclusion: the live payment-to-code path has passed once; email inbox delivery
+has not.** The owner reports a qualifying Flutterwave payment and the success page
+returned and activated a pass for 30 days, which confirms the browser `/verify`
+path. The Worker root subsequently reported `lastWebhookMinutesAgo: 6`; this is
+consistent with a recent signature-validated webhook, but does not identify the
+transaction without the Flutterwave delivery detail. Brevo recorded a
+transactional email as `Sent`; the buyer reports no inbox message. Confirm the
+recipient and final delivery/bounce status in Brevo, then check spam/quarantine if
+the provider says delivered. Do not make another purchase to diagnose email.
+
+The 19 Sep log proves settlement of ₦100 only; a signed sub-₦2,000 event is
+intentionally acknowledged with HTTP 200 and ignored. Run `37890401771` previously
+exposed dashboard variable values; the PR comment is redacted, but the run log
+could not be deleted through the Arena integration. The owner now reports the
+runtime credentials replaced as Worker Secrets; the old log still merits
+best-effort deletion. No credential or pass-code values are recorded here.
 
 ---
 
@@ -151,10 +160,11 @@ account value`; until then, do not turn a hypothetical price into a forecast.
 
 ### Path C — Local volume at ₦2,000
 
-Keep it as the local entry product, and use it to validate real checkout-to-pass
-conversion only after a qualifying ₦2,000 purchase succeeds end to end. The ₦100
-September charge proves payment settlement, not pass issuance. Local volume can feed
-A and B, but it is the funnel, not the destination.
+Keep it as the local entry product. One qualifying live purchase has now returned
+and activated a pass via the browser verification path; the buyer's inbox did not
+receive the transactional email, so email delivery is not yet end-to-end verified.
+The ₦100 September charge proves settlement only, not pass issuance. Local volume
+can feed A and B, but it is the funnel, not the destination.
 
 ---
 
@@ -163,18 +173,18 @@ A and B, but it is the funnel, not the destination.
 1. **Conversion surface.** ✅ **DONE 8 Oct 2026.** 48/59 pages carry a pay path
    (sticky bar + inline CTA → `https://docoga.com.ng/#pricing`); the POA page and
    Business tier are live.
-2. **Recover the payment credentials before testing.** The Flutterwave webhook URL
-   is saved, but deploy run `37890401771` exposed the dashboard values for
-   `BREVO_API_KEY`, `FLW_SECRET_KEY`, and `FLW_WEBHOOK_HASH`; the deploy may also have
-   removed those vars. Delete the run log in GitHub Actions if possible, revoke/rotate
-   the Brevo key, create a genuine Flutterwave secret key, generate a fresh webhook
-   hash, remove any stale plain-text vars, and save the new values as Cloudflare
-   Worker **Secrets**. Do not take a payment until this is complete. The Arena session cannot delete the
-   run log or write repo secrets.
-3. **Verify the direct payment path.** After credential recovery, make one real
-   successful **₦2,000** purchase and confirm webhook acceptance, pass email, and
-   reference lookup. An authenticated ₦100 event is below `PRICE_NGN` and is silently
-   acknowledged as `ignored`; it is not a valid pass test. Local mocks are not proof.
+2. **Credential recovery / log hygiene.** The Flutterwave webhook URL is saved.
+   Run `37890401771` exposed dashboard values for `BREVO_API_KEY`, `FLW_SECRET_KEY`,
+   and `FLW_WEBHOOK_HASH`; the PR comment is redacted, while log deletion remains an
+   owner-side best effort. The owner reports replacing these as Cloudflare Worker
+   **Secrets** and completing a qualifying purchase. Do not repeat credential rotation
+   without a diagnosed need; never put values in chat or Git.
+3. **Finish live delivery verification—no second purchase.** The success page
+   returned and activated a 30-day pass, and the Worker root showed
+   `lastWebhookMinutesAgo: 6`; the latter supports, but does not identify, a recent
+   authenticated webhook. Brevo marked a transactional email `Sent`, but the buyer
+   did not receive it. Confirm Brevo's recipient and final delivery/bounce event;
+   check spam/quarantine if delivered. Local mocks still do not prove inbox delivery.
 4. **B2B outreach first.** The Business tier is live, deliberately unpriced, and
    available by WhatsApp quote. Start discovery conversations; record buyer needs,
    team/document volume, procurement and willingness-to-pay evidence. Do not invent
@@ -196,11 +206,11 @@ Rule Zero: these are unknowns, not assumptions.
 
 - **Traffic.** How many sessions/month, and what is the current free→paid conversion?
   Cannot be read from the repo. **Owner must check GA.**
-- **Are the payment credentials restored safely, and does the webhook work at the
-  paid threshold?** Run `37890401771` exposed remote dashboard vars, and the worker
-  deploy may have removed them. The PR comment is redacted; run-log deletion is an
-  owner action. Rotate/re-add them as Worker Secrets first. Only then can one real
-  successful ₦2,000 purchase confirm webhook acceptance, code issuance and email.
+- **Was the pass email delivered to the right mailbox?** The owner-reported live
+  transaction returned an activated code; the Worker root showed a recent webhook
+  timestamp. Brevo shows `Sent`, but the inbox did not receive the message. The
+  recipient and terminal delivery/bounce event have not yet been confirmed. Check
+  Brevo's message details and mailbox spam/quarantine; do not repeat the purchase.
 - **Is the Flutterwave account approved for international payments?** Required for Path A
   [7](https://etestweb.com/blog/accept-dollar-payment-nigerian-website).
 - **Is the ₦2,000 price tested?** No evidence of a conversion test at any other price.

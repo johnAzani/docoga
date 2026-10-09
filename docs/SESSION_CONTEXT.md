@@ -522,35 +522,37 @@ Documented in `docs/GROWTH_JOURNAL.md`. Key milestones:
 
 ### Current session — 9 Oct 2026
 
-**Branch:** `arena/b9e4e9d2-docoga`, based on `7ee8d79`.
-**Handover:** `git log --oneline -3` showed only `7ee8d79`; `c5283e1`
-("Correct the agent handover notes") was absent, so it was not pushed. Updated
-`docs/DEPLOY_STATUS.md` §8/§11 and `docs/REVENUE.md`: no invented Business price,
-B2B discovery before diaspora USD pricing, the $20 example is illustrative, and
-₦100 proves settlement only—not a paid pass. Added local tests for v3 `/verify`,
-signed webhook issuance at ₦2,000, underpayment rejection/ignore at ₦100,
-idempotency, aliases, and the Brevo hand-off. Corrected buyer email copy for all
-10 tools, including Power of Attorney.
+**Branch:** `arena/b9e4e9d2-docoga`, originally based on `7ee8d79`.
+**Revenue guardrails:** B2B discovery/outreach precedes diaspora USD pricing;
+Business stays deliberately unpriced; `$20` is illustrative only; ₦1bn/month at
+local net pass value requires 510,204 passes. Do not invent a price or pretend the
+local-volume target is a viable plan.
 
-**Deployment and security incident:** pushed `d1a3cfe` with `[deploy-pass]` to
-publish the email-copy correction. Run `37890401771` succeeded as Worker version
-`2ddb599e-ef40-4b6a-a789-bf5742c97874`. Wrangler unexpectedly printed remote
-Cloudflare dashboard `vars` for `BREVO_API_KEY`, `FLW_SECRET_KEY`, and
-`FLW_WEBHOOK_HASH`; the PR #11 comment was immediately replaced with a redacted
-warning. GitHub denied this integration's attempts to delete the Actions log
-(403). Wrangler's default deploy removes remote vars missing from local config,
-so treat the payment/email settings as unavailable until restored. The value
-under `FLW_SECRET_KEY` was also the wrong Flutterwave key type (public, not
-secret). The current branch hardens both marker-gated deploy workflows with `--keep-vars`
-and a raw-Wrangler-log redactor; do not deploy or take a payment until the owner
-rotates credentials, deletes the run log if possible, and stores fresh values as
-Cloudflare Worker Secrets.
+**Deployment/security incident:** deploy run `37890401771` succeeded as Worker
+version `2ddb599e-ef40-4b6a-a789-bf5742c97874` but Wrangler exposed remote dashboard
+vars for `BREVO_API_KEY`, `FLW_SECRET_KEY`, and `FLW_WEBHOOK_HASH`. The PR #11
+comment was replaced with a redacted warning; attempts to delete the run/log
+returned 403. The owner reports replacing the exposed values as Worker Secrets;
+this has not been independently verified from the Arena session. The current
+branch hardens both marker-gated Cloudflare deploy workflows with `--keep-vars`
+and raw-Wrangler-log redaction. The exposed `FLW_SECRET_KEY` value had the public
+key type, not the required secret-key type.
 
-**Live purchase is not yet verified.** After credential recovery, one real
-successful ₦2,000 purchase is required; a ₦100 event is intentionally ignored.
-Then B2B outreach/discovery comes first (Business remains unpriced), followed by
-evidence-backed diaspora USD pricing. Do not claim local mocks prove the live
-webhook or invent a Business price.
+**Owner-reported live check:** a qualifying Flutterwave payment returned a pass
+and the browser success page auto-activated it for 30 days. The Worker root later
+showed `lastWebhookMinutesAgo: 6`, supporting a recent signature-validated webhook
+but not identifying this transaction by itself. Brevo showed a transactional
+message as `Sent`, while the buyer did not receive it. Email inbox delivery is
+unresolved; do not make another purchase to investigate. The earlier `11d` pass
+was not carried into the displayed 30 days if it was the same browser; confirm
+whether it was the same browser profile before concluding rollover failed.
+
+**Code-side diagnostic fix in progress:** Worker mail providers' HTTP response
+status is now checked; safe logs report provider/status only and never recipient,
+pass code, response body, or secret. Tests cover Brevo HTTP rejection without
+blocking code issuance. This needs a future hardened deploy to affect production;
+it cannot retrieve or resend the already-sent email. No pass code, recipient
+address, or transaction identifier is stored in this handover.
 
 ### Previous session — 8 Oct 2026
 
@@ -681,6 +683,7 @@ item 9.
 | 26 | 9 Oct 2026 | **The payment worker is deployed and the site is live again. Both had been silently broken.** **docoga-pass:** `WORKER_URL` in `site/index.html` was never wrong — that worker simply did not exist. Getting it deployed took four API tokens. A token fingerprint (sha256[:16], logged from CI) proved which token was actually in the secret: attempt 2 changed it but perms were unchanged, attempt 3 changed nothing at all. `GET /zones` then handed over the token's own permission list, showing **zone/DNS permissions only** — no Workers, no KV — twice in a row. It succeeded on the fourth token with `Account → Workers Scripts → Write` and `Account → Workers KV Storage → Write`. Deployed: `https://docoga-pass.johnazani.workers.dev`, version `f6370c2d-853d`, KV `docoga-kv` bound, cron `0 7 * * *`. `/activate` and `/verify` both answer correctly where they previously 404'd. **Also fixed a latent deploy bug:** `wrangler deploy` run from `worker/` was picking up the *root* `wrangler.jsonc` and deploying to **docoga-git** (the site) instead of docoga-pass — plausibly how the payment worker got clobbered. Now passes `--config wrangler.toml` explicitly. **The site:** Workers Builds has been failing since session 25 with no error text, so the site silently stopped updating — sessions 24–25 were merged but never live. `docoga-git` is a **Worker with static assets**, not Pages, so `wrangler deploy` at the root works and the working token can run it: `deploy-site-now.yml` now does that, gated on `[deploy-site]`, and **Workers Builds is no longer a blocker**. `docoga.com.ng` is attached as a Workers custom domain pointing at docoga-git (no Worker routes; DNS holds only `AAAA -> 100::`, Cloudflare's placeholder for hostnames it answers itself). **The 404 that was really a cache:** after deploying, the POA page served fine on the workers.dev host but still 404'd on docoga.com.ng from the same worker — a 404 cached at the edge before the file existed. `purge_cache` fixed it instantly and is now a permanent deploy step. Verified live: the POA generator and all three pricing tiers including **Business (Custom, annual, per team)**. **Also fixed a CI regression I had introduced:** `QA + repo integrity` was failing. `test_title_carries_the_shorts_suffix_and_topic_does_not` asserted a hardcoded topic from a **date-seeded rotation** — a time bomb that broke on 9 Oct. Worse, its mock patched `generate_video`, but `youtube_short_daily.main()` **discards** that return value and uses `script["title"]`; production is identical because `generate_video` returns `script["title"]`, so the mock was decorative and the assertion only ever held by coincidence. The test now asserts the real contract date-independently and adds the "topic must not contain #Shorts" check its name promised. (The `09-10-2026` stderr line is a deliberate passing test, not a bug.) All 48 tests, pre_push_verify and qa.py green. **Still blocking revenue:** the fresh Worker has **zero secrets** — `FLW_CLIENT_ID`/`FLW_CLIENT_SECRET` (or `FLW_SECRET_KEY`), `ISSUE_SECRET`, and an email key — so `/issue` 401s and codes cannot be delivered. These are live payment credentials: they belong in the Cloudflare dashboard, never in chat or git. The offline batch is unaffected (hardcoded FNV-1a hashes, not ISSUE_SECRET). | pushed `28b9fd9` |
 | 27 | 9 Oct 2026 | Corrected deploy handover and revenue sequence; added v3/webhook tests and all-10-tools email copy; `[deploy-pass]` run `37890401771` deployed version `2ddb599e`, but Wrangler exposed remote dashboard vars in its log. PR #11 comment redacted; log deletion 403. Owner must rotate/restore credentials as Worker Secrets before any purchase. | `d1a3cfe` |
 | 28 | 9 Oct 2026 | Hardened both Cloudflare deploy workflows to preserve dashboard vars and redact raw Wrangler logs; added regression tests and the redaction helper. No new deploy triggered pending credential rotation/recovery. | `3f72d0a` |
+| 29 | 9 Oct 2026 | Owner-reported qualifying purchase returned/activated a pass; root showed a recent valid-signature webhook timestamp. Brevo marked the message `Sent`, but inbox delivery failed. Added safe provider-status checks/logging in Worker code; diagnose recipient/delivery status without another charge. | pending |
 | 20 | 8 Oct 2026 | **Rule Zero enforced on the build: the verified law is now wired into the pages.** `tools/state_law_data.py` (6 jurisdictions, 20 open questions) drives `tools/gen_state_pages.py`. Three live factual errors fixed: (1) the hard-coded notice table printed "Half-yearly — 3 months" on all 48 pages when that is Lagos s.13(1)(d) and essentially nowhere else — the FCT Act, Cross River s.15 and Kwara s.17 have no half-yearly tier; (2) the four Edo pages said "Magistrates' Courts in Edo State" and "recovery-of-premises legislation" when s.4 of the Edict establishes **Rent Tribunals** and s.41(2) repealed the Recovery of Premises Law for residential accommodation; (3) every page now carries a Sources-and-confidence box with its tier and a "What we could not confirm" list. Rivers added at tier B on the strength of Cap. 109 s.7 (quit notice must expire on the **eve of the anniversary**, the opposite of Lagos s.13(4)) and Landlord & Tenant Law Cap. 75 s.75(1) (rent payable **in arrears**) | PR #11 |
 | 19 | 8 Oct 2026 | **Research before building: measured the state pages and found they fail Google's doorway-page test — median 94.2% similarity between same-tool state pages, median 3 unique words each (worst pairs 99.6%).** So "expand 12 states to 37" was the wrong next move. Wrote `docs/STATE_TENANCY_RESEARCH.md`: verified statute names, sections and sources for 17 of 37 jurisdictions, tiered A-E, with everything unverified listed and three pending bills flagged as NOT law. Added `tools/audit_state_pages.py` to measure and later enforce (80% / 250 unique words / 500 body words) | PR #12 |
 | 18 | 8 Oct 2026 | **Gave the armed Shorts pipeline a memory and an alarm:** publish ledger (`tools/youtube_ledger.py`) + duplicate guard, a secrets preflight that names what is missing, a `YT_PRIVACY` repo-variable switch, a run summary, and a labelled issue opened on any failed run. Verified by simulating all nine scenarios locally (the token cannot dispatch), which caught a real bug: `force=true` exited 3 and failed the run instead of publishing. 48 tests green | PR #11 |
@@ -692,24 +695,29 @@ item 9.
 
 ### Current revenue priority — 9 Oct 2026
 
-1. **Credential incident response first.** Delete Actions run/log `37890401771` in
-   the GitHub UI if possible. Revoke/rotate the exposed Brevo key; create a genuine
-   Flutterwave secret key (the old value had the public-key type); generate a fresh
-   webhook hash; remove stale plain-text vars and store the new values as Cloudflare
-   Worker **Secrets**. Restore the matching hash in Flutterwave. Never paste credentials
-   into chat or git.
-2. **Then verify the live webhook.** After the secrets are restored and the safe
-   `[deploy-pass]` workflow is used, make one real successful **₦2,000** purchase and
-   confirm webhook acceptance, pass email, and reference lookup. A ₦100 event is
-   intentionally ignored; it is not a valid test. This agent cannot initiate the
-   purchase or delete the prior run log.
-3. **B2B discovery/outreach.** The Business tier is live and intentionally unpriced.
+1. **Resolve email delivery; no second purchase.** Brevo shows `Sent`, but the buyer
+   inbox did not receive the pass email. In Brevo's message details, check privately
+   whether the recipient matches the email used at Flutterwave and whether the final
+   event is delivered, deferred, blocked, or bounced. If delivered, check spam/all
+   mail/quarantine; if rejected, use the provider's failure reason. Do not paste the
+   address, pass code, response body, or credentials into chat. Arena has no Brevo
+   connector, so the agent cannot inspect those account-only details directly.
+2. **Apply the Worker mail diagnostics safely.** Code now checks mail-provider HTTP
+   status and logs only a safe provider/status reason. Once the owner has attempted
+   the old Actions log deletion and confirms the rotated secrets are in Production,
+   deploy through the hardened marker-gated Worker workflow; no further payment is
+   needed for this diagnostic release.
+3. **Check the earlier 11-day pass rollover.** If it was active in the same browser
+   profile used for the purchase, confirm why the new display is 30 days rather than
+   the expected remaining days plus 30. Do not repurchase; retain the receipt and
+   browser state while investigating.
+4. **B2B discovery/outreach.** The Business tier is live and deliberately unpriced.
    Collect requirements and willingness-to-pay evidence; do not invent or publish a
    number.
-4. **Diaspora USD pricing.** Research and confirm Flutterwave international approval,
-   settlement and buyer willingness to pay before selecting a price. The `$20` in
-   `docs/REVENUE.md` is an illustrative calculation only, not an adopted price.
-5. **Read GA baseline** (`G-GO8VZB3R28`) in parallel; the agent cannot access it.
+5. **Diaspora USD pricing.** Research Flutterwave international approval, settlement
+   and buyer willingness-to-pay before selecting a price. The `$20` in
+   `docs/REVENUE.md` remains an illustrative calculation only.
+6. **Read GA baseline** (`G-GO8VZB3R28`) in parallel; the agent cannot access it.
 
 ### Historical backlog
 

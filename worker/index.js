@@ -59,32 +59,47 @@ function json(obj, cors, status = 200) {
 
 /* ---------- Email delivery (provider chain: Brevo > SMTP2GO > Resend) ---------- */
 async function sendMail(env, to, subject, text, html) {
-  if (!to) return;
+  if (!to) throw new Error("MAIL_NO_RECIPIENT");
   if (env.BREVO_API_KEY) {
     const from = env.MAIL_FROM || "DocOga <noreply@docoga.com.ng>";
     const m = from.match(/^(.*?)\s*<(.+)>$/) || [null, "DocOga", from];
-    await fetch("https://api.brevo.com/v3/smtp/email", {
+    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
       headers: { "api-key": env.BREVO_API_KEY, "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify({ sender: { name: m[1] || "DocOga", email: m[2] }, to: [{ email: to }], subject, textContent: text, htmlContent: html }),
     });
+    if (!response.ok) throw new Error(`BREVO_HTTP_${response.status}`);
+    console.info(`[docoga-mail] provider=brevo accepted http=${response.status}`);
     return;
   }
   if (env.SMTP2GO_API_KEY) {
-    await fetch("https://api.smtp2go.com/v3/email/send", {
+    const response = await fetch("https://api.smtp2go.com/v3/email/send", {
       method: "POST",
       headers: { "x-smtp2go-api-key": env.SMTP2GO_API_KEY, "Content-Type": "application/json" },
       body: JSON.stringify({ sender: env.MAIL_FROM || "DocOga <noreply@docoga.com.ng>", to: [to], subject, text_body: text, html_body: html }),
     });
+    if (!response.ok) throw new Error(`SMTP2GO_HTTP_${response.status}`);
+    console.info(`[docoga-mail] provider=smtp2go accepted http=${response.status}`);
     return;
   }
   if (env.RESEND_API_KEY) {
-    await fetch("https://api.resend.com/emails", {
+    const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({ from: env.MAIL_FROM || "DocOga <noreply@docoga.com.ng>", to, subject, text, html }),
     });
+    if (!response.ok) throw new Error(`RESEND_HTTP_${response.status}`);
+    console.info(`[docoga-mail] provider=resend accepted http=${response.status}`);
+    return;
   }
+  throw new Error("MAIL_NO_PROVIDER");
+}
+
+function safeMailFailureReason(error) {
+  const message = String(error && error.message || "");
+  if (/^(BREVO|SMTP2GO|RESEND)_HTTP_[1-5][0-9]{2}$/.test(message)) return message;
+  if (message === "MAIL_NO_RECIPIENT" || message === "MAIL_NO_PROVIDER") return message;
+  return "MAIL_NETWORK_ERROR";
 }
 
 function mailShell(inner) {
@@ -102,7 +117,7 @@ function mailShell(inner) {
 }
 
 async function emailCode(env, to, code) {
-  if (!to) return;
+  if (!to) throw new Error("MAIL_NO_RECIPIENT");
   const site = env.SITE_URL || "https://docoga.com.ng";
   const link = `${site}/#code=${code}`;
   const subject = "Your DocOga Oga Pass — tap to activate";
@@ -190,7 +205,13 @@ async function issueCode(env, { email, ref }) {
   const rec = { code, email: email || "", ref: ref || "", issuedAt: Date.now(), used: false, source: "online", exp: Date.now() + 30 * 864e5 }; // dies 30 days from purchase
   await env.KV.put("code:" + code, JSON.stringify(rec));
   if (ref) await env.KV.put("ref:" + ref, code); // idempotency: ref -> code
-  try { await emailCode(env, email, code); } catch (e) { /* email failure must not break issuing */ }
+  try {
+    await emailCode(env, email, code);
+  } catch (e) {
+    // Never log the recipient, pass code, provider response body, or secret.
+    // A payment/pass remains valid even when the separate email hand-off fails.
+    console.error(`[docoga-mail] pass_email_not_accepted reason=${safeMailFailureReason(e)}`);
+  }
   return code;
 }
 

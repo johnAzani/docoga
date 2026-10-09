@@ -169,6 +169,35 @@ r = await hit(webhookEnv, '/flw-webhook', {
 });
 ok('duplicate webhook is idempotent (same code; no second email)', r.status === 200 && r.text === 'ok' && webhookMailRequests.length === 1 && (await webhookEnv.KV.list({ prefix: 'code:' })).keys.length === 1);
 
+const rejectedMailEnv = makeEnv({});
+rejectedMailEnv.FLW_WEBHOOK_HASH = webhookHash;
+rejectedMailEnv.BREVO_API_KEY = 'test-brevo-key';
+const rejectedMailPayload = {
+  ...webhookPayload,
+  data: {
+    ...webhookPayload.data,
+    id: 'flw-charge-mail-fail', tx_ref: 'DOCOGA-TX-MAIL-FAIL', reference: 'DOCOGA-REF-MAIL-FAIL',
+    customer: { email: 'private-recipient@example.com' },
+  },
+};
+const priorConsoleError = console.error;
+const workerErrorLines = [];
+console.error = (...args) => workerErrorLines.push(args.join(' '));
+globalThis.fetch = async () => new Response('private provider response body', { status: 401 });
+r = await hit(rejectedMailEnv, '/flw-webhook', {
+  method: 'POST', headers: { 'content-type': 'application/json', 'verif-hash': webhookHash }, body: JSON.stringify(rejectedMailPayload),
+});
+console.error = priorConsoleError;
+const rejectedMailCode = await rejectedMailEnv.KV.get('ref:DOCOGA-REF-MAIL-FAIL');
+const safeMailLog = workerErrorLines.join('\n');
+ok('Brevo HTTP rejection is logged without blocking pass issuance', r.status === 200 && r.text === 'ok' && /^OGA-/.test(rejectedMailCode || '') && safeMailLog.includes('BREVO_HTTP_401'));
+ok('email failure diagnostic excludes recipient and provider response body', !safeMailLog.includes('private-recipient@example.com') && !safeMailLog.includes('private provider response body') && !safeMailLog.includes(rejectedMailCode || 'NO_CODE'));
+
+globalThis.fetch = async (url, init = {}) => {
+  webhookMailRequests.push({ url: String(url), body: JSON.parse(init.body || '{}') });
+  return new Response(null, { status: 201 });
+};
+
 const underpaidEnv = makeEnv({});
 underpaidEnv.FLW_WEBHOOK_HASH = webhookHash;
 underpaidEnv.BREVO_API_KEY = 'test-brevo-key';

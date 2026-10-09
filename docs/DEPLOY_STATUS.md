@@ -9,10 +9,14 @@ live are historical and are superseded by §§8–9. PR #11 merged as `7ee8d79`,
 the site serves the Business tier and POA page. Worker deploy run `37890401771`
 succeeded as version `2ddb599e-ef40-4b6a-a789-bf5742c97874`, but its Wrangler
 output exposed values from Cloudflare dashboard `vars`; the PR comment was
-redacted, while deleting the run log was denied to this integration. Treat the
-payment/email configuration as compromised and unavailable until the owner
-rotates and re-adds credentials as actual Worker Secrets. **Do not take a test
-payment yet.** Then verify with one real ₦2,000 purchase.
+redacted, while deleting the run log was denied to this integration. The owner
+now reports replacing the exposed credentials as Worker Secrets. A subsequent
+qualifying live payment returned a pass code and activated it for 30 days. The
+Worker root showed `lastWebhookMinutesAgo: 6` when checked, which supports a
+recent authenticated webhook but does not by itself identify the event. Brevo
+history showed a transactional email as `Sent`, while the buyer did not receive
+it; inbox delivery remains unresolved. **Do not take another payment to debug
+email.**
 
 ## 1. Can the agent reach workers.dev?
 
@@ -252,6 +256,25 @@ webhook settings. Do not take a test payment until this is done.
 | `BREVO_API_KEY` | `emailCode()` pass delivery | exposed; revoke/rotate and store as a Worker Secret |
 | `ISSUE_SECRET` | `POST /issue` (Selar/Zapier bridge) | not reported; separate from direct Flutterwave checkout |
 
+### Post-rotation live check — owner-reported, 9 Oct 2026
+
+The owner reports replacing the exposed Worker secrets and completing a live
+qualifying purchase. The success page returned a pass and reported auto-activation
+for 30 days, confirming the browser `/verify` path for this transaction. The
+Worker root later showed `lastWebhookMinutesAgo: 6`; the webhook handler updates
+that timestamp only after signature validation, so this supports a recent validly
+signed webhook, though it is not transaction-specific without the prior timestamp
+or provider delivery record. Brevo showed a matching-looking transactional send
+as `Sent`, but the buyer did not see the message in their inbox. `Sent` is not
+proof of inbox placement, and the log details supplied so far do not show the
+recipient or final delivery/bounce event. Do not repeat the purchase. Check the
+Brevo recipient and event timeline; check spam/quarantine if Brevo records delivery.
+
+The pass chip showed 30 days after purchase. If the earlier 11-day pass was in
+the same browser profile, expected carry-over should be investigated; it may have
+been stale, offline, or from a different profile. No pass code, recipient address,
+or transaction identifier is recorded here.
+
 A qualifying webhook still requires a matching `verif-hash` (or valid v4 HMAC),
 `charge.completed`, a successful/succeeded status, `NGN`, and amount ≥ ₦2,000. An
 authenticated ₦100 event intentionally returns HTTP 200 with body `ignored` and
@@ -364,9 +387,10 @@ uses GitHub's issues-comment REST endpoint).
 
 **Log hygiene is mandatory.** Run `37890401771` exposed dashboard `vars` in
 Wrangler's config diff. Its PR comment has been replaced with a redacted warning;
-this integration received 403 when attempting to delete the Actions log. The
-owner must delete the run/log in GitHub Actions if available and rotate the
-exposed credentials before another purchase. The current branch hardens both marker-gated deploy workflows to pass
-`--keep-vars` and capture/sanitize raw Wrangler output before it reaches Actions
-logs or PR comments. Do not deploy again until the rotated values are stored as
-Cloudflare Worker Secrets.
+this integration received 403 when attempting to delete the Actions log. The owner
+reports rotating/restoring the runtime credentials; deletion of the old run/log
+remains an owner-side best-effort cleanup. Both marker-gated deploy workflows now
+pass `--keep-vars` and sanitize captured Wrangler output before it reaches Actions
+logs or PR comments. The payment-to-code path has since passed once; do not make
+another purchase to debug email. Any future deploy must use the hardened workflow
+and preserve fresh Worker Secrets.
