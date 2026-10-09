@@ -39,47 +39,32 @@ jobs:
         with:
           node-version: '22'
 
-      # Deploy and report in ONE step: passing a temp path between steps via
-      # GITHUB_ENV proved unreliable, and collapsing it removes that variable.
-      - name: Deploy docoga-git from ./site and report
+      - name: Deploy docoga-git from ./site
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -u
+          # Written into the workspace so the next step can read it.
+          npx --yes wrangler@latest deploy --config wrangler.jsonc \
+            > >(tee site-deploy.log) 2>&1
+
+      - name: Report the deploy result
+        if: always()
+        env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -u
-          LOG=site-deploy.log
-          : > "$LOG"
-
-          # Explicit config: without it wrangler can pick up a neighbouring
-          # config and deploy the wrong project.
-          set +e
-          npx --yes wrangler@latest deploy --config wrangler.jsonc \
-            > >(tee -a "$LOG") 2>&1
-          DEXIT=$?
-          set -e
-          echo "deploy_exit=$DEXIT" | tee -a "$LOG"
-
           {
             echo '<!-- deploy-site-log -->'
             echo '## docoga-git site deploy'
             echo
             echo "Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
             echo '```'
-            sed -e 's/\x1b\[[0-9;]*m//g' "$LOG" | tail -40
+            # Strip ANSI colour codes so the comment reads as plain text.
+            perl -pe 's/\e\[[0-9;]*m//g' site-deploy.log 2>/dev/null | tail -40 \
+              || echo "(no deploy log)"
             echo '```'
           } > site-report.md
-
-          CID=$(gh api "repos/$GITHUB_REPOSITORY/issues/11/comments" \
-                  --jq '.[]|select(.body|startswith("<!-- deploy-site-log -->"))|.id' \
-                  | head -1)
-          # -f body=@file reads the file as a form value; --input would be
-          # parsed as a JSON request body, which is not what this endpoint wants.
-          if [ -n "${CID:-}" ]; then
-            gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$CID" \
-              -f body=@site-report.md > /dev/null
-          else
-            gh api -X POST "repos/$GITHUB_REPOSITORY/issues/11/comments" \
-              -f body=@site-report.md > /dev/null
-          fi
-          echo "posted report (existing comment id: ${CID:-none})"
+          gh issue comment 11 --repo "$GITHUB_REPOSITORY" --body-file site-report.md
+          echo "report posted"
