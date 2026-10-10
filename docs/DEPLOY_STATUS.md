@@ -419,6 +419,13 @@ logs or PR comments. The payment-to-code path has since passed once; do not make
 another purchase to debug email. Any future deploy must use the hardened workflow
 and preserve fresh Worker Secrets.
 
+**Owner cleanup attempt — 10 Oct 2026:** screenshot of run `37890401771`'s
+summary ellipsis menu shows only **Create status badge**; **Delete all logs** is
+not offered. Status: **attempted, option unavailable**, NOT confirmed deleted.
+This satisfies the best-effort attempt requirement only; credential safety still
+requires owner confirmation of current production Secrets and live webhook hash.
+No workflow rerun or job-log download was performed during this check.
+
 **Current deployment gate:** do not deploy this branch's local Worker/site changes
 until the owner has (1) attempted best-effort deletion of run `37890401771` and
 (2) confirmed the required production Worker secrets are present and correctly

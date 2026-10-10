@@ -576,7 +576,21 @@ untouched). Added **From name `DocOga`, From email `noreply@docoga.com.ng`**;
 it now shows **Verified** (Shared IP), matching the Worker's default
 `MAIL_FROM`. The branded-subdomain upsell was skipped again (not required).
 
-**Still open before any release/resend:**
+**Log cleanup — 10 Oct 2026:** owner opened run `37890401771` (summary title
+"Correct payment handover and Oga Pass email [deploy-pass] #34") and its top-right
+ellipsis menu. Screenshot shows only **Create status badge**, no **Delete all
+logs**. Record as **attempted, option unavailable**; logs are NOT confirmed deleted.
+The best-effort attempt gate is met, but this does not prove deletion or credential
+revocation. No job logs were opened/downloaded and no workflow rerun was requested.
+
+**Still open before any release/resend:** production Worker Secret names/types
+and current configuration; live Flutterwave webhook-hash match; actual runtime
+`MAIL_FROM` match (Brevo verifies the default sender, runtime override unknown);
+private checkout-vs-event recipient comparison; resend flag remains unset/false
+pending intentional release. Fix/test the Worker workflow's DEXIT propagation and
+manual dry_run behavior before any dispatch. Next owner screen: Cloudflare →
+Workers & Pages → `docoga-pass` → Settings → Variables and Secrets (names/types
+only; hide values; no edit or Deploy). No deploy, resend, payment or price/link change.
 
 ### Session — 9 Oct 2026 (owner click-by-click guide)
 
