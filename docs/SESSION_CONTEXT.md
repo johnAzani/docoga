@@ -1261,3 +1261,17 @@ not independently checked from restricted sandbox. Resend still disabled; no
 new payment, issuance or email. Next owner-guided step requires separate explicit
 resend enablement and ONE existing-pass resend approval, then NEW Brevo event
 and actual receipt. Never use logs/dashboard Resend or /verify as a test.
+
+**Resend enabled and verified — 10 Oct 2026 (owner-performed, screenshot evidence):**
+Owner added Production Text variable `RESEND_EMAIL_ENABLED=true` in the dashboard
+(Secret unticked, Previews unticked); Cloudflare deployment `b70c569e` ("Add
+variable") became Active at 100%, above Worker release `44552c88`. Dashboard
+secrets/vars survived. Owner reopened the saved success page for the EXISTING
+qualifying purchase and tapped Resend ONCE (battery-low phone, so the on-page
+status line was not screenshotted). At about 12:00 the pass email arrived in the
+owner's **Primary** inbox from DocOga with the pass subject line (screenshot).
+Receipt confirms sender authentication works end-to-end. No new payment, no
+Brevo-log Resend, no repeat attempt; no code/recipient/reference stored. The NEW
+Brevo event was not separately inspected; receipt was the decisive proof. Flag
+stays enabled; endpoint limit is 60s spacing/3 attempts per UTC day per pass,
+not globally atomic. Old Brevo failure is historical.
