@@ -1,0 +1,74 @@
+name: Analytics snapshot
+
+# Returns a read-only DocOga GA4 aggregate report back into the repository.
+# Why commit-back instead of an artifact/log: the agent sandbox cannot read
+# workflow logs or artifacts (their hosts are outside its allowlist), but it
+# CAN read repository contents. So the snapshot is committed here.
+#
+# Triggers:
+#   - push touching analytics/refresh-request.json  -> the agent requests a refresh
+#   - workflow_dispatch                             -> owner taps "Run workflow"
+#   - schedule                                      -> hands-off daily (default branch only)
+
+on:
+  push:
+    paths:
+      - analytics/refresh-request.json
+  workflow_dispatch: {}
+  schedule:
+    - cron: "17 4 * * *"
+
+permissions:
+  contents: write
+  id-token: write
+
+concurrency:
+  group: analytics-snapshot
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check whether Google access is configured
+        id: cfg
+        env:
+          GA_PROPERTY_ID: ${{ vars.GA_PROPERTY_ID }}
+          WIF_PROVIDER: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          SA_EMAIL: ${{ vars.GCP_SERVICE_ACCOUNT }}
+        run: |
+          if [ -n "$GA_PROPERTY_ID" ] && [ -n "$WIF_PROVIDER" ] && [ -n "$SA_EMAIL" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Google access not configured yet; writing placeholder snapshot."
+          fi
+
+      # TODO once Google is configured: pin this action to a reviewed commit SHA
+      # and add the keyless auth step here, e.g.
+      #   - uses: google-github-actions/auth@<sha>
+      #     with:
+      #       workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+      #       service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+      #       token_format: access_token
+      #       access_token_scopes: https://www.googleapis.com/auth/analytics.readonly
+
+      - name: Write snapshot (placeholder)
+        if: steps.cfg.outputs.ready != 'true'
+        run: python3 tools/analytics_snapshot.py --placeholder
+
+      - name: Commit snapshot back to the repository
+        run: |
+          set -e
+          git config user.name "docoga-analytics-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add analytics/reports/latest.json analytics/reports/*.json
+          if git diff --cached --quiet; then
+            echo "no snapshot changes"
+          else
+            git commit -m "chore(analytics): snapshot [skip ci]"
+            git push
+          fi
