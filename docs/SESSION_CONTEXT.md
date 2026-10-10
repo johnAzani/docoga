@@ -1756,3 +1756,9 @@ with explicit project/location/pool and formatted name/state/issuer/mapping/
 condition. Verify exact repo/owner IDs, branch/workflow_ref and push/dispatch
 before adding service-account impersonation binding. Do not create provider
 again. Binding, repo vars and live GA call still pending. No secret/token needed.
+
+**Cloud Shell ready again — 10 Oct 2026, 17:39 screenshot:** owner confirms
+reconnection; screenshot still shows provider creation success and idle prompts,
+not describe output. Next repeat the COMPLETE single-line read-only provider
+describe command, not creation. Need saved attributeCondition/mapping/issuer
+readback before service-account binding; no inference from shell command text.
