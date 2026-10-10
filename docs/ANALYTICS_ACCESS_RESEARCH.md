@@ -4,7 +4,7 @@
 
 Owner wants the agent to have ongoing read-only access to DocOga's Analytics across future sessions, instead of repeated owner exports/screenshots. This document records what was verified, what was disproved, the recommended design, the cost/privacy gates, and the acceptance test that must pass before anyone calls this "connected."
 
-Status as of **10 October 2026, 17:53 WAT**: research, Google-side WIF setup, and the keyless reporter are in place; the owner has added the first of three GitHub repository variables. Google configuration is screenshot-verified, but **no authenticated Analytics request has run**, no real aggregate has been committed, and the production site tag remains unchanged. Do not call the connection live until a committed snapshot reports `mode: live`. The default-branch merge/schedule, broader trust, site retag, and deploy remain separately approval-gated.
+Status as of **10 October 2026, 18:20 WAT**: research, Google-side WIF setup, keyless reporter, and repository-variable entry are in place; the owner screenshot shows all three expected variable rows. The long variable values are clipped in the list, so only the visible prefixes are screenshot-verifiable. **No authenticated Analytics request has run**, no real aggregate has been committed, and the production site tag remains unchanged. Do not call the connection live until a committed snapshot reports `mode: live`. The default-branch merge/schedule, broader trust, site retag, and deploy remain separately approval-gated.
 
 ## What was tested and disproved (correcting earlier assumptions)
 
@@ -73,7 +73,7 @@ Identity (IAM/WIF/service accounts) is free; the runner stays inside the include
 
 ## Next owner step (one screen at a time)
 
-Google-side setup is complete and verified; do not repeat Cloud Shell/IAM commands. The current GitHub Variables screen shows `GA_PROPERTY_ID=558370565` saved. Add `GCP_SERVICE_ACCOUNT` with value `docoga-analytics-reader@apt-trainer-367908.iam.gserviceaccount.com` next, then send the saved-variable list screenshot. Continue with only one variable per screen. After both remaining variables are saved, ask separately for explicit approval before the first real-data workflow run, because the runner will commit aggregate Analytics data into Git history. No secret or key is needed.
+Google-side setup is complete and verified; do not repeat Cloud Shell/IAM commands. The 18:20 WAT GitHub Variables screenshot shows all three expected rows, although the long name/value previews are clipped. The next step is to ask for explicit approval before the first real-data workflow run, because the runner will commit aggregate Analytics data into Git history. No secret or key is needed.
 
 ## Mechanism proof — 10 October 2026, 13:33 WAT
 
@@ -117,3 +117,14 @@ row completeness checks, response timezone validation, NGN/timezone provenance,
 thresholding/sampling/schema/data-loss metadata, and token-redacted HTTP error
 messages. Six offline unit tests pass. These tests validate code behavior only;
 they are not evidence of live access.
+
+## GitHub variables listed — 10 October 2026, 18:20 WAT
+
+The owner screenshot shows the repository Variables page with rows for
+`GA_PROPERTY_ID`, `GCP_SERVICE_ACCOUNT`, and a third label clipped to
+`GCP_WORKLOAD_IDENTITY_P...`. `GA_PROPERTY_ID` is visibly `558370565`; the
+other visible value prefixes begin with the expected service-account email and
+provider path, but their complete values are clipped. This is screenshot
+verification of row presence/prefixes, not an agent-side readback. The variables
+REST API remains blocked with 403. No live run or real-data Git commit has
+occurred; explicit approval is still required before triggering it.

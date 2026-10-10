@@ -1,11 +1,11 @@
 # DocOga Analytics read-only access — owner setup runbook
 
-**Status, 10 Oct 2026, 17:53 WAT:** Google-side keyless identity is
-configured and screenshot-verified. The first repository variable is now saved.
-The pipeline is **not connected yet**: the other two variables are pending, no
-live authenticated GA4 request has run, and no real Analytics data has been
-committed. Do not call this complete until a committed report says `"mode":
-"live"`.
+**Status, 10 Oct 2026, 18:20 WAT:** Google-side keyless identity is
+configured and screenshot-verified. The GitHub Variables page shows all three
+expected repository-variable rows; the long labels/value previews are truncated
+in the screenshot. No live authenticated GA4 request has run and no real
+Analytics data has been committed. Do not call this complete until a committed
+report says `"mode": "live"`.
 
 This setup is intended to give future sessions durable, read-only access without
 repeated exports. The repo snapshot is the retrieval path; screenshots are only
@@ -34,25 +34,27 @@ workflows. Do not broaden it or merge to the default branch without separate
 owner approval and a reviewed trust-condition change. No service-account key was
 created. No token or password belongs in chat or the repository.
 
-## Repository variables — 1 of 3 saved
+## Repository variables — 3 expected rows visible
 
-The current GitHub **Settings → Secrets and variables → Actions → Variables**
-screenshot shows `GA_PROPERTY_ID` saved with the correct value. The other two
-are still required:
+The 18:20 WAT owner screenshot of GitHub **Settings → Secrets and variables →
+Actions → Variables** shows rows for `GA_PROPERTY_ID`, `GCP_SERVICE_ACCOUNT`,
+and a third label clipped to `GCP_WORKLOAD_IDENTITY_P...`. `GA_PROPERTY_ID`
+shows the full correct value `558370565`; the other long value previews begin
+with the expected service-account email and provider path but are truncated, so
+the screenshot does not expose every character. These are owner-performed
+screenshots, not an agent readback.
 
-| Name | Value | Status |
+| Name | Value | Screenshot status |
 | --- | --- | --- |
-| `GA_PROPERTY_ID` | `558370565` | Saved (owner screenshot, 10 Oct 17:53 WAT) |
-| `GCP_SERVICE_ACCOUNT` | `docoga-analytics-reader@apt-trainer-367908.iam.gserviceaccount.com` | Pending |
-| `GCP_WORKLOAD_IDENTITY_PROVIDER` | `projects/635194176409/locations/global/workloadIdentityPools/github-actions/providers/github` | Pending |
+| `GA_PROPERTY_ID` | `558370565` | Full name/value visible, correct |
+| `GCP_SERVICE_ACCOUNT` | `docoga-analytics-reader@apt-trainer-367908.iam.gserviceaccount.com` | Row and expected prefix visible; full value clipped |
+| `GCP_WORKLOAD_IDENTITY_PROVIDER` | `projects/635194176409/locations/global/workloadIdentityPools/github-actions/providers/github` | Name/value preview clipped; visible prefix matches |
 
 These are non-secret **repository variables**, not secrets or environment
 variables. The `gh variable` subcommand is not installed in this sandbox, and
 the GitHub Actions variables REST API returned 403 `Resource not accessible by
-integration`; use the repository Variables page. Continue screenshot-by-
-screenshot, one variable at a time. The next one to add is
-`GCP_SERVICE_ACCOUNT` with the exact value in the table; confirm the saved row
-before adding the provider value.
+integration`; use the repository Variables page if correction is needed. No
+secret, password, service-account key, or token is required.
 
 ## Reporter and privacy boundary
 
@@ -81,18 +83,21 @@ that data commit. No real-data snapshot has been authorized or committed yet.
 An empty `rows` list from an authenticated response is still a valid access
 proof, but it does not mean the site has traffic.
 
-## After all three variables are saved — only after live-data approval
+## Live run — explicit real-data approval still required
 
-1. Confirm all three repository variable rows are present and exact.
-2. Ask for explicit approval to publish the first aggregate snapshot into the
-   repository history. Do not infer this approval from the earlier approval of
-   the Google/WIF setup.
-3. After approval, push a change to `analytics/refresh-request.json` on
+The latest owner screenshot shows all three expected rows, but the long values
+are clipped in the list. If the first run fails because of a mistyped variable,
+stop and correct it through the UI; never put a key or password there.
+
+1. **Get explicit owner approval to commit the first real aggregate snapshot to
+   Git history.** Do not infer this approval from the Google/WIF setup or from
+   adding the variables.
+2. Only after approval, push a change to `analytics/refresh-request.json` on
    `arena/47d148f1-docoga`; that path triggers the workflow. The owner may also
    use **Actions → Analytics snapshot → Run workflow** on the authorised branch.
    The agent's dispatch API call returns 403, so push-to-refresh is the agent's
    available path.
-4. Verify the committed `analytics/reports/latest.json` has `"mode": "live"`,
+3. Verify the committed `analytics/reports/latest.json` has `"mode": "live"`,
    the expected property ID, a timestamp/date range, and pagination/quality
    metadata. Do not use run logs or artifacts as the retrieval mechanism; those
    hosts are blocked from the agent environment. A live report is not proven

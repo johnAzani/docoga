@@ -449,7 +449,7 @@ Documented in `docs/GROWTH_JOURNAL.md`. Key milestones:
 ### Analytics:
 - **Legacy/current website tag:** `G-GO8VZB3R28` (the site still sends to the older property; unchanged).
 - **Dedicated DocOga GA4 property:** ID `558370565`, stream `G-BQ1YTR0ZZJ`, timezone `Africa/Lagos` (GMT+01:00), currency `NGN`. The new tag is not deployed, so this property may have no site traffic yet.
-- **Read-only reporter:** `.github/workflows/analytics-snapshot.yml` + `tools/analytics_snapshot.py` use GitHub OIDC/WIF and a property-Viewer service account; the provider is restricted to this repo, the Analytics workflow and the session branch. Google-side WIF/API setup is screenshot-verified. `GA_PROPERTY_ID` is saved; two repo variables remain pending.
+- **Read-only reporter:** `.github/workflows/analytics-snapshot.yml` + `tools/analytics_snapshot.py` use GitHub OIDC/WIF and a property-Viewer service account; the provider is restricted to this repo, the Analytics workflow and the session branch. Google-side WIF/API setup is screenshot-verified. The 18:20 WAT Variables-page screenshot shows all three expected repository-variable rows; the long name/value previews are truncated, so only visible prefixes are screenshot-readable.
 - **Snapshot mechanism:** placeholder commit-back was verified (run 38058018325 / commit 751aacd). No live authenticated report or real-aggregate Git commit yet; explicit owner approval is required before the first live run. Default-branch merge/schedule and site retag/deploy remain separately gated.
 - **Microsoft Clarity:** `ym9fd3sxq5` (heatmaps, session recordings, rage clicks).
 
@@ -1003,10 +1003,10 @@ item 9.
 
 ## What's Next (Pending)
 
-### Analytics access — setup in progress (10 Oct 2026)
+### Analytics access — variables listed; live-data approval pending (10 Oct 2026)
 
-1. **Finish two repository variables from the GitHub Variables UI, one screen at a time.** The 17:53 WAT screenshot confirms `GA_PROPERTY_ID=558370565` is saved. Next add `GCP_SERVICE_ACCOUNT=docoga-analytics-reader@apt-trainer-367908.iam.gserviceaccount.com`; then separately add `GCP_WORKLOAD_IDENTITY_PROVIDER=projects/635194176409/locations/global/workloadIdentityPools/github-actions/providers/github`. Agent-side `gh variable` is unavailable and REST API returned 403, so don't retry that path.
-2. **Before the first live report, ask explicit owner approval to commit real aggregate Analytics data into Git history.** Variables alone are not consent to publish the real snapshot. Until approval, do not edit/push `analytics/refresh-request.json` and do not claim connected.
+1. **Repository variable setup:** the 18:20 WAT screenshot shows all three expected rows on the Variables page. `GA_PROPERTY_ID` is fully readable; the long service-account/provider values are clipped in the list, though their visible prefixes match the instructed values. Because the agent's `gh variable` command is unavailable and the REST API returned 403, the full values cannot be independently read back by the agent. Do not repeat that API path.
+2. **Before the first live report, ask explicit owner approval to commit real aggregate Analytics data into Git history.** The variables screenshot is not consent to publish a real snapshot. Until approval, do not edit/push `analytics/refresh-request.json` and do not claim connected.
 3. After approval only, push the refresh-request path on `arena/47d148f1-docoga`; verify the committed snapshot is `mode: live`, record retrieval time/range/quality flags, and confirm it is agent-readable. Empty rows can prove authenticated access, not traffic.
 4. **Do not merge to `main`, enable scheduled trust, or broaden WIF trust** without separate approval. Site retag to `G-BQ1YTR0ZZJ` and deploy is another production change, not approved.
 
@@ -1850,3 +1850,16 @@ Node 20/Ubuntu migration notices. `analytics/reports/latest.json` is still the
 placeholder from run `38058018325` (`mode: placeholder`); this docs/code push
 did not touch `analytics/refresh-request.json`, so no Analytics run or real-
 data commit was triggered. Working tree was clean before this final log entry.
+
+**All three repository variables listed — 10 Oct 2026, 18:20 WAT screenshot:**
+GitHub Variables page now shows `GA_PROPERTY_ID`, `GCP_SERVICE_ACCOUNT`, and a
+third row labelled `GCP_WORKLOAD_IDENTITY_P...`; the service-account value
+preview begins `docoga-analytics-reader@apt...`, and the provider value begins
+`projects/635194176409/locati...`. The first variable's complete value is
+visible and correct. Long names/values are clipped in the list, so the screenshot
+confirms rows/prefixes but not every character; do not claim an independent
+readback. Agent API access remains 403. No workflow was triggered and no live
+Analytics data has been committed. Next gate: explicitly ask whether the owner
+approves one first live, read-only aggregate snapshot being committed to
+`analytics/reports/latest.json` plus a dated report on the session branch. This
+does NOT authorize a site tag change/deploy, default-branch merge, or schedule.
