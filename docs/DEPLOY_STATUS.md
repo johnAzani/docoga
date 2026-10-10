@@ -630,3 +630,9 @@ endpoint HTTP200/active, deployment account read HTTP200. Account-token endpoint
 mismatch confirmed for this credential; no credential change. Authorized Worker
 retry starting with corrected validation; site still blocked pending actual
 deploy exit and harmless probe. Resend remains disabled.
+
+**Worker release succeeded — 10 Oct:** `79dbe42`, run `38044892137`,
+actual `deploy_exit=0`, version `44552c88-d7d0-4df6-bbfc-c47f55263eae`.
+Live missing-code /activate probe passed (400/code required, no issuance/email).
+Dashboard vars preserved via --keep-vars. Authorized site release starting next;
+site result pending. Resend remains disabled; no email/payment test performed.
