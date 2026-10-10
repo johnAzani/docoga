@@ -1486,3 +1486,17 @@ visible web stream REEL Web, stream ID 3880430747; website and measurement
 ID not shown. Next single action open REEL Web row and screenshot details to
 compare URL and measurement ID with site tracking tag G-GO8VZB3R28. Do not
 rename/add/delete streams or alter measurement before this comparison.
+
+**REEL Web mismatch — 10 Oct 2026, 13:56 local screenshot:** existing REEL Web
+stream details measurement ID differs from DocOga's repository tag
+G-GO8VZB3R28; stream URL field shows no visible value. Do not use this stream
+as DocOga baseline or grant reporting access on that assumption. Additional
+repo check found site/index.html comment AND earlier SESSION_CONTEXT record
+GA property name `inductive-seer-372707`, web stream docoga.com.ng. Historical
+configuration clue, NOT independently verified property ownership/current
+setup; numeric property ID still unknown. Next single screen: phone Back once
+to Data streams, open property selector and search `inductive-seer-372707`.
+Stay on owner's chosen Google login; do not create property or replace tag.
+If no result, report the search result and resolve explicitly with owner,
+not silently switch login or invent property. Reader service account remains
+created; Viewer/WIF/API/report access pending.
