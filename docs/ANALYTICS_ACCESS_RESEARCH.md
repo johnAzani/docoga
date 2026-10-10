@@ -4,7 +4,7 @@
 
 Owner wants the agent to have ongoing read-only access to DocOga's Analytics across future sessions, instead of repeated owner exports/screenshots. This document records what was verified, what was disproved, the recommended design, the cost/privacy gates, and the acceptance test that must pass before anyone calls this "connected."
 
-Status as of **10 October 2026, 18:20 WAT**: research, Google-side WIF setup, keyless reporter, and repository-variable entry are in place; the owner screenshot shows all three expected variable rows. The long variable values are clipped in the list, so only the visible prefixes are screenshot-verifiable. **No authenticated Analytics request has run**, no real aggregate has been committed, and the production site tag remains unchanged. Do not call the connection live until a committed snapshot reports `mode: live`. The default-branch merge/schedule, broader trust, site retag, and deploy remain separately approval-gated.
+Status as of **10 October 2026, after 18:20 WAT**: research, Google-side WIF setup, keyless reporter, and repository-variable entry are in place; the owner screenshot shows all three expected variable rows. The long variable values are clipped in the list, so only visible prefixes are screenshot-verifiable. The owner explicitly approved one first live aggregate report and its commit to the session branch; the trigger file is updated locally but not yet pushed. **No authenticated Analytics request has run**, no real aggregate has been committed, and the production site tag remains unchanged. Do not call the connection live until a committed snapshot reports `mode: live`. The default-branch merge/schedule, broader trust, site retag, and deploy remain separately approval-gated.
 
 ## What was tested and disproved (correcting earlier assumptions)
 
@@ -73,7 +73,7 @@ Identity (IAM/WIF/service accounts) is free; the runner stays inside the include
 
 ## Next owner step (one screen at a time)
 
-Google-side setup is complete and verified; do not repeat Cloud Shell/IAM commands. The 18:20 WAT GitHub Variables screenshot shows all three expected rows, although the long name/value previews are clipped. The next step is to ask for explicit approval before the first real-data workflow run, because the runner will commit aggregate Analytics data into Git history. No secret or key is needed.
+Google-side setup is complete and verified; do not repeat Cloud Shell/IAM commands. The 18:20 WAT GitHub Variables screenshot shows all three expected rows, although long name/value previews are clipped. The owner has explicitly approved one first live read-only report commit. The refresh trigger file is updated locally; the next step is to push it on the session branch, then read the committed snapshot. No secret or key is needed.
 
 ## Mechanism proof — 10 October 2026, 13:33 WAT
 
@@ -127,4 +127,15 @@ other visible value prefixes begin with the expected service-account email and
 provider path, but their complete values are clipped. This is screenshot
 verification of row presence/prefixes, not an agent-side readback. The variables
 REST API remains blocked with 403. No live run or real-data Git commit has
-occurred; explicit approval is still required before triggering it.
+occurred; explicit approval was still required at that screenshot time.
+
+## First live run approved — 10 October 2026, after 18:20 WAT
+
+The owner selected **Approve first snapshot** in the explicit approval prompt,
+authorizing exactly one read-only, seven-day aggregate fetch and its sanitized
+report commit on `arena/47d148f1-docoga`. It does not authorize a site-tag
+change/deploy, merge to `main`, scheduled access, or broader WIF trust.
+`analytics/refresh-request.json` has been updated locally with the approved
+request (UTC timestamp `2026-10-10T17:27:05Z`); it has not yet been pushed at
+this log point. Therefore there is still no authenticated GA response or real
+data commit; the push and committed-file readback are next.

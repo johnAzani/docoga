@@ -1,5 +1,6 @@
 {
-  "note": "Agent-driven refresh trigger. Updating this file triggers the Analytics snapshot workflow. Do not store secrets here.",
-  "requested_at_utc": "2026-10-10T14:02:03Z",
-  "requested_by": "agent-yaml-validation"
+  "note": "Owner-approved first live read-only Analytics snapshot. The workflow writes only the sanitised aggregate report; no secrets here.",
+  "requested_at_utc": "2026-10-10T17:27:05Z",
+  "requested_by": "agent",
+  "scope": "First 7-day aggregate snapshot for GA4 property 558370565; commit to session branch only."
 }

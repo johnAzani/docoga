@@ -1,11 +1,13 @@
 # DocOga Analytics read-only access — owner setup runbook
 
-**Status, 10 Oct 2026, 18:20 WAT:** Google-side keyless identity is
+**Status, 10 Oct 2026, after 18:20 WAT:** Google-side keyless identity is
 configured and screenshot-verified. The GitHub Variables page shows all three
 expected repository-variable rows; the long labels/value previews are truncated
-in the screenshot. No live authenticated GA4 request has run and no real
-Analytics data has been committed. Do not call this complete until a committed
-report says `"mode": "live"`.
+in the screenshot. The owner has explicitly approved one first live report and
+its sanitized commit to this session branch. The refresh request is updated
+locally but has not yet been pushed; no live authenticated GA4 request has run
+and no real Analytics data has been committed. Do not call this complete until
+a committed report says `"mode": "live"`.
 
 This setup is intended to give future sessions durable, read-only access without
 repeated exports. The repo snapshot is the retrieval path; screenshots are only
@@ -76,28 +78,29 @@ or access token. Offline tests cover the fixed query, pagination, timezone,
 response warnings, and redaction of tokens from HTTP error messages; they do not
 prove live Google authentication.
 
-**Privacy approval gate:** the first successful live workflow will commit real
-aggregate Analytics data into Git history (`latest.json` and a dated file).
-Before triggering that first live run, obtain the owner's explicit approval for
-that data commit. No real-data snapshot has been authorized or committed yet.
-An empty `rows` list from an authenticated response is still a valid access
-proof, but it does not mean the site has traffic.
+**Privacy approval gate:** the owner explicitly approved one first successful
+live workflow and its sanitized aggregate report commit into Git history
+(`latest.json` and a dated file) through the approval prompt. That authorization
+is limited to this one read-only snapshot on the session branch; it does not
+cover site deployment, default-branch merge, scheduled access, or broader trust.
+No real-data snapshot has been committed yet. An empty `rows` list from an
+authenticated response is still a valid access proof, but it does not mean the
+site has traffic.
 
-## Live run — explicit real-data approval still required
+## First live run — approved, awaiting the trigger push
 
-The latest owner screenshot shows all three expected rows, but the long values
-are clipped in the list. If the first run fails because of a mistyped variable,
-stop and correct it through the UI; never put a key or password there.
+The owner explicitly approved one live, read-only aggregate run and its
+sanitized report commit to `arena/47d148f1-docoga`. The trigger file is updated
+locally; the workflow has not yet run. The latest Variables screenshot shows
+all three expected rows, but the long values are clipped. If authentication
+fails, inspect the failure without exposing tokens, then correct any typo via
+the Variables UI; never put a key or password there.
 
-1. **Get explicit owner approval to commit the first real aggregate snapshot to
-   Git history.** Do not infer this approval from the Google/WIF setup or from
-   adding the variables.
-2. Only after approval, push a change to `analytics/refresh-request.json` on
-   `arena/47d148f1-docoga`; that path triggers the workflow. The owner may also
-   use **Actions → Analytics snapshot → Run workflow** on the authorised branch.
-   The agent's dispatch API call returns 403, so push-to-refresh is the agent's
-   available path.
-3. Verify the committed `analytics/reports/latest.json` has `"mode": "live"`,
+1. Push the updated `analytics/refresh-request.json`; that path triggers the
+   workflow. The owner may instead use **Actions → Analytics snapshot → Run
+   workflow** on the authorised branch. The agent's dispatch API call returns
+   403, so push-to-refresh is the agent's available path.
+2. Verify the committed `analytics/reports/latest.json` has `"mode": "live"`,
    the expected property ID, a timestamp/date range, and pagination/quality
    metadata. Do not use run logs or artifacts as the retrieval mechanism; those
    hosts are blocked from the agent environment. A live report is not proven

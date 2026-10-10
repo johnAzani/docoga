@@ -450,7 +450,7 @@ Documented in `docs/GROWTH_JOURNAL.md`. Key milestones:
 - **Legacy/current website tag:** `G-GO8VZB3R28` (the site still sends to the older property; unchanged).
 - **Dedicated DocOga GA4 property:** ID `558370565`, stream `G-BQ1YTR0ZZJ`, timezone `Africa/Lagos` (GMT+01:00), currency `NGN`. The new tag is not deployed, so this property may have no site traffic yet.
 - **Read-only reporter:** `.github/workflows/analytics-snapshot.yml` + `tools/analytics_snapshot.py` use GitHub OIDC/WIF and a property-Viewer service account; the provider is restricted to this repo, the Analytics workflow and the session branch. Google-side WIF/API setup is screenshot-verified. The 18:20 WAT Variables-page screenshot shows all three expected repository-variable rows; the long name/value previews are truncated, so only visible prefixes are screenshot-readable.
-- **Snapshot mechanism:** placeholder commit-back was verified (run 38058018325 / commit 751aacd). No live authenticated report or real-aggregate Git commit yet; explicit owner approval is required before the first live run. Default-branch merge/schedule and site retag/deploy remain separately gated.
+- **Snapshot mechanism:** placeholder commit-back was verified (run 38058018325 / commit 751aacd). The owner has now explicitly approved one first live, read-only aggregate report commit to the session branch; the trigger has been staged locally, but no live authenticated report is available yet. Default-branch merge/schedule and site retag/deploy remain separately gated.
 - **Microsoft Clarity:** `ym9fd3sxq5` (heatmaps, session recordings, rage clicks).
 
 ### Facebook Page:
@@ -1003,12 +1003,12 @@ item 9.
 
 ## What's Next (Pending)
 
-### Analytics access — variables listed; live-data approval pending (10 Oct 2026)
+### Analytics access — first-run approval received (10 Oct 2026)
 
 1. **Repository variable setup:** the 18:20 WAT screenshot shows all three expected rows on the Variables page. `GA_PROPERTY_ID` is fully readable; the long service-account/provider values are clipped in the list, though their visible prefixes match the instructed values. Because the agent's `gh variable` command is unavailable and the REST API returned 403, the full values cannot be independently read back by the agent. Do not repeat that API path.
-2. **Before the first live report, ask explicit owner approval to commit real aggregate Analytics data into Git history.** The variables screenshot is not consent to publish a real snapshot. Until approval, do not edit/push `analytics/refresh-request.json` and do not claim connected.
-3. After approval only, push the refresh-request path on `arena/47d148f1-docoga`; verify the committed snapshot is `mode: live`, record retrieval time/range/quality flags, and confirm it is agent-readable. Empty rows can prove authenticated access, not traffic.
-4. **Do not merge to `main`, enable scheduled trust, or broaden WIF trust** without separate approval. Site retag to `G-BQ1YTR0ZZJ` and deploy is another production change, not approved.
+2. **Owner explicitly approved one first live, read-only aggregate snapshot and its commit to the session branch** through the approval prompt. This is limited to the sanitized report files. It does not authorize a site-tag change/deploy, merge to `main`, schedule access, or broader WIF trust.
+3. The `analytics/refresh-request.json` trigger file has been updated with the request. Commit/push it on `arena/47d148f1-docoga`, then verify the committed snapshot is `mode: live`, record retrieval time/range/quality flags, and confirm it is agent-readable. Empty rows can prove authenticated access, not traffic. Do not claim connected until that readback.
+4. **Do not merge to `main`, enable scheduled trust, or broaden WIF trust** without separate approval. Site retag to `G-BQ1YTR0ZZJ` and deploy remains unapproved.
 
 ### Current revenue priority — 10 Oct 2026
 
@@ -1863,3 +1863,13 @@ Analytics data has been committed. Next gate: explicitly ask whether the owner
 approves one first live, read-only aggregate snapshot being committed to
 `analytics/reports/latest.json` plus a dated report on the session branch. This
 does NOT authorize a site tag change/deploy, default-branch merge, or schedule.
+
+**First-live-snapshot approval received — 10 Oct 2026, after 18:20 WAT:** the
+owner selected **Approve first snapshot** in the explicit approval prompt. Scope:
+one live, read-only, seven-day aggregate fetch and commit of its sanitized JSON
+to the session branch. No approval for site retag/deploy, main merge, schedule,
+or broader WIF trust. Updated `analytics/refresh-request.json` locally with the
+owner-approved request at `2026-10-10T17:27:05Z`; it has not yet been pushed at
+this log point, so no live workflow or report commit has happened yet. Next:
+commit and push this trigger path only with the session-context update, then
+inspect the repository snapshot (not run logs) for `mode: live`.
