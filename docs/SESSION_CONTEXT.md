@@ -559,7 +559,13 @@ Documented in `docs/GROWTH_JOURNAL.md`. Key milestones:
 proposal to deploy the corrected payment Worker first, then the site only after
 Worker success, keeping resend disabled. This authorizes those two releases, NOT
 resend-flag enablement, a resend, new payment, credential replacement or bridge
-activation. Starting marker-gated Worker release now; outcome pending. At
+activation. First marker release `87d858b` / run `38044377472` failed BEFORE
+publish at user-token verification (curl exit22; HTTP/body unavailable). Deploy
+and live probe skipped, Worker/site unchanged. Verify/build succeeded; site skipped.
+Read-only diagnostic pending: supports account-token endpoint on structured client
+rejection, still requires active status and deployment-account read. No credential
+changes or auth bypass. Python 63 tests pass; diagnostic marker cannot deploy/probe.
+At
 `76e00fa`, Verify/build succeeded and both deploy jobs were skipped; clean local
 branch and remote head matched. Preserve dashboard Secrets/vars, no /verify probe.
 

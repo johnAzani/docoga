@@ -178,6 +178,18 @@ class DeployExecutionSafetyTests(unittest.TestCase):
             raw_logs = list(temp.glob("*.raw.log"))
             return result, calls, raw_logs
 
+    def test_auth_diagnostic_marker_never_publishes_or_probes(self):
+        doc = yaml.safe_load((WORKFLOWS / "deploy-pass-now.yml").read_text())
+        self.assertIn("[check-pass-auth]", doc["jobs"]["deploy"]["if"])
+        steps = self.steps("deploy-pass-now.yml", "deploy")
+        for name in ("Deploy worker/ as docoga-pass", "Probe the live worker"):
+            self.assertIn("!contains(github.event.head_commit.message, '[check-pass-auth]')", steps[name]["if"])
+        token = steps["Verify the token against Cloudflare"]
+        self.assertIn("tools/verify_cloudflare_token.py | tee", token["run"])
+        self.assertIn("CF_ACCOUNT", token["env"])
+        self.assertNotIn("curl", token["run"])
+        self.assertNotIn("set -x", token["run"])
+
     def test_worker_dry_run_is_isolated_from_all_production_steps(self):
         steps = self.steps("deploy-pass-now.yml", "deploy")
         dry = steps["Validate worker only (manual dry-run)"]

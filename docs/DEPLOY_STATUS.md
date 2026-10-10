@@ -600,11 +600,26 @@ and bridge scope are recorded above; next ask permission for the corrected Worke
 and site deployments with resend still disabled. No release/flag enablement or
 resend is authorized by the owner's "Nothing else" reply about tool usage.
 
-### 12.7 Authorized release — 10 Oct 2026 (in progress)
+### 12.7 Authorized release — 10 Oct 2026 (blocked before publish)
 
 Owner replied **Yes** to publishing the corrected Worker, then website after
 Worker success, with resend disabled. Authorization does not include email resend,
 new payment, changing Secrets or enabling the unused /issue bridge. Starting the
-hardened marker Worker release from session branch. Pre-release head `76e00fa`
-Verify/build succeeded and deploy jobs skipped. Production result pending; do not
-start the site release until Worker deploy exit and live no-code probe succeed.
+hardened marker Worker release from session branch. Run `38044377472` on
+`87d858b` failed at user-token verification, curl exit22. HTTP status/body were
+not retrievable, so invalid credential versus endpoint mismatch is unproven.
+Deployment/probe skipped; Worker/site unchanged. Verify/build success; site skipped.
+
+Read-only `[check-pass-auth]` diagnostic now supports user and account verification:
+structured 400/401/403/404 API client rejection permits account-endpoint check;
+network/malformed/server/throttle/inactive responses stop. Both paths require
+HTTP200/success/active and account Workers read before deployment may proceed.
+No redirects, credential/body/account-ID logging or auth bypass; numeric API error
+codes/statuses only. Python 63 tests passed. Diagnostic cannot deploy or probe,
+even if a deploy marker is also present. Diagnostic result pending; site remains
+blocked until actual Worker deploy exit and no-code live probe succeed.
+
+Sources inspected through official Cloudflare GitHub documentation and bundled
+Cloudflare SDK: account tokens support Workers/KV and account verification is
+`/accounts/{account_id}/tokens/verify` (SDK `accounts.tokens.verify`).
+https://github.com/cloudflare/cloudflare-docs/blob/production/src/content/docs/fundamentals/api/get-started/account-owned-tokens.mdx
