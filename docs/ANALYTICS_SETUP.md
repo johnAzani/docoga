@@ -1,13 +1,14 @@
 # DocOga Analytics read-only access — owner setup runbook
 
-**Status, 10 Oct 2026, after 18:20 WAT:** Google-side keyless identity is
-configured and screenshot-verified. The GitHub Variables page shows all three
-expected repository-variable rows; the long labels/value previews are truncated
-in the screenshot. The owner has explicitly approved one first live report and
-its sanitized commit to this session branch. The refresh request is updated
-locally but has not yet been pushed; no live authenticated GA4 request has run
-and no real Analytics data has been committed. Do not call this complete until
-a committed report says `"mode": "live"`.
+**Status, 10 Oct 2026, 18:28 WAT:** Google-side keyless identity is
+screenshot-verified; the Variables page shows all three expected rows, with
+long values clipped. The owner approved the first live attempt. Run
+`38071879234` successfully exchanged the GitHub OIDC token for Google access,
+but the live Analytics report step failed. The report commit step was skipped;
+`latest.json` remains a placeholder, and no Analytics data was committed. The
+exact API error is unknown because run logs are not readable from this agent
+environment. Do not call this connected until a committed snapshot says
+`"mode": "live"`.
 
 This setup is intended to give future sessions durable, read-only access without
 repeated exports. The repo snapshot is the retrieval path; screenshots are only
@@ -75,8 +76,9 @@ and records completeness, and preserves thresholding, sampling, schema
 restriction, and `(other)`-row data-loss metadata. The report contains no
 user-level identifiers, raw page URLs, emails, pass codes, payment references,
 or access token. Offline tests cover the fixed query, pagination, timezone,
-response warnings, and redaction of tokens from HTTP error messages; they do not
-prove live Google authentication.
+response warnings, and redaction of tokens from HTTP error messages. Run
+`38071879234` proved WIF token exchange only; its Analytics `runReport` step
+failed, so live reporting access is not yet proven.
 
 **Privacy approval gate:** the owner explicitly approved one first successful
 live workflow and its sanitized aggregate report commit into Git history
@@ -87,24 +89,22 @@ No real-data snapshot has been committed yet. An empty `rows` list from an
 authenticated response is still a valid access proof, but it does not mean the
 site has traffic.
 
-## First live run — approved, awaiting the trigger push
+## First live run — API failure; diagnosis pending
 
-The owner explicitly approved one live, read-only aggregate run and its
-sanitized report commit to `arena/47d148f1-docoga`. The trigger file is updated
-locally; the workflow has not yet run. The latest Variables screenshot shows
-all three expected rows, but the long values are clipped. If authentication
-fails, inspect the failure without exposing tokens, then correct any typo via
-the Variables UI; never put a key or password there.
+The owner-approved trigger produced run `38071879234` (`f3fec02`). GitHub-to-
+Google Workload Identity Federation authentication succeeded, but the live
+Analytics report step failed. The report-commit step was skipped; `latest.json`
+remains the earlier placeholder, with no real data in Git history. The exact
+GA4 API error is not visible to the agent because detailed logs redirect to
+blocked hosts.
 
-1. Push the updated `analytics/refresh-request.json`; that path triggers the
-   workflow. The owner may instead use **Actions → Analytics snapshot → Run
-   workflow** on the authorised branch. The agent's dispatch API call returns
-   403, so push-to-refresh is the agent's available path.
-2. Verify the committed `analytics/reports/latest.json` has `"mode": "live"`,
-   the expected property ID, a timestamp/date range, and pagination/quality
-   metadata. Do not use run logs or artifacts as the retrieval mechanism; those
-   hosts are blocked from the agent environment. A live report is not proven
-   until its committed file is readable.
+Next: the owner should open
+https://github.com/johnAzani/docoga/actions/runs/38071879234 and screenshot the
+failure details for **Write snapshot (live, read-only)**. Do not include any
+access token if a log line reveals one. Diagnose the error first; **do not
+trigger another GA4 request until the owner explicitly approves a retry**.
+Authentication succeeded, but this does not prove a successful Analytics
+report or a working read-only report path.
 
 The default-branch schedule is not active for this session branch. Default
 branch merge and any widening of provider trust are separately approval-gated.

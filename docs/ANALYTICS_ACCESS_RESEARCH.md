@@ -4,7 +4,7 @@
 
 Owner wants the agent to have ongoing read-only access to DocOga's Analytics across future sessions, instead of repeated owner exports/screenshots. This document records what was verified, what was disproved, the recommended design, the cost/privacy gates, and the acceptance test that must pass before anyone calls this "connected."
 
-Status as of **10 October 2026, after 18:20 WAT**: research, Google-side WIF setup, keyless reporter, and repository-variable entry are in place; the owner screenshot shows all three expected variable rows. The long variable values are clipped in the list, so only visible prefixes are screenshot-verifiable. The owner explicitly approved one first live aggregate report and its commit to the session branch; the trigger file is updated locally but not yet pushed. **No authenticated Analytics request has run**, no real aggregate has been committed, and the production site tag remains unchanged. Do not call the connection live until a committed snapshot reports `mode: live`. The default-branch merge/schedule, broader trust, site retag, and deploy remain separately approval-gated.
+Status as of **10 October 2026, 18:28 WAT**: Google-side WIF setup and all three repository-variable rows are in place by screenshot evidence; long values are clipped in the list. The owner approved one initial live aggregate attempt. Run `38071879234` proved GitHub-to-Google WIF authentication, but the Analytics `runReport` step failed and no report was committed. The detailed step error is not available to the agent because run logs redirect to blocked hosts. **Live Analytics reporting is not yet proven**; the latest snapshot remains a placeholder. Do not retry until the failure is diagnosed and explicit approval for another attempt is obtained. The default-branch merge/schedule, broader trust, site retag, and deploy remain separately approval-gated.
 
 ## What was tested and disproved (correcting earlier assumptions)
 
@@ -73,7 +73,7 @@ Identity (IAM/WIF/service accounts) is free; the runner stays inside the include
 
 ## Next owner step (one screen at a time)
 
-Google-side setup is complete and verified; do not repeat Cloud Shell/IAM commands. The 18:20 WAT GitHub Variables screenshot shows all three expected rows, although long name/value previews are clipped. The owner has explicitly approved one first live read-only report commit. The refresh trigger file is updated locally; the next step is to push it on the session branch, then read the committed snapshot. No secret or key is needed.
+Google-side setup is complete and verified; do not repeat Cloud Shell/IAM commands. The 18:20 WAT Variables screenshot shows all three expected rows, though long previews are clipped. Run `38071879234` passed WIF authentication and failed at the live Analytics report step; no snapshot was committed. Ask the owner to open https://github.com/johnAzani/docoga/actions/runs/38071879234 and screenshot the `Write snapshot (live, read-only)` error, covering any token if one appears. Diagnose before requesting approval for a retry. No secret or key is needed.
 
 ## Mechanism proof — 10 October 2026, 13:33 WAT
 
@@ -139,3 +139,17 @@ change/deploy, merge to `main`, scheduled access, or broader WIF trust.
 request (UTC timestamp `2026-10-10T17:27:05Z`); it has not yet been pushed at
 this log point. Therefore there is still no authenticated GA response or real
 data commit; the push and committed-file readback are next.
+
+## First live attempt outcome — 10 October 2026, 18:28 WAT
+
+The trigger commit `f3fec02` ran workflow `38071879234`. The configuration check
+and Google WIF authentication step succeeded; `Write snapshot (live, read-only)`
+failed, so placeholder writing and report commit-back were skipped. GitHub
+Contents readback confirms `analytics/reports/latest.json` is still the earlier
+placeholder (`mode: placeholder`, run `38058018325`); there is no real Analytics
+data in the repository. The agent can retrieve job/step conclusions but the
+detailed logs redirect to blocked storage hosts. Exact GA4 API error is unknown.
+
+Next: owner screenshot of the failed step from
+https://github.com/johnAzani/docoga/actions/runs/38071879234 . Do not expose a
+token if shown. No retry until diagnosed and explicitly approved.

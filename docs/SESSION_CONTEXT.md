@@ -450,7 +450,7 @@ Documented in `docs/GROWTH_JOURNAL.md`. Key milestones:
 - **Legacy/current website tag:** `G-GO8VZB3R28` (the site still sends to the older property; unchanged).
 - **Dedicated DocOga GA4 property:** ID `558370565`, stream `G-BQ1YTR0ZZJ`, timezone `Africa/Lagos` (GMT+01:00), currency `NGN`. The new tag is not deployed, so this property may have no site traffic yet.
 - **Read-only reporter:** `.github/workflows/analytics-snapshot.yml` + `tools/analytics_snapshot.py` use GitHub OIDC/WIF and a property-Viewer service account; the provider is restricted to this repo, the Analytics workflow and the session branch. Google-side WIF/API setup is screenshot-verified. The 18:20 WAT Variables-page screenshot shows all three expected repository-variable rows; the long name/value previews are truncated, so only visible prefixes are screenshot-readable.
-- **Snapshot mechanism:** placeholder commit-back was verified (run 38058018325 / commit 751aacd). The owner has now explicitly approved one first live, read-only aggregate report commit to the session branch; the trigger has been staged locally, but no live authenticated report is available yet. Default-branch merge/schedule and site retag/deploy remain separately gated.
+- **Snapshot mechanism:** placeholder commit-back was verified (run 38058018325 / commit 751aacd). Owner-approved first live attempt 38071879234 reached successful WIF authentication but the live GA4 report step failed; commit-back was skipped, and `latest.json` remains placeholder. No Analytics data is committed. Diagnose from the owner-visible step log before any retry; default-branch merge/schedule and site retag/deploy remain separately gated.
 - **Microsoft Clarity:** `ym9fd3sxq5` (heatmaps, session recordings, rage clicks).
 
 ### Facebook Page:
@@ -1003,12 +1003,12 @@ item 9.
 
 ## What's Next (Pending)
 
-### Analytics access — first-run approval received (10 Oct 2026)
+### Analytics access — first live attempt failed; diagnose before retry (10 Oct 2026)
 
-1. **Repository variable setup:** the 18:20 WAT screenshot shows all three expected rows on the Variables page. `GA_PROPERTY_ID` is fully readable; the long service-account/provider values are clipped in the list, though their visible prefixes match the instructed values. Because the agent's `gh variable` command is unavailable and the REST API returned 403, the full values cannot be independently read back by the agent. Do not repeat that API path.
-2. **Owner explicitly approved one first live, read-only aggregate snapshot and its commit to the session branch** through the approval prompt. This is limited to the sanitized report files. It does not authorize a site-tag change/deploy, merge to `main`, schedule access, or broader WIF trust.
-3. The `analytics/refresh-request.json` trigger file has been updated with the request. Commit/push it on `arena/47d148f1-docoga`, then verify the committed snapshot is `mode: live`, record retrieval time/range/quality flags, and confirm it is agent-readable. Empty rows can prove authenticated access, not traffic. Do not claim connected until that readback.
-4. **Do not merge to `main`, enable scheduled trust, or broaden WIF trust** without separate approval. Site retag to `G-BQ1YTR0ZZJ` and deploy remains unapproved.
+1. **Repository variables:** the 18:20 WAT screenshot shows all three expected rows. `GA_PROPERTY_ID` is fully readable; long service-account/provider values are clipped, though their visible prefixes match the instructed values. The agent cannot read variables through the REST API (403); do not retry that path.
+2. **First-live authorization was exercised once.** Run `38071879234` (`f3fec02`) passed `Authenticate to Google (Workload Identity Federation)`, then failed at `Write snapshot (live, read-only)`. The report-commit step was skipped; `analytics/reports/latest.json` remains the placeholder from run `38058018325`. No live report or Analytics data was committed.
+3. The agent can see step conclusions, not the detailed run-log error (logs are on blocked hosts). Next ask the owner to open `https://github.com/johnAzani/docoga/actions/runs/38071879234` and send a screenshot of the `Write snapshot (live, read-only)` failure details. Do not share any token if one appears.
+4. **Do not retry the Analytics request until the error is diagnosed and explicit owner approval for another attempt is obtained.** The first approval covered one initial run. Do not merge to `main`, enable scheduled trust, broaden WIF trust, retag or deploy the site; all remain unapproved.
 
 ### Current revenue priority — 10 Oct 2026
 
@@ -1873,3 +1873,16 @@ owner-approved request at `2026-10-10T17:27:05Z`; it has not yet been pushed at
 this log point, so no live workflow or report commit has happened yet. Next:
 commit and push this trigger path only with the session-context update, then
 inspect the repository snapshot (not run logs) for `mode: live`.
+
+**First live Analytics workflow attempt failed — 10 Oct 2026, 18:28 WAT:**
+commit `f3fec02` on `arena/47d148f1-docoga` triggered run `38071879234`. The
+configuration check and **Authenticate to Google (Workload Identity
+Federation)** step succeeded, proving GitHub-to-Google WIF token exchange. The
+**Write snapshot (live, read-only)** step failed; placeholder and commit-back
+steps were skipped. `analytics/reports/latest.json` remains `mode: placeholder`
+from run `38058018325`; there is no real-data commit. The agent can read run/step
+status via GitHub API, but detailed logs redirect to blocked hosts, so the exact
+GA4 API error is unknown. Next owner action: open the run URL
+https://github.com/johnAzani/docoga/actions/runs/38071879234 and screenshot the
+failure detail for that step (do not send any token if one appears). Do not
+retry until diagnosed and explicit approval is obtained for another attempt.
