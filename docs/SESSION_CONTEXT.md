@@ -1311,3 +1311,9 @@ CSV parse and git diff checks run. Continue screenshot→one next action method.
 for now", understood in context as leave/pause B2B for now. Research and workbook
 are preserved; do not proceed with recruitment, messages, interviews, pilots or
 pricing unless owner resumes. No B2B outreach has been sent. No new task selected.
+
+**Owner interaction constraint — 10 Oct 2026:** owner said "I don't want to
+meet anyone". Do not require in-person meetings or assume willingness for calls
+or live interviews. B2B remains paused. If owner explicitly resumes, propose
+permissioned written/asynchronous options instead; this statement does not
+authorise outreach, automation, lead scraping or pricing changes.
