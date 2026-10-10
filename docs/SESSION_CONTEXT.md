@@ -1566,3 +1566,17 @@ measurement on, tap Create and continue, screenshot result showing measurement
 ID. Do NOT paste a URL with credentials/path; no site deployment yet. New tag
 will still need to replace ANALYTICS_ID in site code and be deployed before
 data flows. Phone battery 4%.
+
+**DocOga web stream CREATED — 10 Oct 2026, 14:22 local screenshots:** stream
+name DocOga Web, STREAM URL https://docoga.com.ng, STREAM ID 16101599953,
+MEASUREMENT ID G-BQ1YTR0ZZJ, enhanced measurement on. Banner still says data
+collection not active / No data received, expected because site still uses old
+tag G-GO8VZB3R28. Measurement ID is public (page source) so recording it is
+safe. NOT yet done: property-level Viewer grant to
+docoga-analytics-reader@apt-trainer-367908.iam.gserviceaccount.com; numeric
+GA4 PROPERTY ID still unread; Analytics Data API enablement; WIF; repo vars;
+live fetch; site tag change + deploy; real report. Next owner action (battery
+~3%, may charge first): Admin (bottom-left gear) -> Property -> Property access
+management -> Add users, paste the service-account email, role Viewer, uncheck
+notify-by-email, then screenshot. Do not grant Editor/Administrator. Site code
+change and any deployment remain separate, owner-approved steps.
