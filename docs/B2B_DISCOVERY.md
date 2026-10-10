@@ -1,5 +1,14 @@
 # DocOga — B2B Discovery Research
 
+> **SUPERSEDED FOR EXECUTION — 10 Oct 2026.** Read
+> `B2B_OUTREACH_GROUNDWORK.md` and `B2B_DISCOVERY_WORKBOOK.md` before outreach.
+> This historical draft contains withdrawn price anchors, incorrect comparison
+> arithmetic and overconfident claims about legal fees, team readiness and
+> cold WhatsApp prospecting. They are NOT current recommendations. Public
+> numbers are not consent; Business remains unpriced. New dossier records
+> primary-source consent rules, capability/privacy/terms gaps, verified service
+> hypotheses and a permissioned interview/test process. No outreach sent.
+
 Owner: John Azani (johnAzani). Operator: Arena agent, under `docs/MANDATE.md`.
 **Status:** discovery research, 9 Oct 2026. Rule Zero applies: every claim is tiered
 and sourced; what could not be verified is listed in §8, not guessed.

@@ -1275,3 +1275,34 @@ Brevo-log Resend, no repeat attempt; no code/recipient/reference stored. The NEW
 Brevo event was not separately inspected; receipt was the decisive proof. Flag
 stays enabled; endpoint limit is 60s spacing/3 attempts per UTC day per pass,
 not globally atomic. Old Brevo failure is historical.
+
+## B2B research continuation — 10 Oct 2026
+
+Owner requested very deep B2B groundwork before any USD pricing. Completed desk
+research and repository capability audit in `docs/B2B_OUTREACH_GROUNDWORK.md`,
+with `docs/B2B_DISCOVERY_WORKBOOK.md` and three empty CSV templates. Earlier
+`B2B_DISCOVERY.md` is marked historical/superseded for execution. Official
+WhatsApp policy covers App and Platform and requires opt-in; NDPC GAID Article
+18(1)(a) requires consent for direct marketing. Public directory numbers are NOT
+permission. Use introductions with prior recipient agreement, authorised channel
+invitations or inbound. No messages/registrations/purchases/pilots sent or created.
+Seven buyer research candidates and four channel/expert candidates; all
+uncontacted, need/budget/authority/consent unknown. NIESV Abuja branch direct fetch
+failed (indexed only); no current registration independently verified.
+
+Important repository findings: Business card promises annual shared-team access,
+logos, invoice/transfer and named-human support; no complete implementation was
+established. Privacy page understates pass/email/reference processing; terms
+activation wording and non-transferability need reconciliation with runtime/team
+claims. Flagged as sales/pilot readiness prerequisites, NOT edited or deployed.
+No nationwide legal correctness or replace-lawyer claims. Prefer routine-document
+workflow discovery; synthetic receipt test only if interviews identify that pain.
+Business pricing unset, retail price/payment link unchanged, no USD work.
+
+Next: present findings and ask only whether owner has a warm property-operator
+relationship or an allowed channel introduction (no private contact values).
+Review ONE exact invitation before sending. First five interviews test problem;
+up to 12 purposive organisation interviews, raw counts/contrary evidence, no
+market extrapolation. Conditional pilot/commercial gates in dossier. Zero B2B
+interviews or revenue established by research. No new code tests needed for docs;
+CSV parse and git diff checks run. Continue screenshot→one next action method.
