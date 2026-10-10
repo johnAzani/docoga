@@ -1500,3 +1500,15 @@ Stay on owner's chosen Google login; do not create property or replace tag.
 If no result, report the search result and resolve explicitly with owner,
 not silently switch login or invent property. Reader service account remains
 created; Viewer/WIF/API/report access pending.
+
+**Owner authorised dedicated property — 10 Oct 2026:** owner explicitly chose
+"new dedicated DocOga property in this account" after explanation that current
+REEL Web tag differs, mixing REEL/Tagme data is undesirable, and history will
+not migrate. Keep current Google Analytics login and current Analytics account;
+create separate property named DocOga, not a new account. Continue one screen
+at a time: close stream details to Admin/Data streams, tap upper-left Create
+then Property, screenshot creation form before entering/submitting. Proposed
+property settings: DocOga, Nigeria reporting timezone, NGN currency; confirm
+form labels first. No property created yet, no retagging/deployment done. New
+web stream/tag and Viewer grant/WIF/report auth still pending. Owner choice
+establishes direction, not proof of completed GA setup or production deployment.
