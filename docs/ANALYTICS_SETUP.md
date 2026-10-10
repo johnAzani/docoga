@@ -18,41 +18,62 @@ setup only; the permanent mechanism is the committed snapshot.
 | Cost gate | Actions budget hard stop at $0 (verified) |
 | Retrieval mechanism | workflow commits `analytics/reports/latest.json`; verified working |
 
-## Remaining step 1 — enable the Analytics Data API
+## Keyless setup progress — 10 October 2026, 17:27 WAT
 
-In project `apt-trainer-367908`, enable **Google Analytics Data API**. Easiest
-route: **Cloud Shell** (console → the `>_` icon, top-right).
+Owner screenshots confirm:
+- Cloud project display name changed to **DocOga**; ID remains `apt-trainer-367908`, project number `635194176409`.
+- Cloud Shell started in that project.
+- `analyticsdata.googleapis.com`, `iam.googleapis.com`, `iamcredentials.googleapis.com`, and `sts.googleapis.com` enabled successfully.
+- Workload identity pool `github-actions` created successfully.
 
-Paste this whole block into Cloud Shell and press Enter. It is safe to re-run.
+**Do not repeat creation or run the earlier all-in-one script.** The commands
+below replace it. Stop and inspect errors instead of masking them with `|| true`.
+Continue one screenshot/command at a time.
+
+### Next: create the narrowly trusted provider
+
+Only repository ID `1376068242`, owner ID `120726541`, and the Analytics
+workflow on the current session branch may use this provider, for `push` or
+`workflow_dispatch` events. Pull-request code, unrelated workflows and other
+branches are not authorised. Scheduled default-branch access is intentionally
+excluded until the owner approves default-branch activation; then the trust
+policy must be reviewed and updated explicitly. Do not broaden to all workflows.
+Anyone who can modify the authorised workflow can still change what it reads
+within the service account's property-level Viewer grant; code review matters.
 
 ```bash
-gcloud config set project apt-trainer-367908
-gcloud services enable analyticsdata.googleapis.com sts.googleapis.com iamcredentials.googleapis.com
-
-gcloud iam workload-identity-pools create github-actions \
-  --project=apt-trainer-367908 --location=global \
-  --display-name="GitHub Actions" || true
-
 gcloud iam workload-identity-pools providers create-oidc github \
   --project=apt-trainer-367908 --location=global \
   --workload-identity-pool=github-actions \
-  --display-name="GitHub" \
-  --issuer-uri="https://token.actions.githubusercontent.com/" \
-  --attribute-mapping="google.subject=assertion.sub,attribute.repository_id=assertion.repository_id,attribute.repository_owner_id=assertion.repository_owner_id,attribute.ref=assertion.ref" \
-  --attribute-condition="assertion.repository_id=='1376068242' && assertion.repository_owner_id=='120726541'"
+  --display-name="DocOga Analytics GitHub" \
+  --issuer-uri="https://token.actions.githubusercontent.com" \
+  --attribute-mapping="google.subject=assertion.sub,attribute.repository_id=assertion.repository_id,attribute.repository_owner_id=assertion.repository_owner_id,attribute.ref=assertion.ref,attribute.workflow_ref=assertion.workflow_ref,attribute.event_name=assertion.event_name" \
+  --attribute-condition="assertion.repository_id=='1376068242' && assertion.repository_owner_id=='120726541' && assertion.ref=='refs/heads/arena/47d148f1-docoga' && assertion.workflow_ref=='johnAzani/docoga/.github/workflows/analytics-snapshot.yml@refs/heads/arena/47d148f1-docoga' && assertion.event_name in ['push','workflow_dispatch']"
+```
 
-PROJECT_NUMBER=$(gcloud projects describe apt-trainer-367908 --format='value(projectNumber)')
+Screenshot the result before continuing. If it says already exists, inspect the
+existing provider rather than treating this command as a successful update.
+Provider creation alone does not grant service-account impersonation.
 
+### Later: grant impersonation on this service account only
+
+After verifying the provider creation/condition, add this binding:
+
+```bash
 gcloud iam service-accounts add-iam-policy-binding \
   docoga-analytics-reader@apt-trainer-367908.iam.gserviceaccount.com \
   --project=apt-trainer-367908 \
   --role="roles/iam.workloadIdentityUser" \
-  --member="principalSet://iam.googleapis.com/projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/github-actions/attribute.repository_id/1376068242"
-
-echo "WIF PROVIDER = projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/github-actions/providers/github"
+  --member="principalSet://iam.googleapis.com/projects/635194176409/locations/global/workloadIdentityPools/github-actions/attribute.repository_id/1376068242"
 ```
 
-Copy the printed **WIF PROVIDER** line — you need it next. It contains no secret.
+This principal set is limited further by the provider condition above. A new
+provider added to the same pool could change its trust boundary; keep this pool
+dedicated and review future IAM/provider changes. Do not grant Owner, Editor,
+project-wide Token Creator or domain-wide delegation. No service-account key.
+
+The provider configuration value (not a secret) will be:
+`projects/635194176409/locations/global/workloadIdentityPools/github-actions/providers/github`.
 
 ## Remaining step 2 — set three repository variables
 
@@ -70,7 +91,7 @@ These are configuration, **not secrets** — no key or password is involved.
 
 1. GitHub → **Actions → Analytics snapshot → Run workflow** (or the agent
    pushes `analytics/refresh-request.json`).
-2. It should commit a snapshot with `"mode": "live"` and real rows.
+2. It should commit a snapshot with `"mode": "live"` and a successful authenticated response. Rows may be empty in this newly created property.
 
 The agent then reads `analytics/reports/latest.json` in any future session.
 
@@ -92,7 +113,7 @@ data, and reports will be empty (which still proves access works).
 ## Honesty notes
 
 - Reports are aggregate only and carry retrieval time, date range, property ID,
-  timezone and GA thresholding/sampling flags. Standard GA data can lag 24–48 h.
+  property ID. Timezone/sampling/data-loss metadata handling still needs hardening before production reporting; the current scaffold does not preserve every required flag. Standard GA data can lag 24–48 h.
 - No purchase/sales tracking exists yet; Analytics access cannot prove revenue.
 - No uptime guarantee: scheduled runs can be delayed or dropped; the agent will
   always state the last successful retrieval time.

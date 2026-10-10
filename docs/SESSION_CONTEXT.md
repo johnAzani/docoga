@@ -1642,3 +1642,92 @@ pool+provider, bind workloadIdentityUser to repository_id 1376068242, set 3 repo
 variables, then live run; and separately the site tag change to G-BQ1YTR0ZZJ +
 deploy. Owner next: Cloud Shell script (step 1) then repo variables (step 2).
 No secrets involved in variables. Property ID 558370565; stream G-BQ1YTR0ZZJ.
+
+**Owner location — 10 Oct 2026, 17:06 local screenshot:** still on Analytics
+→ DocOga Property details, ID 558370565, Nigeria time/NGN confirmed again.
+This is NOT Google Cloud; no evidence owner ran Cloud Shell script or enabled
+APIs/WIF. Next single action: open Cloud console dashboard in existing Cloud
+tab or https://console.cloud.google.com/home/dashboard?project=apt-trainer-367908
+and send screen before activating Cloud Shell. Do not repeat GA setup or
+request secrets. Keep screenshot-by-screenshot guidance, not a multi-step dump.
+
+Workspace Git checkpoint on resumption: local HEAD is base 7ee8d79 with prior
+session files restored as modified/untracked; remote session branch is
+ df74bf2ee94b28442b2550a9487b3337bfd706e3. Preserve all files; reconcile local
+Git history with verified remote before any commit/push. No reset/force push.
+
+**Owner requests Cloud project display-name change — 10 Oct 2026, 17:09:**
+owner dislikes My First Project and asks to change it. Dashboard screenshot
+confirms project ID apt-trainer-367908 and project number 635194176409.
+Recommend display name DocOga; this is not a project-ID change and does not
+change the existing service-account email. Next single action: tap Go to
+project settings at bottom of Project info card (upper-left) and screenshot
+before editing. Rename not yet performed; Analytics property already DocOga.
+WIF/API setup paused at this screen; no billing/resource deletion. Local Git
+history reconciliation remains pending; preserve restored changes.
+
+**Cloud project Settings screenshot — 10 Oct 2026, 17:13 local:** Project
+name editable field shows My First Project with Save at right of same field.
+Project ID apt-trainer-367908 and number 635194176409 shown unchanged. Next:
+replace only Project name with DocOga, tap Save at right, screenshot result.
+Do not touch Migrate, Shut down, or Manage billing. Rename not yet confirmed;
+no impact to identifier/email intended, WIF/API setup still pending.
+
+**Cloud project rename CONFIRMED — 10 Oct 2026, 17:15 local:** owner says
+Saved; screenshot Project name and top project chip both show DocOga. Project
+ID apt-trainer-367908 and project number 635194176409 unchanged. Do not repeat
+rename steps. Next single action: dismiss keyboard, tap Cloud Shell terminal
+icon (>_) in top toolbar between gift icon and circled 1, send startup/prompt
+screen. No script run/API enablement/WIF setup confirmed yet. Do not request
+keys or activate billing/trial; inspect first startup prompt before proceeding.
+
+**Cloud Shell first-use prompt — 10 Oct 2026, 17:17 local screenshot:**
+Cloud Shell panel open beneath DocOga project Settings. Intro dialog explicitly
+states "Cloud Shell is free for all users" and offers Cancel / Continue.
+Next single action: tap Continue, wait for terminal or next prompt, screenshot;
+do not paste setup script yet. This initializes Cloud Shell only, not Analytics
+API/WIF configuration and not proof of billing status of any commands run later.
+No credentials requested. Project name DocOga/ID apt-trainer-367908 remains.
+
+**Cloud Shell READY — 10 Oct 2026, 17:23 local screenshot:** terminal welcome
+explicitly confirms active project apt-trainer-367908 and idle shell prompt.
+Cloud project display name DocOga. No API/WIF commands yet evidenced. Revised
+next action is ONE explicit-project API enable command, not the old all-at-once
+script: `gcloud services enable analyticsdata.googleapis.com iam.googleapis.com
+ iamcredentials.googleapis.com sts.googleapis.com --project=apt-trainer-367908`.
+Send output or authorization prompt; stop if billing/trial is requested. Adding
+IAM API explicitly supports subsequent WIF pool/provider operations. Do not
+run old runbook's unbounded `|| true` block; review and tighten provider trust
+(workflow/ref/events + numeric repo/owner IDs) before owner executes WIF setup.
+No keys, broad resource roles or production/tag changes in this step. APIs
+not confirmed enabled until actual success output. Local/remote history must
+still be reconciled safely before commit/push; no force push or lost work.
+
+**Required APIs enabled — 10 Oct 2026, 17:25 local screenshot:** terminal
+shows explicit-project enable command for analyticsdata, iam, iamcredentials,
+sts and "finished successfully", then idle prompt. Owner-executed success;
+no authenticated GA report yet. Next single command create WIF pool
+`github-actions` in global location/project apt-trainer-367908 with display
+name `DocOga Analytics via GitHub`. This creates pool only, not provider/trust
+or service-account impersonation binding. If already exists or permission error,
+inspect output instead of `|| true`/blind retry. Provider condition must later
+restrict repo/owner numeric IDs + workflow + authorised branch/events. Do not
+run previous all-at-once runbook. No keys/billing/site changes in this step.
+
+**WIF pool CREATED — 10 Oct 2026, 17:27 local screenshot:** terminal says
+Created workload identity pool [github-actions]. Next command creates provider
+`github` in that pool with explicit repo ID 1376068242, owner ID 120726541,
+ref refs/heads/arena/47d148f1-docoga, exact workflow_ref for analytics-snapshot.yml,
+events push/workflow_dispatch only. Official GitHub OIDC reference confirms
+workflow_ref is the current workflow claim (job_workflow_ref is for reusable
+workflows). Daily schedule/main intentionally NOT trusted until approved rollout.
+Provider and service-account binding not yet created/confirmed; no live report.
+Old all-in-one runbook removed/replaced with staged restricted commands in
+ANALYTICS_SETUP.md; no masked errors/|| true. Script metadata hardening still
+pending; no claim current scaffold preserves all sampling/data-loss/timezone.
+
+Git history reconciliation completed safely this reply: compared EVERY remote
+tracked file to restored workspace (only SESSION_CONTEXT differed); saved full
+workspace in git stash plus context backup outside repo, fast-forwarded existing
+session branch to df74bf2, restored added context notes. No branch switch, reset,
+force push or dropped files. New session notes now can be committed normally.
