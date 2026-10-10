@@ -4,7 +4,7 @@
 
 Owner wants the agent to have ongoing read-only access to DocOga's Analytics across future sessions, instead of repeated owner exports/screenshots. This document records what was verified, what was disproved, the recommended design, the cost/privacy gates, and the acceptance test that must pass before anyone calls this "connected."
 
-Status: **research + environment verification complete; nothing connected; no authenticated report retrieved yet.** No Google identity, IAM change, API enablement, workflow, budget change or deployment has been performed.
+Status as of **10 October 2026, 17:53 WAT**: research, Google-side WIF setup, and the keyless reporter are in place; the owner has added the first of three GitHub repository variables. Google configuration is screenshot-verified, but **no authenticated Analytics request has run**, no real aggregate has been committed, and the production site tag remains unchanged. Do not call the connection live until a committed snapshot reports `mode: live`. The default-branch merge/schedule, broader trust, site retag, and deploy remain separately approval-gated.
 
 ## What was tested and disproved (correcting earlier assumptions)
 
@@ -23,9 +23,9 @@ Earlier drafts of this plan assumed the agent could dispatch workflows and read 
 ## Verified facts about the repository
 
 - Private repo, default branch `main`; repository **ID 1376068242**, owner **ID 120726541**.
-- 12 workflows, all active; none is an Analytics reporter. No GA reporting SDK/config found.
-- Actions secrets/variables/permissions endpoints → `HTTP 403`; the agent cannot read or set secrets. Never request secret values in chat.
-- Existing measurement ID is a tracking tag, not the numeric GA4 property ID and not reporting permission.
+- The repo now contains `.github/workflows/analytics-snapshot.yml` and `tools/analytics_snapshot.py`; an earlier placeholder run proved the commit-back mechanism, not Google authentication.
+- The GitHub Actions variables REST endpoint returned `HTTP 403 Resource not accessible by integration`; the installed `gh` has no `variable` subcommand. The agent cannot read or set repository variables through these interfaces. Never request secret values in chat.
+- The existing production measurement ID is a tracking tag, not the numeric GA4 property ID and not reporting permission. The live site still uses the old tag; the dedicated DocOga property has a different measurement ID and has not been deployed.
 
 ## Recommended design — "repo-committed GA4 snapshot"
 
@@ -34,7 +34,7 @@ Because the agent can read repository contents but cannot dispatch or read logs/
 1. **Identity:** a dedicated Google service account with **Viewer on the DocOga GA4 property only** (not account-level access to all properties). Property-level access is the documented, least-privilege Analytics grant. [1](https://support.google.com/analytics/answer/9305788?hl=en)
 2. **Keyless auth:** GitHub OIDC → Google Workload Identity Federation → that service account → short-lived OAuth token scoped `https://www.googleapis.com/auth/analytics.readonly`. Trust is restricted by numeric `repository_id` (and owner id), never by reclaimable names. Google recommends numeric IDs against typosquatting. [1](https://docs.cloud.google.com/iam/docs/workload-identity-federation-with-deployment-pipelines)
 3. **Action:** reviewed, SHA-pinned `google-github-actions/auth` with `token_format: access_token`, the service account, and explicit `access_token_scopes: https://www.googleapis.com/auth/analytics.readonly` (the default generated scope is `cloud-platform`, which is not Analytics permission). Service-account impersonation is required for generated tokens; no domain-wide delegation. [Action docs](https://github.com/google-github-actions/auth/blob/main/README.md)
-4. **Runner:** `ubuntu-latest`, one small `requests`-based script (no SDK dependency), fixed aggregate query set, `timeout-minutes` bound, no credential/token logging, no Analytics write calls.
+4. **Runner:** `ubuntu-latest`, one Python-standard-library `urllib` script (no SDK or third-party request dependency), fixed aggregate query, bounded timeout and pagination, no credential/token logging, no Analytics write calls.
 5. **Output:** a sanitized aggregate JSON committed to `analytics/reports/YYYY-MM-DD.json` and `analytics/reports/latest.json`, committed with `[skip ci]` so it does not re-trigger CI loops.
 6. **Triggers (in priority order):**
    - `push` with a path filter on a refresh-request file → **the agent can trigger a refresh by pushing that file** (push works; dispatch does not). Runs on the pushed branch and commits the snapshot back to it.
@@ -49,9 +49,9 @@ Identity (IAM/WIF/service accounts) is free; the runner stays inside the include
 ## Privacy, freshness and honesty
 
 - Read-only Analytics is still sensitive. Viewer is property-wide, not limited to the reports our script requests; anyone able to edit the trusted workflow could request other readable property data, so workflow review and ref restrictions matter.
-- Aggregate only: users/sessions/engagement/channel/source and **sanitized** page groups; 7/28/90-day windows. No user identifiers, emails, pass codes, payment references or URL query strings. Do not export raw `pageLocation` blindly. Never reverse-engineer suppressed small counts.
-- Every report must carry: retrieval timestamp (UTC), requested dates, numeric property id, property timezone, row/pagination status, and GA's thresholding/sampling/`(other)`-row data-loss flags. [1](https://developers.google.com/analytics/devguides/reporting/data/v1/rest/v1beta/ResponseMetaData)
-- Standard GA data is not live: processing can take 24–48 hours and recent numbers change. Prefer complete windows ending two property-calendar days ago; label yesterday/today provisional. [1](https://support.google.com/analytics/answer/11198161?hl=en)
+- The implemented report is currently one fixed aggregate: sessions, total users, and engagement rate by `sessionDefaultChannelGroup`, over seven days. No page groups, raw `pageLocation`, user identifiers, emails, pass codes, payment references, or URLs are requested. Never reverse-engineer suppressed small counts.
+- Every live snapshot carries: retrieval timestamp (UTC), requested dates, numeric property ID, the verified `Africa/Lagos` timezone, property currency, row/pagination status, and GA's thresholding, sampling, schema-restriction, and `(other)`-row data-loss metadata. The code refuses an unexpected API timezone and refuses to write an incomplete report even if pagination was needed. [1](https://developers.google.com/analytics/devguides/reporting/data/v1/rest/v1beta/ResponseMetaData)
+- Standard GA data is not live: processing can take 24–48 hours and recent numbers change. The implemented window ends two property-calendar days ago. [1](https://support.google.com/analytics/answer/11198161?hl=en)
 - No uptime guarantee. Scheduled runs can be delayed/dropped and the agent cannot force one via dispatch; on-demand refresh depends on the push path. The agent will always state the last successful retrieval and the reason for any gap, and will never present a stale snapshot as current.
 - Reporting access does not create purchase tracking. The site has no verified purchase event; Analytics access cannot prove sales. That is a separate authorised task.
 
@@ -73,7 +73,7 @@ Identity (IAM/WIF/service accounts) is free; the runner stays inside the include
 
 ## Next owner step (one screen at a time)
 
-Open the Google Cloud console and show the project selector: **https://console.cloud.google.com** — do not enable billing, start a trial, or change IAM yet. We will confirm whether the existing YouTube/Gemini project can host the service account before creating anything. Screenshots are for setup only, never the permanent reporting mechanism.
+Google-side setup is complete and verified; do not repeat Cloud Shell/IAM commands. The current GitHub Variables screen shows `GA_PROPERTY_ID=558370565` saved. Add `GCP_SERVICE_ACCOUNT` with value `docoga-analytics-reader@apt-trainer-367908.iam.gserviceaccount.com` next, then send the saved-variable list screenshot. Continue with only one variable per screen. After both remaining variables are saved, ask separately for explicit approval before the first real-data workflow run, because the runner will commit aggregate Analytics data into Git history. No secret or key is needed.
 
 ## Mechanism proof — 10 October 2026, 13:33 WAT
 
@@ -86,6 +86,34 @@ via both `git pull` and the GitHub Contents REST API. Thus the complete
 
 This was a MECHANISM test only: `mode=placeholder`, `property_id=null`,
 `rows=[]`, generated `2026-10-10T12:33:28Z`. No Google API was called; no
-Analytics data or secret was involved. The live auth step is deliberately
-not enabled until owner setup is complete. It must be SHA-pinned and followed
-by the live-fetch step before calling the connection operational.
+Analytics data or secret was involved. Subsequent work added the restricted,
+SHA-pinned WIF auth step and live aggregate fetch. That code path is ready but
+still gated by the repository variables, and the live identity exchange and
+report remain untested.
+
+## Google-side setup verified — 10 October 2026, 17:45 WAT
+
+Owner screenshots confirm Cloud project display name **DocOga** (ID
+`apt-trainer-367908`, number `635194176409`); the Analytics Data API, IAM, IAM
+Credentials, and STS APIs are enabled; the global `github-actions` WIF pool and
+ACTIVE `github` provider exist; and the service account has only the
+`roles/iam.workloadIdentityUser` principal-set binding for repo ID `1376068242`.
+The provider readback was confirmed to require owner ID `120726541`, the exact
+`analytics-snapshot.yml` workflow on `arena/47d148f1-docoga`, and `push` or
+`workflow_dispatch`. It intentionally excludes `main` and scheduled events.
+The service account already has GA4 property-level Viewer on DocOga property
+`558370565` (timezone Africa/Lagos, currency NGN).
+
+At 17:53 WAT the GitHub Variables page showed `GA_PROPERTY_ID=558370565` saved.
+`GCP_SERVICE_ACCOUNT` and `GCP_WORKLOAD_IDENTITY_PROVIDER` remain unset. The
+agent's `gh variable` command is unavailable and the REST API returns 403, so
+the owner UI is required. No real-data commit has been approved, the site tag
+remains `G-GO8VZB3R28`, and no production retag/deploy or main merge is
+approved.
+
+The reporter hardening now uses property-local dates (seven days ending two
+Lagos calendar days ago), a fixed channel-only aggregate, bounded pagination,
+row completeness checks, response timezone validation, NGN/timezone provenance,
+thresholding/sampling/schema/data-loss metadata, and token-redacted HTTP error
+messages. Six offline unit tests pass. These tests validate code behavior only;
+they are not evidence of live access.

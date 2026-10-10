@@ -447,8 +447,11 @@ Documented in `docs/GROWTH_JOURNAL.md`. Key milestones:
 - `social/reel-stakes-thumb-mobile.jpg` — Mobile test (168×94)
 
 ### Analytics:
-- **Google Analytics 4:** `G-GO8VZB3R28` (property: "inductive-seer-372707")
-- **Microsoft Clarity:** `ym9fd3sxq5` (heatmaps, session recordings, rage clicks)
+- **Legacy/current website tag:** `G-GO8VZB3R28` (the site still sends to the older property; unchanged).
+- **Dedicated DocOga GA4 property:** ID `558370565`, stream `G-BQ1YTR0ZZJ`, timezone `Africa/Lagos` (GMT+01:00), currency `NGN`. The new tag is not deployed, so this property may have no site traffic yet.
+- **Read-only reporter:** `.github/workflows/analytics-snapshot.yml` + `tools/analytics_snapshot.py` use GitHub OIDC/WIF and a property-Viewer service account; the provider is restricted to this repo, the Analytics workflow and the session branch. Google-side WIF/API setup is screenshot-verified. `GA_PROPERTY_ID` is saved; two repo variables remain pending.
+- **Snapshot mechanism:** placeholder commit-back was verified (run 38058018325 / commit 751aacd). No live authenticated report or real-aggregate Git commit yet; explicit owner approval is required before the first live run. Default-branch merge/schedule and site retag/deploy remain separately gated.
+- **Microsoft Clarity:** `ym9fd3sxq5` (heatmaps, session recordings, rage clicks).
 
 ### Facebook Page:
 - **Page ID:** `102466208923830`
@@ -1000,6 +1003,13 @@ item 9.
 
 ## What's Next (Pending)
 
+### Analytics access — setup in progress (10 Oct 2026)
+
+1. **Finish two repository variables from the GitHub Variables UI, one screen at a time.** The 17:53 WAT screenshot confirms `GA_PROPERTY_ID=558370565` is saved. Next add `GCP_SERVICE_ACCOUNT=docoga-analytics-reader@apt-trainer-367908.iam.gserviceaccount.com`; then separately add `GCP_WORKLOAD_IDENTITY_PROVIDER=projects/635194176409/locations/global/workloadIdentityPools/github-actions/providers/github`. Agent-side `gh variable` is unavailable and REST API returned 403, so don't retry that path.
+2. **Before the first live report, ask explicit owner approval to commit real aggregate Analytics data into Git history.** Variables alone are not consent to publish the real snapshot. Until approval, do not edit/push `analytics/refresh-request.json` and do not claim connected.
+3. After approval only, push the refresh-request path on `arena/47d148f1-docoga`; verify the committed snapshot is `mode: live`, record retrieval time/range/quality flags, and confirm it is agent-readable. Empty rows can prove authenticated access, not traffic.
+4. **Do not merge to `main`, enable scheduled trust, or broaden WIF trust** without separate approval. Site retag to `G-BQ1YTR0ZZJ` and deploy is another production change, not approved.
+
 ### Current revenue priority — 10 Oct 2026
 
 1. **Owner checks completed, without another purchase:** Brevo domain Authenticated
@@ -1027,9 +1037,7 @@ item 9.
 6. **Diaspora USD pricing.** Research Flutterwave international approval, settlement
    and buyer willingness-to-pay before selecting a price. The `$20` in
    `docs/REVENUE.md` remains an illustrative calculation only.
-7. **Read GA baseline** (`G-GO8VZB3R28`) in parallel; the agent cannot access it.
-   Corrected pull list: `OWNER_CLICK_GUIDE.md` (Parallel). No success-page GA tag
-   or verified-purchase event exists; do not report a conversion funnel as measurable.
+7. **Legacy/live GA baseline** (`G-GO8VZB3R28`) remains separate: until the new property has a live snapshot, the agent has no verified report from either property. The dedicated DocOga property and pending setup steps are tracked above. No success-page GA tag or verified-purchase event exists; do not report a conversion funnel as measurable.
 8. **Owner-side checklist is written down and sourced** — `DEPLOY_STATUS.md` §12:
    Brevo manual authentication (preserves the existing DMARC; 3–4 records; up to
    48 h), Cloudflare DNS-only + flattening off for the DKIM CNAMEs, Flutterwave
@@ -1799,3 +1807,36 @@ form; first intended name GA_PROPERTY_ID, value 558370565. No variables added
 yet; do not use Environment variables or Secrets for these non-secret config.
 Continue one screen at a time; WIF binding confirmed, authenticated GA call
 still pending. Phone battery 9%, saved progress available if paused.
+
+**First repository-variable form — 10 Oct 2026, 17:49 screenshot:** Actions
+variables / New variable with empty Name and Value fields, Add variable button.
+Next enter Name GA_PROPERTY_ID and Value 558370565, click Add variable, send
+resulting list. No variable confirmed saved yet; this is numeric GA property
+ID, not stream ID/measurement ID. Remaining two config values follow separately.
+
+**GA_PROPERTY_ID saved; reporter hardened — after the 17:53 WAT screenshot,
+10 Oct 2026:** the latest Variables-page screenshot now shows repository variable
+`GA_PROPERTY_ID` with exact value `558370565`; this is owner screenshot evidence.
+The installed `gh` lacks the `variable` subcommand, and GitHub's Actions
+variables REST endpoint returned 403 `Resource not accessible by integration`,
+so the agent did not set or read repo variables. `GCP_SERVICE_ACCOUNT` and
+`GCP_WORKLOAD_IDENTITY_PROVIDER` remain pending via the UI, one variable at a
+time. Do not repeat the failed agent API path.
+
+Hardened `tools/analytics_snapshot.py`: date windows now use the property-local
+Africa/Lagos calendar and end two days ago; the query remains only aggregate
+sessions/users/engagement by session default channel group; the response is
+paginated with row-count/completeness checks; timezone/currency provenance and
+thresholding, sampling, schema-restriction, and `(other)`-row data-loss flags
+are preserved. HTTP errors are bounded and token-redacted; the access token is
+never written to report output. Added six offline unit tests for query schema,
+window, pagination, metadata, timezone, and redaction. All six pass; after
+installing CI's test dependencies in an ignored local venv, the full Python
+suite passed 69/69. `tools/qa.py` is green with two environment warnings (no
+`.worker-secrets.env`; jsdom not installed); Python compilation and
+`git diff --check` pass. No live API call, real-data commit,
+site tag change, deploy or main merge occurred. Next one screen: add
+`GCP_SERVICE_ACCOUNT` with value
+docoga-analytics-reader@apt-trainer-367908.iam.gserviceaccount.com and send the
+saved-variable screenshot. After all three exist, get explicit approval before
+the first real aggregate report commit.
