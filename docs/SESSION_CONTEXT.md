@@ -1731,3 +1731,18 @@ tracked file to restored workspace (only SESSION_CONTEXT differed); saved full
 workspace in git stash plus context backup outside repo, fast-forwarded existing
 session branch to df74bf2, restored added context notes. No branch switch, reset,
 force push or dropped files. New session notes now can be committed normally.
+
+**Cloud Shell reconnected — 10 Oct 2026, 17:31–17:32 screenshots:** first
+screen said Establishing connection; latest shows idle prompt with previous
+API enable success and pool creation success. No provider-create command or
+output visible. Do not assume it ran or retry blindly if owner says already
+executed. Next paste previously supplied restricted create-oidc github command
+at ready prompt and screenshot result. No changes to confirmed pool/API steps.
+
+**Provider command incomplete — 10 Oct 2026, 17:34 screenshot:** only base
+`gcloud iam workload-identity-pools providers create-oidc github` was executed;
+CLI reports required attribute-mapping/issuer-uri missing and usage text. No
+provider created by this failed validation; existing pool/APIs unaffected.
+Next give FULL provider command as ONE LINE to avoid phone multiline copying
+error; retain exact repo/owner IDs, working ref/workflow_ref and push/dispatch
+condition. Screenshot result before binding. No need to repeat pool creation.
