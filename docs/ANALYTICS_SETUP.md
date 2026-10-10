@@ -1,13 +1,15 @@
 # DocOga Analytics read-only access — owner setup runbook
 
-**Status, 10 Oct 2026, 18:28 WAT:** Google-side keyless identity is
+**Status, 10 Oct 2026, 18:34 WAT:** Google-side keyless identity is
 screenshot-verified; the Variables page shows all three expected rows, with
-long values clipped. The owner approved the first live attempt. Run
-`38071879234` successfully exchanged the GitHub OIDC token for Google access,
-but the live Analytics report step failed. The report commit step was skipped;
-`latest.json` remains a placeholder, and no Analytics data was committed. The
-exact API error is unknown because run logs are not readable from this agent
-environment. Do not call this connected until a committed snapshot says
+long values clipped. Run `38071879234` successfully exchanged the GitHub OIDC
+token, but the live report step failed with `Google Analytics response is
+missing a valid rowCount`. The commit step was skipped; `latest.json` remains a
+placeholder and no Analytics data was committed. The parser fix now treats a
+missing count as zero only for a recognized empty RunReport response. Targeted
+tests pass 8/8; the full suite passes 71/71; `tools/qa.py` is green with two
+environment-only warnings; and `git diff --check` passes. The code/docs push is
+still pending. Do not call this connected until a committed snapshot says
 `"mode": "live"`.
 
 This setup is intended to give future sessions durable, read-only access without
@@ -76,35 +78,40 @@ and records completeness, and preserves thresholding, sampling, schema
 restriction, and `(other)`-row data-loss metadata. The report contains no
 user-level identifiers, raw page URLs, emails, pass codes, payment references,
 or access token. Offline tests cover the fixed query, pagination, timezone,
-response warnings, and redaction of tokens from HTTP error messages. Run
+response warnings, empty-report row-count handling, and token redaction. Run
 `38071879234` proved WIF token exchange only; its Analytics `runReport` step
 failed, so live reporting access is not yet proven.
 
-**Privacy approval gate:** the owner explicitly approved one first successful
-live workflow and its sanitized aggregate report commit into Git history
-(`latest.json` and a dated file) through the approval prompt. That authorization
-is limited to this one read-only snapshot on the session branch; it does not
-cover site deployment, default-branch merge, scheduled access, or broader trust.
-No real-data snapshot has been committed yet. An empty `rows` list from an
-authenticated response is still a valid access proof, but it does not mean the
-site has traffic.
+**Privacy approval gate:** the owner approved one initial live attempt and its
+sanitized report commit to Git history (`latest.json` and a dated file). That
+attempt failed before writing any report, so no real data was committed. Treat
+the approval as exercised; obtain fresh explicit approval before another GA4
+request. No approval exists for site deployment, default-branch merge, scheduled
+access, or broader trust. An empty `rows` list from a successful authenticated
+response would prove access, not site traffic.
 
-## First live run — API failure; diagnosis pending
+## First live attempt — empty-response row-count handling; retry approval pending
 
-The owner-approved trigger produced run `38071879234` (`f3fec02`). GitHub-to-
-Google Workload Identity Federation authentication succeeded, but the live
-Analytics report step failed. The report-commit step was skipped; `latest.json`
-remains the earlier placeholder, with no real data in Git history. The exact
-GA4 API error is not visible to the agent because detailed logs redirect to
-blocked hosts.
+The owner-approved trigger produced run `38071879234` (`f3fec02`). WIF
+authentication succeeded, but the live Analytics report step failed with the
+screenshot-confirmed message `Google Analytics response is missing a valid
+rowCount`. Commit-back was skipped; `latest.json` remains the earlier
+placeholder, with no real data in Git history.
 
-Next: the owner should open
-https://github.com/johnAzani/docoga/actions/runs/38071879234 and screenshot the
-failure details for **Write snapshot (live, read-only)**. Do not include any
-access token if a log line reveals one. Diagnose the error first; **do not
-trigger another GA4 request until the owner explicitly approves a retry**.
-Authentication succeeded, but this does not prove a successful Analytics
-report or a working read-only report path.
+Google's [RunReportResponse schema](https://github.com/googleapis/googleapis/blob/master/google/analytics/data/v1beta/data.proto)
+defines `row_count` as a proto3 `int32` and `kind` as the fixed
+`analyticsData#runReport`. For a new property returning no rows, omission of a
+zero-valued `rowCount` is the likely cause, but the raw JSON was not captured.
+The parser fix accepts a missing count as zero **only** when `kind` identifies a
+RunReport and the `rows` list is empty; it continues to reject missing counts
+for nonempty or unrecognized responses. The targeted reporter tests pass 8/8;
+the full Python suite passes 71/71, `tools/qa.py` is green (two environment-only
+warnings), and `git diff --check` passes.
+
+The first attempt did not commit Analytics data. Push the code/docs without
+touching `analytics/refresh-request.json`; that alone will not trigger another
+report. Then get explicit owner approval before a retry. WIF success is not
+proof that `runReport` succeeded.
 
 The default-branch schedule is not active for this session branch. Default
 branch merge and any widening of provider trust are separately approval-gated.

@@ -450,7 +450,7 @@ Documented in `docs/GROWTH_JOURNAL.md`. Key milestones:
 - **Legacy/current website tag:** `G-GO8VZB3R28` (the site still sends to the older property; unchanged).
 - **Dedicated DocOga GA4 property:** ID `558370565`, stream `G-BQ1YTR0ZZJ`, timezone `Africa/Lagos` (GMT+01:00), currency `NGN`. The new tag is not deployed, so this property may have no site traffic yet.
 - **Read-only reporter:** `.github/workflows/analytics-snapshot.yml` + `tools/analytics_snapshot.py` use GitHub OIDC/WIF and a property-Viewer service account; the provider is restricted to this repo, the Analytics workflow and the session branch. Google-side WIF/API setup is screenshot-verified. The 18:20 WAT Variables-page screenshot shows all three expected repository-variable rows; the long name/value previews are truncated, so only visible prefixes are screenshot-readable.
-- **Snapshot mechanism:** placeholder commit-back was verified (run 38058018325 / commit 751aacd). Owner-approved first live attempt 38071879234 reached successful WIF authentication but the live GA4 report step failed; commit-back was skipped, and `latest.json` remains placeholder. No Analytics data is committed. Diagnose from the owner-visible step log before any retry; default-branch merge/schedule and site retag/deploy remain separately gated.
+- **Snapshot mechanism:** placeholder commit-back was verified (run 38058018325 / commit 751aacd). First live attempt 38071879234 passed WIF auth but failed because the script rejected a missing `rowCount`; commit-back was skipped and `latest.json` remains placeholder. Owner screenshot now confirms the exact error. Researching Google's RunReport proto showed `row_count` is proto3 int32; parser now treats a missing count as zero only for a validated empty `analyticsData#runReport` response. Eight targeted tests and the full Python suite (71/71) pass; `tools/qa.py` is green with two environment-only warnings, and `git diff --check` passes. The parser/docs fix is still local and not yet pushed. No Analytics data is committed. Next: commit/push the fix without touching `analytics/refresh-request.json`, then seek explicit owner approval before another attempt.
 - **Microsoft Clarity:** `ym9fd3sxq5` (heatmaps, session recordings, rage clicks).
 
 ### Facebook Page:
@@ -1003,12 +1003,12 @@ item 9.
 
 ## What's Next (Pending)
 
-### Analytics access — first live attempt failed; diagnose before retry (10 Oct 2026)
+### Analytics access — zero-row response handling fixed; retry approval pending (10 Oct 2026)
 
 1. **Repository variables:** the 18:20 WAT screenshot shows all three expected rows. `GA_PROPERTY_ID` is fully readable; long service-account/provider values are clipped, though their visible prefixes match the instructed values. The agent cannot read variables through the REST API (403); do not retry that path.
-2. **First-live authorization was exercised once.** Run `38071879234` (`f3fec02`) passed `Authenticate to Google (Workload Identity Federation)`, then failed at `Write snapshot (live, read-only)`. The report-commit step was skipped; `analytics/reports/latest.json` remains the placeholder from run `38058018325`. No live report or Analytics data was committed.
-3. The agent can see step conclusions, not the detailed run-log error (logs are on blocked hosts). Next ask the owner to open `https://github.com/johnAzani/docoga/actions/runs/38071879234` and send a screenshot of the `Write snapshot (live, read-only)` failure details. Do not share any token if one appears.
-4. **Do not retry the Analytics request until the error is diagnosed and explicit owner approval for another attempt is obtained.** The first approval covered one initial run. Do not merge to `main`, enable scheduled trust, broaden WIF trust, retag or deploy the site; all remain unapproved.
+2. **First-live attempt 38071879234** (`f3fec02`) passed `Authenticate to Google (Workload Identity Federation)` but failed at `Write snapshot (live, read-only)`. Owner's 18:34 screenshot shows the exact message: `Google Analytics response is missing a valid rowCount.` Commit-back was skipped; latest remains the placeholder from run `38058018325`. No Analytics data was committed.
+3. Research of Google's `RunReportResponse` proto (`row_count` is a proto3 `int32`; response `kind` is fixed) indicates the newly created property may return an empty report with the zero-valued count omitted. Hardened `tools/analytics_snapshot.py` to infer zero only when `kind` is `analyticsData#runReport` and rows are empty; other missing/malformed counts still fail closed. Eight targeted tests and the full suite (71/71) pass; `tools/qa.py` is green with two environment-only warnings, and `git diff --check` passes.
+4. Push the code/docs fix without changing `analytics/refresh-request.json`; this does not trigger another report. Then ask explicit owner approval before retrying the GA4 request. First approval covered the initial attempt only. No site retag/deploy, `main` merge, schedule, or broader trust is approved.
 
 ### Current revenue priority — 10 Oct 2026
 
@@ -1886,3 +1886,11 @@ GA4 API error is unknown. Next owner action: open the run URL
 https://github.com/johnAzani/docoga/actions/runs/38071879234 and screenshot the
 failure detail for that step (do not send any token if one appears). Do not
 retry until diagnosed and explicit approval is obtained for another attempt.
+
+**Live failure detail and parser fix — 10 Oct 2026, 18:34 WAT screenshot:**
+owner opened run `38071879234` and its failed step. Visible error:
+`analytics snapshot failed: Google Analytics response is missing a valid rowCount.`
+The WIF exchange succeeded; failure is in our response parser, not proven to be
+an IAM/API permission denial. Checked Google's official `RunReportResponse`
+proto: `row_count` is proto3 `int32`, and `kind` is fixed
+`analyticsData#runReport` ([schema](https://github.com/googleapis/googleapis/blob/master/google/analytics/data/v1beta/data.proto)). A new property with no collected traffic may return no rows and omit zero-valued `rowCount`; this is the likely cause, not yet confirmed from raw response. Updated parser to infer zero only for recognized RunReport responses with an empty rows list; otherwise it still fails closed. Added tests for valid empty and malformed/nonempty missing-count responses. Targeted suite 8/8 and full suite 71/71 pass; `tools/qa.py` is green with two environment-only warnings. `git diff --check` passes. Code/docs commit and push remain pending. No retry or data commit occurred; obtain explicit approval before another live attempt.

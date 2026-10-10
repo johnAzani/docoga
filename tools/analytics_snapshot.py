@@ -191,11 +191,25 @@ def _parse_rows(raw_rows: Any, offset: int) -> list[dict[str, str]]:
     return parsed
 
 
-def _validate_row_count(data: dict[str, Any]) -> int:
+def _validate_row_count(data: dict[str, Any]) -> tuple[int, str]:
     row_count = data.get("rowCount")
-    if isinstance(row_count, bool) or not isinstance(row_count, int) or row_count < 0:
-        raise SnapshotError("Google Analytics response is missing a valid rowCount.")
-    return row_count
+    if isinstance(row_count, int) and not isinstance(row_count, bool) and row_count >= 0:
+        return row_count, "api_response"
+
+    # Google Analytics API schema:
+    # https://github.com/googleapis/googleapis/blob/master/google/analytics/data/v1beta/data.proto
+    # RunReportResponse.row_count is proto3 int32. A zero-valued scalar may be
+    # omitted from JSON; accept an absent count as zero only when the response
+    # identifies itself as a RunReport and contains no rows.
+    # A missing count alongside rows, or an unrecognized response, still fails
+    # closed rather than being mistaken for an empty report.
+    if (
+        "rowCount" not in data
+        and data.get("kind") == "analyticsData#runReport"
+        and data.get("rows", []) == []
+    ):
+        return 0, "implicit_empty_response"
+    raise SnapshotError("Google Analytics response is missing a valid rowCount.")
 
 
 def _validate_metadata(data: dict[str, Any]) -> dict[str, Any]:
@@ -244,6 +258,7 @@ def fetch(
     first_metadata: dict[str, Any] | None = None
     metadata_signature: str | None = None
     expected_row_count: int | None = None
+    row_count_source: str | None = None
     offset = 0
     pages_fetched = 0
 
@@ -251,11 +266,12 @@ def fetch(
         if pages_fetched >= MAX_PAGES:
             raise SnapshotError("GA4 report exceeded the safe pagination limit; no snapshot was written.")
         data = _request_page(property_id, token, start, end, offset)
-        page_row_count = _validate_row_count(data)
+        page_row_count, page_row_count_source = _validate_row_count(data)
         metadata = _validate_metadata(data)
         signature = _page_metadata_signature(metadata)
         if expected_row_count is None:
             expected_row_count = page_row_count
+            row_count_source = page_row_count_source
             first_metadata = metadata
             metadata_signature = signature
         elif page_row_count != expected_row_count or signature != metadata_signature:
@@ -276,7 +292,11 @@ def fetch(
             raise SnapshotError("GA4 pagination stopped before all rows were received.")
         offset = next_offset
 
-    assert expected_row_count is not None and first_metadata is not None
+    assert (
+        expected_row_count is not None
+        and row_count_source is not None
+        and first_metadata is not None
+    )
     pagination_complete = len(rows) == expected_row_count
     if not pagination_complete:
         raise SnapshotError("GA4 returned an incomplete report; no snapshot was written.")
@@ -308,6 +328,7 @@ def fetch(
             "sampling_metadatas": first_metadata.get("samplingMetadatas", []),
             "empty_reason": first_metadata.get("emptyReason"),
             "row_count": expected_row_count,
+            "row_count_source": row_count_source,
             "returned_rows": len(rows),
             "pages_fetched": pages_fetched,
             "pagination_complete": pagination_complete,

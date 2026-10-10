@@ -28,7 +28,18 @@ def api_row(channel, sessions, users, engagement_rate):
 
 
 def api_response(rows, row_count, **metadata):
-    return {"rows": rows, "rowCount": row_count, "metadata": metadata}
+    return {
+        "kind": "analyticsData#runReport",
+        "dimensionHeaders": [{"name": "sessionDefaultChannelGroup"}],
+        "metricHeaders": [
+            {"name": "sessions"},
+            {"name": "totalUsers"},
+            {"name": "engagementRate"},
+        ],
+        "rows": rows,
+        "rowCount": row_count,
+        "metadata": metadata,
+    }
 
 
 class FakeResponse:
@@ -92,6 +103,7 @@ class AnalyticsSnapshotTests(unittest.TestCase):
         self.assertTrue(result["warnings"]["data_loss_from_other_row"])
         self.assertEqual(len(result["warnings"]["sampling_metadatas"]), 1)
         self.assertEqual(result["warnings"]["row_count"], 1)
+        self.assertEqual(result["warnings"]["row_count_source"], "api_response")
         self.assertEqual(result["warnings"]["returned_rows"], 1)
         self.assertTrue(result["warnings"]["pagination_complete"])
         self.assertNotIn(FAKE_TOKEN, json.dumps(result))
@@ -119,6 +131,45 @@ class AnalyticsSnapshotTests(unittest.TestCase):
         self.assertEqual([row["channel"] for row in result["rows"]], ["Direct", "Referral"])
         self.assertEqual(result["warnings"]["pages_fetched"], 2)
         self.assertTrue(result["warnings"]["pagination_complete"])
+
+    def test_missing_row_count_is_zero_only_for_a_valid_empty_report(self):
+        response = api_response(
+            [],
+            0,
+            timeZone="Africa/Lagos",
+            currencyCode="NGN",
+            emptyReason="NO_DATA",
+        )
+        del response["rowCount"]
+        with mock.patch.object(
+            snapshot.urllib.request, "urlopen", return_value=FakeResponse(response)
+        ):
+            result = snapshot.fetch(
+                "558370565", FAKE_TOKEN, today=dt.date(2026, 10, 10)
+            )
+
+        self.assertEqual(result["rows"], [])
+        self.assertEqual(result["warnings"]["row_count"], 0)
+        self.assertEqual(
+            result["warnings"]["row_count_source"], "implicit_empty_response"
+        )
+        self.assertEqual(result["warnings"]["empty_reason"], "NO_DATA")
+        self.assertTrue(result["warnings"]["pagination_complete"])
+
+    def test_missing_row_count_is_rejected_for_nonempty_or_unrecognized_response(self):
+        for response in (
+            api_response([api_row("Direct", 1, 1, "1")], 1),
+            {"kind": "not-a-run-report", "rows": [], "metadata": {}},
+        ):
+            response.pop("rowCount", None)
+            with self.subTest(response=response):
+                with mock.patch.object(
+                    snapshot.urllib.request,
+                    "urlopen",
+                    return_value=FakeResponse(response),
+                ):
+                    with self.assertRaisesRegex(snapshot.SnapshotError, "rowCount"):
+                        snapshot.fetch("558370565", FAKE_TOKEN)
 
     def test_http_error_is_friendly_and_redacts_token(self):
         error_body = json.dumps({
