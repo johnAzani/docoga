@@ -1329,3 +1329,31 @@ deployment-pipeline docs researched. No reporter/identity/access created yet.
 Next owner screenshot: Google Cloud console current project-selector screen;
 no billing/free-trial activation or broad IAM roles. Verify zero-cost path and
 GitHub OIDC/secure aggregate-report retrieval before account setup. B2B paused.
+
+**Analytics durable-access research completed — 10 Oct 2026:** see
+`docs/ANALYTICS_ACCESS_RESEARCH.md` for architecture, evidence, security/cost gates
+and acceptance tests. Recommendation remains CONDITIONAL: private GitHub Actions
+GA4 Data API reporter, WIF through dedicated property-only Viewer service
+account, explicitly minted `analytics.readonly` token, daily plus on-demand
+reports. Official Google Analytics MCP exists but is experimental and not
+attached here; Google API hosts are outside this sandbox's outbound allowance.
+No authenticated GA report, identity, workflow, API enablement or billing change.
+Correction to earlier wording: no usable native GA connector was demonstrated;
+this does not prove no external access was previously granted.
+
+Authenticated GitHub checks verified private repo/default main, workflows-list
+read and artifact-list read (zero artifacts); actual artifact download and
+reporting dispatch untested. Secrets/variables/permissions endpoints 403. Do not
+invoke unrelated deployment/autopost workflows to test access. Budget/allowance,
+OIDC policy, numeric GA property ID, project and long-term private report store
+remain unresolved. Artifact expiry and scheduled-run delays must not be hidden;
+no silent analytics data commits or automatic report pushes. Existing purchase
+tracking not verified; GA access alone cannot prove sales. Full gates in runbook.
+
+Next: present researched recommendation and use owner's locked one-screen-at-a-
+time method ONLY for initial setup. Revised first screenshot is GitHub Settings
+→ Billing and licensing → Budgets and alerts, to verify no-paid-overage BEFORE
+Cloud setup. Alerts alone are insufficient; do not activate trial/billing or
+request credentials. Goal remains future-session self-service reporting, not
+ongoing screenshots. All work remains on session branch arena/47d148f1-docoga;
+no workflow or default-branch change authorised by this research. B2B paused.
