@@ -1306,3 +1306,8 @@ up to 12 purposive organisation interviews, raw counts/contrary evidence, no
 market extrapolation. Conditional pilot/commercial gates in dossier. Zero B2B
 interviews or revenue established by research. No new code tests needed for docs;
 CSV parse and git diff checks run. Continue screenshot→one next action method.
+
+**B2B paused — owner instruction, 10 Oct 2026:** owner said "Level the b2b
+for now", understood in context as leave/pause B2B for now. Research and workbook
+are preserved; do not proceed with recruitment, messages, interviews, pilots or
+pricing unless owner resumes. No B2B outreach has been sent. No new task selected.
