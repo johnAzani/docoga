@@ -1840,3 +1840,13 @@ site tag change, deploy or main merge occurred. Next one screen: add
 docoga-analytics-reader@apt-trainer-367908.iam.gserviceaccount.com and send the
 saved-variable screenshot. After all three exist, get explicit approval before
 the first real aggregate report commit.
+
+**Analytics hardening commit/push verified — 10 Oct 2026:** implementation,
+unit tests and refreshed runbooks were committed as `1643e57` and pushed only
+to `arena/47d148f1-docoga`. Local and remote branch heads matched. GitHub Verify
+run `38070462480` and Cloudflare build check `38070462453` succeeded; site and
+Worker deploy workflows were skipped. The build check reported only platform
+Node 20/Ubuntu migration notices. `analytics/reports/latest.json` is still the
+placeholder from run `38058018325` (`mode: placeholder`); this docs/code push
+did not touch `analytics/refresh-request.json`, so no Analytics run or real-
+data commit was triggered. Working tree was clean before this final log entry.
