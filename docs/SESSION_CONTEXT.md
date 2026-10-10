@@ -1317,3 +1317,15 @@ meet anyone". Do not require in-person meetings or assume willingness for calls
 or live interviews. B2B remains paused. If owner explicitly resumes, propose
 permissioned written/asynchronous options instead; this statement does not
 authorise outreach, automation, lead scraping or pricing changes.
+
+**Analytics access request — 10 Oct 2026:** owner wants agent access rather than
+repeated report screenshots. Connector lookup `google_analytics` returned
+unsupported; no direct GA connection exists. Sandbox cannot reach Google API
+hosts. Proposed read-only GA4 Data API reporter executed in GitHub Actions,
+prefer keyless Workload Identity Federation with a dedicated service account
+and Viewer permission on DocOga property only; never invent an agent email or
+request passwords/keys in chat. Official Google Data API quickstart and WIF
+deployment-pipeline docs researched. No reporter/identity/access created yet.
+Next owner screenshot: Google Cloud console current project-selector screen;
+no billing/free-trial activation or broad IAM roles. Verify zero-cost path and
+GitHub OIDC/secure aggregate-report retrieval before account setup. B2B paused.
