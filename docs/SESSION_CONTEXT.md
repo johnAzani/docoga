@@ -521,6 +521,31 @@ Documented in `docs/GROWTH_JOURNAL.md`. Key milestones:
 
 ---
 
+## How We Work (LOCKED BY OWNER, 10 Oct 2026)
+
+**Owner directive — applies to every future session, no exceptions:**
+
+1. **Screenshot-driven workflow.** This is how we solved the Brevo domain/sender
+   problem, and it is the permanent method for all feature/account problems: the
+   owner sends a screenshot of the current screen → the agent reads it and
+   replies with the exact next taps/fields → owner sends the next screenshot.
+   One screen at a time, short concrete instructions, no long checklists dumped
+   at once.
+2. **Never claim screenshots can't be read.** A future session must never tell
+   the owner it "can no longer read or see" screenshots sent in the
+   conversation. Screenshots are the owner's evidence channel and the way
+   account/DNS/dashboard work gets done (the agent cannot click dashboards).
+   If an image is genuinely unclear, ask for a retake or a zoomed shot — never
+   claim blindness as a limitation.
+3. **Do not treat new sections as amnesia.** When the owner moves to another
+   app/section (Brevo → Cloudflare → GitHub → Flutterwave…), all previously
+   observed values, decisions and progress from earlier screenshots remain in
+   force. Cross-check against the session log and docs below instead of
+   starting over or re-asking for completed steps.
+4. **Screenshot evidence ≠ agent verification.** Record what screenshots show
+   accurately, but keep labelling it owner-performed/owner evidence when it
+   hasn't been independently verified by the agent.
+
 ## Last Session (LIVING — Update This Every Time)
 
 ### Current session — 10 Oct 2026 (Brevo domain AUTHENTICATED ✅)
@@ -862,7 +887,7 @@ item 9.
 | 32 | 9 Oct 2026 | **Continuation on the Arena-fixed branch `arena/47d148f1-docoga`:** recovered the reset local pointer by fast-forward to `5cc840e` (the full `arena/b9e4e9d2-docoga` work; old remote branch untouched; no branch switch, no force-push). Re-verified app-side: `c5283e1` absent (`git cat-file`); §11 deployment gate present at head; resend contract confirmed in code + tests (fail-closed unless `RESEND_EMAIL_ENABLED` is exactly `true`, stored-email-only, follows renewals to the newest active code, never returns the code, 60s + 3-per-UTC-day per-pass throttle shared across aliases); the flag is not set anywhere in the repo; the success-page button posts references only; the cache-clear fix is in place. All gates re-run green locally: worker suite (incl. 6 resend tests), DOM 97/97, Python 52/52, qa.py 0 errors, pre_push_verify ✅; CI at `5cc840e`: Verify + build check ✅, both deploys skipped. **No deploy, no resend, no payment, no change to the pass link or price.** Owner-side gates unchanged: run `37890401771` log cleanup, Worker secrets + webhook-hash confirmation, Brevo sender/domain authentication (DNS-only, CNAME flattening off, preserve the single DMARC record). | pushed `arena/47d148f1-docoga` |
 | 33 | 9 Oct 2026 | Historical research summary is in Last Session and `B2B_DISCOVERY.md` at `fca8025`; a prior reply reported this table row but it was absent at the measured remote head. Recorded here without inventing a missing commit. Competitor/vendor claims remain listed prices or hypotheses, not validated DocOga buyer willingness to pay; Business remains Custom. | `fca8025` |
 | 34 | 9 Oct 2026 | Official-source click guide with classic/new Brevo UI, private Secret inspection, live webhook confirmation, DNS-only DKIM, single preserved DMARC, sender/recipient checks, best-effort log cleanup and STOP-before-release. Corrected flattening semantics, needless Secret overwrites, unsafe ISSUE_SECRET change, green-run/dry_run deploy assumptions, and unmeasurable GA success funnel. No deploy/resend/payment/account action. | session branch |
-| 35 | 10 Oct 2026 | **Brevo domain `docoga.com.ng` authenticated** (owner clicks, guided one record at a time): TXT `@` brevo-code + CNAME `brevo1._domainkey` + CNAME `brevo2._domainkey` (both DNS only) + TXT `_dmarc` (`p=none`, Brevo-generated rua) added to the existing Cloudflare zone; both Worker `100::` records untouched; Brevo verify returned "Your domain has been authenticated". Sender status, secrets, webhook hash, log cleanup, recipient comparison and resend flag still open; no deploy/resend/payment. | session branch |
+| 35 | 10 Oct 2026 | **Brevo domain `docoga.com.ng` authenticated + sender verified** (owner clicks, guided one record at a time): TXT `@` brevo-code + CNAME `brevo1._domainkey` + CNAME `brevo2._domainkey` (both DNS only) + TXT `_dmarc` (`p=none`, Brevo-generated rua) added to the existing Cloudflare zone; both Worker `100::` records untouched; Brevo verify returned "Your domain has been authenticated". Added sender `DocOga <noreply@docoga.com.ng>` → shows **Verified**; old Gmail sender left untouched (compliance banner expected for gmail From). **Owner also locked the working method (see "How We Work" above): screenshot → exact next taps → next screenshot, one screen at a time; future sessions must never claim they cannot read screenshots.** Remaining gates: Actions log cleanup, secrets, webhook hash, recipient comparison, resend flag, workflow-defect fixes; no deploy/resend/payment. | session branch |
 | 20 | 8 Oct 2026 | **Rule Zero enforced on the build: the verified law is now wired into the pages.** `tools/state_law_data.py` (6 jurisdictions, 20 open questions) drives `tools/gen_state_pages.py`. Three live factual errors fixed: (1) the hard-coded notice table printed "Half-yearly — 3 months" on all 48 pages when that is Lagos s.13(1)(d) and essentially nowhere else — the FCT Act, Cross River s.15 and Kwara s.17 have no half-yearly tier; (2) the four Edo pages said "Magistrates' Courts in Edo State" and "recovery-of-premises legislation" when s.4 of the Edict establishes **Rent Tribunals** and s.41(2) repealed the Recovery of Premises Law for residential accommodation; (3) every page now carries a Sources-and-confidence box with its tier and a "What we could not confirm" list. Rivers added at tier B on the strength of Cap. 109 s.7 (quit notice must expire on the **eve of the anniversary**, the opposite of Lagos s.13(4)) and Landlord & Tenant Law Cap. 75 s.75(1) (rent payable **in arrears**) | PR #11 |
 | 19 | 8 Oct 2026 | **Research before building: measured the state pages and found they fail Google's doorway-page test — median 94.2% similarity between same-tool state pages, median 3 unique words each (worst pairs 99.6%).** So "expand 12 states to 37" was the wrong next move. Wrote `docs/STATE_TENANCY_RESEARCH.md`: verified statute names, sections and sources for 17 of 37 jurisdictions, tiered A-E, with everything unverified listed and three pending bills flagged as NOT law. Added `tools/audit_state_pages.py` to measure and later enforce (80% / 250 unique words / 500 body words) | PR #12 |
 | 18 | 8 Oct 2026 | **Gave the armed Shorts pipeline a memory and an alarm:** publish ledger (`tools/youtube_ledger.py`) + duplicate guard, a secrets preflight that names what is missing, a `YT_PRIVACY` repo-variable switch, a run summary, and a labelled issue opened on any failed run. Verified by simulating all nine scenarios locally (the token cannot dispatch), which caught a real bug: `force=true` exited 3 and failed the run instead of publishing. 48 tests green | PR #11 |
