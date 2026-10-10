@@ -1330,30 +1330,34 @@ Next owner screenshot: Google Cloud console current project-selector screen;
 no billing/free-trial activation or broad IAM roles. Verify zero-cost path and
 GitHub OIDC/secure aggregate-report retrieval before account setup. B2B paused.
 
-**Analytics durable-access research completed — 10 Oct 2026:** see
-`docs/ANALYTICS_ACCESS_RESEARCH.md` for architecture, evidence, security/cost gates
-and acceptance tests. Recommendation remains CONDITIONAL: private GitHub Actions
-GA4 Data API reporter, WIF through dedicated property-only Viewer service
-account, explicitly minted `analytics.readonly` token, daily plus on-demand
-reports. Official Google Analytics MCP exists but is experimental and not
-attached here; Google API hosts are outside this sandbox's outbound allowance.
-No authenticated GA report, identity, workflow, API enablement or billing change.
-Correction to earlier wording: no usable native GA connector was demonstrated;
-this does not prove no external access was previously granted.
+**Analytics durable-access research completed + environment verified — 10 Oct 2026:**
+see `docs/ANALYTICS_ACCESS_RESEARCH.md` (rewritten with direct test results). Key
+corrections from live testing: (1) agent CANNOT trigger workflows — `gh workflow
+run` returns HTTP 403 Resource-not-accessible-by-integration on the dispatches
+endpoint; (2) agent CANNOT read run logs — job logs redirect to
+results-receiver.actions.githubusercontent.com / productionresultssa*.blob.core.
+windows.net, outside the sandbox allowlist (EOF); (3) agent CANNOT download
+artifacts (same blocked host); (4) agent CAN read AND write repo contents
+(permissions admin/maintain/push/triage; pushes trigger Verify). Therefore any
+design whose result is read from a run log or artifact is UNUSABLE; the report
+must be committed into the repository. Confirmed cost gate: GitHub Free, cycle
+included usage $2.96 (docoga $1.97), no payment due, Actions budget Stop
+usage=Yes budget=$0 (hard stop). Confirmed runners have unrestricted egress
+(existing net-probe.yml egress-bridge) while the sandbox does not. Confirmed
+existing YouTube OAuth client/refresh token in repo secrets, but reusing it is
+rejected (7-day Testing expiry + sensitive-scope verification; shared blast
+radius). Recommended design = repo-committed GA4 snapshot: property-only Viewer
+service account, GitHub OIDC->WIF->scoped analytics.readonly token, SHA-pinned
+google-github-actions/auth, small aggregate script, commit analytics/reports/
+latest.json with [skip ci]; refresh triggered by pushing a request file (push
+works) and/or workflow_dispatch (owner taps) and/or schedule (default branch
+only, delayed/dropped, needs approved merge to main). Official Google Analytics
+MCP exists but is experimental and not attached/usable here.
 
-Authenticated GitHub checks verified private repo/default main, workflows-list
-read and artifact-list read (zero artifacts); actual artifact download and
-reporting dispatch untested. Secrets/variables/permissions endpoints 403. Do not
-invoke unrelated deployment/autopost workflows to test access. Budget/allowance,
-OIDC policy, numeric GA property ID, project and long-term private report store
-remain unresolved. Artifact expiry and scheduled-run delays must not be hidden;
-no silent analytics data commits or automatic report pushes. Existing purchase
-tracking not verified; GA access alone cannot prove sales. Full gates in runbook.
-
-Next: present researched recommendation and use owner's locked one-screen-at-a-
-time method ONLY for initial setup. Revised first screenshot is GitHub Settings
-→ Billing and licensing → Budgets and alerts, to verify no-paid-overage BEFORE
-Cloud setup. Alerts alone are insufficient; do not activate trial/billing or
-request credentials. Goal remains future-session self-service reporting, not
-ongoing screenshots. All work remains on session branch arena/47d148f1-docoga;
-no workflow or default-branch change authorised by this research. B2B paused.
+Still unresolved: numeric GA4 property id, existing Cloud project suitability,
+owner Analytics admin access, WIF/OIDC policy, Actions workflow permissions
+policy (may govern whether GITHUB_TOKEN may push report commits), and any real
+authenticated runReport. NO identity, IAM, API enablement, workflow, budget
+change or deployment performed. No secrets requested. Next owner step remains a
+Google Cloud console project-selector screenshot; no billing/trial yet. All work
+stays on session branch arena/47d148f1-docoga. B2B paused.
