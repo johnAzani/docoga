@@ -1,6 +1,6 @@
 {
-  "note": "Owner-approved first live read-only Analytics snapshot. The workflow writes only the sanitised aggregate report; no secrets here.",
-  "requested_at_utc": "2026-10-10T17:27:05Z",
+  "note": "Owner-approved single retry after the empty-RunReport rowCount parser fix was pushed. This triggers one read-only Analytics request; the workflow writes only the sanitized aggregate report, with no secrets here.",
+  "requested_at_utc": "2026-10-10T17:49:59Z",
   "requested_by": "agent",
-  "scope": "First 7-day aggregate snapshot for GA4 property 558370565; commit to session branch only."
+  "scope": "One 7-day aggregate snapshot for GA4 property 558370565; commit the sanitized report to the session branch only."
 }
