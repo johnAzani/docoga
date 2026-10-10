@@ -1746,3 +1746,13 @@ provider created by this failed validation; existing pool/APIs unaffected.
 Next give FULL provider command as ONE LINE to avoid phone multiline copying
 error; retain exact repo/owner IDs, working ref/workflow_ref and push/dispatch
 condition. Screenshot result before binding. No need to repeat pool creation.
+
+**WIF provider creation output — 10 Oct 2026, 17:36 screenshot:** visible
+"Created workload identity pool provider [github]" after full create command.
+Terminal also has repeated/highlighted command fragments below that output;
+do not assume saved condition exactly matches intended scope without readback.
+Next ONE read-only `gcloud iam workload-identity-pools providers describe github`
+with explicit project/location/pool and formatted name/state/issuer/mapping/
+condition. Verify exact repo/owner IDs, branch/workflow_ref and push/dispatch
+before adding service-account impersonation binding. Do not create provider
+again. Binding, repo vars and live GA call still pending. No secret/token needed.
