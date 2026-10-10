@@ -1374,3 +1374,17 @@ has been verified. No project selected/created or settings changed in this
 step. Next single action: tap **All** in the selector, send that screen, do not
 select/create anything yet. Continue saved screenshot progress one screen at a
 time; no billing/trial/IAM action authorised by this screenshot.
+
+**Google Cloud credentials screenshot — 10 Oct 2026, 13:21 local:** owner is
+now on APIs & Services → Credentials (not the requested All-projects list).
+Visible: project display name My First Project; an API key entry named Game
+with Gemini API restriction text; OAuth client named DocOga, web application,
+created 25 Sep 2026; Service Accounts table says no service accounts to display.
+No secret values copied. This supports an existing DocOga-related client but
+does NOT prove its match to GitHub secrets, active use, Analytics permission,
+or the selected project's ID (not visible). Do not infer the ID from previous
+selector because navigation may have changed it. Yellow OAuth verification
+banner is not a reason to edit the existing client/consent screen for the
+proposed service-account approach. Next single action: tap current My First
+Project chip and screenshot the checked project row to confirm exact ID; no
+credential details or secret values needed, no creation/permission changes yet.
