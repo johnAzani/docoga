@@ -1447,3 +1447,11 @@ landing screen with account/property name visible; hide personal details. Need
 confirm DocOga property and numeric ID before property-level Viewer grant to
 this now-observed service-account email. No need to revisit Cloud creation;
 no keys/OAuth/billing changes. WIF and API enablement remain pending.
+
+**Analytics landing screenshot — 10 Oct 2026, 13:43 local:** currently selected
+property label `reel-31bcb`, breadcrumb truncated `Default Account for Fire...`.
+Not yet confirmed DocOga property. Home shows zero active users and collection
+setup prompt, but do NOT use these numbers as DocOga traffic baseline. Blue
+Benchmarking popover visible. Next action: tap property dropdown `reel-31bcb`
+at top beside Analytics logo, send account/property selector. No permission
+changes until correct property verified; no need to change collection settings.
