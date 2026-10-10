@@ -1548,3 +1548,11 @@ Recommend Understand web and/or app traffic + Drive sales, then Create and
 screenshot result (data collection or terms). Objective selection does not
 install purchase tracking or establish sales data. Property not yet confirmed
 created; phone battery 5%, progress saved. No website changes/deployment.
+
+**GA data collection screen — 10 Oct 2026, 14:18 local:** step 4 Start
+collecting data displayed; previous property/business/objective steps have
+checkmarks, supporting completed property-creation wizard stage. Property
+name/numeric ID not shown yet. Platform buttons Web, Android app, iOS app;
+next action tap Web, send stream setup form before submission. Stream not
+created, new measurement ID unknown, website tag unchanged; Viewer/WIF/report
+access pending. Phone battery 4%; progress saved for pause/recharge.
