@@ -1406,3 +1406,22 @@ that top-left card and screenshot loaded Service Accounts page. Do not create
 project/account/key, enable billing, or infer absent accounts from this unscoped
 page. Confirmed project ID remains apt-trainer-367908; no new identification
 loop needed.
+
+**Commit-back mechanism VERIFIED — 10 Oct 2026, 13:33 local:** on screenshot
+owner selected My First Project (apt-trainer-367908); Service Accounts empty
+("No rows to display"). Agent then built branch-only reporter scaffold:
+`.github/workflows/analytics-snapshot.yml`, `tools/analytics_snapshot.py`,
+`analytics/refresh-request.json`. Push 1889753 triggered run 38052387346;
+ALL steps success, including "Commit snapshot back to the repository". Bot
+commit f12c5b6 wrote analytics/reports/latest.json + 2026-10-10.json. Agent
+fetched and read BOTH via git pull and `gh api .../contents/...` — proof that
+push-trigger -> runner -> commit-back -> agent-read works despite dispatch/log
+restrictions. Snapshot mode=placeholder, property_id=null, rows=[]; NO Google
+call, real data or secret involved. Live script exists but not enabled (auth
+step is TODO; once vars set, must add SHA-pinned WIF auth + live fetch step).
+Mechanism remaining risk resolved; numeric GA4 property id, Viewer grant, WIF,
+API enablement and actual authenticated report still pending. Next owner step:
+tap **Create service account** at top of current Service Accounts page; show
+creation form BEFORE filling/submitting. Intended name docoga-analytics-reader;
+no project IAM role (Analytics Viewer is assigned separately in GA). No billing
+or OAuth-client change. Do not generate a key. B2B paused.

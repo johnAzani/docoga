@@ -74,3 +74,18 @@ Identity (IAM/WIF/service accounts) is free; the runner stays inside the include
 ## Next owner step (one screen at a time)
 
 Open the Google Cloud console and show the project selector: **https://console.cloud.google.com** — do not enable billing, start a trial, or change IAM yet. We will confirm whether the existing YouTube/Gemini project can host the service account before creating anything. Screenshots are for setup only, never the permanent reporting mechanism.
+
+## Mechanism proof — 10 October 2026, 13:33 WAT
+
+The commit-back design is now **tested**, not hypothetical. Agent pushed
+commit `1889753` (scaffold + refresh request) on `arena/47d148f1-docoga`.
+GitHub Actions run **38052387346** succeeded, including commit-back step;
+bot commit **f12c5b6** wrote a placeholder snapshot. The agent then read it
+via both `git pull` and the GitHub Contents REST API. Thus the complete
+**push → workflow → commit snapshot → future agent-readable file** path works.
+
+This was a MECHANISM test only: `mode=placeholder`, `property_id=null`,
+`rows=[]`, generated `2026-10-10T12:33:28Z`. No Google API was called; no
+Analytics data or secret was involved. The live auth step is deliberately
+not enabled until owner setup is complete. It must be SHA-pinned and followed
+by the live-fetch step before calling the connection operational.
