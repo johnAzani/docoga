@@ -9,6 +9,15 @@ name: Analytics snapshot
 #   - push touching analytics/refresh-request.json  -> the agent requests a refresh
 #   - workflow_dispatch                             -> owner taps "Run workflow"
 #   - schedule                                      -> hands-off daily (default branch only)
+#
+# Auth: GitHub OIDC -> Google Workload Identity Federation -> the
+# docoga-analytics-reader service account -> a short-lived token scoped to
+# ANALYTICS READ ONLY. No key or password is stored. Until the repository
+# variables below are set, the job writes a harmless placeholder snapshot.
+#
+#   vars.GCP_WORKLOAD_IDENTITY_PROVIDER  e.g. projects/<number>/locations/global/workloadIdentityPools/github-actions/providers/github
+#   vars.GCP_SERVICE_ACCOUNT             docoga-analytics-reader@apt-trainer-367908.iam.gserviceaccount.com
+#   vars.GA_PROPERTY_ID                  558370565
 
 on:
   push:
@@ -47,14 +56,26 @@ jobs:
             echo "::notice::Google access not configured yet; writing placeholder snapshot."
           fi
 
-      # TODO once Google is configured: pin this action to a reviewed commit SHA
-      # and add the keyless auth step here, e.g.
-      #   - uses: google-github-actions/auth@<sha>
-      #     with:
-      #       workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-      #       service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
-      #       token_format: access_token
-      #       access_token_scopes: https://www.googleapis.com/auth/analytics.readonly
+      # Keyless auth. Pinned to the reviewed v3.0.0 commit SHA (do not use a
+      # floating tag). The default generated token scope is cloud-platform, so
+      # the Analytics read scope MUST be set explicitly.
+      - name: Authenticate to Google (Workload Identity Federation)
+        id: auth
+        if: steps.cfg.outputs.ready == 'true'
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          create_credentials_file: false
+          token_format: access_token
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+          access_token_scopes: https://www.googleapis.com/auth/analytics.readonly
+
+      - name: Write snapshot (live, read-only)
+        if: steps.cfg.outputs.ready == 'true'
+        env:
+          GA_PROPERTY_ID: ${{ vars.GA_PROPERTY_ID }}
+          ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+        run: python3 tools/analytics_snapshot.py
 
       - name: Write snapshot (placeholder)
         if: steps.cfg.outputs.ready != 'true'
