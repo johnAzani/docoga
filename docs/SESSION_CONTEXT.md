@@ -1762,3 +1762,18 @@ reconnection; screenshot still shows provider creation success and idle prompts,
 not describe output. Next repeat the COMPLETE single-line read-only provider
 describe command, not creation. Need saved attributeCondition/mapping/issuer
 readback before service-account binding; no inference from shell command text.
+
+**Provider readback VERIFIED — 10 Oct 2026, 17:42 screenshot:** describe output
+shows state ACTIVE; issuer https://token.actions.githubusercontent.com; provider
+projects/635194176409/locations/global/workloadIdentityPools/github-actions/providers/github.
+Saved attributeCondition matches repository_id 1376068242, repository_owner_id
+120726541, ref refs/heads/arena/47d148f1-docoga, exact
+johnAzani/docoga/.github/workflows/analytics-snapshot.yml@refs/heads/arena/47d148f1-docoga,
+events push/workflow_dispatch. Mappings for google.subject and repo/owner/ref/
+workflow_ref/event_name present. Next single-line command adds
+roles/iam.workloadIdentityUser on docoga-analytics-reader service account only,
+member principalSet://iam.googleapis.com/projects/635194176409/locations/global/workloadIdentityPools/github-actions/attribute.repository_id/1376068242.
+This binding relies on verified provider condition; no broad project resource
+roles, keys, billing or website change. Binding success NOT yet confirmed.
+After binding output, configure three GitHub repo variables and verify real
+scoped GA call. Schedule/main remain outside allowed trust until approved.
