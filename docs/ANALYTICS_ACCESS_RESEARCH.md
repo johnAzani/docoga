@@ -4,7 +4,7 @@
 
 Owner wants the agent to have ongoing read-only access to DocOga's Analytics across future sessions, instead of repeated owner exports/screenshots. This document records what was verified, what was disproved, the recommended design, the cost/privacy gates, and the acceptance test that must pass before anyone calls this "connected."
 
-Status as of **10 October 2026, 18:39 WAT**: Google-side WIF setup and all three repository-variable rows are in place by screenshot evidence; long values are clipped in the list. The owner approved one initial live aggregate attempt. Run `38071879234` proved GitHub-to-Google WIF authentication, but the Analytics `runReport` step failed with the owner-screenshot error `Google Analytics response is missing a valid rowCount`; commit-back was skipped and latest remains a placeholder. The likely zero-row/default-count handling defect has been fixed locally. Targeted tests pass 8/8, full suite 71/71, `tools/qa.py` is green with two environment-only warnings, and `git diff --check` passes; code/docs commit and push are pending. **Live Analytics reporting is not yet proven**. Do not retry until the fix is pushed and the owner explicitly approves another attempt. Main merge/schedule, broader trust, site retag, and deploy remain separately approval-gated.
+Status as of **10 October 2026, 18:41 WAT**: Google-side WIF setup and all three repository-variable rows are in place by screenshot evidence; long values are clipped in the list. The owner approved one initial live aggregate attempt. Run `38071879234` proved GitHub-to-Google WIF authentication, but the Analytics `runReport` step failed with the owner-screenshot error `Google Analytics response is missing a valid rowCount`; commit-back was skipped and latest remains a placeholder. The likely zero-row/default-count handling defect was fixed and pushed in `801a1ea` on `arena/47d148f1-docoga`. Targeted tests pass 8/8, full suite 71/71, `tools/qa.py` is green with two environment-only warnings, and `git diff --check` plus `tools/pre_push_verify.sh` pass. Remote and local heads match; no new Analytics run was started. **Live Analytics reporting is not yet proven**. Do not retry until the owner explicitly approves another attempt. Main merge/schedule, broader trust, site retag, and deploy remain separately approval-gated.
 
 ## What was tested and disproved (correcting earlier assumptions)
 
@@ -73,7 +73,7 @@ Identity (IAM/WIF/service accounts) is free; the runner stays inside the include
 
 ## Next owner step (one screen at a time)
 
-Google-side setup is complete and verified; do not repeat Cloud Shell/IAM commands. The owner screenshot now exposes run `38071879234`'s `missing a valid rowCount` error. Research confirms the RunReport schema uses a proto3 int32 count; a zero-row response may omit default zero. The local parser fix only accepts that omission for a recognized empty RunReport; targeted tests pass. After full checks and a code-only push (not the refresh trigger), ask for explicit approval before another API attempt. No secret or key is needed.
+Google-side setup is complete and verified; do not repeat Cloud Shell/IAM commands. The owner screenshot exposes run `38071879234`'s `missing a valid rowCount` error. Research confirms the RunReport schema uses a proto3 int32 count; a zero-row response may omit default zero. The parser fix accepts that omission only for a recognized empty RunReport; all tests and pre-push checks passed, and commit `801a1ea` is pushed without changing the refresh trigger. Ask for explicit approval before another API attempt. No secret or key is needed.
 
 ## Mechanism proof — 10 October 2026, 13:33 WAT
 
@@ -167,7 +167,8 @@ hypothesis, not a verified fact. The parser now treats a missing count as zero
 only for a recognized RunReport with an empty rows list. Missing counts for
 nonempty rows or unrecognized responses still fail closed. Two new offline
 tests cover both. Targeted suite: 8/8; full suite: 71/71; `tools/qa.py` is
-green with two environment-only warnings; `git diff --check` passes. Code/docs
-commit and push remain pending. No second live request or data commit is
-authorized yet; request owner approval before retrying after the code fix is
-pushed.
+green with two environment-only warnings; `git diff --check` and
+`tools/pre_push_verify.sh` pass. Commit `801a1ea` is pushed to
+`arena/47d148f1-docoga`; remote/local heads match, no trigger/report changed,
+and no new run was started. No second live request or data commit is authorized
+yet; request owner approval before retrying.

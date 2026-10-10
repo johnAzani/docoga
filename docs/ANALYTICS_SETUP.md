@@ -8,9 +8,10 @@ missing a valid rowCount`. The commit step was skipped; `latest.json` remains a
 placeholder and no Analytics data was committed. The parser fix now treats a
 missing count as zero only for a recognized empty RunReport response. Targeted
 tests pass 8/8; the full suite passes 71/71; `tools/qa.py` is green with two
-environment-only warnings; and `git diff --check` passes. The code/docs push is
-still pending. Do not call this connected until a committed snapshot says
-`"mode": "live"`.
+environment-only warnings; and both `git diff --check` and `tools/pre_push_verify.sh` pass. The
+code/docs fix was pushed as `801a1ea` to `arena/47d148f1-docoga`; the trigger
+and placeholder report were unchanged, and no new Analytics run started. Do not
+call this connected until a committed snapshot says `"mode": "live"`.
 
 This setup is intended to give future sessions durable, read-only access without
 repeated exports. The repo snapshot is the retrieval path; screenshots are only
@@ -108,10 +109,11 @@ for nonempty or unrecognized responses. The targeted reporter tests pass 8/8;
 the full Python suite passes 71/71, `tools/qa.py` is green (two environment-only
 warnings), and `git diff --check` passes.
 
-The first attempt did not commit Analytics data. Push the code/docs without
-touching `analytics/refresh-request.json`; that alone will not trigger another
-report. Then get explicit owner approval before a retry. WIF success is not
-proof that `runReport` succeeded.
+The first attempt did not commit Analytics data. The tested code/docs fix is
+pushed as `801a1ea` on `arena/47d148f1-docoga`; `analytics/refresh-request.json`
+and `analytics/reports/latest.json` were not changed, and no new report run
+started. Get explicit owner approval before retrying. WIF success is not proof
+that `runReport` succeeded.
 
 The default-branch schedule is not active for this session branch. Default
 branch merge and any widening of provider trust are separately approval-gated.
