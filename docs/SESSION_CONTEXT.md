@@ -1388,3 +1388,12 @@ banner is not a reason to edit the existing client/consent screen for the
 proposed service-account approach. Next single action: tap current My First
 Project chip and screenshot the checked project row to confirm exact ID; no
 credential details or secret values needed, no creation/permission changes yet.
+
+**Project confirmed by screenshot — 10 Oct 2026, 13:24 local:** selector opened
+above the same Credentials page, checked My First Project row has ID
+`apt-trainer-367908`. Thus this is the project displaying the DocOga OAuth
+client and Game API-key entry. This does not establish GA property access or
+current GitHub credential use. Next: open project-scoped Service Accounts list
+https://console.cloud.google.com/iam-admin/serviceaccounts?project=apt-trainer-367908
+and screenshot; inspection only, do not create keys/accounts or change billing.
+No need to repeat project identification or inventory all unrelated projects.
