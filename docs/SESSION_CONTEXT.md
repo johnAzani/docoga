@@ -1540,3 +1540,11 @@ information/document templates, not a claim of law-firm status. Next: select
 Law & Government (search Law), retain Small, tap Next and screenshot Business
 objectives. No need for further category screenshots. Phone battery 7%; progress
 saved if owner pauses. Property creation not yet confirmed.
+
+**Business objectives screenshot — 10 Oct 2026, 14:16 local:** step 3 open,
+all boxes empty. Options Generate leads, Drive sales, Understand web and/or
+app traffic, View user engagement & retention, Other business objectives.
+Recommend Understand web and/or app traffic + Drive sales, then Create and
+screenshot result (data collection or terms). Objective selection does not
+install purchase tracking or establish sales data. Property not yet confirmed
+created; phone battery 5%, progress saved. No website changes/deployment.
