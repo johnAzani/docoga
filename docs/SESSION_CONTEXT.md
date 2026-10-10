@@ -1520,3 +1520,13 @@ GMT+01:00 Nigeria/Lagos (label may vary); currency Nigerian Naira (NGN); tap
 Next, screenshot Business details. Property not created yet. Do not retain US
 defaults; no deployment/stream/tag changes. Owner phone battery 12%, keep
 instructions short and one screen at a time.
+
+**Business details form — 10 Oct 2026, 14:07 local screenshot:** step 2 open;
+industry category required dropdown says Select one, choices not visible;
+business size required radio choices Small 1–10, Medium 11–100, Large 101–500,
+Very Large 501+. Neither selected. Step 1 progressed but entered name/timezone/
+currency not visible here, so not independently verified. Next single action
+open Industry category dropdown and send choices; choose closest accurate
+category, do not invent a menu label or classify product as a law firm.
+Business size must reflect actual team, not traffic/revenue. Property not yet
+confirmed created; no data stream, tracking deployment or GA Viewer access.
