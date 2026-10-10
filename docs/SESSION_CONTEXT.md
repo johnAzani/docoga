@@ -1478,3 +1478,11 @@ login; Admin open for reel-31bcb. Visible Data streams under Data collection
 and modification; next single action tap Data streams and screenshot list.
 Do not tap account/property access management yet: stream website and tracking
 ID must establish DocOga relationship first. No property/access/tracking edits.
+
+**Data streams screenshot — 10 Oct 2026, 13:54 local:** reel-31bcb lists REEL
+iOS, REEL Android, Tagme Android, Tagme iOS and REEL Web. Each visible row
+states no data received in past 48 hours; not evidence about DocOga. Only
+visible web stream REEL Web, stream ID 3880430747; website and measurement
+ID not shown. Next single action open REEL Web row and screenshot details to
+compare URL and measurement ID with site tracking tag G-GO8VZB3R28. Do not
+rename/add/delete streams or alter measurement before this comparison.
