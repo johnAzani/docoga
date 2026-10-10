@@ -521,9 +521,11 @@ or verified by the agent.
   chat, git, or logs.
 > **Latest LIVE webhook screenshot, 10 Oct 2026:** V3 Live webhooks with masked
 > hash and Enable v3 webhooks checked. Earlier cropped screen said V4; no version
-> switch/save is confirmed. URL points to the payment Worker but path is clipped;
-> full `/flw-webhook` suffix remains unconfirmed. Hash equality is now
-> owner-confirmed by the subsequent Yes reply, not by the masked screenshot. Do not use
+> switch/save is confirmed. The URL path is clipped in the screenshot, but the
+> owner subsequently confirmed the complete URL:
+> `https://docoga-pass.johnazani.workers.dev/flw-webhook`. URL and LIVE hash match
+> are now owner-confirmed, not independently verified. Recipient comparison and
+> `/issue` bridge status remain open; no release authorization. Do not use
 > Save, Switch to V4 webhook, or dashboard resend/test to inspect configuration.
 
 - Flutterwave dashboard → **Settings → Webhooks** → the **secret hash** field is

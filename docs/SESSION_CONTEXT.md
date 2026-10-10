@@ -605,23 +605,27 @@ No setting edits, Deploy, payment or resend performed.
 Live webhooks and shows **V3 Live webhooks**, a masked Secret hash, and Enable v3
 webhooks checked. An earlier cropped image showed V4 Live webhooks; do not infer
 that any migration or save occurred. The visible URL targets the payment Worker,
-but the field clips the path at `/flw-webh`; full `/flw-webhook` suffix is NOT yet
-confirmed. Masking itself does not establish equality with `FLW_WEBHOOK_HASH`.
+but the field clips the path at `/flw-webh`. The owner subsequently confirmed
+the full URL is `https://docoga-pass.johnazani.workers.dev/flw-webhook`. Masking itself does not establish equality with `FLW_WEBHOOK_HASH`.
 **Owner subsequently replied Yes** that this LIVE hash is the same one saved as
 Cloudflare `FLW_WEBHOOK_HASH` during replacement setup. Hash-match gate is now
 owner-confirmed, not independently verified; no secret value was requested or
-recorded. Next: owner privately check the FULL URL equals the public endpoint
-`https://docoga-pass.johnazani.workers.dev/flw-webhook` without editing/saving.
+recorded. LIVE URL and hash now owner-confirmed (not independently verified).
+No URL edit, Save, test, version migration or event resend was requested.
 Do not reveal the hash,
 switch webhook versions, Save, send tests, or resend events.
 
-**Still open before any release/resend:** full LIVE webhook URL; `ISSUE_SECRET`/bridge status; actual runtime
-`MAIL_FROM` match (Brevo verifies the default sender, runtime override unknown);
-private checkout-vs-event recipient comparison; resend flag remains unset/false
-pending intentional release. Fix/test the Worker workflow's DEXIT propagation and
-manual dry_run behavior before any dispatch. Next owner check: on the current
-Flutterwave LIVE Webhooks screen, confirm the full URL privately (match/differs/
-not sure), without changing it. Hide hashes/API keys and identifiers in screenshots. No Save or webhook test requested. No deploy, resend, payment or price/link change.
+**Still open before any release/resend:** `ISSUE_SECRET`/bridge status; private
+checkout-vs-event recipient comparison; resend flag remains unset/false pending
+intentional release. No `MAIL_FROM` override is listed in the complete supplied
+runtime table, so repository code uses the verified default sender; live code has
+not been independently inspected. Fix/test the Worker workflow's DEXIT propagation
+and manual dry_run behavior before any dispatch. Next owner screen: Flutterwave
+Main menu (navigation only) → Transactions to locate the EXISTING qualifying
+purchase, then compare its checkout email privately with the OLD failed Brevo
+event's recipient. Never request/store recipients, pass codes, transaction IDs or
+success URLs; only match/differs/not compared statuses. No new payment, dashboard
+resend, webhook test or deployment. One screen at a time.
 
 ### Session — 9 Oct 2026 (owner click-by-click guide)
 
