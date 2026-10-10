@@ -1,17 +1,16 @@
 # DocOga Analytics read-only access — owner setup runbook
 
-**Status, 10 Oct 2026, 18:34 WAT:** Google-side keyless identity is
-screenshot-verified; the Variables page shows all three expected rows, with
-long values clipped. Run `38071879234` successfully exchanged the GitHub OIDC
-token, but the live report step failed with `Google Analytics response is
-missing a valid rowCount`. The commit step was skipped; `latest.json` remains a
-placeholder and no Analytics data was committed. The parser fix now treats a
-missing count as zero only for a recognized empty RunReport response. Targeted
-tests pass 8/8; the full suite passes 71/71; `tools/qa.py` is green with two
-environment-only warnings; and both `git diff --check` and `tools/pre_push_verify.sh` pass. The
-code/docs fix was pushed as `801a1ea` to `arena/47d148f1-docoga`; the trigger
-and placeholder report were unchanged, and no new Analytics run started. Do not
-call this connected until a committed snapshot says `"mode": "live"`.
+**Status, 10 Oct 2026, 18:51 WAT:** Google-side keyless identity is
+screenshot-verified. The first live run (`38071879234`) failed on an omitted
+`rowCount`; the conservative parser fix was pushed as `801a1ea`. The owner then
+approved exactly one retry. Run `38073371592` completed WIF authentication,
+Analytics `runReport`, and report commit-back successfully; bot commit `bbde8dd`
+added live `latest.json` and the dated report. The report covers 2–8 October
+2026, has zero rows (`row_count: 0`, source `implicit_empty_response`), and
+confirms the response's `Africa/Lagos` timezone and `NGN` currency. This proves
+the read-only report path works; it does not prove site traffic or purchases.
+No further live request is approved. The site tag/deploy, default-branch merge,
+schedule, and broader trust remain unapproved.
 
 This setup is intended to give future sessions durable, read-only access without
 repeated exports. The repo snapshot is the retrieval path; screenshots are only
@@ -79,19 +78,22 @@ and records completeness, and preserves thresholding, sampling, schema
 restriction, and `(other)`-row data-loss metadata. The report contains no
 user-level identifiers, raw page URLs, emails, pass codes, payment references,
 or access token. Offline tests cover the fixed query, pagination, timezone,
-response warnings, empty-report row-count handling, and token redaction. Run
-`38071879234` proved WIF token exchange only; its Analytics `runReport` step
-failed, so live reporting access is not yet proven.
+response warnings, empty-report row-count handling, and token redaction. The
+first run `38071879234` proved WIF token exchange only; the approved retry
+`38073371592` completed `runReport` and report commit-back, confirming live
+read-only reporting. Details follow.
 
-**Privacy approval gate:** the owner approved one initial live attempt and its
-sanitized report commit to Git history (`latest.json` and a dated file). That
-attempt failed before writing any report, so no real data was committed. Treat
-the approval as exercised; obtain fresh explicit approval before another GA4
-request. No approval exists for site deployment, default-branch merge, scheduled
-access, or broader trust. An empty `rows` list from a successful authenticated
-response would prove access, not site traffic.
+**Privacy approval gate:** the owner approved the initial live attempt and,
+after the parser fix was pushed, exactly one retry with a sanitized aggregate
+report commit. The first attempt failed before writing a report; the approved
+retry succeeded. Both approvals are now exercised. Obtain fresh explicit
+approval before any further GA4 request. No approval exists for site deployment,
+default-branch merge, scheduled access, or broader trust. The successful empty
+`rows` response proves the read-only report path, not site traffic.
 
-## First live attempt — empty-response row-count handling; retry approval pending
+## Live report validation — first attempt failed, approved retry succeeded
+
+### First attempt — row-count validation failure
 
 The owner-approved trigger produced run `38071879234` (`f3fec02`). WIF
 authentication succeeded, but the live Analytics report step failed with the
@@ -101,19 +103,29 @@ placeholder, with no real data in Git history.
 
 Google's [RunReportResponse schema](https://github.com/googleapis/googleapis/blob/master/google/analytics/data/v1beta/data.proto)
 defines `row_count` as a proto3 `int32` and `kind` as the fixed
-`analyticsData#runReport`. For a new property returning no rows, omission of a
-zero-valued `rowCount` is the likely cause, but the raw JSON was not captured.
-The parser fix accepts a missing count as zero **only** when `kind` identifies a
-RunReport and the `rows` list is empty; it continues to reject missing counts
-for nonempty or unrecognized responses. The targeted reporter tests pass 8/8;
-the full Python suite passes 71/71, `tools/qa.py` is green (two environment-only
-warnings), and `git diff --check` passes.
+`analyticsData#runReport`. The first failure was consistent with an omitted
+default-zero count. The successful retry recorded
+`row_count_source: implicit_empty_response`, confirming the narrow fallback was
+used for a recognized empty RunReport. The raw API JSON is not retained. The
+parser accepts a missing count as zero **only** for that recognized empty
+response; missing counts for nonempty or unrecognized responses still fail
+closed. Targeted reporter tests pass 8/8; the full Python suite passes 71/71;
+`tools/qa.py` is green (two environment-only warnings); `git diff --check` and
+`tools/pre_push_verify.sh` pass.
 
-The first attempt did not commit Analytics data. The tested code/docs fix is
-pushed as `801a1ea` on `arena/47d148f1-docoga`; `analytics/refresh-request.json`
-and `analytics/reports/latest.json` were not changed, and no new report run
-started. Get explicit owner approval before retrying. WIF success is not proof
-that `runReport` succeeded.
+### Approved retry — live empty report committed
+
+After the parser/docs fix (`801a1ea`, `29eff4e`) was pushed, the owner approved
+exactly one retry. Trigger commit `4062832` ran workflow `38073371592`; WIF,
+`Write snapshot (live, read-only)`, and commit-back all succeeded. Bot commit
+`bbde8dd` added `analytics/reports/latest.json` and
+`analytics/reports/2026-10-10.json`, both with `mode: live`. The report covers
+2026-10-02 through 2026-10-08 in `Africa/Lagos`, with `NGN` currency, zero rows,
+and `row_count: 0`. No raw identifiers, URLs, or user-level data are present.
+This confirms live read-only reporting, not site traffic or purchases. The
+separate site-tag change/deploy remains unapproved. This retry approval is
+exercised; do not issue another Analytics request without fresh explicit
+approval.
 
 The default-branch schedule is not active for this session branch. Default
 branch merge and any widening of provider trust are separately approval-gated.
@@ -128,11 +140,13 @@ does not prove purchases or revenue; no verified purchase event exists.
 
 ## What this setup does not promise
 
-- No live connection has been confirmed yet; a placeholder is not a live report.
+- Live read-only reporting was confirmed by run `38073371592`; a placeholder from an earlier run is still not a live report.
 - Google Analytics processing can lag and recent totals can change; the report
   ends two property-calendar days ago.
 - Scheduled runs can be delayed or dropped; no uptime guarantee.
 - Viewer is property-wide, even though the code requests one fixed aggregate
   report. Keep the authorized workflow and provider restriction reviewed.
+- A fresh-session readback and an owner-side comparison are still acceptance
+  checks; the current empty report cannot be compared to a nonempty baseline.
 - Revocation can be done by removing the service account's property Viewer role
   or disabling the WIF provider/workflow. Do not create or share a long-lived key.

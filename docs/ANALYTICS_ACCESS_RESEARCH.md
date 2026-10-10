@@ -4,7 +4,7 @@
 
 Owner wants the agent to have ongoing read-only access to DocOga's Analytics across future sessions, instead of repeated owner exports/screenshots. This document records what was verified, what was disproved, the recommended design, the cost/privacy gates, and the acceptance test that must pass before anyone calls this "connected."
 
-Status as of **10 October 2026, 18:41 WAT**: Google-side WIF setup and all three repository-variable rows are in place by screenshot evidence; long values are clipped in the list. The owner approved one initial live aggregate attempt. Run `38071879234` proved GitHub-to-Google WIF authentication, but the Analytics `runReport` step failed with the owner-screenshot error `Google Analytics response is missing a valid rowCount`; commit-back was skipped and latest remains a placeholder. The likely zero-row/default-count handling defect was fixed and pushed in `801a1ea` on `arena/47d148f1-docoga`. Targeted tests pass 8/8, full suite 71/71, `tools/qa.py` is green with two environment-only warnings, and `git diff --check` plus `tools/pre_push_verify.sh` pass. Remote and local heads match; no new Analytics run was started. **Live Analytics reporting is not yet proven**. Do not retry until the owner explicitly approves another attempt. Main merge/schedule, broader trust, site retag, and deploy remain separately approval-gated.
+Status as of **10 October 2026, 18:51 WAT**: The initial live run `38071879234` passed WIF but failed on missing `rowCount`; the parser fix was pushed as `801a1ea`. The owner approved exactly one retry. Run `38073371592` completed WIF, Analytics `runReport`, and commit-back; bot commit `bbde8dd` added both reports with `mode: live`. The seven-day window is 2–8 October 2026, with zero rows and `row_count_source: implicit_empty_response`, plus response metadata `Africa/Lagos` / `NGN`. This proves the keyless read-only report path, not site traffic or purchases. Targeted tests 8/8, full suite 71/71, `tools/qa.py`, `git diff --check`, and `tools/pre_push_verify.sh` passed. Local and remote heads include the report commit. The retry approval is exercised; no further live request without fresh explicit approval. Main merge/schedule, broader trust, site retag, and deploy remain separately approval-gated.
 
 ## What was tested and disproved (correcting earlier assumptions)
 
@@ -71,9 +71,16 @@ Identity (IAM/WIF/service accounts) is free; the runner stays inside the include
 5. The push-triggered refresh produces a newer timestamped snapshot; failures are bounded and leak no credentials.
 6. Rediscovery + stale-state behaviour documented.
 
+**Acceptance status:** owner-side configuration, WIF/token handling, a real
+`runReport`, the push-triggered sanitized snapshot, and stale-state documentation
+are verified. The live report is empty, so an owner-side aggregate comparison
+has not been possible; fresh-session readback also remains untested. Thus the
+keyless report path works, but the full cross-session/matching acceptance test
+is not yet complete.
+
 ## Next owner step (one screen at a time)
 
-Google-side setup is complete and verified; do not repeat Cloud Shell/IAM commands. The owner screenshot exposes run `38071879234`'s `missing a valid rowCount` error. Research confirms the RunReport schema uses a proto3 int32 count; a zero-row response may omit default zero. The parser fix accepts that omission only for a recognized empty RunReport; all tests and pre-push checks passed, and commit `801a1ea` is pushed without changing the refresh trigger. Ask for explicit approval before another API attempt. No secret or key is needed.
+The read-only reporting path is now proven: approved retry `38073371592` committed a live seven-day report with zero rows. The dedicated GA4 tag is not deployed on the site, so the empty result does not establish site traffic. The next optional step is for the owner to decide whether to separately approve a site-tag change and production deploy; neither is authorized now. Do not make another Analytics request without fresh approval. No secret or key is needed.
 
 ## Mechanism proof — 10 October 2026, 13:33 WAT
 
@@ -169,6 +176,30 @@ nonempty rows or unrecognized responses still fail closed. Two new offline
 tests cover both. Targeted suite: 8/8; full suite: 71/71; `tools/qa.py` is
 green with two environment-only warnings; `git diff --check` and
 `tools/pre_push_verify.sh` pass. Commit `801a1ea` is pushed to
-`arena/47d148f1-docoga`; remote/local heads match, no trigger/report changed,
-and no new run was started. No second live request or data commit is authorized
-yet; request owner approval before retrying.
+`arena/47d148f1-docoga`; remote/local heads matched at that point; no trigger or
+report had changed yet. At the time of this entry, the retry had not been
+approved. Its subsequent approval and outcome are recorded below.
+
+## One approved retry succeeded — 10 October 2026, 18:51 WAT
+
+After the parser fix (`801a1ea`) and its documentation (`29eff4e`) were pushed,
+the owner explicitly approved exactly one retry. Trigger commit `4062832`
+(updated only `analytics/refresh-request.json`) launched workflow
+[38073371592](https://github.com/johnAzani/docoga/actions/runs/38073371592).
+Configuration check, GitHub-to-Google WIF, `Write snapshot (live, read-only)`,
+and report commit-back all succeeded. Bot commit `bbde8dd` wrote
+`analytics/reports/latest.json` and `analytics/reports/2026-10-10.json`; both
+are `mode: live`.
+
+The sanitized seven-day report covers **2–8 October 2026** (`Africa/Lagos`). It
+contains `rows: []`, `row_count: 0`, and
+`row_count_source: implicit_empty_response`; timezone and currency were returned
+as `Africa/Lagos` and `NGN`. This confirms the missing default-zero count was
+safely handled on a valid empty RunReport. It proves the read-only Analytics
+report path works, but does **not** prove the site had no traffic or that
+purchases were measured. The dedicated tag is still not deployed, and no
+purchase event exists.
+
+The one retry approval is exercised. No further API request is approved without
+fresh explicit owner approval. Site retag/deploy, default-branch merge,
+scheduling, and broader WIF trust remain separately unapproved.

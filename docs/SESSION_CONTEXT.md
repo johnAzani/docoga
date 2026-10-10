@@ -450,7 +450,7 @@ Documented in `docs/GROWTH_JOURNAL.md`. Key milestones:
 - **Legacy/current website tag:** `G-GO8VZB3R28` (the site still sends to the older property; unchanged).
 - **Dedicated DocOga GA4 property:** ID `558370565`, stream `G-BQ1YTR0ZZJ`, timezone `Africa/Lagos` (GMT+01:00), currency `NGN`. The new tag is not deployed, so this property may have no site traffic yet.
 - **Read-only reporter:** `.github/workflows/analytics-snapshot.yml` + `tools/analytics_snapshot.py` use GitHub OIDC/WIF and a property-Viewer service account; the provider is restricted to this repo, the Analytics workflow and the session branch. Google-side WIF/API setup is screenshot-verified. The 18:20 WAT Variables-page screenshot shows all three expected repository-variable rows; the long name/value previews are truncated, so only visible prefixes are screenshot-readable.
-- **Snapshot mechanism:** placeholder commit-back was verified (run 38058018325 / commit 751aacd). First live attempt 38071879234 passed WIF auth but failed because the script rejected a missing `rowCount`; commit-back was skipped and `latest.json` remains placeholder. Owner screenshot now confirms the exact error. Researching Google's RunReport proto showed `row_count` is proto3 int32; parser now treats a missing count as zero only for a validated empty `analyticsData#runReport` response. Eight targeted tests and the full Python suite (71/71) pass; `tools/qa.py` is green with two environment-only warnings, and `git diff --check` passes. Pushed code/docs commit `801a1ea` to `arena/47d148f1-docoga`; remote and local heads match and the working tree is clean. Neither `analytics/refresh-request.json` nor `analytics/reports/latest.json` changed. The push did not trigger a new Analytics run; latest remains failed run `38071879234`. No Analytics data is committed. Next: seek explicit owner approval before another attempt.
+- **Snapshot mechanism:** placeholder commit-back was verified first; run `38071879234` then passed WIF but failed on omitted `rowCount`. The conservative parser fix accepts missing count only for recognized empty RunReports; targeted tests 8/8 and full suite 71/71 pass, QA is green with two environment-only warnings, and pre-push checks passed. Owner approved exactly one retry after the fix. Run `38073371592` passed WIF, `runReport`, and commit-back; bot commit `bbde8dd` wrote `mode: live` reports for 2–8 Oct 2026 with zero rows and `row_count_source: implicit_empty_response`. This proves keyless read-only report access, not site traffic or purchases. The dedicated site tag is still not deployed; no further live request, site deploy, `main` merge, schedule, or broader trust is approved.
 - **Microsoft Clarity:** `ym9fd3sxq5` (heatmaps, session recordings, rage clicks).
 
 ### Facebook Page:
@@ -1003,12 +1003,13 @@ item 9.
 
 ## What's Next (Pending)
 
-### Analytics access — zero-row response handling fixed; retry approval pending (10 Oct 2026)
+### Analytics access — live report path confirmed; zero-row result (10 Oct 2026)
 
 1. **Repository variables:** the 18:20 WAT screenshot shows all three expected rows. `GA_PROPERTY_ID` is fully readable; long service-account/provider values are clipped, though their visible prefixes match the instructed values. The agent cannot read variables through the REST API (403); do not retry that path.
 2. **First-live attempt 38071879234** (`f3fec02`) passed `Authenticate to Google (Workload Identity Federation)` but failed at `Write snapshot (live, read-only)`. Owner's 18:34 screenshot shows the exact message: `Google Analytics response is missing a valid rowCount.` Commit-back was skipped; latest remains the placeholder from run `38058018325`. No Analytics data was committed.
 3. Research of Google's `RunReportResponse` proto (`row_count` is a proto3 `int32`; response `kind` is fixed) indicates the newly created property may return an empty report with the zero-valued count omitted. Hardened `tools/analytics_snapshot.py` to infer zero only when `kind` is `analyticsData#runReport` and rows are empty; other missing/malformed counts still fail closed. Eight targeted tests and the full suite (71/71) pass; `tools/qa.py` is green with two environment-only warnings, and `git diff --check` passes.
-4. Code/docs fix was pushed as `801a1ea` to `arena/47d148f1-docoga`; remote matches and the working tree is clean. The push changed neither `analytics/refresh-request.json` nor `analytics/reports/latest.json`, and no new run was started. Ask explicit owner approval before retrying the GA4 request; first approval covered the initial attempt only. No site retag/deploy, `main` merge, schedule, or broader trust is approved.
+4. After the fix/docs pushes (`801a1ea`, `29eff4e`), the owner approved exactly one retry. Trigger commit `4062832` ran `38073371592`; WIF, `runReport`, and commit-back succeeded. Bot commit `bbde8dd` wrote `latest.json` and `2026-10-10.json` with `mode: live`, an empty row list, and a seven-day window of 2–8 Oct 2026. `row_count_source` is `implicit_empty_response`; property timezone/currency are `Africa/Lagos` / `NGN`.
+5. The retry approval is exercised. No further GA4 request without fresh explicit approval. The empty report does not prove no site traffic: the dedicated site tag is not deployed. Full durability acceptance still needs fresh-session readback and an owner-side aggregate comparison; with zero rows, the comparison is not yet possible. No site retag/deploy, `main` merge, schedule, or broader trust is approved.
 
 ### Current revenue priority — 10 Oct 2026
 
@@ -1037,7 +1038,7 @@ item 9.
 6. **Diaspora USD pricing.** Research Flutterwave international approval, settlement
    and buyer willingness-to-pay before selecting a price. The `$20` in
    `docs/REVENUE.md` remains an illustrative calculation only.
-7. **Legacy/live GA baseline** (`G-GO8VZB3R28`) remains separate: until the new property has a live snapshot, the agent has no verified report from either property. The dedicated DocOga property and pending setup steps are tracked above. No success-page GA tag or verified-purchase event exists; do not report a conversion funnel as measurable.
+7. **Legacy/live GA baseline** (`G-GO8VZB3R28`) remains separate. The dedicated DocOga property now has a live empty aggregate snapshot for 2–8 Oct 2026 (run `38073371592`); the old website tag is unchanged, and no success-page tag or verified-purchase event exists. Do not report a conversion funnel, traffic level, or revenue as measurable from this empty report.
 8. **Owner-side checklist is written down and sourced** — `DEPLOY_STATUS.md` §12:
    Brevo manual authentication (preserves the existing DMARC; 3–4 records; up to
    48 h), Cloudflare DNS-only + flattening off for the DKIM CNAMEs, Flutterwave
@@ -1882,10 +1883,9 @@ Federation)** step succeeded, proving GitHub-to-Google WIF token exchange. The
 steps were skipped. `analytics/reports/latest.json` remains `mode: placeholder`
 from run `38058018325`; there is no real-data commit. The agent can read run/step
 status via GitHub API, but detailed logs redirect to blocked hosts, so the exact
-GA4 API error is unknown. Next owner action: open the run URL
-https://github.com/johnAzani/docoga/actions/runs/38071879234 and screenshot the
-failure detail for that step (do not send any token if one appears). Do not
-retry until diagnosed and explicit approval is obtained for another attempt.
+GA4 API error was unavailable at this first inspection. The next owner action
+at that time was to screenshot the failed step; the owner later shared the
+message, documented below. No retry occurred at this stage.
 
 **Live failure detail and parser fix — 10 Oct 2026, 18:34 WAT screenshot:**
 owner opened run `38071879234` and its failed step. Visible error:
@@ -1893,4 +1893,17 @@ owner opened run `38071879234` and its failed step. Visible error:
 The WIF exchange succeeded; failure is in our response parser, not proven to be
 an IAM/API permission denial. Checked Google's official `RunReportResponse`
 proto: `row_count` is proto3 `int32`, and `kind` is fixed
-`analyticsData#runReport` ([schema](https://github.com/googleapis/googleapis/blob/master/google/analytics/data/v1beta/data.proto)). A new property with no collected traffic may return no rows and omit zero-valued `rowCount`; this is the likely cause, not yet confirmed from raw response. Updated parser to infer zero only for recognized RunReport responses with an empty rows list; otherwise it still fails closed. Added tests for valid empty and malformed/nonempty missing-count responses. Targeted suite 8/8 and full suite 71/71 pass; `tools/qa.py` is green with two environment-only warnings. `git diff --check` and `tools/pre_push_verify.sh` pass. Code/docs commit `801a1ea` is pushed to `arena/47d148f1-docoga`; remote/local heads match, worktree clean, and latest workflow remains failed run `38071879234` with no new run. No retry or data commit occurred; obtain explicit approval before another live attempt.
+`analyticsData#runReport` ([schema](https://github.com/googleapis/googleapis/blob/master/google/analytics/data/v1beta/data.proto)). A new property with no collected traffic may return no rows and omit zero-valued `rowCount`; this is the likely cause, not yet confirmed from raw response. Updated parser to infer zero only for recognized RunReport responses with an empty rows list; otherwise it still fails closed. Added tests for valid empty and malformed/nonempty missing-count responses. Targeted suite 8/8 and full suite 71/71 pass; `tools/qa.py` is green with two environment-only warnings. `git diff --check` and `tools/pre_push_verify.sh` pass. Code/docs commit `801a1ea` was pushed to `arena/47d148f1-docoga`; at that point latest workflow remained the failed run `38071879234`, and no retry or data commit had occurred. The owner later authorized one retry; its successful result is recorded below.
+
+**One approved Analytics retry succeeded — 10 Oct 2026, 18:51 WAT:** after
+parser fix `801a1ea` and docs `29eff4e`, the owner explicitly approved one retry.
+Trigger commit `4062832` started workflow `38073371592`; WIF, `Write snapshot
+(live, read-only)`, and commit-back all succeeded. Bot commit `bbde8dd` added
+`analytics/reports/latest.json` and `analytics/reports/2026-10-10.json` with
+`mode: live`. The report covers 2–8 Oct 2026 in `Africa/Lagos`, has `NGN`
+currency and zero rows (`row_count: 0`, `row_count_source:
+implicit_empty_response`). This confirms the keyless read-only Analytics path,
+not site traffic or purchases; the dedicated site tag is not deployed. The
+retry approval is exercised. No further Analytics request, site retag/deploy,
+`main` merge, schedule, or broader trust is authorized without separate owner
+approval.
