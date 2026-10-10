@@ -1512,3 +1512,11 @@ property settings: DocOga, Nigeria reporting timezone, NGN currency; confirm
 form labels first. No property created yet, no retagging/deployment done. New
 web stream/tag and Viewer grant/WIF/report auth still pending. Owner choice
 establishes direction, not proof of completed GA setup or production deployment.
+
+**Dedicated GA property form — 10 Oct 2026, 14:03 local screenshot:** step 1
+Property creation open; name empty, defaults United States / Los Angeles time
+and US Dollar. Next instructions: name DocOga; country Nigeria; timezone
+GMT+01:00 Nigeria/Lagos (label may vary); currency Nigerian Naira (NGN); tap
+Next, screenshot Business details. Property not created yet. Do not retain US
+defaults; no deployment/stream/tag changes. Owner phone battery 12%, keep
+instructions short and one screen at a time.
