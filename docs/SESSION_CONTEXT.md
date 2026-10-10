@@ -583,8 +583,23 @@ logs**. Record as **attempted, option unavailable**; logs are NOT confirmed dele
 The best-effort attempt gate is met, but this does not prove deletion or credential
 revocation. No job logs were opened/downloaded and no workflow rerun was requested.
 
-**Still open before any release/resend:** production Worker Secret names/types
-and current configuration; live Flutterwave webhook-hash match; actual runtime
+**Production configuration snapshot — 10 Oct 2026 (owner screenshots):**
+Landscape screenshots show `docoga-pass` → Settings → Production with three
+Secret rows: `BREVO_API_KEY`, `FLW_SECRET_KEY`, `FLW_WEBHOOK_HASH`, each displayed
+as **Value encrypted**. Three Variable rows: `PAYMENT_URL` (value not copied),
+`PROVIDER`, `SITE_URL`; KV binding `KV` → `docoga-kv`. `ISSUE_SECRET`, `MAIL_FROM`
+and `RESEND_EMAIL_ENABLED` are not listed in the supplied table. This establishes
+presence/type only, not currentness, live-key validity or hash equality. Without
+an override the repository defaults to the newly verified sender; resend remains
+fail-closed without the exact true flag in repository code (not yet deployed).
+`ISSUE_SECRET` is needed for the authenticated `/issue` bridge; do not invent or
+replace it without checking whether that bridge is used and coordinating both ends.
+Next owner question: confirm whether the three encrypted Secrets are the current
+replacement credentials saved after the log exposure (yes/no/not sure, no values).
+No setting edits, Deploy, payment or resend performed.
+
+**Still open before any release/resend:** production credential currentness and
+`ISSUE_SECRET`/bridge status; live Flutterwave webhook-hash match; actual runtime
 `MAIL_FROM` match (Brevo verifies the default sender, runtime override unknown);
 private checkout-vs-event recipient comparison; resend flag remains unset/false
 pending intentional release. Fix/test the Worker workflow's DEXIT propagation and

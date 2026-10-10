@@ -502,6 +502,14 @@ or verified by the agent.
 
 ### 12.2 Cloudflare Worker secrets + Flutterwave webhook hash (gates deploy)
 
+> **Observed 10 Oct 2026 (owner screenshots, no edits):** production `docoga-pass`
+> lists `BREVO_API_KEY`, `FLW_SECRET_KEY`, `FLW_WEBHOOK_HASH` as encrypted Secrets;
+> variables `PAYMENT_URL`, `PROVIDER`, `SITE_URL`; KV binding `KV` → `docoga-kv`.
+> `ISSUE_SECRET`, `MAIL_FROM`, `RESEND_EMAIL_ENABLED` are not listed. Currentness
+> and live webhook-hash match remain unconfirmed. Investigate `/issue` bridge use
+> before any ISSUE_SECRET remediation; do not choose a random replacement.
+> No deployment or resend authorized by this inspection.
+
 - Workers & Pages → `docoga-pass` → Settings → Variables and Secrets: confirm
   `FLW_SECRET_KEY` (or `FLW_CLIENT_ID`/`FLW_CLIENT_SECRET`), `ISSUE_SECRET`,
   `BREVO_API_KEY`, and `FLW_WEBHOOK_HASH` are present. Names only — never values in
