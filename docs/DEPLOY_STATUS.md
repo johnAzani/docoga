@@ -623,3 +623,10 @@ Sources inspected through official Cloudflare GitHub documentation and bundled
 Cloudflare SDK: account tokens support Workers/KV and account verification is
 `/accounts/{account_id}/tokens/verify` (SDK `accounts.tokens.verify`).
 https://github.com/cloudflare/cloudflare-docs/blob/production/src/content/docs/fundamentals/api/get-started/account-owned-tokens.mdx
+
+**Read-only authentication result — 10 Oct:** run `38044854641` on `caefff4`
+succeeded with publish/probe skipped: user endpoint HTTP401/API1000, account
+endpoint HTTP200/active, deployment account read HTTP200. Account-token endpoint
+mismatch confirmed for this credential; no credential change. Authorized Worker
+retry starting with corrected validation; site still blocked pending actual
+deploy exit and harmless probe. Resend remains disabled.

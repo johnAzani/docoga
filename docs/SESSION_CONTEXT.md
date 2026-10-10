@@ -1239,3 +1239,9 @@ item 9.
 ---
 
 *This file is the contract between sessions. Update it at the end of EVERY session. If you're reading this, you have everything you need. Continue naturally.*
+**Read-only authentication result — 10 Oct:** run `38044854641` on `caefff4`
+succeeded with publish/probe skipped: user endpoint HTTP401/API1000, account
+endpoint HTTP200/active, deployment account read HTTP200. Account-token endpoint
+mismatch confirmed for this credential; no credential change. Authorized Worker
+retry starting with corrected validation; site still blocked pending actual
+deploy exit and harmless probe. Resend remains disabled.
