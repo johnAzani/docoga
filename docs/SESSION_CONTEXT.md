@@ -1455,3 +1455,13 @@ setup prompt, but do NOT use these numbers as DocOga traffic baseline. Blue
 Benchmarking popover visible. Next action: tap property dropdown `reel-31bcb`
 at top beside Analytics logo, send account/property selector. No permission
 changes until correct property verified; no need to change collection settings.
+
+**GA selector screenshot — 10 Oct 2026, 13:47 local:** All tab selected,
+visible account Default Account for Firebase; visible property names reel-241ea,
+reel-31bcb, tageme-2d59b, tagemeonline, tagme-c07c2. No DocOga-named property
+visible; do not infer deletion/nonexistence or grant Viewer to a guessed
+property. Next: tap Google profile avatar A at upper right to inspect signed-in
+account/switcher, redact full personal emails in screenshot but retain account
+labels/initials. Need locate Google login used to set up DocOga Analytics. Do
+not create a new property or change existing tracking. Cloud service-account
+project need not use same Google login as Analytics property administration.
