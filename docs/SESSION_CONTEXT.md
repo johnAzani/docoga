@@ -1791,3 +1791,11 @@ https://github.com/johnAzani/docoga/settings/variables/actions ; screenshot
 before adding GA_PROPERTY_ID / GCP_SERVICE_ACCOUNT / GCP_WORKLOAD_IDENTITY_PROVIDER.
 These are non-secret config values, not a credential upload. Do not re-run Cloud
 commands or claim connected until actual report retrieved. Phone battery 11%.
+
+**GitHub Variables screen — 10 Oct 2026, 17:47 screenshot:** correct DocOga
+Actions secrets and variables page, Variables tab selected; repository has no
+variables. New repository variable button visible. Next tap that button to open
+form; first intended name GA_PROPERTY_ID, value 558370565. No variables added
+yet; do not use Environment variables or Secrets for these non-secret config.
+Continue one screen at a time; WIF binding confirmed, authenticated GA call
+still pending. Phone battery 9%, saved progress available if paused.
