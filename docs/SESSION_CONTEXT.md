@@ -555,6 +555,15 @@ Documented in `docs/GROWTH_JOURNAL.md`. Key milestones:
 
 ### Current session — 10 Oct 2026 (Brevo domain AUTHENTICATED ✅)
 
+**Release authorization — 10 Oct 2026:** owner replied **Yes** to the explicit
+proposal to deploy the corrected payment Worker first, then the site only after
+Worker success, keeping resend disabled. This authorizes those two releases, NOT
+resend-flag enablement, a resend, new payment, credential replacement or bridge
+activation. Starting marker-gated Worker release now; outcome pending. At
+`76e00fa`, Verify/build succeeded and both deploy jobs were skipped; clean local
+branch and remote head matched. Preserve dashboard Secrets/vars, no /verify probe.
+
+
 **Milestone (owner-performed, screenshot evidence, not agent-verified):** the owner
 completed Brevo domain authentication for `docoga.com.ng` in the new guided Brevo
 flow (root domain, optional branded subdomain skipped, **Manual** setup, provider
