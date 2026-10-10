@@ -1626,3 +1626,19 @@ mobile screens/APIs: sts + iamcredentials + WIF pool/provider/binding), or
 (fewer steps, long-lived, needs rotation; repo already stores other long-lived
 secrets). Must still enable Analytics Data API in apt-trainer-367908 either way.
 No key created, no API enabled, no repo variables set, no site tag change yet.
+
+**WIF workflow + runbook committed — 10 Oct 2026:** rewrote
+`.github/workflows/analytics-snapshot.yml` with pinned
+`google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093` (v3.0.0,
+latest release), `token_format: access_token`, explicit
+`access_token_scopes: .../analytics.readonly`, gated live step using
+vars.GA_PROPERTY_ID/GCP_WORKLOAD_IDENTITY_PROVIDER/GCP_SERVICE_ACCOUNT, plus
+placeholder fallback. Added `docs/ANALYTICS_SETUP.md` owner runbook. Validated:
+pre_push + qa green; push 7bd8adb then 5e1f974 (refresh request) triggered
+analytics-snapshot run 38058018325 = SUCCESS (placeholder mode, vars unset), so
+the new YAML/auth-step structure parses and the push->refresh path works.
+Still not done: enable analyticsdata/sts/iamcredentials APIs, create WIF
+pool+provider, bind workloadIdentityUser to repository_id 1376068242, set 3 repo
+variables, then live run; and separately the site tag change to G-BQ1YTR0ZZJ +
+deploy. Owner next: Cloud Shell script (step 1) then repo variables (step 2).
+No secrets involved in variables. Property ID 558370565; stream G-BQ1YTR0ZZJ.
