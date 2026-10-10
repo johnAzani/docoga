@@ -1425,3 +1425,14 @@ tap **Create service account** at top of current Service Accounts page; show
 creation form BEFORE filling/submitting. Intended name docoga-analytics-reader;
 no project IAM role (Analytics Viewer is assigned separately in GA). No billing
 or OAuth-client change. Do not generate a key. B2B paused.
+
+**Service-account creation form — 10 Oct 2026, 13:36 local screenshot:** form
+open in apt-trainer-367908 (email preview confirms project). Name, ID and
+description empty; optional Permissions and Principals with access sections
+collapsed. Buttons Create and continue / Create and close visible. Next owner
+instructions: name and ID `docoga-analytics-reader`; description `Read-only
+DocOga GA4 reporting from GitHub Actions.`; leave both optional sections empty
+and tap **Create and close**, then screenshot returned list. This creates only
+the reporting identity, not GA access. Do not assign Cloud Viewer/Editor/Owner,
+generate a key, alter OAuth client or enable billing. Creation is NOT yet
+confirmed; verify resulting row/generated email before property permission grant.
