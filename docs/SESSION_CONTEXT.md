@@ -1612,3 +1612,17 @@ set repo variables GA_PROPERTY_ID / GCP_WORKLOAD_IDENTITY_PROVIDER /
 GCP_SERVICE_ACCOUNT; add SHA-pinned google-github-actions/auth + live fetch to
 analytics-snapshot.yml; separately update site ANALYTICS_ID to G-BQ1YTR0ZZJ and
 deploy; then verify a real authenticated report. No site change/deploy yet.
+
+**GA property details CONFIRMED — 10 Oct 2026, 14:58 local screenshot:**
+NUMERIC GA4 PROPERTY ID = 558370565. Property name DocOga; timezone Nigeria
+(GMT+01:00) Nigeria Time; currency Nigerian Naira; industry Law & Government;
+business size Small 1–10 employees; objectives listed as Drive sales,
+Understand web and/or app traffic, View user engagement & retention (three
+shown; harmless, not re-edited). Web stream measurement ID G-BQ1YTR0ZZJ.
+Viewer grant to service account already confirmed. NEXT: choose auth path for
+the workflow. Options under consideration: (A) WIF (no long-lived secret, more
+mobile screens/APIs: sts + iamcredentials + WIF pool/provider/binding), or
+(B) service-account JSON key stored ONLY as an encrypted GitHub Actions secret
+(fewer steps, long-lived, needs rotation; repo already stores other long-lived
+secrets). Must still enable Analytics Data API in apt-trainer-367908 either way.
+No key created, no API enabled, no repo variables set, no site tag change yet.
