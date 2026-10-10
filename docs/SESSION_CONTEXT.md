@@ -1472,3 +1472,9 @@ account switch. Property names alone do not establish which web stream matches
 DocOga. Next inspect Admin on current property (dismiss selector, bottom-left
 gear) then Data streams, comparing website URL and measurement ID to repository
 tracking ID before any Viewer grant. No new property/retagging authorised.
+
+**Analytics Admin screenshot — 10 Oct 2026, 13:51 local:** owner kept current
+login; Admin open for reel-31bcb. Visible Data streams under Data collection
+and modification; next single action tap Data streams and screenshot list.
+Do not tap account/property access management yet: stream website and tracking
+ID must establish DocOga relationship first. No property/access/tracking edits.
