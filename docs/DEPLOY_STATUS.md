@@ -444,6 +444,17 @@ or verified by the agent.
 
 ### 12.1 Brevo: authenticate `docoga.com.ng` (gates `RESEND_EMAIL_ENABLED`)
 
+> **Status 10 Oct 2026: COMPLETE (owner-performed).** The new guided Brevo flow
+> (Manual, Cloudflare) generated four records, all added to the existing zone and
+> verified by Brevo: TXT `@` brevo-code; CNAME `brevo1._domainkey` →
+> `b1.docoga-com-ng.dkim.brevo.com`; CNAME `brevo2._domainkey` →
+> `b2.docoga-com-ng.dkim.brevo.com` (both DNS only, TTL Auto); TXT `_dmarc`
+> `v=DMARC1; p=none; rua=mailto:rua@dmarc.brevo.com`. Brevo displayed **"Your
+> domain has been authenticated."** The two pre-existing Worker `100::` records
+> were not modified; there was no prior DMARC record, so exactly one exists now.
+> Evidence is owner screenshots; not independently verified by the agent. Steps
+> below remain as the reference procedure.
+
 1. Brevo → **Settings → Senders, Domains, IPs → Domains → Add a domain** → enter
    `docoga.com.ng`. (Some accounts have a newer guided "Set up your domain" flow;
    the manual route below works regardless.)

@@ -523,7 +523,37 @@ Documented in `docs/GROWTH_JOURNAL.md`. Key milestones:
 
 ## Last Session (LIVING — Update This Every Time)
 
-### Current session — 9 Oct 2026 (owner click-by-click guide)
+### Current session — 10 Oct 2026 (Brevo domain AUTHENTICATED ✅)
+
+**Milestone (owner-performed, screenshot evidence, not agent-verified):** the owner
+completed Brevo domain authentication for `docoga.com.ng` in the new guided Brevo
+flow (root domain, optional branded subdomain skipped, **Manual** setup, provider
+Cloudflare). Four records were added to the existing Cloudflare zone, one at a
+time, each checked against the pre-save form before saving:
+
+1. TXT `@` — `brevo-code:…` (account-generated value), TTL Auto, DNS only
+2. CNAME `brevo1._domainkey` → `b1.docoga-com-ng.dkim.brevo.com`, **DNS only**, TTL Auto
+3. CNAME `brevo2._domainkey` → `b2.docoga-com-ng.dkim.brevo.com`, **DNS only**, TTL Auto
+4. TXT `_dmarc` — `v=DMARC1; p=none; rua=mailto:rua@dmarc.brevo.com`, TTL Auto
+
+The zone's two pre-existing Worker records (`@` → `100::`, `www.docoga.com.ng` →
+`100::`, both Proxied) were left untouched; no SPF/MX changes; zone now shows
+6 records used of 200. Brevo's own check then returned **"Your domain has been
+authenticated."** Brevo notes full provider-side propagation can still take up to
+48h. Record values were copied from Brevo's own generated fields; treat screenshots
+as owner evidence, not independent DNS/API verification (the sandbox has no DNS or
+dashboard access). DMARC count is exactly one (there was no prior DMARC record).
+
+**Still open before any release/resend:** sender identity check in Brevo → Senders
+(`MAIL_FROM` default is `DocOga <noreply@docoga.com.ng>`; authenticated-domain
+senders should verify automatically, but presence/status is unconfirmed);
+best-effort Actions log cleanup for run `37890401771`; production Secret
+bindings/current values; live Flutterwave webhook-hash match; private
+checkout-vs-event recipient comparison; `RESEND_EMAIL_ENABLED` still unset;
+workflow defects (DEXIT not propagated; manual dry_run still deploys) still
+unfixed — do not dispatch. No deploy, no resend, no payment, no price/link change.
+
+### Session — 9 Oct 2026 (owner click-by-click guide)
 
 **Branch:** `arena/47d148f1-docoga`; recovered the local base pointer to the
 measured remote head `fca8025` using `git reset --mixed` (working files retained;
@@ -832,6 +862,7 @@ item 9.
 | 32 | 9 Oct 2026 | **Continuation on the Arena-fixed branch `arena/47d148f1-docoga`:** recovered the reset local pointer by fast-forward to `5cc840e` (the full `arena/b9e4e9d2-docoga` work; old remote branch untouched; no branch switch, no force-push). Re-verified app-side: `c5283e1` absent (`git cat-file`); §11 deployment gate present at head; resend contract confirmed in code + tests (fail-closed unless `RESEND_EMAIL_ENABLED` is exactly `true`, stored-email-only, follows renewals to the newest active code, never returns the code, 60s + 3-per-UTC-day per-pass throttle shared across aliases); the flag is not set anywhere in the repo; the success-page button posts references only; the cache-clear fix is in place. All gates re-run green locally: worker suite (incl. 6 resend tests), DOM 97/97, Python 52/52, qa.py 0 errors, pre_push_verify ✅; CI at `5cc840e`: Verify + build check ✅, both deploys skipped. **No deploy, no resend, no payment, no change to the pass link or price.** Owner-side gates unchanged: run `37890401771` log cleanup, Worker secrets + webhook-hash confirmation, Brevo sender/domain authentication (DNS-only, CNAME flattening off, preserve the single DMARC record). | pushed `arena/47d148f1-docoga` |
 | 33 | 9 Oct 2026 | Historical research summary is in Last Session and `B2B_DISCOVERY.md` at `fca8025`; a prior reply reported this table row but it was absent at the measured remote head. Recorded here without inventing a missing commit. Competitor/vendor claims remain listed prices or hypotheses, not validated DocOga buyer willingness to pay; Business remains Custom. | `fca8025` |
 | 34 | 9 Oct 2026 | Official-source click guide with classic/new Brevo UI, private Secret inspection, live webhook confirmation, DNS-only DKIM, single preserved DMARC, sender/recipient checks, best-effort log cleanup and STOP-before-release. Corrected flattening semantics, needless Secret overwrites, unsafe ISSUE_SECRET change, green-run/dry_run deploy assumptions, and unmeasurable GA success funnel. No deploy/resend/payment/account action. | session branch |
+| 35 | 10 Oct 2026 | **Brevo domain `docoga.com.ng` authenticated** (owner clicks, guided one record at a time): TXT `@` brevo-code + CNAME `brevo1._domainkey` + CNAME `brevo2._domainkey` (both DNS only) + TXT `_dmarc` (`p=none`, Brevo-generated rua) added to the existing Cloudflare zone; both Worker `100::` records untouched; Brevo verify returned "Your domain has been authenticated". Sender status, secrets, webhook hash, log cleanup, recipient comparison and resend flag still open; no deploy/resend/payment. | session branch |
 | 20 | 8 Oct 2026 | **Rule Zero enforced on the build: the verified law is now wired into the pages.** `tools/state_law_data.py` (6 jurisdictions, 20 open questions) drives `tools/gen_state_pages.py`. Three live factual errors fixed: (1) the hard-coded notice table printed "Half-yearly — 3 months" on all 48 pages when that is Lagos s.13(1)(d) and essentially nowhere else — the FCT Act, Cross River s.15 and Kwara s.17 have no half-yearly tier; (2) the four Edo pages said "Magistrates' Courts in Edo State" and "recovery-of-premises legislation" when s.4 of the Edict establishes **Rent Tribunals** and s.41(2) repealed the Recovery of Premises Law for residential accommodation; (3) every page now carries a Sources-and-confidence box with its tier and a "What we could not confirm" list. Rivers added at tier B on the strength of Cap. 109 s.7 (quit notice must expire on the **eve of the anniversary**, the opposite of Lagos s.13(4)) and Landlord & Tenant Law Cap. 75 s.75(1) (rent payable **in arrears**) | PR #11 |
 | 19 | 8 Oct 2026 | **Research before building: measured the state pages and found they fail Google's doorway-page test — median 94.2% similarity between same-tool state pages, median 3 unique words each (worst pairs 99.6%).** So "expand 12 states to 37" was the wrong next move. Wrote `docs/STATE_TENANCY_RESEARCH.md`: verified statute names, sections and sources for 17 of 37 jurisdictions, tiered A-E, with everything unverified listed and three pending bills flagged as NOT law. Added `tools/audit_state_pages.py` to measure and later enforce (80% / 250 unique words / 500 body words) | PR #12 |
 | 18 | 8 Oct 2026 | **Gave the armed Shorts pipeline a memory and an alarm:** publish ledger (`tools/youtube_ledger.py`) + duplicate guard, a secrets preflight that names what is missing, a `YT_PRIVACY` repo-variable switch, a run summary, and a labelled issue opened on any failed run. Verified by simulating all nine scenarios locally (the token cannot dispatch), which caught a real bug: `force=true` exited 3 and failed the run instead of publishing. 48 tests green | PR #11 |
