@@ -1397,3 +1397,12 @@ current GitHub credential use. Next: open project-scoped Service Accounts list
 https://console.cloud.google.com/iam-admin/serviceaccounts?project=apt-trainer-367908
 and screenshot; inspection only, do not create keys/accounts or change billing.
 No need to repeat project identification or inventory all unrelated projects.
+
+**Service Accounts navigation — 10 Oct 2026, 13:29 local screenshot:** IAM &
+Admin → Service Accounts opened but says "To view this page, select a project";
+project-scoped link did not retain selection. Recent-project top-left card is
+My First Project with explicit ID apt-trainer-367908. Next single action: tap
+that top-left card and screenshot loaded Service Accounts page. Do not create
+project/account/key, enable billing, or infer absent accounts from this unscoped
+page. Confirmed project ID remains apt-trainer-367908; no new identification
+loop needed.
