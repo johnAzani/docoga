@@ -1530,3 +1530,13 @@ open Industry category dropdown and send choices; choose closest accurate
 category, do not invent a menu label or classify product as a law firm.
 Business size must reflect actual team, not traffic/revenue. Property not yet
 confirmed created; no data stream, tracking deployment or GA Viewer access.
+
+**Industry options screenshots — 10 Oct 2026, 14:11–14:13 local:** dropdown
+choices include Law & Government, Business & Industrial, Computers &
+Electronics, Real Estate, Reference and Other Business Activity. Latest screen
+has Small 1–10 employees selected; industry still blank with required-field
+error. Recommend Law & Government as closest subject category for legal
+information/document templates, not a claim of law-firm status. Next: select
+Law & Government (search Law), retain Small, tap Next and screenshot Business
+objectives. No need for further category screenshots. Phone battery 7%; progress
+saved if owner pauses. Property creation not yet confirmed.
