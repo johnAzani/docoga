@@ -1,5 +1,5 @@
 {
   "note": "Agent-driven refresh trigger. Updating this file triggers the Analytics snapshot workflow. Do not store secrets here.",
-  "requested_at_utc": "2026-10-10T12:35:00Z",
-  "requested_by": "agent-mechanism-test"
+  "requested_at_utc": "2026-10-10T14:02:03Z",
+  "requested_by": "agent-yaml-validation"
 }
