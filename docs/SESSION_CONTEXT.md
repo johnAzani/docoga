@@ -1777,3 +1777,17 @@ This binding relies on verified provider condition; no broad project resource
 roles, keys, billing or website change. Binding success NOT yet confirmed.
 After binding output, configure three GitHub repo variables and verify real
 scoped GA call. Schedule/main remain outside allowed trust until approved.
+
+**Service-account WIF binding CONFIRMED — 10 Oct 2026, 17:45 screenshot:**
+Cloud Shell reports Updated IAM policy for docoga-analytics-reader at
+apt-trainer-367908; output shows roles/iam.workloadIdentityUser with member
+principalSet://iam.googleapis.com/projects/635194176409/locations/global/workloadIdentityPools/github-actions/attribute.repository_id/1376068242.
+Verified provider condition from prior readback remains required to narrow
+repo member to exact workflow/ref/events. No key created or site change.
+Google-side planned setup now screenshot-confirmed; actual WIF token exchange
+and authenticated GA report still untested. Next single screen: GitHub repo
+Settings -> Secrets and variables -> Actions -> Variables, direct URL
+https://github.com/johnAzani/docoga/settings/variables/actions ; screenshot
+before adding GA_PROPERTY_ID / GCP_SERVICE_ACCOUNT / GCP_WORKLOAD_IDENTITY_PROVIDER.
+These are non-secret config values, not a credential upload. Do not re-run Cloud
+commands or claim connected until actual report retrieved. Phone battery 11%.
