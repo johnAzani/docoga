@@ -447,10 +447,12 @@ Documented in `docs/GROWTH_JOURNAL.md`. Key milestones:
 - `social/reel-stakes-thumb-mobile.jpg` — Mobile test (168×94)
 
 ### Analytics:
-- **Legacy/current website tag:** `G-GO8VZB3R28` (the site still sends to the older property; unchanged).
-- **Dedicated DocOga GA4 property:** ID `558370565`, stream `G-BQ1YTR0ZZJ`, timezone `Africa/Lagos` (GMT+01:00), currency `NGN`. The new tag is not deployed, so this property may have no site traffic yet.
+- **Last verified production baseline:** deployment run `38044933960` at commit `1335863c` used legacy tag `G-GO8VZB3R28`; `success.html` was untagged. No later deployment was made in this work.
+- **Current session-branch source:** unconditional legacy loader removed; `site/analytics-consent.js` holds the dedicated ID `G-BQ1YTR0ZZJ` behind `ANALYTICS_RELEASE_ENABLED = false`. A first-party Privacy choices status control reports that Analytics is off. If the release gate is eventually cleared, a valid affirmative consent is still required before loading Google code. The manager covers the main app and every marketing HTML page except `success.html`; privacy/terms pages can manage choices but are not page-view tracked.
+- **Privacy/event controls prepared:** 13 SPA routes allowlisted; manual safe page views; unsafe query keys and raw fragments are excluded, only fixed source/medium campaign enums can remain, and external referrers are reduced to origin. GA4 may still generate built-in session/engagement events; optional Enhanced Measurement remains off by release checklist. The app's WhatsApp `shareDoc` uses fixed promotional copy plus the homepage URL only (no generated form/document fields), with `noopener,noreferrer`; tests cover all 10 tools. Google Signals/ad-personalisation signals are denied; consent expires after 180 days; intended GA cookie lifetime is 90 days. Property-side settings, transfer basis, Google terms/data sharing, retention and redaction remain unverified, so the code release gate stays closed.
+- **Dedicated DocOga GA4 property:** ID `558370565`, stream `G-BQ1YTR0ZZJ`, timezone `Africa/Lagos` (GMT+01:00), currency `NGN`. Its empty aggregate report is not evidence of zero site traffic.
 - **Read-only reporter:** `.github/workflows/analytics-snapshot.yml` + `tools/analytics_snapshot.py` use GitHub OIDC/WIF and a property-Viewer service account; the provider is restricted to this repo, the Analytics workflow and the session branch. Google-side WIF/API setup is screenshot-verified. The 18:20 WAT Variables-page screenshot shows all three expected repository-variable rows; the long name/value previews are truncated, so only visible prefixes are screenshot-readable.
-- **Snapshot mechanism:** placeholder commit-back was verified first; run `38071879234` then passed WIF but failed on omitted `rowCount`. The conservative parser fix accepts missing count only for recognized empty RunReports; targeted tests 8/8 and full suite 71/71 pass, QA is green with two environment-only warnings, and pre-push checks passed. Owner approved exactly one retry after the fix. Run `38073371592` passed WIF, `runReport`, and commit-back; bot commit `bbde8dd` wrote `mode: live` reports for 2–8 Oct 2026 with zero rows and `row_count_source: implicit_empty_response`. This proves keyless read-only report access, not site traffic or purchases. The dedicated site tag is still not deployed; no further live request, site deploy, `main` merge, schedule, or broader trust is approved.
+- **Snapshot mechanism:** placeholder commit-back was verified first; run `38071879234` then passed WIF but failed on omitted `rowCount`. The conservative parser fix accepts missing count only for recognized empty RunReports; targeted tests 8/8 and full suite 71/71 pass, QA is green with two environment-only warnings, and pre-push checks passed. Owner approved exactly one retry after the fix. Run `38073371592` passed WIF, `runReport`, and commit-back; bot commit `bbde8dd` wrote `mode: live` reports for 2–8 Oct 2026 with zero rows and `row_count_source: implicit_empty_response`. This proves keyless read-only report access, not site traffic or purchases. The dedicated site tag is not deployed. The owner later authorized local consent-first code preparation only; no further live request, site deployment, `main` merge, schedule, or broader trust is authorized.
 - **Microsoft Clarity:** `ym9fd3sxq5` (heatmaps, session recordings, rage clicks).
 
 ### Facebook Page:
@@ -555,6 +557,42 @@ Documented in `docs/GROWTH_JOURNAL.md`. Key milestones:
    hasn't been independently verified by the agent.
 
 ## Last Session (LIVING — Update This Every Time)
+
+### Current continuation — consent-first Analytics preparation (10 Oct 2026)
+
+Branch checked at start: `arena/47d148f1-docoga`, synchronized to remote
+`454cb576e79f414cbe2b4af36d2314c6cf96a3f3`; worktree was clean before edits.
+Prepared a shared consent manager on all 59 HTML pages other than `success.html`;
+57 main-app/marketing pages are tracking-eligible if later enabled, while
+privacy/terms pages only manage choices. Coverage includes both SEO generators
+and the manually maintained POA page.
+The legacy unconditional tag is removed from source; the dedicated stream is
+behind `ANALYTICS_RELEASE_ENABLED = false`. While disabled, the first-party
+Privacy choices control reports the off state without asking for a choice; the
+manager clears any stale choice and accessible production `_ga` cookies, creates
+no dataLayer, and loads no Google library. In a future release,
+affirmative opt-in, revocation/change UI, safe manual SPA page views, query/hash
+scrubbing (including after a reject-then-accept change), referrer reduction, and
+success-page exclusion are covered by the manager. GA4 built-in session/engagement
+signals are acknowledged for the future privacy review. `success.html` remains
+untagged; policy/terms pages allow choice
+management but are not measured. Inspected `shareDoc` and verified across all 10
+tools that its WhatsApp URL contains only fixed promotional text and the
+homepage URL, never generated form/document content; it opens with
+`noopener,noreferrer`. The consent suite now guards this outbound-data boundary.
+
+Updated privacy/deployment/runbook guidance and the `tools/gen_*_pages.py`
+templates. During regeneration, caught and fixed a pre-existing guide-generator
+regression that would otherwise have removed the national guides' sticky Oga
+Pass CTA and the POA cross-link; regenerated output keeps both and reports all
+10 tools. `tools/qa.py` passed with 0 errors and one warning (`.worker-secrets.env`
+absent, so secret comparison was skipped); worker, consent, and full-app DOM
+suites passed, with DOM at 97/97 using a temporary jsdom install outside the
+repository. Python unit tests passed (71 tests). The VM consent
+suite uses a stubbed script sink and made no Analytics request. No deployment,
+GA request, schedule change, or main merge was made. The Worker-secret cleanup /
+confirmation gate remains uncleared; keep both that deployment gate and
+`ANALYTICS_RELEASE_ENABLED = false` in force.
 
 ### Current session — 10 Oct 2026 (Brevo domain AUTHENTICATED ✅)
 
@@ -1009,7 +1047,8 @@ item 9.
 2. **First-live attempt 38071879234** (`f3fec02`) passed `Authenticate to Google (Workload Identity Federation)` but failed at `Write snapshot (live, read-only)`. Owner's 18:34 screenshot shows the exact message: `Google Analytics response is missing a valid rowCount.` Commit-back was skipped; latest remains the placeholder from run `38058018325`. No Analytics data was committed.
 3. Research of Google's `RunReportResponse` proto (`row_count` is a proto3 `int32`; response `kind` is fixed) indicates the newly created property may return an empty report with the zero-valued count omitted. Hardened `tools/analytics_snapshot.py` to infer zero only when `kind` is `analyticsData#runReport` and rows are empty; other missing/malformed counts still fail closed. Eight targeted tests and the full suite (71/71) pass; `tools/qa.py` is green with two environment-only warnings, and `git diff --check` passes.
 4. After the fix/docs pushes (`801a1ea`, `29eff4e`), the owner approved exactly one retry. Trigger commit `4062832` ran `38073371592`; WIF, `runReport`, and commit-back succeeded. Bot commit `bbde8dd` wrote `latest.json` and `2026-10-10.json` with `mode: live`, an empty row list, and a seven-day window of 2–8 Oct 2026. `row_count_source` is `implicit_empty_response`; property timezone/currency are `Africa/Lagos` / `NGN`.
-5. The retry approval is exercised. No further GA4 request without fresh explicit approval. The empty report does not prove no site traffic: the dedicated site tag is not deployed. Full durability acceptance still needs fresh-session readback and an owner-side aggregate comparison; with zero rows, the comparison is not yet possible. No site retag/deploy, `main` merge, schedule, or broader trust is approved.
+5. The retry approval is exercised; no further GA4 request without fresh explicit approval. The empty report does not prove no site traffic. A consent-first source patch is prepared locally, but is not deployed; the last verified deployed tag was the legacy one. Full durability acceptance still needs fresh-session readback and an owner-side aggregate comparison; with zero rows, the comparison is not yet possible. No production site deploy, `main` merge, schedule, or broader trust is authorized.
+6. Keep `ANALYTICS_RELEASE_ENABLED = false` until owner-side evidence documents the NDPA transfer basis/safeguards and applicable Google terms, property sharing/links, retention/redaction, and Enhanced Measurement. The client sends explicit safe page views; GA4 may also generate built-in session/engagement events, which must be included in that review. Before activation, disable Enhanced Measurement history pageviews, outbound clicks, scrolls, and forms unless separately reviewed. Production deployment remains independently blocked by Worker-secret cleanup/confirmation; never add `[deploy-site]` before that gate clears.
 
 ### Current revenue priority — 10 Oct 2026
 
@@ -1038,7 +1077,7 @@ item 9.
 6. **Diaspora USD pricing.** Research Flutterwave international approval, settlement
    and buyer willingness-to-pay before selecting a price. The `$20` in
    `docs/REVENUE.md` remains an illustrative calculation only.
-7. **Legacy/live GA baseline** (`G-GO8VZB3R28`) remains separate. The dedicated DocOga property now has a live empty aggregate snapshot for 2–8 Oct 2026 (run `38073371592`); the old website tag is unchanged, and no success-page tag or verified-purchase event exists. Do not report a conversion funnel, traffic level, or revenue as measurable from this empty report.
+7. **Analytics baseline and release gate.** Last verified deployed code used legacy GA `G-GO8VZB3R28`; local source now removes that unconditional loader and stages the dedicated property `G-BQ1YTR0ZZJ` behind the closed consent/release gate. No site deploy occurred; no success-page tag or verified-purchase event exists. The live aggregate snapshot for 2–8 Oct 2026 (run `38073371592`) is empty; do not infer zero traffic or report a conversion funnel/revenue from it. No further Analytics request without fresh approval.
 8. **Owner-side checklist is written down and sourced** — `DEPLOY_STATUS.md` §12:
    Brevo manual authentication (preserves the existing DMARC; 3–4 records; up to
    48 h), Cloudflare DNS-only + flattening off for the DKIM CNAMEs, Flutterwave

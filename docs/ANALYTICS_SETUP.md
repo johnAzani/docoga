@@ -9,8 +9,63 @@ added live `latest.json` and the dated report. The report covers 2–8 October
 2026, has zero rows (`row_count: 0`, source `implicit_empty_response`), and
 confirms the response's `Africa/Lagos` timezone and `NGN` currency. This proves
 the read-only report path works; it does not prove site traffic or purchases.
-No further live request is approved. The site tag/deploy, default-branch merge,
-schedule, and broader trust remain unapproved.
+No further live request is approved. The owner later authorized safe local
+engineering, but production deployment, default-branch merge, schedule, and
+broader trust remain gated.
+
+## Website integration status — consent-first, release-gated
+
+Local source preparation removes the unconditional legacy tag from the app and
+adds a first-party consent manager for the main app and generated marketing
+pages. The dedicated stream `G-BQ1YTR0ZZJ` is hard-coded only in that manager;
+`ANALYTICS_RELEASE_ENABLED` remains **false**, so the manager currently shows
+no consent prompt, retains no affirmative choice, creates no Google tag script
+or dataLayer, and sends no measurement request. It removes any stale consent
+record and, on the production origin, best-effort expires accessible legacy
+`_ga` cookies. Its first-party Privacy choices control reports that Analytics
+is off. When the owner-side legal/property controls below are complete, the
+release gate may be opened; even then, the Google library is loaded only after
+an affirmative, unexpired choice. Rejecting leaves the app usable, and a
+persistent Privacy choices control permits review or withdrawal. The payment
+success page remains untagged.
+
+The prepared measurement path is constrained to an allowlist of DocOga SPA
+routes; it turns off automatic page views, sends explicit safe virtual
+pageviews, removes non-allowlisted URL parameters before tag load, retains
+only fixed enumerated `utm_source`/`utm_medium` values (not campaign names,
+content, IDs, or search terms), excludes raw fragments, reduces external
+referrers to origin, and disables
+Google Signals/ad-personalisation signals. The app's WhatsApp `shareDoc` flow
+uses fixed tool-specific promotional copy plus the homepage URL; it never reads
+or shares generated document fields and opens with `noopener,noreferrer`.
+Enhanced Measurement outbound-click tracking remains off by default. It uses a
+90-day Analytics cookie lifetime, and consent expires after 180 days. These are
+client-side controls;
+they do not replace the still-required verification of the GA property and
+stream settings.
+
+**Not deployment-ready:** before opening the source gate or deploying any
+active measurement, document all of the following without making another live
+Analytics request:
+
+1. The Nigeria Data Protection Act transfer basis, destination(s), relevant
+   Google contract/DPA terms, and safeguards applicable to this account.
+2. GA property data-sharing choices, Google-product links, retention, cookie
+   settings, query redaction, and Enhanced Measurement. The client disables
+   automatic `page_view` and sends explicit safe page-view events. GA4 may still
+   create built-in session/engagement events (for example, session starts, first
+   visits, and engagement timing); include those in the privacy/transfer review.
+   Keep optional Enhanced Measurement off by default, including history-based
+   page views, outbound clicks, scrolls, and form interactions. If any automatic
+   event is later considered, review its parameters first—especially link URLs
+   and form metadata—and prove it cannot expose user-generated content.
+3. The final privacy notice and banner language against the verified data flow.
+4. The separate Worker-secret cleanup/confirmation and production-deployment
+   gate. A code push without `[deploy-site]` is not a deployment.
+
+Until those are recorded, keep `ANALYTICS_RELEASE_ENABLED = false`. No
+Analytics measurement request or live tracking test was made as part of this
+local implementation.
 
 This setup is intended to give future sessions durable, read-only access without
 repeated exports. The repo snapshot is the retrieval path; screenshots are only
@@ -130,13 +185,14 @@ approval.
 The default-branch schedule is not active for this session branch. Default
 branch merge and any widening of provider trust are separately approval-gated.
 
-## Separate later work — live website tag
+## Historical website-tag status at the 18:51 WAT report run
 
-The production site still uses its old tag `G-GO8VZB3R28`; the dedicated DocOga
-property stream is `G-BQ1YTR0ZZJ`. Changing `site/index.html` and deploying are
-production changes, **not approved or done**. Until separately approved and
-deployed, the new property may correctly return no rows. Analytics access alone
-does not prove purchases or revenue; no verified purchase event exists.
+At that point, production used the old tag `G-GO8VZB3R28`, and the dedicated
+property stream `G-BQ1YTR0ZZJ` had not been deployed. The owner subsequently
+authorized local code preparation only; the current source/release-gate status
+and remaining pre-deployment controls are recorded in “Website integration
+status” above. Analytics access alone does not prove purchases or revenue; no
+verified purchase event exists.
 
 ## What this setup does not promise
 

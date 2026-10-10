@@ -162,7 +162,7 @@ with a lawyer" per the 19 Sep rule.*
 | Trust & brand | 🔶 Starts at launch | Reviews, testimonials, WhatsApp responsiveness — earned, not built |
 | Legal | ✅ Covered | Disclaimer in-app + Privacy/Terms pages; no legal advice given |
 | Economics | ✅ Strong | Zero fixed costs; downside capped at ~₦2,000 + time |
-| Measurement | ✅ Ready | GA4 hook built in (set `ANALYTICS_ID`), sitemap/robots included |
+| Measurement | 🔒 Release-gated | Consent-first GA4 manager is prepared; dedicated property remains disabled until privacy, contract/property, and Nigeria transfer controls are verified |
 
 **The rule:** the code was 20% of the work. The market is the other 80%.
 

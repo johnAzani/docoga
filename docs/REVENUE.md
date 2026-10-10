@@ -34,7 +34,7 @@ purchase or blindly resend. The historical ₦100 charge was below the Worker’
 | Fallbacks already coded | Flutterwave v4 OAuth + v3 verify; Paystack ("Path C — after CAC"); Selar→Zapier bridge | `worker/index.js` |
 | Tools shipping | 10: agreement, notice, receipt, invoice, employment, caution, demand, payslip, warning, power of attorney | `site/index.html` (10 renderer types) |
 | SEO surface | 48 state pages | `tools/gen_state_pages.py` |
-| Analytics | GA property `G-GO8VZB3R28` | `site/index.html` (`ANALYTICS_ID`) |
+| Analytics | Last verified production baseline: legacy property `G-GO8VZB3R28`; local source now removes it. Dedicated property `G-BQ1YTR0ZZJ` is behind the closed consent/release gate | `site/analytics-consent.js`; `ANALYTICS_RELEASE_ENABLED = false`. Not deployed |
 | Support | WhatsApp `2349021852845` | `site/index.html` (`SUPPORT_WHATSAPP`) |
 
 **Conclusion: the live payment-to-code path passed once; the email was rejected
@@ -204,10 +204,12 @@ funnel, not the destination.
    diaspora buyers need and what they pay, confirm Flutterwave international-payment
    approval and settlement details, then recommend a USD price. The `$20` figure in
    §3 is an illustrative sensitivity case only, not a selected price.
-6. **Measure the baseline in parallel.** The owner must read GA (`G-GO8VZB3R28`):
-   sessions/month, top landing pages and current conversion rate. The Arena session
-   cannot read GA; traffic data is essential for forecasting volume, though it does
-   not block B2B discovery.
+6. **Measure the historical baseline if the owner chooses.** The previously
+   live property was `G-GO8VZB3R28`; the new DocOga property report is empty and
+   does not establish site traffic. The owner may inspect historical production
+   traffic for sessions/month, landing pages, and conversion rate. The agent must
+   not issue another Analytics request without fresh explicit approval. Local
+   consent-first code is not deployed and the new property remains release-gated.
 
 ---
 

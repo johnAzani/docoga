@@ -80,7 +80,7 @@ is not yet complete.
 
 ## Next owner step (one screen at a time)
 
-The read-only reporting path is now proven: approved retry `38073371592` committed a live seven-day report with zero rows. The dedicated GA4 tag is not deployed on the site, so the empty result does not establish site traffic. The next optional step is for the owner to decide whether to separately approve a site-tag change and production deploy; neither is authorized now. Do not make another Analytics request without fresh approval. No secret or key is needed.
+The read-only reporting path is proven: approved retry `38073371592` committed a live seven-day report with zero rows. The dedicated GA4 tag was not deployed, so the empty result does not establish site traffic. The owner later authorized safe local code preparation; the legacy loader is removed from source and the dedicated tag is behind the closed release gate documented in `docs/ANALYTICS_SETUP.md`. Production deployment remains blocked by the Worker-secret cleanup/confirmation gate and the unresolved privacy/transfer controls. Do not make another Analytics request without fresh approval. No secret or key is needed.
 
 ## Mechanism proof — 10 October 2026, 13:33 WAT
 
