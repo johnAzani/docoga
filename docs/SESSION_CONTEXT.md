@@ -1361,3 +1361,16 @@ authenticated runReport. NO identity, IAM, API enablement, workflow, budget
 change or deployment performed. No secrets requested. Next owner step remains a
 Google Cloud console project-selector screenshot; no billing/trial yet. All work
 stays on session branch arena/47d148f1-docoga. B2B paused.
+
+**Google Cloud selector screenshot — 10 Oct 2026, 13:14 local:** owner opened
+project selector; **Recent** tab is selected, not All. Checked current project:
+`My First Project`, ID `apt-trainer-367908`. Other fully visible entries:
+`tagemeonline` (ID `tagemeonline`), `My First Project` IDs
+`feisty-delight-366811`, `inbound-rock-367406`, and `mystical-being-367405`.
+Another row is partially visible; this is NOT a complete project inventory.
+Earlier claim that the generic project name identifies the YouTube/Gemini
+project was an inference, not evidence; no project association or suitability
+has been verified. No project selected/created or settings changed in this
+step. Next single action: tap **All** in the selector, send that screen, do not
+select/create anything yet. Continue saved screenshot progress one screen at a
+time; no billing/trial/IAM action authorised by this screenshot.
