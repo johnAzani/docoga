@@ -505,8 +505,11 @@ or verified by the agent.
 > **Observed 10 Oct 2026 (owner screenshots, no edits):** production `docoga-pass`
 > lists `BREVO_API_KEY`, `FLW_SECRET_KEY`, `FLW_WEBHOOK_HASH` as encrypted Secrets;
 > variables `PAYMENT_URL`, `PROVIDER`, `SITE_URL`; KV binding `KV` → `docoga-kv`.
-> `ISSUE_SECRET`, `MAIL_FROM`, `RESEND_EMAIL_ENABLED` are not listed. Currentness
-> and live webhook-hash match remain unconfirmed. Investigate `/issue` bridge use
+> `ISSUE_SECRET`, `MAIL_FROM`, `RESEND_EMAIL_ENABLED` are not listed. The owner
+> subsequently replied **Yes** that all three encrypted Secrets are the replacement
+> credentials saved after the exposed log (owner-confirmed currentness, not
+> independently verified). LIVE webhook-hash equality remains unconfirmed.
+> Investigate `/issue` bridge use
 > before any ISSUE_SECRET remediation; do not choose a random replacement.
 > No deployment or resend authorized by this inspection.
 

@@ -594,18 +594,20 @@ an override the repository defaults to the newly verified sender; resend remains
 fail-closed without the exact true flag in repository code (not yet deployed).
 `ISSUE_SECRET` is needed for the authenticated `/issue` bridge; do not invent or
 replace it without checking whether that bridge is used and coordinating both ends.
-Next owner question: confirm whether the three encrypted Secrets are the current
-replacement credentials saved after the log exposure (yes/no/not sure, no values).
+**Owner confirmation 10 Oct 2026:** replied **Yes** that these three encrypted
+Secrets are the replacement credentials saved after the old log exposure. Record
+currentness as owner-confirmed, not independently verified. This does NOT yet
+confirm that Flutterwave's LIVE webhook hash matches the Worker's saved hash.
+No secret values requested or recorded.
 No setting edits, Deploy, payment or resend performed.
 
-**Still open before any release/resend:** production credential currentness and
-`ISSUE_SECRET`/bridge status; live Flutterwave webhook-hash match; actual runtime
+**Still open before any release/resend:** `ISSUE_SECRET`/bridge status; live Flutterwave webhook-hash match; actual runtime
 `MAIL_FROM` match (Brevo verifies the default sender, runtime override unknown);
 private checkout-vs-event recipient comparison; resend flag remains unset/false
 pending intentional release. Fix/test the Worker workflow's DEXIT propagation and
-manual dry_run behavior before any dispatch. Next owner screen: Cloudflare →
-Workers & Pages → `docoga-pass` → Settings → Variables and Secrets (names/types
-only; hide values; no edit or Deploy). No deploy, resend, payment or price/link change.
+manual dry_run behavior before any dispatch. Next owner screen: Flutterwave →
+Settings, then locate LIVE Webhooks one screen at a time; hide secret hashes/API
+keys and identifiers before any screenshot. No Save or webhook test requested. No deploy, resend, payment or price/link change.
 
 ### Session — 9 Oct 2026 (owner click-by-click guide)
 
