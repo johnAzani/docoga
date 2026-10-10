@@ -431,6 +431,11 @@ Documented in `docs/GROWTH_JOURNAL.md`. Key milestones:
 
 ## What's Been Built (Assets)
 
+### Deployment safeguards (10 Oct 2026, session branch only):
+- Marker Worker workflow: isolated manual dry-run, deploy failure propagation,
+  sanitized output/exit cleanup, no-code read-only activation probe; site exit
+  cleanup hardened too. Tested locally; not deployed.
+
 ### Social Content:
 - `social/status-oct3.jpg` — Premium editorial status post (Week One)
 - `social/reel-stakes-caution.mp4` — STAKES hook reel (14.4s, 5 scenes)
@@ -615,17 +620,44 @@ No URL edit, Save, test, version migration or event resend was requested.
 Do not reveal the hash,
 switch webhook versions, Save, send tests, or resend events.
 
-**Still open before any release/resend:** `ISSUE_SECRET`/bridge status; private
-checkout-vs-event recipient comparison; resend flag remains unset/false pending
-intentional release. No `MAIL_FROM` override is listed in the complete supplied
-runtime table, so repository code uses the verified default sender; live code has
-not been independently inspected. Fix/test the Worker workflow's DEXIT propagation
-and manual dry_run behavior before any dispatch. Next owner screen: Flutterwave
-Main menu (navigation only) → Transactions to locate the EXISTING qualifying
-purchase, then compare its checkout email privately with the OLD failed Brevo
-event's recipient. Never request/store recipients, pass codes, transaction IDs or
-success URLs; only match/differs/not compared statuses. No new payment, dashboard
-resend, webhook test or deployment. One screen at a time.
+**Recipient comparison — 10 Oct 2026 (owner screenshots, no API access):**
+The checkout/customer email on the existing successful qualifying purchase matches
+Recipient (To) on the OLD failed Brevo Oga Pass event. Record **matches** only;
+no address, message ID, payment reference, account number or pass code copied.
+The old event still shows Sent then Error; it predates sender authentication and
+is NOT a new delivery test. Do not delete it or click Brevo/Flutterwave resend.
+
+**App-side work — 10 Oct 2026, not deployed:** repaired `deploy-pass-now.yml`:
+nonzero DEXIT now exits the step; manual dry-run has its own credential-free local
+build step and skips token checks, publishing, live probes and PR comments. All
+Wrangler commands name worker/wrangler.toml explicitly; removed ambiguous-config
+probe and verbose account/token-fingerprint diagnostics. Token check now reports
+active status only. Production Wrangler output is sanitized and raw logs removed
+on exit (including sanitizer failure); same cleanup/pipefail protection added to
+the site workflow. Live probe changed from /verify to /activate WITHOUT a code:
+400/code required before KV access, no activation, issuance or mail. No changes to
+worker runtime or website code this turn; no flag enablement or production call.
+
+**Validation:** Python 57/57 (5 new execution/contract tests), Worker suite green
+(including missing ISSUE_SECRET rejection and no-code probe, plus Flutterwave
+without bridge secret), DOM 97/97, QA 0 errors/1 warning (local secret file absent).
+Executed deploy shell snippets with stubbed npx for success, failure and sanitizer
+failure; old workflows correctly fail regression checks. Real credential-free
+Wrangler 4.147.0 Worker build --dry-run passed; no publish. GitHub CI pending push.
+
+**ISSUE_SECRET finding:** only /issue (Selar/Zapier/Make or manual issuing bridge)
+requires it; Flutterwave webhook/verify/resend do not. Missing secret fails closed
+with 401 even if a caller supplies a key. Historic docs mention a manual fallback;
+current use is unknown. Next owner question: any such manual/third-party issuing
+connection still in use, or Flutterwave only? Do not invent/replace a secret. Keep
+release blocked until this dependency is explicitly scoped and owner approves.
+
+**Next:** resolve bridge use above; then seek deliberate Worker-first/site-second
+release approval and intentional resend-flag enablement. No runtime MAIL_FROM
+listed, so repository default matches authenticated sender; live code not fetched.
+Never request success URLs or identifiers; owner uses the existing saved purchase
+page only AFTER release approval. One deliberate resend, inspect NEW event and
+actual receipt. No new payment, dashboard resend or deployment authorized yet.
 
 ### Session — 9 Oct 2026 (owner click-by-click guide)
 
@@ -937,6 +969,7 @@ item 9.
 | 33 | 9 Oct 2026 | Historical research summary is in Last Session and `B2B_DISCOVERY.md` at `fca8025`; a prior reply reported this table row but it was absent at the measured remote head. Recorded here without inventing a missing commit. Competitor/vendor claims remain listed prices or hypotheses, not validated DocOga buyer willingness to pay; Business remains Custom. | `fca8025` |
 | 34 | 9 Oct 2026 | Official-source click guide with classic/new Brevo UI, private Secret inspection, live webhook confirmation, DNS-only DKIM, single preserved DMARC, sender/recipient checks, best-effort log cleanup and STOP-before-release. Corrected flattening semantics, needless Secret overwrites, unsafe ISSUE_SECRET change, green-run/dry_run deploy assumptions, and unmeasurable GA success funnel. No deploy/resend/payment/account action. | session branch |
 | 35 | 10 Oct 2026 | **Brevo domain `docoga.com.ng` authenticated + sender verified** (owner clicks, guided one record at a time): TXT `@` brevo-code + CNAME `brevo1._domainkey` + CNAME `brevo2._domainkey` (both DNS only) + TXT `_dmarc` (`p=none`, Brevo-generated rua) added to the existing Cloudflare zone; both Worker `100::` records untouched; Brevo verify returned "Your domain has been authenticated". Added sender `DocOga <noreply@docoga.com.ng>` → shows **Verified**; old Gmail sender left untouched (compliance banner expected for gmail From). **Owner also locked the working method (see "How We Work" above): screenshot → exact next taps → next screenshot, one screen at a time; future sessions must never claim they cannot read screenshots.** Remaining gates: Actions log cleanup, secrets, webhook hash, recipient comparison, resend flag, workflow-defect fixes; no deploy/resend/payment. | session branch |
+| 36 | 10 Oct 2026 | Recipient match observed across owner screenshots (no private data copied); production Secrets and LIVE webhook URL/hash owner-confirmed; log cleanup option unavailable. Repaired Worker deploy exit/dry-run safety, stripped unsafe diagnostics, changed live probe to no-code activation, hardened raw-log cleanup for both marker workflows. Python 57/57, Worker/DOM green, local Worker dry-run passed. ISSUE_SECRET only gates the separate manual/third-party bridge; owner use still to confirm. No release, resend, payment or flag enablement. | session branch |
 | 20 | 8 Oct 2026 | **Rule Zero enforced on the build: the verified law is now wired into the pages.** `tools/state_law_data.py` (6 jurisdictions, 20 open questions) drives `tools/gen_state_pages.py`. Three live factual errors fixed: (1) the hard-coded notice table printed "Half-yearly — 3 months" on all 48 pages when that is Lagos s.13(1)(d) and essentially nowhere else — the FCT Act, Cross River s.15 and Kwara s.17 have no half-yearly tier; (2) the four Edo pages said "Magistrates' Courts in Edo State" and "recovery-of-premises legislation" when s.4 of the Edict establishes **Rent Tribunals** and s.41(2) repealed the Recovery of Premises Law for residential accommodation; (3) every page now carries a Sources-and-confidence box with its tier and a "What we could not confirm" list. Rivers added at tier B on the strength of Cap. 109 s.7 (quit notice must expire on the **eve of the anniversary**, the opposite of Lagos s.13(4)) and Landlord & Tenant Law Cap. 75 s.75(1) (rent payable **in arrears**) | PR #11 |
 | 19 | 8 Oct 2026 | **Research before building: measured the state pages and found they fail Google's doorway-page test — median 94.2% similarity between same-tool state pages, median 3 unique words each (worst pairs 99.6%).** So "expand 12 states to 37" was the wrong next move. Wrote `docs/STATE_TENANCY_RESEARCH.md`: verified statute names, sections and sources for 17 of 37 jurisdictions, tiered A-E, with everything unverified listed and three pending bills flagged as NOT law. Added `tools/audit_state_pages.py` to measure and later enforce (80% / 250 unique words / 500 body words) | PR #12 |
 | 18 | 8 Oct 2026 | **Gave the armed Shorts pipeline a memory and an alarm:** publish ledger (`tools/youtube_ledger.py`) + duplicate guard, a secrets preflight that names what is missing, a `YT_PRIVACY` repo-variable switch, a run summary, and a labelled issue opened on any failed run. Verified by simulating all nine scenarios locally (the token cannot dispatch), which caught a real bug: `force=true` exited 3 and failed the run instead of publishing. 48 tests green | PR #11 |
@@ -946,30 +979,22 @@ item 9.
 
 ## What's Next (Pending)
 
-### Current revenue priority — 9 Oct 2026
+### Current revenue priority — 10 Oct 2026
 
-1. **Authenticate the sender in Brevo; no second purchase.** Brevo's detailed log
-   shows 0% delivered and an `Error` rejecting `noreply@docoga.com.ng` as an invalid
-   sender. Authenticate `docoga.com.ng` in Brevo, or select a sender Brevo already
-   verifies. In Brevo, copy the exact DNS records it supplies into Cloudflare DNS;
-   do not guess record names/values. Wait for Brevo to mark the domain/sender
-   authenticated. The event recipient has not been compared with checkout; do not
-   share either address or any key. Brevo/Cloudflare access is unavailable to this
-   session, so the owner must perform this account-side step.
-2. **Enable and deliberately resend the existing pass only after authentication.**
-   Local code adds `POST /resend-email` and a button on the success page. It targets
-   only the email stored with the active purchased pass, does not issue a code or
-   return one in the HTTP response, and throttles per pass (60 seconds, three per
-   UTC day). It fails closed until the Cloudflare Worker runtime variable
-   `RESEND_EMAIL_ENABLED` is exactly `true`. If choosing a different verified
-   sender, configure `MAIL_FROM` to that exact identity. Do not use the button until
-   sender authentication is complete.
-3. **Honor deployment security gates.** Before any deploy, the owner must attempt
-   the best-effort deletion of run `37890401771` and confirm the production Worker
-   secrets are in place; the agent cannot independently verify either. Then use
-   only the hardened, marker-gated workflow. Do not deploy this branch before both
-   conditions are met. No additional payment is required or permitted for this
-   email investigation.
+1. **Owner checks completed, without another purchase:** Brevo domain Authenticated
+   and default sender Verified; log cleanup attempted (delete option unavailable,
+   not confirmed deleted); production three Secrets encrypted/current by owner
+   confirmation; LIVE webhook URL/hash matched by owner; checkout/old-event
+   recipient matched from screenshots. No values/recipients copied into docs.
+2. **Resolve manual bridge and get release approval.** ISSUE_SECRET absent, /issue
+   safely disabled; Flutterwave works without it. Ask if a manual/Selar/Make/Zapier
+   issuing connection is used before choosing to leave it disabled. Workflow bugs
+   repaired/tested locally (details above), not dispatched. No release markers
+   until scoped gates and explicit owner approval; no payment needed.
+3. **Later gated release and ONE existing-pass resend.** Worker first, site second,
+   enable RESEND_EMAIL_ENABLED intentionally, owner uses saved purchase page once.
+   No log/dashboard resend or reopening a success URL for pre-gate inspection.
+   Acceptance is not inbox proof: inspect NEW Brevo event and actual receipt.
 4. **Investigate the 11-day rollover without charging again.** Same browser is
    confirmed. The Worker carries remaining time only if the old code exists and is
    valid in KV; the old local chip could have been stale. The client now clears

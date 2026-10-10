@@ -280,9 +280,10 @@ these gates are explicitly confirmed. Account/DNS status remains owner-reported.
 The agent owns app-side code/test/release work:
 1. Use the hardened marker-gated Worker workflow with `[deploy-pass]`.
 2. Verify its actual deploy exit/result, not merely a green run summary. The
-   current Worker workflow logs `deploy_exit` but does not propagate a nonzero
-   deploy exit as a failed step; the manual `dry_run` input also does not prevent
-   its deployment step. Those contracts need repair/test before release.
+   old Worker workflow hid nonzero deploy exits and deployed even with manual
+   `dry_run`. Both repaired/tested on the session branch 10 Oct 2026; use the
+   repaired commit, never rerun the old workflow. Dry-run skips production checks,
+   publishing, live probes and comments; the live probe no longer calls /verify.
 3. Only after Worker success, use `[deploy-site]` for the site and verify it.
 4. Enable the flag only as part of that intentional release. Dashboard path if
    agreed: **Workers & Pages → docoga-pass → Settings → Variables and Secrets →

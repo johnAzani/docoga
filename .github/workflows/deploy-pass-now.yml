@@ -37,7 +37,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # No credentials, Cloudflare API calls, live probes, or publish in dry-run.
+      - name: Validate worker only (manual dry-run)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          cd worker
+          npx --yes wrangler@latest deploy --config wrangler.toml --keep-vars --dry-run --outdir "$RUNNER_TEMP/pass-dry-run"
+
       - name: Confirm the secrets are reachable
+        if: ${{ github.event_name != 'workflow_dispatch' || !inputs.dry_run }}
         env:
           HAS_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           HAS_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -53,141 +66,61 @@ jobs:
           echo "Both secrets are present."
 
       - name: Verify the token against Cloudflare
-        if: ${{ env.RESULT != 'MISSING_SECRETS' }}
+        if: ${{ (github.event_name != 'workflow_dispatch' || !inputs.dry_run) && env.RESULT == 'SECRETS_PRESENT' }}
         env:
           CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           DEPLOY_LOG: ${{ runner.temp }}/deploy.log
         run: |
-          set -u
+          set -euo pipefail
           : > "$DEPLOY_LOG"
           echo "DEPLOY_LOG=$DEPLOY_LOG" >> "$GITHUB_ENV"
-          echo "########## token/verify ##########" | tee -a "$DEPLOY_LOG"
-          curl -sS --max-time 25 \
+          # Report status only, not token fingerprints, account IDs or API bodies.
+          RESPONSE="$RUNNER_TEMP/token-verify.json"
+          trap 'rm -f "$RESPONSE"' EXIT
+          curl --fail --silent --show-error --max-time 25 \
             -H "Authorization: Bearer $CF_TOKEN" \
-            -H "Content-Type: application/json" \
-            https://api.cloudflare.com/client/v4/user/tokens/verify \
-            | head -c 2000 | tee -a "$DEPLOY_LOG"
-          echo | tee -a "$DEPLOY_LOG"
-          echo "########## token fingerprint (sha256, first 16) ##########" | tee -a "$DEPLOY_LOG"
-          # A hash reveals nothing about the token but tells us WHICH token is
-          # in the secret — so we can tell whether the secret was replaced.
-          printf '%s' "$CF_TOKEN" | sha256sum | cut -c1-16 | tee -a "$DEPLOY_LOG"
-          echo | tee -a "$DEPLOY_LOG"
-          echo "########## accounts this token can see ##########" | tee -a "$DEPLOY_LOG"
-          curl -sS --max-time 25 \
-            -H "Authorization: Bearer $CF_TOKEN" \
-            -H "Content-Type: application/json" \
-            "https://api.cloudflare.com/client/v4/accounts?per_page=50" \
-            | head -c 2500 | tee -a "$DEPLOY_LOG"
-          echo | tee -a "$DEPLOY_LOG"
-          echo "########## workers in account $CF_ACCOUNT ##########" | tee -a "$DEPLOY_LOG"
-          curl -sS --max-time 25 \
-            -H "Authorization: Bearer $CF_TOKEN" \
-            -H "Content-Type: application/json" \
-            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/workers/scripts" \
-            | head -c 2000 | tee -a "$DEPLOY_LOG"
-          echo | tee -a "$DEPLOY_LOG"
-          echo "########## KV namespaces in account $CF_ACCOUNT ##########" | tee -a "$DEPLOY_LOG"
-          curl -sS --max-time 25 \
-            -H "Authorization: Bearer $CF_TOKEN" \
-            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/storage/kv/namespaces" \
-            | head -c 2000 | tee -a "$DEPLOY_LOG"
-          echo | tee -a "$DEPLOY_LOG"
-          echo "########## workers.dev subdomain for this account ##########" | tee -a "$DEPLOY_LOG"
-          curl -sS --max-time 25 \
-            -H "Authorization: Bearer $CF_TOKEN" \
-            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/workers/subdomain" \
-            | head -c 800 | tee -a "$DEPLOY_LOG"
-          echo | tee -a "$DEPLOY_LOG"
-          echo "########## PAGES projects (is docoga-git here?) ##########" | tee -a "$DEPLOY_LOG"
-          curl -sS --max-time 25 \
-            -H "Authorization: Bearer $CF_TOKEN" \
-            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/pages/projects?per_page=50" \
-            | head -c 2500 | tee -a "$DEPLOY_LOG"
-          echo | tee -a "$DEPLOY_LOG"
-          echo "########## zones ##########" | tee -a "$DEPLOY_LOG"
-          curl -sS --max-time 25 \
-            -H "Authorization: Bearer $CF_TOKEN" \
-            "https://api.cloudflare.com/client/v4/zones?per_page=50" \
-            | head -c 1500 | tee -a "$DEPLOY_LOG"
+            https://api.cloudflare.com/client/v4/user/tokens/verify > "$RESPONSE"
+          python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); assert d.get("success") is True and d.get("result",{}).get("status") == "active", "Cloudflare token is not active"' "$RESPONSE"
+          echo "Cloudflare token active." | tee -a "$DEPLOY_LOG"
 
       - name: Deploy worker/ as docoga-pass
-        if: ${{ env.RESULT != 'MISSING_SECRETS' }}
+        if: ${{ (github.event_name != 'workflow_dispatch' || !inputs.dry_run) && env.RESULT == 'SECRETS_PRESENT' }}
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           DEPLOY_LOG: ${{ runner.temp }}/deploy.log
         run: |
-          set -u
-          # Do NOT truncate: the verify step already wrote the token's
-          # permission list here, and that is the whole point of capturing it.
+          set -euo pipefail
           touch "$DEPLOY_LOG"
-          echo "########## versions ##########" | tee -a "$DEPLOY_LOG"
-          node --version 2>&1 | tee -a "$DEPLOY_LOG"
-          npx --yes wrangler@latest --version 2>&1 | tee -a "$DEPLOY_LOG"
-          echo
-          echo "########## KV namespace reachable? ##########" | tee -a "$DEPLOY_LOG"
-          curl -sS --max-time 25 \
-            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/storage/kv/namespaces" \
-            2>&1 | head -c 1500 | tee -a "$DEPLOY_LOG"
-          echo
-          echo "########## which config does wrangler pick up? ##########" | tee -a "$DEPLOY_LOG"
-          ( cd worker && npx --yes wrangler@latest deploy --dry-run --outdir /tmp/probe 2>&1 | grep -iE "config|Reading|services/|name" | head -10 ) | tee -a "$DEPLOY_LOG"
-          echo
-          echo "########## what IS docoga-git — Worker or Pages? ##########" | tee -a "$DEPLOY_LOG"
-          echo "-- all workers --" | tee -a "$DEPLOY_LOG"
-          curl -sS --max-time 25 \
-            -H "Authorization: Bearer $CF_TOKEN" \
-            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/workers/scripts" \
-            | head -c 1500 | tee -a "$DEPLOY_LOG"
-          echo | tee -a "$DEPLOY_LOG"
-          echo "-- all pages projects --" | tee -a "$DEPLOY_LOG"
-          curl -sS --max-time 25 \
-            -H "Authorization: Bearer $CF_TOKEN" \
-            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/pages/projects?per_page=50" \
-            | head -c 2000 | tee -a "$DEPLOY_LOG"
-          echo | tee -a "$DEPLOY_LOG"
-          echo "########## secret NAMES present on docoga-pass ##########" | tee -a "$DEPLOY_LOG"
-          # Lists names only; Cloudflare never returns secret values.
-          curl -sS --max-time 25 \
-            -H "Authorization: Bearer $CF_TOKEN" \
-            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/workers/scripts/docoga-pass/secrets" \
-            | head -c 1200 | tee -a "$DEPLOY_LOG"
-          echo | tee -a "$DEPLOY_LOG"
           echo "########## wrangler deploy (explicit config; preserve dashboard vars) ##########" | tee -a "$DEPLOY_LOG"
-          # Wrangler's default deploy removes dashboard-set vars that are absent
-          # from wrangler.toml. Keep them, and never stream raw Wrangler output:
-          # its remote/local config diff can print values for dashboard vars.
+          # Remote/local config diffs may contain dashboard values. Capture raw
+          # output privately, sanitize it before publishing, and delete on exit.
           RAW_WRANGLER_LOG="${RUNNER_TEMP}/wrangler-deploy.raw.log"
+          trap 'rm -f "$RAW_WRANGLER_LOG"' EXIT
           set +e
           ( cd worker && npx --yes wrangler@latest deploy --config wrangler.toml --keep-vars ) >"$RAW_WRANGLER_LOG" 2>&1
           DEXIT=$?
           set -e
           python3 tools/redact_deploy_log.py "$RAW_WRANGLER_LOG" | tee -a "$DEPLOY_LOG"
-          rm -f "$RAW_WRANGLER_LOG"
           echo "deploy_exit=$DEXIT" | tee -a "$DEPLOY_LOG"
           echo "DEPLOY_LOG=$DEPLOY_LOG" >> "$GITHUB_ENV"
+          exit "$DEXIT"
 
       - name: Probe the live worker
-        if: ${{ env.RESULT != 'MISSING_SECRETS' && github.event.inputs.dry_run != 'true' }}
+        if: ${{ (github.event_name != 'workflow_dispatch' || !inputs.dry_run) && env.RESULT == 'SECRETS_PRESENT' }}
         env:
           WORKER: https://docoga-pass.johnazani.workers.dev
         run: |
-          set -u
-          echo "########## /activate (bogus code) ##########"
-          curl -sS -i --max-time 25 "$WORKER/activate?code=BOGUSTEST123" \
-            -w '\nhttp_code=%{http_code}\n' | head -25
-          echo
-          echo "########## /verify (bogus ref) ##########"
-          curl -sS -i --max-time 25 "$WORKER/verify?ref=TESTREF123" \
-            -w '\nhttp_code=%{http_code}\n' | head -25
+          set -euo pipefail
+          # /verify can issue/email a paid purchase; never use it as a probe.
+          # Missing code is rejected before any KV access, activation or email.
+          STATUS=$(curl -sS --max-time 25 -o "$RUNNER_TEMP/activate-probe.json" -w '%{http_code}' "$WORKER/activate")
+          test "$STATUS" = 400
+          python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); assert d.get("ok") is False and d.get("error") == "code required"' "$RUNNER_TEMP/activate-probe.json"
+          echo "Live activation rejection probe passed (no issuance or email)."
 
       - name: Post result where the agent can read it
-        if: always()
+        if: ${{ always() && (github.event_name != 'workflow_dispatch' || !inputs.dry_run) }}
         uses: actions/github-script@v7
         env:
           DEPLOY_LOG: ${{ env.DEPLOY_LOG }}

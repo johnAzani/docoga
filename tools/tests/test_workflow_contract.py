@@ -17,6 +17,7 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -137,6 +138,105 @@ class CloudflareDeploySafetyTests(unittest.TestCase):
         self.assertIn('>"$RAW_WRANGLER_LOG" 2>&1', deploy["run"])
         self.assertIn("tools/redact_deploy_log.py", deploy["run"])
         self.assertEqual(job["permissions"].get("pull-requests"), "write")
+
+
+@unittest.skipIf(yaml is None, "PyYAML is required for the workflow contract tests")
+class DeployExecutionSafetyTests(unittest.TestCase):
+    """Execute actual workflow shell scripts with stubs: never contact providers."""
+
+    def steps(self, workflow, job):
+        doc = yaml.safe_load((WORKFLOWS / workflow).read_text(encoding="utf-8"))
+        return {s.get("name"): s for s in doc["jobs"][job]["steps"]}
+
+    def run_shell(self, step, exit_code=0, fail_redactor=False):
+        with tempfile.TemporaryDirectory() as td:
+            temp = Path(td)
+            (temp / "worker").mkdir()
+            (temp / "tools").mkdir()
+            (temp / "tools" / "redact_deploy_log.py").write_text(
+                (ROOT / "tools" / "redact_deploy_log.py").read_text())
+            stub = temp / "npx"
+            stub.write_text(
+                '#!/bin/bash\n'
+                'printf "%s\\n" "$*" >> "$CALLS"\n'
+                "echo 'FLW_SECRET_KEY: \"fake-private-value\"'\n"
+                'echo "fake wrangler status"\n'
+                f'exit {exit_code}\n'
+            )
+            stub.chmod(0o755)
+            # A redaction failure must not be hidden by tee's successful exit.
+            if fail_redactor:
+                py = temp / "python3"
+                py.write_text('#!/bin/bash\nexit 23\n')
+                py.chmod(0o755)
+            env = dict(os.environ, PATH=f"{temp}:{os.environ['PATH']}",
+                       RUNNER_TEMP=td, DEPLOY_LOG=str(temp / "deploy.log"),
+                       GITHUB_ENV=str(temp / "github-env"), CALLS=str(temp / "calls"))
+            result = subprocess.run(["bash", "-e", "-o", "pipefail", "-c", step["run"]],
+                                    cwd=temp, env=env, capture_output=True, text=True)
+            calls = (temp / "calls").read_text() if (temp / "calls").exists() else ""
+            raw_logs = list(temp.glob("*.raw.log"))
+            return result, calls, raw_logs
+
+    def test_worker_dry_run_is_isolated_from_all_production_steps(self):
+        steps = self.steps("deploy-pass-now.yml", "deploy")
+        dry = steps["Validate worker only (manual dry-run)"]
+        self.assertEqual(dry["if"], "${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}")
+        self.assertNotIn("env", dry)  # no provider credentials
+        for name, step in steps.items():
+            if name in (None, "Validate worker only (manual dry-run)"):
+                continue  # checkout and setup-node have no network side effects at providers
+            with self.subTest(step=name):
+                self.assertIn("github.event_name != 'workflow_dispatch' || !inputs.dry_run", step["if"])
+        result, calls, _ = self.run_shell(dry)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(len(calls.splitlines()), 1)
+        self.assertIn("--dry-run", calls)
+        self.assertIn("--config wrangler.toml", calls)
+        self.assertNotIn("curl", dry["run"])
+
+    def test_worker_dry_run_build_failure_is_not_hidden(self):
+        dry = self.steps("deploy-pass-now.yml", "deploy")["Validate worker only (manual dry-run)"]
+        result, _, _ = self.run_shell(dry, exit_code=42)
+        self.assertEqual(result.returncode, 42)
+
+    def test_both_deploys_propagate_failure_and_delete_private_logs(self):
+        for workflow, job, name, config in (
+            ("deploy-pass-now.yml", "deploy", "Deploy worker/ as docoga-pass", "wrangler.toml"),
+            ("deploy-site-now.yml", "deploy-site", "Deploy docoga-git from ./site", "wrangler.jsonc"),
+        ):
+            step = self.steps(workflow, job)[name]
+            for exit_code in (0, 42):
+                with self.subTest(workflow=workflow, exit_code=exit_code):
+                    result, calls, raw_logs = self.run_shell(step, exit_code)
+                    self.assertEqual(result.returncode, exit_code, result.stderr)
+                    self.assertEqual(raw_logs, [])
+                    self.assertNotIn("fake-private-value", result.stdout + result.stderr)
+                    self.assertIn("[REDACTED]", result.stdout)
+                    self.assertIn(f"deploy_exit={exit_code}", result.stdout)
+                    self.assertEqual(len(calls.splitlines()), 1)
+                    self.assertIn(f"--config {config} --keep-vars", calls)
+            with self.subTest(workflow=workflow, sanitizer_failure=True):
+                result, _, raw_logs = self.run_shell(step, fail_redactor=True)
+                self.assertEqual(result.returncode, 23)
+                self.assertEqual(raw_logs, [])
+                self.assertNotIn("fake-private-value", result.stdout + result.stderr)
+
+    def test_live_probe_cannot_verify_or_issue_a_payment(self):
+        steps = self.steps("deploy-pass-now.yml", "deploy")
+        probe = steps["Probe the live worker"]["run"]
+        self.assertIn('$WORKER/activate"', probe)
+        self.assertNotIn("?code=", probe)
+        self.assertNotRegex(probe, r"\$WORKER/(verify|issue|flw-webhook|resend-email)")
+        self.assertIn('test "$STATUS" = 400', probe)
+        self.assertIn('d.get("error") == "code required"', probe)
+
+    def test_reporting_after_failure_does_not_publish_dry_run_results(self):
+        steps = self.steps("deploy-pass-now.yml", "deploy")
+        self.assertEqual(steps["Post result where the agent can read it"]["if"],
+                         "${{ always() && (github.event_name != 'workflow_dispatch' || !inputs.dry_run) }}")
+        for name in ("Verify the token against Cloudflare", "Deploy worker/ as docoga-pass", "Probe the live worker"):
+            self.assertIn("env.RESULT == 'SECRETS_PRESENT'", steps[name]["if"])
 
 
 @unittest.skipIf(yaml is None, "PyYAML is required for the workflow contract tests")

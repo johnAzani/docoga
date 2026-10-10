@@ -564,8 +564,30 @@ private recipient comparison, and STOP-before-release checkpoints. Cloudflare
 flattening returns IP addresses instead of the CNAME; it does NOT convert to TXT.
 Do not use a generic DMARC reporting value in place of account instructions.
 
-Code inspection found that deploy-pass-now.yml records but does not propagate a
-nonzero DEXIT, and its manual dry_run input does not prevent deployment. A green
-historical workflow result is not sufficient deploy proof. Repair/test these
-contracts locally before any marker-gated release. Do not dispatch/re-run workflows
-or use dashboard Deploy as a read-only inspection. Owner gates still apply.
+**Updated 10 Oct 2026 — repaired on session branch, not released:** Worker deploy
+now propagates DEXIT; manual dry-run runs an isolated no-credential build and skips
+all production/API/probe/report steps. Explicit worker config throughout, no
+ambiguous dry-run config probe; verbose token fingerprints/account dumps removed.
+Both marker deploy scripts sanitize captured raw output, fail on sanitizer errors,
+and remove raw files using EXIT traps. Worker live probe is now /activate without
+a code (400/code required before KV access), NOT /verify. Python 57/57 including
+stub-executed exit/cleanup/dry-run regressions; Worker/DOM green; real local Worker
+build --dry-run passed. Historical green runs remain insufficient deployment proof.
+Legacy deploy-pass.yml/build-check.yml are NOT the release route and have not been
+hardened by these fixes; do not dispatch them or rerun old commits.
+
+### 12.6 Latest gate state — 10 Oct 2026
+
+- Brevo domain Authenticated and default sender Verified (owner screenshots).
+- Old Actions logs: deletion attempted, option unavailable; NOT confirmed deleted.
+- Three production Secrets: encrypted per screenshots, replacements current per
+  owner confirmation. LIVE webhook URL and hash equality owner-confirmed.
+- Recipient: **matches** between existing qualifying purchase customer/checkout and
+  OLD Brevo failed event, from owner screenshots; no private values recorded.
+  Old Error is historical, not a new failure after authentication.
+- ISSUE_SECRET absent: code/tests show only /issue uses it and fails closed without
+  it; Flutterwave does not require it. Historic manual/Selar bridge usage needs
+  owner clarification before closing this dependency; never randomly replace it.
+- Resend flag absent from supplied table; no enablement. No deployment authorization.
+  After bridge scope and approval: marker Worker then site, intentional enablement,
+  ONE existing-pass resend, NEW event plus actual receipt. No payment or blind retry.

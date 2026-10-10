@@ -19,6 +19,24 @@ async function hit(env, path, init = {}) {
 }
 const rec = (code, over = {}) => JSON.stringify(Object.assign({ code, email: '', ref: 'x', issuedAt: NOW, used: true, source: 'online', exp: NOW + 30 * 864e5 }, over));
 
+console.log('— disabled manual bridge and side-effect-free deployment probe —');
+const bridgeDisabledEnv = makeEnv({});
+let unexpectedCalls = 0;
+const beforeBridgeFetch = globalThis.fetch;
+globalThis.fetch = async () => { unexpectedCalls++; throw new Error('unexpected provider request'); };
+for (const headers of [{}, { 'x-docoga-key': 'fake-bridge-key' }]) {
+  const blocked = await hit(bridgeDisabledEnv, '/issue', {
+    method: 'POST', headers: { 'content-type': 'application/json', ...headers },
+    body: JSON.stringify({ email: 'bridge-buyer@example.com', ref: 'TEST-BRIDGE-REF' }),
+  });
+  ok('missing ISSUE_SECRET keeps /issue closed even with a supplied key', blocked.status === 401 && blocked.j.error === 'unauthorized');
+}
+const missingCodeProbe = await hit(bridgeDisabledEnv, '/activate');
+ok('deployment probe without code returns 400 and cannot issue or email',
+   missingCodeProbe.status === 400 && missingCodeProbe.j.error === 'code required' &&
+   (await bridgeDisabledEnv.KV.list({ prefix: 'code:' })).keys.length === 0 && unexpectedCalls === 0);
+globalThis.fetch = beforeBridgeFetch;
+
 console.log('— expired code —');
 let r = await hit(makeEnv({ 'code:OGA-DEAD-PLAN-CCCC': rec('OGA-DEAD-PLAN-CCCC', { exp: NOW - 864e5 }) }), '/activate?code=OGA-DEAD-PLAN-CCCC&did=d1');
 ok('expired → 403 + expired error', r.status === 403 && /expired/i.test(r.j.error || ''), r.status + ' ' + JSON.stringify(r.j).slice(0, 90));
@@ -163,6 +181,7 @@ const webhookCode = await webhookEnv.KV.get('ref:DOCOGA-REF-2000');
 const webhookRecord = JSON.parse(await webhookEnv.KV.get('code:' + webhookCode) || '{}');
 ok('valid signed ₦2,000 NGN charge.completed webhook issues a code', r.status === 200 && r.text === 'ok' && /^OGA-/.test(webhookCode || ''), r.status + ' ' + r.text);
 ok('webhook aliases reference, tx_ref and charge id to the same code', webhookCode && (await webhookEnv.KV.get('ref:DOCOGA-TX-2000')) === webhookCode && (await webhookEnv.KV.get('ref:flw-charge-2000')) === webhookCode);
+ok('Flutterwave works without ISSUE_SECRET', !webhookEnv.ISSUE_SECRET && r.status === 200 && !!webhookCode);
 ok('webhook stores buyer email and asks Brevo to deliver the pass', webhookRecord.email === 'webhook-buyer@example.com' && webhookMailRequests.length === 1 && webhookMailRequests[0].url.includes('api.brevo.com') && webhookMailRequests[0].body.to?.[0]?.email === 'webhook-buyer@example.com' && webhookMailRequests[0].body.textContent.includes('all 10 tools') && webhookMailRequests[0].body.htmlContent.includes('Power of Attorney'));
 r = await hit(webhookEnv, '/flw-webhook', {
   method: 'POST', headers: { 'content-type': 'application/json', 'verif-hash': webhookHash }, body: webhookRaw,
