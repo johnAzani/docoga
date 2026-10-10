@@ -508,7 +508,9 @@ or verified by the agent.
 > `ISSUE_SECRET`, `MAIL_FROM`, `RESEND_EMAIL_ENABLED` are not listed. The owner
 > subsequently replied **Yes** that all three encrypted Secrets are the replacement
 > credentials saved after the exposed log (owner-confirmed currentness, not
-> independently verified). LIVE webhook-hash equality remains unconfirmed.
+> independently verified). In a separate subsequent reply the owner confirmed
+> the LIVE webhook hash is the same one saved as `FLW_WEBHOOK_HASH` (not
+> independently verified; no value recorded).
 > Investigate `/issue` bridge use
 > before any ISSUE_SECRET remediation; do not choose a random replacement.
 > No deployment or resend authorized by this inspection.
@@ -520,7 +522,8 @@ or verified by the agent.
 > **Latest LIVE webhook screenshot, 10 Oct 2026:** V3 Live webhooks with masked
 > hash and Enable v3 webhooks checked. Earlier cropped screen said V4; no version
 > switch/save is confirmed. URL points to the payment Worker but path is clipped;
-> full `/flw-webhook` suffix and hash equality remain unconfirmed. Do not use
+> full `/flw-webhook` suffix remains unconfirmed. Hash equality is now
+> owner-confirmed by the subsequent Yes reply, not by the masked screenshot. Do not use
 > Save, Switch to V4 webhook, or dashboard resend/test to inspect configuration.
 
 - Flutterwave dashboard → **Settings → Webhooks** → the **secret hash** field is

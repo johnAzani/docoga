@@ -596,8 +596,8 @@ fail-closed without the exact true flag in repository code (not yet deployed).
 replace it without checking whether that bridge is used and coordinating both ends.
 **Owner confirmation 10 Oct 2026:** replied **Yes** that these three encrypted
 Secrets are the replacement credentials saved after the old log exposure. Record
-currentness as owner-confirmed, not independently verified. This does NOT yet
-confirm that Flutterwave's LIVE webhook hash matches the Worker's saved hash.
+currentness as owner-confirmed, not independently verified. LIVE webhook-hash
+equality was confirmed separately in the subsequent owner reply below.
 No secret values requested or recorded.
 No setting edits, Deploy, payment or resend performed.
 
@@ -606,18 +606,22 @@ Live webhooks and shows **V3 Live webhooks**, a masked Secret hash, and Enable v
 webhooks checked. An earlier cropped image showed V4 Live webhooks; do not infer
 that any migration or save occurred. The visible URL targets the payment Worker,
 but the field clips the path at `/flw-webh`; full `/flw-webhook` suffix is NOT yet
-confirmed. Masking does not establish equality with `FLW_WEBHOOK_HASH`. Next ask
-whether this LIVE hash is the same value the owner saved as the Cloudflare Secret
-during replacement setup (yes/no/not sure, no value). Do not reveal the hash,
+confirmed. Masking itself does not establish equality with `FLW_WEBHOOK_HASH`.
+**Owner subsequently replied Yes** that this LIVE hash is the same one saved as
+Cloudflare `FLW_WEBHOOK_HASH` during replacement setup. Hash-match gate is now
+owner-confirmed, not independently verified; no secret value was requested or
+recorded. Next: owner privately check the FULL URL equals the public endpoint
+`https://docoga-pass.johnazani.workers.dev/flw-webhook` without editing/saving.
+Do not reveal the hash,
 switch webhook versions, Save, send tests, or resend events.
 
-**Still open before any release/resend:** `ISSUE_SECRET`/bridge status; live Flutterwave webhook-hash match; actual runtime
+**Still open before any release/resend:** full LIVE webhook URL; `ISSUE_SECRET`/bridge status; actual runtime
 `MAIL_FROM` match (Brevo verifies the default sender, runtime override unknown);
 private checkout-vs-event recipient comparison; resend flag remains unset/false
 pending intentional release. Fix/test the Worker workflow's DEXIT propagation and
-manual dry_run behavior before any dispatch. Next owner screen: Flutterwave →
-Settings, then locate LIVE Webhooks one screen at a time; hide secret hashes/API
-keys and identifiers before any screenshot. No Save or webhook test requested. No deploy, resend, payment or price/link change.
+manual dry_run behavior before any dispatch. Next owner check: on the current
+Flutterwave LIVE Webhooks screen, confirm the full URL privately (match/differs/
+not sure), without changing it. Hide hashes/API keys and identifiers in screenshots. No Save or webhook test requested. No deploy, resend, payment or price/link change.
 
 ### Session — 9 Oct 2026 (owner click-by-click guide)
 
