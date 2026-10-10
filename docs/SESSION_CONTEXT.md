@@ -1465,3 +1465,10 @@ account/switcher, redact full personal emails in screenshot but retain account
 labels/initials. Need locate Google login used to set up DocOga Analytics. Do
 not create a new property or change existing tracking. Cloud service-account
 project need not use same Google login as Analytics property administration.
+
+**Owner account decision — 10 Oct 2026:** owner says "The current account is
+what I want". Keep current Google Analytics login; do not continue requesting
+account switch. Property names alone do not establish which web stream matches
+DocOga. Next inspect Admin on current property (dismiss selector, bottom-left
+gear) then Data streams, comparing website URL and measurement ID to repository
+tracking ID before any Viewer grant. No new property/retagging authorised.
