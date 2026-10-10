@@ -517,6 +517,12 @@ or verified by the agent.
   `FLW_SECRET_KEY` (or `FLW_CLIENT_ID`/`FLW_CLIENT_SECRET`), `ISSUE_SECRET`,
   `BREVO_API_KEY`, and `FLW_WEBHOOK_HASH` are present. Names only — never values in
   chat, git, or logs.
+> **Latest LIVE webhook screenshot, 10 Oct 2026:** V3 Live webhooks with masked
+> hash and Enable v3 webhooks checked. Earlier cropped screen said V4; no version
+> switch/save is confirmed. URL points to the payment Worker but path is clipped;
+> full `/flw-webhook` suffix and hash equality remain unconfirmed. Do not use
+> Save, Switch to V4 webhook, or dashboard resend/test to inspect configuration.
+
 - Flutterwave dashboard → **Settings → Webhooks** → the **secret hash** field is
   what the Worker's `FLW_WEBHOOK_HASH` must equal. **Live and test environments
   have separate hashes** — the Worker needs the **live** one. [Flutterwave support,

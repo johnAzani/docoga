@@ -601,6 +601,16 @@ confirm that Flutterwave's LIVE webhook hash matches the Worker's saved hash.
 No secret values requested or recorded.
 No setting edits, Deploy, payment or resend performed.
 
+**Flutterwave LIVE screenshot — 10 Oct 2026:** latest owner screenshot selects
+Live webhooks and shows **V3 Live webhooks**, a masked Secret hash, and Enable v3
+webhooks checked. An earlier cropped image showed V4 Live webhooks; do not infer
+that any migration or save occurred. The visible URL targets the payment Worker,
+but the field clips the path at `/flw-webh`; full `/flw-webhook` suffix is NOT yet
+confirmed. Masking does not establish equality with `FLW_WEBHOOK_HASH`. Next ask
+whether this LIVE hash is the same value the owner saved as the Cloudflare Secret
+during replacement setup (yes/no/not sure, no value). Do not reveal the hash,
+switch webhook versions, Save, send tests, or resend events.
+
 **Still open before any release/resend:** `ISSUE_SECRET`/bridge status; live Flutterwave webhook-hash match; actual runtime
 `MAIL_FROM` match (Brevo verifies the default sender, runtime override unknown);
 private checkout-vs-event recipient comparison; resend flag remains unset/false
