@@ -1599,3 +1599,16 @@ screenshot 2-row access list. Owner personal email visible in background but
 deliberately NOT stored. No Editor/Administrator. Remaining: numeric property
 ID, Analytics Data API enablement, WIF, repo variables, live fetch, site tag
 change and deploy, real authenticated report.
+
+**GA Viewer grant CONFIRMED — 10 Oct 2026, 14:56 local:** DocOga property access
+list now 2 rows; docoga-analytics-reader@apt-trainer-367908.iam.gserviceaccount.com
+has role Viewer; owner remains Administrator. Read-only Analytics access for the
+reporting identity now granted (screenshot-confirmed). Next single action: Admin
+-> Property -> Property details, screenshot to capture numeric PROPERTY ID.
+Remaining after that: enable Analytics Data API in apt-trainer-367908; create WIF
+pool/provider and bind service account (roles/iam.workloadIdentityUser to
+principalSet for repository_id 1376068242 restricted to the analytics workflow);
+set repo variables GA_PROPERTY_ID / GCP_WORKLOAD_IDENTITY_PROVIDER /
+GCP_SERVICE_ACCOUNT; add SHA-pinned google-github-actions/auth + live fetch to
+analytics-snapshot.yml; separately update site ANALYTICS_ID to G-BQ1YTR0ZZJ and
+deploy; then verify a real authenticated report. No site change/deploy yet.
