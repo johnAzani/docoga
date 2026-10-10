@@ -1436,3 +1436,14 @@ and tap **Create and close**, then screenshot returned list. This creates only
 the reporting identity, not GA access. Do not assign Cloud Viewer/Editor/Owner,
 generate a key, alter OAuth client or enable billing. Creation is NOT yet
 confirmed; verify resulting row/generated email before property permission grant.
+
+**Service account CREATED — 10 Oct 2026, 13:39 local screenshot:** toast says
+"Service account created"; list shows docoga-analytics-reader, Enabled, email
+`docoga-analytics-reader@apt-trainer-367908.iam.gserviceaccount.com`.
+Screenshot confirms identity creation, NOT GA Viewer access, key absence or
+project IAM bindings (not independently inspected). No authenticated GA report.
+Next single action: open https://analytics.google.com/ in another tab, send
+landing screen with account/property name visible; hide personal details. Need
+confirm DocOga property and numeric ID before property-level Viewer grant to
+this now-observed service-account email. No need to revisit Cloud creation;
+no keys/OAuth/billing changes. WIF and API enablement remain pending.
