@@ -1580,3 +1580,13 @@ live fetch; site tag change + deploy; real report. Next owner action (battery
 management -> Add users, paste the service-account email, role Viewer, uncheck
 notify-by-email, then screenshot. Do not grant Editor/Administrator. Site code
 change and any deployment remain separate, owner-approved steps.
+
+**Property access management screenshot — 10 Oct 2026, 14:51 local:** DocOga
+property access list shows exactly 1 row, the owner's own Google account as
+Administrator. Owner's personal email intentionally NOT recorded here (privacy);
+do not commit it. Confirms DocOga property exists under the owner's current
+Analytics account. Service account not yet added. Next: tap Add users, enter
+docoga-analytics-reader@apt-trainer-367908.iam.gserviceaccount.com, role
+Viewer, uncheck notify-by-email, Add, then screenshot the 2-row list. Do not
+grant Editor/Administrator. Numeric GA4 property ID still unread; API
+enablement/WIF/repo vars/live fetch/site tag change still pending.
