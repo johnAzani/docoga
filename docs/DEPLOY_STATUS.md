@@ -636,3 +636,13 @@ actual `deploy_exit=0`, version `44552c88-d7d0-4df6-bbfc-c47f55263eae`.
 Live missing-code /activate probe passed (400/code required, no issuance/email).
 Dashboard vars preserved via --keep-vars. Authorized site release starting next;
 site result pending. Resend remains disabled; no email/payment test performed.
+
+**Release complete — 10 Oct 2026:** site `1335863`, run `38044933960`,
+actual `deploy_exit=0`, version `8817b0c7-5863-49b6-becc-00f284ea411a`.
+Only ./site uploaded; index.html and success.html updated, 63 assets unchanged.
+Cache purge API success=true. Verify/build succeeded; Worker job skipped on
+site marker. Worker-first/site-second release complete. Public browser rendering
+not independently checked from restricted sandbox. Resend still disabled; no
+new payment, issuance or email. Next owner-guided step requires separate explicit
+resend enablement and ONE existing-pass resend approval, then NEW Brevo event
+and actual receipt. Never use logs/dashboard Resend or /verify as a test.
