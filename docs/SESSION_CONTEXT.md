@@ -643,17 +643,23 @@ worker runtime or website code this turn; no flag enablement or production call.
 without bridge secret), DOM 97/97, QA 0 errors/1 warning (local secret file absent).
 Executed deploy shell snippets with stubbed npx for success, failure and sanitizer
 failure; old workflows correctly fail regression checks. Real credential-free
-Wrangler 4.147.0 Worker build --dry-run passed; no publish. GitHub CI pending push.
+Wrangler 4.147.0 Worker build --dry-run passed; no publish. At `0f258c8`, GitHub
+Verify and Cloudflare build check succeeded; both marker deploy jobs skipped
+(measured in preceding turn).
 
 **ISSUE_SECRET finding:** only /issue (Selar/Zapier/Make or manual issuing bridge)
 requires it; Flutterwave webhook/verify/resend do not. Missing secret fails closed
 with 401 even if a caller supplies a key. Historic docs mention a manual fallback;
-current use is unknown. Next owner question: any such manual/third-party issuing
-connection still in use, or Flutterwave only? Do not invent/replace a secret. Keep
-release blocked until this dependency is explicitly scoped and owner approves.
+**Owner confirmed "Nothing else for now"** when asked about other issuing tools:
+Flutterwave only at present. Leave ISSUE_SECRET absent and /issue disabled; no
+bridge repair or new secret is needed for this scoped release. If a manual or
+third-party bridge is introduced later, configure both ends deliberately then.
+This closes the bridge-use question, not deployment authorization.
 
-**Next:** resolve bridge use above; then seek deliberate Worker-first/site-second
-release approval and intentional resend-flag enablement. No runtime MAIL_FROM
+**Next:** request explicit approval to deploy the corrected Worker first and site
+second, preserving production Secrets and keeping resend disabled. No approval yet.
+Resend-flag enablement and ONE existing-pass resend will be guided separately
+only after successful release; no dashboard resend or additional purchase. No runtime MAIL_FROM
 listed, so repository default matches authenticated sender; live code not fetched.
 Never request success URLs or identifiers; owner uses the existing saved purchase
 page only AFTER release approval. One deliberate resend, inspect NEW event and
@@ -986,11 +992,11 @@ item 9.
    not confirmed deleted); production three Secrets encrypted/current by owner
    confirmation; LIVE webhook URL/hash matched by owner; checkout/old-event
    recipient matched from screenshots. No values/recipients copied into docs.
-2. **Resolve manual bridge and get release approval.** ISSUE_SECRET absent, /issue
-   safely disabled; Flutterwave works without it. Ask if a manual/Selar/Make/Zapier
-   issuing connection is used before choosing to leave it disabled. Workflow bugs
-   repaired/tested locally (details above), not dispatched. No release markers
-   until scoped gates and explicit owner approval; no payment needed.
+2. **Get release approval.** Owner confirms Flutterwave only, no other issuing
+   tool currently used. Leave ISSUE_SECRET absent and /issue disabled. Workflow
+   bugs repaired/tested; Verify/build succeeded at `0f258c8`, deploy jobs skipped.
+   Next ask permission for Worker-first/site-second release with resend still
+   disabled. No release markers before explicit approval; no payment needed.
 3. **Later gated release and ONE existing-pass resend.** Worker first, site second,
    enable RESEND_EMAIL_ENABLED intentionally, owner uses saved purchase page once.
    No log/dashboard resend or reopening a success URL for pre-gate inspection.

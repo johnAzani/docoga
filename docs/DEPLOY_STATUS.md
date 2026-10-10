@@ -586,8 +586,16 @@ hardened by these fixes; do not dispatch them or rerun old commits.
   OLD Brevo failed event, from owner screenshots; no private values recorded.
   Old Error is historical, not a new failure after authentication.
 - ISSUE_SECRET absent: code/tests show only /issue uses it and fails closed without
-  it; Flutterwave does not require it. Historic manual/Selar bridge usage needs
-  owner clarification before closing this dependency; never randomly replace it.
+  it; Flutterwave does not require it. Owner replied **"Nothing else for now"**
+  to the question about other issuing tools: Flutterwave only currently. Leave
+  ISSUE_SECRET absent and the separate /issue bridge disabled. Dependency scoped;
+  no replacement secret required for this release.
 - Resend flag absent from supplied table; no enablement. No deployment authorization.
-  After bridge scope and approval: marker Worker then site, intentional enablement,
+  After explicit approval: marker Worker then site, later intentional enablement,
   ONE existing-pass resend, NEW event plus actual receipt. No payment or blind retry.
+
+**Release readiness, not release approval:** at code commit `0f258c8`, Verify and
+Cloudflare build check succeeded; both marker deploy jobs skipped. Owner checks
+and bridge scope are recorded above; next ask permission for the corrected Worker
+and site deployments with resend still disabled. No release/flag enablement or
+resend is authorized by the owner's "Nothing else" reply about tool usage.
