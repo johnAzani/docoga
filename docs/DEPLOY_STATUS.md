@@ -454,6 +454,13 @@ or verified by the agent.
 > were not modified; there was no prior DMARC record, so exactly one exists now.
 > Evidence is owner screenshots; not independently verified by the agent. Steps
 > below remain as the reference procedure.
+>
+> **Sender status 10 Oct 2026 (owner-performed):** `DocOga <noreply@docoga.com.ng>`
+> added under Brevo → Senders and shows **Verified** (the address behind the
+> Worker's default `MAIL_FROM` and the previously observed sender-invalid event).
+> The pre-existing Gmail sender remains Verified but flagged non-compliant with
+> Google/Yahoo/Microsoft requirements — expected for a gmail.com From address and
+> not used by the Worker. Branded-subdomain offer skipped (not required).
 
 1. Brevo → **Settings → Senders, Domains, IPs → Domains → Add a domain** → enter
    `docoga.com.ng`. (Some accounts have a newer guided "Set up your domain" flow;

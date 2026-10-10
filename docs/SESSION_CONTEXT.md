@@ -544,14 +544,14 @@ authenticated."** Brevo notes full provider-side propagation can still take up t
 as owner evidence, not independent DNS/API verification (the sandbox has no DNS or
 dashboard access). DMARC count is exactly one (there was no prior DMARC record).
 
-**Still open before any release/resend:** sender identity check in Brevo → Senders
-(`MAIL_FROM` default is `DocOga <noreply@docoga.com.ng>`; authenticated-domain
-senders should verify automatically, but presence/status is unconfirmed);
-best-effort Actions log cleanup for run `37890401771`; production Secret
-bindings/current values; live Flutterwave webhook-hash match; private
-checkout-vs-event recipient comparison; `RESEND_EMAIL_ENABLED` still unset;
-workflow defects (DEXIT not propagated; manual dry_run still deploys) still
-unfixed — do not dispatch. No deploy, no resend, no payment, no price/link change.
+**Sender gate also closed 10 Oct 2026 (owner-performed, screenshot evidence):**
+Brevo → Senders previously held only the old Gmail sender (Verified but not
+DKIM/DMARC-compliant — the source of the orange compliance banner; left
+untouched). Added **From name `DocOga`, From email `noreply@docoga.com.ng`**;
+it now shows **Verified** (Shared IP), matching the Worker's default
+`MAIL_FROM`. The branded-subdomain upsell was skipped again (not required).
+
+**Still open before any release/resend:**
 
 ### Session — 9 Oct 2026 (owner click-by-click guide)
 
