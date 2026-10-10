@@ -1590,3 +1590,12 @@ docoga-analytics-reader@apt-trainer-367908.iam.gserviceaccount.com, role
 Viewer, uncheck notify-by-email, Add, then screenshot the 2-row list. Do not
 grant Editor/Administrator. Numeric GA4 property ID still unread; API
 enablement/WIF/repo vars/live fetch/site tag change still pending.
+
+**Add roles dialog — 10 Oct 2026, 14:54 local:** DocOga property; email field
+empty; Notify new users by email still CHECKED; Viewer already selected; data
+restrictions (No Cost Metrics / No Revenue Metrics) unchecked. Next: type
+service-account email, uncheck notify, keep Viewer, tap Add top-right, then
+screenshot 2-row access list. Owner personal email visible in background but
+deliberately NOT stored. No Editor/Administrator. Remaining: numeric property
+ID, Analytics Data API enablement, WIF, repo variables, live fetch, site tag
+change and deploy, real authenticated report.
