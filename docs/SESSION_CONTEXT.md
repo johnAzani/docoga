@@ -1556,3 +1556,13 @@ name/numeric ID not shown yet. Platform buttons Web, Android app, iOS app;
 next action tap Web, send stream setup form before submission. Stream not
 created, new measurement ID unknown, website tag unchanged; Viewer/WIF/report
 access pending. Phone battery 4%; progress saved for pause/recharge.
+
+**Web stream setup form — 10 Oct 2026, 14:19 local:** Set up data stream open;
+Website URL field shows protocol selector plus placeholder www.mywebsite.com,
+Stream name placeholder My Website, Enhanced measurement toggled on with Page
+views, Scrolls, Outbound clicks, +4 more. Next instructions: set protocol
+https, Website URL docoga.com.ng, Stream name DocOga Web, leave enhanced
+measurement on, tap Create and continue, screenshot result showing measurement
+ID. Do NOT paste a URL with credentials/path; no site deployment yet. New tag
+will still need to replace ANALYTICS_ID in site code and be deployed before
+data flows. Phone battery 4%.
