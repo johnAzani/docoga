@@ -26,27 +26,46 @@ You marked FLW + CAC status as "not sure". Check the Flutterwave dashboard
       retail charge path, so this almost certainly works — but the Business
       card path uses the v4 `generic` hosted charge, which is a slightly
       different API; the rehearsal is what proves it.)
+- [ ] **While you're in there, copy two values** (step 1 needs them):
+      Settings → API keys → **SECRET KEY**, and Webhooks → the **hash** for
+      the endpoint posted to the worker's `/flw-webhook` (create the webhook
+      in the FLW dashboard if it doesn't exist yet — URL = your worker's
+      `/flw-webhook`, event = charge completed).
 
 Write the answers in the decision log (`docs/BUSINESS_TIER_RESEARCH.md` §13)
 so the next session inherits them. If VAs are NOT enabled: file the enablement
 request in the FLW dashboard (the 10 Oct Brevo enablement is the precedent for
 the owner-guided path) and proceed — the product degrades honestly.
 
-## 1. Deploy (2 commands)
+## 1. Deploy (secrets first, then 2 commands)
+
+The live worker is the **10-Oct retail-pass worker only** — Phases 0–4 have
+never been deployed, so the Business endpoints don't exist in production yet.
+
+1. **Set the three worker secrets** (Cloudflare dashboard → Workers →
+   `docoga-pass` → Settings → Variables). `deploy.sh` prints the exact
+   checklist when you run it — but the values must exist BEFORE the deploy,
+   and two come from the Flutterwave dashboard (step 0):
+   `TEAM_AUTH_SECRET` (any long random string) · `FLW_SECRET_KEY` (FLW
+   Settings → API keys) · `FLW_WEBHOOK_HASH` (FLW Webhooks → hash).
+   Bank transfer (VA) confirmation is webhook-only — without the hash the
+   transfer leg of the rehearsal hangs at "waiting for payment".
+2. **Then deploy:**
 
 ```
 bash tools/deploy.sh
 ```
 
-1. `cd worker && npx wrangler deploy` — the money path + portal + cron.
-2. root `npx wrangler deploy` — the site (portal, support page, privacy).
+   1. `cd worker && npx wrangler deploy` — the money path + portal + cron.
+   2. root `npx wrangler deploy` — the site (portal, support page, privacy).
 
-One-time (already done if Phase 0/1 shipped before — re-check):
-`npx wrangler secret put TEAM_AUTH_SECRET` (worker).
+   Known quirk (10 Oct): the first deploy attempt can hit a
+   token-validation error — retry; the retry publishes.
 
-Verify block: the script curls the live worker; the Business probe should
-answer **400 "valid email required"**, not 404. If it's 404, the worker
-deploy didn't take.
+Verify block: the script prints the curls; the Business probes should
+answer **400 "valid email required"** (creation) and **401
+"sign_in_required"** (renewal), not 404. If 404, the worker deploy didn't
+take.
 
 ## 2. Make business@docoga.com.ng real (15 min)
 
