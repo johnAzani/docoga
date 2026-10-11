@@ -11,12 +11,31 @@ function makeEnv(records) {
       list: async ({ prefix = '' }) => ({ keys: [...store.keys()].filter(k => k.startsWith(prefix)).map(name => ({ name })), list_complete: true }),
   }, SITE_URL: 'https://docoga.com.ng', PAYMENT_URL: 'https://flutterwave.com/pay/x', PROVIDER: 'flw' };
 }
-async function hit(env, path) {
-  const r = await mod.fetch(new Request('https://w' + path), env);
-  let j = null; try { j = await r.json(); } catch (e) {}
-  return { status: r.status, j };
+async function hit(env, path, init = {}) {
+  const r = await mod.fetch(new Request('https://w' + path, init), env);
+  const text = await r.text();
+  let j = null; try { j = JSON.parse(text); } catch (e) {}
+  return { status: r.status, j, text };
 }
 const rec = (code, over = {}) => JSON.stringify(Object.assign({ code, email: '', ref: 'x', issuedAt: NOW, used: true, source: 'online', exp: NOW + 30 * 864e5 }, over));
+
+console.log('— disabled manual bridge and side-effect-free deployment probe —');
+const bridgeDisabledEnv = makeEnv({});
+let unexpectedCalls = 0;
+const beforeBridgeFetch = globalThis.fetch;
+globalThis.fetch = async () => { unexpectedCalls++; throw new Error('unexpected provider request'); };
+for (const headers of [{}, { 'x-docoga-key': 'fake-bridge-key' }]) {
+  const blocked = await hit(bridgeDisabledEnv, '/issue', {
+    method: 'POST', headers: { 'content-type': 'application/json', ...headers },
+    body: JSON.stringify({ email: 'bridge-buyer@example.com', ref: 'TEST-BRIDGE-REF' }),
+  });
+  ok('missing ISSUE_SECRET keeps /issue closed even with a supplied key', blocked.status === 401 && blocked.j.error === 'unauthorized');
+}
+const missingCodeProbe = await hit(bridgeDisabledEnv, '/activate');
+ok('deployment probe without code returns 400 and cannot issue or email',
+   missingCodeProbe.status === 400 && missingCodeProbe.j.error === 'code required' &&
+   (await bridgeDisabledEnv.KV.list({ prefix: 'code:' })).keys.length === 0 && unexpectedCalls === 0);
+globalThis.fetch = beforeBridgeFetch;
 
 console.log('— expired code —');
 let r = await hit(makeEnv({ 'code:OGA-DEAD-PLAN-CCCC': rec('OGA-DEAD-PLAN-CCCC', { exp: NOW - 864e5 }) }), '/activate?code=OGA-DEAD-PLAN-CCCC&did=d1');
@@ -117,35 +136,208 @@ const newRec = JSON.parse(await v7.KV.get('code:' + r.j.code) || '{}');
 ok('top-up via redirect carries the remaining days', Math.abs(newRec.exp - (NOW + 42 * 864e5)) < 60000, 'exp-NOW=' + Math.round((newRec.exp - NOW) / 864e5) + 'd');
 ok('old code is burned and pointed at the new one', /^OGA-/.test(String(r.j.code)) && JSON.parse(await v7.KV.get('code:OGA-OLDP-PLAN-ZZZZ')).succ === r.j.code, 'succ=' + JSON.parse(await v7.KV.get('code:OGA-OLDP-PLAN-ZZZZ')).succ);
 
-console.log('— /business/waitlist (self-serve Business notify, 11 Oct 2026) —');
-/* Phase 0 of the Business tier: the retired quote-by-WhatsApp CTA is replaced
-   by this endpoint. No email provider keys in the mock env, so sendMail is a
-   no-op and confirmationEmail must report false (not crash). */
-async function postJSON(env, path, obj) {
-  const r = await mod.fetch(new Request('https://w' + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(obj) }), env);
-  let j = null; try { j = await r.json(); } catch (e) {}
-  return { status: r.status, j };
-}
+globalThis.fetch = realFetch;
+
+console.log('— /verify v3 (configured FLW_SECRET_KEY fallback, locally simulated) —');
+let v3Charge = { status: 'successful', currency: 'NGN', amount: 2000, tx_ref: 'V3-REF-2000', customer: { email: 'v3-buyer@example.com' } };
+globalThis.fetch = async (url) => {
+  if (!String(url).includes('/v3/transactions/verify_by_reference')) throw new Error('unexpected v3 verify request: ' + url);
+  return { json: async () => ({ data: v3Charge }) };
+};
+const v3Env = makeEnv({});
+v3Env.FLW_SECRET_KEY = 'test-flw-v3-secret';
+r = await hit(v3Env, '/verify?ref=V3-REF-2000');
+ok('successful ₦2,000 v3 verification mints a code', r.status === 200 && r.j.ok === true && /^OGA-/.test(r.j.code || '') && (await v3Env.KV.get('ref:V3-REF-2000')) === r.j.code, r.status + ' ' + JSON.stringify(r.j));
+const v3UnderpaidEnv = makeEnv({});
+v3UnderpaidEnv.FLW_SECRET_KEY = 'test-flw-v3-secret';
+v3Charge = { ...v3Charge, amount: 100, tx_ref: 'V3-REF-100' };
+r = await hit(v3UnderpaidEnv, '/verify?ref=V3-REF-100');
+ok('v3 underpayment below ₦2,000 is rejected with no code', r.status === 402 && !(await v3UnderpaidEnv.KV.get('ref:V3-REF-100')), r.status + ' ' + JSON.stringify(r.j));
+globalThis.fetch = realFetch;
+
+console.log('— /flw-webhook (Flutterwave payment-link path, locally simulated) —');
+const webhookHash = 'test-flutterwave-secret-hash';
+const webhookMailRequests = [];
+globalThis.fetch = async (url, init = {}) => {
+  webhookMailRequests.push({ url: String(url), body: JSON.parse(init.body || '{}') });
+  return new Response(null, { status: 201 });
+};
+const webhookPayload = {
+  event: 'charge.completed',
+  data: {
+    id: 'flw-charge-2000', tx_ref: 'DOCOGA-TX-2000', reference: 'DOCOGA-REF-2000',
+    amount: 2000, currency: 'NGN', status: 'successful',
+    customer: { email: 'webhook-buyer@example.com' },
+  },
+};
+const webhookEnv = makeEnv({});
+webhookEnv.FLW_WEBHOOK_HASH = webhookHash;
+webhookEnv.BREVO_API_KEY = 'test-brevo-key';
+const webhookRaw = JSON.stringify(webhookPayload);
+r = await hit(webhookEnv, '/flw-webhook', {
+  method: 'POST', headers: { 'content-type': 'application/json', 'verif-hash': webhookHash }, body: webhookRaw,
+});
+const webhookCode = await webhookEnv.KV.get('ref:DOCOGA-REF-2000');
+const webhookRecord = JSON.parse(await webhookEnv.KV.get('code:' + webhookCode) || '{}');
+ok('valid signed ₦2,000 NGN charge.completed webhook issues a code', r.status === 200 && r.text === 'ok' && /^OGA-/.test(webhookCode || ''), r.status + ' ' + r.text);
+ok('webhook aliases reference, tx_ref and charge id to the same code', webhookCode && (await webhookEnv.KV.get('ref:DOCOGA-TX-2000')) === webhookCode && (await webhookEnv.KV.get('ref:flw-charge-2000')) === webhookCode);
+ok('Flutterwave works without ISSUE_SECRET', !webhookEnv.ISSUE_SECRET && r.status === 200 && !!webhookCode);
+ok('webhook stores buyer email and asks Brevo to deliver the pass', webhookRecord.email === 'webhook-buyer@example.com' && webhookMailRequests.length === 1 && webhookMailRequests[0].url.includes('api.brevo.com') && webhookMailRequests[0].body.to?.[0]?.email === 'webhook-buyer@example.com' && webhookMailRequests[0].body.textContent.includes('all 10 tools') && webhookMailRequests[0].body.htmlContent.includes('Power of Attorney'));
+r = await hit(webhookEnv, '/flw-webhook', {
+  method: 'POST', headers: { 'content-type': 'application/json', 'verif-hash': webhookHash }, body: webhookRaw,
+});
+ok('duplicate webhook is idempotent (same code; no second email)', r.status === 200 && r.text === 'ok' && webhookMailRequests.length === 1 && (await webhookEnv.KV.list({ prefix: 'code:' })).keys.length === 1);
+
+const rejectedMailEnv = makeEnv({});
+rejectedMailEnv.FLW_WEBHOOK_HASH = webhookHash;
+rejectedMailEnv.BREVO_API_KEY = 'test-brevo-key';
+const rejectedMailPayload = {
+  ...webhookPayload,
+  data: {
+    ...webhookPayload.data,
+    id: 'flw-charge-mail-fail', tx_ref: 'DOCOGA-TX-MAIL-FAIL', reference: 'DOCOGA-REF-MAIL-FAIL',
+    customer: { email: 'private-recipient@example.com' },
+  },
+};
+const priorConsoleError = console.error;
+const workerErrorLines = [];
+console.error = (...args) => workerErrorLines.push(args.join(' '));
+globalThis.fetch = async () => new Response('private provider response body', { status: 401 });
+r = await hit(rejectedMailEnv, '/flw-webhook', {
+  method: 'POST', headers: { 'content-type': 'application/json', 'verif-hash': webhookHash }, body: JSON.stringify(rejectedMailPayload),
+});
+console.error = priorConsoleError;
+const rejectedMailCode = await rejectedMailEnv.KV.get('ref:DOCOGA-REF-MAIL-FAIL');
+const safeMailLog = workerErrorLines.join('\n');
+ok('Brevo HTTP rejection is logged without blocking pass issuance', r.status === 200 && r.text === 'ok' && /^OGA-/.test(rejectedMailCode || '') && safeMailLog.includes('BREVO_HTTP_401'));
+ok('email failure diagnostic excludes recipient and provider response body', !safeMailLog.includes('private-recipient@example.com') && !safeMailLog.includes('private provider response body') && !safeMailLog.includes(rejectedMailCode || 'NO_CODE'));
+
+globalThis.fetch = async (url, init = {}) => {
+  webhookMailRequests.push({ url: String(url), body: JSON.parse(init.body || '{}') });
+  return new Response(null, { status: 201 });
+};
+
+console.log('— /resend-email (no-charge recovery path) —');
+const resendCode = 'OGA-RESN-TEST-8236';
+const resendRequests = [];
+const disabledResendEnv = makeEnv({
+  'ref:FLW-REF-RESEND-A': resendCode,
+  ['code:' + resendCode]: rec(resendCode, { email: 'resend-buyer@example.com', exp: NOW + 30 * 864e5 }),
+});
+disabledResendEnv.BREVO_API_KEY = 'test-brevo-key';
+r = await hit(disabledResendEnv, '/resend-email', {
+  method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ids: ['FLW-REF-RESEND-A'] }),
+});
+ok('resend is fail-closed until explicitly enabled after sender authentication', r.status === 503 && r.j.error === 'resend_disabled' && resendRequests.length === 0);
+const resendEnv = makeEnv({
+  'ref:FLW-REF-RESEND-A': resendCode,
+  'ref:FLW-REF-RESEND-B': resendCode, // aliases for the same purchase must share a throttle
+  ['code:' + resendCode]: rec(resendCode, { email: 'resend-buyer@example.com', exp: NOW + 30 * 864e5 }),
+});
+resendEnv.BREVO_API_KEY = 'test-brevo-key';
+resendEnv.RESEND_EMAIL_ENABLED = 'true';
+globalThis.fetch = async (url, init = {}) => {
+  resendRequests.push({ url: String(url), body: JSON.parse(init.body || '{}') });
+  return new Response(null, { status: 201 });
+};
+r = await hit(resendEnv, '/resend-email', {
+  method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ids: ['FLW-REF-RESEND-A'] }),
+});
+ok('resend sends the stored pass to its stored email without returning the code', r.status === 200 && r.j.ok === true && !JSON.stringify(r.j).includes(resendCode) && resendRequests.length === 1 && resendRequests[0].body.to?.[0]?.email === 'resend-buyer@example.com' && resendRequests[0].body.textContent.includes(resendCode));
+r = await hit(resendEnv, '/resend-email', {
+  method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ids: ['FLW-REF-RESEND-B'] }),
+});
+ok('resend throttle covers reference aliases for the same pass', r.status === 429 && r.j.error === 'resend_wait' && resendRequests.length === 1);
+
+const topupOldCode = 'OGA-OLDP-PLAN-8234';
+const topupNewCode = 'OGA-NEWP-PLAN-8235';
+const topupResendEnv = makeEnv({
+  'ref:FLW-REF-RESEND-TOPUP': topupOldCode,
+  ['code:' + topupOldCode]: rec(topupOldCode, { email: 'old-buyer@example.com', succ: topupNewCode, exp: NOW + 10 * 864e5 }),
+  ['code:' + topupNewCode]: rec(topupNewCode, { email: 'current-buyer@example.com', exp: NOW + 40 * 864e5 }),
+});
+topupResendEnv.BREVO_API_KEY = 'test-brevo-key';
+topupResendEnv.RESEND_EMAIL_ENABLED = 'true';
+r = await hit(topupResendEnv, '/resend-email', {
+  method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ref: 'FLW-REF-RESEND-TOPUP' }),
+});
+ok('top-up reference resends only the newest active code to its stored email', r.status === 200 && !JSON.stringify(r.j).includes(topupNewCode) && resendRequests.length === 2 && resendRequests[1].body.to?.[0]?.email === 'current-buyer@example.com' && resendRequests[1].body.textContent.includes(topupNewCode) && !resendRequests[1].body.textContent.includes(topupOldCode));
+const expiredResendCode = 'OGA-EXPR-PLAN-8234';
+const expiredResendEnv = makeEnv({
+  'ref:FLW-REF-RESEND-EXPIRED': expiredResendCode,
+  ['code:' + expiredResendCode]: rec(expiredResendCode, { email: 'expired-buyer@example.com', exp: NOW - 864e5 }),
+});
+expiredResendEnv.BREVO_API_KEY = 'test-brevo-key';
+expiredResendEnv.RESEND_EMAIL_ENABLED = 'true';
+r = await hit(expiredResendEnv, '/resend-email', {
+  method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ref: 'FLW-REF-RESEND-EXPIRED' }),
+});
+ok('expired passes cannot be resent', r.status === 410 && r.j.error === 'pass_expired' && resendRequests.length === 2);
+
+const failedResendCode = 'OGA-FALX-RESE-8237';
+const failedResendEnv = makeEnv({
+  'ref:FLW-REF-RESEND-FAIL': failedResendCode,
+  ['code:' + failedResendCode]: rec(failedResendCode, { email: 'private-resend@example.com', exp: NOW + 30 * 864e5 }),
+});
+failedResendEnv.BREVO_API_KEY = 'test-brevo-key';
+failedResendEnv.RESEND_EMAIL_ENABLED = 'true';
+let resendFailureLogs = [];
+const originalConsoleError = console.error;
+console.error = (...args) => resendFailureLogs.push(args.join(' '));
+globalThis.fetch = async () => new Response('private provider response body', { status: 401 });
+r = await hit(failedResendEnv, '/resend-email', {
+  method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ref: 'FLW-REF-RESEND-FAIL' }),
+});
+console.error = originalConsoleError;
+const resendFailureLog = resendFailureLogs.join(' ');
+ok('provider rejection fails the resend without exposing the code', r.status === 502 && r.j.error === 'email_send_failed' && !JSON.stringify(r.j).includes(failedResendCode));
+ok('resend failure diagnostic excludes recipient and provider body', resendFailureLog.includes('BREVO_HTTP_401') && !resendFailureLog.includes('private-resend@example.com') && !resendFailureLog.includes('private provider response body') && !resendFailureLog.includes(failedResendCode));
+
+globalThis.fetch = async (url, init = {}) => {
+  webhookMailRequests.push({ url: String(url), body: JSON.parse(init.body || '{}') });
+  return new Response(null, { status: 201 });
+};
+
+const underpaidEnv = makeEnv({});
+underpaidEnv.FLW_WEBHOOK_HASH = webhookHash;
+underpaidEnv.BREVO_API_KEY = 'test-brevo-key';
+const underpaidPayload = { ...webhookPayload, data: { ...webhookPayload.data, id: 'flw-charge-100', tx_ref: 'DOCOGA-TX-100', reference: 'DOCOGA-REF-100', amount: 100 } };
+r = await hit(underpaidEnv, '/flw-webhook', {
+  method: 'POST', headers: { 'content-type': 'application/json', 'verif-hash': webhookHash }, body: JSON.stringify(underpaidPayload),
+});
+ok('valid ₦100 webhook is acknowledged but ignored; no pass is issued', r.status === 200 && r.text === 'ignored' && (await underpaidEnv.KV.list({ prefix: 'code:' })).keys.length === 0 && webhookMailRequests.length === 1, r.status + ' ' + r.text);
+
+const badSignatureEnv = makeEnv({});
+badSignatureEnv.FLW_WEBHOOK_HASH = webhookHash;
+r = await hit(badSignatureEnv, '/flw-webhook', {
+  method: 'POST', headers: { 'content-type': 'application/json', 'verif-hash': 'wrong-hash' }, body: webhookRaw,
+});
+ok('invalid webhook secret hash is rejected before any code is issued', r.status === 403 && (await badSignatureEnv.KV.list({ prefix: 'code:' })).keys.length === 0);
+
+console.log('— /business/waitlist (self-serve Business notify, Phase 0, 11 Oct 2026) —');
+/* The retired quote-by-WhatsApp CTA is replaced by this endpoint. No email
+   provider keys in the mock env, so sendMail throws MAIL_NO_PROVIDER: the
+   signup must still be stored and confirmationEmail must report false. */
 const wenv = makeEnv({});
-r = await postJSON(wenv, '/business/waitlist', { email: 'ops@firm.ng', company: 'Firm & Co', segment: 'property-manager' });
+r = await hit(wenv, '/business/waitlist', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'ops@firm.ng', company: 'Firm & Co', segment: 'property-manager' }) });
 ok('valid signup → ok + stored', r.status === 200 && r.j.ok === true && !!(await wenv.KV.get('bizwait:ops@firm.ng')), r.status + ' ' + JSON.stringify(r.j).slice(0, 90));
 const storedW = JSON.parse(await wenv.KV.get('bizwait:ops@firm.ng') || '{}');
 ok('record keeps company+segment, lowercases email', storedW.company === 'Firm & Co' && storedW.segment === 'property-manager' && storedW.email === 'ops@firm.ng', JSON.stringify(storedW).slice(0, 100));
-ok('no email keys → confirmationEmail false, not a crash', r.j.confirmationEmail === false, JSON.stringify(r.j));
-r = await postJSON(wenv, '/business/waitlist', { email: 'OPS@firm.ng' });
+ok('no email keys → stored anyway, confirmationEmail false, not a crash', r.j.confirmationEmail === false, JSON.stringify(r.j));
+r = await hit(wenv, '/business/waitlist', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'OPS@firm.ng' }) });
 ok('duplicate (case-insensitive) → alreadyOnList', r.status === 200 && r.j.alreadyOnList === true, JSON.stringify(r.j).slice(0, 80));
-r = await postJSON(wenv, '/business/waitlist', { email: 'not-an-email' });
-ok('invalid email → 400', r.status === 400, String(r.status));
-r = await postJSON(wenv, '/business/waitlist', { email: 'a@b.co', segment: 'spaceship' });
+r = await hit(wenv, '/business/waitlist', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'not-an-email' }) });
+ok('invalid email → 400, nothing stored', r.status === 400 && (await wenv.KV.list({ prefix: 'bizwait:not' })).keys.length === 0, String(r.status));
+r = await hit(wenv, '/business/waitlist', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'a@b.co', segment: 'spaceship' }) });
 ok('unknown segment → 400', r.status === 400, String(r.status));
 const envW2 = makeEnv({});
-await postJSON(envW2, '/business/waitlist', { email: '1@a.co' });
-await postJSON(envW2, '/business/waitlist', { email: '2@a.co' });
-await postJSON(envW2, '/business/waitlist', { email: '3@a.co' });
-r = await postJSON(envW2, '/business/waitlist', { email: '4@a.co' });
+await hit(envW2, '/business/waitlist', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: '1@a.co' }) });
+await hit(envW2, '/business/waitlist', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: '2@a.co' }) });
+await hit(envW2, '/business/waitlist', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: '3@a.co' }) });
+r = await hit(envW2, '/business/waitlist', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: '4@a.co' }) });
 ok('4th valid signup same IP/day → 429 rate guard', r.status === 429, String(r.status));
 
 globalThis.fetch = realFetch;
 
-console.log(fails === 0 ? '\n🏆 WORKER LOGIC UNIT-VERIFIED: expiry / fence / hostile records / top-up / verify+email-capture all correct' : '\n💥 ' + fails + ' FAILED');
+console.log(fails === 0 ? '\n🏆 WORKER LOGIC UNIT-VERIFIED: expiry / fence / hostile records / top-up / redirect verify / signed webhook / underpayment gate / email hand-off / business waitlist' : '\n💥 ' + fails + ' FAILED');
 process.exit(fails ? 1 : 0);

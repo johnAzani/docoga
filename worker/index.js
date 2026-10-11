@@ -6,6 +6,9 @@
  *   POST /issue         Bridge for Selar→Zapier/Make (auth: X-DocOga-Key header)
  *                       Body: {"email":"buyer@mail.com","ref":"optional-sale-id"}
  *                       → generates a unique code, stores it in KV, emails the buyer.
+ *   POST /resend-email  No-charge resend by stored purchase reference; sends only to
+ *                       the stored email, returns no code, disabled unless
+ *                       RESEND_EMAIL_ENABLED is exactly "true".
  *   POST /flw-webhook   Flutterwave webhook (auth: v3 verif-hash OR v4 flutterwave-signature HMAC)
  *                       → verifies amount & status, issues + emails code, aliases it under
  *                       every id (reference/tx_ref/id) so /verify matches. Idempotent.
@@ -16,6 +19,10 @@
  *   GET  /activate?code=X  Activation for ANY code (server-issued or offline batch).
  *                       Returns the SERVER expiry so every browser shares one synced
  *                       countdown. Optional &prev=OLD links a top-up on manual entry.
+ *   POST /business/waitlist  Self-serve "notify me at launch" for the Business tier
+ *                       (Phase 0, 11 Oct 2026 — replaces the retired quote-by-WhatsApp
+ *                       CTA). Body: {email, company?, segment?}. Dedupes on email,
+ *                       3/IP/day rate guard, best-effort confirmation email.
  *
  * Free-tier capacity: Workers 100k req/day · KV 1k writes/day · Resend 3k emails/month.
  *
@@ -28,12 +35,15 @@
  *   PAYSTACK_SECRET_KEY Paystack secret key (Path C — after CAC)
  *   PROVIDER            "flw" (default) or "paystack" — which API /verify should call
  *   RESEND_API_KEY      free key from resend.com (email delivery — optional)
- *   MAIL_FROM           e.g. "DocOga <passes@docoga.com.ng>" (requires verified domain in Resend)
+ *   MAIL_FROM           optional sender identity; must be verified by active mail provider
+ *   RESEND_EMAIL_ENABLED set exactly to "true" only after authenticating the sender
  *   SITE_URL            e.g. https://docoga.com.ng (used inside the email)
  * KV binding: must be named KV (see wrangler.toml)
  */
 
-const PRICE_NGN = 2000; // Oga Pass price — proven end-to-end with real ₦100 rehearsal 19 Sep (logs/)
+// ₦2,000 is the minimum qualifying Oga Pass payment. The 19 Sep ₦100 rehearsal
+// was below this gate and did not test code issuance.
+const PRICE_NGN = 2000;
 const ALPHA = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
 function makeCode() {
@@ -57,34 +67,47 @@ function json(obj, cors, status = 200) {
 
 /* ---------- Email delivery (provider chain: Brevo > SMTP2GO > Resend) ---------- */
 async function sendMail(env, to, subject, text, html) {
-  if (!to) return false;
+  if (!to) throw new Error("MAIL_NO_RECIPIENT");
   if (env.BREVO_API_KEY) {
     const from = env.MAIL_FROM || "DocOga <noreply@docoga.com.ng>";
     const m = from.match(/^(.*?)\s*<(.+)>$/) || [null, "DocOga", from];
-    await fetch("https://api.brevo.com/v3/smtp/email", {
+    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
       headers: { "api-key": env.BREVO_API_KEY, "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify({ sender: { name: m[1] || "DocOga", email: m[2] }, to: [{ email: to }], subject, textContent: text, htmlContent: html }),
     });
-    return true;
+    if (!response.ok) throw new Error(`BREVO_HTTP_${response.status}`);
+    console.info(`[docoga-mail] provider=brevo accepted http=${response.status}`);
+    return;
   }
   if (env.SMTP2GO_API_KEY) {
-    await fetch("https://api.smtp2go.com/v3/email/send", {
+    const response = await fetch("https://api.smtp2go.com/v3/email/send", {
       method: "POST",
       headers: { "x-smtp2go-api-key": env.SMTP2GO_API_KEY, "Content-Type": "application/json" },
       body: JSON.stringify({ sender: env.MAIL_FROM || "DocOga <noreply@docoga.com.ng>", to: [to], subject, text_body: text, html_body: html }),
     });
-    return true;
+    if (!response.ok) throw new Error(`SMTP2GO_HTTP_${response.status}`);
+    console.info(`[docoga-mail] provider=smtp2go accepted http=${response.status}`);
+    return;
   }
   if (env.RESEND_API_KEY) {
-    await fetch("https://api.resend.com/emails", {
+    const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({ from: env.MAIL_FROM || "DocOga <noreply@docoga.com.ng>", to, subject, text, html }),
     });
-    return true;
+    if (!response.ok) throw new Error(`RESEND_HTTP_${response.status}`);
+    console.info(`[docoga-mail] provider=resend accepted http=${response.status}`);
+    return;
   }
-  return false;
+  throw new Error("MAIL_NO_PROVIDER");
+}
+
+function safeMailFailureReason(error) {
+  const message = String(error && error.message || "");
+  if (/^(BREVO|SMTP2GO|RESEND)_HTTP_[1-5][0-9]{2}$/.test(message)) return message;
+  if (message === "MAIL_NO_RECIPIENT" || message === "MAIL_NO_PROVIDER") return message;
+  return "MAIL_NETWORK_ERROR";
 }
 
 function mailShell(inner) {
@@ -97,12 +120,12 @@ function mailShell(inner) {
   `<tr><td style="padding:28px;">` + inner +
   `</td></tr>` +
   `<tr><td style="background:#F0F4FA;padding:16px 28px;border-top:1px solid #DCE4F0;">` +
-  `<p style="margin:0;font-size:12px;color:#5B6B85;line-height:1.5;">DocOga — free Nigerian document tools: tenancy agreement, notice to quit, rent receipt, invoice, employment contract, caution fee, letter of demand, payslip, warning letter.<br>Abuja, Nigeria · <a href="https://docoga.com.ng" style="color:#0040E0;">docoga.com.ng</a></p>` +
+  `<p style="margin:0;font-size:12px;color:#5B6B85;line-height:1.5;">DocOga — free Nigerian document tools: tenancy agreement, notice to quit, rent receipt, invoice, employment contract, caution fee, letter of demand, payslip, warning letter, power of attorney.<br>Abuja, Nigeria · <a href="https://docoga.com.ng" style="color:#0040E0;">docoga.com.ng</a></p>` +
   `</td></tr></table></td></tr></table></body></html>`;
 }
 
 async function emailCode(env, to, code) {
-  if (!to) return;
+  if (!to) throw new Error("MAIL_NO_RECIPIENT");
   const site = env.SITE_URL || "https://docoga.com.ng";
   const link = `${site}/#code=${code}`;
   const subject = "Your DocOga Oga Pass — tap to activate";
@@ -110,13 +133,13 @@ async function emailCode(env, to, code) {
     `Thank you for your purchase!\n\n` +
     `ACTIVATE ON ANY DEVICE — tap this link:\n${link}\n\n` +
     `Your pass code (if you ever need to type it): ${code}\n\n` +
-    `What you got: clean, watermark-free documents for 30 days — all 9 tools.\n\n` +
+    `What you got: clean, watermark-free documents for 30 days — all 10 tools, including Power of Attorney.\n\n` +
     `Keep this email — the link keeps working for the whole life of your pass.\n\n` +
     `Need help? WhatsApp us: +234 902 185 2845\n\n` +
     `— The DocOga Team, Abuja, Nigeria`;
   const inner =
   `<p style="margin:0 0 14px;font-size:17px;color:#141F33;font-weight:700;">Thank you for your purchase! 🎉</p>` +
-  `<p style="margin:0 0 20px;font-size:15px;color:#37455E;line-height:1.6;">Your <b>Oga Pass</b> is ready — <b>all 9 document tools</b>, clean and watermark-free, for <b>30 days</b>.</p>` +
+  `<p style="margin:0 0 20px;font-size:15px;color:#37455E;line-height:1.6;">Your <b>Oga Pass</b> is ready — <b>all 10 document tools, including Power of Attorney</b>, clean and watermark-free, for <b>30 days</b>.</p>` +
   `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto 8px;"><tr>` +
   `<td style="background:#0040E0;border-radius:10px;">` +
   `<a href="${link}" style="display:inline-block;padding:15px 34px;font-size:16px;font-weight:800;color:#ffffff;text-decoration:none;">Activate my pass →</a>` +
@@ -152,7 +175,7 @@ async function emailRenewalReminder(env, to, code, exp) {
     `— The DocOga Team, Abuja, Nigeria`;
   const inner =
   `<p style="margin:0 0 14px;font-size:17px;color:#141F33;font-weight:700;">Your Oga Pass expires on ${when}</p>` +
-  `<p style="margin:0 0 20px;font-size:15px;color:#37455E;line-height:1.6;">Renew in one tap and keep making clean, watermark-free documents with all 9 tools.</p>` +
+  `<p style="margin:0 0 20px;font-size:15px;color:#37455E;line-height:1.6;">Renew in one tap and keep making clean, watermark-free documents with all 10 tools, including Power of Attorney.</p>` +
   `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto 8px;"><tr>` +
   `<td style="background:#0040E0;border-radius:10px;">` +
   `<a href="${pay}" style="display:inline-block;padding:15px 34px;font-size:16px;font-weight:800;color:#ffffff;text-decoration:none;">Renew my pass — ₦2,000 →</a>` +
@@ -190,7 +213,13 @@ async function issueCode(env, { email, ref }) {
   const rec = { code, email: email || "", ref: ref || "", issuedAt: Date.now(), used: false, source: "online", exp: Date.now() + 30 * 864e5 }; // dies 30 days from purchase
   await env.KV.put("code:" + code, JSON.stringify(rec));
   if (ref) await env.KV.put("ref:" + ref, code); // idempotency: ref -> code
-  try { await emailCode(env, email, code); } catch (e) { /* email failure must not break issuing */ }
+  try {
+    await emailCode(env, email, code);
+  } catch (e) {
+    // Never log the recipient, pass code, provider response body, or secret.
+    // A payment/pass remains valid even when the separate email hand-off fails.
+    console.error(`[docoga-mail] pass_email_not_accepted reason=${safeMailFailureReason(e)}`);
+  }
   return code;
 }
 
@@ -206,6 +235,109 @@ async function handleIssue(request, env, cors) {
   const existing = await env.KV.get("ref:" + ref);
   const code = existing || (await issueCode(env, { email, ref }));
   return json({ ok: true, code, alreadyIssued: !!existing }, cors);
+}
+
+/* Customer-initiated, no-charge resend for a previously verified purchase.
+   It sends only to the email stored with the issued code, never returns the code,
+   and is throttled by code so reference aliases cannot bypass the limit. */
+async function handleResendEmail(request, env, cors) {
+  // Fail closed until the owner authenticates the sender in the provider and explicitly enables resends.
+  if (env.RESEND_EMAIL_ENABLED !== "true") return json({ ok: false, error: "resend_disabled" }, cors, 503);
+  const body = await request.json().catch(() => ({}));
+  const rawIds = Array.isArray(body.ids) ? body.ids : [body.ref || body.reference];
+  const ids = [...new Set(rawIds.map((value) => String(value || "").trim()).filter((value) => value && value.length <= 200))].slice(0, 8);
+  if (!ids.length) return json({ ok: false, error: "ref_required" }, cors, 400);
+
+  let code = "";
+  for (const id of ids) {
+    code = await env.KV.get("ref:" + id) || "";
+    if (code) break;
+  }
+  if (!code) return json({ ok: false, error: "purchase_not_found" }, cors, 404);
+
+  let record = await readCode(env, normalizeCode(String(code).toUpperCase().replace(/[\s-]/g, "")));
+  if (!record && String(code).includes("-")) record = await readCode(env, String(code).replace(/-/g, ""));
+  // A topped-up reference should resend only the newest, currently active code.
+  const visitedCodes = new Set();
+  for (let depth = 0; record && record.succ; depth++) {
+    if (depth >= 64) return json({ ok: false, error: "pass_unavailable" }, cors, 409);
+    const successorKey = normalizeCode(String(record.succ).toUpperCase().replace(/[\s-]/g, ""));
+    if (!successorKey || visitedCodes.has(successorKey)) return json({ ok: false, error: "pass_unavailable" }, cors, 409);
+    visitedCodes.add(successorKey);
+    const newest = await readCode(env, successorKey);
+    if (!newest) return json({ ok: false, error: "pass_unavailable" }, cors, 409);
+    record = newest;
+  }
+  if (!record || !record.email) return json({ ok: false, error: "email_unavailable" }, cors, 409);
+  const expiry = Number(record.exp);
+  if (!Number.isFinite(expiry) || expiry <= Date.now()) return json({ ok: false, error: "pass_expired" }, cors, 410);
+
+  const codeKey = fnv1a(String(record.code || code).toUpperCase()).toString(16).padStart(8, "0");
+  const throttleKey = "email-resend:" + codeKey;
+  const now = Date.now();
+  const day = Math.floor(now / 864e5);
+  let throttle = { day, count: 0, last: 0 };
+  try { throttle = JSON.parse(await env.KV.get(throttleKey) || "null") || throttle; } catch (e) {}
+  if (throttle.day === day && throttle.count >= 3)
+    return json({ ok: false, error: "resend_limit_reached" }, cors, 429);
+  if (throttle.last && now - throttle.last < 60000)
+    return json({ ok: false, error: "resend_wait" }, cors, 429);
+  throttle = { day, count: throttle.day === day ? throttle.count + 1 : 1, last: now };
+  await env.KV.put(throttleKey, JSON.stringify(throttle), { expirationTtl: 172800 });
+
+  try {
+    await emailCode(env, record.email, record.code || code);
+  } catch (e) {
+    console.error(`[docoga-mail] resend_not_accepted reason=${safeMailFailureReason(e)}`);
+    return json({ ok: false, error: "email_send_failed" }, cors, 502);
+  }
+  return json({ ok: true, message: "email_request_accepted" }, cors);
+}
+
+/* ---------- Business waitlist (Phase 0, 11 Oct 2026) ----------
+ * Self-serve "notify me at launch" for the Business tier. Replaces the retired
+ * quote-by-WhatsApp CTA (owner instruction 11 Oct 2026: Business must run
+ * end-to-end without the customer sending a WhatsApp message).
+ * - dedupe on email (KV bizwait:{email}); rate guard 3 per IP per day
+ * - the signup is stored BEFORE any email: a signup remains valid even when
+ *   the separate email hand-off fails (same rule as pass issuance)
+ * - owner reads the list in the Cloudflare KV dashboard (no public read endpoint) */
+async function handleBusinessWaitlist(request, env, cors) {
+  const body = await request.json().catch(() => null);
+  if (!body) return json({ ok: false, error: "json body required" }, cors, 400);
+  const email = String(body.email || "").trim().slice(0, 254).toLowerCase();
+  const company = String(body.company || "").trim().slice(0, 120);
+  const segment = String(body.segment || "").trim().slice(0, 40);
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+    return json({ ok: false, error: "valid email required" }, cors, 400);
+  const SEGMENTS = ["estate-agent", "property-manager", "landlord", "hr-team"];
+  if (segment && !SEGMENTS.includes(segment))
+    return json({ ok: false, error: "unknown segment" }, cors, 400);
+  try {
+    const ip = ((request.headers.get("cf-connecting-ip") || request.headers.get("x-real-ip") || "unknown").replace(/[^a-zA-Z0-9.:_-]/g, "").slice(0, 64)) || "unknown";
+    const k = "bizwait:ip:" + ip + ":" + new Date().toISOString().slice(0, 10);
+    const n = Number((await env.KV.get(k)) || "0") + 1;
+    await env.KV.put(k, String(n), { expirationTtl: 86400 });
+    if (n > 3) return json({ ok: false, error: "too many requests from your connection — try again tomorrow" }, cors, 429);
+  } catch (e) {}
+  const key = "bizwait:" + email;
+  const existing = await env.KV.get(key);
+  if (existing) return json({ ok: true, alreadyOnList: true });
+  await env.KV.put(key, JSON.stringify({ email, company, segment, at: new Date().toISOString() }));
+  let emailSent = false;
+  try {
+    await sendMail(
+      env, email,
+      "You're on the DocOga Business list",
+      "Thanks — you're on the list for the DocOga Business tier (annual, per team, your firm's name and logo on every document).\n\nWe'll email you once, when your team can sign up. No WhatsApp, no chasing — if you don't see it, check spam.\n\n— DocOga, Abuja\nhttps://docoga.com.ng",
+      mailShell(`<h2 style="margin:0 0 12px;font-size:20px;color:#0B1B3F">You're on the list</h2><p style="margin:0 0 12px;font-size:14px;color:#33415C;line-height:1.6">We're building the DocOga <b>Business</b> tier — annual, per team, your firm's name and logo on every document, team seats you manage yourself.</p><p style="margin:0;font-size:14px;color:#33415C;line-height:1.6">We'll email you once, when your team can sign up. No WhatsApp, no chasing.</p>`)
+    );
+    emailSent = true;
+  } catch (e) {
+    // Never log the recipient or provider response body. The signup is already stored.
+    console.error(`[docoga-mail] bizwait_email_not_accepted reason=${safeMailFailureReason(e)}`);
+  }
+  return json({ ok: true, alreadyOnList: false, confirmationEmail: emailSent });
 }
 
 /* ---------- Flutterwave webhook — PRIMARY instant-delivery path for payment links ---------- */
@@ -252,48 +384,6 @@ async function handleFlwWebhook(request, env, cors) {
     if (id !== ref) await env.KV.put("ref:" + id, code);
   }
   return new Response("ok", { status: 200 });
-}
-
-/* ---------- Business waitlist (Phase 0, 11 Oct 2026) ----------
- * Self-serve "notify me at launch" for the Business tier. Replaces the retired
- * quote-by-WhatsApp CTA (owner instruction 11 Oct 2026: Business must run
- * end-to-end without the customer sending a WhatsApp message).
- * - dedupe on email (KV bizwait:{email}); rate guard 3 per IP per day
- * - confirmation email best-effort via the existing provider chain
- * - owner reads the list in the Cloudflare KV dashboard (no public read endpoint) */
-async function handleBusinessWaitlist(request, env, cors) {
-  let body = null;
-  try { body = await request.json(); } catch (e) {}
-  if (!body) return json({ ok: false, error: "json body required" }, cors, 400);
-  const email = String(body.email || "").trim().slice(0, 254).toLowerCase();
-  const company = String(body.company || "").trim().slice(0, 120);
-  const segment = String(body.segment || "").trim().slice(0, 40);
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
-    return json({ ok: false, error: "valid email required" }, cors, 400);
-  const SEGMENTS = ["estate-agent", "property-manager", "landlord", "hr-team"];
-  if (segment && !SEGMENTS.includes(segment))
-    return json({ ok: false, error: "unknown segment" }, cors, 400);
-  try {
-    const ip = ((request.headers.get("cf-connecting-ip") || request.headers.get("x-real-ip") || "unknown").replace(/[^a-zA-Z0-9.:_-]/g, "").slice(0, 64)) || "unknown";
-    const k = "bizwait:ip:" + ip + ":" + new Date().toISOString().slice(0, 10);
-    const n = Number((await env.KV.get(k)) || "0") + 1;
-    await env.KV.put(k, String(n), { expirationTtl: 86400 });
-    if (n > 3) return json({ ok: false, error: "too many requests from your connection — try again tomorrow" }, cors, 429);
-  } catch (e) {}
-  const key = "bizwait:" + email;
-  const existing = await env.KV.get(key);
-  if (existing) return json({ ok: true, alreadyOnList: true });
-  await env.KV.put(key, JSON.stringify({ email, company, segment, at: new Date().toISOString() }));
-  let emailSent = false;
-  try {
-    emailSent = !!(await sendMail(
-      env, email,
-      "You're on the DocOga Business list",
-      "Thanks — you're on the list for the DocOga Business tier (annual, per team, your firm's name and logo on every document).\n\nWe'll email you once, when your team can sign up. No WhatsApp, no chasing — if you don't see it, check spam.\n\n— DocOga, Abuja\nhttps://docoga.com.ng",
-      mailShell(`<h2 style="margin:0 0 12px;font-size:20px;color:#0B1B3F">You're on the list</h2><p style="margin:0 0 12px;font-size:14px;color:#33415C;line-height:1.6">We're building the DocOga <b>Business</b> tier — annual, per team, your firm's name and logo on every document, team seats you manage yourself.</p><p style="margin:0;font-size:14px;color:#33415C;line-height:1.6">We'll email you once, when your team can sign up. No WhatsApp, no chasing.</p>`)
-    ));
-  } catch (e) {}
-  return json({ ok: true, alreadyOnList: false, confirmationEmail: emailSent });
 }
 
 /* ---------- Flutterwave v4 (OAuth) helpers ---------- */
@@ -566,6 +656,7 @@ export default {
       return json({ ok: true, service: "docoga-pass", lastWebhookMinutesAgo: lw, priceNGN: PRICE_NGN }, cors);
     }
       if (url.pathname === "/issue" && request.method === "POST") return await handleIssue(request, env, cors);
+      if (url.pathname === "/resend-email" && request.method === "POST") return await handleResendEmail(request, env, cors);
       if (url.pathname === "/flw-webhook" && request.method === "POST") return await handleFlwWebhook(request, env, cors);
       if (url.pathname === "/verify" && request.method === "GET") return await handleVerify(url, env, cors);
       if (url.pathname === "/activate" && request.method === "GET") return await handleActivate(url, env, cors);
