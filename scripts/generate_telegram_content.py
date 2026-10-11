@@ -11,8 +11,13 @@ Photo posts use brand images from the brand/ folder.
 import json
 import random
 import os
+import sys
 from datetime import datetime
 from pathlib import Path
+
+# The escaper lives in tools/ so the poster and the tests share one definition.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
+from telegram_mdv2 import escape, validate  # noqa: E402
 
 # ===== CONFIG =====
 ASSETS_DIR = Path("assets/telegram")
@@ -37,7 +42,7 @@ PHOTO_POST_IMAGES = [
 
 TEMPLATES = {
     "promo": [
-        "🚀 *Get Clean Tenancy Agreements in Seconds!*\n\nDocOga helps Nigerian landlords and tenants create professional documents instantly\\. No lawyer fees!\n\n👉 Try it free: https://docoga\\.com\\.ng",
+        "🚀 *Get Clean Tenancy Agreements in Seconds\\!*\n\nDocOga helps Nigerian landlords and tenants create professional documents instantly\\. No lawyer fees\\!\n\n👉 Try it free: https://docoga\\.com\\.ng",
         "📄 *Need a Rent Receipt?*\n\nGenerate legally valid rent receipts in minutes with DocOga\\. Perfect for Nigerian landlords and tenants\\.\n\n👉 https://docoga\\.com\\.ng",
         "⚖️ *Avoid Tenancy Disputes\\!*\n\nUse DocOga's professionally drafted agreements to protect your rights\\. Nigerian law compliant\\.\n\n👉 https://docoga\\.com\\.ng",
         "💰 *Save ₦50,000 on Legal Fees\\!*\n\nDocOga's Oga Pass gives you unlimited clean documents for just ₦2,000/30 days\\.\n\n👉 Get yours: https://docoga\\.com\\.ng",
@@ -152,8 +157,22 @@ def generate_daily_content():
     template = random.choice(TEMPLATES[post_type])
     hashtag = HASHTAGS.get(post_type, "#DocOga #NigerianProperty")
 
-    # Build the full message
-    message = f"{template}\n\n{hashtag}"
+    # Build the full message. The templates carry their own MarkdownV2 escapes
+    # (that is deliberate — they were written for it), but the hashtag block is
+    # generated text, so it MUST go through the escaper: `#` is reserved in
+    # MarkdownV2 and a raw hashtag makes Telegram reject the entire post with
+    # "can't parse entities: Character '#' is reserved". That was the 7 Oct
+    # 2026 outage — every post failed, every day, for four days.
+    message = f"{template}\n\n{escape(hashtag)}"
+
+    # Fail loudly in the log rather than silently in the channel. The unit
+    # tests in tools/tests/test_telegram_mdv2.py cover every template; this is
+    # the runtime tripwire for a template added later without its escapes.
+    problems = validate(message)
+    if problems:
+        log("⚠️ Message is not valid MarkdownV2 — the poster will fall back to plain text:")
+        for problem in problems:
+            log(f"   • {problem}")
 
     # Decide on photo vs text post
     send_photo = should_send_photo()

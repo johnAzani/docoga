@@ -2,16 +2,30 @@ name: DocOga Telegram Auto-Post
 
 # Posts daily content to the @docogadaily Telegram channel
 # Runs at 9 AM Nigeria time (UTC+1 = 8 AM UTC)
+#
+# Hardened 11 Oct 2026 after four days of silent failure (7–10 Oct). The post
+# itself was failing on a MarkdownV2 escaping bug, but the reason nobody knew
+# was structural, and those three gaps are what this workflow now closes:
+#   1. a preflight that asks Telegram whether the bot may post at all, and says
+#      which of token / chat / permissions is wrong (tools/telegram_preflight.py),
+#   2. the poster's own words on stderr captured to a file, so the exact API
+#      error lands in the issue instead of only in the run log,
+#   3. a labelled issue when a run fails, so a broken day is not just a red dot.
 
 on:
   schedule:
     - cron: '0 8 * * *'  # 8 AM UTC = 9 AM Nigeria time (UTC+1)
   workflow_dispatch:     # Allow manual triggering
 
+permissions:
+  contents: read
+  issues: write          # a failed run opens (or comments on) a visible issue
+
 jobs:
   generate-and-post:
     name: Generate Content & Post to Telegram
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     env:
       TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -29,6 +43,14 @@ jobs:
         with:
           python-version: '3.11'
 
+      # Runs before any dependency install: it is stdlib-only, and a dead token
+      # or a demoted bot should cost seconds, not a whole run. Each failure
+      # names the cause instead of leaving an unexplained red X.
+      - name: Preflight — may the bot post to the channel?
+        run: |
+          set -o pipefail
+          python3 tools/telegram_preflight.py 2>&1 | tee /tmp/telegram_preflight.log
+
       - name: Install dependencies
         run: pip install requests
 
@@ -36,4 +58,65 @@ jobs:
         run: python3 scripts/generate_telegram_content.py
 
       - name: Post to Telegram
-        run: python3 scripts/post_telegram.py
+        run: |
+          set -o pipefail
+          python3 scripts/post_telegram.py 2>&1 | tee /tmp/telegram_post.log
+
+      # A red run in a repo nobody opens is the same as silence. This makes the
+      # failure land where the owner will actually see it, carrying Telegram's
+      # own error text so triage does not need the run log.
+      - name: Open a visible issue if the run failed
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          RUN_DATE="$(date +%F)"
+
+          PREFLIGHT_TAIL=$(tail -n 20 /tmp/telegram_preflight.log 2>/dev/null || echo "(preflight produced no output)")
+          POST_TAIL=$(tail -n 30 /tmp/telegram_post.log 2>/dev/null || echo "(the poster never ran — the preflight stopped the run)")
+
+          gh label create telegram-automation --color 229ED9 \
+            --description "Unattended Telegram channel pipeline" >/dev/null 2>&1 || true
+
+          cat > /tmp/issue_body.md <<BODY
+          The unattended Telegram post for **$RUN_DATE** failed. **Nothing was published to @docogadaily.**
+
+          - Run: $RUN_URL
+
+          ### What the preflight said
+
+          \`\`\`
+          $PREFLIGHT_TAIL
+          \`\`\`
+
+          ### What the poster said
+
+          \`\`\`
+          $POST_TAIL
+          \`\`\`
+
+          ### Reading it
+
+          - \`can't parse entities: Character '…' is reserved\` — the message markup is
+            wrong. Escape the character (see \`tools/telegram_mdv2.py\`); the poster
+            retries as plain text, and this line says whether that retry worked.
+          - \`getMe failed: … Unauthorized\` — the bot token is revoked. Reissue it with
+            @BotFather and update \`TELEGRAM_BOT_TOKEN\`.
+          - \`chat not found\` / \`bot is not a member\` — the channel ID moved or the bot
+            was removed. Re-check \`TELEGRAM_CHAT_ID\` and the channel's admin list.
+          - \`not enough rights\` / \`can_post_messages\` — re-grant the bot "Post messages"
+            in the channel's administrator settings.
+          - \`429 Too Many Requests\` — flood limit; the next scheduled run is unaffected.
+          BODY
+
+          EXISTING=$(gh issue list --label telegram-automation --state open --limit 100 \
+            --json number,title \
+            --jq "[.[] | select(.title | contains(\$ENV.RUN_DATE)) | .number][0] // empty")
+          if [ -n "$EXISTING" ]; then
+            gh issue comment "$EXISTING" --body-file /tmp/issue_body.md
+            echo "Commented on issue #$EXISTING"
+          else
+            gh issue create --title "Telegram post failed — $RUN_DATE" \
+              --label telegram-automation --body-file /tmp/issue_body.md
+          fi

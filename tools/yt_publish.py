@@ -40,6 +40,26 @@ def get_access_token():
     
     if r.status_code != 200:
         print(f"❌ Token refresh failed: {r.status_code} — {r.text[:300]}")
+        # The 9 Oct 2026 failure was this one. It is worth naming precisely,
+        # because "refresh token" and "client" are different repairs:
+        #   invalid_client / "The OAuth client was not found" -> the OAuth client
+        #     itself is gone from the Cloud project. No amount of re-issuing a
+        #     refresh token helps; the client must be recreated and all three
+        #     secrets replaced together.
+        #   invalid_grant -> the refresh token was revoked or has expired.
+        body = r.text.lower()
+        if "invalid_client" in body or "oauth client was not found" in body:
+            print(
+                "   ↳ The OAuth *client* no longer exists in the Google Cloud project "
+                "('invalid_client'). Re-create the OAuth client and update "
+                "YT_CLIENT_ID, YT_CLIENT_SECRET and YT_REFRESH_TOKEN together — "
+                "the upload cannot work until then."
+            )
+        elif "invalid_grant" in body:
+            print(
+                "   ↳ The refresh token was revoked or expired ('invalid_grant'). "
+                "Re-run the one-time OAuth flow and update YT_REFRESH_TOKEN."
+            )
         sys.exit(1)
     
     return r.json()["access_token"]
@@ -104,14 +124,30 @@ def upload_video(video_path, title, description="", tags="", privacy="public", c
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description="DocOga YouTube Publisher")
-    parser.add_argument("--video", required=True, help="Path to video file")
-    parser.add_argument("--title", required=True, help="Video title")
+    parser.add_argument("--video", help="Path to video file")
+    parser.add_argument("--title", help="Video title")
     parser.add_argument("--description", default="", help="Video description")
     parser.add_argument("--tags", default="", help="Comma-separated tags")
     parser.add_argument("--privacy", default="public", choices=["public", "unlisted", "private"])
     parser.add_argument("--category", default="22", help="YouTube category ID (22=People & Blogs)")
+    # Cheap credential check for the scheduled workflow: prove a token can be
+    # minted before spending ten minutes rendering a video that cannot be
+    # uploaded. Exists because the 9 Oct run rendered, then failed at the wire.
+    parser.add_argument(
+        "--check-token",
+        action="store_true",
+        help="Only verify that the OAuth credentials can mint a token, then exit",
+    )
     
     args = parser.parse_args(argv)
+    
+    if args.check_token:
+        get_access_token()  # exits 1, naming the cause, if the credentials are dead
+        print("✅ OAuth credentials are usable — a token was minted.")
+        return 0
+    
+    if not args.video or not args.title:
+        parser.error("--video and --title are required (or use --check-token)")
     
     if not os.path.exists(args.video):
         print(f"❌ Video file not found: {args.video}")

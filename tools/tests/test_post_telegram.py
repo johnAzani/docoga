@@ -1,0 +1,231 @@
+"""Poster fallback behaviour — the half of the 7 Oct outage that was invisible.
+
+The message markup bug is covered in test_telegram_mdv2.py. What made the
+outage expensive was that the poster *knew* why the retry failed and threw the
+reason away:
+
+    ❌ Telegram API error: Bad Request: can't parse entities: …
+    ⚠️ Markdown parse failed, retrying as plain text...
+    ❌ Failed to post engagement message          <- no reason given
+
+So these tests pin the behaviour that makes a failure self-diagnosing:
+
+  * the plain-text retry's own error is logged,
+  * a photo that cannot be sent still produces a text post,
+  * a caption too long for Telegram is trimmed, not rejected.
+"""
+
+import copy
+import json
+import sys
+import unittest
+from contextlib import redirect_stdout
+from io import StringIO
+from pathlib import Path
+from unittest.mock import patch
+
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "scripts"))
+
+import post_telegram  # noqa: E402
+
+PARSE_ERROR = (
+    "Bad Request: can't parse entities: Character '#' is reserved and must be "
+    "escaped with the preceding '\\'"
+)
+
+
+class FakeResponse:
+    def __init__(self, payload, status_code=200):
+        self._payload = payload
+        self.status_code = status_code
+        self.text = json.dumps(payload)
+
+    def json(self):
+        return self._payload
+
+
+def ok(message_id=1):
+    return FakeResponse({"ok": True, "result": {"message_id": message_id}})
+
+
+def error(description, status_code=400):
+    return FakeResponse({"ok": False, "description": description}, status_code)
+
+
+class PosterFallbackTests(unittest.TestCase):
+    def setUp(self):
+        self.calls = []
+
+        def recorder(url, json=None, data=None, files=None, timeout=None):
+            # Snapshot the payloads: the poster mutates them in place between
+            # attempts (it pops parse_mode), so holding a reference would make
+            # every recorded call look like the last one.
+            self.calls.append(
+                {
+                    "url": url,
+                    "json": copy.deepcopy(json),
+                    "data": copy.deepcopy(data),
+                }
+            )
+            return self.responses.pop(0)
+
+        self.responses = []
+        self._patch = patch.object(post_telegram.requests, "post", side_effect=recorder)
+        self._patch.start()
+        self.addCleanup(self._patch.stop)
+
+        env = patch.dict(
+            post_telegram.os.environ,
+            {"TELEGRAM_BOT_TOKEN": "test-token", "TELEGRAM_CHAT_ID": "@channel"},
+        )
+        env.start()
+        self.addCleanup(env.stop)
+        post_telegram.TELEGRAM_BOT_TOKEN = "test-token"
+        post_telegram.TELEGRAM_CHAT_ID = "@channel"
+        self.addCleanup(setattr, post_telegram, "TELEGRAM_BOT_TOKEN", None)
+        self.addCleanup(setattr, post_telegram, "TELEGRAM_CHAT_ID", None)
+
+    def _run(self, func, *args, **kwargs):
+        out = StringIO()
+        with redirect_stdout(out):
+            result = func(*args, **kwargs)
+        return result, out.getvalue()
+
+    def test_parse_error_retries_as_plain_text_without_markup(self):
+        self.responses = [error(PARSE_ERROR), ok()]
+        result, output = self._run(
+            post_telegram.send_text_message, "*Bold* text\\. #DocOga"
+        )
+
+        self.assertTrue(result)
+        self.assertIn("plain text fallback", output)
+        first, second = self.calls
+        self.assertEqual(first["json"]["parse_mode"], "MarkdownV2")
+        self.assertNotIn("parse_mode", second["json"])
+        # Markup and escapes go; real characters (including '#' in plain text)
+        # stay exactly as written.
+        self.assertEqual(second["json"]["text"], "Bold text. #DocOga")
+
+    def test_failed_retry_reports_why_it_failed(self):
+        """The regression: the second error used to be discarded."""
+        self.responses = [
+            error(PARSE_ERROR),
+            error("Bad Request: not enough rights to send text messages to the chat", 403),
+        ]
+        result, output = self._run(post_telegram.send_text_message, "hello #DocOga")
+
+        self.assertFalse(result)
+        self.assertIn("Plain-text retry also failed", output)
+        self.assertIn("not enough rights", output)
+        self.assertIn("HTTP 403", output)
+
+    def test_unsendable_photo_falls_back_to_a_text_post(self):
+        self.responses = [
+            error("Bad Request: PHOTO_INVALID_DIMENSIONS", 400),
+        ]
+        # send_photo_message keeps a file handle open; a real file is needed.
+        photo = Path(self.enterContext(_temp_png()))
+        self.responses.append(ok())  # the text fallback
+        result, output = self._run(
+            post_telegram.send_photo_message, str(photo), "Caption with #hashtag"
+        )
+
+        self.assertTrue(result)
+        self.assertIn("falling back to a text post", output)
+        self.assertTrue(self.calls[0]["url"].endswith("/sendPhoto"))
+        self.assertTrue(self.calls[1]["url"].endswith("/sendMessage"))
+
+    def test_photo_parse_error_retries_the_caption_as_plain_text(self):
+        photo = Path(self.enterContext(_temp_png()))
+        self.responses = [error(PARSE_ERROR), ok(2)]
+        result, output = self._run(
+            post_telegram.send_photo_message, str(photo), "*Caption* with #hashtag"
+        )
+
+        self.assertTrue(result)
+        self.assertIn("plain caption", output)
+        self.assertNotIn("parse_mode", self.calls[1]["data"])
+
+    def test_over_long_caption_is_trimmed_not_rejected(self):
+        photo = Path(self.enterContext(_temp_png()))
+        self.responses = [ok(3)]
+        long_caption = "x" * 2000
+        self._run(post_telegram.send_photo_message, str(photo), long_caption)
+        self.assertEqual(len(self.calls[0]["data"]["caption"]), post_telegram.MAX_CAPTION_CHARS)
+
+    def test_over_long_message_is_trimmed_not_rejected(self):
+        self.responses = [ok(4)]
+        self._run(post_telegram.send_text_message, "y" * 5000)
+        self.assertEqual(len(self.calls[0]["json"]["text"]), post_telegram.MAX_MESSAGE_CHARS)
+
+
+def _temp_png():
+    """A context manager yielding a throwaway PNG path (content is never parsed)."""
+    import tempfile
+
+    class _Temp:
+        def __enter__(self):
+            self._tmp = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
+            self._tmp.write(b"\x89PNG\r\n\x1a\n fake")
+            self._tmp.close()
+            return self._tmp.name
+
+        def __exit__(self, *exc):
+            Path(self._tmp.name).unlink(missing_ok=True)
+
+    return _Temp()
+
+
+class PreflightTests(unittest.TestCase):
+    """The preflight must name a missing secret without touching the network."""
+
+    def test_missing_secrets_exit_two(self):
+        sys.path.insert(0, str(ROOT / "tools"))
+        import telegram_preflight
+
+        with patch.dict(telegram_preflight.os.environ, {}, clear=True):
+            out = StringIO()
+            with redirect_stdout(out):
+                code = telegram_preflight.main([])
+        self.assertEqual(code, 2)
+        self.assertIn("TELEGRAM_BOT_TOKEN", out.getvalue())
+
+    def test_invalid_token_exits_three(self):
+        sys.path.insert(0, str(ROOT / "tools"))
+        import telegram_preflight
+
+        with patch.dict(
+            telegram_preflight.os.environ,
+            {"TELEGRAM_BOT_TOKEN": "bad", "TELEGRAM_CHAT_ID": "@channel"},
+            clear=True,
+        ), patch.object(telegram_preflight, "call", return_value=(False, "Unauthorized")):
+            out = StringIO()
+            with redirect_stdout(out):
+                code = telegram_preflight.main([])
+        self.assertEqual(code, 3)
+        self.assertIn("Unauthorized", out.getvalue())
+
+    def test_demoted_bot_exits_five(self):
+        sys.path.insert(0, str(ROOT / "tools"))
+        import telegram_preflight
+
+        responses = {
+            "getMe": (True, {"id": 42, "username": "docoga_bot"}),
+            "getChat": (True, {"id": -100, "type": "channel", "title": "DocOga Daily"}),
+            "getChatMember": (True, {"status": "member"}),
+        }
+        with patch.dict(
+            telegram_preflight.os.environ,
+            {"TELEGRAM_BOT_TOKEN": "t", "TELEGRAM_CHAT_ID": "@channel"},
+            clear=True,
+        ), patch.object(telegram_preflight, "call", side_effect=lambda m, *a, **k: responses[m]):
+            out = StringIO()
+            with redirect_stdout(out):
+                code = telegram_preflight.main([])
+        self.assertEqual(code, 5)
+        self.assertIn("administrator", out.getvalue())
+
+
+if __name__ == "__main__":
+    unittest.main()
