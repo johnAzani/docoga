@@ -128,7 +128,7 @@ const win = w(dom);
 await wait(120); // let init() + inline scripts settle
 check('page loads with zero uncaught errors', dom.__errs().length === 0, dom.__errs().join(' | ').slice(0, 200));
 check('localStorage store wrapper present', typeof lex(dom, 'store') === 'object' && typeof lex(dom, 'store').getItem === 'function');
-check('router knows 14 pages (13 + business-setup, Phase 2)', lex(dom, 'PAGES.length') === 14, 'PAGES=' + lex(dom, 'PAGES.length'));
+check('router knows 15 pages (13 + business-setup + team dashboard)', lex(dom, 'PAGES.length') === 15, 'PAGES=' + lex(dom, 'PAGES.length'));
 
 const PAGES = ['home', 'agreement', 'notice', 'receipt', 'invoice', 'employment', 'caution', 'demand', 'payslip', 'warning', 'poa', 'docs', 'pricing', 'business-setup'];
 let routeOk = 0, routeBad = [];
@@ -600,6 +600,66 @@ upDom.window.printCurrent('agreement');
 const upPr = $(upDom, 'print-root');
 check('unpaid team documents still carry the DocOga banner (branding is what is paid for)',
       !!upPr.querySelector('.free-banner') && !upPr.querySelector('.team-banner'));
+
+/* ============================ TEAM PORTAL (PHASE 3) ============================ */
+section('Team portal + support surface (Phase 3)');
+check('team dashboard route registered with the portal container',
+      lex(dom, "PAGES.indexOf('team')") !== -1 &&
+      !!dom.window.document.getElementById('page-team') &&
+      !!dom.window.document.getElementById('team-portal'));
+check('signed-out visitor → portal shows the sign-in hint (magic link) + setup link',
+      /Sign in to your team dashboard/.test($(dom, 'team-portal').textContent) &&
+      !!dom.window.document.querySelector('#team-portal #tp-login-email') &&
+      !!dom.window.document.querySelector('#team-portal a[href="#business-setup"]'));
+/* Phase 1 signed teamDom out (banner-restore check) — boot a fresh active-team DOM for the portal */
+const teamDom3 = boot({ storage: teamStorage });
+await new Promise(res => setTimeout(res, 80));
+const tpAct = teamDom3.window.document.querySelector('#team-portal');
+check('active team → portal shows the licence card (firm + ACTIVE + expiry)',
+      /Firm & Co/.test(tpAct.textContent) && /ACTIVE · until/.test(tpAct.textContent),
+      tpAct.textContent.slice(0, 160));
+check('owner gets the branding editor (firm name pre-filled, logo input PNG/JPG/SVG)',
+      !!teamDom3.window.document.querySelector('#team-portal #tp-brand-name') &&
+      teamDom3.window.document.querySelector('#team-portal #tp-brand-name').value === 'Firm & Co' &&
+      /image\/svg\+xml/.test(teamDom3.window.document.querySelector('#team-portal #tp-brand-logo').getAttribute('accept') || ''));
+check('seats card lists the owner seat + the invite form (owner only)',
+      /owner@firm\.ng/.test(tpAct.textContent) &&
+      !!teamDom3.window.document.querySelector('#team-portal #tp-invite-email'));
+check('invoices card present + support card links business@ and the FAQ',
+      !!teamDom3.window.document.querySelector('#team-portal #tp-invoices') &&
+      !!teamDom3.window.document.querySelector('#team-portal a[href="mailto:business@docoga.com.ng"]') &&
+      !!teamDom3.window.document.querySelector('#team-portal a[href="support.html"]'));
+check('active + unpaid chips both get the “Team dashboard →” link',
+      !!teamDom3.window.document.querySelector('#biz-team-box a[href="#team"]') &&
+      !!upDom.window.document.querySelector('#biz-team-box a[href="#team"]'));
+check('unpaid team portal → UNPAID licence card with the quote total + pay buttons',
+      /UNPAID/.test($(upDom, 'team-portal').textContent) &&
+      /₦103,200/.test($(upDom, 'team-portal').textContent) &&
+      !!upDom.window.document.querySelector('#team-portal [onclick*="transfer"]'),
+      'portal=' + $(upDom, 'team-portal').textContent.slice(0, 160) + ' | chip=' + upDom.window.document.querySelector('#biz-team-box').textContent.slice(0,120));
+check('teamRefresh persists the seats list for the portal',
+      lex(dom, 'teamRefresh.toString()').includes('team.seats=j.seats'));
+check('portal wiring: invoices list + printable invoice links + seats actions + brand PUT',
+      (() => {
+        const inv = lex(dom, 'teamInvoicesLoad.toString()');
+        const seatA = lex(dom, 'teamInvite.toString()') + lex(dom, 'teamRevoke.toString()');
+        const brand = lex(dom, 'teamBrandSave.toString()');
+        return inv.includes('/business/team/invoices') && inv.includes('/business/invoice/') &&
+               seatA.includes('/business/team/seats') && seatA.includes("action:'invite'") && seatA.includes("action:'revoke'") &&
+               brand.includes('/business/team/brand') && brand.includes("method:'PUT'");
+      })());
+check('logo upload validated client-side: type whitelist + 25KB cap',
+      (() => { const s = lex(dom, 'teamBrandLogoChange.toString()'); return s.includes('25*1024') && s.includes('png|jpe?g|svg'); })());
+const supportHtml = fs.readFileSync(path.join(ROOT, 'site', 'support.html'), 'utf8');
+check('support.html: noindex, business@ everywhere, wrong-amount + renewal + data answers',
+      /noindex/.test(supportHtml) && (supportHtml.match(/business@docoga\.com\.ng/g) || []).length >= 5 &&
+      /wrong amount/i.test(supportHtml) && /renew/i.test(supportHtml) && /Privacy Policy/.test(supportHtml));
+check('support.html makes NO fixed refund-window promise (§11 pending)',
+      !/14[- ]day/i.test(supportHtml) && !/14[- ]days/i.test(supportHtml));
+check('privacy.html: Business Teams section (account data spelled out) + dated 11 Oct',
+      /<h2>5\. Business teams<\/h2>/.test(fs.readFileSync(path.join(ROOT, 'site', 'privacy.html'), 'utf8')) &&
+      /11 October 2026/.test(fs.readFileSync(path.join(ROOT, 'site', 'privacy.html'), 'utf8')));
+check('footer links the public support page', !!dom.window.document.querySelector('footer a[href="support.html"]'));
 
 section('config values used by customers');
 const CFG = { PAYMENT_URL: lex(dom, 'PAYMENT_URL'), SUPPORT_WHATSAPP: lex(dom, 'SUPPORT_WHATSAPP'), SITE_URL: lex(dom, 'SITE_URL'), WORKER_URL: lex(dom, 'WORKER_URL'), ANALYTICS_ID: lex(dom, 'ANALYTICS_ID') };

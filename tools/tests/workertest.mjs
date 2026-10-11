@@ -539,6 +539,27 @@ ok('charge(card) → v4 hosted checkout URL returned', r.status === 200 && r.j.p
 r = await hit(te2, '/business/team/charge', Object.assign(authed(bossTok), { method: 'POST', headers: Object.assign(authed(bossTok).headers, { 'content-type': 'application/json' }), body: JSON.stringify({ method: 'transfer' }) }));
 ok('active team cannot create a new charge (renewals are by email in Phase 2)', r.status === 400, String(r.status) + ' ' + JSON.stringify(r.j).slice(0, 90));
 
+/* ---------- Phase 3 — portal invoice list + printable invoice (C10) ---------- */
+r = await hit(te2, '/business/team/invoices', authed(bossTok));
+ok('GET /business/team/invoices (team session) → paid invoice listed with total', r.status === 200 && r.j.ok === true && r.j.invoices.length === 1 && r.j.invoices[0].id === inv1 && r.j.invoices[0].status === 'paid' && r.j.invoices[0].total === 296700, String(r.status) + ' ' + JSON.stringify(r.j).slice(0, 120));
+await te2.KV.put('teaminv:' + team1, JSON.stringify([{ id: 'olinv0001', total: 111, method: 'transfer', status: 'paid', created: new Date(Date.now() - 400 * 864e5).toISOString() }, { id: inv1, total: 296700, method: 'transfer', status: 'paid', created: new Date().toISOString() }]));
+r = await hit(te2, '/business/team/invoices', authed(bossTok));
+ok('invoice list applies the 12-month window (older entry excluded)', r.status === 200 && r.j.invoices.length === 1 && r.j.invoices[0].id === inv1, JSON.stringify(r.j.invoices).slice(0, 120));
+r = await hit(te2, '/business/team/invoices', authed(boss2Tok));
+ok('wrong-amount webhook updated the list entry status to wrong_amount', r.status === 200 && r.j.invoices.length === 1 && r.j.invoices[0].id === inv2 && r.j.invoices[0].status === 'wrong_amount', JSON.stringify(r.j.invoices).slice(0, 120));
+r = await hit(te2, '/business/invoice/' + inv1, { method: 'GET' });
+ok('GET /business/invoice/:id without session → 401', r.status === 401, String(r.status));
+r = await hit(te2, '/business/invoice/' + inv1, authed(bossTok));
+ok('GET /business/invoice/:id (own team) → printable HTML: firm name, total, PAID, id', r.status === 200 && /<!DOCTYPE html>/i.test(r.text) && r.text.includes('INVOICE') && r.text.includes('New Firm') && r.text.includes('296,700') && r.text.includes(inv1) && /PAID/.test(r.text) && /business@docoga\.com\.ng/.test(r.text), String(r.status) + ' ' + r.text.slice(0, 100));
+r = await hit(te2, '/business/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'vol@volfirm.ng' }) });
+const volMagic = decodeURIComponent((((mailCap[mailCap.length - 1] || {}).body || {}).text || '').match(/team_token=([\w.~@%]+)/)[1]);
+r = await hit(te2, '/business/login?token=' + encodeURIComponent(volMagic));
+const volTok = r.j.token;
+r = await hit(te2, '/business/invoice/' + inv1, authed(volTok));
+ok('another team\'s session opening this invoice → 404 (no enumeration, no leak)', r.status === 404, String(r.status));
+r = await hit(te2, '/business/invoice/not-an-id!!', authed(volTok));
+ok('malformed invoice id → 404 (no KV probe with garbage)', r.status === 404, String(r.status));
+
 globalThis.fetch = realFetch;
 
 console.log(fails === 0 ? '\n🏆 WORKER LOGIC UNIT-VERIFIED: expiry / fence / hostile records / top-up / redirect verify / signed webhook / underpayment gate / email hand-off / business waitlist / team core (magic-link auth, brand, seats, revoke)' : '\n💥 ' + fails + ' FAILED');

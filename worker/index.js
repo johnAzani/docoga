@@ -46,6 +46,12 @@
  *                       reference activates the team (annual, +365 days);
  *                       wrong amount → VA voided + fresh VA + email (§7.4);
  *                       idempotent; retail pass path untouched.
+ *   GET  /business/team/invoices  Portal: team invoice list (12-month window).
+ *   GET  /business/invoice/:id    C10 (Phase 3): authoritative invoice as a
+ *                       printable HTML document (print → Save as PDF in the
+ *                       browser — no PDF lib, ₦0; binary .pdf is a v2 upgrade
+ *                       if teams demand attachments). Any seat of the team;
+ *                       other teams' ids are 404 (no enumeration).
  *
  * Free-tier capacity: Workers 100k req/day · KV 1k writes/day · Resend 3k emails/month.
  *
@@ -791,10 +797,58 @@ async function handleBusinessCharge(request, env, cors) {
   await env.KV.put("invref:" + id, id);
   if (inv.flw_ref && inv.flw_ref !== id) await env.KV.put("invref:" + inv.flw_ref, id);
   await env.KV.put("team:" + s.id + ":inv", id);
+  // Team invoice index (newest first, cap 24) — the portal list reads this
+  let invIndex = []; try { invIndex = JSON.parse(await env.KV.get("teaminv:" + s.id) || "[]"); } catch (e) {}
+  invIndex = [{ id, total: q.total, method, status: "open", created: now }].concat(invIndex).slice(0, 24);
+  try { await env.KV.put("teaminv:" + s.id, JSON.stringify(invIndex)); } catch (e) {}
   const out = { ok: true, reused: false, invoice: { id, base: inv.amount, vat: inv.vat, total: inv.total } };
   if (method === "transfer") out.va = JSON.parse(await env.KV.get("inv:" + id + ":va"));
   else out.pay_url = inv.pay_url;
   return json(out, cors);
+}
+async function handleBusinessInvoices(request, env, cors) {
+  const s = await teamSession(request, env);
+  if (!s) return json({ ok: false, error: "sign_in_required" }, cors, 401);
+  let invIndex = []; try { invIndex = JSON.parse(await env.KV.get("teaminv:" + s.id) || "[]"); } catch (e) {}
+  // 12-month download window (C10) — older invoices stay in the records, not the portal
+  const cutoff = Date.now() - 365 * 864e5;
+  const invoices = invIndex.filter(x => x && x.id && (Date.parse(x.created || "1970-01-01T00:00:00Z") >= cutoff)).slice(0, 20);
+  return json({ ok: true, invoices });
+}
+function invoiceHtml(inv, team, brand, va) {
+  const firm = brand.name || (team && team.name) || "Your firm";
+  const logo = brand.logo ? '<img src="' + brand.logo + '" style="height:40px;max-width:180px;object-fit:contain">' : '';
+  const lines = [
+    '<tr><td>DocOga Business licence — ' + htmlEsc(String(inv.plan || "team")) + ' plan (' + (inv.seats || 1) + ' seats, ' + (inv.docs || 100) + ' docs/month)</td><td align="right">' + Number(inv.amount).toLocaleString('en-NG') + '</td></tr>',
+    '<tr><td>VAT (7.5%)</td><td align="right">' + Number(inv.vat).toLocaleString('en-NG') + '</td></tr>',
+    '<tr class="total"><td>Total — annual</td><td align="right">₦' + Number(inv.total).toLocaleString('en-NG') + '</td></tr>',
+  ].join("");
+  const statusChip = inv.status === "paid"
+    ? '<span class="chip paid">PAID' + (inv.paid_at ? ' · ' + htmlEsc(inv.paid_at.slice(0, 10)) : '') + '</span>'
+    : inv.status === "wrong_amount"
+      ? '<span class="chip wrong">WRONG AMOUNT — see fresh account in your email</span>'
+      : '<span class="chip open">OPEN' + (inv.method === "transfer" && va && va.account ? ' · transfer to ' + htmlEsc(va.account) + ' (' + htmlEsc(va.bank || "Flutterwave MFB") + ')' : '') + '</span>';
+  return '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Invoice ' + htmlEsc(inv.id) + ' — DocOga</title>' +
+    '<style>body{font-family:Arial,Helvetica,sans-serif;background:#f1f5f9;margin:0;color:#0f172a}.page{max-width:760px;margin:24px auto;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:36px 40px}@media print{body{background:#fff}.page{border:none;margin:0;max-width:none;padding:24px}button{display:none!important}}.top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}.firm{font-size:20px;font-weight:bold}.sub{color:#475569;font-size:13px;margin-top:2px}.inv{font-size:13px;color:#475569;text-align:right}.chip{display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:bold;margin:10px 0}.chip.paid{background:#dcfce7;color:#166534}.chip.open{background:#fef9c3;color:#854d0e}.chip.wrong{background:#fee2e2;color:#991b1b}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:14px}td{padding:9px 4px;border-bottom:1px solid #e2e8f0;vertical-align:top}tr.total td{font-weight:bold;font-size:16px;border-bottom:none}.meta{font-size:12px;color:#64748b;line-height:1.7}button{background:#0B1B3F;color:#fff;border:none;padding:11px 20px;border-radius:10px;font-size:14px;cursor:pointer;margin-bottom:14px}.foot{margin-top:26px;padding-top:14px;border-top:1px dashed #cbd5e1;font-size:11px;color:#94a3b8;line-height:1.6}</style></head><body>' +
+    '<button onclick="window.print()">Print / Save as PDF</button>' +
+    '<div class="page"><div class="top"><div>' + logo + '<div class="firm">' + htmlEsc(firm) + '</div>' + (brand.address ? '<div class="sub">' + htmlEsc(brand.address) + '</div>' : '') + '</div><div class="inv"><b>INVOICE</b><br>' + htmlEsc(inv.id) + '<br>Issued ' + htmlEsc(String(inv.created || "").slice(0, 10)) + '</div></div>' +
+    '<div>' + statusChip + '</div>' +
+    '<table><tbody>' + lines + '</tbody></table>' +
+    '<div class="meta"><b>Payment:</b> ' + htmlEsc(inv.method === "card" ? "Card / USSD via Flutterwave" : "Bank transfer (virtual account)") + ' · Reference ' + htmlEsc(inv.ref || inv.id) + (inv.flw_ref ? ' · Flutterwave ' + htmlEsc(inv.flw_ref) : '') + (va && va.expires ? ' · account valid until ' + htmlEsc(va.expires) : '') + '<br><b>Billed to:</b> ' + htmlEsc(firm) + ' — 12-month licence, firm branding + seat management included.<br><b>Questions:</b> business@docoga.com.ng (email — we answer within 1 working day).</div>' +
+    '<div class="foot">DocOga · docoga.com.ng · This invoice is generated from the payment record — it is the authoritative statement for this team. DocOga is not a law firm and this invoice is not legal advice.</div></div></body></html>';
+}
+async function handleBusinessInvoice(id, request, env, cors) {
+  const s = await teamSession(request, env);
+  if (!s) return new Response("sign in required", { status: 401, headers: cors });
+  if (!/^[A-Za-z0-9-]{6,40}$/.test(id)) return new Response("invoice not found", { status: 404, headers: cors });
+  const invRaw = await env.KV.get("inv:" + id);
+  if (!invRaw) return new Response("invoice not found", { status: 404, headers: cors });
+  let inv = null; try { inv = JSON.parse(invRaw); } catch (e) {}
+  if (!inv || inv.team !== s.id) return new Response("invoice not found", { status: 404, headers: cors }); // never leak other teams' invoices
+  const team = await loadTeam(env, s.id);
+  let brand = {}; try { brand = JSON.parse(await env.KV.get("brand:" + s.id) || "{}"); } catch (e) {}
+  let va = null; try { va = JSON.parse(await env.KV.get("inv:" + id + ":va") || "null"); } catch (e) {}
+  return new Response(invoiceHtml(inv, team, brand, va), { headers: Object.assign({}, cors, { "Content-Type": "text/html; charset=utf-8" }) });
 }
 async function handleInvoiceWebhook(env, d, ids) {
   // Returns true when this webhook belongs to a Business invoice (handled
@@ -815,6 +869,11 @@ async function handleInvoiceWebhook(env, d, ids) {
       // fresh one, email the correct amount. No human reconciliation.
       inv.status = "wrong_amount"; inv.received_amount = amt;
       await env.KV.put("inv:" + inv.id, JSON.stringify(inv));
+      try {
+        let invIndex = []; try { invIndex = JSON.parse(await env.KV.get("teaminv:" + inv.team) || "[]"); } catch (e) {}
+        const jx = invIndex.findIndex(x => x && x.id === inv.id);
+        if (jx >= 0) { invIndex[jx].status = "wrong_amount"; await env.KV.put("teaminv:" + inv.team, JSON.stringify(invIndex)); }
+      } catch (e) {}
       try {
         const oldVa = JSON.parse(await env.KV.get("inv:" + inv.id + ":va") || "null");
         if (oldVa) { oldVa.voided = true; await env.KV.put("inv:" + inv.id + ":va", JSON.stringify(oldVa)); }
@@ -861,6 +920,11 @@ async function handleInvoiceWebhook(env, d, ids) {
     inv.status = "paid"; inv.paid_at = new Date().toISOString(); inv.received_amount = amt;
     if (d.flw_ref) inv.flw_ref = String(d.flw_ref);
     await env.KV.put("inv:" + inv.id, JSON.stringify(inv));
+    try {
+      let invIndex = []; try { invIndex = JSON.parse(await env.KV.get("teaminv:" + inv.team) || "[]"); } catch (e) {}
+      const i = invIndex.findIndex(x => x && x.id === inv.id);
+      if (i >= 0) { invIndex[i].status = "paid"; invIndex[i].paid_at = inv.paid_at; await env.KV.put("teaminv:" + inv.team, JSON.stringify(invIndex)); }
+    } catch (e) {}
     try {
       if (team && owner) {
         await sendMail(env, owner.email,
@@ -1207,6 +1271,11 @@ export default {
       if (url.pathname === "/business/team/seats" && request.method === "POST") return await handleBusinessSeats(request, env, cors);
       if (url.pathname === "/business/teams" && request.method === "POST") return await handleBusinessTeams(request, env, cors);
       if (url.pathname === "/business/team/charge" && request.method === "POST") return await handleBusinessCharge(request, env, cors);
+      if (url.pathname === "/business/team/invoices" && request.method === "GET") return await handleBusinessInvoices(request, env, cors);
+      if (url.pathname.startsWith("/business/invoice/") && request.method === "GET") {
+        const parts = url.pathname.split("/");
+        if (parts.length === 4) return await handleBusinessInvoice(decodeURIComponent(parts[3]), request, env, cors);
+      }
       return json({ ok: false, error: "not found" }, cors, 404);
     } catch (e) {
       return json({ ok: false, error: String((e && e.message) || e) }, cors, 500);

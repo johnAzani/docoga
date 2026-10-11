@@ -982,6 +982,13 @@ body.has-pass .buy-only{display:none !important}
 </div>
 </section>
 
+<!-- ======================= TEAM PORTAL (Phase 3) ======================= -->
+<section id="page-team">
+<h2 class="page-title">Your team</h2>
+<p class="page-sub">Licence, firm branding, seats, invoices and support — one place, no WhatsApp.</p>
+<div id="team-portal" style="max-width:720px;margin:0 auto"></div>
+</section>
+
 <!-- ======================= PRICING ======================= -->
 <section id="page-pricing">
 <h2 class="page-title">Simple pricing</h2>
@@ -1057,7 +1064,7 @@ body.has-pass .buy-only{display:none !important}
 <div class="foot">
 <b style="color:var(--ink)">DocOga</b> — the Oga of Documents. Made in Abuja, Nigeria 🇳🇬
 <div class="disc"><b>Disclaimer:</b> DocOga provides self-help document templates based on standard Nigerian practice. It is not a law firm and does not provide legal advice. For complex or high-value transactions, consult a qualified Nigerian lawyer. Documents remain binding only when properly completed, signed and witnessed.</div>
-<div>© 2026 DocOga. All rights reserved. · <a href="#pricing">Oga Pass</a> · <a href="privacy.html">Privacy Policy</a> · <a href="terms.html">Terms of Use</a> · Support: <a id="foot-wa" href="#" onclick="return false">WhatsApp</a></div>
+<div>© 2026 DocOga. All rights reserved. · <a href="#pricing">Oga Pass</a> · <a href="privacy.html">Privacy Policy</a> · <a href="terms.html">Terms of Use</a> · <a href="support.html">Support</a> · Oga Pass support: <a id="foot-wa" href="#" onclick="return false">WhatsApp</a></div>
 </div>
 </footer>
 
@@ -1243,21 +1250,24 @@ async function teamRefresh(){
   try{
     const r=await fetch(WORKER_URL+'/business/team',{headers:{Authorization:'Bearer '+team.token}});
     const j=await r.json();
-    if(j.ok){ team.team.name=j.team.name; team.team.slug=j.team.slug; team.team.expiry=j.team.expiry; team.team.status=j.team.status; team.role=j.role; team.brand=j.brand||{}; team.quote=j.quote; updateTeamUI(); renderAll(); return true; }
+    if(j.ok){ team.team.name=j.team.name; team.team.slug=j.team.slug; team.team.expiry=j.team.expiry; team.team.status=j.team.status; team.role=j.role; team.brand=j.brand||{}; team.quote=j.quote; team.seats=j.seats||[]; updateTeamUI(); renderAll(); return true; }
     teamSignOut(false);
   }catch(e){ /* offline: keep last known state; next online call re-checks */ }
   return false;
 }
 async function bizLoginSubmit(e){
   e.preventDefault();
-  const msg=$('biz-login-msg');
-  const email=$('biz-login-email').value.trim();
+  const form=e.target;
+  const msg=$('biz-login-msg')||$('tp-login-msg');
+  const input=form&&form.querySelector('input[type=email]');
+  if(!msg||!input) return false;
+  const email=input.value.trim();
   if(!email){ msg.textContent='Enter the email your team owner added for you.'; return false; }
   msg.textContent='Sending your sign-in link…';
   try{
     const r=await fetch(WORKER_URL+'/business/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});
     const j=await r.json();
-    if(j.ok){ $('biz-login-email').value=''; msg.textContent='✅ Check your inbox — a sign-in link is on its way (works once, 10 minutes).'; }
+    if(j.ok){ input.value=''; msg.textContent='✅ Check your inbox — a sign-in link is on its way (works once, 10 minutes).'; }
     else { msg.textContent=j.error||'Something went wrong — please try again.'; }
   }catch(err){ msg.textContent='Could not reach the server — please try again in a moment.'; }
   return false;
@@ -1270,7 +1280,7 @@ function teamSignOut(silent){
 function updateTeamUI(){
   const box=$('biz-team-box'); if(!box) return;
   if(teamActive()){
-    box.innerHTML='<div class="team-chip"><span>🏢 <b>'+esc(team.team.name)+'</b> · signed in as '+esc(team.email)+(team.role==='owner'?'':'')+'</span><button class="link-btn" onclick="teamSignOut()">Sign out</button></div>';
+    box.innerHTML='<div class="team-chip"><span>🏢 <b>'+esc(team.team.name)+'</b> · signed in as '+esc(team.email)+(team.role==='owner'?'':'')+'</span><a class="link-btn" href="#team">Team dashboard →</a><button class="link-btn" onclick="teamSignOut()">Sign out</button></div>';
   } else if(team && team.token && team.team && team.team.status==='unpaid'){
     const q=team.quote||{};
     box.innerHTML='<div class="team-chip" style="align-items:flex-start;flex-direction:column;gap:6px"><span>🏢 <b>'+esc(team.team.name)+'</b> — activated: pay <b>'+ngn(q.total)+'</b>/yr (incl. VAT) and your team switches on automatically</span>'+
@@ -1279,7 +1289,7 @@ function updateTeamUI(){
       '<button class="btn ghost" style="justify-content:center" onclick="bizCharge(\'card\')">Pay by card / USSD</button>'+
       '</div>'+
       '<div id="biz-va-panel" style="width:100%;margin-top:8px"></div>'+
-      '<button class="link-btn" onclick="teamSignOut()">Sign out</button></div>';
+      '<div style="display:flex;gap:12px;margin-top:6px"><a class="link-btn" href="#team">Team dashboard →</a><button class="link-btn" onclick="teamSignOut()">Sign out</button></div></div>';
   } else {
     box.innerHTML='<div class="team-signin"><div class="team-signin-t">Already part of a DocOga team?</div>'+
       '<form onsubmit="return bizLoginSubmit(event)" style="display:flex;gap:8px;margin-top:8px">'+
@@ -1287,6 +1297,7 @@ function updateTeamUI(){
       '<button class="btn primary" type="submit" style="white-space:nowrap">Sign in</button></form>'+
       '<p class="guarantee" id="biz-login-msg" style="margin-top:8px">Magic link, no password, no WhatsApp.</p></div>';
   }
+  try{ teamPortalRender(); }catch(e){}
 }
 
 /* ================= Business configurator + checkout (Phase 2, 11 Oct 2026 — C3/C5) =================
@@ -1382,6 +1393,152 @@ async function bizPollActivation(){
     }catch(e){ break; }
   }
   const st=$('biz-va-status'); if(st) st.innerHTML='If you already transferred, it usually confirms within a few minutes — just refresh this page.';
+}
+
+/* ================= Team portal (Phase 3, 11 Oct 2026) =================
+   Self-serve dashboard for team members: licence state, firm branding
+   (owner edits), seats (owner invites/revokes), invoices (C10 — each opens
+   a printable page, print → Save as PDF) and support (FAQ + business@).
+   No WhatsApp anywhere: every action is a worker call or an email. */
+function teamChip(status,label){
+  const map={paid:['#dcfce7','#166534'],open:['#fef9c3','#854d0e'],wrong:['#fee2e2','#991b1b'],active:['#dcfce7','#166534'],expired:['#fee2e2','#991b1b']};
+  const c=map[status]||map.open;
+  return '<span style="background:'+c[0]+';color:'+c[1]+';padding:4px 10px;border-radius:999px;font-size:12px;font-weight:bold;white-space:nowrap">'+label+'</span>';
+}
+function teamPortalRender(){
+  const el=$('team-portal'); if(!el) return;
+  if(!team || !team.team){
+    el.innerHTML='<div class="team-signin" style="max-width:460px;margin:0 auto"><div class="team-signin-t">Sign in to your team dashboard</div>'+
+      '<p class="guarantee" style="margin-top:6px">Licence, firm branding, seats, invoices and support — one place, no WhatsApp.</p>'+
+      '<form onsubmit="return bizLoginSubmit(event)" style="display:flex;gap:8px;margin-top:10px">'+
+      '<input id="tp-login-email" type="email" placeholder="Your work email" aria-label="Team sign-in email" style="flex:1;min-width:0;padding:12px 14px;border:1px solid #cdd6e4;border-radius:10px;font-size:16px">'+
+      '<button class="btn primary" type="submit" style="white-space:nowrap">Sign in</button></form>'+
+      '<p class="guarantee" id="tp-login-msg" style="margin-top:8px">Magic link, no password — sent to the email your team owner added for you.</p>'+
+      '<p style="text-align:center;margin-top:12px"><a class="link-btn" href="#business-setup">Setting up your first team? →</a></p></div>';
+    return;
+  }
+  const t=team.team, q=team.quote||{}, b=team.brand||{}, isOwner=team.role==='owner';
+  const exp=t.expiry?new Date(t.expiry).toLocaleDateString('en-NG',{day:'numeric',month:'long',year:'numeric'}):'—';
+  const card='<div style="background:#fff;border:1px solid #cdd6e4;border-radius:12px;padding:16px 18px;margin-bottom:14px">';
+  let h='';
+  /* 1 — licence */
+  h+=card+'<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px"><div style="font-size:16px;font-weight:bold">🏢 '+esc(t.name)+'</div>';
+  if(t.status==='unpaid'){
+    h+=teamChip('open','UNPAID — pay '+ngn(q.total||0)+' to activate');
+    h+='<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" style="justify-content:center" onclick="bizCharge(\'transfer\')">Pay by bank transfer</button><button class="btn ghost" style="justify-content:center" onclick="bizCharge(\'card\')">Pay by card / USSD</button></div>';
+  } else if(t.status==='active'){
+    h+=teamChip('active','ACTIVE · until '+exp);
+  } else if(t.status==='suspended'){
+    h+=teamChip('expired','EXPIRED · email business@docoga.com.ng to renew');
+  }
+  h+='</div><div style="margin-top:8px;font-size:13px;color:#475569">'+(q.tier?q.tier.charAt(0).toUpperCase()+q.tier.slice(1)+' licence':'Business licence')+' · '+(q.seats||'—')+' seats · '+(q.docs||'—')+' docs/month · '+(q.total?ngn(q.total)+' billed yearly, incl. VAT':'')+' · signed in as '+esc(team.email)+(isOwner?' (owner)':'')+'</div></div>';
+  /* 2 — firm branding */
+  h+=card+'<div style="font-size:15px;font-weight:bold;margin-bottom:10px">Firm branding</div>'+
+    '<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px">'+
+    ((b.logo||team._logo)?'<img src="'+esc(b.logo||team._logo)+'" alt="" style="height:40px;max-width:160px;object-fit:contain">':'<div style="width:48px;height:40px;border:1px dashed #94a3b8;border-radius:6px"></div>')+
+    '<div><div style="font-weight:bold">'+esc(b.name||t.name)+'</div>'+(b.address?'<div style="font-size:12px;color:#64748b">'+esc(b.address)+'</div>':'')+(b.footer?'<div style="font-size:12px;color:#64748b">'+esc(b.footer)+'</div>':'')+'</div></div>';
+  if(isOwner){
+    h+='<div style="margin-top:12px;display:grid;gap:8px">'+
+      '<input id="tp-brand-name" type="text" value="'+esc(b.name||t.name)+'" placeholder="Firm or company name" aria-label="Firm name" style="width:100%;box-sizing:border-box;padding:11px 13px;border:1px solid #cdd6e4;border-radius:10px;font-size:15px">'+
+      '<input id="tp-brand-tagline" type="text" value="'+esc(b.tagline||'')+'" placeholder="Tagline (optional)" aria-label="Tagline" style="width:100%;box-sizing:border-box;padding:11px 13px;border:1px solid #cdd6e4;border-radius:10px;font-size:15px">'+
+      '<input id="tp-brand-address" type="text" value="'+esc(b.address||'')+'" placeholder="Address / contact line (optional)" aria-label="Address" style="width:100%;box-sizing:border-box;padding:11px 13px;border:1px solid #cdd6e4;border-radius:10px;font-size:15px">'+
+      '<input id="tp-brand-footer" type="text" value="'+esc(b.footer||'')+'" placeholder="Document footer line (optional)" aria-label="Footer" style="width:100%;box-sizing:border-box;padding:11px 13px;border:1px solid #cdd6e4;border-radius:10px;font-size:15px">'+
+      '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">'+
+      '<label style="font-size:14px;font-weight:600;cursor:pointer" for="tp-brand-logo">Logo (PNG/JPG/SVG ≤ 25KB)</label>'+
+      '<input id="tp-brand-logo" type="file" accept="image/png,image/jpeg,image/svg+xml" aria-label="Logo file" style="font-size:13px" onchange="teamBrandLogoChange()">'+
+      '<img id="tp-brand-logo-preview" alt="" style="height:32px;max-width:120px;object-fit:contain;display:'+(team._logo?'block':'none')+'">'+
+      '</div>'+
+      '<div><button class="btn primary" style="justify-content:center" onclick="teamBrandSave()">Save branding</button> <span id="tp-brand-msg" style="font-size:13px;color:#33415C;display:inline-block;margin-left:8px"></span></div>'+
+      '</div>';
+  } else {
+    h+='<p class="guarantee" style="margin-top:10px">Your owner manages firm branding — changes appear on every document the team produces.</p>';
+  }
+  h+='</div>';
+  /* 3 — seats */
+  const seats=team.seats||[];
+  h+=card+'<div style="font-size:15px;font-weight:bold">Team seats'+(q.seats?' <span style="font-weight:normal;color:#64748b;font-size:13px">('+seats.length+' of '+q.seats+' used)</span>':'')+'</div>';
+  if(seats.length){
+    h+=seats.map(s=>'<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #eef2f7;font-size:14px"><div><b>'+esc(s.name||'')+'</b> '+esc(s.email)+(s.role==='owner'?' <span style="font-size:11px;color:#64748b">(owner)</span>':'')+'</div>'+((isOwner&&s.role!=='owner')?'<button class="link-btn" style="color:#b91c1c" onclick="teamRevoke(\''+esc(s.email)+'\')">Remove</button>':'')+'</div>').join('');
+  } else {
+    h+='<p class="guarantee" style="margin-top:6px">No seats added yet.</p>';
+  }
+  if(isOwner){
+    h+='<div style="display:flex;gap:8px;margin-top:12px"><input id="tp-invite-email" type="email" placeholder="colleague@firm.com" aria-label="Invite email" style="flex:1;min-width:0;padding:11px 13px;border:1px solid #cdd6e4;border-radius:10px;font-size:15px"><button class="btn ghost" style="white-space:nowrap" onclick="teamInvite()">Invite →</button></div>'+
+      '<p id="tp-invite-msg" style="font-size:13px;color:#33415C;margin-top:8px"></p>'+
+      '<p class="guarantee" style="margin-top:4px">They get a sign-in link by email the moment you invite — magic link, no password. Need <b>more seats</b> this year? Email <a href="mailto:business@docoga.com.ng">business@docoga.com.ng</a> and a human confirms the addition.</p>';
+  }
+  h+='</div>';
+  /* 4 — invoices */
+  h+=card+'<div style="font-size:15px;font-weight:bold">Invoices &amp; payments</div>'+
+    '<div id="tp-invoices" style="margin-top:8px"><div style="font-size:13px;color:#33415C">Loading invoices…</div></div>'+
+    '<p class="guarantee" style="margin-top:10px">Each invoice opens as a printable page — use the print button on it (or your browser’s Print → Save as PDF). Invoices stay available for 12 months.</p></div>';
+  /* 5 — support */
+  h+=card+'<div style="font-size:15px;font-weight:bold">Support</div>'+
+    '<div style="font-size:14px;line-height:1.9;margin-top:8px">'+
+    '<a class="link-btn" href="support.html" style="display:inline-block;margin-bottom:6px">Read the Business FAQ →</a><br>'+
+    'Email <a href="mailto:business@docoga.com.ng">business@docoga.com.ng</a> — a real person answers within 1 working day.<br>'+
+    '<span style="color:#64748b;font-size:13px">Mid-year changes (adding seats, renewals, anything unusual) all go through that address — a human replies by email, so there’s always a record.</span></div></div>';
+  el.innerHTML=h;
+  try{ teamInvoicesLoad(); }catch(e){}
+}
+async function teamInvite(){
+  const input=$('tp-invite-email'), msg=$('tp-invite-msg');
+  const email=input&&input.value.trim();
+  if(!email){ msg.textContent='Enter your colleague’s work email.'; return; }
+  msg.textContent='Inviting '+email+'…';
+  try{
+    const r=await fetch(WORKER_URL+'/business/team/seats',{method:'POST',headers:{Authorization:'Bearer '+team.token,'Content-Type':'application/json'},body:JSON.stringify({action:'invite',email})});
+    const j=await r.json();
+    if(j.ok){ input.value=''; msg.textContent='✅ '+email+' will receive a sign-in link by email.'; team.seats=j.seats||team.seats; }
+    else { msg.textContent=j.error||'Could not invite — please try again.'; }
+  }catch(e){ msg.textContent='Could not reach the server — please try again in a moment.'; }
+}
+async function teamRevoke(email){
+  if(!confirm('Remove '+email+' from the team? Their documents stay as they are; they simply lose the team banner.')) return;
+  try{
+    const r=await fetch(WORKER_URL+'/business/team/seats',{method:'POST',headers:{Authorization:'Bearer '+team.token,'Content-Type':'application/json'},body:JSON.stringify({action:'revoke',email})});
+    const j=await r.json();
+    if(j.ok){ team.seats=(j.seats||[]); teamPortalRender(); toast('Removed '+email+'.'); }
+    else toast('⚠️ '+(j.error||'Could not remove — please try again.'));
+  }catch(e){ toast('Could not reach the server — please try again in a moment.'); }
+}
+async function teamBrandSave(){
+  const msg=$('tp-brand-msg');
+  const brand={name:($('tp-brand-name')||{}).value, tagline:($('tp-brand-tagline')||{}).value, address:($('tp-brand-address')||{}).value, footer:($('tp-brand-footer')||{}).value};
+  brand.name=(brand.name||'').trim(); brand.tagline=(brand.tagline||'').trim(); brand.address=(brand.address||'').trim(); brand.footer=(brand.footer||'').trim();
+  if(team._logo) brand.logo=team._logo; else if(team.brand&&team.brand.logo) brand.logo=team.brand.logo;
+  msg.textContent='Saving…';
+  try{
+    const r=await fetch(WORKER_URL+'/business/team/brand',{method:'PUT',headers:{Authorization:'Bearer '+team.token,'Content-Type':'application/json'},body:JSON.stringify(brand)});
+    const j=await r.json();
+    if(j.ok){ team.brand=j.brand||brand; delete team._logo; msg.textContent='✅ Saved — your firm name now appears on every document instead of DocOga.'; updateTeamUI(); }
+    else { msg.textContent=j.error||'Could not save — please try again.'; }
+  }catch(e){ msg.textContent='Could not reach the server — please try again in a moment.'; }
+}
+function teamBrandLogoChange(){
+  const inp=$('tp-brand-logo'), msg=$('tp-brand-msg'), f=inp&&inp.files&&inp.files[0];
+  if(!f) return;
+  if(!/^image\/(png|jpe?g|svg\+xml)$/.test(f.type)){ msg.textContent='Logo must be a PNG, JPG or SVG image.'; inp.value=''; return; }
+  if(f.size>25*1024){ msg.textContent='Logo must be ≤ 25KB — please export a smaller image.'; inp.value=''; return; }
+  const rd=new FileReader();
+  rd.onload=function(){ team._logo=String(rd.result); const pv=$('tp-brand-logo-preview'); if(pv){ pv.src=team._logo; pv.style.display='block'; } msg.textContent='Logo attached — press “Save branding” to apply.'; };
+  rd.readAsDataURL(f);
+}
+async function teamInvoicesLoad(){
+  const box=$('tp-invoices'); if(!box) return;
+  box.innerHTML='<div style="font-size:13px;color:#33415C">Loading invoices…</div>';
+  try{
+    const r=await fetch(WORKER_URL+'/business/team/invoices',{headers:{Authorization:'Bearer '+team.token}});
+    const j=await r.json();
+    if(!j.ok){ box.innerHTML='<div style="font-size:13px;color:#33415C">Could not load invoices — refresh the page.</div>'; return; }
+    const list=j.invoices||[];
+    if(!list.length){ box.innerHTML='<div style="font-size:13px;color:#33415C">No invoices yet — they appear here as soon as you pay.</div>'; return; }
+    box.innerHTML=list.map(function(x){
+      const d=x.created?new Date(x.created).toLocaleDateString('en-NG'):'—';
+      const chip=x.status==='paid'?teamChip('paid','PAID'):(x.status==='wrong_amount'?teamChip('wrong','WRONG AMOUNT'):teamChip('open','OPEN'));
+      return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid #eef2f7;font-size:14px"><div><b>'+esc(x.id)+'</b><br><span style="color:#64748b;font-size:12px">'+d+' · '+ngn(x.total)+' incl. VAT</span></div><div style="display:flex;align-items:center;gap:10px">'+chip+'<a class="link-btn" style="white-space:nowrap" href="'+WORKER_URL+'/business/invoice/'+encodeURIComponent(x.id)+'" target="_blank" rel="noopener">Open / Save PDF →</a></div></div>';
+    }).join('');
+  }catch(e){ box.innerHTML='<div style="font-size:13px;color:#33415C">Could not load invoices — check your connection and refresh.</div>'; }
 }
 
 /* states */
@@ -1932,7 +2089,7 @@ return html;
 }
 
 /* ================= router & init ================= */
-const PAGES=['home','agreement','notice','receipt','invoice','employment','caution','demand','payslip','warning','poa','docs','pricing','business-setup'];
+const PAGES=['home','agreement','notice','receipt','invoice','employment','caution','demand','payslip','warning','poa','docs','pricing','business-setup','team'];
 function route(){
   let h=(location.hash||'#home').slice(1).split('?')[0];
   if(!PAGES.includes(h)) h='home';
