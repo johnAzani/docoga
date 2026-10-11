@@ -11,11 +11,22 @@ name: DocOga Telegram Auto-Post
 #   2. the poster's own words on stderr captured to a file, so the exact API
 #      error lands in the issue instead of only in the run log,
 #   3. a labelled issue when a run fails, so a broken day is not just a red dot.
+#
+# `workflow_dispatch` also accepts dry_run=true: the preflight still runs (and
+# still opens an issue if the token, chat or permissions are wrong), but
+# nothing is generated and nothing is posted. That answers "can the bot post?"
+# without publishing to the channel.
 
 on:
   schedule:
     - cron: '0 8 * * *'  # 8 AM UTC = 9 AM Nigeria time (UTC+1)
   workflow_dispatch:     # Allow manual triggering
+    inputs:
+      dry_run:
+        description: 'Check credentials and permissions only — do not post anything'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -52,12 +63,20 @@ jobs:
           python3 tools/telegram_preflight.py 2>&1 | tee /tmp/telegram_preflight.log
 
       - name: Install dependencies
+        if: ${{ !inputs.dry_run }}
         run: pip install requests
 
+      - name: Dry run — stopping before anything is generated or posted
+        if: ${{ inputs.dry_run }}
+        run: |
+          echo "::notice title=Dry run::The preflight above is the whole test — nothing was generated and nothing was posted."
+
       - name: Generate Telegram content
+        if: ${{ !inputs.dry_run }}
         run: python3 scripts/generate_telegram_content.py
 
       - name: Post to Telegram
+        if: ${{ !inputs.dry_run }}
         run: |
           set -o pipefail
           python3 scripts/post_telegram.py 2>&1 | tee /tmp/telegram_post.log

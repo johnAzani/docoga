@@ -227,5 +227,50 @@ class PreflightTests(unittest.TestCase):
         self.assertIn("administrator", out.getvalue())
 
 
+try:
+    import yaml
+except ImportError:  # pragma: no cover - CI installs PyYAML
+    yaml = None
+
+
+@unittest.skipIf(yaml is None, "PyYAML is required for the workflow contract tests")
+class DryRunContractTests(unittest.TestCase):
+    """`dry_run=true` must be able to answer "can the bot post?" without posting.
+
+    The question left open by the 7–10 Oct outage is whether the bot still has
+    permission to post to the channel. The only way to ask Telegram is with the
+    real token, and the only safe way to do that is a run that stops after the
+    preflight. If a refactor ever removes those `if` guards, this fails.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        path = ROOT / ".github" / "workflows" / "telegram_autopost.yml"
+        cls.workflow = yaml.safe_load(path.read_text(encoding="utf-8"))
+
+    def _steps(self):
+        return self.workflow["jobs"]["generate-and-post"]["steps"]
+
+    def _by_name(self, fragment):
+        return [s for s in self._steps() if fragment in (s.get("name") or "")]
+
+    def test_posting_steps_are_skipped_on_a_dry_run(self):
+        for fragment in ("Generate Telegram content", "Post to Telegram"):
+            steps = self._by_name(fragment)
+            self.assertEqual(len(steps), 1, "expected exactly one '%s' step" % fragment)
+            condition = steps[0].get("if") or ""
+            self.assertIn("inputs.dry_run", condition, "%s would post during a dry run" % fragment)
+
+    def test_preflight_always_runs(self):
+        preflight = self._by_name("Preflight")
+        self.assertEqual(len(preflight), 1)
+        self.assertIsNone(preflight[0].get("if"), "the preflight must run on every trigger")
+
+    def test_dry_run_input_is_boolean_and_defaults_to_false(self):
+        inputs = self.workflow[True]["workflow_dispatch"]["inputs"]
+        self.assertEqual(inputs["dry_run"]["type"], "boolean")
+        self.assertIs(inputs["dry_run"]["default"], False)
+
+
 if __name__ == "__main__":
     unittest.main()
