@@ -7,49 +7,74 @@
 > exact error — the product was built to fail honestly, so the error text is
 > the diagnosis.
 
-## 0. Payment readiness (do this FIRST — it scopes the rehearsal)
+## 0. Flutterwave: create the "DocOga" business account (do this FIRST)
 
-You marked FLW + CAC status as "not sure". Check the Flutterwave dashboard
-(Settings → Account / KYC) and note which of these are actually enabled:
+Your live FLW account is **Personal** (it runs the ₦2,000 Oga Pass via a v3
+checkout link — that stays untouched). Research to the vendor's own docs (full
+write-up: `docs/BUSINESS_TIER_RESEARCH.md` §14) settled three things:
 
-- [ ] **KYC level** — is the account business-level (not just personal)?
-- [ ] **Virtual Accounts (NGN)** — can the account *create* VAs? (This is the
-      PRIMARY advertised transfer path; if it's not enabled, the transfer
-      button returns an honest 502 and falls back to card — the product
-      handles it, but the rehearsal then covers card only.)
-- [ ] **Settlement** — which bank account do funds settle to, and under what
-      name? (For B2B buyers a business-name settlement is preferable; this is
-      where **CAC business-name registration** matters. CAC does NOT gate
-      going live or card payments — it only affects the name on the settlement
-      side of the transfer path.)
-- [ ] **Card / USSD / POS** — standard charges (the Oga Pass already uses the
-      retail charge path, so this almost certainly works — but the Business
-      card path uses the v4 `generic` hosted charge, which is a slightly
-      different API; the rehearsal is what proves it.)
-- [ ] **While you're in there, copy two values** (step 1 needs them):
-      Settings → API keys → **SECRET KEY**, and Webhooks → the **hash** for
-      the endpoint posted to the worker's `/flw-webhook` (create the webhook
-      in the FLW dashboard if it doesn't exist yet — URL = your worker's
-      `/flw-webhook`, event = charge completed).
+1. **The Business money path is built on FLW v4 (OAuth)**, and v4 LIVE
+   credentials (Client ID / Client Secret) are issued to an **approved
+   business** — a Personal account very likely can't produce them. So the
+   Business path needs a business account; forcing it onto the Personal one
+   would be a dead end.
+2. **Bank-transfer buyers see the merchant's registered name** on the virtual
+   account. Personal account = your personal name on a ₦103k B2B transfer.
+   Business account = "DocOga".
+3. **CAC is NOT required to launch.** FLW has a **Starter (unregistered
+   business)** category: personal ID + website + electric meter number +
+   BVN/NIN + estimated monthly sales + business profile. No CAC certificate,
+   no business bank account — it settles to FLW's MFB wallet and pays out to
+   your personal bank account. CAC business-name registration (≈₦23k official
+   / ≈₦45k via agent, 2–5 working days, TIN auto-issued) is deferred: it only
+   adds a business-name bank account and registered-entity standing, neither
+   of which blocks v1.
 
-Write the answers in the decision log (`docs/BUSINESS_TIER_RESEARCH.md` §13)
-so the next session inherits them. If VAs are NOT enabled: file the enablement
-request in the FLW dashboard (the 10 Oct Brevo enablement is the precedent for
-the owner-guided path) and proceed — the product degrades honestly.
+**Actions (≈30 min now + KYC wait):**
+
+1. [ ] **Create the business** — Flutterwave dashboard → bottom-left →
+      *Your Businesses* → **New Business +** → name **DocOga** → type
+      **Starter / unregistered business**. (If that type isn't offered for NG,
+      email hi@flutterwavego.com — the NG onboarding docs list it.)
+2. [ ] **Complete its KYC** — personal ID, website `https://docoga.com.ng`,
+      residential electric meter number, BVN + NIN, estimated monthly sales
+      (e.g. "₦500,000 — B2B SaaS, 3–5 teams/month early"), short business
+      profile ("DocOga generates branded tenancy/property/HR documents for
+      small teams — docoga.com.ng").
+3. [ ] **When approved, run the 5-point verification** (dossier §14.7) and
+      report the answers here: (a) live **Client ID + Client Secret**
+      (v4) visible under Settings → Developers → API Keys? (b) test VA
+      creates — what name does it show? (c) account labelled Business/Starter?
+      (d) transaction limits displayed (expect ≫ ₦103,200)? (e) small test
+      payout from the MFB wallet to your bank lands?
+4. [ ] **Optional, in parallel (does not block launch):** start CAC
+      business-name registration for "DocOga" (portal: ~₦23k, 2–5 working
+      days). When the certificate arrives, the account upgrades
+      Starter → sole-proprietorship by adding it.
+
+**Do NOT deploy (step 1) before item 3(a)** — the worker's credentials come
+from the new business account.
 
 ## 1. Deploy (secrets first, then 2 commands)
 
 The live worker is the **10-Oct retail-pass worker only** — Phases 0–4 have
 never been deployed, so the Business endpoints don't exist in production yet.
 
-1. **Set the three worker secrets** (Cloudflare dashboard → Workers →
+1. **Set the four worker secrets** (Cloudflare dashboard → Workers →
    `docoga-pass` → Settings → Variables). `deploy.sh` prints the exact
-   checklist when you run it — but the values must exist BEFORE the deploy,
-   and two come from the Flutterwave dashboard (step 0):
-   `TEAM_AUTH_SECRET` (any long random string) · `FLW_SECRET_KEY` (FLW
-   Settings → API keys) · `FLW_WEBHOOK_HASH` (FLW Webhooks → hash).
-   Bank transfer (VA) confirmation is webhook-only — without the hash the
-   transfer leg of the rehearsal hangs at "waiting for payment".
+   checklist when you run it — but the values must exist BEFORE the deploy.
+   Three come from the **new DocOga business account** (step 0), one is yours
+   to invent:
+   - `TEAM_AUTH_SECRET` — any long random string (invents team auth; without
+     it the team endpoints fail closed 503).
+   - `FLW_CLIENT_ID` + `FLW_CLIENT_SECRET` — the business account's **v4 live**
+     Client ID / Client Secret (FLW Settings → Developers → API Keys). The
+     Business money path is v4-only; these are what create the VAs and the
+     card charges and verify them. **Not** the classic v3 secret key.
+   - `FLW_WEBHOOK_HASH` — FLW Webhooks → hash for the endpoint posted to the
+     worker's `/flw-webhook`. Bank transfer (VA) confirmation is webhook-only —
+     without it the transfer leg of the rehearsal hangs at "waiting for
+     payment" (card works via redirect + verify).
 2. **Then deploy:**
 
 ```

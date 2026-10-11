@@ -835,6 +835,7 @@ unverified).
 41. Akintunde Esan (2015, historical context): Evidence Act 2011 recognition of electronic documents/signatures; e-sign not required where no statutory form mandate. METHOD (legal commentary). https://akintundeesan.blogspot.com/2015/09/formation-validity-and-enforcement-of.html
 42. REPO: `docs/MANDATE.md`, `docs/REVENUE.md` (fee schedule, paths, arithmetic), `docs/BUSINESS_PLAN.md`, `docs/SESSION_CONTEXT.md` (sessions 25–26: Business card shipped unpriced; worker + site deployed), `docs/STATE_TENANCY_RESEARCH.md` (verified state tenancy law), `site/index.html` (live card copy, 10 tools, ANALYTICS/WORKER config), `worker/index.js` (endpoints, dual-sign webhook, cron, KV, PRICE_NGN), `logs/2026-09-19-first-real-payment-webhook.json` (real payment), `docs/B2B_OUTREACH_GROUNDWORK.md` + `B2B_DISCOVERY_WORKBOOK.md` (on `arena/47d148f1-docoga`, 10 Oct 2026 — capability inspection, consent rules, discovery method, economics without inventing a price).
 43. Flutterwave GHS virtual-account docs (dynamic 1h expiry sample) — OFFICIAL (vendor), used only as the expiry-semantics caution: https://developer.flutterwave.com/docs/ghs-virtual-accounts
+44. **Flutterwave account-state deep dive (§14, 11 Oct 2026, owner account = Personal):** FLW Help Center NG business-account requirements (Starter/unregistered + sole-prop + LLC document lists; MFB settlement; upgrade FAQ) + "What are the requirements" (Starter category) + "Selecting the correct business account" (sub-business accounts) — all OFFICIAL; Developer Docs NGN VAs (default-for-Nigerian-merchants, `note`/`bank_name` fields, 1h expiry) OFFICIAL; FLW Eng "v4 onboarding" (OAuth client_credentials; live mode = approved business) ORG (vendor blog); FLW NG pricing (2.0% local capped ₦2k / 4.8% intl) OFFICIAL; WakaAbuja 2026 limits (Personal ₦1m/txn, ₦5m/day; Business ₦2m/txn, ₦10m/day) REPORT **UNVERIFIED**; CAC Register 2026 fees (BN ≈ ₦23,162 official / ≈ ₦45,000 agent; 2–5 working days; TIN auto) METHOD/REPORT. Full per-claim list: §14.8.
 
 **What we could not verify (stated, not filled):** exact Wonder.legal prices; current
 active paying-agent count (all counts are directory/press figures of varying age);
@@ -869,3 +870,212 @@ trial" and Rentyx' trial terms in practice (advertised).
 | **Phase 3 built (11 Oct 2026)** | Self-serve surface: team portal (`#team`: licence, branding, seats, invoices, support), **C10 = printable HTML invoice** (`GET /business/invoice/:id` — no PDF lib, browser print → Save as PDF; binary .pdf = v2 if demanded), `teaminv:` summary index (12-month list window), `site/support.html` + `docs/support/` (FAQ/AUTO_REPLY/CANNED around business@docoga.com.ng), privacy §5 "Business teams" (the "no account, no upload" claim had to be fixed — public team accounts made it false) | The portal ends owner-touch for everything that should NOT stay human; refunds and mid-year seat adds intentionally remain a written business@ step (v1). Printable HTML is a ₦0, dependency-free authoritative invoice (the KV record is the source of truth). support.html is the public face of docs/support/FAQ.md — they must never disagree |
 | **Phase 4 exit gate closed + retail funnel (11 Oct 2026)** | Re-review found the Phase 4 suite had not proven two dossier exit items: **overage emails** (100%/150%, deduped per month, most-urgent tier) and **data retention during the free tier** (present until retention end; invoices always kept) — both now unit-proven. Retail GA funnel completed (`pass_checkout_opened` / `pass_activated` / `pass_topup` alongside the four business events via `trackEvent`): the site previously fired zero events anywhere, and the scoreboard must see BOTH funnels. Waitlist launch email + KV procedure added to the runbook (Phase 5 leg; list stays read-only per the Phase 0 decision). Worker 109/109, DOM 145/145 | Exit-gate items must be PROVEN by the suite, not just built — the gap would have shipped as "verified" when it wasn't. Both funnels tracked from the first live deploy |
 | **Phase 4 built (11 Oct 2026)** | Autonomy: **self-serve renewals** (`POST /business/team/renew` — window T-90/grace/free, price at purchase via `renewal_*` on the team record, early renewal stacks on the future expiry, same VA/card machinery) + **daily cron lifecycle** (T-90/30/7 deduped reminders, most-urgent-consumes-coarser; expiry→grace 14d→free 90d retention→delete with **invoices kept**) + **C8 usage metering** (best-effort monthly counter capped at 2× band; soft caps — 100%/150% emails, NO hard cut-off in v1 per §6.4) + **GA revenue events** (created/charged/activated/renewal — the site previously fired zero events anywhere) | Completes the "zero owner touches" buy→renew loop; renewal = price at purchase (§6.4 no silent increases); refunds + mid-year seat adds remain the human email lane. **FLW payment-plan auto-charge (the §7.1 "auto-renewal enrolment" option) deferred to v2** — it is a native FLW product that cannot be unit-verified without the live KYC'd account (owner unsure of FLW status as of 11 Oct); v1 renewal is the dashboard + VA/card, i.e. the journey's "renewal invoice + VA link" leg, with the auto-charge leg as the v2 upgrade. Worker 105/105, DOM 145/145, qa 0 errors, gzip 47.9KB |
+| **FLW account state — Personal (11 Oct 2026, owner-reported, researched to vendor docs)** | Owner's live Flutterwave account is a **Personal** account (it runs the retail Oga Pass via a classic v3 checkout link, `PAYMENT_URL`). Research conclusion (§14): the **business money path is built on FLW v4 (OAuth client_credentials)**, whose LIVE mode is issued to an **approved business** — so the Personal account most likely cannot issue the v4 live `Client ID`/`Client Secret` the worker needs. Decision: **launch on a NEW "DocOga" Business (Starter / unregistered) account created as a sub-business from the same dashboard** (personal ID only, NO CAC, NO business bank account — it settles to the FLW MFB wallet and pays out to a personal account). This leaves the Personal account + retail Oga Pass untouched and gives the B2B buyer a **"DocOga"** settlement name instead of the owner's personal name. CAC formal registration (≈₦23k official / ≈₦45k via agent, 2–5 working days, TIN auto-issued) is **NOT required for launch** — deferred until B2B volume or a specific buyer demands a registered entity. | The two things that actually gate launch are (1) v4 live credentials, which a Personal account may not be able to issue, and (2) the buyer-facing settlement name. A Starter business account resolves both without CAC. The worker code is unchanged — only the credentials it's pointed at move to the new business account. **Owner must verify in the dashboard (§14.7): does the business account issue v4 Client ID/Secret, can it create a dynamic VA, and what name does the VA show?** |
+
+## 14. Flutterwave account state — deep dive (11 Oct 2026, owner-reported: Personal)
+
+Owner state, 11 Oct: the live Flutterwave account is a **Personal** account. It
+already accepts real money — the retail **Oga Pass (₦2,000)** runs on it via a
+classic **v3 checkout link** (`PAYMENT_URL = flutterwave.com/pay/…`). This
+section is the thinnest-detail picture of what that means for the Business
+money path, researched against Flutterwave's own docs on 11 Oct 2026.
+
+### 14.1 The account types that exist in Nigeria (Flutterwave's own categories)
+
+| Type | Registration needed | KYC documents (NG) | Where it settles |
+|---|---|---|---|
+| **Personal** (individual) | None | Personal ID, BVN, NIN | Personal bank / MFB wallet |
+| **Starter business** (unregistered) | **None** — a trading name | Personal ID + website/SNS + residential address (electric meter no.) + BVN + NIN + estimated monthly sales + business profile | FLW MFB wallet → pays out to a **personal** bank account |
+| **Sole proprietorship** (registered) | **CAC business-name certificate** | CAC cert + business-name cert + verifiable website + BVN + NIN + residential address proof + valid ID + operating licence (if regulated) + estimated monthly sales | FLW MFB wallet (business name) → pays out |
+| **Limited liability company** (registered) | Certificate of incorporation | Cert of incorporation + M&A + corporate bank details + rep NIN/BVN + residential proof + website + licence + estimated monthly sales | FLW MFB wallet (company) → pays out |
+
+Source: Flutterwave Help Center, *"Requirements for opening a business account
+in Nigeria"* (updated ~1 month before 11 Oct 2026). Note the **Starter /
+unregistered** category: it exists specifically for a business that has **no
+registration number yet** and needs to accept payments now — "personal means of
+identification" only. It is available in Nigeria (the older global page flags
+it "not available in all countries", but the NG page lists it as a first-class
+NG category).
+
+### 14.2 The decisive constraint: the Business money path is built on FLW v4
+
+This is the part that changes the plan, and it is a fact about **our own code**
+plus the vendor's v4 onboarding docs, not a guess:
+
+- `worker/index.js` implements the Business charge path on **Flutterwave v4** —
+  OAuth 2.0 `client_credentials` (`FLW_CLIENT_ID` + `FLW_CLIENT_SECRET` →
+  `idp.flutterwave.com` token → `f4bexperience.flutterwave.com`) for **both**
+  the dynamic NGN virtual account and the hosted `generic` card charge.
+  (See the v4 helpers at the foot of the worker and the header contract.)
+- Flutterwave's **v4 developer onboarding** guide states live mode is reached
+  when "**your business is approved**" and "you'll receive production API
+  credentials" (a live Client ID / Client Secret), with the go-live checklist
+  requiring "Your business verification (KYC) is complete and approved" and
+  "Settlement accounts are set up and verified."
+- The owner's **Personal** account runs the **retail** path on a **classic v3
+  checkout link**, not the v4 API. A Personal account is the oldest account
+  shape and is provisioned for that.
+
+**Consequence (highest-confidence single finding):** the v4 live
+`Client ID`/`Client Secret` that the worker requires are issued to an
+**approved Business** account. A Personal account very likely **cannot**
+produce them. If it can't, the entire Business money path (both the VA transfer
+and the card charge, since both ride v4) cannot run on the Personal account —
+regardless of VAs or limits. The retail Oga Pass is unaffected (v3 checkout
+link, no API).
+
+**This must be verified in the dashboard, not assumed** — see §14.7.
+
+### 14.3 The buyer-facing settlement name (the real B2B trust issue)
+
+- Virtual accounts are generated by **Flutterwave MFB**. The **account name the
+  buyer sees when doing the bank transfer is the merchant's registered name** —
+  the personal name if the account is Personal, the business/trading name if it
+  is a business. (The v3 create-VA response's `note` field, e.g. "Please make a
+  bank transfer to *Tester FLW*", is exactly the name surfaced to the payer;
+  the `bank_name` is always "Flutterwave MFB".)
+- On a **Personal** account, an estate agent paying ₦103,200 by transfer would
+  be directed to an account in the **owner's personal name**. For the four
+  B2B segments this dossier targets (estate agents, property managers,
+  landlords, HR teams), a personal-name settlement line is a trust and
+  procurement friction — it undercuts the "this is a company" signal the whole
+  Business tier is selling.
+- A **Business** account (even an unregistered "DocOga" trading name) makes that
+  line **"DocOga"**.
+
+This is precisely where CAC/business registration *matters* — and where it
+*doesn't*: it is **not** a gate on going live or on card payments. It only
+controls the **name on the settlement side** (and, later, a bank account in the
+business name). A Starter/unregistered business already fixes the name without
+any CAC step.
+
+### 14.4 Virtual-account availability (the PRIMARY advertised transfer path)
+
+- Vendor developer docs (NGN Virtual Accounts): "This is **available to
+  Nigerian merchants by default**." That statement is about the merchant's
+  **country**, not the KYC tier — it does not by itself confirm a Personal
+  account can create **dynamic** VAs via the v4 API.
+- Vendor support docs (Fixed Virtual Accounts): "Your account must have
+  undergone our **KYC verification process** before you can create a fixed
+  virtual account." Whether a Personal account's personal-KYC satisfies that
+  for **dynamic** VAs is **not unambiguously stated** in the public docs.
+- **Resolution is a live dashboard test, not a document** (§14.7). The product
+  already degrades honestly: a VA-create failure returns an honest 502 and the
+  flow falls back to card, so the launch is not blocked even if VAs are
+  restricted — but the **primary** transfer leg would be card-only, which is why
+  the business-account upgrade (which is what VAs are designed for) is the
+  recommended path rather than a workaround.
+
+### 14.5 Fees and limits (context — not launch-gating at our price points)
+
+- **Fees (NG, Flutterwave official pricing page):** local card / bank transfer /
+  USSD / eNaira / NQR = **2.0%** (1.4% transaction + 0.6% platform),
+  **capped at ₦2,000**; international = **4.8%**. These match the numbers the
+  dossier's price formula already assumes; no change needed.
+- **Limits (third-party, UNVERIFIED — treat as indicative):** a verified
+  **Personal** account ≈ ₦1,000,000/transaction and ₦5,000,000/day; a verified
+  **Business** account ≈ ₦2,000,000/transaction and ₦10,000,000/day. The
+  smallest real Business invoice is **₦103,200** and the largest realistic
+  annual quote is a few hundred thousand — **far under either tier's cap**.
+  Limits are therefore **not** a launch constraint at our pricing; the account
+  type choice is driven by §14.2 (v4 credentials) and §14.3 (settlement name),
+  not by limits. (Confirm the exact figure the dashboard displays for the
+  account you actually use — §14.7.)
+
+### 14.6 The decision (recommended)
+
+**Launch the Business tier on a NEW "DocOga" Business account (Starter /
+unregistered), created as a sub-business under the same owner — do NOT try to
+force the Business money path onto the Personal account.**
+
+Concretely:
+1. In the Flutterwave dashboard, create a **new business** (bottom-left →
+   *Your Businesses* → *New Business +*, or ask FLW support to add one).
+   Business name = **DocOga** (or the chosen trading name). Type =
+   **Starter / unregistered business** (no registration number required).
+2. Complete its KYC with **personal ID only** (no CAC, no business bank
+   account): website `https://docoga.com.ng`, residential electric-meter
+   number, BVN + NIN, estimated monthly sales, short business profile.
+3. Once approved, it settles to the **FLW MFB wallet** and pays out to the
+   owner's (personal) bank account — fine for v1. The **buyer sees "DocOga"**.
+4. Generate that business's **v4 live `Client ID` / `Client Secret`** and set
+   them as the worker's `FLW_CLIENT_ID` / `FLW_CLIENT_SECRET` (the retail
+   `PAYMENT_URL` v3 checkout link for the Oga Pass stays on the Personal
+   account, untouched). The worker code does not change.
+
+**Why not just upgrade the existing Personal account in place?** Creating a
+separate business account is lower-risk: it leaves the working retail path
+(Personal + v3 checkout link) completely untouched, and the two paths use
+independent credentials. It also matches how FLW structures multi-business
+owners.
+
+**CAC formal registration — NOT required for launch.** Official CAC
+business-name fees for 2026 ≈ **₦23,162** (portal: ₦750 name reservation +
+₦20,000 filing + ~₦162 Remita/portal + optional ~₦2,500 certified copy) or
+≈ **₦45,000** all-in through an accredited agent; **2–5 working days**; a **TIN
+is auto-issued** and printed on the certificate. What it would buy later:
+a bank account in the business name (matters only for downstream banking, since
+FLW settles to its MFB wallet either way), enterprise credibility with larger
+buyers, and legal separation. **Recommendation: defer CAC** until B2B volume or
+a specific buyer/procurement process demands a registered entity; the Starter
+business account is the fastest professional settlement name + full v4 money
+path. (If the owner does later register, the account upgrades Starter →
+Sole-proprietorship by adding the CAC certificate — no new account needed.)
+
+### 14.7 What the owner must verify in the dashboard (the only things I can't see)
+
+Do these on the **new business account** (or, for item 1, compare Personal vs
+Business) and report back — they settle every UNVERIFIED flag above:
+
+1. **v4 credentials:** Settings → Developers → API Keys. Does the **Business**
+   account show / let you generate a live **Client ID + Client Secret** (v4)?
+   Does the **Personal** account show only classic v3 keys? (If the business
+   account cannot issue v4 live keys, escalate to FLW support before the
+   deploy — the v4 money path is the one that needs them.)
+2. **VA capability:** try creating a (test) virtual account. Does it succeed?
+   **What account name is shown** — "DocOga" (business) or the personal name?
+3. **Account type label:** confirm the dashboard shows the account as
+   Business/Starter, and that "Starter / unregistered business" was a
+   selectable type.
+4. **Transaction limit:** note the per-transaction and daily limits displayed
+   (expect well above ₦103,200).
+5. **Settlement:** confirm settlement lands in the FLW MFB wallet and that a
+   payout to the owner's bank account works (one small test payout).
+
+### 14.8 Sources (accessed 11 Oct 2026)
+
+- Flutterwave Help Center — *"Requirements for opening a business account in
+  Nigeria"* (Starter/unregistered, sole-proprietorship, LLC document lists;
+  "all Nigerian merchants settle to the FLW MFB account"; upgrade-FAQ).
+  https://www.flutterwave.com/tz/support/onboarding/onboarding-requirements-for-using-flutterwave-in-nigeria
+- Flutterwave Help Center — *"What are the requirements for using Flutterwave?"*
+  (Starter category for businesses without a certificate of incorporation).
+  https://flutterwave.com/ng/support/general/what-are-the-requirements-for-using-flutterwave
+- Flutterwave — *"Selecting the correct Flutterwave business account"* (Personal
+  vs Business; unregistered-business category; multiple sub-business accounts;
+  unregistered → personal bank; registered → matching business bank).
+  https://flutterwave-website-v3-pilot.f4b-flutterwave.com/us/support/my-account/selecting-the-correct-flutterwave-business-account
+- Flutterwave Developer Docs — *"NGN Virtual Accounts"* (available to Nigerian
+  merchants by default; dynamic vs static; 1-hour default expiry; `note`/`bank_name`
+  fields). https://developer.flutterwave.com/docs/ngn-virtual-accounts
+- Flutterwave Help Center — *"Fixed Virtual Accounts"* (KYC verification
+  required before creating a VA). https://flutterwave.com/us/support/payments/fixed-virtual-accounts
+- Flutterwave (Flutterwave Eng) — *"A Quick Guide to Developer Onboarding in v4"*
+  (OAuth client_credentials; live mode requires approved business; go-live
+  checklist). https://dev.to/flutterwaveeng/a-quick-guide-to-developer-onboarding-in-v4-4dcj
+- Flutterwave Help Center — *"Pricing for receiving payment"* (NG 2.0% local
+  capped ₦2,000; 4.8% international). https://flutterwave.com/ng/support/pricing/pricing-for-receiving-payment
+- WakaAbuja — *"Flutterwave Transaction Limits 2026"* (Personal ≈ ₦1m/txn,
+  ₦5m/day; Business ≈ ₦2m/txn, ₦10m/day) — **REPORT, UNVERIFIED**, indicative
+  only. https://wakaabuja.com/flutterwave-transaction-limits/
+- CAC Register (agent) — *"CAC Registration Fees 2026"* / *"Business Name
+  Registration 2026"* (BN ≈ ₦23,162 official / ≈ ₦45,000 via agent; 2–5 working
+  days; TIN auto-issued) — **METHOD/REPORT**, verify against the CAC portal at
+  filing time. https://cacregister.com.ng/blog/cac-registration-fees-official
+
+**Bottom line:** the Personal account is fine for the retail pass and cannot be
+assumed to run the v4 Business money path. The clean, no-CAC launch move is a
+new **"DocOga" Starter business** sub-account (personal ID only) that issues
+the v4 credentials and gives B2B buyers a company settlement name; CAC is
+deferred. Everything the owner must confirm is the 5-item dashboard checklist
+in §14.7.
