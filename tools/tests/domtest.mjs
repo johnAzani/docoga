@@ -667,9 +667,9 @@ check('renewal posts to /business/team/renew (owner; server owns window + price)
       (() => { const s = lex(dom, 'bizRenew.toString()'); return /\/business\/team\/renew/.test(s) && s.includes("method:'POST'") && /biz-renew-panel/.test(s); })());
 check('usage beacon: best-effort, non-blocking, throttled (C8 honesty)',
       (() => { const s = lex(dom, 'usageBeacon.toString()'); return /\/business\/team\/usage/.test(s) && s.includes('keepalive:true') && /10\*60\*1000/.test(s) && /teamActive/.test(s); })());
-check('revenue funnel events wired (created / charged / activated / renewal) with gtag guard',
-      (() => { const s = HTML; const g = lex(dom, 'bizEvent.toString()');
-        return ['business_team_created','business_charge_started','business_team_activated','business_renewal_started'].every(n => s.includes(n)) && /window\.gtag/.test(g); })());
+check('revenue funnel events wired for BOTH funnels (retail pass + business) with gtag guard',
+      (() => { const s = HTML; const g = lex(dom, 'trackEvent.toString()');
+        return ['pass_checkout_opened','pass_activated','pass_topup','business_team_created','business_charge_started','business_team_activated','business_renewal_started'].every(n => s.includes(n)) && /window\.gtag/.test(g); })());
 const p4Team = (over) => `
   window.fetch = function (u, opt) {
     u = String(u); window.__calls.push(u);

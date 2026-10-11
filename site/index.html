@@ -1183,7 +1183,8 @@ if(!code){ toast('Enter your code first.'); return; }
 const norm=code.toUpperCase().replace(/[\s-]/g,'');
 const h=fnv1a(norm).toString(16).padStart(8,'0');
 if(pass&&pass.h===h&&pass.exp>Date.now()){ closeModal(); $('pass-input').value=''; toast('✓ This code is already active on this device — '+Math.ceil((pass.exp-Date.now())/864e5)+'d left. Topping up adds 30 days to your remaining time.'); return; }
-const save=(exp,c)=>{ pass={exp,c,h}; store.setItem('docoga_pass',JSON.stringify(pass)); updatePassUI(); renderAll(); closeModal(); $('pass-input').value=''; const d=Math.max(1,Math.ceil((pass.exp-Date.now())/864e5)); toast('✅ Oga Pass active — '+d+' day'+(d>1?'s':'')+' of clean documents left.'); };
+const wasTopup=!!(pass&&pass.c); // an existing pass code before this activation = top-up
+const save=(exp,c)=>{ const oldPass=pass; pass={exp,c,h}; store.setItem('docoga_pass',JSON.stringify(pass)); trackEvent(wasTopup?'pass_topup':'pass_activated',{value:2000, currency:'NGN', prev_exp:oldPass?oldPass.exp:undefined}); updatePassUI(); renderAll(); closeModal(); $('pass-input').value=''; const d=Math.max(1,Math.ceil((pass.exp-Date.now())/864e5)); toast('✅ Oga Pass active — '+d+' day'+(d>1?'s':'')+' of clean documents left.'); };
 // 1) ask the Worker first — it owns the synced expiry and links top-ups (?prev)
 if(WORKER_URL){
 try{
@@ -1199,7 +1200,7 @@ if(j&&j.error){ toast('❌ '+j.error); return; }
 if(CODE_HASHES.has(h)){ save(Math.max((pass&&pass.exp)||0, Date.now())+30*864e5, norm); return; }
 toast('❌ Invalid code. Please check and try again.');
 }
-function buyPass(){ window.open(PAYMENT_URL,'_blank'); toast('Complete payment — you\'ll be returned here and your pass activates automatically.'); }
+function buyPass(){ trackEvent('pass_checkout_opened',{value:2000, currency:'NGN'}); window.open(PAYMENT_URL,'_blank'); toast('Complete payment — you\'ll be returned here and your pass activates automatically.'); }
 /* Business waitlist (11 Oct 2026): self-serve notify at launch. Replaces the
    retired "quote by WhatsApp" CTA — owner instruction: the Business path must
    run end-to-end without the customer sending a WhatsApp message. */
@@ -1352,7 +1353,7 @@ async function bizCreateTeam(){
   try{
     const r=await fetch(WORKER_URL+'/business/teams',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,name,seats:$('biz-cfg-seats').value,docs:$('biz-cfg-docs').value,segment:bizSeg})});
     const j=await r.json();
-    if(j.ok){ bizEvent('business_team_created',{team_id:j.team.id, value:j.quote.total}); msg.textContent='✅ Team created — a sign-in link is on its way to '+email+'. Click it, pay by card or transfer, and your team activates automatically.'; $('biz-cfg-email').value=''; $('biz-cfg-name').value=''; }
+    if(j.ok){ trackEvent('business_team_created',{team_id:j.team.id, value:j.quote.total}); msg.textContent='✅ Team created — a sign-in link is on its way to '+email+'. Click it, pay by card or transfer, and your team activates automatically.'; $('biz-cfg-email').value=''; $('biz-cfg-name').value=''; }
     else { msg.textContent=j.error||'Something went wrong — please try again.'; }
   }catch(e){ msg.textContent='Could not reach the server — please try again in a moment.'; }
 }
@@ -1363,7 +1364,7 @@ async function bizCharge(method){
     const r=await fetch(WORKER_URL+'/business/team/charge',{method:'POST',headers:{Authorization:'Bearer '+team.token,'Content-Type':'application/json'},body:JSON.stringify({method})});
     const j=await r.json();
     if(!j.ok){ panel.innerHTML='<div style="font-size:13px;color:#b91c1c">'+esc(j.error||'Payment setup failed — please try again.')+'</div>'; return; }
-    bizEvent('business_charge_started',{method:method, value:j.invoice.total, reused:!!j.reused});
+    trackEvent('business_charge_started',{method:method, value:j.invoice.total, reused:!!j.reused});
     if(method==='card' && j.pay_url){
       window.open(j.pay_url,'_blank');
       panel.innerHTML='<div style="font-size:13px;color:#33415C">We opened the secure Flutterwave checkout. Your team activates automatically once payment lands — refresh this page if it does not update.</div>';
@@ -1393,7 +1394,7 @@ async function bizRenew(method){
     const r=await fetch(WORKER_URL+'/business/team/renew',{method:'POST',headers:{Authorization:'Bearer '+team.token,'Content-Type':'application/json'},body:JSON.stringify({method})});
     const j=await r.json();
     if(!j.ok){ panel.innerHTML='<div style="font-size:13px;color:#b91c1c">'+esc(j.error||'Renewal setup failed — please try again.')+'</div>'; return; }
-    bizEvent('business_renewal_started',{method:method, value:j.invoice.total});
+    trackEvent('business_renewal_started',{method:method, value:j.invoice.total});
     if(method==='card' && j.pay_url){
       window.open(j.pay_url,'_blank');
       panel.innerHTML='<div style="font-size:13px;color:#33415C">We opened the secure Flutterwave checkout. Your licence renews automatically once payment lands — refresh this page if it does not update.</div>';
@@ -1426,9 +1427,10 @@ function usageBeacon(){
     fetch(WORKER_URL+'/business/team/usage',{method:'POST',keepalive:true,headers:{Authorization:'Bearer '+team.token,'Content-Type':'application/json'},body:'{}'}).catch(function(){});
   }catch(e){}
 }
-/* Revenue funnel events (revenue is the only scoreboard — see the dashboard).
-   Guarded: no ANALYTICS_ID / non-https / blocked gtag = silently skipped. */
-function bizEvent(name,params){
+/* Revenue funnel events — the only scoreboard. Covers BOTH funnels:
+   Oga Pass (retail) and Business (teams). Guarded: no ANALYTICS_ID / non-https
+   / blocked gtag = silently skipped, never breaks the purchase flow. */
+function trackEvent(name,params){
   try{ if(window.gtag) window.gtag('event',name,params||{}); }catch(e){}
 }
 async function bizPollActivation(){
@@ -1440,7 +1442,7 @@ async function bizPollActivation(){
       if(j.ok && j.team.status==='active'){
         team.team=j.team; team.brand=j.brand||{}; team.role=j.role; team.renewal=j.renewal; team.usage=j.usage;
         updateTeamUI(); renderAll();
-        bizEvent('business_team_activated',{value:team.quote?team.quote.total:undefined});
+        trackEvent('business_team_activated',{value:team.quote?team.quote.total:undefined});
         toast('✅ Payment received — your team is live. Invite your team members by email.');
         return;
       }

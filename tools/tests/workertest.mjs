@@ -612,6 +612,21 @@ const firstRound = mailCap.length - mBefore;
 sweepP = null; await mod.scheduled({}, te2, { waitUntil: (p) => { sweepP = p; } }); await sweepP;
 const t3rem = JSON.parse(await te2.KV.get('team:' + team3));
 ok('cron: T-30 renewal reminder emailed ONCE (dedupe + stale T-90 consumed; second sweep silent)', firstRound === 1 && mailCap.length === mBefore + 1 && t3rem.rem30 === true && t3rem.rem90 === true && /renews in 2[56] days/i.test((((mailCap[mBefore] || {}).body || {}).subject || '')), 'round1=' + firstRound + ' total=' + (mailCap.length - mBefore) + ' subj=' + (((mailCap[mBefore] || {}).body || {}).subject || ''));
+/* C8 overage emails (Phase 4 exit gate: overage emails proven, deduped per month) */
+const mKey3 = 'team:' + team3 + ':usage:' + new Date().toISOString().slice(0, 7);
+await te2.KV.put(mKey3, '300'); // team3 band = 300 docs/mo → 100%
+const oBefore = mailCap.length;
+sweepP = null; await mod.scheduled({}, te2, { waitUntil: (p) => { sweepP = p; } }); await sweepP;
+ok('C8: 100% of monthly band → overage email (soft-cap notice, most-urgent tier only)', mailCap.length === oBefore + 1 && /100% of its monthly document allowance/i.test((((mailCap[oBefore] || {}).body || {}).subject || '')), 'n=' + (mailCap.length - oBefore) + ' subj=' + (((mailCap[oBefore] || {}).body || {}).subject || ''));
+sweepP = null; await mod.scheduled({}, te2, { waitUntil: (p) => { sweepP = p; } }); await sweepP;
+ok('C8: overage email deduped within the month (second sweep silent)', mailCap.length === oBefore + 1, 'n=' + (mailCap.length - oBefore));
+await te2.KV.put(mKey3, '450'); // 150% of the band
+const o150 = mailCap.length;
+sweepP = null; await mod.scheduled({}, te2, { waitUntil: (p) => { sweepP = p; } }); await sweepP;
+ok('C8: 150% → right-size email (one new email, not the 100% one again)', mailCap.length === o150 + 1 && /150% of its monthly document allowance/i.test((((mailCap[o150] || {}).body || {}).subject || '')), 'n=' + (mailCap.length - o150) + ' subj=' + (((mailCap[o150] || {}).body || {}).subject || ''));
+/* downgrade data-retention proven (Phase 4 exit gate): data intact DURING free tier */
+await te2.KV.put('brand:' + team1, JSON.stringify({ name: 'New Firm', address: '1 Test St' }));
+ok('downgrade retention: during the free tier, brand/seats/invoice index are still present (90-day retention)', !!(await te2.KV.get('brand:' + team1)) && !!(await te2.KV.get('team:' + team1 + ':seats')) && !!(await te2.KV.get('teaminv:' + team1)), 'brand=' + (await te2.KV.get('brand:' + team1)) + ' seats=' + (await te2.KV.get('team:' + team1 + ':seats')));
 /* cron: retention ended → team data deleted, invoices KEPT (tax records) */
 const t1r = JSON.parse(await te2.KV.get('team:' + team1));
 t1r.retire_at = new Date(Date.now() - 864e5).toISOString();

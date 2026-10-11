@@ -109,6 +109,38 @@ published entry number, named contact, SLA capacity, quarterly option,
 discovery). The 14-day refund is still PROPOSED, not promised, everywhere —
 a test guards it.
 
+**Waitlist launch email** — the list lives in KV as `bizwait:{email}` (one
+JSON value per person: email/company/segment). Read it in the Cloudflare KV
+dashboard (by design there is no public read endpoint) and email each person.
+Copy (edit the price line to whatever §11 #3 decides):
+
+```
+Subject: DocOga Business is live — set up your team in 2 minutes
+
+Hi {first name},
+
+You asked to be notified when DocOga Business launched — it has.
+
+It's fully self-serve: pick your seats and document volume, see the price
+instantly (from ₦96,000/yr, VAT line included — computed from YOUR numbers),
+pay by card or bank transfer, and your team activates by itself. No quote,
+no waiting, no WhatsApp.
+
+• Your firm's name and logo on every document
+• Team seats you invite and remove by email
+• One annual invoice with VAT — auto-confirmed
+
+Set it up here: https://docoga.com.ng/#business-setup
+
+— DocOga, Abuja
+https://docoga.com.ng
+```
+
+Send it as a plain personal email (or your mail tool's list) — the list will
+be small at first. If it's grown past ~20 names by then, tell the session and
+we'll add a secret-gated notify endpoint (the dossier deliberately kept the
+list read-only in v1).
+
 ## Rollback
 
 Everything deployed here is a strict forward superset of what's live; retail
