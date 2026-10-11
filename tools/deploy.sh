@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# DocOga deploy kit — 11 Oct 2026 (Phase 0 card + production-worker port + Phase 1 team core)
+#
+# OWNER runs this from a machine with Cloudflare auth (wrangler login).
+# The Arena sandbox has no Cloudflare egress and no CF credentials, so the
+# publish step cannot execute there — everything else (build, tests, QA) is
+# done and green on this branch before this script is ever needed.
+#
+# Known quirk (10 Oct): the first `wrangler deploy` attempt can hit a
+# token-validation error — just retry; the retry publishes.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+echo "== 1/2 · payment worker (docoga-pass) — strict forward superset of the live worker =="
+echo "     adds: POST /business/waitlist (Phase 0) + /business/login, /business/team* (Phase 1)"
+(cd worker && npx wrangler deploy)
+
+echo "== 2/2 · site (docoga-git) — Business card live, team sign-in, branded rendering =="
+npx wrangler deploy   # root wrangler.jsonc publishes ./site (never change assets.directory)
+
+echo ""
+echo "== VERIFY the new worker is live (owner, any shell) =="
+echo "  curl -s -o /dev/null -w '%{http_code}\n' -X POST https://docoga-pass.johnazani.workers.dev/resend-email \\"
+echo "    -H 'content-type: application/json' -d '{\"ids\":[]}'"
+echo "    → expect 503  (the OLD worker returned 404 here — 503 proves the new one is live)"
+echo "  curl -s -X POST https://docoga-pass.johnazani.workers.dev/business/waitlist \\"
+echo "    -H 'content-type: application/json' -d '{\"email\":\"bad\"}'"
+echo "    → expect 400 {\"ok\":false,\"error\":\"valid email required\"}  (no KV write, no email)"
+echo "  curl -s 'https://docoga-pass.johnazani.workers.dev/activate?code=NOTACODE' | head -c 80"
+echo "    → expect 404 code_not_found  (activation regression intact)"
+echo "  curl -s https://docoga.com.ng | grep -c 'biz-waitlist'"
+echo "    → expect ≥1  (new Business card + form live)"
+echo ""
+echo "== PHASE 1 SETUP (worker dashboard → Settings → Variables) =="
+echo "  TEAM_AUTH_SECRET = any long random string (required for /business/login* + /business/team*)"
+echo "  without it those endpoints fail closed with 503 team_auth_disabled"
