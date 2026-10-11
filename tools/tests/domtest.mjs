@@ -178,6 +178,10 @@ check('Business card carries no WhatsApp quote link', !!bizCard && !bizCard.quer
 check('Business card carries the self-serve notify form', !!bizCard && !!bizCard.querySelector('#biz-waitlist #biz-email') && /notify me/i.test(bizCard.textContent));
 check('Business notify form posts to the worker waitlist endpoint',
       /\/business\/waitlist/.test(lex(dom, 'bizWaitlistSubmit.toString()')));
+check('Business card: "Configure & pay online" entry point is REMOVED while BIZ_LIVE=false (no dead-end purchase)',
+      !!bizCard && !bizCard.querySelector('#biz-pay-link') && !/configure &amp; pay online|configure & pay online/i.test(bizCard.innerHTML));
+check('BIZ_LIVE gate constant exists and defaults to false (Phase 5 flips it true only when FLW creds are live)',
+      (() => { const m = HTML.match(/const BIZ_LIVE\s*=\s*(true|false)/); return !!m && m[1] === 'false'; })());
 
 // Business team core (Phase 1, 11 Oct 2026): magic-link sign-in + firm branding
 // through the single freeBanner() chokepoint that all 10 renderers share.
@@ -577,9 +581,9 @@ $(dom, 'biz-cfg-seats').value = '25';
 lex(dom, 'bizUpdateQuote()');
 check('quote recomputes on input (25 seats → growth base + 5 seat units, ₦774,000 total)',
       /₦480,000/.test($(dom, 'biz-cfg-quote').textContent) && /\+5 seats/.test($(dom, 'biz-cfg-quote').textContent) && /₦774,000/.test($(dom, 'biz-cfg-quote').textContent));
-check('create-team posts to /business/teams; card links to the configurator',
+check('create-team posts to /business/teams; payment entry point present in SOURCE (BIZ_LIVE gate controls its runtime visibility)',
       /\/business\/teams/.test(lex(dom, 'bizCreateTeam.toString()')) &&
-      !!dom.window.document.querySelector('#page-pricing a[href="#business-setup"]'));
+      /id="biz-pay-link"[^>]*href="#business-setup"/.test(HTML));
 check('checkout posts to /business/team/charge (transfer VA panel + card hosted URL)',
       (() => { const s = lex(dom, 'bizCharge.toString()'); return /\/business\/team\/charge/.test(s) && /biz-va-panel/.test(s) && /pay_url/.test(s); })());
 const unpaidStorage = `
