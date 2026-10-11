@@ -128,9 +128,9 @@ const win = w(dom);
 await wait(120); // let init() + inline scripts settle
 check('page loads with zero uncaught errors', dom.__errs().length === 0, dom.__errs().join(' | ').slice(0, 200));
 check('localStorage store wrapper present', typeof lex(dom, 'store') === 'object' && typeof lex(dom, 'store').getItem === 'function');
-check('router knows 13 pages', lex(dom, 'PAGES.length') === 13, 'PAGES=' + lex(dom, 'PAGES.length'));
+check('router knows 14 pages (13 + business-setup, Phase 2)', lex(dom, 'PAGES.length') === 14, 'PAGES=' + lex(dom, 'PAGES.length'));
 
-const PAGES = ['home', 'agreement', 'notice', 'receipt', 'invoice', 'employment', 'caution', 'demand', 'payslip', 'warning', 'poa', 'docs', 'pricing'];
+const PAGES = ['home', 'agreement', 'notice', 'receipt', 'invoice', 'employment', 'caution', 'demand', 'payslip', 'warning', 'poa', 'docs', 'pricing', 'business-setup'];
 let routeOk = 0, routeBad = [];
 for (const p of PAGES) {
   win.location.hash = '#' + p;
@@ -139,7 +139,7 @@ for (const p of PAGES) {
   if (el && el.style.display === 'block') routeOk++;
   else routeBad.push(p);
 }
-check('all 13 routes render their page', routeOk === 13, 'broken: ' + routeBad.join(','));
+check('all 14 routes render their page', routeOk === 14, 'broken: ' + routeBad.join(','));
 win.location.hash = '#not-a-real-page';
 win.dispatchEvent(new win.Event('hashchange'));
 check('unknown hash falls back to home', $(dom, 'page-home').style.display === 'block');
@@ -557,6 +557,49 @@ tWin.printCurrent('agreement');
 const tPr2 = $(teamDom, 'print-root');
 check('sign-out restores the DocOga free banner immediately', !!tPr2.querySelector('.free-banner') && !tPr2.querySelector('.team-banner'));
 check('sign-out restores the sign-in form', !!teamDom.window.document.querySelector('#biz-team-box #biz-login-email'));
+
+/* ============================ BUSINESS CONFIGURATOR + CHECKOUT (PHASE 2) ============================ */
+section('Business configurator + checkout (Phase 2)');
+check('business-setup page registered in the router', lex(dom, "PAGES.indexOf('business-setup')") !== -1);
+check('configurator page present with the four segment presets',
+      !!dom.window.document.getElementById('page-business-setup') &&
+      !!dom.window.document.getElementById('biz-seg-estate-agent') &&
+      !!dom.window.document.getElementById('biz-seg-hr-team') &&
+      !!dom.window.document.getElementById('biz-cfg-quote'));
+check('published formula: 3/100 → ₦96,000 base, ₦103,200 total (VAT line)',
+      (() => { const q = lex(dom, 'bizQuote(3,100)'); return q.price === 96000 && q.vat === 7200 && q.total === 103200 && q.tier === 'starter'; })());
+check('published formula: 25/1000 → ₦720,000 · 8/300 → ₦240,000 · 2/5000 → ₦978,000',
+      (() => { return lex(dom, 'bizQuote(25,1000)').price === 720000 && lex(dom, 'bizQuote(8,300)').price === 240000 && lex(dom, 'bizQuote(2,5000)').price === 978000; })());
+lex(dom, 'bizUpdateQuote()');
+check('live quote renders base + VAT + total for the defaults',
+      /₦96,000/.test($(dom, 'biz-cfg-quote').textContent) && /VAT/.test($(dom, 'biz-cfg-quote').textContent) && /Total \/ year/.test($(dom, 'biz-cfg-quote').textContent));
+$(dom, 'biz-cfg-seats').value = '25';
+lex(dom, 'bizUpdateQuote()');
+check('quote recomputes on input (25 seats → growth base + 5 seat units, ₦774,000 total)',
+      /₦480,000/.test($(dom, 'biz-cfg-quote').textContent) && /\+5 seats/.test($(dom, 'biz-cfg-quote').textContent) && /₦774,000/.test($(dom, 'biz-cfg-quote').textContent));
+check('create-team posts to /business/teams; card links to the configurator',
+      /\/business\/teams/.test(lex(dom, 'bizCreateTeam.toString()')) &&
+      !!dom.window.document.querySelector('#page-pricing a[href="#business-setup"]'));
+check('checkout posts to /business/team/charge (transfer VA panel + card hosted URL)',
+      (() => { const s = lex(dom, 'bizCharge.toString()'); return /\/business\/team\/charge/.test(s) && /biz-va-panel/.test(s) && /pay_url/.test(s); })());
+const unpaidStorage = `
+  window.fetch = function (u, opt) {
+    u = String(u); window.__calls.push(u);
+    if (u.indexOf('/business/team') !== -1) return Promise.resolve({ ok: true, status: 200, json: function(){ return Promise.resolve({ ok: true, team: { id: 't9', slug: 'pf', name: 'Pay First', status: 'unpaid', expiry: '', plan: 'starter' }, email: 'pay@first.co', role: 'owner', seats: [], brand: {}, quote: { tier: 'starter', seats: 3, docs: 100, extraSeats: 0, extraBlocks: 0, price: 96000, vat: 7200, total: 103200 } }); } });
+    return Promise.resolve({ ok: false, status: 404, json: function(){ return Promise.resolve({ ok: false, error: 'nope' }); } });
+  };
+  try { localStorage.setItem('docoga_team', JSON.stringify({ token: 'tl_t9|pay@first.co|9999999999.sig', team: { id: 't9', name: 'Pay First', slug: 'pf', status: 'unpaid' }, email: 'pay@first.co', role: 'owner', exp: 9999999999 })); } catch(e) {}
+`;
+const upDom = boot({ storage: unpaidStorage });
+await new Promise(res => setTimeout(res, 60));
+check('unpaid team → checkout panel with total + transfer/card buttons',
+      /₦103,200/.test(upDom.window.document.querySelector('#biz-team-box').textContent) &&
+      !!upDom.window.document.querySelector('#biz-team-box [onclick*="transfer"]') &&
+      !!upDom.window.document.querySelector('#biz-team-box [onclick*="card"]'));
+upDom.window.printCurrent('agreement');
+const upPr = $(upDom, 'print-root');
+check('unpaid team documents still carry the DocOga banner (branding is what is paid for)',
+      !!upPr.querySelector('.free-banner') && !upPr.querySelector('.team-banner'));
 
 section('config values used by customers');
 const CFG = { PAYMENT_URL: lex(dom, 'PAYMENT_URL'), SUPPORT_WHATSAPP: lex(dom, 'SUPPORT_WHATSAPP'), SITE_URL: lex(dom, 'SITE_URL'), WORKER_URL: lex(dom, 'WORKER_URL'), ANALYTICS_ID: lex(dom, 'ANALYTICS_ID') };

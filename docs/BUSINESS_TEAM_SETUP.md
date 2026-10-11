@@ -1,13 +1,20 @@
-# Business team setup — Phase 1 (manual onboarding)
+# Business team setup
 
-Phase 1 teams are created by the owner by hand in the Cloudflare KV dashboard
-(the `docoga-kv` namespace, bound as `KV` on the `docoga-pass` worker). Four
-or five keys per team — no code. After that, magic-link sign-in, firm
-branding and seat management run fully automatically.
+**Since Phase 2 (11 Oct 2026) teams are self-serve:**
+`docoga.com.ng/#business-setup` → pick a segment preset, seats and document
+volume → the published formula shows the live annual price (VAT line-item) →
+"Create my team" → magic-link email → sign in → **pay by bank transfer
+(dynamic virtual account, auto-confirmed by webhook) or card/USSD** → the
+team activates itself for 12 months. No owner step anywhere.
 
-This is intentional for Phase 1 (dossier §10): the exit gate is *owner + 1
-seat, branded PDFs across all 10 tools, revoke works*. Self-serve team
-creation, checkout and invoicing arrive in Phase 2.
+What the owner does: nothing per team, unless the customer writes an email
+(support, §7.5). Watch the KV dashboard for `inv:*` records to see payment
+state (`open` → `paid`, or `wrong_amount` — the wrong-amount case auto-issues
+a fresh VA and emails the customer, no human reconciliation).
+
+The manual procedure below is kept for **owner-side fixes and teams created
+before Phase 2** (e.g. reviving a mis-created team, or adding a seat by hand
+during a rollout issue).
 
 ## 0. One-time (first team only)
 
@@ -67,12 +74,16 @@ expired team loses branding immediately, even with an old session token.
 - **Update the brand** — name, address, footer line, logo (≤25 KB).
 - See the seat list (members see only themselves).
 
-## 4. Not in Phase 1 (Phase 2, per dossier §10)
+## 4. What the webhook does (Phase 2)
 
-No self-serve team creation, no configurator, no Flutterwave checkout
-(card + bank transfer), no invoices, no volume metering. A Phase 1 team is
-licensed by hand: create the record, collect payment through the normal
-channel, set `expiry` to match.
+On a signed `charge.completed` that matches an invoice reference:
+- **correct amount** (naira or kobo — v4 reports minor units) → team `active`
+  for +365 days, invoice `paid`, owner emailed "your team is live".
+- **wrong amount** → no activation; the old VA is voided, a fresh one issued,
+  the owner emailed the exact amount — automatically (§7.4).
+- **duplicate** → idempotent no-op.
+- The retail pass path is untouched (the invoice branch runs first on
+  reference match; pass references never match invoices).
 
 ## 5. Troubleshooting
 

@@ -34,6 +34,18 @@
  *                       (PNG/JPG/SVG ≤25KB, re-validated server-side).
  *   POST /business/team/seats  Owner: {action:"invite"|"revoke", email, name?} —
  *                       invite emails a magic link; revoke is immediate.
+ *   POST /business/teams       Self-serve team creation (Phase 2, 11 Oct):
+ *                       {email, name, seats, docs, segment?} → UNPAID team +
+ *                       owner seat + magic link. Price = PUBLISHED formula
+ *                       (§6.1) recomputed server-side; client never sends price.
+ *   POST /business/team/charge Owner: {method:"transfer"|"card"} → invoice +
+ *                       Flutterwave dynamic VA (bank transfer, PRIMARY — vendor
+ *                       expiry honoured, re-issue on expiry) or v4 hosted
+ *                       "generic" charge (card, P3).
+ *   /flw-webhook (extended)    charge.completed that matches an invoice
+ *                       reference activates the team (annual, +365 days);
+ *                       wrong amount → VA voided + fresh VA + email (§7.4);
+ *                       idempotent; retail pass path untouched.
  *
  * Free-tier capacity: Workers 100k req/day · KV 1k writes/day · Resend 3k emails/month.
  *
@@ -453,7 +465,7 @@ async function handleBusinessLogin(request, env, cors) {
   const teamId = await env.KV.get("seatidx:" + email);
   if (!teamId) return json({ ok: false, error: "that email is not on a DocOga team yet" }, cors, 400);
   const team = await loadTeam(env, teamId);
-  if (!teamLive(team)) return json({ ok: false, error: "team not active" }, cors, 400);
+  if (!teamSignInOk(team)) return json({ ok: false, error: "team not active" }, cors, 400);
   const seat = (await loadSeats(env, teamId)).find(s => String(s.email || "").toLowerCase() === email);
   if (!seat || seat.status !== "active") return json({ ok: false, error: "this email can't sign in — ask your team owner" }, cors, 400);
   if (!(await teamLoginRateGuard(request, env, email))) return json({ ok: false, error: "too many sign-in requests — try again tomorrow" }, cors, 429);
@@ -481,7 +493,7 @@ async function handleBusinessLoginVerify(url, env, cors) {
   const teamId = await env.KV.get("seatidx:" + email);
   const team = teamId ? await loadTeam(env, teamId) : null;
   const seat = teamId ? (await loadSeats(env, teamId)).find(s => String(s.email || "").toLowerCase() === email) : null;
-  if (!teamLive(team) || !seat || seat.status !== "active")
+  if (!teamSignInOk(team) || !seat || seat.status !== "active")
     return json({ ok: false, error: "this email can't sign in — ask your team owner" }, cors, 400);
   const sess = await makeSessionToken(env, teamId, email);
   return json({
@@ -507,7 +519,7 @@ async function teamSession(request, env) {
   if (!Number.isFinite(exp) || exp < Date.now() / 1000) return null;
   if (await teamSig(env, payload) !== tok.slice(dot + 1)) return null; // forged/tampered
   const team = await loadTeam(env, teamId);
-  if (!teamLive(team)) return null;
+  if (!teamSignInOk(team)) return null;
   const seat = (await loadSeats(env, teamId)).find(s => String(s.email || "").toLowerCase() === email.toLowerCase());
   if (!seat || seat.status !== "active") return null;
   return { id: teamId, email: email.toLowerCase(), role: seat.role === "owner" ? "owner" : "member", team };
@@ -525,7 +537,10 @@ async function handleBusinessTeam(request, env, cors) {
     team: { id: s.id, slug: s.team.slug, name: s.team.name, status: s.team.status, expiry: s.team.expiry, plan: s.team.plan },
     email: s.email, role: s.role,
     seats: publicSeats(await loadSeats(env, s.id), s),
-    brand
+    brand,
+    // Unpaid teams need the published quote to render checkout (C3 formula)
+    quote: s.team.status === "unpaid" ? businessQuote(s.team.seats, s.team.docs) : undefined,
+    openInvoice: s.team.status === "unpaid" ? (await currentInvoice(env, s.id)) : undefined
   });
 }
 async function handleBusinessBrand(request, env, cors) {
@@ -601,6 +616,267 @@ async function handleBusinessSeats(request, env, cors) {
   return json({ ok: true, action: "revoke" });
 }
 
+/* ---------- Business money path (Phase 2, 11 Oct 2026) ----------
+ * C3/C4/C5/C10: self-serve team creation (unpaid), invoicing, Flutterwave
+ * bank-transfer (dynamic VA — PRIMARY advertised method per dossier §6.4)
+ * and card (v4 hosted "generic" charge — P3, honest 502 if the account
+ * doesn't support it). Webhook activates on signature + reference match;
+ * the amount is validated in BOTH naira and kobo (v4 reports minor units —
+ * never guess on the money path). Prices are the PUBLISHED formula
+ * (dossier §6.1, PROPOSED bands): worker is authoritative — the client
+ * never sends a price.
+ * KV: team:{id}:inv (current invoice id) · inv:{id} (record) · inv:{id}:va
+ * (bank/account/amount/expires) · invref:{ref} (invoice id; ref = invoice id)
+ * VA expiry: we REQUEST a 7-day expiry on the v4 payment method but HONOUR
+ * whatever account_expiration_datetime the vendor returns (dynamic VAs
+ * default to 1h per Flutterwave docs); the customer sees the real expiry
+ * and "get a new one" re-issues (dossier §7.4). */
+const BIZ_TIERS = [
+  { key: "starter", base: 96000, seats: 3, docs: 100, brands: 1 },
+  { key: "standard", base: 240000, seats: 8, docs: 300, brands: 1 },
+  { key: "growth", base: 480000, seats: 20, docs: 1000, brands: 2 },
+];
+const BIZ_SEAT_UNIT = 48000; // per extra seat/yr (above the seat band)
+const BIZ_DOC_BLOCK_UNIT = 18000; // per extra 100 docs/mo block, per yr
+const BIZ_VAT = 0.075; // shown line-item (dossier §6.4)
+const UNPAID_TTL_DAYS = 14; // an unpaid team can sign in (to pay) for 14 days
+function businessQuote(seats, docs) {
+  const nseats = Math.max(1, Math.min(500, Math.floor(Number(seats) || 1)));
+  const ndocs = Math.max(100, Math.min(100000, Math.floor(Number(docs) || 100)));
+  const tier = BIZ_TIERS.find(t => nseats <= t.seats) || BIZ_TIERS[BIZ_TIERS.length - 1];
+  const extraSeats = Math.max(0, nseats - tier.seats);
+  const extraBlocks = Math.max(0, Math.ceil((ndocs - tier.docs) / 100));
+  const price = tier.base + extraSeats * BIZ_SEAT_UNIT + extraBlocks * BIZ_DOC_BLOCK_UNIT;
+  const vat = Math.round(price * BIZ_VAT);
+  return { tier: tier.key, seats: nseats, docs: ndocs, extraSeats, extraBlocks, price, vat, total: price + vat };
+}
+function teamSignInOk(team) {
+  if (!team) return false;
+  if (team.status === "active") return teamLive(team);
+  if (team.status === "unpaid") {
+    const born = Date.parse(team.created || "1970-01-01T00:00:00Z");
+    return born + UNPAID_TTL_DAYS * 864e5 >= Date.now();
+  }
+  return false;
+}
+async function flw4Post(env, path, body) {
+  const token = await flw4Token(env);
+  const r = await fetch(FLW4_BASE + path, {
+    method: "POST",
+    headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  let j = {};
+  try { j = await r.json(); } catch (e) {}
+  if (!r.ok || j.status === "failure") throw new Error("FLW4_HTTP_" + r.status);
+  return j;
+}
+async function handleBusinessTeams(request, env, cors) {
+  if (!env.TEAM_AUTH_SECRET) return json({ ok: false, error: "team_auth_disabled" }, cors, 503);
+  const body = await request.json().catch(() => null);
+  const email = String((body && body.email) || "").trim().slice(0, 254).toLowerCase();
+  const name = String((body && body.name) || "").trim().slice(0, 120);
+  const segment = String((body && body.segment) || "").trim().slice(0, 40);
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json({ ok: false, error: "valid email required" }, cors, 400);
+  if (!name) return json({ ok: false, error: "firm name required" }, cors, 400);
+  const SEGS = ["estate-agent", "property-manager", "landlord", "hr-team"];
+  if (segment && !SEGS.includes(segment)) return json({ ok: false, error: "unknown segment" }, cors, 400);
+  const other = await env.KV.get("seatidx:" + email);
+  if (other) return json({ ok: false, error: "that email is already on a DocOga team" }, cors, 400);
+  try {
+    const ip = ((request.headers.get("cf-connecting-ip") || "unknown").replace(/[^a-zA-Z0-9.:_-]/g, "").slice(0, 64)) || "unknown";
+    const k = "bizcreate:ip:" + ip + ":" + new Date().toISOString().slice(0, 10);
+    const n = Number((await env.KV.get(k)) || "0") + 1;
+    await env.KV.put(k, String(n), { expirationTtl: 86400 });
+    if (n > 10) return json({ ok: false, error: "too many team requests from your connection — try again tomorrow" }, cors, 429);
+  } catch (e) {}
+  const q = businessQuote(body.seats, body.docs);
+  const id = "t" + Math.random().toString(36).slice(2, 8);
+  const now = new Date().toISOString();
+  await env.KV.put("team:" + id, JSON.stringify({
+    id, slug: name.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 40) || id,
+    name, status: "unpaid", plan: q.tier, price: q.price, vat: q.vat, total: q.total,
+    seats: q.seats, docs: q.docs, segment, created: now, expiry: "",
+  }));
+  await env.KV.put("team:" + id + ":seats", JSON.stringify([{ email, name: "", role: "owner", status: "active", invited_at: now }]));
+  await env.KV.put("brand:" + id, JSON.stringify({ name }));
+  await env.KV.put("seatidx:" + email, id);
+  // Magic link (best-effort: the team exists even if the email hand-off fails —
+  // the owner can request a fresh link from the sign-in form)
+  const token = await magicLinkToken(email);
+  await storeMagicToken(env, token);
+  let emailSent = false;
+  try {
+    await sendAuthMail(env, email, "", name, token, "Your DocOga team is ready — sign in and activate it");
+    emailSent = true;
+  } catch (e) {
+    console.error(`[docoga-mail] biz_team_email_not_accepted reason=${safeMailFailureReason(e)}`);
+  }
+  return json({ ok: true, team: { id, name }, quote: q, confirmationEmail: emailSent });
+}
+async function currentInvoice(env, teamId) {
+  const id = await env.KV.get("team:" + teamId + ":inv");
+  if (!id) return null;
+  const invRaw = await env.KV.get("inv:" + id);
+  if (!invRaw) return null;
+  try { return JSON.parse(invRaw); } catch (e) { return null; }
+}
+async function handleBusinessCharge(request, env, cors) {
+  const s = await teamSession(request, env);
+  if (!s) return json({ ok: false, error: "sign_in_required" }, cors, 401);
+  if (s.role !== "owner") return json({ ok: false, error: "owner_only" }, cors, 403);
+  if (s.team.status !== "unpaid") return json({ ok: false, error: "team already active — renewals are handled by DocOga by email" }, cors, 400);
+  const body = await request.json().catch(() => ({ method: "transfer" }));
+  const method = String((body && body.method) || "transfer");
+  if (method !== "transfer" && method !== "card") return json({ ok: false, error: "method must be transfer or card" }, cors, 400);
+  const existing = await currentInvoice(env, s.id);
+  if (existing && existing.status === "open") {
+    // Re-issue only when the VA is dead (expired/voided) — "link expired, get a new one" (§7.4)
+    const va = JSON.parse(await env.KV.get("inv:" + existing.id + ":va") || "null");
+    const vaAlive = va && !va.voided && (!va.expires || Date.parse(va.expires) > Date.now());
+    if (method === existing.method && vaAlive) {
+      return json({ ok: true, reused: true, invoice: { id: existing.id, base: existing.amount, vat: existing.vat, total: existing.total }, va, reference: existing.ref });
+    }
+  }
+  try {
+    const k = "bizcharge:" + s.id + ":" + new Date().toISOString().slice(0, 10);
+    const n = Number((await env.KV.get(k)) || "0") + 1;
+    await env.KV.put(k, String(n), { expirationTtl: 86400 });
+    if (n > 5) return json({ ok: false, error: "too many payment links today — try again tomorrow" }, cors, 429);
+  } catch (e) {}
+  const q = businessQuote(s.team.seats, s.team.docs);
+  const id = "INV-" + Math.random().toString(36).slice(2, 10).toUpperCase();
+  const now = new Date().toISOString();
+  const inv = { id, team: s.id, amount: q.price, vat: q.vat, total: q.total, seats: q.seats, docs: q.docs, plan: q.tier, method, status: "open", ref: id, flw_ref: "", created: now };
+  if (method === "transfer") {
+    const exp = new Date(Date.now() + 7 * 864e5).toISOString();
+    let pm;
+    try {
+      pm = await flw4Post(env, "/v1/payment_methods", {
+        type: "bank_account", currency: "NGN",
+        amount: q.total * 100, // v4 reports minor units (kobo)
+        reference: id,
+        note: "DocOga Business — " + s.team.name + " — pay exactly " + q.total + " NGN",
+        account_expiration_datetime: exp, // requested; the VENDOR'S returned expiry is what we honour
+        customer: { email: s.email },
+      });
+    } catch (e) {
+      return json({ ok: false, error: "could not create your transfer account — try again in a moment" }, cors, 502);
+    }
+    const d = pm.data || {};
+    if (!d.account_number) return json({ ok: false, error: "could not create your transfer account — try again in a moment" }, cors, 502);
+    const va = { bank: d.account_bank_name || d.bank_name || "Flutterwave MFB", account: String(d.account_number), amount: d.amount, expires: d.account_expiration_datetime || d.expiry_date || exp, note: d.note || "", flw_ref: d.reference || d.flw_ref || "" };
+    await env.KV.put("inv:" + id + ":va", JSON.stringify(va));
+    inv.flw_ref = va.flw_ref;
+  } else {
+    let ch;
+    try {
+      ch = await flw4Post(env, "/v1/charges", {
+        amount: q.total * 100, currency: "NGN", reference: id,
+        payment_method: { type: "generic" }, // hosted page: card / USSD / POS
+        customer: { email: s.email },
+        return_url: (env.SITE_URL || "https://docoga.com.ng") + "/?team_inv=" + id,
+        description: "DocOga Business — " + s.team.name,
+      });
+    } catch (e) {
+      return json({ ok: false, error: "card checkout is not available for your plan right now — please use bank transfer" }, cors, 502);
+    }
+    const d = ch.data || {};
+    const payUrl = (d.next_action && (d.next_action.url || d.next_action.redirect_url)) || d.hosted_payment_url;
+    if (!payUrl) return json({ ok: false, error: "card checkout is not available for your plan right now — please use bank transfer" }, cors, 502);
+    inv.pay_url = payUrl;
+    inv.flw_ref = d.id || "";
+  }
+  await env.KV.put("inv:" + id, JSON.stringify(inv));
+  await env.KV.put("invref:" + id, id);
+  if (inv.flw_ref && inv.flw_ref !== id) await env.KV.put("invref:" + inv.flw_ref, id);
+  await env.KV.put("team:" + s.id + ":inv", id);
+  const out = { ok: true, reused: false, invoice: { id, base: inv.amount, vat: inv.vat, total: inv.total } };
+  if (method === "transfer") out.va = JSON.parse(await env.KV.get("inv:" + id + ":va"));
+  else out.pay_url = inv.pay_url;
+  return json(out, cors);
+}
+async function handleInvoiceWebhook(env, d, ids) {
+  // Returns true when this webhook belongs to a Business invoice (handled
+  // here); false = fall through to the retail pass path.
+  for (const cand of ids) {
+    const invId = await env.KV.get("invref:" + cand);
+    if (!invId) continue;
+    const invRaw = await env.KV.get("inv:" + invId);
+    let inv = null; if (invRaw) { try { inv = JSON.parse(invRaw); } catch (e) {} }
+    if (!inv) continue;
+    const amt = d.amount && typeof d.amount === "object" ? Number(d.amount.value) : Number(d.amount);
+    // v4 reports minor units (kobo), v3 naira — accept both, never guess.
+    const amountOk = amt === inv.total || amt === Math.round(inv.total * 100);
+    if (inv.status === "paid") return true; // idempotent
+    const owner = (JSON.parse(await env.KV.get("team:" + inv.team + ":seats") || "[]")).find(x => x.role === "owner");
+    if (!amountOk) {
+      // Wrong amount to the VA (§7.4): no activation, void the VA, issue a
+      // fresh one, email the correct amount. No human reconciliation.
+      inv.status = "wrong_amount"; inv.received_amount = amt;
+      await env.KV.put("inv:" + inv.id, JSON.stringify(inv));
+      try {
+        const oldVa = JSON.parse(await env.KV.get("inv:" + inv.id + ":va") || "null");
+        if (oldVa) { oldVa.voided = true; await env.KV.put("inv:" + inv.id + ":va", JSON.stringify(oldVa)); }
+        const exp = new Date(Date.now() + 7 * 864e5).toISOString();
+        const newRef = inv.id + "R" + String(Date.now()).slice(-5);
+        const pm = await flw4Post(env, "/v1/payment_methods", {
+          type: "bank_account", currency: "NGN", amount: inv.total * 100,
+          reference: newRef,
+          note: "DocOga Business — pay exactly " + inv.total + " NGN (previous account closed)",
+          account_expiration_datetime: exp,
+          customer: owner ? { email: owner.email } : undefined,
+        });
+        const dpm = pm.data || {};
+        if (dpm.account_number) {
+          inv.ref = newRef;
+          await env.KV.put("invref:" + newRef, inv.id); // the corrected transfer must match
+          if (dpm.reference) await env.KV.put("invref:" + dpm.reference, inv.id);
+          await env.KV.put("inv:" + inv.id + ":va", JSON.stringify({
+            bank: dpm.account_bank_name || "Flutterwave MFB", account: String(dpm.account_number),
+            amount: dpm.amount, expires: dpm.account_expiration_datetime || exp, note: dpm.note || "", flw_ref: dpm.reference || "",
+          }));
+        }
+        if (owner) {
+          const newVa = JSON.parse(await env.KV.get("inv:" + inv.id + ":va") || "{}");
+          await sendMail(env, owner.email,
+            "DocOga invoice " + inv.id + " — we received the wrong amount",
+            "We received a transfer that did not match invoice " + inv.id + " (expected exactly " + inv.total + " NGN).\n\n" + (newVa.account ? "Use this fresh account instead (it replaces the old one):\nBank: " + newVa.bank + "\nAccount: " + newVa.account + "\nAmount: exactly " + inv.total + " NGN\n\n" : "A fresh transfer account will appear in your DocOga account.") + "\n\nYour team stays paused until the exact amount lands — no call, no WhatsApp, this is automatic.\n\n— DocOga, Abuja\nhttps://docoga.com.ng",
+            mailShell(`<h2 style="margin:0 0 12px;font-size:20px;color:#0B1B3F">Invoice ${htmlEsc(inv.id)}</h2><p style="margin:0 0 12px;font-size:14px;color:#33415C;line-height:1.6">The transfer we received didn't match the exact amount of <b>${inv.total} NGN</b>.</p>${newVa.account ? `<p style="margin:0 0 12px;font-size:14px;color:#33415C;line-height:1.6">Fresh account: <b>${htmlEsc(newVa.bank)}</b> · <b>${htmlEsc(newVa.account)}</b></p>` : ""}<p style="margin:0;font-size:14px;color:#33415C;line-height:1.6">This is automatic — once the exact amount lands, your team activates by itself.</p>`)
+          );
+        }
+      } catch (e) {
+        console.error(`[docoga-inv] wrong_amount_reissue_failed reason=${safeMailFailureReason(e)}`);
+      }
+      return true;
+    }
+    // Correct amount → activate (annual licence from today)
+    const teamRaw = await env.KV.get("team:" + inv.team);
+    let team = null; if (teamRaw) { try { team = JSON.parse(teamRaw); } catch (e) {} }
+    if (team) {
+      const end = new Date(Date.now() + 365 * 864e5);
+      team.status = "active"; team.expiry = end.toISOString().slice(0, 10);
+      await env.KV.put("team:" + inv.team, JSON.stringify(team));
+    }
+    inv.status = "paid"; inv.paid_at = new Date().toISOString(); inv.received_amount = amt;
+    if (d.flw_ref) inv.flw_ref = String(d.flw_ref);
+    await env.KV.put("inv:" + inv.id, JSON.stringify(inv));
+    try {
+      if (team && owner) {
+        await sendMail(env, owner.email,
+          "Your " + team.name + " team is live on DocOga",
+          "Payment received — invoice " + inv.id + " (" + inv.total + " NGN incl. VAT) is paid.\n\n" + team.name + " is now active for 12 months. Sign in and invite your team — each member signs in with their own email and every document carries your firm's name and logo.\n\nhttps://docoga.com.ng\n\n— DocOga, Abuja",
+          mailShell(`<h2 style="margin:0 0 12px;font-size:20px;color:#0B1B3F">${htmlEsc(team.name)} is live 🎉</h2><p style="margin:0 0 12px;font-size:14px;color:#33415C;line-height:1.6">Invoice <b>${htmlEsc(inv.id)}</b> — <b>${inv.total} NGN</b> (incl. VAT) — received. Your team is active for 12 months.</p><p style="margin:0;font-size:14px;color:#33415C;line-height:1.6">Next: sign in and invite your team. Every document carries your firm's name and logo.</p>`)
+        );
+      }
+    } catch (e) {
+      console.error(`[docoga-mail] biz_activate_email_not_accepted reason=${safeMailFailureReason(e)}`); // activation is already stored
+    }
+    return true;
+  }
+  return false;
+}
+
 /* ---------- Flutterwave webhook — PRIMARY instant-delivery path for payment links ---------- */
 /* Accepts BOTH shapes: classic v3 (event + verif-hash header) and v4
  * (type + flutterwave-signature = HMAC-SHA256(rawBody, secretHash) base64).
@@ -633,10 +909,12 @@ async function handleFlwWebhook(request, env, cors) {
   const d = body.data || {};
   const isCompleted = body.type === "charge.completed" || body.event === "charge.completed";
   const succeeded = d.status === "succeeded" || d.status === "successful";
+  const ids = [d.reference, d.tx_ref, d.id, d.flw_ref].filter((x) => x !== undefined && x !== null && String(x).length > 0).map(String);
+  if (isCompleted && succeeded && d.currency === "NGN" && await handleInvoiceWebhook(env, d, ids))
+    return new Response("ok", { status: 200 }); // Business invoice handled — never mint a retail code for it
   const amt = d.amount && typeof d.amount === "object" ? Number(d.amount.value) : Number(d.amount);
   const paid = isCompleted && succeeded && d.currency === "NGN" && amt >= PRICE_NGN;
   if (!paid) return new Response("ignored", { status: 200 });
-  const ids = [d.reference, d.tx_ref, d.id].filter((x) => x !== undefined && x !== null && String(x).length > 0).map(String);
   const ref = ids[0] || String(Date.now());
   const existing = await env.KV.get("ref:" + ref);
   if (existing) return new Response("ok", { status: 200 });
@@ -927,6 +1205,8 @@ export default {
       if (url.pathname === "/business/team" && request.method === "GET") return await handleBusinessTeam(request, env, cors);
       if (url.pathname === "/business/team/brand" && request.method === "PUT") return await handleBusinessBrand(request, env, cors);
       if (url.pathname === "/business/team/seats" && request.method === "POST") return await handleBusinessSeats(request, env, cors);
+      if (url.pathname === "/business/teams" && request.method === "POST") return await handleBusinessTeams(request, env, cors);
+      if (url.pathname === "/business/team/charge" && request.method === "POST") return await handleBusinessCharge(request, env, cors);
       return json({ ok: false, error: "not found" }, cors, 404);
     } catch (e) {
       return json({ ok: false, error: String((e && e.message) || e) }, cors, 500);

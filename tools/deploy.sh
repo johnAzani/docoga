@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# DocOga deploy kit — 11 Oct 2026 (Phase 0 card + production-worker port + Phase 1 team core)
+# DocOga deploy kit — 11 Oct 2026 (Phase 0 card + production-worker port
+# + Phase 1 team core + Phase 2 money path: configurator, team creation,
+# Flutterwave VA/card charges, webhook activation)
 #
 # OWNER runs this from a machine with Cloudflare auth (wrangler login).
 # The Arena sandbox has no Cloudflare egress and no CF credentials, so the
@@ -30,6 +32,9 @@ echo "  curl -s 'https://docoga-pass.johnazani.workers.dev/activate?code=NOTACOD
 echo "    → expect 404 code_not_found  (activation regression intact)"
 echo "  curl -s https://docoga.com.ng | grep -c 'biz-waitlist'"
 echo "    → expect ≥1  (new Business card + form live)"
+echo "  curl -s -X POST https://docoga-pass.johnazani.workers.dev/business/teams \\"
+echo "    -H 'content-type: application/json' -d '{\"name\":\"x\"}'"
+echo "    → expect 400 {\"ok\":false,\"error\":\"valid email required\"}  (Phase 2 team-creation route live; no record created)"
 echo ""
 echo "== PHASE 1 SETUP (worker dashboard → Settings → Variables) =="
 echo "  TEAM_AUTH_SECRET = any long random string (required for /business/login* + /business/team*)"

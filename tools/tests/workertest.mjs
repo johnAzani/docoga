@@ -425,6 +425,120 @@ const mailsBefore = mailCap.length;
 r = await hit(te, '/business/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'late@old.co' }) });
 ok('expired team → login blocked 400, no email sent', r.status === 400 && r.j.error === 'team not active' && mailCap.length === mailsBefore, String(r.status) + ' ' + JSON.stringify(r.j).slice(0, 60));
 
+console.log('— /business/* money path (Phase 2, 11 Oct 2026) —');
+/* Flutterwave + mail routed through one fetch mock: the VA/charge responses
+   are canned v4 shapes; the VENDOR'S expiry (1h) differs from the one we
+   requested (7d) on purpose — the worker must honour the vendor's. */
+const flwCalls = [];
+globalThis.fetch = async (url, opts) => {
+  url = String(url);
+  const o = opts || {};
+  if (url.includes('api.resend.com')) { mailCap.push({ url, body: o.body ? JSON.parse(o.body) : null }); return new Response(JSON.stringify({ id: 'm' }), { status: 200, headers: { 'content-type': 'application/json' } }); }
+  if (url.includes('idp.flutterwave.com')) return new Response(JSON.stringify({ access_token: 'test-v4-token', expires_in: 600 }), { status: 200, headers: { 'content-type': 'application/json' } });
+  if (url.includes('/v1/payment_methods')) {
+    const d = JSON.parse(o.body);
+    flwCalls.push(d);
+    return new Response(JSON.stringify({ status: 'success', data: { account_number: '1234567890', account_bank_name: 'WEMA BANK', amount: d.amount, reference: 'van_' + flwCalls.length, account_expiration_datetime: new Date(Date.now() + 3600e3).toISOString(), note: d.note } }), { status: 200, headers: { 'content-type': 'application/json' } });
+  }
+  if (url.includes('/v1/charges')) return new Response(JSON.stringify({ status: 'success', data: { id: 'chg_test', next_action: { url: 'https://checkout.flutterwave.com/hosted/test' } } }), { status: 200, headers: { 'content-type': 'application/json' } });
+  return new Response('{}', { status: 404 });
+};
+function moneyEnv() {
+  const env = teamEnv();
+  env.FLW_CLIENT_ID = 'FLWV4-ID'; env.FLW_CLIENT_SECRET = 'FLWV4-SECRET';
+  env.FLW_WEBHOOK_HASH = webhookHash;
+  return env;
+}
+const wh = (env, payload) => hit(env, '/flw-webhook', { method: 'POST', headers: { 'content-type': 'application/json', 'verif-hash': webhookHash }, body: JSON.stringify(payload) });
+
+/* published formula (§6.1): 5 seats/500 docs → standard base + 2 blocks */
+const te2 = moneyEnv();
+r = await hit(te2, '/business/teams', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'boss@newfirm.ng', name: 'New Firm', seats: 5, docs: 500, segment: 'property-manager' }) });
+ok('team creation → unpaid team + owner seat + PUBLISHED price (server-computed)', r.status === 200 && r.j.team.id.startsWith('t') && r.j.quote.price === 276000 && r.j.quote.vat === 20700 && r.j.quote.total === 296700, String(r.status) + ' ' + JSON.stringify(r.j.quote || {}).slice(0, 100));
+const team1 = r.j.team.id;
+const t1rec = JSON.parse(await te2.KV.get('team:' + team1));
+ok('created team stored unpaid with seat index + magic link emailed', t1rec.status === 'unpaid' && t1rec.name === 'New Firm' && (await te2.KV.get('seatidx:boss@newfirm.ng')) === team1 && /team_token=boss(%40|@)newfirm\.ng~/.test((((mailCap[mailCap.length - 1] || {}).body || {}).text || '')), JSON.stringify(t1rec).slice(0, 100));
+r = await hit(te2, '/business/teams', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'boss@newfirm.ng', name: 'New Firm', seats: 3, docs: 100 }) });
+ok('same email creating a second team → 400 (one team per email)', r.status === 400, String(r.status) + ' ' + JSON.stringify(r.j).slice(0, 80));
+
+/* formula edges: 25 seats → growth + 5×₦48k; 2 seats/5000 docs → starter + 49 blocks */
+r = await hit(te2, '/business/teams', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'big@bigfirm.ng', name: 'Big Firm', seats: 25, docs: 1000 }) });
+ok('25 seats/1000 docs → ₦720,000 (growth + 5 seat units)', r.status === 200 && r.j.quote.price === 720000 && r.j.quote.total === 774000, JSON.stringify(r.j.quote || {}).slice(0, 100));
+r = await hit(te2, '/business/teams', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'vol@volfirm.ng', name: 'Vol Firm', seats: 2, docs: 5000 }) });
+ok('2 seats/5000 docs → ₦978,000 (starter + 49 doc blocks)', r.status === 200 && r.j.quote.price === 978000, JSON.stringify(r.j.quote || {}).slice(0, 100));
+
+/* unpaid sign-in is allowed (to pay) and exposes the quote — no branding yet */
+r = await hit(te2, '/business/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'boss@newfirm.ng' }) });
+ok('unpaid team can request a sign-in link (to reach checkout)', r.status === 200, String(r.status) + ' ' + JSON.stringify(r.j).slice(0, 80));
+const bossMagic = decodeURIComponent((((mailCap[mailCap.length - 1] || {}).body || {}).text || '').match(/team_token=([\w.~@%]+)/)[1]);
+r = await hit(te2, '/business/login?token=' + encodeURIComponent(bossMagic));
+const bossTok = r.j.token;
+r = await hit(te2, '/business/team', authed(bossTok));
+ok('unpaid session → /business/team returns status unpaid + quote (no active licence)', r.status === 200 && r.j.team.status === 'unpaid' && r.j.quote.total === 296700, String(r.status) + ' ' + JSON.stringify(r.j.team || {}).slice(0, 100));
+await te2.KV.put('team:told', JSON.stringify({ id: 'told', slug: 'old', name: 'Old Unpaid', status: 'unpaid', created: new Date(Date.now() - 20 * 864e5).toISOString(), expiry: '' }));
+await te2.KV.put('team:told:seats', JSON.stringify([T1('late2@old.co', 'Late', 'owner')]));
+await te2.KV.put('seatidx:late2@old.co', 'told');
+r = await hit(te2, '/business/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'late2@old.co' }) });
+ok('unpaid team older than 14 days → sign-in blocked', r.status === 400, String(r.status) + ' ' + JSON.stringify(r.j).slice(0, 80));
+
+/* transfer charge: VA from Flutterwave, vendor expiry honoured */
+r = await hit(te2, '/business/team/charge', Object.assign(authed(bossTok), { method: 'POST', headers: Object.assign(authed(bossTok).headers, { 'content-type': 'application/json' }), body: JSON.stringify({ method: 'transfer' }) }));
+ok('charge(transfer) → invoice + VA (vendor expiry HONOURED, not our requested 7d)', r.status === 200 && r.j.invoice.total === 296700 && r.j.va.account === '1234567890' && r.j.va.bank === 'WEMA BANK' && Math.abs(Date.parse(r.j.va.expires) - Date.now()) < 3700e3, String(r.status) + ' ' + JSON.stringify(r.j.va || {}).slice(0, 100));
+const inv1 = r.j.invoice.id;
+const invRec = JSON.parse(await te2.KV.get('inv:' + inv1));
+ok('invoice stored open with reference index + team pointer', invRec.status === 'open' && (await te2.KV.get('invref:' + inv1)) === inv1 && (await te2.KV.get('team:' + team1 + ':inv')) === inv1, JSON.stringify(invRec).slice(0, 90));
+r = await hit(te2, '/business/team/charge', Object.assign(authed(bossTok), { method: 'POST', headers: Object.assign(authed(bossTok).headers, { 'content-type': 'application/json' }), body: JSON.stringify({ method: 'transfer' }) }));
+ok('second charge while one is open → reuses it (no duplicate VA)', r.status === 200 && r.j.reused === true && r.j.invoice.id === inv1, String(r.status) + ' ' + JSON.stringify(r.j.invoice || {}).slice(0, 80));
+
+/* webhook: correct amount (naira) → team active +365d, invoice paid, owner emailed */
+r = await wh(te2, { event: 'charge.completed', 'event.type': 'BANK_TRANSFER_TRANSACTION', data: { status: 'successful', currency: 'NGN', amount: 296700, tx_ref: inv1, flw_ref: 'FLW-ACT-1', customer: { email: 'boss@newfirm.ng' } } });
+const t1after = JSON.parse(await te2.KV.get('team:' + team1));
+ok('webhook correct amount (naira) → 200 + team active +365d + invoice paid', r.status === 200 && t1after.status === 'active' && (await te2.KV.get('inv:' + inv1)).includes('"paid"') && Math.abs(Math.abs(new Date(t1after.expiry).getTime() - Date.now()) - 365 * 864e5) < 2 * 864e5, String(r.status) + ' team=' + JSON.stringify(t1after).slice(0, 90));
+ok('activation email sent to the team owner', /is live on DocOga/i.test((((mailCap[mailCap.length - 1] || {}).body || {}).subject || '')), JSON.stringify(((mailCap[mailCap.length - 1] || {}).body || {}).subject || '').slice(0, 80));
+const expiryBefore = t1after.expiry;
+r = await wh(te2, { event: 'charge.completed', 'event.type': 'BANK_TRANSFER_TRANSACTION', data: { status: 'successful', currency: 'NGN', amount: 296700, tx_ref: inv1, flw_ref: 'FLW-ACT-1', customer: { email: 'boss@newfirm.ng' } } });
+ok('duplicate webhook → idempotent (200, expiry unchanged)', r.status === 200 && (await te2.KV.get('team:' + team1)).includes(expiryBefore), String(r.status));
+
+/* wrong amount → no activation, VA voided + fresh VA + email (§7.4) */
+r = await hit(te2, '/business/teams', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'wa@wa.co', name: 'Wrong Amount Co', seats: 3, docs: 100 }) });
+const team2 = r.j.team.id;
+r = await hit(te2, '/business/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'wa@wa.co' }) });
+const boss2Magic = decodeURIComponent((((mailCap[mailCap.length - 1] || {}).body || {}).text || '').match(/team_token=([\w.~@%]+)/)[1]);
+r = await hit(te2, '/business/login?token=' + encodeURIComponent(boss2Magic));
+const boss2Tok = r.j.token;
+r = await hit(te2, '/business/team/charge', Object.assign(authed(boss2Tok), { method: 'POST', headers: Object.assign(authed(boss2Tok).headers, { 'content-type': 'application/json' }), body: JSON.stringify({ method: 'transfer' }) }));
+const inv2 = r.j.invoice.id;
+const vaCallsBefore = flwCalls.length;
+r = await wh(te2, { event: 'charge.completed', 'event.type': 'BANK_TRANSFER_TRANSACTION', data: { status: 'successful', currency: 'NGN', amount: 50000, tx_ref: inv2, flw_ref: 'FLW-WRONG-1', customer: { email: 'wa@wa.co' } } });
+const t2after = JSON.parse(await te2.KV.get('team:' + team2));
+const inv2rec = JSON.parse(await te2.KV.get('inv:' + inv2));
+ok('wrong amount → 200, NO activation, invoice wrong_amount, fresh VA issued + owner emailed', r.status === 200 && t2after.status === 'unpaid' && inv2rec.status === 'wrong_amount' && inv2rec.received_amount === 50000 && flwCalls.length === vaCallsBefore + 1 && /wrong amount/i.test((((mailCap[mailCap.length - 1] || {}).body || {}).subject || '')), String(r.status) + ' inv=' + JSON.stringify(inv2rec).slice(0, 100));
+
+/* kobo units (v4 minor units) → accepted */
+r = await hit(te2, '/business/teams', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'kobo@kobo.co', name: 'Kobo Co', seats: 4, docs: 300 }) });
+const team3 = r.j.team.id;
+r = await hit(te2, '/business/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'kobo@kobo.co' }) });
+const koboMagic = decodeURIComponent((((mailCap[mailCap.length - 1] || {}).body || {}).text || '').match(/team_token=([\w.~@%]+)/)[1]);
+r = await hit(te2, '/business/login?token=' + encodeURIComponent(koboMagic));
+const koboTok = r.j.token;
+r = await hit(te2, '/business/team/charge', Object.assign(authed(koboTok), { method: 'POST', headers: Object.assign(authed(koboTok).headers, { 'content-type': 'application/json' }), body: JSON.stringify({ method: 'transfer' }) }));
+const inv3 = r.j.invoice.id;
+const total3 = r.j.invoice.total;
+r = await wh(te2, { type: 'charge.completed', data: { status: 'succeeded', currency: 'NGN', amount: total3 * 100, reference: inv3, customer: { email: 'kobo@kobo.co' } } });
+ok('v4-style webhook in KOBO (minor units) → activated (both units accepted)', r.status === 200 && (await te2.KV.get('team:' + team3)).includes('"active"'), String(r.status) + ' total=' + total3);
+
+/* card (v4 hosted generic charge) */
+r = await hit(te2, '/business/teams', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'card@card.co', name: 'Card Co', seats: 3, docs: 100 }) });
+const team4 = r.j.team.id;
+r = await hit(te2, '/business/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'card@card.co' }) });
+const cardMagic = decodeURIComponent((((mailCap[mailCap.length - 1] || {}).body || {}).text || '').match(/team_token=([\w.~@%]+)/)[1]);
+r = await hit(te2, '/business/login?token=' + encodeURIComponent(cardMagic));
+const cardTok = r.j.token;
+r = await hit(te2, '/business/team/charge', Object.assign(authed(cardTok), { method: 'POST', headers: Object.assign(authed(cardTok).headers, { 'content-type': 'application/json' }), body: JSON.stringify({ method: 'card' }) }));
+ok('charge(card) → v4 hosted checkout URL returned', r.status === 200 && r.j.pay_url === 'https://checkout.flutterwave.com/hosted/test', String(r.status) + ' ' + JSON.stringify(r.j).slice(0, 100));
+r = await hit(te2, '/business/team/charge', Object.assign(authed(bossTok), { method: 'POST', headers: Object.assign(authed(bossTok).headers, { 'content-type': 'application/json' }), body: JSON.stringify({ method: 'transfer' }) }));
+ok('active team cannot create a new charge (renewals are by email in Phase 2)', r.status === 400, String(r.status) + ' ' + JSON.stringify(r.j).slice(0, 90));
+
 globalThis.fetch = realFetch;
 
 console.log(fails === 0 ? '\n🏆 WORKER LOGIC UNIT-VERIFIED: expiry / fence / hostile records / top-up / redirect verify / signed webhook / underpayment gate / email hand-off / business waitlist / team core (magic-link auth, brand, seats, revoke)' : '\n💥 ' + fails + ' FAILED');
