@@ -981,6 +981,7 @@ body.has-pass .buy-only{display:none !important}
 <p style="text-align:center;margin-top:8px"><button class="link-btn" onclick="openModal()">Have a code? Activate / extend →</button></p>
 </div>
 <div class="price-card">
+<span class="tag">COMING SOON</span>
 <div class="plan">Business</div>
 <div class="amount">Custom</div>
 <div class="per">annual, per team</div>
@@ -988,12 +989,22 @@ body.has-pass .buy-only{display:none !important}
 <ul>
 <li>Everything in Oga Pass, for your whole team</li>
 <li><b>Your firm’s name and logo</b> on every document instead of ours</li>
-<li>One shared pass — no per-person codes to chase</li>
-<li>Invoice and bank transfer, no cards, no reimbursements</li>
-<li>A named human on WhatsApp who knows your account</li>
+<li>Team seats — invite and remove people by email</li>
+<li>One annual invoice with VAT — pay by card or bank transfer, auto-confirmed</li>
 </ul>
-<a class="btn primary" style="width:100%;justify-content:center" href="https://wa.me/2349021852845?text=Hello%20DocOga%20%E2%80%94%20I%27d%20like%20a%20Business%20quote%20for%20my%20team.">Get a Business quote →</a>
-<p class="guarantee">One annual invoice. Cheaper than a single lawyer-drafted agreement per branch. We quote within one working day.</p>
+<form id="biz-waitlist" onsubmit="return bizWaitlistSubmit(event)" style="margin-top:12px">
+<input id="biz-email" type="email" required placeholder="Your work email" style="width:100%;box-sizing:border-box;padding:12px 14px;margin:6px 0;border:1px solid #cdd6e4;border-radius:10px;font-size:16px" aria-label="Work email">
+<input id="biz-company" type="text" placeholder="Firm or company (optional)" style="width:100%;box-sizing:border-box;padding:12px 14px;margin:6px 0;border:1px solid #cdd6e4;border-radius:10px;font-size:16px" aria-label="Firm or company name">
+<select id="biz-seg" style="width:100%;box-sizing:border-box;padding:12px 14px;margin:6px 0;border:1px solid #cdd6e4;border-radius:10px;font-size:16px;background:#fff" aria-label="What best describes you">
+<option value="">What best describes you?</option>
+<option value="estate-agent">Estate agent</option>
+<option value="property-manager">Property manager</option>
+<option value="landlord">Landlord (several units)</option>
+<option value="hr-team">HR team / employer</option>
+</select>
+<button class="btn primary" type="submit" style="width:100%;justify-content:center">Notify me at launch →</button>
+</form>
+<p class="guarantee" id="biz-waitlist-msg">Launching soon — fully self-serve: your team signs up online, no WhatsApp, no waiting for a quote. We’ll email you when it’s live.</p>
 </div>
 </div>
 </section>
@@ -1141,6 +1152,25 @@ if(CODE_HASHES.has(h)){ save(Math.max((pass&&pass.exp)||0, Date.now())+30*864e5,
 toast('❌ Invalid code. Please check and try again.');
 }
 function buyPass(){ window.open(PAYMENT_URL,'_blank'); toast('Complete payment — you\'ll be returned here and your pass activates automatically.'); }
+/* Business waitlist (11 Oct 2026): self-serve notify at launch. Replaces the
+   retired "quote by WhatsApp" CTA — owner instruction: the Business path must
+   run end-to-end without the customer sending a WhatsApp message. */
+async function bizWaitlistSubmit(e){
+  e.preventDefault();
+  const msg=$('biz-waitlist-msg');
+  const email=$('biz-email').value.trim();
+  if(!email){ msg.textContent='Please enter your work email.'; return false; }
+  msg.textContent='Sending…';
+  try{
+    const r=await fetch(WORKER_URL+'/business/waitlist',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,company:$('biz-company').value.trim(),segment:$('biz-seg').value})});
+    const j=await r.json();
+    if(j.ok){
+      $('biz-email').value='';$('biz-company').value='';$('biz-seg').value='';
+      msg.textContent=j.alreadyOnList?'You\u2019re already on the list \u2014 we\u2019ll email you at launch.':'You\u2019re on the list \u2014 we\u2019ll email you when your team can sign up.';
+    } else { msg.textContent=j.error||'Something went wrong \u2014 please try again.'; }
+  }catch(err){ msg.textContent='Could not reach the server \u2014 please try again in a moment.'; }
+  return false;
+}
 
 /* shared sheet helpers */
 function sheetClass(){ return passActive()?'sheet':'sheet free'; }

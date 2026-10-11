@@ -57,7 +57,7 @@ function json(obj, cors, status = 200) {
 
 /* ---------- Email delivery (provider chain: Brevo > SMTP2GO > Resend) ---------- */
 async function sendMail(env, to, subject, text, html) {
-  if (!to) return;
+  if (!to) return false;
   if (env.BREVO_API_KEY) {
     const from = env.MAIL_FROM || "DocOga <noreply@docoga.com.ng>";
     const m = from.match(/^(.*?)\s*<(.+)>$/) || [null, "DocOga", from];
@@ -66,7 +66,7 @@ async function sendMail(env, to, subject, text, html) {
       headers: { "api-key": env.BREVO_API_KEY, "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify({ sender: { name: m[1] || "DocOga", email: m[2] }, to: [{ email: to }], subject, textContent: text, htmlContent: html }),
     });
-    return;
+    return true;
   }
   if (env.SMTP2GO_API_KEY) {
     await fetch("https://api.smtp2go.com/v3/email/send", {
@@ -74,7 +74,7 @@ async function sendMail(env, to, subject, text, html) {
       headers: { "x-smtp2go-api-key": env.SMTP2GO_API_KEY, "Content-Type": "application/json" },
       body: JSON.stringify({ sender: env.MAIL_FROM || "DocOga <noreply@docoga.com.ng>", to: [to], subject, text_body: text, html_body: html }),
     });
-    return;
+    return true;
   }
   if (env.RESEND_API_KEY) {
     await fetch("https://api.resend.com/emails", {
@@ -82,7 +82,9 @@ async function sendMail(env, to, subject, text, html) {
       headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({ from: env.MAIL_FROM || "DocOga <noreply@docoga.com.ng>", to, subject, text, html }),
     });
+    return true;
   }
+  return false;
 }
 
 function mailShell(inner) {
@@ -250,6 +252,48 @@ async function handleFlwWebhook(request, env, cors) {
     if (id !== ref) await env.KV.put("ref:" + id, code);
   }
   return new Response("ok", { status: 200 });
+}
+
+/* ---------- Business waitlist (Phase 0, 11 Oct 2026) ----------
+ * Self-serve "notify me at launch" for the Business tier. Replaces the retired
+ * quote-by-WhatsApp CTA (owner instruction 11 Oct 2026: Business must run
+ * end-to-end without the customer sending a WhatsApp message).
+ * - dedupe on email (KV bizwait:{email}); rate guard 3 per IP per day
+ * - confirmation email best-effort via the existing provider chain
+ * - owner reads the list in the Cloudflare KV dashboard (no public read endpoint) */
+async function handleBusinessWaitlist(request, env, cors) {
+  let body = null;
+  try { body = await request.json(); } catch (e) {}
+  if (!body) return json({ ok: false, error: "json body required" }, cors, 400);
+  const email = String(body.email || "").trim().slice(0, 254).toLowerCase();
+  const company = String(body.company || "").trim().slice(0, 120);
+  const segment = String(body.segment || "").trim().slice(0, 40);
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+    return json({ ok: false, error: "valid email required" }, cors, 400);
+  const SEGMENTS = ["estate-agent", "property-manager", "landlord", "hr-team"];
+  if (segment && !SEGMENTS.includes(segment))
+    return json({ ok: false, error: "unknown segment" }, cors, 400);
+  try {
+    const ip = ((request.headers.get("cf-connecting-ip") || request.headers.get("x-real-ip") || "unknown").replace(/[^a-zA-Z0-9.:_-]/g, "").slice(0, 64)) || "unknown";
+    const k = "bizwait:ip:" + ip + ":" + new Date().toISOString().slice(0, 10);
+    const n = Number((await env.KV.get(k)) || "0") + 1;
+    await env.KV.put(k, String(n), { expirationTtl: 86400 });
+    if (n > 3) return json({ ok: false, error: "too many requests from your connection — try again tomorrow" }, cors, 429);
+  } catch (e) {}
+  const key = "bizwait:" + email;
+  const existing = await env.KV.get(key);
+  if (existing) return json({ ok: true, alreadyOnList: true });
+  await env.KV.put(key, JSON.stringify({ email, company, segment, at: new Date().toISOString() }));
+  let emailSent = false;
+  try {
+    emailSent = !!(await sendMail(
+      env, email,
+      "You're on the DocOga Business list",
+      "Thanks — you're on the list for the DocOga Business tier (annual, per team, your firm's name and logo on every document).\n\nWe'll email you once, when your team can sign up. No WhatsApp, no chasing — if you don't see it, check spam.\n\n— DocOga, Abuja\nhttps://docoga.com.ng",
+      mailShell(`<h2 style="margin:0 0 12px;font-size:20px;color:#0B1B3F">You're on the list</h2><p style="margin:0 0 12px;font-size:14px;color:#33415C;line-height:1.6">We're building the DocOga <b>Business</b> tier — annual, per team, your firm's name and logo on every document, team seats you manage yourself.</p><p style="margin:0;font-size:14px;color:#33415C;line-height:1.6">We'll email you once, when your team can sign up. No WhatsApp, no chasing.</p>`)
+    ));
+  } catch (e) {}
+  return json({ ok: true, alreadyOnList: false, confirmationEmail: emailSent });
 }
 
 /* ---------- Flutterwave v4 (OAuth) helpers ---------- */
@@ -525,6 +569,7 @@ export default {
       if (url.pathname === "/flw-webhook" && request.method === "POST") return await handleFlwWebhook(request, env, cors);
       if (url.pathname === "/verify" && request.method === "GET") return await handleVerify(url, env, cors);
       if (url.pathname === "/activate" && request.method === "GET") return await handleActivate(url, env, cors);
+      if (url.pathname === "/business/waitlist" && request.method === "POST") return await handleBusinessWaitlist(request, env, cors);
       return json({ ok: false, error: "not found" }, cors, 404);
     } catch (e) {
       return json({ ok: false, error: String((e && e.message) || e) }, cors, 500);

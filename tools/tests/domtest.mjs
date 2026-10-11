@@ -168,12 +168,16 @@ check('pricing states the real tool count on Oga Pass',
 // The newest, highest-value tool must be named on the paid tier.
 check('Oga Pass names Power of Attorney', /power of attorney/i.test(priceText));
 
-// Business tier must exist and must be contactable.
+// Business tier (owner instruction, 11 Oct 2026: the Business path must be fully
+// self-serve — no WhatsApp step for the customer). The card sits in an honest
+// "coming soon" state and carries the self-serve notify form, NOT a quote link.
 check('Business tier present', priceText.includes('Business'));
-const bizLink = priceSec.querySelector('a[href*="wa.me"]');
-check('Business tier links to WhatsApp', !!bizLink, bizLink ? bizLink.getAttribute('href').slice(0, 40) : 'none');
-check('Business WhatsApp uses the configured support number',
-      !!bizLink && bizLink.getAttribute('href').includes(lex(dom, 'SUPPORT_WHATSAPP')));
+const bizCard = [...priceSec.querySelectorAll('.price-card')].find(c => c.textContent.includes('Business'));
+check('Business card is marked coming soon (no unmet promises)', !!bizCard && /coming soon/i.test(bizCard.textContent));
+check('Business card carries no WhatsApp quote link', !!bizCard && !bizCard.querySelector('a[href*="wa.me"]'));
+check('Business card carries the self-serve notify form', !!bizCard && !!bizCard.querySelector('#biz-waitlist #biz-email') && /notify me/i.test(bizCard.textContent));
+check('Business notify form posts to the worker waitlist endpoint',
+      /\/business\/waitlist/.test(lex(dom, 'bizWaitlistSubmit.toString()')));
 
 // The buy button must still be wired.
 check('Oga Pass buy button present and wired',

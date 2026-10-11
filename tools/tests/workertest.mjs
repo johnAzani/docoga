@@ -117,6 +117,34 @@ const newRec = JSON.parse(await v7.KV.get('code:' + r.j.code) || '{}');
 ok('top-up via redirect carries the remaining days', Math.abs(newRec.exp - (NOW + 42 * 864e5)) < 60000, 'exp-NOW=' + Math.round((newRec.exp - NOW) / 864e5) + 'd');
 ok('old code is burned and pointed at the new one', /^OGA-/.test(String(r.j.code)) && JSON.parse(await v7.KV.get('code:OGA-OLDP-PLAN-ZZZZ')).succ === r.j.code, 'succ=' + JSON.parse(await v7.KV.get('code:OGA-OLDP-PLAN-ZZZZ')).succ);
 
+console.log('— /business/waitlist (self-serve Business notify, 11 Oct 2026) —');
+/* Phase 0 of the Business tier: the retired quote-by-WhatsApp CTA is replaced
+   by this endpoint. No email provider keys in the mock env, so sendMail is a
+   no-op and confirmationEmail must report false (not crash). */
+async function postJSON(env, path, obj) {
+  const r = await mod.fetch(new Request('https://w' + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(obj) }), env);
+  let j = null; try { j = await r.json(); } catch (e) {}
+  return { status: r.status, j };
+}
+const wenv = makeEnv({});
+r = await postJSON(wenv, '/business/waitlist', { email: 'ops@firm.ng', company: 'Firm & Co', segment: 'property-manager' });
+ok('valid signup → ok + stored', r.status === 200 && r.j.ok === true && !!(await wenv.KV.get('bizwait:ops@firm.ng')), r.status + ' ' + JSON.stringify(r.j).slice(0, 90));
+const storedW = JSON.parse(await wenv.KV.get('bizwait:ops@firm.ng') || '{}');
+ok('record keeps company+segment, lowercases email', storedW.company === 'Firm & Co' && storedW.segment === 'property-manager' && storedW.email === 'ops@firm.ng', JSON.stringify(storedW).slice(0, 100));
+ok('no email keys → confirmationEmail false, not a crash', r.j.confirmationEmail === false, JSON.stringify(r.j));
+r = await postJSON(wenv, '/business/waitlist', { email: 'OPS@firm.ng' });
+ok('duplicate (case-insensitive) → alreadyOnList', r.status === 200 && r.j.alreadyOnList === true, JSON.stringify(r.j).slice(0, 80));
+r = await postJSON(wenv, '/business/waitlist', { email: 'not-an-email' });
+ok('invalid email → 400', r.status === 400, String(r.status));
+r = await postJSON(wenv, '/business/waitlist', { email: 'a@b.co', segment: 'spaceship' });
+ok('unknown segment → 400', r.status === 400, String(r.status));
+const envW2 = makeEnv({});
+await postJSON(envW2, '/business/waitlist', { email: '1@a.co' });
+await postJSON(envW2, '/business/waitlist', { email: '2@a.co' });
+await postJSON(envW2, '/business/waitlist', { email: '3@a.co' });
+r = await postJSON(envW2, '/business/waitlist', { email: '4@a.co' });
+ok('4th valid signup same IP/day → 429 rate guard', r.status === 429, String(r.status));
+
 globalThis.fetch = realFetch;
 
 console.log(fails === 0 ? '\n🏆 WORKER LOGIC UNIT-VERIFIED: expiry / fence / hostile records / top-up / verify+email-capture all correct' : '\n💥 ' + fails + ' FAILED');
