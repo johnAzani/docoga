@@ -23,6 +23,17 @@
  *                       (Phase 0, 11 Oct 2026 — replaces the retired quote-by-WhatsApp
  *                       CTA). Body: {email, company?, segment?}. Dedupes on email,
  *                       3/IP/day rate guard, best-effort confirmation email.
+ *   POST /business/login     Team magic-link request {email} → one-time 10-min token
+ *                       emailed. 503 team_auth_disabled until TEAM_AUTH_SECRET set.
+ *   GET  /business/login?token=…  Verify magic link → 30-day stateless HMAC session
+ *                       (Authorization: Bearer). KV re-checked on EVERY call, so
+ *                       revoked seats / expired teams die immediately.
+ *   GET  /business/team       Signed-in team: seats (owner sees all, member self),
+ *                       brand (name/address/logo/footer) for branded rendering.
+ *   PUT  /business/team/brand  Owner: firm name/address/footer + logo data-URI
+ *                       (PNG/JPG/SVG ≤25KB, re-validated server-side).
+ *   POST /business/team/seats  Owner: {action:"invite"|"revoke", email, name?} —
+ *                       invite emails a magic link; revoke is immediate.
  *
  * Free-tier capacity: Workers 100k req/day · KV 1k writes/day · Resend 3k emails/month.
  *
@@ -37,6 +48,8 @@
  *   RESEND_API_KEY      free key from resend.com (email delivery — optional)
  *   MAIL_FROM           optional sender identity; must be verified by active mail provider
  *   RESEND_EMAIL_ENABLED set exactly to "true" only after authenticating the sender
+ *   TEAM_AUTH_SECRET    long random string (secret) — required for /business/login*
+ *                       and /business/team*; unset = 503 team_auth_disabled (fail-closed)
  *   SITE_URL            e.g. https://docoga.com.ng (used inside the email)
  * KV binding: must be named KV (see wrangler.toml)
  */
@@ -340,6 +353,254 @@ async function handleBusinessWaitlist(request, env, cors) {
   return json({ ok: true, alreadyOnList: false, confirmationEmail: emailSent });
 }
 
+/* ---------- Business team core (Phase 1, 11 Oct 2026) ----------
+ * Team/brand/seat records + magic-link auth + owner team/brand/seats API.
+ * Phase 1 teams are created by the owner BY HAND in KV (recipe:
+ * docs/BUSINESS_TEAM_SETUP.md; dossier: docs/BUSINESS_TIER_RESEARCH.md §10):
+ *   team:{id}        {"id","slug","name","status":"active","expiry":"YYYY-MM-DD","plan"}
+ *   team:{id}:seats  [{"email","name","role":"owner"|"member","status":"active","invited_at"}]
+ *   brand:{id}       {"name","address","logo":data-URI(≤25KB),"footer"}
+ *   seatidx:{email}  teamId
+ * Security model: the magic link is a one-time 10-minute token (only its
+ * SHA-256 hash is stored); the session token is a stateless
+ * HMAC(payload, TEAM_AUTH_SECRET) whose validity is RE-CHECKED AGAINST KV ON
+ * EVERY CALL (team status+expiry, seat status) — a revoked seat or expired
+ * team loses access immediately, no token revocation needed. The site and
+ * this Worker are different origins, so the session rides in
+ * Authorization: Bearer (localStorage on the site), not a cookie.
+ * No TEAM_AUTH_SECRET set → every /business/login* and /business/team* call
+ * fails closed with 503 team_auth_disabled (same pattern as RESEND_EMAIL_ENABLED). */
+const TEAM_SESSION_DAYS = 30;
+const MAGIC_TTL_SEC = 600;
+const LOGO_MAX_BYTES = 25 * 1024;
+
+function htmlEsc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+async function teamSha256Hex(str) {
+  const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+  let s = ""; for (const b of new Uint8Array(d)) s += b.toString(16).padStart(2, "0");
+  return s;
+}
+async function teamSig(env, payload) {
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey("raw", enc.encode(env.TEAM_AUTH_SECRET), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const mac = await crypto.subtle.sign("HMAC", key, enc.encode(payload));
+  let bin = ""; const bytes = new Uint8Array(mac);
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin);
+}
+async function makeSessionToken(env, teamId, email) {
+  const exp = Math.floor(Date.now() / 1000) + TEAM_SESSION_DAYS * 86400;
+  const payload = "tl_" + teamId + "|" + email + "|" + exp;
+  return payload + "." + await teamSig(env, payload);
+}
+function logoValid(logo) {
+  if (typeof logo !== "string" || logo === "") return true; // absent or clearing
+  const m = /^data:image\/(png|jpeg|svg\+xml);base64,([A-Za-z0-9+/=]+)$/.exec(logo);
+  if (!m) return false;
+  return Math.floor(m[2].length * 3 / 4) <= LOGO_MAX_BYTES;
+}
+async function loadTeam(env, teamId) {
+  const raw = await env.KV.get("team:" + teamId);
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch (e) { return null; }
+}
+function teamLive(team) {
+  if (!team || team.status !== "active") return false;
+  if (team.expiry) { const t = Date.parse(team.expiry + "T23:59:59Z"); if (t && t < Date.now()) return false; }
+  return true;
+}
+async function loadSeats(env, teamId) {
+  try { const s = JSON.parse(await env.KV.get("team:" + teamId + ":seats") || "[]"); return Array.isArray(s) ? s : []; } catch (e) { return []; }
+}
+async function magicLinkToken(email) {
+  const rand = crypto.getRandomValues(new Uint8Array(32));
+  let token = email + "~";
+  for (const b of rand) token += b.toString(16).padStart(2, "0");
+  return token;
+}
+async function storeMagicToken(env, token) {
+  await env.KV.put("auth:" + token.slice(0, token.lastIndexOf("~")).toLowerCase(),
+    JSON.stringify({ h: await teamSha256Hex(token), exp: Math.floor(Date.now() / 1000) + MAGIC_TTL_SEC }),
+    { expirationTtl: MAGIC_TTL_SEC });
+}
+async function sendAuthMail(env, email, name, teamName, token, introLine) {
+  const link = (env.SITE_URL || "https://docoga.com.ng") + "?team_token=" + encodeURIComponent(token);
+  await sendMail(
+    env, email,
+    introLine,
+    "Hi " + (name || "") + ",\n\n" + teamName + " on DocOga — sign in with one click (no password; this link works once and expires in 10 minutes):\n\n" + link + "\n\nIf you didn't ask for this, ignore it — nothing changes.\n\n— DocOga, Abuja\nhttps://docoga.com.ng",
+    mailShell(`<h2 style="margin:0 0 12px;font-size:20px;color:#0B1B3F">${htmlEsc(teamName)}</h2><p style="margin:0 0 16px;font-size:14px;color:#33415C;line-height:1.6">${htmlEsc(introLine === "Sign in to your DocOga team" ? "Sign in with one click — no password." : "Your team added you. Documents you generate carry your firm's name and logo.")} This link works once and expires in 10 minutes.</p><a href="${link}" style="display:inline-block;background:#0B1B3F;color:#fff;padding:12px 22px;border-radius:10px;font-size:14px;text-decoration:none;font-family:Arial,sans-serif">Sign in &rarr;</a><p style="margin:16px 0 0;font-size:12px;color:#64748B;font-family:Arial,sans-serif">Didn't ask for this? Ignore it — nothing changes.</p>`)
+  );
+}
+async function teamLoginRateGuard(request, env, email) {
+  const today = new Date().toISOString().slice(0, 10);
+  try {
+    const ekey = "teamlogin:em:" + email + ":" + today;
+    const n = Number((await env.KV.get(ekey)) || "0") + 1;
+    await env.KV.put(ekey, String(n), { expirationTtl: 86400 });
+    const ip = ((request.headers.get("cf-connecting-ip") || "unknown").replace(/[^a-zA-Z0-9.:_-]/g, "").slice(0, 64)) || "unknown";
+    const ikey = "teamlogin:ip:" + ip + ":" + today;
+    const m = Number((await env.KV.get(ikey)) || "0") + 1;
+    await env.KV.put(ikey, String(m), { expirationTtl: 86400 });
+    return n <= 5 && m <= 10;
+  } catch (e) { return true; } // the guard must never hard-block sign-in
+}
+async function handleBusinessLogin(request, env, cors) {
+  if (!env.TEAM_AUTH_SECRET) return json({ ok: false, error: "team_auth_disabled" }, cors, 503);
+  const body = await request.json().catch(() => null);
+  const email = String((body && body.email) || "").trim().slice(0, 254).toLowerCase();
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json({ ok: false, error: "valid email required" }, cors, 400);
+  const teamId = await env.KV.get("seatidx:" + email);
+  if (!teamId) return json({ ok: false, error: "that email is not on a DocOga team yet" }, cors, 400);
+  const team = await loadTeam(env, teamId);
+  if (!teamLive(team)) return json({ ok: false, error: "team not active" }, cors, 400);
+  const seat = (await loadSeats(env, teamId)).find(s => String(s.email || "").toLowerCase() === email);
+  if (!seat || seat.status !== "active") return json({ ok: false, error: "this email can't sign in — ask your team owner" }, cors, 400);
+  if (!(await teamLoginRateGuard(request, env, email))) return json({ ok: false, error: "too many sign-in requests — try again tomorrow" }, cors, 429);
+  const token = await magicLinkToken(email);
+  await storeMagicToken(env, token);
+  try {
+    await sendAuthMail(env, email, seat.name, team.name, token, "Sign in to your DocOga team");
+  } catch (e) {
+    console.error(`[docoga-mail] biz_auth_email_not_accepted reason=${safeMailFailureReason(e)}`);
+    return json({ ok: false, error: "email_send_failed — your team is ready, try again" }, cors, 502);
+  }
+  return json({ ok: true, message: "check_your_email" });
+}
+async function handleBusinessLoginVerify(url, env, cors) {
+  if (!env.TEAM_AUTH_SECRET) return json({ ok: false, error: "team_auth_disabled" }, cors, 503);
+  const token = url.searchParams.get("token") || "";
+  const tilde = token.lastIndexOf("~");
+  if (tilde < 3) return json({ ok: false, error: "invalid link" }, cors, 400);
+  const email = token.slice(0, tilde).toLowerCase();
+  const storedRaw = await env.KV.get("auth:" + email);
+  let stored = null; if (storedRaw) { try { stored = JSON.parse(storedRaw); } catch (e) {} }
+  if (!stored || Number(stored.exp) < Date.now() / 1000 || stored.h !== await teamSha256Hex(token))
+    return json({ ok: false, error: "link expired or already used — request a new one" }, cors, 400);
+  await env.KV.delete("auth:" + email); // one-time
+  const teamId = await env.KV.get("seatidx:" + email);
+  const team = teamId ? await loadTeam(env, teamId) : null;
+  const seat = teamId ? (await loadSeats(env, teamId)).find(s => String(s.email || "").toLowerCase() === email) : null;
+  if (!teamLive(team) || !seat || seat.status !== "active")
+    return json({ ok: false, error: "this email can't sign in — ask your team owner" }, cors, 400);
+  const sess = await makeSessionToken(env, teamId, email);
+  return json({
+    ok: true, token: sess,
+    role: seat.role === "owner" ? "owner" : "member",
+    team: { id: teamId, name: team.name, slug: team.slug },
+    email, exp: Math.floor(Date.now() / 1000) + TEAM_SESSION_DAYS * 86400
+  });
+}
+async function teamSession(request, env) {
+  if (!env.TEAM_AUTH_SECRET) return null;
+  const h = request.headers.get("authorization") || "";
+  const tok = h.startsWith("Bearer ") ? h.slice(7) : (request.headers.get("x-doco-team") || "");
+  if (!tok || !tok.startsWith("tl_")) return null;
+  const dot = tok.lastIndexOf(".");
+  if (dot < 3) return null;
+  const payload = tok.slice(0, dot);
+  const parts = payload.slice(3).split("|");
+  if (parts.length !== 3) return null;
+  const [teamId, email, expStr] = parts;
+  if (!teamId || !email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return null;
+  const exp = Number(expStr);
+  if (!Number.isFinite(exp) || exp < Date.now() / 1000) return null;
+  if (await teamSig(env, payload) !== tok.slice(dot + 1)) return null; // forged/tampered
+  const team = await loadTeam(env, teamId);
+  if (!teamLive(team)) return null;
+  const seat = (await loadSeats(env, teamId)).find(s => String(s.email || "").toLowerCase() === email.toLowerCase());
+  if (!seat || seat.status !== "active") return null;
+  return { id: teamId, email: email.toLowerCase(), role: seat.role === "owner" ? "owner" : "member", team };
+}
+function publicSeats(seats, viewer) {
+  const pick = s => ({ email: s.email, name: s.name, role: s.role, status: s.status });
+  return (viewer.role === "owner" ? seats : seats.filter(s => String(s.email || "").toLowerCase() === viewer.email)).map(pick);
+}
+async function handleBusinessTeam(request, env, cors) {
+  const s = await teamSession(request, env);
+  if (!s) return json({ ok: false, error: "sign_in_required" }, cors, 401);
+  let brand = {}; try { brand = JSON.parse(await env.KV.get("brand:" + s.id) || "{}"); } catch (e) {}
+  return json({
+    ok: true,
+    team: { id: s.id, slug: s.team.slug, name: s.team.name, status: s.team.status, expiry: s.team.expiry, plan: s.team.plan },
+    email: s.email, role: s.role,
+    seats: publicSeats(await loadSeats(env, s.id), s),
+    brand
+  });
+}
+async function handleBusinessBrand(request, env, cors) {
+  const s = await teamSession(request, env);
+  if (!s) return json({ ok: false, error: "sign_in_required" }, cors, 401);
+  if (s.role !== "owner") return json({ ok: false, error: "owner_only" }, cors, 403);
+  const body = await request.json().catch(() => null);
+  if (!body) return json({ ok: false, error: "json body required" }, cors, 400);
+  let brand = {}; try { brand = JSON.parse(await env.KV.get("brand:" + s.id) || "{}"); } catch (e) {}
+  if (body.name !== undefined) {
+    const name = String(body.name).trim().slice(0, 120);
+    if (!name) return json({ ok: false, error: "brand name required" }, cors, 400);
+    brand.name = name;
+  }
+  if (body.address !== undefined) brand.address = String(body.address).trim().slice(0, 200);
+  if (body.footer !== undefined) brand.footer = String(body.footer).trim().slice(0, 200);
+  if (body.logo !== undefined) {
+    if (!logoValid(body.logo)) return json({ ok: false, error: "logo must be a PNG, JPG or SVG data-URI, ≤25KB" }, cors, 400);
+    if (body.logo === "") delete brand.logo; else brand.logo = body.logo;
+  }
+  await env.KV.put("brand:" + s.id, JSON.stringify(brand));
+  return json({ ok: true, brand });
+}
+async function handleBusinessSeats(request, env, cors) {
+  const s = await teamSession(request, env);
+  if (!s) return json({ ok: false, error: "sign_in_required" }, cors, 401);
+  if (s.role !== "owner") return json({ ok: false, error: "owner_only" }, cors, 403);
+  const body = await request.json().catch(() => null);
+  if (!body) return json({ ok: false, error: "json body required" }, cors, 400);
+  const action = String(body.action || "");
+  const email = String(body.email || "").trim().slice(0, 254).toLowerCase();
+  const name = String(body.name || "").trim().slice(0, 120);
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json({ ok: false, error: "valid email required" }, cors, 400);
+  if (action !== "invite" && action !== "revoke") return json({ ok: false, error: "action must be invite or revoke" }, cors, 400);
+  const seats = await loadSeats(env, s.id);
+  const idx = seats.findIndex(x => String(x.email || "").toLowerCase() === email);
+  if (action === "invite") {
+    const today = new Date().toISOString().slice(0, 10);
+    try {
+      const k = "teamseats:" + s.id + ":" + today;
+      const n = Number((await env.KV.get(k)) || "0") + 1;
+      await env.KV.put(k, String(n), { expirationTtl: 86400 });
+      if (n > 5) return json({ ok: false, error: "too many invites today — try again tomorrow" }, cors, 429);
+    } catch (e) {}
+    const other = await env.KV.get("seatidx:" + email);
+    if (other && other !== s.id) return json({ ok: false, error: "that email is already on another team" }, cors, 400);
+    if (idx >= 0) {
+      if (seats[idx].status === "active") return json({ ok: false, error: "already a member of this team" }, cors, 400);
+      seats[idx] = { email, name: name || seats[idx].name || "", role: seats[idx].role === "owner" ? "owner" : "member", status: "active", invited_at: new Date().toISOString() };
+    } else {
+      seats.push({ email, name, role: "member", status: "active", invited_at: new Date().toISOString() });
+    }
+    await env.KV.put("team:" + s.id + ":seats", JSON.stringify(seats));
+    await env.KV.put("seatidx:" + email, s.id);
+    // Magic link for the seat (best-effort: the seat exists even if the email hand-off fails)
+    const token = await magicLinkToken(email);
+    await storeMagicToken(env, token);
+    let emailSent = false;
+    try {
+      await sendAuthMail(env, email, name, s.team.name, token, "You're on the " + s.team.name + " team (DocOga)");
+      emailSent = true;
+    } catch (e) {
+      console.error(`[docoga-mail] biz_seat_email_not_accepted reason=${safeMailFailureReason(e)}`);
+    }
+    return json({ ok: true, action: "invite", emailSent });
+  }
+  if (idx < 0) return json({ ok: false, error: "not a member of this team" }, cors, 400);
+  if (seats[idx].role === "owner") return json({ ok: false, error: "the owner seat can't be revoked here — edit the KV record" }, cors, 400);
+  seats[idx] = Object.assign({}, seats[idx], { status: "revoked" });
+  await env.KV.put("team:" + s.id + ":seats", JSON.stringify(seats));
+  await env.KV.delete("seatidx:" + email); // allows a clean re-invite later
+  await env.KV.delete("auth:" + email);
+  return json({ ok: true, action: "revoke" });
+}
+
 /* ---------- Flutterwave webhook — PRIMARY instant-delivery path for payment links ---------- */
 /* Accepts BOTH shapes: classic v3 (event + verif-hash header) and v4
  * (type + flutterwave-signature = HMAC-SHA256(rawBody, secretHash) base64).
@@ -637,8 +898,8 @@ export default {
     const url = new URL(request.url);
     const cors = {
       "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Headers": "Content-Type,X-DocOga-Key",
-      "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type,X-DocOga-Key,Authorization",
+      "Access-Control-Allow-Methods": "GET,POST,PUT,OPTIONS",
     };
     if (request.method === "OPTIONS") return new Response(null, { headers: cors });
 
@@ -661,6 +922,11 @@ export default {
       if (url.pathname === "/verify" && request.method === "GET") return await handleVerify(url, env, cors);
       if (url.pathname === "/activate" && request.method === "GET") return await handleActivate(url, env, cors);
       if (url.pathname === "/business/waitlist" && request.method === "POST") return await handleBusinessWaitlist(request, env, cors);
+      if (url.pathname === "/business/login" && request.method === "POST") return await handleBusinessLogin(request, env, cors);
+      if (url.pathname === "/business/login" && request.method === "GET") return await handleBusinessLoginVerify(url, env, cors);
+      if (url.pathname === "/business/team" && request.method === "GET") return await handleBusinessTeam(request, env, cors);
+      if (url.pathname === "/business/team/brand" && request.method === "PUT") return await handleBusinessBrand(request, env, cors);
+      if (url.pathname === "/business/team/seats" && request.method === "POST") return await handleBusinessSeats(request, env, cors);
       return json({ ok: false, error: "not found" }, cors, 404);
     } catch (e) {
       return json({ ok: false, error: String((e && e.message) || e) }, cors, 500);

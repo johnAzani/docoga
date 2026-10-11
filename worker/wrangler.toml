@@ -26,6 +26,8 @@ id = "f3a5afebe7d04bb0a6018c0d7d355253"
 #   PROVIDER = "flw" or "paystack"
 #   MAIL_FROM = "DocOga <passes@docoga.com.ng>" (must be verified by the active mail provider)
 #   RESEND_EMAIL_ENABLED = "true" (only after sender/domain authentication; unset means disabled)
+# Secrets (wrangler secret put ...):
+#   TEAM_AUTH_SECRET (required for /business/login* and /business/team* — unset means 503 fail-closed)
 #   SITE_URL = "https://docoga.com.ng"
 
 [triggers]

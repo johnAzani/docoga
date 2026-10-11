@@ -140,6 +140,14 @@ textarea{resize:vertical;min-height:70px}
 .sheet .receipt-box{border:2px solid #333;border-radius:8px;padding:22px 26px;max-width:640px;margin:0 auto}
 .sheet .receipt-box hr{border:none;border-top:1.5px dashed #888;margin:14px 0}
 .sheet .free-banner{margin-top:30px;border-top:1px dashed #999;padding-top:10px;font-size:10.5px;color:#8a8a8a;text-align:center;font-family:Arial,sans-serif;letter-spacing:.3px}
+.sheet .team-banner{margin-top:30px;border-top:2px solid #0B1B3F;padding-top:12px;display:flex;align-items:center;gap:12px}
+.sheet .team-logo{height:28px;max-width:130px;object-fit:contain}
+.sheet .team-name{font-size:14px;font-weight:bold;color:#0B1B3F;font-family:Arial,sans-serif}
+.sheet .team-sub{font-size:10.5px;color:#555;font-family:Arial,sans-serif}
+.badge.team{background:#0B1B3F;color:#fff}
+.team-chip{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:12px;padding:10px 12px;background:#eef3fb;border:1px solid #cdd6e4;border-radius:10px;font-size:14px}
+.team-signin{margin-top:14px;padding-top:12px;border-top:1px dashed #cdd6e4}
+.team-signin-t{font-size:14px;font-weight:600;color:#0B1B3F}
 .sheet.free::before{content:"DOCOGA · FREE";position:absolute;top:44%;left:50%;transform:translate(-50%,-50%) rotate(-28deg);font-size:52px;font-weight:900;color:rgba(4,106,56,.07);font-family:Arial,sans-serif;pointer-events:none;white-space:nowrap}
 
 /* docs list */
@@ -1005,6 +1013,7 @@ body.has-pass .buy-only{display:none !important}
 <button class="btn primary" type="submit" style="width:100%;justify-content:center">Notify me at launch →</button>
 </form>
 <p class="guarantee" id="biz-waitlist-msg">Launching soon — fully self-serve: your team signs up online, no WhatsApp, no waiting for a quote. We’ll email you when it’s live.</p>
+<div id="biz-team-box"></div>
 </div>
 </div>
 </section>
@@ -1174,8 +1183,67 @@ async function bizWaitlistSubmit(e){
 
 /* shared sheet helpers */
 function sheetClass(){ return passActive()?'sheet':'sheet free'; }
-function freeBanner(){ return passActive()?'':'<div class="free-banner">Created free with <b>DocOga</b> — '+esc(SITE_URL)+' — Get the Oga Pass to remove this banner.</div>'; }
-function renderBadge(type){ const b=$('badge-'+type); if(!b) return; b.innerHTML = passActive() ? '<span class="badge pro">OGA PASS</span>' : '<span class="badge free">FREE · banner on doc</span>'; }
+function freeBanner(){ if(teamActive()) return teamBrandHeader(); return passActive()?'':'<div class="free-banner">Created free with <b>DocOga</b> — '+esc(SITE_URL)+' — Get the Oga Pass to remove this banner.</div>'; }
+function renderBadge(type){ const b=$('badge-'+type); if(!b) return; b.innerHTML = teamActive() ? '<span class="badge team">TEAM · '+esc((team&&team.team&&team.team.name)||'')+'</span>' : (passActive() ? '<span class="badge pro">OGA PASS</span>' : '<span class="badge free">FREE · banner on doc</span>'); }
+
+/* ================= Business team core (Phase 1, 11 Oct 2026) =================
+   Magic-link sign-in + firm branding across all 10 renderers (C2/C4/C7). The
+   session token lives in localStorage — the site and the API are different
+   origins, so a cookie can't cross; the worker re-validates it against KV on
+   every call, so a revoked seat or expired team loses branding immediately.
+   Team mode replaces the DocOga banner with the firm's name + logo on every
+   document (the Business card's promise). */
+let team=null;
+function teamActive(){ return !!(team && team.token); }
+function teamBrandHeader(){
+  const b=team.brand||{};
+  let h='<div class="team-banner">';
+  if(b.logo) h+='<img class="team-logo" src="'+b.logo+'" alt="">';
+  h+='<div><div class="team-name">'+esc(b.name||team.team.name)+'</div>';
+  if(b.address) h+='<div class="team-sub">'+esc(b.address)+'</div>';
+  if(b.footer) h+='<div class="team-sub">'+esc(b.footer)+'</div>';
+  return h+'</div></div>';
+}
+async function teamRefresh(){
+  try{
+    const r=await fetch(WORKER_URL+'/business/team',{headers:{Authorization:'Bearer '+team.token}});
+    const j=await r.json();
+    if(j.ok){ team.team.name=j.team.name; team.team.slug=j.team.slug; team.team.expiry=j.team.expiry; team.role=j.role; team.brand=j.brand||{}; renderAll(); return true; }
+    teamSignOut(false);
+  }catch(e){ /* offline: keep last known state; next online call re-checks */ }
+  return false;
+}
+async function bizLoginSubmit(e){
+  e.preventDefault();
+  const msg=$('biz-login-msg');
+  const email=$('biz-login-email').value.trim();
+  if(!email){ msg.textContent='Enter the email your team owner added for you.'; return false; }
+  msg.textContent='Sending your sign-in link…';
+  try{
+    const r=await fetch(WORKER_URL+'/business/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});
+    const j=await r.json();
+    if(j.ok){ $('biz-login-email').value=''; msg.textContent='✅ Check your inbox — a sign-in link is on its way (works once, 10 minutes).'; }
+    else { msg.textContent=j.error||'Something went wrong — please try again.'; }
+  }catch(err){ msg.textContent='Could not reach the server — please try again in a moment.'; }
+  return false;
+}
+function teamSignOut(silent){
+  try{ store.removeItem('docoga_team'); }catch(e){}
+  team=null; updateTeamUI(); renderAll();
+  if(!silent) toast('Signed out — documents show the DocOga banner again.');
+}
+function updateTeamUI(){
+  const box=$('biz-team-box'); if(!box) return;
+  if(teamActive()){
+    box.innerHTML='<div class="team-chip"><span>🏢 <b>'+esc(team.team.name)+'</b> · signed in as '+esc(team.email)+'</span><button class="link-btn" onclick="teamSignOut()">Sign out</button></div>';
+  } else {
+    box.innerHTML='<div class="team-signin"><div class="team-signin-t">Already part of a DocOga team?</div>'+
+      '<form onsubmit="return bizLoginSubmit(event)" style="display:flex;gap:8px;margin-top:8px">'+
+      '<input id="biz-login-email" type="email" placeholder="Your work email" aria-label="Team sign-in email" style="flex:1;min-width:0;padding:12px 14px;border:1px solid #cdd6e4;border-radius:10px;font-size:16px">'+
+      '<button class="btn primary" type="submit" style="white-space:nowrap">Sign in</button></form>'+
+      '<p class="guarantee" id="biz-login-msg" style="margin-top:8px">Teams are onboarded by DocOga during this launch period — sign in with the email your owner added. Magic link, no password, no WhatsApp.</p></div>';
+  }
+}
 
 /* states */
 const STATES=["Abia","Adamawa","Akwa Ibom","Anambra","Bauchi","Bayelsa","Benue","Borno","Cross River","Delta","Ebonyi","Edo","Ekiti","Enugu","FCT (Abuja)","Gombe","Imo","Jigawa","Kaduna","Kano","Katsina","Kebbi","Kogi","Kwara","Lagos","Nasarawa","Niger","Ogun","Ondo","Osun","Oyo","Plateau","Rivers","Sokoto","Taraba","Yobe","Zamfara"];
@@ -1770,6 +1838,26 @@ function renderAll(){ renderAgreement(); renderNotice(); renderReceipt(); render
   window.addEventListener('hashchange',route);
   $('foot-wa').href='https://wa.me/'+SUPPORT_WHATSAPP;
   $('wa-float').href='https://wa.me/'+SUPPORT_WHATSAPP;
+  // Team session (Phase 1): magic-link pickup → restore stored session → re-validate
+  (async function teamBoot(){
+    try{
+      const q=new URLSearchParams(location.search);
+      const tk=q.get('team_token');
+      if(tk){
+        const r=await fetch(WORKER_URL+'/business/login?token='+encodeURIComponent(tk));
+        const j=await r.json();
+        if(j.ok){ const sess={token:j.token,team:{id:j.team.id,name:j.team.name,slug:j.team.slug},email:j.email,role:j.role,exp:j.exp,brand:{}};
+          store.setItem('docoga_team',JSON.stringify(sess)); team=sess; }
+        else { toast('❌ '+(j.error||'Sign-in link problem')); }
+        history.replaceState(null,'',location.pathname+(location.hash||''));
+      } else {
+        const s=store.getItem('docoga_team');
+        if(s){ const t=JSON.parse(s); if(t&&t.token&&t.team) team=t; }
+      }
+      if(team) await teamRefresh();
+    }catch(e){ team=null; }
+    updateTeamUI();
+  })();
   // Google Analytics 4 — loads only when configured AND served over http(s)
   if(ANALYTICS_ID && /^https?:/.test(location.protocol)){
     try{

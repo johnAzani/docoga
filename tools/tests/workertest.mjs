@@ -8,6 +8,7 @@ function makeEnv(records) {
   return { KV: {
       get: async k => store.has(k) ? store.get(k) : null,
       put: async (k, v) => { store.set(k, v); },
+      delete: async k => { store.delete(k); },
       list: async ({ prefix = '' }) => ({ keys: [...store.keys()].filter(k => k.startsWith(prefix)).map(name => ({ name })), list_complete: true }),
   }, SITE_URL: 'https://docoga.com.ng', PAYMENT_URL: 'https://flutterwave.com/pay/x', PROVIDER: 'flw' };
 }
@@ -337,7 +338,94 @@ await hit(envW2, '/business/waitlist', { method: 'POST', headers: { 'content-typ
 r = await hit(envW2, '/business/waitlist', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: '4@a.co' }) });
 ok('4th valid signup same IP/day → 429 rate guard', r.status === 429, String(r.status));
 
+console.log('— /business/* team core (Phase 1, 11 Oct 2026) —');
+/* Phase 1 teams are owner-created-by-hand in KV (docs/BUSINESS_TEAM_SETUP.md);
+   the tests write the same records directly. Magic-link emails are captured by
+   mocking globalThis.fetch on the RESEND provider path. */
+const T1 = (email, name, role, status = 'active') => ({ email, name, role, status, invited_at: new Date().toISOString() });
+function teamEnv() {
+  const env = makeEnv({
+    'team:t1': JSON.stringify({ id: 't1', slug: 'firm', name: 'Firm & Co', status: 'active', expiry: '2027-01-01', plan: 'starter' }),
+    'team:t1:seats': JSON.stringify([T1('owner@firm.ng', 'Owner', 'owner'), T1('staff@firm.ng', 'Staff', 'member')]),
+    'brand:t1': JSON.stringify({ name: 'Firm & Co' }),
+    'seatidx:owner@firm.ng': 't1', 'seatidx:staff@firm.ng': 't1',
+  });
+  env.TEAM_AUTH_SECRET = 'test-team-secret';
+  env.RESEND_API_KEY = 're_test';
+  return env;
+}
+const mailCap = [];
+globalThis.fetch = async (url, opts) => {
+  mailCap.push({ url: String(url), body: opts && opts.body ? JSON.parse(opts.body) : null });
+  return new Response(JSON.stringify({ id: 'mail-x' }), { status: 200, headers: { 'content-type': 'application/json' } });
+};
+const authed = (tok) => ({ headers: { authorization: 'Bearer ' + tok } });
+const postBody = (tok, obj) => ({ method: 'POST', headers: Object.assign(authed(tok).headers, { 'content-type': 'application/json' }), body: JSON.stringify(obj) });
+const putBody = (tok, obj) => ({ method: 'PUT', headers: Object.assign(authed(tok).headers, { 'content-type': 'application/json' }), body: JSON.stringify(obj) });
+
+r = await hit(makeEnv({}), '/business/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'owner@firm.ng' }) });
+ok('no TEAM_AUTH_SECRET → 503 team_auth_disabled (fail-closed)', r.status === 503 && r.j.error === 'team_auth_disabled', String(r.status) + ' ' + JSON.stringify(r.j).slice(0, 60));
+
+const te = teamEnv();
+r = await hit(te, '/business/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'ghost@nowhere.co' }) });
+ok('login with unknown email → 400, no token stored', r.status === 400 && (await te.KV.list({ prefix: 'auth:' })).keys.length === 0, String(r.status) + ' ' + JSON.stringify(r.j).slice(0, 80));
+
+r = await hit(te, '/business/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'owner@firm.ng' }) });
+ok('login with known owner email → 200 + magic link emailed', r.status === 200 && r.j.ok === true, String(r.status) + ' ' + JSON.stringify(r.j).slice(0, 80));
+const linkMail = mailCap[mailCap.length - 1];
+ok('magic link email goes to the seat, carries ?team_token= link', !!(linkMail && linkMail.body && linkMail.body.to === 'owner@firm.ng') && /team_token=owner(%40|@)firm\.ng~[0-9a-f]{64}/.test((linkMail && linkMail.body && (linkMail.body.text || '')) || ''), JSON.stringify((linkMail && linkMail.body) || {}).slice(0, 100));
+const magicTok = decodeURIComponent(((linkMail && linkMail.body && (linkMail.body.text || '')) || '').match(/team_token=([\w.~@%]+)/)[1]);
+const storedAuth = await te.KV.get('auth:owner@firm.ng');
+ok('magic token stored only as SHA-256 hash with 10-min expiry', !!storedAuth && !String(storedAuth).includes(magicTok), String(storedAuth).slice(0, 90));
+
+r = await hit(te, '/business/login?token=' + encodeURIComponent(magicTok));
+ok('magic link verified → 30-day HMAC session, one-time (record deleted)', r.status === 200 && r.j.ok === true && r.j.role === 'owner' && String(r.j.token).startsWith('tl_t1|owner@firm.ng|') && !(await te.KV.get('auth:owner@firm.ng')), String(r.status) + ' ' + JSON.stringify(r.j).slice(0, 90));
+const ownerTok = r.j.token;
+r = await hit(te, '/business/login?token=' + encodeURIComponent(magicTok));
+ok('reused magic link → 400 (one-time)', r.status === 400, String(r.status));
+
+r = await hit(te, '/business/team', authed(ownerTok));
+ok('GET /business/team (owner session) → team + all seats + brand', r.status === 200 && r.j.team.name === 'Firm & Co' && r.j.seats.length === 2 && r.j.brand.name === 'Firm & Co', String(r.status) + ' ' + JSON.stringify(r.j).slice(0, 140));
+r = await hit(te, '/business/team', {});
+ok('GET /business/team without token → 401', r.status === 401, String(r.status));
+r = await hit(te, '/business/team', authed(ownerTok.replace('owner@firm.ng', 'hacker@evil.co')));
+ok('tampered session payload → 401', r.status === 401, String(r.status));
+
+const tinyPng = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+r = await hit(te, '/business/team/brand', putBody(ownerTok, { name: 'Firm & Co Ltd', logo: tinyPng }));
+ok('owner PUT brand (name+logo) → stored', r.status === 200 && r.j.brand.name === 'Firm & Co Ltd' && r.j.brand.logo === tinyPng, String(r.status) + ' ' + JSON.stringify(r.j.brand || {}).slice(0, 80));
+r = await hit(te, '/business/team/brand', putBody(ownerTok, { logo: 'data:image/png;base64,' + 'A'.repeat(Math.ceil(26 * 1024 * 4 / 3)) }));
+ok('26KB logo → 400 (25KB cap, server re-validates)', r.status === 400, String(r.status));
+r = await hit(te, '/business/team/brand', putBody(ownerTok, { logo: 'http://evil/logo.png' }));
+ok('non-data-URI logo → 400', r.status === 400, String(r.status));
+
+r = await hit(te, '/business/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'staff@firm.ng' }) });
+const staffMagic = decodeURIComponent((((mailCap[mailCap.length - 1] || {}).body || {}).text || '').match(/team_token=([\w.~@%]+)/)[1]);
+r = await hit(te, '/business/login?token=' + encodeURIComponent(staffMagic));
+const staffTok = r.j.token;
+r = await hit(te, '/business/team', authed(staffTok));
+ok('member GET /business/team sees only own seat', r.status === 200 && r.j.seats.length === 1 && r.j.seats[0].email === 'staff@firm.ng', String(r.status) + ' ' + JSON.stringify(r.j.seats || []).slice(0, 80));
+r = await hit(te, '/business/team/brand', putBody(staffTok, { name: 'Hacked' }));
+ok('member PUT brand → 403 owner_only', r.status === 403, String(r.status));
+
+r = await hit(te, '/business/team/seats', postBody(ownerTok, { action: 'invite', email: 'new@firm.ng', name: 'New' }));
+ok('owner invite → seat active + index set + magic link emailed', r.status === 200 && r.j.emailSent === true && (await te.KV.get('seatidx:new@firm.ng')) === 't1' && /team_token=new(%40|@)firm\.ng~/.test((((mailCap[mailCap.length - 1] || {}).body || {}).text || '')), String(r.status) + ' ' + JSON.stringify(r.j).slice(0, 80));
+r = await hit(te, '/business/team/seats', postBody(ownerTok, { action: 'invite', email: 'staff@firm.ng' }));
+ok('invite an existing active member → 400', r.status === 400, String(r.status));
+
+r = await hit(te, '/business/team/seats', postBody(ownerTok, { action: 'revoke', email: 'staff@firm.ng' }));
+ok('owner revoke → seat revoked + index deleted', r.status === 200 && r.j.action === 'revoke' && !(await te.KV.get('seatidx:staff@firm.ng')), String(r.status) + ' ' + JSON.stringify(r.j).slice(0, 80));
+r = await hit(te, '/business/team', authed(staffTok));
+ok('revoked seat session dies immediately (Phase 1 gate)', r.status === 401, String(r.status));
+
+await te.KV.put('team:t2', JSON.stringify({ id: 't2', slug: 'old', name: 'Old Firm', status: 'active', expiry: '2020-01-01', plan: 'starter' }));
+await te.KV.put('team:t2:seats', JSON.stringify([T1('late@old.co', 'Late', 'owner')]));
+await te.KV.put('seatidx:late@old.co', 't2');
+const mailsBefore = mailCap.length;
+r = await hit(te, '/business/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'late@old.co' }) });
+ok('expired team → login blocked 400, no email sent', r.status === 400 && r.j.error === 'team not active' && mailCap.length === mailsBefore, String(r.status) + ' ' + JSON.stringify(r.j).slice(0, 60));
+
 globalThis.fetch = realFetch;
 
-console.log(fails === 0 ? '\n🏆 WORKER LOGIC UNIT-VERIFIED: expiry / fence / hostile records / top-up / redirect verify / signed webhook / underpayment gate / email hand-off / business waitlist' : '\n💥 ' + fails + ' FAILED');
+console.log(fails === 0 ? '\n🏆 WORKER LOGIC UNIT-VERIFIED: expiry / fence / hostile records / top-up / redirect verify / signed webhook / underpayment gate / email hand-off / business waitlist / team core (magic-link auth, brand, seats, revoke)' : '\n💥 ' + fails + ' FAILED');
 process.exit(fails ? 1 : 0);

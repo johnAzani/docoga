@@ -179,6 +179,24 @@ check('Business card carries the self-serve notify form', !!bizCard && !!bizCard
 check('Business notify form posts to the worker waitlist endpoint',
       /\/business\/waitlist/.test(lex(dom, 'bizWaitlistSubmit.toString()')));
 
+// Business team core (Phase 1, 11 Oct 2026): magic-link sign-in + firm branding
+// through the single freeBanner() chokepoint that all 10 renderers share.
+check('Business card carries the team sign-in box', !!bizCard && !!bizCard.querySelector('#biz-team-box'));
+check('team sign-in UI is generated and posts to the worker login endpoint',
+      /biz-login-email/.test(lex(dom, 'updateTeamUI.toString()')) &&
+      /\/business\/login/.test(lex(dom, 'bizLoginSubmit.toString()')));
+check('freeBanner() serves firm branding in team mode (chokepoint for all 10 renderers)',
+      /teamActive/.test(lex(dom, 'freeBanner.toString()')) && /teamBrandHeader/.test(lex(dom, 'freeBanner.toString()')));
+check('team brand header renders firm name + logo',
+      /team-logo/.test(lex(dom, 'teamBrandHeader.toString()')) && /team-name/.test(lex(dom, 'teamBrandHeader.toString()')));
+check('toolbar badge flips to TEAM in team mode', /badge team/.test(lex(dom, 'renderBadge.toString()')));
+check('team boot picks up ?team_token= magic link and stores the session',
+      /team_token/.test(HTML) && /docoga_team/.test(HTML));
+check('sign-out clears the stored session and re-renders',
+      /docoga_team/.test(lex(dom, 'teamSignOut.toString()')) && /renderAll/.test(lex(dom, 'teamSignOut.toString()')));
+check('all 10 renderers still route through freeBanner()',
+      (HTML.match(/freeBanner\(\)\+/g) || []).length === 10);
+
 // The buy button must still be wired.
 check('Oga Pass buy button present and wired',
       !!$(dom, 'buy-btn') && /buyPass\(/.test($(dom, 'buy-btn').getAttribute('onclick') || ''));
@@ -504,6 +522,42 @@ for (const [k, v] of corrupt) {
 check('app survives ' + corrupt.length + ' corrupt-storage permutations', corruptOk === corrupt.length, corruptBad.join(' | ').slice(0, 200));
 
 /* ============================ 11. CONFIG GUARDS ========================== */
+/* ============================ BUSINESS TEAM MODE (PHASE 1) ============================ */
+section('Business team mode — branded rendering end-to-end (Phase 1 gate)');
+const teamLogo = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+const teamStorage = `
+  window.fetch = function (u, opt) {
+    u = String(u); window.__calls.push(u);
+    if (u.indexOf('/business/team') !== -1) return Promise.resolve({ ok: true, status: 200, json: function(){ return Promise.resolve({ ok: true, team: { id: 't1', slug: 'firm', name: 'Firm & Co', status: 'active', expiry: '2027-01-01', plan: 'starter' }, email: 'owner@firm.ng', role: 'owner', seats: [{ email: 'owner@firm.ng', name: 'Owner', role: 'owner', status: 'active' }], brand: { name: 'Firm & Co', address: '12 Agents Rd, Abuja', logo: ${JSON.stringify(teamLogo)} } }); } });
+    return Promise.resolve({ ok: false, status: 404, json: function(){ return Promise.resolve({ ok: false, error: 'nope' }); } });
+  };
+  try { localStorage.setItem('docoga_team', JSON.stringify({ token: 'tl_t1|owner@firm.ng|9999999999.sig', team: { id: 't1', name: 'Firm & Co', slug: 'firm' }, email: 'owner@firm.ng', role: 'owner', exp: 9999999999 })); } catch(e) {}
+`;
+const teamDom = boot({ storage: teamStorage });
+const tWin = teamDom.window;
+await new Promise(res => setTimeout(res, 60));
+check('stored team session restored + /business/team re-validated on boot', (tWin.__calls || []).some(u => u.indexOf('/business/team') !== -1));
+let brandedAll = 0, brandedBad = [];
+for (const t of RENDERERS) {
+  try {
+    tWin.printCurrent(t);
+    const pr = $(teamDom, 'print-root');
+    const tb = pr.querySelector('.team-banner');
+    const ok = tb && /Firm & Co/.test(tb.textContent) && !!pr.querySelector('img.team-logo') && !pr.querySelector('.free-banner');
+    if (ok) brandedAll++; else brandedBad.push(t);
+    tWin.document.body.classList.remove('printing');
+    $(teamDom, 'print-root').innerHTML = '';
+  } catch (e) { brandedBad.push(t + ':' + e.message); }
+}
+check('ALL 10 tools render the firm banner (name + logo) with no DocOga banner (Phase 1 gate)', brandedAll === 10, 'failed: ' + brandedBad.join(','));
+check('signed-in chip replaces the sign-in form on the Business card',
+      !!teamDom.window.document.querySelector('#biz-team-box .team-chip') && /signed in as/i.test(teamDom.window.document.querySelector('#biz-team-box').textContent));
+tWin.teamSignOut();
+tWin.printCurrent('agreement');
+const tPr2 = $(teamDom, 'print-root');
+check('sign-out restores the DocOga free banner immediately', !!tPr2.querySelector('.free-banner') && !tPr2.querySelector('.team-banner'));
+check('sign-out restores the sign-in form', !!teamDom.window.document.querySelector('#biz-team-box #biz-login-email'));
+
 section('config values used by customers');
 const CFG = { PAYMENT_URL: lex(dom, 'PAYMENT_URL'), SUPPORT_WHATSAPP: lex(dom, 'SUPPORT_WHATSAPP'), SITE_URL: lex(dom, 'SITE_URL'), WORKER_URL: lex(dom, 'WORKER_URL'), ANALYTICS_ID: lex(dom, 'ANALYTICS_ID') };
 check('PAYMENT_URL is a live https link', /^https:\/\/flutterwave\.com\/pay\//.test(CFG.PAYMENT_URL), CFG.PAYMENT_URL);
