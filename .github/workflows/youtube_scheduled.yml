@@ -83,21 +83,31 @@ jobs:
       # Fail here, before spending ten minutes rendering, and name the secret
       # that is missing. yt_publish.py would also refuse, but only after the
       # render, and its message does not say which one is absent.
-      - name: Preflight — are the YouTube secrets present?
+      #
+      # Then go one step further and *use* the credentials: minting a token
+      # costs seconds and proves the client id/secret/refresh token triple is
+      # still valid. On 9 Oct 2026 the run rendered the whole Short and only
+      # then hit `401 invalid_client — The OAuth client was not found`; this
+      # step turns that into a 20-second named failure.
+      - name: Preflight — are the YouTube secrets present and usable?
         env:
           YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
           YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
           YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
         run: |
-          missing=""
-          [ -n "$YT_REFRESH_TOKEN" ] || missing="$missing YT_REFRESH_TOKEN"
-          [ -n "$YT_CLIENT_ID" ]     || missing="$missing YT_CLIENT_ID"
-          [ -n "$YT_CLIENT_SECRET" ] || missing="$missing YT_CLIENT_SECRET"
-          if [ -n "$missing" ]; then
-            echo "::error title=YouTube secrets missing::Set these repository secrets:$missing — nothing was rendered and nothing was published."
-            exit 1
-          fi
-          echo "All three YouTube secrets are present."
+          set -o pipefail
+          {
+            missing=""
+            [ -n "$YT_REFRESH_TOKEN" ] || missing="$missing YT_REFRESH_TOKEN"
+            [ -n "$YT_CLIENT_ID" ]     || missing="$missing YT_CLIENT_ID"
+            [ -n "$YT_CLIENT_SECRET" ] || missing="$missing YT_CLIENT_SECRET"
+            if [ -n "$missing" ]; then
+              echo "::error title=YouTube secrets missing::Set these repository secrets:$missing — nothing was rendered and nothing was published."
+              exit 1
+            fi
+            echo "All three YouTube secrets are present."
+            python3 tools/yt_publish.py --check-token
+          } 2>&1 | tee /tmp/yt_preflight.log
 
       - name: Generate today's Short
         id: short
@@ -258,12 +268,34 @@ jobs:
           - Run: $RUN_URL
           - Intended title: ${TITLE:-unknown — the render may not have run}
 
-          Triage, fastest first:
+          ### What the credential preflight said
 
-          1. **Secrets** — repo → Settings → Secrets and variables → Actions: \`YT_REFRESH_TOKEN\`, \`YT_CLIENT_ID\`, \`YT_CLIENT_SECRET\` must all be present. A missing one fails the preflight before anything is rendered.
-          2. **Stale or revoked token** — a 4xx from \`oauth2.googleapis.com/token\` during upload means the refresh token needs re-issuing.
-          3. **YouTube audit** — Google may hold API uploads private until the Cloud project is verified. The upload succeeds and the video simply is not public.
-          4. **Quota** — the Data API allows roughly six uploads a day; this job uploads at most one.
+          \`\`\`
+          $(if [ -f /tmp/yt_preflight.log ]; then tail -n 20 /tmp/yt_preflight.log; else echo "(no preflight log — see the run)"; fi)
+          \`\`\`
+
+          ### What the uploader said
+
+          \`\`\`
+          $(if [ -f /tmp/yt_upload.log ]; then tail -n 25 /tmp/yt_upload.log; else echo "(the uploader never ran — the preflight stopped this run)"; fi)
+          \`\`\`
+
+          ### Reading it
+
+          - **\`invalid_client\` / "The OAuth client was not found"** — the OAuth *client*
+            no longer exists in the Google Cloud project (this is what failed the 9 Oct
+            run). Re-create the client, then replace \`YT_CLIENT_ID\`, \`YT_CLIENT_SECRET\`
+            **and** \`YT_REFRESH_TOKEN\` together: a re-issued refresh token alone cannot
+            help while the client id points at a deleted client.
+          - **\`invalid_grant\`** — the refresh token was revoked or expired. Re-run the
+            one-time OAuth flow and update \`YT_REFRESH_TOKEN\`.
+          - **Secrets missing** — one of the three is absent; the preflight names it
+            before anything is rendered.
+          - **\`403\` / \`quotaExceeded\`** — the daily Data API quota is spent; the next
+            scheduled run is unaffected.
+          - **A successful upload that is not public** — Google may hold API uploads
+            private until the Cloud project passes verification. Check the video's
+            actual privacy on the channel, not this job's status.
 
           The channel's own history is the ledger: \`logs/youtube_published.json\`.
           BODY

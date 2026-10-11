@@ -4,6 +4,18 @@ DocOga Telegram Auto-Poster
 Posts generated content to Telegram channel automatically.
 Supports text posts and photo posts with captions.
 Fully autonomous — runs on GitHub Actions or local cron.
+
+Failure-handling contract (hardened 11 Oct 2026, after the four-day outage):
+  1. Every Telegram rejection is logged with its HTTP status AND the API's
+     `description`. The old code logged the first attempt's error and then
+     discarded the retry's — which is why a failing post was diagnosable only
+     by someone who could open the run log, and why nobody could tell whether
+     the token, the chat or the message was at fault.
+  2. A MarkdownV2 parse failure retries as plain text (markup stripped).
+  3. A photo that cannot be sent falls back to a text post — a bad image must
+     not cost the channel its daily post.
+  4. The process still exits non-zero when nothing was posted, so the workflow
+     can raise a visible issue.
 """
 
 import os
@@ -12,6 +24,10 @@ import json
 import requests
 from datetime import datetime
 from pathlib import Path
+
+# Shared escaper/stripper. tools/ is a sibling of scripts/.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
+from telegram_mdv2 import to_plain  # noqa: E402
 
 # ===== CONFIG =====
 ASSETS_DIR = Path("assets/telegram")
@@ -24,6 +40,14 @@ TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
 TELEGRAM_API = "https://api.telegram.org"
 
+# Telegram limits: message text 4096 characters, photo caption 1024. Exceeding
+# either is a hard "Bad Request" with no retry path, so both are clamped here.
+MAX_MESSAGE_CHARS = 4096
+MAX_CAPTION_CHARS = 1024
+
+# Telegram's parse errors, in the shapes the API actually returns.
+PARSE_ERROR_MARKERS = ("can't parse", "can't find end of", "unsupported start tag")
+
 
 def log(message):
     """Log messages to file and console"""
@@ -32,6 +56,30 @@ def log(message):
     print(log_msg, end="")
     with open(LOG_FILE, "a") as f:
         f.write(log_msg)
+
+
+def _clamp(text, limit, label):
+    """Trim to Telegram's limit, saying so — never fail on length alone."""
+    if len(text) <= limit:
+        return text
+    log(f"⚠️ {label} is {len(text)} characters; Telegram's limit is {limit} — trimmed.")
+    return text[: limit - 1].rstrip() + "…"
+
+
+def _describe(response):
+    """Return 'HTTP 400 — <Telegram's own words>' for any API response."""
+    try:
+        body = response.json()
+        description = body.get("description") or body.get("error_description")
+    except ValueError:
+        description = (response.text or "").strip()[:300] or "no response body"
+    if not description:
+        description = "no description in response"
+    return f"HTTP {response.status_code} — {description}"
+
+
+def _is_parse_error(description):
+    return any(marker in (description or "").lower() for marker in PARSE_ERROR_MARKERS)
 
 
 def validate_credentials():
@@ -46,8 +94,12 @@ def validate_credentials():
 
 
 def send_text_message(text, parse_mode="MarkdownV2"):
-    """Send a text-only message to Telegram"""
+    """Send a text-only message to Telegram.
+
+    Returns True if the message reached the channel, by any route.
+    """
     url = f"{TELEGRAM_API}/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+    text = _clamp(text, MAX_MESSAGE_CHARS, "message")
 
     payload = {
         "chat_id": TELEGRAM_CHAT_ID,
@@ -63,38 +115,46 @@ def send_text_message(text, parse_mode="MarkdownV2"):
             msg_id = result["result"].get("message_id")
             log(f"✅ Text message sent (id={msg_id})")
             return True
-        else:
-            desc = result.get("description", "Unknown error")
-            log(f"❌ Telegram API error: {desc}")
-            # Fallback to plain text if Markdown fails
-            if "can't parse" in desc.lower():
-                log("⚠️ Markdown parse failed, retrying as plain text...")
-                payload.pop("parse_mode")
-                # Strip markdown characters for plain text fallback
-                plain = text.replace("\\", "").replace("*", "")
-                payload["text"] = plain
-                r2 = requests.post(url, json=payload, timeout=30)
-                r2_result = r2.json()
-                if r2_result.get("ok"):
-                    log("✅ Sent as plain text fallback")
-                    return True
-            return False
+
+        description = result.get("description", "Unknown error")
+        log(f"❌ Telegram API error: {_describe(r)}")
+
+        # Fallback to plain text if Markdown parsing failed.
+        if _is_parse_error(description):
+            log("⚠️ Markdown parse failed, retrying as plain text...")
+            payload.pop("parse_mode", None)
+            payload["text"] = _clamp(to_plain(text), MAX_MESSAGE_CHARS, "plain message")
+            r2 = requests.post(url, json=payload, timeout=30)
+            r2_result = r2.json()
+            if r2_result.get("ok"):
+                log("✅ Sent as plain text fallback")
+                return True
+            # The old code threw this error away. It is the one that says what
+            # is really wrong (token, chat rights, payload), so it is logged.
+            log(f"❌ Plain-text retry also failed: {_describe(r2)}")
+        return False
     except requests.exceptions.RequestException as e:
         log(f"❌ Request failed: {e}")
         return False
 
 
 def send_photo_message(photo_path, caption=None, parse_mode="MarkdownV2"):
-    """Send a photo with optional caption to Telegram"""
+    """Send a photo with optional caption to Telegram.
+
+    If the photo cannot be sent for any reason — a parse error, an unsupported
+    image, an upload failure — the caption is posted as a text message instead,
+    so the channel still gets its daily post.
+    """
     url = f"{TELEGRAM_API}/bot{TELEGRAM_BOT_TOKEN}/sendPhoto"
 
     if not os.path.exists(photo_path):
         log(f"❌ Photo not found: {photo_path}")
-        # Fall back to text-only
         if caption:
             log("⚠️ Falling back to text-only post")
             return send_text_message(caption, parse_mode)
         return False
+
+    caption = _clamp(caption, MAX_CAPTION_CHARS, "caption") if caption else caption
 
     try:
         data = {"chat_id": TELEGRAM_CHAT_ID}
@@ -111,25 +171,37 @@ def send_photo_message(photo_path, caption=None, parse_mode="MarkdownV2"):
             msg_id = result["result"].get("message_id")
             log(f"✅ Photo message sent (id={msg_id})")
             return True
-        else:
-            desc = result.get("description", "Unknown error")
-            log(f"❌ Photo API error: {desc}")
-            # Fallback: retry without parse mode
-            if "can't parse" in desc.lower():
-                log("⚠️ Caption parse failed, retrying plain...")
-                data.pop("parse_mode", None)
-                if caption:
-                    plain = caption.replace("\\", "").replace("*", "")
-                    data["caption"] = plain
-                with open(photo_path, "rb") as photo:
-                    files = {"photo": photo}
-                    r2 = requests.post(url, data=data, files=files, timeout=60)
-                if r2.json().get("ok"):
-                    log("✅ Photo sent with plain caption")
-                    return True
-            return False
+
+        description = result.get("description", "Unknown error")
+        log(f"❌ Photo API error: {_describe(r)}")
+
+        # Retry with the caption as plain text if the failure was the markup.
+        if _is_parse_error(description):
+            log("⚠️ Caption parse failed, retrying plain...")
+            data.pop("parse_mode", None)
+            if caption:
+                data["caption"] = _clamp(
+                    to_plain(caption), MAX_CAPTION_CHARS, "plain caption"
+                )
+            with open(photo_path, "rb") as photo:
+                files = {"photo": photo}
+                r2 = requests.post(url, data=data, files=files, timeout=60)
+            r2_result = r2.json()
+            if r2_result.get("ok"):
+                log("✅ Photo sent with plain caption")
+                return True
+            log(f"❌ Plain-caption retry also failed: {_describe(r2)}")
+
+        # Not a markup problem, or the plain retry failed too: post the words.
+        if caption:
+            log("⚠️ Photo could not be sent — falling back to a text post")
+            return send_text_message(caption, parse_mode)
+        return False
     except requests.exceptions.RequestException as e:
         log(f"❌ Photo upload failed: {e}")
+        if caption:
+            log("⚠️ Falling back to a text post")
+            return send_text_message(caption, parse_mode)
         return False
 
 

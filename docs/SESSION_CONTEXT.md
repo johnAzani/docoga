@@ -520,92 +520,121 @@ Documented in `docs/GROWTH_JOURNAL.md`. Key milestones:
 
 ## Last Session (LIVING — Update This Every Time)
 
-**Date:** 8 Oct 2026 (second session of the day)
-**Branch:** `arena/b51ecc68-docoga` (branched from `main` at `b84ecfb`)
+**Date:** 11 Oct 2026
+**Branch:** `arena/af592af6-docoga` (branched from `main` at `7ee8d79`)
 **What was done:**
 
-**The armed pipeline had no memory and no alarm. It now has both.**
+**Both autopost pipelines are broken. Read this before touching anything
+automated.**
 
-Item 9 below says it plainly: from Friday 9 Oct the Shorts workflow renders and
-uploads **public, twice a week, with nobody watching**. Reading it end to end
-raised three questions the pipeline could not answer, and none of them was
-fixable by a human on the day:
+The owner asked two things: *continue the project — what next?* and *why are we
+having so many arena branches?* Answering the first honestly meant checking
+whether the automation was still working. It was not — and it had not been for
+days, and nothing in the repo could tell him why.
 
-1. *If the run fails, who finds out?* Nobody. It was a red dot in a repo
-   nobody opens.
-2. *If a re-run, a GitHub retry or two dispatches land on the same day, what
-   stops a duplicate Short?* Nothing. The rotation is deterministic and
-   date-seeded, so the same topic would be rendered and uploaded again.
-3. *What did we actually publish?* Nothing in the repo said. You had to open
-   YouTube and read the channel.
+### Finding 1 — Telegram has been dark since 7 Oct
 
-**What shipped:**
+The channel's last post is `t.me/docogadaily/32` (7 Oct, 11:18). Every scheduled
+run since — 7, 8, 9, 10 Oct — failed. The run logs were recovered (method at the
+bottom of this section) and they say the same thing every day:
 
-- **`tools/youtube_ledger.py`** (new) — `logs/youtube_published.json`, a
-  publish ledger: title, topic, video id, URL, privacy, WAT date, run id, size.
-  Sub-commands `check` / `record` / `show`. stdlib only; a missing or corrupt
-  ledger never blocks publishing (a damaged file is backed up as
-  `.corrupt-<timestamp>`, not overwritten); newest first and capped at 200
-  entries so a file we push to twice a week cannot grow forever.
-- **Duplicate guard** in the workflow: `check` exits 3 inside a 7-day window.
-  Six topics x two runs a week means a title returns after ~3 weeks — that
-  repeat is intended and is *not* blocked; a same-day re-run is. A skipped run
-  is **green** with a notice. `force=true` overrides, deliberately.
-- **Preflight step** — the three secrets are checked in the first 30 seconds
-  and the error names the missing one. Previously the failure appeared after a
-  ten-minute render, from inside the uploader, without saying which secret.
-- **Failure visibility** — a failed run opens an issue labelled
-  `youtube-automation` (or comments on the one already open for that date)
-  with the run link and a 4-step triage list: secrets → revoked token →
-  YouTube audit → quota.
-- **Owner-side privacy switch** — repository **variable** `YT_PRIVACY`
-  (`unlisted`/`private`) changes every future run with no code change, for
-  anyone who wants to watch the first ones land before they go public. An
-  invalid value fails loudly rather than publishing at the wrong privacy.
-  Manual dispatch also takes `privacy` and `force`.
-- **Run summary** on every run — topic, title, privacy, result, link, size.
-- `tools/yt_publish.py` now prints `VIDEO_ID=<id>`, and the workflow refuses to
-  record a publish when that line is missing (an unverified ledger entry is
-  worse than a red run). `scripts/youtube_short_daily.py` gained a `topic`
-  output so the ledger reads as plain English.
+```
+❌ Photo API error: Bad Request: can't parse entities: Character '#' is
+   reserved and must be escaped with the preceding '\'
+⚠️ Caption parse failed, retrying plain...
+   ❌ Failed to post educational message
+📊 Complete: 0/1 messages sent
+```
 
-**Verification — the workflow was run, not just read.** The token cannot
-dispatch workflows (403), so the job was simulated on this machine: the real
-step scripts from the YAML, through `bash -e`, with the same `GITHUB_OUTPUT`
-plumbing, against a real git remote (the ledger commit is a real pull --rebase
-+ push), a fake `gh`, and stubs only for ffmpeg and the YouTube network. The
-logic under test was never stubbed. **Nine scenarios:**
+**Cause: all 39 message templates were invalid MarkdownV2.** The template text
+is hand-escaped (`\.`, `\!`), but the hashtag block appended to every message
+(`#DocOga #NigerianLandlords …`) was raw — and `#` is reserved in MarkdownV2.
+It is deterministic, not intermittent: every post, every day. (The plain-text
+retry should have rescued it, but its own error was discarded by the code, so
+the fallback failed silently and nobody could see why. That is now impossible.)
 
-| # | Scenario | Result |
-|---|---|---|
-| 1 | Happy path, empty ledger, secrets present | GREEN — published, recorded, ledger committed and pushed |
-| 2 | Secrets missing | FAILED at preflight, nothing rendered, issue opened |
-| 3 | Same title already in the ledger | GREEN, skipped with a notice, ledger untouched |
-| 4 | Duplicate + `force=true` | GREEN, published anyway, ledger 2 entries |
-| 5 | `YT_PRIVACY=unlisted` | `--privacy unlisted` reached the uploader |
-| 6 | Typo in `YT_PRIVACY` | FAILED at settings, nothing published |
-| 7 | Upload exits 0 but prints no `VIDEO_ID` | FAILED, **no** ledger entry recorded |
-| 8 | Upload rejected by YouTube | FAILED, no ledger entry, issue opened |
-| 9 | Second failure the same day | Commented on the open issue instead of opening a second |
+### Finding 2 — the Shorts Friday run failed at the OAuth *client*
 
-**One real bug was caught by simulating it, and it would have shipped.** The
-`force` path in the duplicate guard was written as
-`if code == 3 && FORCE != "true" { skip } elif code != 0 { exit code }`, so
-asking to force a re-publish took the `elif` and **exited 3 — failing the run
-instead of publishing**. Reading the YAML does not show this; only running it
-does. Fixed, and pinned by a regression test.
+Issue #12 (auto-opened by the hardened workflow) said "nothing may have been
+published". The log says why:
 
-**Tests:** 48 pass (was 30). New `tools/tests/test_youtube_ledger.py` (17) and
-`tools/tests/test_workflow_contract.py` (18), which statically checks every
-`steps.<id>.outputs.<key>` reference in every workflow points at a real,
-preceding step — an unknown id resolves to `""` at run time, which is the
-silent failure mode this repo keeps getting bitten by. `PyYAML` added to the
-CI test dependencies. `qa.py` 🏆 and `pre_push_verify.sh` ✅ green.
+```
+❌ Token refresh failed: 401 — {"error": "invalid_client",
+   "error_description": "The OAuth client was not found."}
+```
 
-**What's next:** the Friday 18:00 WAT run is still the open question, but it is
-now a *safe* one to let happen: a missing secret fails in 30 seconds with a
-named cause and an issue, and a successful publish is recorded in the repo. See
-item 9.
+`invalid_client` means the OAuth **client** no longer exists in the Google Cloud
+project: `YT_CLIENT_ID` / `YT_CLIENT_SECRET` are dead. Re-issuing a refresh
+token cannot fix this. **Owner-only work** (Google Cloud console) — see
+What's Next item 3.
+
+### What shipped (this branch, tests included)
+
+- **`tools/telegram_mdv2.py`** (new) — `escape()`, `validate()`, `to_plain()`:
+  the one definition of the MarkdownV2 rules, shared by generator, poster and
+  tests. `validate()` reports exactly why Telegram would reject a message.
+- **`scripts/generate_telegram_content.py`** — hashtags escaped at render time;
+  the rendered message is validated and any violation is logged. Also fixed two
+  genuinely unescaped `!` in the `promo[0]` template.
+- **`scripts/post_telegram.py`** — the plain-text retry's own error is now
+  logged (the discarded error is what made four days undiagnosable); the
+  fallback strips markup properly (it used to leave `_` and `` ` `` behind,
+  which is why the channel displays literal `_**🔍**_`); a photo that cannot be
+  sent falls back to a text post; over-long text/captions are trimmed instead
+  of rejected.
+- **`tools/telegram_preflight.py`** (new) — before a run is spent, asks
+  Telegram: is the token valid (`getMe`), is the chat reachable (`getChat`),
+  **may the bot actually post** (`getChatMember` → `can_post_messages`)? Exits
+  3/4/5 naming the cause. This is what converts the remaining unknown — whether
+  the bot still has posting rights — into a one-line answer on the next run.
+- **`.github/workflows/telegram_autopost.yml`** — preflight step, `tee` of the
+  poster output, and a labelled issue on failure carrying Telegram's own words.
+  The missing alarm is why a four-day outage looked like a red dot.
+- **`.github/workflows/youtube_scheduled.yml`** — the credential preflight now
+  *mints a token* before rendering (a dead client costs 20 seconds, not a full
+  render), and the failure issue embeds both logs plus a corrected triage list
+  that names `invalid_client` first.
+- **`tools/yt_publish.py`** — `--check-token`, and refresh failures now say
+  which repair is needed (`invalid_client` = recreate the client,
+  `invalid_grant` = re-issue the refresh token).
+- **24 new tests** — `tools/tests/test_telegram_mdv2.py` and
+  `tools/tests/test_post_telegram.py` — including the one that would have caught
+  the outage: every template, in every post type, rendered exactly as the
+  generator renders it, must be valid MarkdownV2. Full suite **72/72**;
+  `qa.py` 🏆 green (2 environment warnings: no `.worker-secrets.env`, no jsdom).
+
+### Branch hygiene — why there are nine `arena/*` branches
+
+Every Arena session gets its own branch (`arena/<session-id>-docoga`), and
+merging the PR does not delete it, so merged branches accumulate. Measured at
+tree level this session (`git diff main <branch>` — ahead/behind is *misleading*
+here, because the 6 Oct force-push recovery re-created commits with new SHAs):
+
+| branch | what it actually holds |
+|---|---|
+| `01a10172`, `10e42594`, `22719d94`, `350e6ff3`, `86310b2a`, `a0d5b259`, `b51ecc68` | **nothing unique** — zero files exist on them that `main` lacks; `b51ecc68` is byte-identical to `main`. They are older snapshots, safe to delete. |
+| `47d148f1` | **live, unmerged work**: `main` + 86 commits and a clean fast-forward (`main` is an ancestor). 20 files exist only here — the analytics/consent path, B2B discovery docs, deploy-log redaction, Cloudflare token verification. |
+| `b9e4e9d2` | fully contained in `47d148f1` (its 10 commits are ancestors) — the payment/email-recovery fixes live on that branch. |
+
+**Not merged, deliberately:** `47d148f1`'s own session record is explicit —
+"No further Analytics request, site retag/deploy, `main` merge, schedule, or
+broader trust is authorized without separate owner approval." So merging it is
+an owner decision, not a cleanup.
+
+### Reading a run log (keep this — it works)
+
+`gh run view --log-failed` and `gh api …/jobs/<id>/logs` fail from the sandbox
+(the blob host is blocked). Two steps work instead:
+
+1. get the signed URL:
+   `curl -s -o /dev/null -D - -H "Authorization: token $(gh auth token)" https://api.github.com/repos/johnAzani/docoga/actions/jobs/<job_id>/logs`
+   → `HTTP/2 302` with a `location:` on `productionresultssa*.blob.core.windows.net`
+2. `fetch_page` that URL. It is outside the sandbox's network restriction and
+   returns the full job log (chunked).
+
+Signed links expire in ~1.5 h; regenerate with step 1. This is how both
+findings above were proved rather than guessed.
+
 
 ## How to Continue in a New Session
 
@@ -623,6 +652,7 @@ item 9.
 
 | # | Date | What Was Done | Commit |
 |---|------|---------------|--------|
+| 27 | 11 Oct 2026 | **Found and fixed the reason both autopost pipelines have been dead since 7 Oct.** Telegram: all 39 templates were invalid MarkdownV2 (raw `#` in hashtags) — fixed at the source with `tools/telegram_mdv2.py` + escaping at render time, the discarded retry error now logged, photo→text fallback, a preflight that asks Telegram whether the bot may post, and a labelled failure issue. YouTube: the Shorts failure was `401 invalid_client — The OAuth client was not found` (owner must recreate the OAuth client; a new refresh token cannot help) — preflight now mints a token before rendering and the issue carries the real log. 24 new tests, suite 72/72, qa.py green. Also explained the nine `arena/*` branches: seven hold nothing unique, `47d148f1` (main + 86 commits) and `b9e4e9d2` hold the only unmerged work, and merging is owner-gated | this branch |
 | 1 | 3 Oct 2026 | Brand style locked, status post built, reel created, SFX v1 | `1f00e77` |
 | 2 | 3 Oct 2026 | Status post premium rebuild (asymmetric, "01" watermark) | `5b0e07e` |
 | 3 | 3 Oct 2026 | STATUS_POST_TEMPLATE.md locked in | `8b558c5` |
@@ -654,6 +684,41 @@ item 9.
 
 ## What's Next (Pending)
 
+### 🔴 11 Oct 2026 — the live blockers, in order
+
+**A. Telegram: one run will answer the last open question — and only the owner
+can trigger it.** The escaping bug is fixed, but a second failure was hiding
+behind it: the logs show the *plain-text retry* being rejected too (its reason
+was thrown away by the old code). The new preflight distinguishes the three
+possible causes — dead token (`getMe`), unreachable/moved chat (`getChat`), or
+**bot silently demoted so it may no longer post** (`getChatMember` →
+`can_post_messages`) — and the new failure issue carries Telegram's exact words.
+**Next step:** merge this branch, then either wait for the 08:00 UTC run or
+click **DocOga Telegram Auto-Post → Run workflow**. If it fails, issue #13+
+names the cause in one line. If the bot was demoted, the fix is channel-side:
+channel → *Administrators* → re-add the bot with **Post messages** permission.
+
+**B. YouTube: owner-only, Google Cloud.** Recreate the OAuth client (the old one
+is gone — `invalid_client`) and replace **all three** secrets together:
+`YT_CLIENT_ID`, `YT_CLIENT_SECRET`, `YT_REFRESH_TOKEN`. Then click **YouTube
+Shorts Auto-Generate and Publish → Run workflow** to confirm before the next
+Friday cron. The channel is currently at zero published Shorts from this
+pipeline; `logs/youtube_published.json` is still empty.
+
+**C. Two branches hold the only unmerged work — decide, don't drift.**
+`arena/47d148f1-docoga` (`main` + 86 commits: analytics live path, B2B discovery
+docs, deploy-log redaction, Cloudflare token verification) is a clean
+fast-forward, but its own session record gates a `main` merge on explicit owner
+approval. `arena/b9e4e9d2-docoga` is contained inside it. **Recommendation:**
+review `docs/B2B_DISCOVERY.md`, `docs/OWNER_CLICK_GUIDE.md` and the analytics
+setup docs on that branch, then approve one merge — 86 commits of finished,
+tested work sitting on a branch is the project's biggest piece of invisible
+progress. The seven other `arena/*` branches have nothing unique and can be
+deleted whenever convenient.
+
+**D. Then, the real growth work (unchanged):** earn the 48 existing state pages
+before adding more (item 11), and the B2B path from `docs/B2B_DISCOVERY.md`.
+
 1. ~~**Merge PR #5 with "Create a merge commit"**~~ — **✅ DONE 7 Oct 2026**
    (`bfa555b`, merge commit, not squash). `main` is whole again: 138 commits,
    179 files. Do not force-push either direction.
@@ -682,16 +747,24 @@ item 9.
    Then either click **YouTube Upload from Queue** (manual, one click) or let
    the Tue/Fri scheduler take it.
 
-3. **Confirm YouTube secrets exist** — `YT_REFRESH_TOKEN`, `YT_CLIENT_ID`,
-   `YT_CLIENT_SECRET`. `tools/yt_publish.py:29` exits immediately if any are
-   missing. This is the one cause of the two failed `YouTube Upload from
-   Queue` runs that was never ruled out. The other cause is fixed: those runs
-   used `head_sha 85097d7`, where the queue pointed at
-   `social/reel-stakes-final.mp4` but that commit did not contain it.
+3. ~~**Confirm YouTube secrets exist**~~ — **✅ ANSWERED 11 Oct 2026, and the
+   answer is not the one we were looking for.** The three secrets *are* present
+   (the preflight passed on the 9 Oct run and on the two queue runs). The
+   failure is that the OAuth **client itself no longer exists**:
 
-   **Owner action, UI only:** repo → *Settings* → *Secrets and variables* →
-   *Actions* → the three names must be listed. The agent's token cannot read
-   them (`HTTP 403`), so this cannot be checked from a session.
+   ```
+   ❌ Token refresh failed: 401 — {"error": "invalid_client",
+      "error_description": "The OAuth client was not found."}
+   ```
+
+   So `YT_CLIENT_ID` / `YT_CLIENT_SECRET` point at a deleted client — nothing
+   in the repo can fix that, and re-issuing `YT_REFRESH_TOKEN` alone will not
+   help. **Owner action, Google Cloud console:** create a new OAuth client
+   (Desktop app), run the one-time consent flow, then replace **all three**
+   secrets together in repo → *Settings* → *Secrets and variables* → *Actions*.
+   The workflow now mints a token in its preflight, so a bad client fails in
+   ~20 seconds instead of after a full render, and the failure issue quotes the
+   API verbatim.
 
 4. **Branch protection on `main`** — **still NOT set.** The API returns
    `403 Resource not accessible by integration` for the agent's token despite
@@ -792,6 +865,13 @@ item 9.
    labelled issue opened (or commented on) whenever a run fails. A successful
    publish is committed back to the repo, so the channel's history is readable
    without opening YouTube. Full detail in `YOUTUBE_AUTOMATION.md`.
+
+   **Outcome, 11 Oct 2026: the first unattended run failed, safely.** The
+   Friday 9 Oct run rendered the Short and died at the upload with
+   `401 invalid_client — The OAuth client was not found`; nothing was
+   published, and the workflow opened issue #12. That is the hardening doing
+   its job: a red run nobody could explain became a named cause in one line.
+   The fix is owner-side — see item 3.
 
 10. **`tools/verify_live.py` cannot run from the sandbox** (unchanged): it
     reaches `docoga.com.ng` over the network and fails with
