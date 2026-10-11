@@ -47,6 +47,14 @@
  *                       wrong amount → VA voided + fresh VA + email (§7.4);
  *                       idempotent; retail pass path untouched.
  *   GET  /business/team/invoices  Portal: team invoice list (12-month window).
+ *   POST /business/team/renew     Phase 4 (C9): owner renewal at purchase price
+ *                       (active within 90d of expiry, or grace, or free) →
+ *                       renewal invoice via the same transfer/card machinery.
+ *   POST /business/team/usage     Phase 4 (C8): best-effort monthly usage meter
+ *                       (KV incr, capped at 2× band; soft caps only, §6.4).
+ *   scheduled() (daily 07:00)    Phase 4 (C9): T-90/30/7 renewal emails,
+ *                       expiry→grace(14d)→free, 90-day retention then delete
+ *                       (invoices kept), 100%/150% monthly overage emails.
  *   GET  /business/invoice/:id    C10 (Phase 3): authoritative invoice as a
  *                       printable HTML document (print → Save as PDF in the
  *                       browser — no PDF lib, ₦0; binary .pdf is a v2 upgrade
@@ -538,6 +546,19 @@ async function handleBusinessTeam(request, env, cors) {
   const s = await teamSession(request, env);
   if (!s) return json({ ok: false, error: "sign_in_required" }, cors, 401);
   let brand = {}; try { brand = JSON.parse(await env.KV.get("brand:" + s.id) || "{}"); } catch (e) {}
+  // Phase 4 (C9/C8): the portal needs the renewal price (owner only — renewal is
+  // a money action) and the monthly usage meter (any seat; the dashboard shows
+  // the allowance line).
+  let renewal = undefined;
+  if (s.role === "owner" && ["active", "grace", "free"].includes(s.team.status)) {
+    const p = teamRenewalPrice(s.team);
+    renewal = { base: p.base, vat: p.vat, total: p.total, expiry: s.team.expiry, status: s.team.status };
+  }
+  let usage = undefined;
+  if (teamLive(s.team)) {
+    const month = new Date().toISOString().slice(0, 7);
+    usage = { used: Number((await env.KV.get("team:" + s.id + ":usage:" + month)) || "0"), band: Number(s.team.docs) || 100 };
+  }
   return json({
     ok: true,
     team: { id: s.id, slug: s.team.slug, name: s.team.name, status: s.team.status, expiry: s.team.expiry, plan: s.team.plan },
@@ -546,7 +567,9 @@ async function handleBusinessTeam(request, env, cors) {
     brand,
     // Unpaid teams need the published quote to render checkout (C3 formula)
     quote: s.team.status === "unpaid" ? businessQuote(s.team.seats, s.team.docs) : undefined,
-    openInvoice: s.team.status === "unpaid" ? (await currentInvoice(env, s.id)) : undefined
+    openInvoice: s.team.status === "unpaid" ? (await currentInvoice(env, s.id)) : undefined,
+    renewal,
+    usage
   });
 }
 async function handleBusinessBrand(request, env, cors) {
@@ -663,6 +686,8 @@ function teamSignInOk(team) {
     const born = Date.parse(team.created || "1970-01-01T00:00:00Z");
     return born + UNPAID_TTL_DAYS * 864e5 >= Date.now();
   }
+  if (team.status === "grace") return true; // 14-day grace — owner renews from the dashboard; cron caps it (then "free")
+  if (team.status === "free") return true;  // downgraded — free banner until renewed; cron retires the data at 90 days
   return false;
 }
 async function flw4Post(env, path, body) {
@@ -806,6 +831,251 @@ async function handleBusinessCharge(request, env, cors) {
   else out.pay_url = inv.pay_url;
   return json(out, cors);
 }
+/* ---------- Phase 4 (Autonomy, 11 Oct 2026) — C8 metering + C9 renewal cron ----------
+ * Renewal (dossier §6.4/§7.1, no human):
+ *   - price at renewal = price at purchase (renewal_* fields stored on the team
+ *     at (re)activation; fallback = published formula recomputed)
+ *   - POST /business/team/renew (owner): active within 90 days of expiry, or
+ *     grace (14 days post-expiry), or free (downgraded) → renewal invoice
+ *     (transfer VA or card, same machinery as first purchase)
+ *   - webhook on a renewal invoice extends from the FUTURE expiry if there is
+ *     one (early renewal never loses days), else from now
+ *   - scheduled() daily sweep: T-90/30/7 reminder emails (deduped on the team
+ *     record, reset at each (re)activation); expiry → "grace" (14 days, banner
+ *     off, dashboard renewal); grace-end → "free" (data kept BIZ_RETAIN_DAYS);
+ *     retention end → team/brand/seats deleted, invoices KEPT (tax records),
+ *     owner notified.
+ * Volume (C8, §6.4 soft — no hard cut-off of in-progress documents in v1):
+ *   - POST /business/team/usage: best-effort monthly counter (KV incr, capped
+ *     at 2× the band — the meter is stated as best-effort, generation is
+ *     browser-side exactly like the retail pass; the honest gate is v2's
+ *     server-side render endpoint, out of v1 scope)
+ *   - daily sweep emails the owner at 100% and 150% of the monthly band
+ *     (deduped per month), suggesting a right-sized plan via business@ */
+const BIZ_GRACE_DAYS = 14, BIZ_RETAIN_DAYS = 90, BIZ_RENEW_WINDOW_DAYS = 90;
+function teamRenewalPrice(team) {
+  if (team && team.renewal_total && team.renewal_base !== undefined && team.renewal_vat !== undefined)
+    return { base: team.renewal_base, vat: team.renewal_vat, total: team.renewal_total };
+  return businessQuote(team && team.seats, team && team.docs);
+}
+function renewalLink(env) { return (env.SITE_URL || "https://docoga.com.ng") + "/#team"; }
+async function sendRenewalMail(env, team, owner, subject, body, html) {
+  try { await sendMail(env, owner.email, subject, body, mailShell(html)); }
+  catch (e) { console.error(`[docoga-biz] renewal_email_not_accepted reason=${safeMailFailureReason(e)}`); }
+}
+async function handleBusinessRenew(request, env, cors) {
+  const s = await teamSession(request, env);
+  if (!s) return json({ ok: false, error: "sign_in_required" }, cors, 401);
+  if (s.role !== "owner") return json({ ok: false, error: "owner_only" }, cors, 403);
+  const st = s.team.status;
+  if (st === "unpaid") return json({ ok: false, error: "use the payment step on your team dashboard" }, cors, 400);
+  if (st === "active") {
+    const end = Date.parse((s.team.expiry || "") + "T23:59:59Z");
+    const days = end ? Math.ceil((end - Date.now()) / 864e5) : Infinity;
+    if (days > BIZ_RENEW_WINDOW_DAYS) return json({ ok: false, error: "renewals open 90 days before expiry — email business@docoga.com.ng for anything sooner" }, cors, 400);
+  }
+  if (st !== "active" && st !== "grace" && st !== "free") return json({ ok: false, error: "team not renewable" }, cors, 400);
+  const body = await request.json().catch(() => ({ method: "transfer" }));
+  const method = String((body && body.method) || "transfer");
+  if (method !== "transfer" && method !== "card") return json({ ok: false, error: "method must be transfer or card" }, cors, 400);
+  const existing = await currentInvoice(env, s.id);
+  if (existing && existing.status === "open" && existing.kind === "renewal") {
+    // Same re-issue rule as first purchase (§7.4): reuse while the VA is alive
+    const va = JSON.parse(await env.KV.get("inv:" + existing.id + ":va") || "null");
+    const vaAlive = va && !va.voided && (!va.expires || Date.parse(va.expires) > Date.now());
+    if (method === existing.method && vaAlive) {
+      return json({ ok: true, reused: true, invoice: { id: existing.id, base: existing.amount, vat: existing.vat, total: existing.total }, va, reference: existing.ref });
+    }
+  }
+  try {
+    const k = "bizrenew:" + s.id + ":" + new Date().toISOString().slice(0, 10);
+    const n = Number((await env.KV.get(k)) || "0") + 1;
+    await env.KV.put(k, String(n), { expirationTtl: 86400 });
+    if (n > 5) return json({ ok: false, error: "too many renewal links today — try again tomorrow" }, cors, 429);
+  } catch (e) {}
+  const p = teamRenewalPrice(s.team); // price at purchase — no silent increases (§6.4)
+  const id = "INV-" + Math.random().toString(36).slice(2, 10).toUpperCase();
+  const now = new Date().toISOString();
+  const inv = { id, team: s.id, kind: "renewal", amount: p.base, vat: p.vat, total: p.total, seats: s.team.seats, docs: s.team.docs, plan: s.team.plan, method, status: "open", ref: id, flw_ref: "", created: now };
+  if (method === "transfer") {
+    const exp = new Date(Date.now() + 7 * 864e5).toISOString();
+    let pm;
+    try {
+      pm = await flw4Post(env, "/v1/payment_methods", {
+        type: "bank_account", currency: "NGN",
+        amount: p.total * 100,
+        reference: id,
+        note: "DocOga Business — RENEWAL — " + s.team.name + " — pay exactly " + p.total + " NGN",
+        account_expiration_datetime: exp,
+        customer: { email: s.email },
+      });
+    } catch (e) {
+      return json({ ok: false, error: "could not create your transfer account — try again in a moment" }, cors, 502);
+    }
+    const d = pm.data || {};
+    if (!d.account_number) return json({ ok: false, error: "could not create your transfer account — try again in a moment" }, cors, 502);
+    const va = { bank: d.account_bank_name || d.bank_name || "Flutterwave MFB", account: String(d.account_number), amount: d.amount, expires: d.account_expiration_datetime || d.expiry_date || exp, note: d.note || "", flw_ref: d.reference || d.flw_ref || "" };
+    await env.KV.put("inv:" + id + ":va", JSON.stringify(va));
+    inv.flw_ref = va.flw_ref;
+  } else {
+    let ch;
+    try {
+      ch = await flw4Post(env, "/v1/charges", {
+        amount: p.total * 100, currency: "NGN", reference: id,
+        payment_method: { type: "generic" },
+        customer: { email: s.email },
+        return_url: (env.SITE_URL || "https://docoga.com.ng") + "/?team_inv=" + id,
+        description: "DocOga Business — RENEWAL — " + s.team.name,
+      });
+    } catch (e) {
+      return json({ ok: false, error: "card checkout is not available for your plan right now — please use bank transfer" }, cors, 502);
+    }
+    const d = ch.data || {};
+    const payUrl = (d.next_action && (d.next_action.url || d.next_action.redirect_url)) || d.hosted_payment_url;
+    if (!payUrl) return json({ ok: false, error: "card checkout is not available for your plan right now — please use bank transfer" }, cors, 502);
+    inv.pay_url = payUrl;
+    inv.flw_ref = d.id || "";
+  }
+  await env.KV.put("inv:" + id, JSON.stringify(inv));
+  await env.KV.put("invref:" + id, id);
+  if (inv.flw_ref && inv.flw_ref !== id) await env.KV.put("invref:" + inv.flw_ref, id);
+  await env.KV.put("team:" + s.id + ":inv", id);
+  let invIndex = []; try { invIndex = JSON.parse(await env.KV.get("teaminv:" + s.id) || "[]"); } catch (e) {}
+  invIndex = [{ id, total: p.total, method, status: "open", created: now }].concat(invIndex).slice(0, 24);
+  try { await env.KV.put("teaminv:" + s.id, JSON.stringify(invIndex)); } catch (e) {}
+  const out = { ok: true, reused: false, invoice: { id, base: inv.amount, vat: inv.vat, total: inv.total }, renewal: true };
+  if (method === "transfer") out.va = JSON.parse(await env.KV.get("inv:" + id + ":va"));
+  else out.pay_url = inv.pay_url;
+  return json(out, cors);
+}
+async function handleBusinessUsage(request, env, cors) {
+  const s = await teamSession(request, env);
+  if (!s) return json({ ok: false, error: "sign_in_required" }, cors, 401);
+  if (!teamLive(s.team)) return json({ ok: false, error: "metering_active_only" }, cors, 400);
+  const month = new Date().toISOString().slice(0, 7);
+  const key = "team:" + s.id + ":usage:" + month;
+  const band = Number(s.team.docs) || 100;
+  let used = Number((await env.KV.get(key)) || "0");
+  if (used >= band * 2) return json({ ok: true, used, band, capped: true }); // best-effort meter: stop counting past 2× the band
+  try { used = Number(await env.KV.incr(key, 1, { expirationTtl: 45 * 86400 })) || (used + 1); } catch (e) { used += 1; }
+  return json({ ok: true, used, band, capped: used >= band * 2 });
+}
+async function sweepOneBusinessTeam(env, team, now) {
+  const id = team.id;
+  const seats = await loadSeats(env, id);
+  const owner = seats.find(x => x.role === "owner");
+  if (team.status === "active") {
+    const end = Date.parse((team.expiry || "") + "T23:59:59Z");
+    let changed = false;
+    if (end) {
+      const days = Math.ceil((end - now) / 864e5);
+      if (days < 0) {
+        // Expiry passed → 14-day grace: branding off (banner back), renewal stays self-serve
+        team.status = "grace";
+        team.grace_until = new Date(now + BIZ_GRACE_DAYS * 864e5).toISOString();
+        changed = true;
+        if (owner) await sendRenewalMail(env, team, owner,
+          "DocOga: " + team.name + " — 14-day grace period, branding paused",
+          "Your " + team.name + " licence expired on " + (team.expiry || "the last day") + ".\n\nYou have 14 days to renew — nothing is lost. During grace, documents show the DocOga banner instead of your firm's branding; your seats, branding and invoices stay exactly as they are.\n\nRenew now (same price you paid): sign in → Team dashboard → Renew (bank transfer or card).\n" + renewalLink(env) + "\n\nIf the 14 days run out, the team moves to the free tier and its data is kept 90 days.\n\n— DocOga, Abuja",
+          `<h2 style="margin:0 0 12px;font-size:20px;color:#0B1B3F">14-day grace period</h2><p style="margin:0 0 12px;font-size:14px;color:#33415C;line-height:1.6">Nothing is lost — renew from your team dashboard at the price you paid, and branding comes straight back.</p>`);
+        await env.KV.put("team:" + id, JSON.stringify(team));
+        return; // just flipped to grace — no overage metering for a non-active team
+      } else if (days <= 7 && !team.rem7) {
+        // fire the MOST URGENT pending milestone and consume the coarser ones
+        // (a team first seen at T-26 gets the T-30 notice, not a stale
+        // "window open" email a moment later)
+        team.rem7 = true; team.rem30 = true; team.rem90 = true; changed = true;
+        const price = teamRenewalPrice(team);
+        if (owner) await sendRenewalMail(env, team, owner,
+          "DocOga: " + team.name + " renews in " + days + " days — " + price.total + " NGN",
+          "Your " + team.name + " licence (renewal price " + price.total + " NGN incl. VAT — the price you paid) expires on " + team.expiry + ".\n\nRenew from your team dashboard — bank transfer or card, same price, automatic activation:\n" + renewalLink(env) + "\n\nOr reply to business@docoga.com.ng. This is automatic — no WhatsApp, no chasing.\n\n— DocOga, Abuja",
+          `<h2 style="margin:0 0 12px;font-size:20px;color:#0B1B3F">Renews in ${days} day${days === 1 ? "" : "s"}</h2><p style="margin:0 0 12px;font-size:14px;color:#33415C;line-height:1.6">${price.total} NGN (incl. VAT) — the price you paid. Renew from the team dashboard: transfer or card, automatic activation.</p>`);
+      } else if (days <= 30 && !team.rem30) {
+        team.rem30 = true; team.rem90 = true; changed = true; // consume the stale T-90 milestone too
+        const price = teamRenewalPrice(team);
+        if (owner) await sendRenewalMail(env, team, owner,
+          "DocOga: " + team.name + " renews in " + days + " days — plan ahead",
+          "Heads-up: your " + team.name + " licence expires on " + team.expiry + " (" + days + " days). Renewal is " + price.total + " NGN incl. VAT — the price you paid, no increase.\n\nRenew from your team dashboard when it suits you (renewals open 90 days before expiry):\n" + renewalLink(env) + "\n\n— DocOga, Abuja",
+          `<h2 style="margin:0 0 12px;font-size:20px;color:#0B1B3F">Renews in ${days} days</h2><p style="margin:0;font-size:14px;color:#33415C;line-height:1.6">Renewal stays at your purchase price: ${price.total} NGN (incl. VAT). Dashboard → Renew, transfer or card.</p>`);
+      } else if (days <= BIZ_RENEW_WINDOW_DAYS && !team.rem90) {
+        team.rem90 = true; changed = true;
+        const price = teamRenewalPrice(team);
+        if (owner) await sendRenewalMail(env, team, owner,
+          "DocOga: " + team.name + " renewal window is open",
+          "Your " + team.name + " licence is within 90 days of expiry (" + team.expiry + "). The renewal window is open from now — " + price.total + " NGN incl. VAT, the price you paid.\n\nRenew from your team dashboard (bank transfer or card) and the next 12 months stack on — early renewal never loses days.\n" + renewalLink(env) + "\n\n— DocOga, Abuja",
+          `<h2 style="margin:0 0 12px;font-size:20px;color:#0B1B3F">Renewal window open</h2><p style="margin:0;font-size:14px;color:#33415C;line-height:1.6">${price.total} NGN (incl. VAT) — your purchase price. Renewal stacks on your remaining days.</p>`);
+      }
+    }
+    // C8 soft caps (§6.4): email at 100% and 150% of the monthly band, deduped
+    // per month. NO hard cut-off of in-progress documents in v1 — stated honestly.
+    const month = new Date(now).toISOString().slice(0, 7);
+    const band = Number(team.docs) || 100;
+    const used = Number((await env.KV.get("team:" + id + ":usage:" + month)) || "0");
+    if (used >= band * 1.5 && team.usage150 !== month) {
+      team.usage150 = month; changed = true;
+      if (owner) await sendRenewalMail(env, team, owner,
+        "DocOga: " + team.name + " is at " + Math.round(used / band * 100) + "% of its monthly document allowance",
+        "This month " + team.name + " has generated about " + used + " documents against a " + band + "/month allowance (" + Math.round(used / band * 100) + "%).\n\nNothing is cut off — the v1 limit is soft and in-progress documents are never interrupted. But you're well above the band, so let's right-size the plan: email business@docoga.com.ng (or write from the team dashboard) and we'll confirm an upgrade by email, with the written record.\n\n— DocOga, Abuja",
+        `<h2 style="margin:0 0 12px;font-size:20px;color:#0B1B3F">${Math.round(used / band * 100)}% of monthly allowance</h2><p style="margin:0;font-size:14px;color:#33415C;line-height:1.6">Soft limit — nothing is cut off. If this is the new normal, email business@docoga.com.ng and we'll right-size the plan by email.</p>`);
+    } else if (used >= band && team.usage100 !== month) {
+      team.usage100 = month; changed = true;
+      if (owner) await sendRenewalMail(env, team, owner,
+        "DocOga: " + team.name + " hit 100% of its monthly document allowance",
+        "Heads-up: " + team.name + " has generated about " + used + " documents this month — the full " + band + "/month allowance.\n\nThe limit is soft (dossier-honest): documents keep generating and in-progress ones are never interrupted. If you keep hitting the band, an upgrade keeps things smooth — email business@docoga.com.ng and a human confirms it by email.\n\n— DocOga, Abuja",
+        `<h2 style="margin:0 0 12px;font-size:20px;color:#0B1B3F">100% of monthly allowance</h2><p style="margin:0;font-size:14px;color:#33415C;line-height:1.6">Soft limit — nothing stops. If you're consistently above the band, we'll right-size the plan by email.</p>`);
+    }
+    if (changed) await env.KV.put("team:" + id, JSON.stringify(team));
+    return;
+  }
+  if (team.status === "grace") {
+    const limit = Date.parse(team.grace_until || "2000-01-01T00:00:00Z");
+    if (limit && now >= limit) {
+      // Grace ended → free tier; data (brand, seats, history) kept BIZ_RETAIN_DAYS
+      team.status = "free";
+      team.retire_at = new Date(now + BIZ_RETAIN_DAYS * 864e5).toISOString();
+      await env.KV.put("team:" + id, JSON.stringify(team));
+      if (owner) await sendRenewalMail(env, team, owner,
+        "DocOga: " + team.name + " moved to the free tier — data kept 90 days",
+        "The 14-day grace period for " + team.name + " has ended, so the team is now on the free tier: documents show the DocOga banner and the firm branding is paused.\n\nNothing is deleted yet — your seats, branding and invoice history are kept for 90 days. Renewing from the team dashboard restores everything at the price you paid:\n" + renewalLink(env) + "\n\nIf the 90 days pass without a renewal, the team data is deleted (invoices remain available from us on request).\n\n— DocOga, Abuja",
+        `<h2 style="margin:0 0 12px;font-size:20px;color:#0B1B3F">Moved to the free tier</h2><p style="margin:0 0 12px;font-size:14px;color:#33415C;line-height:1.6">Nothing deleted — 90 days of data retention. Renew from the team dashboard at your purchase price and branding comes straight back.</p>`);
+    }
+    return;
+  }
+  if (team.status === "free") {
+    const retire = Date.parse(team.retire_at || "2000-01-01T00:00:00Z");
+    if (retire && now >= retire) {
+      // 90-day retention ended: delete team data; KEEP invoices (tax records)
+      if (owner) await sendRenewalMail(env, team, owner,
+        "DocOga: " + team.name + " — team data deleted, invoices kept",
+        "As agreed after the 90-day retention period, the " + team.name + " team data (branding, seats) has been deleted. Your invoices are kept — email business@docoga.com.ng and we'll send any of them by email.\n\nIf you want the team back, set it up again from docoga.com.ng — it takes 2 minutes.\n\n— DocOga, Abuja",
+        `<h2 style="margin:0 0 12px;font-size:20px;color:#0B1B3F">Team data deleted</h2><p style="margin:0;font-size:14px;color:#33415C;line-height:1.6">Invoices are kept. Email business@docoga.com.ng for any of them. Re-setup takes 2 minutes.</p>`);
+      for (const x of seats) await env.KV.delete("seatidx:" + String(x.email || "").toLowerCase());
+      for (const x of seats) await env.KV.delete("auth:" + String(x.email || "").toLowerCase());
+      await env.KV.delete("team:" + id + ":seats");
+      await env.KV.delete("brand:" + id);
+      await env.KV.delete("team:" + id + ":inv");
+      await env.KV.delete("teaminv:" + id);
+      await env.KV.delete("team:" + id);
+      console.log("[docoga-biz] team_retired id=" + id);
+    }
+  }
+}
+async function dailyBusinessRenewals(env) {
+  const now = Date.now();
+  let cursor = undefined;
+  do {
+    const page = await env.KV.list({ prefix: "team:", cursor });
+    for (const k of page.keys) {
+      // team:{id} only — team:{id}:seats / :usage / :inv share the prefix
+      if (String(k.name).split(":").length !== 2) continue;
+      let team = null;
+      try { team = JSON.parse(await env.KV.get(k.name) || "null"); } catch (e) {}
+      if (!team || !team.id || !["active", "grace", "free"].includes(team.status)) continue;
+      try { await sweepOneBusinessTeam(env, team, now); } catch (e) { /* one bad record never stops the loop */ }
+    }
+    cursor = page.list_complete ? undefined : page.cursor;
+  } while (cursor);
+}
 async function handleBusinessInvoices(request, env, cors) {
   const s = await teamSession(request, env);
   if (!s) return json({ ok: false, error: "sign_in_required" }, cors, 401);
@@ -909,12 +1179,20 @@ async function handleInvoiceWebhook(env, d, ids) {
       }
       return true;
     }
-    // Correct amount → activate (annual licence from today)
+    // Correct amount → activate. Renewal-aware (Phase 4, C9): if the team
+    // already has a FUTURE expiry (early renewal), the new year stacks on top
+    // of it — no days lost. First activation has no future expiry → from now.
+    // Renewal price at purchase is remembered (dossier §6.4: no silent
+    // increases) and the reminder dedupe flags reset for the next cycle.
     const teamRaw = await env.KV.get("team:" + inv.team);
     let team = null; if (teamRaw) { try { team = JSON.parse(teamRaw); } catch (e) {} }
     if (team) {
-      const end = new Date(Date.now() + 365 * 864e5);
+      const cur = Date.parse((team.expiry || "") + "T23:59:59Z");
+      const base = (cur > Date.now()) ? cur : Date.now();
+      const end = new Date(base + 365 * 864e5);
       team.status = "active"; team.expiry = end.toISOString().slice(0, 10);
+      team.renewal_base = inv.amount; team.renewal_vat = inv.vat; team.renewal_total = inv.total;
+      team.rem90 = false; team.rem30 = false; team.rem7 = false;
       await env.KV.put("team:" + inv.team, JSON.stringify(team));
     }
     inv.status = "paid"; inv.paid_at = new Date().toISOString(); inv.received_amount = amt;
@@ -927,10 +1205,11 @@ async function handleInvoiceWebhook(env, d, ids) {
     } catch (e) {}
     try {
       if (team && owner) {
+        const isRenewal = inv.kind === "renewal";
         await sendMail(env, owner.email,
-          "Your " + team.name + " team is live on DocOga",
-          "Payment received — invoice " + inv.id + " (" + inv.total + " NGN incl. VAT) is paid.\n\n" + team.name + " is now active for 12 months. Sign in and invite your team — each member signs in with their own email and every document carries your firm's name and logo.\n\nhttps://docoga.com.ng\n\n— DocOga, Abuja",
-          mailShell(`<h2 style="margin:0 0 12px;font-size:20px;color:#0B1B3F">${htmlEsc(team.name)} is live 🎉</h2><p style="margin:0 0 12px;font-size:14px;color:#33415C;line-height:1.6">Invoice <b>${htmlEsc(inv.id)}</b> — <b>${inv.total} NGN</b> (incl. VAT) — received. Your team is active for 12 months.</p><p style="margin:0;font-size:14px;color:#33415C;line-height:1.6">Next: sign in and invite your team. Every document carries your firm's name and logo.</p>`)
+          isRenewal ? ("Your " + team.name + " licence is renewed on DocOga") : ("Your " + team.name + " team is live on DocOga"),
+          "Payment received — invoice " + inv.id + " (" + inv.total + " NGN incl. VAT) is paid.\n\n" + (isRenewal ? team.name + " is active again for 12 months — branding is back on every document. " : team.name + " is now active for 12 months. Sign in and invite your team — each member signs in with their own email and every document carries your firm's name and logo. ") + "\n\nhttps://docoga.com.ng\n\n— DocOga, Abuja",
+          mailShell(`<h2 style="margin:0 0 12px;font-size:20px;color:#0B1B3F">${isRenewal ? htmlEsc(team.name) + " is renewed ✅" : htmlEsc(team.name) + " is live 🎉"}</h2><p style="margin:0 0 12px;font-size:14px;color:#33415C;line-height:1.6">Invoice <b>${htmlEsc(inv.id)}</b> — <b>${inv.total} NGN</b> (incl. VAT) — received. Your team is active for 12 months.</p><p style="margin:0;font-size:14px;color:#33415C;line-height:1.6">${isRenewal ? "Branding is back on every document your team produces." : "Next: sign in and invite your team. Every document carries your firm's name and logo."}</p>`)
         );
       }
     } catch (e) {
@@ -1272,6 +1551,8 @@ export default {
       if (url.pathname === "/business/teams" && request.method === "POST") return await handleBusinessTeams(request, env, cors);
       if (url.pathname === "/business/team/charge" && request.method === "POST") return await handleBusinessCharge(request, env, cors);
       if (url.pathname === "/business/team/invoices" && request.method === "GET") return await handleBusinessInvoices(request, env, cors);
+      if (url.pathname === "/business/team/renew" && request.method === "POST") return await handleBusinessRenew(request, env, cors);
+      if (url.pathname === "/business/team/usage" && request.method === "POST") return await handleBusinessUsage(request, env, cors);
       if (url.pathname.startsWith("/business/invoice/") && request.method === "GET") {
         const parts = url.pathname.split("/");
         if (parts.length === 4) return await handleBusinessInvoice(decodeURIComponent(parts[3]), request, env, cors);
@@ -1284,6 +1565,7 @@ export default {
   async scheduled(event, env, ctx) {
     ctx.waitUntil((async () => {
       try { await dailyRenewalReminders(env); } catch (e) {}
+      try { await dailyBusinessRenewals(env); } catch (e) {}
     })());
   },
 };

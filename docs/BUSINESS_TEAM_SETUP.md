@@ -84,8 +84,44 @@ On a signed `charge.completed` that matches an invoice reference:
 - **duplicate** → idempotent no-op.
 - The retail pass path is untouched (the invoice branch runs first on
   reference match; pass references never match invoices).
+- **renewal invoice** (`kind:"renewal"`, Phase 4) → same activation; the new
+  year **stacks on a future expiry** (early renewal loses no days) and the
+  team's `renewal_base/vat/total` are refreshed to this invoice (renewal
+  pricing = price at purchase, §6.4).
 
-## 5. Troubleshooting
+## 5. Autonomy lifecycle (Phase 4 — what the daily cron does, 07:00)
+
+The `scheduled()` handler sweeps every team record each day (retail pass
+reminders run first, then the business sweep). The lifecycle is:
+
+```
+active ──(T-90 / T-30 / T-7)──► reminder emails (deduped: rem90/rem30/rem7 on the team record)
+active ──(expiry passed)──────► grace  (14 days: branding off, banner back, renewal self-serve)
+grace  ──(grace_until passed)► free   (free tier; data retained 90 days: retire_at)
+free   ──(retire_at passed)──► deleted (team/brand/seats/seatidx removed; invoices KEPT — tax)
+```
+
+Team-record fields the cron reads/writes (don't hand-edit mid-lifecycle):
+`status` (`unpaid|active|grace|free`), `expiry`, `grace_until`, `retire_at`,
+`rem90`/`rem30`/`rem7` (reset automatically at each (re)activation),
+`renewal_base`/`renewal_vat`/`renewal_total` (price at purchase),
+`usage100`/`usage150` (last month a 100%/150% overage email went out).
+
+- **Renewal** is self-serve: `POST /business/team/renew` (owner; window =
+  active-within-90-days, grace, or free) → renewal invoice at the purchase
+  price via the same transfer/card machinery.
+- **Volume meter (C8)**: `POST /business/team/usage` (best-effort monthly
+  counter `team:{id}:usage:{yyyy-mm}`, capped at 2× the band; the print
+  beacon is throttled to 10 min in the site and is fire-and-forget). The cron
+  emails the owner at 100% and 150% of the monthly band, deduped per month.
+  **Soft caps only — v1 never hard-cuts in-progress documents** (§6.4).
+
+Owner intervention, if ever needed (e.g. a disputed expiry): edit the team
+record's `status`/`expiry`/`grace_until`/`retire_at` directly — the cron
+reasons only about those fields, and a renewal payment re-baselines the
+reminder flags.
+
+## 6. Troubleshooting
 
 | Symptom | Cause / fix |
 |---|---|

@@ -1250,7 +1250,7 @@ async function teamRefresh(){
   try{
     const r=await fetch(WORKER_URL+'/business/team',{headers:{Authorization:'Bearer '+team.token}});
     const j=await r.json();
-    if(j.ok){ team.team.name=j.team.name; team.team.slug=j.team.slug; team.team.expiry=j.team.expiry; team.team.status=j.team.status; team.role=j.role; team.brand=j.brand||{}; team.quote=j.quote; team.seats=j.seats||[]; updateTeamUI(); renderAll(); return true; }
+    if(j.ok){ team.team.name=j.team.name; team.team.slug=j.team.slug; team.team.expiry=j.team.expiry; team.team.status=j.team.status; team.role=j.role; team.brand=j.brand||{}; team.quote=j.quote; team.seats=j.seats||[]; team.renewal=j.renewal; team.usage=j.usage; updateTeamUI(); renderAll(); return true; }
     teamSignOut(false);
   }catch(e){ /* offline: keep last known state; next online call re-checks */ }
   return false;
@@ -1281,6 +1281,10 @@ function updateTeamUI(){
   const box=$('biz-team-box'); if(!box) return;
   if(teamActive()){
     box.innerHTML='<div class="team-chip"><span>🏢 <b>'+esc(team.team.name)+'</b> · signed in as '+esc(team.email)+(team.role==='owner'?'':'')+'</span><a class="link-btn" href="#team">Team dashboard →</a><button class="link-btn" onclick="teamSignOut()">Sign out</button></div>';
+  } else if(team && team.team && (team.team.status==='grace' || team.team.status==='free')){
+    const gtxt=team.team.status==='grace'?'licence expired — 14-day grace, renew to keep branding':'licence expired — free tier, renew to restore branding';
+    box.innerHTML='<div class="team-chip" style="align-items:flex-start;flex-direction:column;gap:6px"><span>🏢 <b>'+esc(team.team.name)+'</b> — '+gtxt+'</span>'+
+      '<div style="display:flex;gap:12px;margin-top:4px"><a class="link-btn" href="#team">Renew in the team dashboard →</a><button class="link-btn" onclick="teamSignOut()">Sign out</button></div></div>';
   } else if(team && team.token && team.team && team.team.status==='unpaid'){
     const q=team.quote||{};
     box.innerHTML='<div class="team-chip" style="align-items:flex-start;flex-direction:column;gap:6px"><span>🏢 <b>'+esc(team.team.name)+'</b> — activated: pay <b>'+ngn(q.total)+'</b>/yr (incl. VAT) and your team switches on automatically</span>'+
@@ -1348,7 +1352,7 @@ async function bizCreateTeam(){
   try{
     const r=await fetch(WORKER_URL+'/business/teams',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,name,seats:$('biz-cfg-seats').value,docs:$('biz-cfg-docs').value,segment:bizSeg})});
     const j=await r.json();
-    if(j.ok){ msg.textContent='✅ Team created — a sign-in link is on its way to '+email+'. Click it, pay by card or transfer, and your team activates automatically.'; $('biz-cfg-email').value=''; $('biz-cfg-name').value=''; }
+    if(j.ok){ bizEvent('business_team_created',{team_id:j.team.id, value:j.quote.total}); msg.textContent='✅ Team created — a sign-in link is on its way to '+email+'. Click it, pay by card or transfer, and your team activates automatically.'; $('biz-cfg-email').value=''; $('biz-cfg-name').value=''; }
     else { msg.textContent=j.error||'Something went wrong — please try again.'; }
   }catch(e){ msg.textContent='Could not reach the server — please try again in a moment.'; }
 }
@@ -1359,6 +1363,7 @@ async function bizCharge(method){
     const r=await fetch(WORKER_URL+'/business/team/charge',{method:'POST',headers:{Authorization:'Bearer '+team.token,'Content-Type':'application/json'},body:JSON.stringify({method})});
     const j=await r.json();
     if(!j.ok){ panel.innerHTML='<div style="font-size:13px;color:#b91c1c">'+esc(j.error||'Payment setup failed — please try again.')+'</div>'; return; }
+    bizEvent('business_charge_started',{method:method, value:j.invoice.total, reused:!!j.reused});
     if(method==='card' && j.pay_url){
       window.open(j.pay_url,'_blank');
       panel.innerHTML='<div style="font-size:13px;color:#33415C">We opened the secure Flutterwave checkout. Your team activates automatically once payment lands — refresh this page if it does not update.</div>';
@@ -1378,6 +1383,54 @@ async function bizCharge(method){
     }
   }catch(e){ panel.innerHTML='<div style="font-size:13px;color:#b91c1c">Could not reach the server — please try again in a moment.</div>'; }
 }
+/* Phase 4 (C9): renewal — same machinery as first purchase, price at purchase.
+   The worker owns the window rules (T-90/grace/free) and the re-pricing is
+   server-side; the panel mirrors the checkout VA panel. */
+async function bizRenew(method){
+  const panel=$('biz-renew-panel'); if(!panel) return;
+  panel.innerHTML='<div style="font-size:13px;color:#33415C">Creating your renewal payment…</div>';
+  try{
+    const r=await fetch(WORKER_URL+'/business/team/renew',{method:'POST',headers:{Authorization:'Bearer '+team.token,'Content-Type':'application/json'},body:JSON.stringify({method})});
+    const j=await r.json();
+    if(!j.ok){ panel.innerHTML='<div style="font-size:13px;color:#b91c1c">'+esc(j.error||'Renewal setup failed — please try again.')+'</div>'; return; }
+    bizEvent('business_renewal_started',{method:method, value:j.invoice.total});
+    if(method==='card' && j.pay_url){
+      window.open(j.pay_url,'_blank');
+      panel.innerHTML='<div style="font-size:13px;color:#33415C">We opened the secure Flutterwave checkout. Your licence renews automatically once payment lands — refresh this page if it does not update.</div>';
+      return;
+    }
+    if(j.va){
+      const va=j.va;
+      const expTxt=va.expires?new Date(va.expires).toLocaleString():'';
+      panel.innerHTML='<div style="background:#fff;border:1px solid #0B1B3F;border-radius:10px;padding:12px;font-size:13px;line-height:1.7">'+
+        '<b>Transfer exactly '+ngn(j.invoice.total)+' NGN</b> to:<br>'+
+        'Bank: <b>'+esc(va.bank)+'</b><br>Account: <b>'+esc(va.account)+'</b><br>'+
+        (expTxt?'Valid until: <b>'+expTxt+'</b><br>':'')+
+        'Your licence renews the moment the exact amount lands — automatically.<br>'+
+        '<button class="link-btn" style="margin-top:4px" onclick="bizRenew(\'transfer\')">Link expired? Get a new one →</button>'+
+        '<span id="biz-renew-status" style="font-size:12px;color:#33415C"></span></div>';
+      bizPollActivation();
+    }
+  }catch(e){ panel.innerHTML='<div style="font-size:13px;color:#b91c1c">Could not reach the server — please try again in a moment.</div>'; }
+}
+/* Phase 4 (C8): best-effort usage beacon — fire-and-forget, throttled to once
+   per 10 minutes per team. The meter is honestly best-effort (generation is
+   browser-side, same as the retail pass); the print must never wait on it. */
+function usageBeacon(){
+  try{
+    if(!teamActive()) return;
+    const key='docoga_usage_ping_'+team.team.id;
+    const last=Number(store.getItem(key)||'0');
+    if(Date.now()-last < 10*60*1000) return;
+    store.setItem(key,String(Date.now()));
+    fetch(WORKER_URL+'/business/team/usage',{method:'POST',keepalive:true,headers:{Authorization:'Bearer '+team.token,'Content-Type':'application/json'},body:'{}'}).catch(function(){});
+  }catch(e){}
+}
+/* Revenue funnel events (revenue is the only scoreboard — see the dashboard).
+   Guarded: no ANALYTICS_ID / non-https / blocked gtag = silently skipped. */
+function bizEvent(name,params){
+  try{ if(window.gtag) window.gtag('event',name,params||{}); }catch(e){}
+}
 async function bizPollActivation(){
   for(let i=0;i<8;i++){
     await new Promise(res=>setTimeout(res,15000));
@@ -1385,8 +1438,9 @@ async function bizPollActivation(){
       const r=await fetch(WORKER_URL+'/business/team',{headers:{Authorization:'Bearer '+(team&&team.token)}});
       const j=await r.json();
       if(j.ok && j.team.status==='active'){
-        team.team=j.team; team.brand=j.brand||{}; team.role=j.role;
+        team.team=j.team; team.brand=j.brand||{}; team.role=j.role; team.renewal=j.renewal; team.usage=j.usage;
         updateTeamUI(); renderAll();
+        bizEvent('business_team_activated',{value:team.quote?team.quote.total:undefined});
         toast('✅ Payment received — your team is live. Invite your team members by email.');
         return;
       }
@@ -1422,16 +1476,36 @@ function teamPortalRender(){
   const card='<div style="background:#fff;border:1px solid #cdd6e4;border-radius:12px;padding:16px 18px;margin-bottom:14px">';
   let h='';
   /* 1 — licence */
+  const renewBtns=isOwner?'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn primary" style="justify-content:center" onclick="bizRenew(\'transfer\')">Renew by bank transfer</button><button class="btn ghost" style="justify-content:center" onclick="bizRenew(\'card\')">Renew by card / USSD</button></div><div id="biz-renew-panel" style="margin-top:8px"></div>':'';
   h+=card+'<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px"><div style="font-size:16px;font-weight:bold">🏢 '+esc(t.name)+'</div>';
   if(t.status==='unpaid'){
     h+=teamChip('open','UNPAID — pay '+ngn(q.total||0)+' to activate');
     h+='<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" style="justify-content:center" onclick="bizCharge(\'transfer\')">Pay by bank transfer</button><button class="btn ghost" style="justify-content:center" onclick="bizCharge(\'card\')">Pay by card / USSD</button></div>';
   } else if(t.status==='active'){
     h+=teamChip('active','ACTIVE · until '+exp);
-  } else if(t.status==='suspended'){
-    h+=teamChip('expired','EXPIRED · email business@docoga.com.ng to renew');
+  } else if(t.status==='grace'){
+    h+=teamChip('expired','EXPIRED · 14-day grace — branding paused');
+  } else if(t.status==='free'){
+    h+=teamChip('expired','EXPIRED · free tier — data kept 90 days');
+  } else {
+    h+=teamChip('expired','LICENCE PROBLEM · email business@docoga.com.ng');
   }
-  h+='</div><div style="margin-top:8px;font-size:13px;color:#475569">'+(q.tier?q.tier.charAt(0).toUpperCase()+q.tier.slice(1)+' licence':'Business licence')+' · '+(q.seats||'—')+' seats · '+(q.docs||'—')+' docs/month · '+(q.total?ngn(q.total)+' billed yearly, incl. VAT':'')+' · signed in as '+esc(team.email)+(isOwner?' (owner)':'')+'</div></div>';
+  h+='</div><div style="margin-top:8px;font-size:13px;color:#475569">'+(q.tier?q.tier.charAt(0).toUpperCase()+q.tier.slice(1)+' licence':'Business licence')+' · '+(q.seats||'—')+' seats · '+(q.docs||'—')+' docs/month · '+(q.total?ngn(q.total)+' billed yearly, incl. VAT':'')+' · signed in as '+esc(team.email)+(isOwner?' (owner)':'')+'</div>';
+  /* Phase 4 (C9): renewal is self-serve — owner renews at the price at purchase */
+  if(isOwner && t.status==='grace'){
+    h+='<div style="margin-top:10px;font-size:13px;color:#33415C;line-height:1.6">Your licence expired on '+(t.expiry||'the last day')+'. Nothing is lost — renew below and branding comes straight back (the next 12 months start now). Data is kept 90 days after the grace period ends.</div>'+renewBtns;
+  } else if(isOwner && t.status==='free'){
+    h+='<div style="margin-top:10px;font-size:13px;color:#33415C;line-height:1.6">Your team is on the free tier — documents show the DocOga banner. Seats, branding and invoices are kept for 90 days; renew below to restore everything at the price you paid.</div>'+renewBtns;
+  } else if(isOwner && t.status==='active' && t.expiry && (new Date(t.expiry+'T23:59:59Z').getTime()-Date.now()) <= 90*864e5){
+    const price=(team.renewal&&team.renewal.total)?' '+ngn(team.renewal.total)+' incl. VAT':'';
+    h+='<div style="margin-top:10px;font-size:13px;color:#33415C;line-height:1.6">Renews <b>'+exp+'</b> — same price you paid'+price+'. Renew any time below; early renewal stacks on your remaining days (none lost).</div>'+renewBtns;
+  }
+  /* Phase 4 (C8): monthly allowance line (soft limit — stated honestly) */
+  if(team.usage && team.usage.band && t.status==='active'){
+    const pct=Math.round(team.usage.used/team.usage.band*100);
+    h+='<div style="margin-top:10px;padding:9px 12px;background:'+(pct>=100?'#fef9c3':'#f8fafc')+';border:1px solid '+(pct>=100?'#fde68a':'#e2e8f0')+';border-radius:10px;font-size:13px;color:#33415C">Documents this month: <b>'+team.usage.used+' / '+team.usage.band+'</b> ('+pct+'%)'+(pct>=100?' — you\'re over the band. The limit is soft: nothing stops, in-progress documents are never interrupted — but if this is the new normal, email <a href="mailto:business@docoga.com.ng">business@docoga.com.ng</a> and we\'ll right-size the plan by email.':'')+'</div>';
+  }
+  h+='</div>';
   /* 2 — firm branding */
   h+=card+'<div style="font-size:15px;font-weight:bold;margin-bottom:10px">Firm branding</div>'+
     '<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px">'+
@@ -1840,6 +1914,7 @@ function printCurrent(type){
 const html=RENDERERS[type](); // single source of truth — do not re-list renderers here
 const pr=$('print-root');
 pr.innerHTML=html;
+usageBeacon(); // C8: non-blocking, throttled, best-effort — the render never waits
 document.body.classList.add('printing');
 try{ window.print(); toast(passActive()?'Sending to printer — choose "Save as PDF" for a digital copy.':'Printing free copy — Oga Pass removes the banner.'); }
 catch(e){ toast('Printing is blocked in this preview. Open the live site to print or save as PDF.'); }

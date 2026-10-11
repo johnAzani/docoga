@@ -654,12 +654,56 @@ const supportHtml = fs.readFileSync(path.join(ROOT, 'site', 'support.html'), 'ut
 check('support.html: noindex, business@ everywhere, wrong-amount + renewal + data answers',
       /noindex/.test(supportHtml) && (supportHtml.match(/business@docoga\.com\.ng/g) || []).length >= 5 &&
       /wrong amount/i.test(supportHtml) && /renew/i.test(supportHtml) && /Privacy Policy/.test(supportHtml));
-check('support.html makes NO fixed refund-window promise (§11 pending)',
-      !/14[- ]day/i.test(supportHtml) && !/14[- ]days/i.test(supportHtml));
+check('support.html makes NO fixed REFUND-window promise (§11 pending; the 14-day GRACE period is lifecycle, not refunds)',
+      !/14[- ]day[^<]{0,80}refund/i.test(supportHtml) && !/refund[^<]{0,80}14[- ]day/i.test(supportHtml));
 check('privacy.html: Business Teams section (account data spelled out) + dated 11 Oct',
       /<h2>5\. Business teams<\/h2>/.test(fs.readFileSync(path.join(ROOT, 'site', 'privacy.html'), 'utf8')) &&
       /11 October 2026/.test(fs.readFileSync(path.join(ROOT, 'site', 'privacy.html'), 'utf8')));
 check('footer links the public support page', !!dom.window.document.querySelector('footer a[href="support.html"]'));
+
+/* ============================ AUTONOMY (PHASE 4) ============================ */
+section('Autonomy — renewal + usage metering (Phase 4)');
+check('renewal posts to /business/team/renew (owner; server owns window + price)',
+      (() => { const s = lex(dom, 'bizRenew.toString()'); return /\/business\/team\/renew/.test(s) && s.includes("method:'POST'") && /biz-renew-panel/.test(s); })());
+check('usage beacon: best-effort, non-blocking, throttled (C8 honesty)',
+      (() => { const s = lex(dom, 'usageBeacon.toString()'); return /\/business\/team\/usage/.test(s) && s.includes('keepalive:true') && /10\*60\*1000/.test(s) && /teamActive/.test(s); })());
+check('revenue funnel events wired (created / charged / activated / renewal) with gtag guard',
+      (() => { const s = HTML; const g = lex(dom, 'bizEvent.toString()');
+        return ['business_team_created','business_charge_started','business_team_activated','business_renewal_started'].every(n => s.includes(n)) && /window\.gtag/.test(g); })());
+const p4Team = (over) => `
+  window.fetch = function (u, opt) {
+    u = String(u); window.__calls.push(u);
+    if (u.indexOf('/business/team') !== -1) return Promise.resolve({ ok: true, status: 200, json: function(){ return Promise.resolve(${JSON.stringify(Object.assign({ ok: true, team: { id: 'tp4', slug: 'p4', name: 'P4 Firm', status: 'active', expiry: '2026-11-10', plan: 'starter' }, email: 'o@p4.ng', role: 'owner', seats: [], brand: {} }, over))}); } });
+    return Promise.resolve({ ok: false, status: 404, json: function(){ return Promise.resolve({ ok: false, error: 'nope' }); } });
+  };
+  try { localStorage.setItem('docoga_team', JSON.stringify({ token: 'tl_tp4|o@p4.ng|9999999999.sig', team: { id: 'tp4', name: 'P4 Firm', slug: 'p4', status: 'active' }, email: 'o@p4.ng', role: 'owner', exp: 9999999999 })); } catch(e) {}
+`;
+const nearDom = boot({ storage: p4Team({ team: { id: 'tp4', slug: 'p4', name: 'P4 Firm', status: 'active', expiry: '2026-11-10', plan: 'starter' }, renewal: { base: 96000, vat: 7200, total: 103200, expiry: '2026-11-10', status: 'active' }, usage: { used: 120, band: 100 } }) });
+await new Promise(res => setTimeout(res, 80));
+const nearP = nearDom.window.document.querySelector('#team-portal');
+check('active near expiry (T-30) → renewal offered at the PURCHASE price with both methods',
+      /Renews/.test(nearP.textContent) && /₦103,200/.test(nearP.textContent) &&
+      !!nearDom.window.document.querySelector('#team-portal [onclick*="bizRenew"]') &&
+      !!nearDom.window.document.querySelector('#team-portal #biz-renew-panel'));
+check('monthly allowance line renders overage honestly (120/100 = soft, no cut-off)',
+      /Documents this month:/.test(nearP.textContent) && /120 \/ 100/.test(nearP.textContent) && /soft/i.test(nearP.textContent));
+nearDom.window.printCurrent('agreement');
+check('branded print fires the usage beacon (non-blocking, throttled)',
+      (nearDom.window.__calls || []).some(u => u.indexOf('/business/team/usage') !== -1));
+const graceDom = boot({ storage: p4Team({ team: { id: 'tp4', slug: 'p4', name: 'P4 Firm', status: 'grace', expiry: '2026-09-01', plan: 'starter' }, renewal: { base: 96000, vat: 7200, total: 103200, expiry: '2026-09-01', status: 'grace' } }) });
+await new Promise(res => setTimeout(res, 80));
+const graceP = graceDom.window.document.querySelector('#team-portal');
+check('grace team → 14-day grace card + self-serve Renew + chip hint (no beacon: not active)',
+      /14-day grace/.test(graceP.textContent) &&
+      !!graceDom.window.document.querySelector('#team-portal [onclick*="bizRenew"]') &&
+      /grace/i.test(graceDom.window.document.querySelector('#biz-team-box').textContent) &&
+      !(graceDom.window.__calls || []).some(u => u.indexOf('/business/team/usage') !== -1));
+const freeDom = boot({ storage: p4Team({ team: { id: 'tp4', slug: 'p4', name: 'P4 Firm', status: 'free', expiry: '2026-09-01', plan: 'starter' }, renewal: { base: 96000, vat: 7200, total: 103200, expiry: '2026-09-01', status: 'free' } }) });
+await new Promise(res => setTimeout(res, 80));
+const freeP = freeDom.window.document.querySelector('#team-portal');
+check('free-tier team → 90-day retention notice + self-serve Renew (reactivation at purchase price)',
+      /free tier/.test(freeP.textContent) && /90 days/.test(freeP.textContent) &&
+      !!freeDom.window.document.querySelector('#team-portal [onclick*="bizRenew"]'));
 
 section('config values used by customers');
 const CFG = { PAYMENT_URL: lex(dom, 'PAYMENT_URL'), SUPPORT_WHATSAPP: lex(dom, 'SUPPORT_WHATSAPP'), SITE_URL: lex(dom, 'SITE_URL'), WORKER_URL: lex(dom, 'WORKER_URL'), ANALYTICS_ID: lex(dom, 'ANALYTICS_ID') };

@@ -9,6 +9,7 @@ function makeEnv(records) {
       get: async k => store.has(k) ? store.get(k) : null,
       put: async (k, v) => { store.set(k, v); },
       delete: async k => { store.delete(k); },
+      incr: async (k, amt = 1) => { const n = Number(store.get(k) || '0') + Number(amt); store.set(k, String(n)); return n; },
       list: async ({ prefix = '' }) => ({ keys: [...store.keys()].filter(k => k.startsWith(prefix)).map(name => ({ name })), list_complete: true }),
   }, SITE_URL: 'https://docoga.com.ng', PAYMENT_URL: 'https://flutterwave.com/pay/x', PROVIDER: 'flw' };
 }
@@ -559,6 +560,64 @@ r = await hit(te2, '/business/invoice/' + inv1, authed(volTok));
 ok('another team\'s session opening this invoice → 404 (no enumeration, no leak)', r.status === 404, String(r.status));
 r = await hit(te2, '/business/invoice/not-an-id!!', authed(volTok));
 ok('malformed invoice id → 404 (no KV probe with garbage)', r.status === 404, String(r.status));
+
+/* ---------- Phase 4 — Autonomy (C8 metering + C9 renewal cron) ---------- */
+const monthKey = 'team:' + team1 + ':usage:' + new Date().toISOString().slice(0, 7);
+r = await hit(te2, '/business/team/usage', Object.assign(authed(bossTok), { method: 'POST', headers: Object.assign(authed(bossTok).headers, { 'content-type': 'application/json' }), body: '{}' }));
+ok('C8: POST /business/team/usage increments the monthly counter (band from the licence)', r.status === 200 && r.j.ok === true && r.j.used === 1 && r.j.band === 500, String(r.status) + ' ' + JSON.stringify(r.j).slice(0, 100));
+r = await hit(te2, '/business/team/usage', Object.assign(authed(bossTok), { method: 'POST', headers: Object.assign(authed(bossTok).headers, { 'content-type': 'application/json' }), body: '{}' }));
+ok('C8: meter counts per call (used=2)', r.status === 200 && r.j.used === 2, JSON.stringify(r.j).slice(0, 80));
+await te2.KV.put(monthKey, '1000'); // 2× the band (500)
+r = await hit(te2, '/business/team/usage', Object.assign(authed(bossTok), { method: 'POST', headers: Object.assign(authed(bossTok).headers, { 'content-type': 'application/json' }), body: '{}' }));
+ok('C8: meter is best-effort — capped at 2× the band (no unbounded counting)', r.status === 200 && r.j.used === 1000 && r.j.capped === true, JSON.stringify(r.j).slice(0, 80));
+r = await hit(te2, '/business/team', authed(bossTok));
+ok('/business/team exposes usage + renewal price AT PURCHASE (owner, Phase 4 fields)', r.status === 200 && r.j.usage && r.j.usage.band === 500 && r.j.usage.used === 1000 && r.j.renewal && r.j.renewal.total === 296700 && r.j.renewal.status === 'active', String(r.status) + ' ' + JSON.stringify(r.j.renewal || {}).slice(0, 100));
+r = await hit(te2, '/business/team/renew', Object.assign(authed(bossTok), { method: 'POST', headers: Object.assign(authed(bossTok).headers, { 'content-type': 'application/json' }), body: JSON.stringify({ method: 'transfer' }) }));
+ok('renewal 90+ days before expiry → 400 (window not open yet)', r.status === 400 && /90 days/.test(r.j.error || ''), String(r.status) + ' ' + JSON.stringify(r.j).slice(0, 80));
+const t1near = JSON.parse(await te2.KV.get('team:' + team1));
+t1near.expiry = new Date(Date.now() + 30 * 864e5).toISOString().slice(0, 10);
+await te2.KV.put('team:' + team1, JSON.stringify(t1near));
+r = await hit(te2, '/business/team/renew', Object.assign(authed(bossTok), { method: 'POST', headers: Object.assign(authed(bossTok).headers, { 'content-type': 'application/json' }), body: JSON.stringify({ method: 'transfer' }) }));
+ok('renewal at T-30 (owner) → renewal invoice at the PURCHASE price + fresh VA', r.status === 200 && r.j.renewal === true && r.j.invoice.total === 296700 && !!r.j.va && r.j.va.account === '1234567890', String(r.status) + ' ' + JSON.stringify(r.j).slice(0, 120));
+const renInv = r.j.invoice.id;
+const renOldExpiry = t1near.expiry;
+r = await wh(te2, { event: 'charge.completed', 'event.type': 'BANK_TRANSFER_TRANSACTION', data: { status: 'successful', currency: 'NGN', amount: 296700, tx_ref: renInv, flw_ref: 'FLW-REN-1', customer: { email: 'boss@newfirm.ng' } } });
+const t1ren = JSON.parse(await te2.KV.get('team:' + team1));
+ok('renewal webhook → active again, expiry = old FUTURE expiry + 365d (early renewal loses no days) + renewal email', r.status === 200 && t1ren.status === 'active' && t1ren.expiry === new Date(Date.parse(renOldExpiry + 'T23:59:59Z') + 365 * 864e5).toISOString().slice(0, 10) && /renewed/i.test((((mailCap[mailCap.length - 1] || {}).body || {}).subject || '')), String(r.status) + ' exp=' + t1ren.expiry + ' subj=' + (((mailCap[mailCap.length - 1] || {}).body || {}).subject || ''));
+/* cron: active team past expiry → 14-day grace (banner off via status, renewal self-serve) */
+const t1past = JSON.parse(await te2.KV.get('team:' + team1));
+t1past.status = 'active'; t1past.expiry = new Date(Date.now() - 2 * 864e5).toISOString().slice(0, 10);
+await te2.KV.put('team:' + team1, JSON.stringify(t1past));
+let sweepP;
+await mod.scheduled({}, te2, { waitUntil: (p) => { sweepP = p; } });
+await sweepP;
+const t1g = JSON.parse(await te2.KV.get('team:' + team1));
+ok('cron: active team past expiry → status grace + 14-day grace_until + owner emailed (one email)', t1g.status === 'grace' && Math.abs(Date.parse(t1g.grace_until) - (Date.now() + 14 * 864e5)) < 864e5 && /grace/i.test((((mailCap[mailCap.length - 1] || {}).body || {}).subject || '')), JSON.stringify(t1g).slice(0, 100) + ' subj=' + (((mailCap[mailCap.length - 1] || {}).body || {}).subject || ''));
+/* cron: grace ended → free tier + 90-day retention */
+const t1ge = JSON.parse(await te2.KV.get('team:' + team1));
+t1ge.grace_until = new Date(Date.now() - 864e5).toISOString();
+await te2.KV.put('team:' + team1, JSON.stringify(t1ge));
+sweepP = null; await mod.scheduled({}, te2, { waitUntil: (p) => { sweepP = p; } }); await sweepP;
+const t1free = JSON.parse(await te2.KV.get('team:' + team1));
+ok('cron: grace ended → free tier + retire_at = now + 90 days + owner emailed', t1free.status === 'free' && Math.abs(Date.parse(t1free.retire_at) - (Date.now() + 90 * 864e5)) < 864e5 && /free tier/i.test((((mailCap[mailCap.length - 1] || {}).body || {}).subject || '')), JSON.stringify(t1free).slice(0, 100) + ' subj=' + (((mailCap[mailCap.length - 1] || {}).body || {}).subject || ''));
+r = await hit(te2, '/business/team/renew', Object.assign(authed(bossTok), { method: 'POST', headers: Object.assign(authed(bossTok).headers, { 'content-type': 'application/json' }), body: JSON.stringify({ method: 'transfer' }) }));
+ok('renewal from the FREE tier → reactivation invoice at purchase price (session still valid in free)', r.status === 200 && r.j.renewal === true && r.j.invoice.total === 296700, String(r.status) + ' ' + JSON.stringify(r.j).slice(0, 100));
+/* cron: T-30 reminder, deduped on the team record */
+const t3near = JSON.parse(await te2.KV.get('team:' + team3));
+t3near.status = 'active'; t3near.expiry = new Date(Date.now() + 25 * 864e5).toISOString().slice(0, 10);
+await te2.KV.put('team:' + team3, JSON.stringify(t3near));
+const mBefore = mailCap.length;
+sweepP = null; await mod.scheduled({}, te2, { waitUntil: (p) => { sweepP = p; } }); await sweepP;
+const firstRound = mailCap.length - mBefore;
+sweepP = null; await mod.scheduled({}, te2, { waitUntil: (p) => { sweepP = p; } }); await sweepP;
+const t3rem = JSON.parse(await te2.KV.get('team:' + team3));
+ok('cron: T-30 renewal reminder emailed ONCE (dedupe + stale T-90 consumed; second sweep silent)', firstRound === 1 && mailCap.length === mBefore + 1 && t3rem.rem30 === true && t3rem.rem90 === true && /renews in 2[56] days/i.test((((mailCap[mBefore] || {}).body || {}).subject || '')), 'round1=' + firstRound + ' total=' + (mailCap.length - mBefore) + ' subj=' + (((mailCap[mBefore] || {}).body || {}).subject || ''));
+/* cron: retention ended → team data deleted, invoices KEPT (tax records) */
+const t1r = JSON.parse(await te2.KV.get('team:' + team1));
+t1r.retire_at = new Date(Date.now() - 864e5).toISOString();
+await te2.KV.put('team:' + team1, JSON.stringify(t1r));
+sweepP = null; await mod.scheduled({}, te2, { waitUntil: (p) => { sweepP = p; } }); await sweepP;
+ok('cron: retention ended → team/brand/seats deleted, INVOICES KEPT', !(await te2.KV.get('team:' + team1)) && !(await te2.KV.get('team:' + team1 + ':seats')) && !(await te2.KV.get('brand:' + team1)) && !!r.j.invoice && !!(await te2.KV.get('inv:' + inv1)) && !!(await te2.KV.get('inv:' + renInv)), 'team=' + (await te2.KV.get('team:' + team1)) + ' inv1=' + (await te2.KV.get('inv:' + inv1)));
 
 globalThis.fetch = realFetch;
 

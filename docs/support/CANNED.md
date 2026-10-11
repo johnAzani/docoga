@@ -60,19 +60,22 @@ provide legal advice.
 >
 > {sign-off}
 
-## 4. Renewal
+## 4. Renewal (customer writes about expiring/renewing)
 
 > Hi {name},
 >
-> Your licence for {firm} ({N} seats) expires on {date}. You can renew at the
-> same price you paid: {₦total} incl. VAT.
+> Renewal is self-serve: sign in → <b>Team dashboard → Renew</b>. Bank transfer
+> or card, at the same price you paid ({₦total} incl. VAT), and the licence
+> extends automatically when payment lands. The window is open from 90 days
+> before expiry — renewing early stacks on your remaining days, none are lost.
 >
-> I've set up a one-time account for that amount (bank {bank}, account {VA},
-> valid until {expiry}). Transfer it whenever you're ready and I'll extend the
-> licence by another 12 months and confirm here.
+> {IF PAST EXPIRY: You're in the 14-day grace period — nothing is deleted;
+> renewing from the dashboard restores branding immediately. Data is kept 90
+> days after that if the licence lapses.}
 >
-> Your documents keep working until the expiry date either way — nothing is
-> switched off without notice.
+> If the dashboard route is blocked for you for any reason, say the word and I
+> will set up a one-time transfer account here in this thread (the written
+> record), and I'll confirm the extension when it lands.
 >
 > {sign-off}
 
