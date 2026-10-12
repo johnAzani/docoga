@@ -103,6 +103,42 @@ fallback makes the answer irrelevant to ₦0).
       16:05) — CF's git-triggered build deployed it (the "Workers Builds
       docoga-git" PR check fails on PR branches by documented design — see
       `build-check.yml` header — and succeeds on main, as the live site proves).
+> **⚠️ CORRECTION (12 Oct, session `arena/1913fcb7-docoga`) — the worker WAS
+> stale; it is deployed now.** The dashboard-editor check recorded above was
+> right about *what it saw* — `/business/waitlist` **is** in the deployed bundle
+> — but the inference drawn from it ("worker already current") was wrong. That
+> route shipped in **`f83be6e`**; the Phase 1–4 routes did not.
+>
+> Measured live from this session, read-only GETs against the real worker
+> (`https://docoga-pass.johnazani.workers.dev`, the URL the site calls —
+> `site/index.html:1095`), before the deploy:
+>
+> | probe | live worker answered | the new code answers |
+> |---|---|---|
+> | `GET /business/team` | `{"ok":false,"error":"not found"}` | `401 sign_in_required` (or `503 team_auth_disabled`) |
+> | `GET /business/login?token=bad` | `{"ok":false,"error":"not found"}` | `400 invalid link` |
+>
+> `not found` is the **old** handler's fall-through — the probe cannot be
+> satisfied by any revision that contains the business routes.
+>
+> **Cause, from the run history** (`gh run list --workflow=deploy-pass-now.yml`,
+> all branches): the last *successful* gated worker deploy is **`f83be6e`,
+> 11 Oct 12:22** — it carries `/business/waitlist` (so the notify form worked)
+> but none of the team routes. Those landed later the same day in `5076223`
+> (12:30), `efe1765` (12:48), `c64be86` (13:09) and `3f507a9` (13:21), and every
+> push after that carried no `[deploy-pass]` marker — so every subsequent run is
+> `skipped`. The site half of the seam was published by PR #15; the worker half
+> was still at Phase 0. On the live homepage that meant "Notify me at launch"
+> worked while **"Set up your team" and "Your team" → Sign in returned 404**.
+>
+> Fixed in this session by deploying `main`'s `worker/` with the gated
+> `[deploy-pass]` marker (the same path `f83be6e` used). Before deploying:
+> `npm test` (worker + email + DOM suites) green, `tools/qa.py` 0 errors, and
+> `worker/wrangler.toml` confirmed identical to `f83be6e`'s in KV binding and
+> `[triggers]` cron, with the only edits to pre-existing live code being the
+> invoice-first branch in `handleFlwWebhook` and two CORS header lines.
+> Deploy run link and post-deploy probes: **§7**.
+
 - [x] Step 3 (browser half) — verified live from the session: `docoga.com.ng/support`
       live (de-humanized FAQ); homepage shows "Set up your team" configurator +
       "Your team" sign-in + Business card **COMING SOON** with the "Notify me at
@@ -116,6 +152,17 @@ fallback makes the answer irrelevant to ₦0).
       `/business/team/renew` (no body) → **401** "sign_in_required". The
       teams/renew probes also prove TEAM_AUTH_SECRET is in effect (without it
       they'd 503 fail-closed).
+      *Agent-side status (12 Oct):* the sandbox cannot POST — it has no socket
+      egress to `workers.dev` (documented in `docs/DEPLOY_STATUS.md` §1) and
+      the `fetch_page` tool is GET-only, while the repo's `net-probe.yml` needs
+      `actions: write`, which this session's GitHub token lacks (dispatch →
+      HTTP 403 "Resource not accessible by integration"). **GET probes the
+      agent *can* run, and did** (see the correction above and §7): after the
+      deploy they must answer `401 sign_in_required` (`/business/team`) and
+      `400 invalid link` (`/business/login?token=bad`) instead of `not found`.
+      The POST half — including the proof that `TEAM_AUTH_SECRET` is in effect,
+      since `/business/team` answering 401 rather than 503 already shows it —
+      is still worth doing from the owner's phone.
 
 The live site today still shows the OLD Business card (the "quote by
 WhatsApp" flow you retired). The pre-deploy fixes that **without exposing a
@@ -257,3 +304,29 @@ migrations were done — the new KV keys (`teaminv:*`, `team:*:usage:*`,
 `renewal_*` fields) are additive. If a pre-deploy (step 2) needs to be
 undone specifically: re-deploy the previous site+worker; the waitlist KV
 entries and any team records are harmless to keep.
+
+## 7. Deploy log — append-only (agent-run)
+
+One entry per deploy event, newest last. Each entry states the **measured**
+before and after — never the intent.
+
+### 2026-10-12 · `docoga-pass` brought up to `main` (session `arena/1913fcb7-docoga`)
+
+- **Why:** the live worker was `f83be6e` — the last *successful* gated deploy
+  (11 Oct 12:22). The Business routes added after it (`5076223` Phase 1,
+  `efe1765` Phase 2, `c64be86` Phase 3, `3f507a9` Phase 4) were never shipped,
+  so the live site's team UI 404'd (see the §2 correction).
+- **Before (live, read-only):** `GET /business/team` →
+  `{"ok":false,"error":"not found"}` · `GET /business/login?token=bad` → same.
+  Worker `/` healthy throughout: `{"ok":true,"service":"docoga-pass",…}`.
+- **Pre-flight:** `npm test` green — worker + email-worker suites, DOM suite
+  **147/147** (after `npm i jsdom`); `python3 tools/qa.py` → **QA GREEN, 0
+  errors**. Worker diff `f83be6e..main`: **+900 / −3** lines; the only edits to
+  pre-existing live code are the invoice-first branch in `handleFlwWebhook`
+  (matches on `invref:*` KV keys, which pass references never carry — retail
+  untouched by construction) and two CORS header lines. `worker/wrangler.toml`
+  identical to `f83be6e` apart from one comment line — same KV id, same
+  `[triggers]` cron, so nothing new is bound or scheduled by this deploy.
+- **Action:** commit with the `[deploy-pass]` marker on
+  `arena/1913fcb7-docoga` → workflow `Deploy docoga-pass (gated)`.
+- **After:** _appended below once the run finishes._
