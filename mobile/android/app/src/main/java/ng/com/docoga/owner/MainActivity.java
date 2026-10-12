@@ -1,8 +1,11 @@
 package ng.com.docoga.owner;
 
+import android.annotation.SuppressLint;
 import android.os.Build;
 import android.os.Bundle;
 import android.webkit.WebView;
+import android.window.OnBackInvokedCallback;
+import android.window.OnBackInvokedDispatcher;
 import com.getcapacitor.Bridge;
 import com.getcapacitor.BridgeActivity;
 
@@ -25,37 +28,54 @@ import com.getcapacitor.BridgeActivity;
  *     WebView (patched by Play) rather than a bundled Chromium frozen at build
  *     time.
  *
- * What this override is for: the back gesture. Capacitor 8.5.3 does not touch
- * navigation, so the default behaviour is "back = close the app". On Android 16
- * (targetSdk 36) onBackPressed is no longer called at all — predictive back is
- * enabled and the gesture must be claimed through OnBackInvokedDispatcher — so
- * both paths are implemented and both delegate to the WebView, which is where the
- * history actually is.
+ * What this override is for: the back gesture. Capacitor 8.5.3 implements no
+ * back handling at all, so the default is "back = close the app". On Android 16
+ * (targetSdk 36) onBackPressed is not even delivered — predictive back is on and
+ * the gesture must be claimed through OnBackInvokedCallback — so both paths exist
+ * here and both delegate to the WebView, which is where the history actually is.
  */
+/* The API-33 symbols (OnBackInvokedCallback / getOnBackInvokedDispatcher) sit
+ * behind explicit Build.VERSION.SDK_INT checks; that is what makes them safe at
+ * runtime on minSdk 24. Annotated at class level so the check is stated once, in
+ * the place a reader will look for it, rather than scattered per call site. */
+@SuppressLint("NewApi")
 public class MainActivity extends BridgeActivity {
 
-  /* Held in a field on purpose: the dispatcher matches on identity, and a method
-   * reference builds a new object every time it is written — so registering
-   * `this::goBackOrLeave` and unregistering `this::goBackOrLeave` would leak the
-   * callback instead of removing it. */
-  private final Runnable backCallback = this::goBackOrLeave;
+  /* Must be OnBackInvokedCallback, not Runnable: registerOnBackInvokedCallback
+   * takes that interface, and a Runnable — even one bound to the same method —
+   * is simply the wrong type. Held in a field on purpose too, because the
+   * dispatcher matches on identity when unregistering, and writing
+   * `this::goBackOrLeave` twice builds two different objects (the second would
+   * unregister nothing and leak the first).
+   *
+   * The type does not exist below API 33 while minSdk is 24. That is safe: ART
+   * resolves it lazily, so a field whose *declared type* is newer than the
+   * device is fine as long as nothing touches it — which is what every use of
+   * this field below is guarded by. (This is the same pattern AndroidX uses.) */
+  private OnBackInvokedCallback backCallback;
 
   @Override
   public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     if (Build.VERSION.SDK_INT >= 33) {
-      getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
-        android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT, backCallback
-      );
+      // PRIORITY_DEFAULT is a constant of the *dispatcher* interface, not of the
+      // callback — and the callback is written out instead of as a lambda so the
+      // build depends on nothing newer than the template's default Java level.
+      backCallback = new OnBackInvokedCallback() {
+        @Override public void onBackInvoked() { goBackOrLeave(); }
+      };
+      getOnBackInvokedDispatcher()
+        .registerOnBackInvokedCallback(OnBackInvokedDispatcher.PRIORITY_DEFAULT, backCallback);
     }
   }
 
   @Override
   protected void onDestroy() {
-    if (Build.VERSION.SDK_INT >= 33) {
+    if (Build.VERSION.SDK_INT >= 33 && backCallback != null) {
       try {
         getOnBackInvokedDispatcher().unregisterOnBackInvokedCallback(backCallback);
       } catch (Exception ignored) { /* already detached — nothing left to release */ }
+      backCallback = null;
     }
     super.onDestroy();
   }
@@ -70,8 +90,8 @@ public class MainActivity extends BridgeActivity {
 
   /** Walk back through the page's own history; leave the app at the root.
    *  The dashboard is a single view with no deep links today, so in practice
-   *  "back" closes the app — the guard exists so that the day the page starts
-   *  pushing history, the gesture follows it instead of escaping. */
+   *  "back" backgrounds the app — the guard exists so that the day the page
+   *  starts pushing history, the gesture follows it instead of escaping. */
   private void goBackOrLeave() {
     Bridge b = getBridge();
     WebView wv = b == null ? null : b.getWebView();
@@ -79,8 +99,8 @@ public class MainActivity extends BridgeActivity {
       wv.goBack();
       return;
     }
-    // MoveTaskToBack keeps the WebView (and its session) warm for the next tap
-    // on the icon, which is what makes a 12-hour token feel like a native app.
+    // moveTaskToBack keeps the WebView (and its session) warm for the next tap on
+    // the icon, which is what makes a 12-hour token feel like a native app.
     moveTaskToBack(true);
   }
 }

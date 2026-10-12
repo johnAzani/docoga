@@ -18,32 +18,49 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    // ── release signing ───────────────────────────────────────────────────────
+    // Declared at the android level (where the container lives) and *created*
+    // only when a keystore is handed to the build from outside — CI passes
+    // docogaKeystoreFile/-Password/-Alias as Gradle properties written into the
+    // runner's gradle user home, never into this file and never into the
+    // command line. No keystore is in the repo and no password is here, so a
+    // bare checkout still builds: it produces an *unsigned* release that Android
+    // refuses to install. That failure is the point — the release key stays with
+    // the owner, out of git. (See mobile/README.md for the one-time setup.)
+    //
+    // AGP needs the file to exist at configuration time, hence .exists() here as
+    // well as the property check.
+    signingConfigs {
+        def ksPath = project.findProperty('docogaKeystoreFile')
+        if (ksPath && file(ksPath.toString()).exists()) {
+            docogaRelease {
+                storeFile file(ksPath.toString())
+                storePassword project.findProperty('docogaKeystorePassword').toString()
+                keyAlias (project.findProperty('docogaKeystoreAlias') ?: 'docoga-owner').toString()
+                keyPassword (project.findProperty('docogaKeystoreAliasPassword')
+                    ?: project.findProperty('docogaKeystorePassword')).toString()
+            }
+        }
+    }
+
+    // Lint must not be able to break the build of a one-user sideload app: the
+    // gates on this repo are tools/qa.py and tools/tests/*. `./gradlew lint` is
+    // still there when someone wants it. (AGP otherwise runs lintVitalRelease as
+    // part of assembleRelease, and a fatal-severity check there fails the build.)
+    lint {
+        checkReleaseBuilds = false
+    }
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-
-            // Signed only when a keystore is handed to the build from outside —
-            // CI passes it via -PdocogaKeystore* properties built from repo
-            // secrets (see mobile/README.md). No password and no keystore is ever
-            // committed here, so a bare checkout still builds: it produces an
-            // unsigned release that Android refuses to install. That failure is
-            // the point — the release key stays with the owner, out of git.
             def ksPath = project.findProperty('docogaKeystoreFile')
             if (ksPath && file(ksPath.toString()).exists()) {
-                signingConfigs {
-                    docogaRelease {
-                        storeFile file(ksPath.toString())
-                        storePassword project.findProperty('docogaKeystorePassword').toString()
-                        keyAlias (project.findProperty('docogaKeystoreAlias') ?: 'docoga-owner').toString()
-                        keyPassword (project.findProperty('docogaKeystoreAliasPassword')
-                            ?: project.findProperty('docogaKeystorePassword')).toString()
-                    }
-                }
                 signingConfig signingConfigs.docogaRelease
             }
-            // else: signingConfig stays null -> unsigned release APK, installable
-            // nowhere. Use assembleDebug for a throwaway build.
+            // else: signingConfig stays unset → unsigned release APK. Use
+            // assembleDebug for anything you intend to install without a key.
         }
     }
 }

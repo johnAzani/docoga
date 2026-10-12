@@ -90,9 +90,20 @@ jobs:
       - name: assemble debug
         working-directory: mobile/android
         run: |
-          ./gradlew assembleDebug --no-daemon -x lint \
+          set +e
+          ./gradlew assembleDebug --no-daemon -x lint --stacktrace \
             -PdocogaVersionCode='${{ github.run_number }}' \
-            -PdocogaVersionName='${{ env.VERSION_NAME_BASE }}-debug'
+            -PdocogaVersionName='${{ env.VERSION_NAME_BASE }}-debug' 2>&1 | tee /tmp/debug-build.log
+          status=${PIPESTATUS[0]}
+          if [ "$status" != 0 ]; then
+            # Echo the useful lines as annotations: they reach `gh run view` and
+            # the Checks API, while the raw log behind results-receiver does not
+            # (it is unreachable from some CI-adjacent tooling, including the
+            # sandbox this pipeline was written in).
+            grep -E "^(e: |error: |FAILURE:|> Task|Caused by:|.*\* What went wrong)" /tmp/debug-build.log \
+              | head -30 | sed 's/^/::error title=gradle debug::/'
+            exit "$status"
+          fi
 
       - name: prepare release keystore (skipped when unconfigured)
         id: keystore
@@ -131,9 +142,16 @@ jobs:
         if: steps.keystore.outputs.ok == 'true'
         working-directory: mobile/android
         run: |
-          ./gradlew assembleRelease --no-daemon -x lint \
+          set +e
+          ./gradlew assembleRelease --no-daemon -x lint --stacktrace \
             -PdocogaVersionCode='${{ github.run_number }}' \
-            -PdocogaVersionName='${{ env.VERSION_NAME_BASE }}'
+            -PdocogaVersionName='${{ env.VERSION_NAME_BASE }}' 2>&1 | tee /tmp/release-build.log
+          status=${PIPESTATUS[0]}
+          if [ "$status" != 0 ]; then
+            grep -E "^(e: |error: |FAILURE:|> Task|Caused by:)" /tmp/release-build.log \
+              | head -30 | sed 's/^/::error title=gradle release::/'
+            exit "$status"
+          fi
 
       - name: collect + verify
         run: |
