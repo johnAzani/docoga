@@ -78,6 +78,21 @@ uploads two artifacts:
 No `android-actions/setup-android` step: the `ubuntu-24.04` runner already ships
 SDK platform 36 and build-tools 36.0.0, which is what Capacitor 8 needs.
 
+A cold run is ~3 minutes; the release step is skipped, not failed, while no
+keystore is configured. Proven green on PR #19 (run 38293473770, 2m47s,
+`docoga-owner-debug-apk`).
+
+When a build breaks, the diagnosis is in two places a browser is not needed
+for: the job's annotations (the first lines Gradle printed that contained
+`error:` / `What went wrong`) and the `gradle-build-log` artifact, which the
+workflow uploads only on failure:
+
+```bash
+gh run list --workflow 'Android APK (DocOga Owner)'
+gh api repos/johnAzani/docoga/check-runs/<job-id>/annotations --jq '.[].message'
+gh run download <run-id> --name gradle-build-log
+```
+
 ## Sign it — one time, ten minutes
 
 ```bash
