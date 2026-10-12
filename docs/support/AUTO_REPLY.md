@@ -30,17 +30,54 @@
 > alternative if its signup ever clears — it is no longer on the critical
 > path.
 
-## Domain state (live-verified 12 Oct 2026 — direct DNS queries)
+## Domain state (LIVE — post go-live, direct DNS queries 12 Oct 2026)
 
 | Record | Value |
 |---|---|
 | NS / SOA | `beau./elly.ns.cloudflare.com` — DNS lives in the **Cloudflare dashboard**; every edit happens there (never the registrar) |
 | A | `104.21.33.145`, `172.67.146.104` — Cloudflare proxy (the site) |
-| MX | **none** — clean slate, no conflicts |
-| TXT (apex) | `brevo-code:e5a4c9356a5a68c472613f64e4237b80` (Brevo domain verification) |
-| DKIM | `brevo1._domainkey`, `brevo2._domainkey` (Brevo keys — the worker's magic links already send DKIM-signed) |
+| MX | CF routing: `route1.mx.cloudflare.net` (21), `route3.mx.cloudflare.net` (34), `route2.mx.cloudflare.net` (71) |
+| TXT (apex) | **SPF (merged, live-verified 14:50):** `v=spf1 include:spf.brevo.com include:_spf.mx.cloudflare.net ~all` + `brevo-code:e5a4c9356a5a68c472613f64e4237b80` (Brevo domain verification) |
+| DKIM | `brevo1._domainkey` / `brevo2._domainkey` (CNAME → dkim.brevo.com — the worker's magic links send DKIM-signed) + `cf2024-1._domainkey` (CF routing — signs the lane's reply()) |
 | DMARC | `_dmarc = v=DMARC1; p=none; rua=mailto:rua@dmarc.brevo.com` (monitoring only — leave as-is) |
-| SPF | **MISSING** — the domain's first SPF record is written in Step 1 below |
+
+## Live status (12 Oct 2026 — deployed + both test mails pass)
+
+The lane is **LIVE**. Go-live was walked with the owner on the phone, entirely
+in the Cloudflare dashboard — **the owner has no wrangler machine, so the
+dashboard code-paste below is the canonical owner deploy path** (the CLI
+commands in Step 2 remain the desktop alternative).
+
+- **07:05** Onboard Domain → Activate. CF added the 3 MX + `cf2024-1._domainkey`
+  + the apex SPF; the apex SPF was then merged (one record, both senders).
+- **07:32** Destination `azanijohn2017@gmail.com` verified (the archive target).
+- **12:53** Worker `docoga-support-mail`: Workers & Pages → Create application →
+  "Start with Hello World!" → name it `docoga-support-mail` → Deploy → the "…"
+  overflow → **Edit code** → replace ALL the placeholder with
+  `worker/support-mail/index.js` → Save and Deploy → Settings → Variables and
+  Secrets: variable `ARCHIVE_TO`, secret `BREVO_API_KEY` (a FRESH Brevo v3 key —
+  Brevo → ⚙ Settings → SMTP & API; direct link `app.brevo.com/settings/keys/api`).
+  Code verified live via the editor test panel: the response is
+  `Error: No fetch handler!` — the expected answer for an email-only worker
+  (no web route by design; the public URL's 1101 is that, not a fault).
+- **13:54** Routing rule: `business@docoga.com.ng` → Send to a Worker →
+  `docoga-support-mail`.
+- **14:24 Test 1** (subject "Test 1 - normal mail"): archive copy in Gmail +
+  auto-reply FROM business@, **threaded** under the original (CF native
+  `reply()` used the sender's valid DMARC — the anti-spoof gate is satisfied),
+  verbatim contract copy, landed in **Primary** (not spam) within ~3 min.
+- **14:37 Test 2** (subject "Mail Delivery Failure"): archive copy only, no
+  auto-reply — the subject guard works. Activity log: 2 inbound + 1 outbound
+  (the reply); zero outbound for Test 2.
+
+Remaining 1-minute checks (non-blocking): the pinned **Catch-all** routing
+rule's action (it should reject unmatched addresses — otherwise
+random-address spam archives into the owner's Gmail) and CF usage after the
+tests (settles whether `reply()` bills as paid "Email Sending"; the Brevo
+fallback makes the answer irrelevant to ₦0).
+
+The steps below are the original walkthrough — kept for a future
+re-provision (or the desktop/wrangler alternative).
 
 ## Step 1 — Cloudflare Email Routing (dashboard, ~5 min)
 

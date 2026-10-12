@@ -70,13 +70,25 @@ for this account, so the mailbox is built from parts DocOga already runs:
 AS business@ + silent archive copy to your Gmail). Full walkthrough, DNS
 records and test plan: `docs/support/AUTO_REPLY.md`.
 
-- [ ] CF dashboard: *Email Routing → Onboard Domain* `docoga.com.ng` (CF auto-adds MX + DKIM + SPF) → edit the apex SPF to `v=spf1 include:spf.brevo.com include:_spf.mx.cloudflare.net ~all`
-- [ ] CF dashboard: *Destinations → Add* `azanijohn2017@gmail.com` → Verify
-- [ ] Terminal: `npx wrangler secret put BREVO_API_KEY --config worker/support-mail/wrangler.toml` (same key as docoga-pass) then `npx wrangler deploy --config worker/support-mail/wrangler.toml`
-- [ ] CF dashboard: *Custom addresses* `business@docoga.com.ng` → Route to **Worker → `docoga-support-mail`**
-- [ ] Test: mail from a personal address → BOTH an archive copy in Gmail AND an auto-reply FROM business@ (text per the doc)
-- [ ] Test: a "Mail Delivery Failure"-subject mail → archive copy only, NO auto-reply
-- [ ] SPF valid (mxtoolbox free check)
+**DONE 12 Oct 2026** — walked live with the owner on the phone (Cloudflare
+dashboard; the owner has no wrangler machine, so the worker went in by
+**code-paste into the dashboard editor** — now the canonical owner deploy
+path, recorded in `docs/support/AUTO_REPLY.md` "Live status").
+
+- [x] CF dashboard: *Email Routing → Onboard Domain* `docoga.com.ng` → **Activate** (07:05). CF auto-added MX route1/2/3 (prio 21/34/71) + `cf2024-1._domainkey` DKIM + apex SPF; apex SPF then merged to `v=spf1 include:spf.brevo.com include:_spf.mx.cloudflare.net ~all` (07:24) — **live-verified by direct DNS query 14:50** (exact value; `brevo-code` TXT + `_dmarc` untouched)
+- [x] CF dashboard: *Destinations → Add* `azanijohn2017@gmail.com` → **Verify** (07:32)
+- [x] Worker `docoga-support-mail`: created + `worker/support-mail/index.js` pasted + deployed via the dashboard editor (12:53). Code verified live by the editor test — `Error: No fetch handler!` is the expected answer (email-only worker; the public URL's 1101 is that, not a fault). Vars: `ARCHIVE_TO` (variable) + `BREVO_API_KEY` (secret — a FRESH v3 key, 13:36; coexists with docoga-pass's old key)
+- [x] CF dashboard: *Routing rules* → `business@docoga.com.ng` → **Send to a Worker → `docoga-support-mail`** (13:54)
+- [x] Test 1 (14:24, subject "Test 1 - normal mail"): archive copy in Gmail **AND** auto-reply FROM business@ — threaded under the original (CF native `reply()` worked), verbatim contract copy, landed in **Primary** (not spam) within ~3 min
+- [x] Test 2 (14:37, subject "Mail Delivery Failure"): archive copy only, **no** auto-reply (guard proven live)
+- [x] SPF valid: merged record live-verified by direct DNS query (14:50) — exact `v=spf1 include:spf.brevo.com include:_spf.mx.cloudflare.net ~all`
+
+Activity log: exactly 2 inbound + 1 outbound (the reply); zero outbound for
+Test 2. Remaining 1-minute checks (non-blocking): what the pinned
+**Catch-all** rule does with unmatched addresses (should reject — otherwise
+random-address spam archives into the owner's Gmail), and CF usage after the
+tests (settles whether `reply()` bills as paid "Email Sending" — the Brevo
+fallback makes the answer irrelevant to ₦0).
 
 ## 2. Pre-deploy (safe NOW — the money path is sealed, everything else goes live)
 
