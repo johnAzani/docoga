@@ -17,6 +17,10 @@ Usage:
 """
 import json, sys, urllib.parse, urllib.request
 
+# Same rule as tools/ig_publish.py: one place to move the Graph API version.
+API_VERSION = os.environ.get("META_GRAPH_VERSION", "v26.0")
+GRAPH = f"https://graph.facebook.com/{API_VERSION}"
+
 
 def get(url, params):
     u = url + "?" + urllib.parse.urlencode(params)
@@ -54,7 +58,7 @@ def main():
 
     # 1. Exchange for 60-day long-lived token
     print("── 1. exchange for 60-day long-lived token ──")
-    r = get("https://graph.facebook.com/v21.0/oauth/access_token", {
+    r = get(f"{GRAPH}/oauth/access_token", {
         "grant_type": "fb_exchange_token",
         "client_id": app_id,
         "client_secret": app_secret,
@@ -69,7 +73,7 @@ def main():
 
     # 2. Find the Instagram Business account
     print("\n── 2. find the Instagram Business account ──")
-    pages = get("https://graph.facebook.com/v21.0/me/accounts", {
+    pages = get(f"{GRAPH}/me/accounts", {
         "fields": "name,instagram_business_account{id,username,followers_count,media_count}",
         "access_token": token,
     })
@@ -93,7 +97,7 @@ def main():
 
     # 3. Verify permissions on the token
     print("\n── 3. verify permissions on the token ──")
-    perms = get("https://graph.facebook.com/v21.0/me/permissions",
+    perms = get(f"{GRAPH}/me/permissions",
                 {"access_token": token})
     have = {p["permission"] for p in perms.get("data", [])
             if p.get("status") == "granted"}
@@ -109,7 +113,7 @@ def main():
 
     # 4. Publishing quota
     print("\n── 4. publishing quota ──")
-    q = get(f"https://graph.facebook.com/v21.0/{ig['id']}/content_publishing_limit",
+    q = get(f"{GRAPH}/{ig['id']}/content_publishing_limit",
             {"fields": "config,quota_usage", "access_token": token})
     print(json.dumps(q, indent=2))
 

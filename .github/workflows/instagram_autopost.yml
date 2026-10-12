@@ -1,3 +1,10 @@
+# Instagram Page autopost — manual dispatch only, on purpose (see the note at the
+# bottom of FACEBOOK_AUTOMATION.md): the Reels API needs a public media URL, and
+# rendered Shorts live in gitignored assets/, so an unattended run today would
+# publish nothing more often than not. The publishing path is shared with
+# tools/ig_publish.py and hardened the same way as Facebook's on 12 Oct 2026:
+# inputs via env (never interpolated), Graph API version from one constant, and
+# the carousel argument list built as a real bash array.
 name: Instagram Autopost
 on:
   workflow_dispatch:
@@ -26,9 +33,13 @@ on:
         description: 'Public cover image URL (for Reels)'
         required: false
 
+permissions:
+  contents: read
+
 jobs:
   publish:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -40,32 +51,60 @@ jobs:
       - name: Install dependencies
         run: pip install requests
 
+      # Inputs reach the script through `env:` only. Interpolating `${{ inputs.… }}`
+      # into the command line means a caption with an apostrophe, a quote or
+      # `$(…)` is shell code executed on the runner with this job's secrets in
+      # scope — the same defect that made the Facebook workflow unsafe to hand a
+      # sentence. `--flag=value` form also keeps a caption starting with `-` from
+      # being read as an option by argparse.
       - name: Publish to Instagram
         env:
           IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
           IG_USER_ID: ${{ secrets.IG_USER_ID }}
           META_APP_ID: ${{ secrets.META_APP_ID }}
           META_APP_SECRET: ${{ secrets.META_APP_SECRET }}
+          META_GRAPH_VERSION: v26.0
+          IG_MODE: ${{ inputs.content_type }}
+          IG_CAPTION: ${{ inputs.caption }}
+          IG_VIDEO: ${{ inputs.video_url }}
+          IG_IMAGE: ${{ inputs.image_url }}
+          IG_IMAGES: ${{ inputs.image_urls }}
+          IG_COVER: ${{ inputs.cover_url }}
         run: |
-          if [ "${{ inputs.content_type }}" = "reel" ]; then
-            python3 tools/ig_publish.py \
-              --video-url "${{ inputs.video_url }}" \
-              --caption "${{ inputs.caption }}" \
-              --cover-url "${{ inputs.cover_url || '' }}"
-          elif [ "${{ inputs.content_type }}" = "photo" ]; then
-            python3 tools/ig_publish.py \
-              --image-url "${{ inputs.image_url }}" \
-              --caption "${{ inputs.caption }}"
-          elif [ "${{ inputs.content_type }}" = "carousel" ]; then
-            IFS=',' read -ra URLS <<< "${{ inputs.image_urls }}"
-            URL_ARGS=""
-            for url in "${URLS[@]}"; do
-              URL_ARGS="$URL_ARGS --image-urls $url"
-            done
-            python3 tools/ig_publish.py \
-              --image-urls ${URLS[@]} \
-              --caption "${{ inputs.caption }}"
-          fi
+          set -euo pipefail
+          python3 -m pip install --quiet requests
+          case "$IG_MODE" in
+            reel)
+              [ -n "$IG_VIDEO" ] || { echo "::error title=reel needs a URL::video_url is empty"; exit 4; }
+              if [ -n "$IG_COVER" ]; then
+                python3 tools/ig_publish.py --video-url="$IG_VIDEO" --caption="$IG_CAPTION" --cover-url="$IG_COVER"
+              else
+                python3 tools/ig_publish.py --video-url="$IG_VIDEO" --caption="$IG_CAPTION"
+              fi
+              ;;
+            photo)
+              [ -n "$IG_IMAGE" ] || { echo "::error title=photo needs a URL::image_url is empty"; exit 4; }
+              python3 tools/ig_publish.py --image-url="$IG_IMAGE" --caption="$IG_CAPTION"
+              ;;
+            carousel)
+              # ig_publish.py takes the list with nargs="+"; the previous draft
+              # built a URL_ARGS string it never passed and then handed
+              # unquoted, word-split URLs to --image-urls.
+              [ -n "$IG_IMAGES" ] || { echo "::error title=carousel needs URLs::image_urls is empty"; exit 4; }
+              ARGS=()
+              IFS=',' read -ra PARTS <<< "$IG_IMAGES"
+              for part in "${PARTS[@]}"; do
+                trimmed="$(echo "$part" | xargs)"   # strip the spaces a typed "a, b" leaves behind
+                [ -n "$trimmed" ] && ARGS+=("$trimmed")
+              done
+              [ ${#ARGS[@]} -ge 2 ] || { echo "::error title=carousel needs 2+ images::got ${#ARGS[@]}"; exit 4; }
+              python3 tools/ig_publish.py --image-urls "${ARGS[@]}" --caption="$IG_CAPTION"
+              ;;
+            *)
+              echo "::error title=unknown content_type::'$IG_MODE' is not reel, photo or carousel"
+              exit 4
+              ;;
+          esac
 
       - name: Refresh token
         if: always()

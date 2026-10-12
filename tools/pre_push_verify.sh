@@ -53,7 +53,7 @@ done
 # ------------------------------------------------------------------- tools
 echo ""
 echo "🔧 Checking tools/"
-for f in yt_publish.py fb_publish.py ig_publish.py telegram_mdv2.py telegram_preflight.py; do
+for f in yt_publish.py fb_publish.py fb_preflight.py ig_publish.py telegram_mdv2.py telegram_preflight.py; do
     check_file "tools/$f"
 done
 

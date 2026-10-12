@@ -65,9 +65,15 @@ jobs:
 
       - name: Resolve the settings for this run
         id: settings
+        env:
+          # `PRIVACY="${{ inputs.privacy }}"` would substitute first and expand
+          # `$(…)` afterwards, inside the quotes. env: keeps the value out of the
+          # command line entirely.
+          IN_PRIVACY: ${{ inputs.privacy }}
+          IN_YT_PRIVACY: ${{ vars.YT_PRIVACY }}
         run: |
-          PRIVACY="${{ inputs.privacy }}"
-          [ -n "$PRIVACY" ] || PRIVACY="${{ vars.YT_PRIVACY }}"
+          PRIVACY="$IN_PRIVACY"
+          [ -n "$PRIVACY" ] || PRIVACY="$IN_YT_PRIVACY"
           [ -n "$PRIVACY" ] || PRIVACY="public"
           case "$PRIVACY" in
             public|unlisted|private) ;;

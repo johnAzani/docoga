@@ -18,6 +18,10 @@ for Nigeria. Single-file static app — no build step, no server, 0 Naira/month 
 - `worker/` — Cloudflare Worker for automatic pass-code delivery
   (deploy to Cloudflare Workers — NOT to the website)
 - `tools/` — QA gate, test suites and page generators (`npm run qa`, `npm test`)
+- social automation — `Facebook Page Autopost` posts the daily copy to the DocOga
+  Page every morning at 09:30 (₦0, GitHub Actions is the cron). Handbook, token
+  minting, failure matrix and what is deliberately *not* automated:
+  **`FACEBOOK_AUTOMATION.md`**. Telegram: `TELEGRAM_AUTOMATION.md`
 - `mobile/` — the Android app: a Capacitor shell around `/admin`, built to a
   sideloadable APK by CI (`ADMIN_DASHBOARD.md` §7, `mobile/README.md`)
 

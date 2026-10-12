@@ -113,7 +113,8 @@ Integration rules:
 **The machine (AI) — fully autonomous:**
 - Daily research + fresh frame design (house rules enforced, OCR text QC)
 - Telegram broadcasting: DocOga Daily channel (@docogadaily, t.me/docogadaily) — daily tips + funnel link via Bot API (₦0, live 25 Sep)
-- Facebook publishing: the DocOga Page (102466208923830, **facebook.com/docoga.com.ng** — vanity username taken 26 Sep) via Pages API + non-expiring page token (₦0, live 26 Sep) — photos + videos
+- Facebook publishing: the DocOga Page (102466208923830, **facebook.com/docoga.com.ng** — vanity username taken 26 Sep) via Pages API + non-expiring page token (₦0).
+  **AUDIT, 12 Oct 2026 — this line was wrong when written.** The credential existed, the code existed, and the line said "live 26 Sep — photos + videos"; `gh run list --workflow 'Facebook Page Autopost'` returned **zero runs**. Nothing had ever been published. Rebuilt to the Telegram standard that day: scheduled daily 09:30, preflight, dry-run write probe, duplicate guard that asks the Page, a labelled issue on failure, no secret defaults, Graph API v26.0 → **`FACEBOOK_AUTOMATION.md`**. Replaced "photos + videos" with "photos + text" honestly: Reels need the render in the same run and are listed as unbuilt, not implied.
 - Story publishing via API (2–3/day) with verify-then-publish checklist
 - Metrics pull + logging + weekly review + calendar re-cut
 - Comments replies (phase ⓷, building next)
@@ -153,7 +154,7 @@ Integration rules:
 - ⓸ Feed posts + reels via API — **DONE 25 Sep** (POST /api/ig/post: images now, reels with resumable poll for slow processing).
 - **Telegram channel — DONE 25 Sep** (t.me/docogadaily + @docoga_daily_bot, Bot API, ₦0 forever).
 - **YouTube Shorts — DONE 25 Sep** (DocOga channel, resumable uploads via Data API, ₦0).
-- **Facebook Page — DONE 26 Sep** (Pages API use-case app, non-expiring page token, ₦0). Next free lane: Threads (Meta App Review).
+- **Facebook Page — was marked DONE 26 Sep; actually wired and first-verified 12 Oct 2026** (Pages API use-case app, non-expiring page token, ₦0, `FACEBOOK_AUTOMATION.md`). The lesson the PRE-FLIGHT LAW below already encodes: *credentials existing is not a pipeline* — step 4, "VERIFY programmatically", is the step that was skipped, and it is now a dry-run button anyone can press in ten seconds. Next free lane: Threads (Meta App Review).
 - ⓹ **Level 2 autonomy** — scheduled worker posts the daily story even when nobody opens chat (needs one-time 2-minute token setup by the boss; ask and I'll guide tap-by-tap).
 - ⓺ Collab engine: identify 5 complementary accounts (property/law/rent niche), draft outreach the boss sends.
 - ⓻ Format replication: winners' hooks/length/audio become templates automatically.

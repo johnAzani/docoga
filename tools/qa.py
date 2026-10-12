@@ -361,6 +361,109 @@ check("ADMIN_DASHBOARD.md documents the setup", os.path.exists(os.path.join(ROOT
 rdme2 = open(os.path.join(ROOT, "README.md"), encoding="utf-8").read()
 check("README points at the dashboard doc", "ADMIN_DASHBOARD.md" in rdme2)
 
+print("── 14. Social automation (Facebook daily post, 12 Oct 2026) ──")
+# The Facebook pipeline claimed "live" for two weeks while its workflow had never
+# run once. So the *automation* is gated like the storefront: the files exist, the
+# schedule exists, the safety net exists, and no credential has a default.
+# Deep behaviour lives in two unittest files that CI runs
+# (`python3 -m unittest discover -s tools/tests -p 'test_*.py'`); these are the
+# cheap invariants that must also hold on a `npm run qa` before a push.
+import re as _re4
+soc = {
+    "workflow": os.path.join(ROOT, ".github", "workflows", "facebook_autopost.yml"),
+    "publisher": os.path.join(ROOT, "tools", "fb_publish.py"),
+    "preflight": os.path.join(ROOT, "tools", "fb_preflight.py"),
+    "generator": os.path.join(ROOT, "scripts", "generate_facebook_content.py"),
+    "poster": os.path.join(ROOT, "scripts", "post_facebook.py"),
+    "doc": os.path.join(ROOT, "FACEBOOK_AUTOMATION.md"),
+    "tests": os.path.join(ROOT, "tools", "tests", "test_post_facebook.py"),
+}
+for label, path in soc.items():
+    check(f"social automation: {label} exists ({os.path.relpath(path, ROOT)})", os.path.exists(path))
+wf = open(soc["workflow"], encoding="utf-8").read() if os.path.exists(soc["workflow"]) else ""
+if wf:
+    check("it is a schedule, not only a button", "on:\n  schedule" in wf or "schedule:" in wf.split("permissions:")[0],
+          "an autopost that needs a person to press it is not an autopost")
+    check("preflight runs before any post step",
+          wf.find("fb_preflight.py") != -1 and wf.find("fb_preflight.py") < wf.find("post_facebook.py"),
+          "the October Telegram lesson: name the credential that is wrong, in seconds")
+    check("a failed run opens a labelled issue", "gh issue create" in wf and "facebook-automation" in wf,
+          "a red tick in a repo nobody opens is indistinguishable from silence")
+    # Line-based on purpose: a whole-file regex with DOTALL "finds" injection
+    # across unrelated blocks. A `${{ inputs.x }}` is only dangerous when it is
+    # not the value of an env: mapping (`X: ${{ inputs.x }}` is safe).
+    # A line that *starts* with a key (`if:` or `NAME:` in env:/with:) is a
+    # mapping and is fine; anything else holding an interpolation is a command.
+    leaked = [ln.strip() for ln in wf.splitlines()
+              if "${{ inputs." in ln and not ln.strip().startswith("#")
+              and not _re4.match(r"^(if:|[A-Za-z_]+:)\s", ln.strip())]
+    check("inputs reach the shell through env:, never interpolated", not leaked,
+          ("line(s) like: %s" % leaked[:1]) if leaked else "")
+    check("it can be tested without publishing (dry_run)", "dry_run" in wf)
+    check("concurrency cannot interleave two publishes",
+          "concurrency:" in wf and "cancel-in-progress: false" in wf)
+    check("no secret is echoed into the summary", 'echo "$FB_PAGE_ACCESS_TOKEN"' not in wf)
+pub = open(soc["publisher"], encoding="utf-8").read() if os.path.exists(soc["publisher"]) else ""
+if pub:
+    check("no secret-shaped default in the publisher",
+          not _re4.search(r"""environ\.get\(\s*["'](.*(SECRET|TOKEN|PASSWORD|PASSPHRASE).*)["']\s*,\s*["']""", pub),
+          "a credential with a literal fallback lives in git history forever")
+    def _body(name):
+        i = pub.find("def %s(" % name)
+        return pub[i:pub.find("\ndef ", i + 1)] if i >= 0 else ""
+    check("Page photo posts send `caption`, not `message`",
+          all('"caption"' in _body(f) and '"message"' not in _body(f)
+              for f in ("post_photo_file", "post_photo_url")),
+          "`message` on /photos is accepted and ignored: a green run, a caption-less post")
+    check("the Graph API version comes from one constant",
+          'API_VERSION = os.environ.get("META_GRAPH_VERSION"' in pub
+          and not _re4.search(r"graph\.facebook\.com/v\d", pub))
+    # Judged on the code after the module docstring — the docstring is where the
+    # old `print(new_token[:30])` bug is *described*, and a check that reads it as
+    # code would make the file unable to document its own history.
+    pub_code = pub.split('"""')[2] if pub.count('"""') >= 2 else pub
+    check("the token is never printed, not even as a prefix",
+          not _re4.search(r"print\([^)]*\btoken\[[^\]]*\]", pub_code) and "def fingerprint(" in pub,
+          "Actions masks the exact secret only, so token[:30] is a leak")
+    check("the duplicate guard reads the Page, not a local marker file",
+          "/feed" in pub and "posted_on_date" in pub)
+    check("no fallback Page id is compiled in",
+          'environ.get("FB_PAGE_ID", "' not in pub,
+          "a silent default posts to somebody else's Page")
+gen = open(soc["generator"], encoding="utf-8").read() if os.path.exists(soc["generator"]) else ""
+if gen:
+    check("the Facebook copy is converted, not duplicated", "from telegram_mdv2 import to_plain" in gen,
+          "two template sets drift; one source, one conversion")
+    check("Telegram's white-on-transparent hero is not offered to Facebook",
+          "official-logo-white" not in gen.split("FB_PHOTO_IMAGES")[1].split("]")[0])
+post = open(soc["poster"], encoding="utf-8").read() if os.path.exists(soc["poster"]) else ""
+if post:
+    check("a run that posted nothing fails loudly", "return 3" in post and "return 0" in post)
+    check("a skipped day is not a failure (no issue for a duplicate)",
+        "skipped" in post)
+ig_wf = open(os.path.join(ROOT, ".github", "workflows", "instagram_autopost.yml"), encoding="utf-8").read() \
+    if os.path.exists(os.path.join(ROOT, ".github", "workflows", "instagram_autopost.yml")) else ""
+if ig_wf:
+    check("the Instagram path got the same input-handling fix",
+          not _re4.search(r"--caption \"\$\{\{ inputs", ig_wf) and "IG_CAPTION: ${{ inputs.caption }}" in ig_wf,
+          "the shell-injection class was in both autoposts, not only Facebook's")
+rdme3 = open(os.path.join(ROOT, "README.md"), encoding="utf-8").read()
+check("README points at the Facebook handbook", "FACEBOOK_AUTOMATION.md" in rdme3)
+check("assets/facebook/ is gitignored (generated copy, not source)",
+      "assets/facebook/" in open(os.path.join(ROOT, ".gitignore"), encoding="utf-8").read())
+# The unittest files are the real gate; run them when their deps are present.
+import importlib.util as _ilu
+missing_mods = [m for m in ("requests", "yaml") if _ilu.find_spec(m) is None]
+if missing_mods:
+    warn("social unittests skipped locally — missing " + ", ".join(missing_mods)
+         + " (CI runs them; install with `pip install requests pyyaml`)", False)
+else:
+    r = subprocess.run([sys.executable, "-m", "unittest", "discover", "-s",
+                        os.path.join(ROOT, "tools", "tests"), "-p", "test_*.py", "-q"],
+                       capture_output=True, text=True, cwd=ROOT, timeout=900)
+    check("python automation tests (workflows + telegram + facebook + youtube)",
+          r.returncode == 0, (r.stderr or "").strip().splitlines()[-1][:160] if r.returncode else "")
+
 print()
 if errors:
     print(f"⛔ QA FAILED — {len(errors)} error(s). DO NOT PUSH.")

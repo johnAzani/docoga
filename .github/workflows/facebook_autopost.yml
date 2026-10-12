@@ -1,50 +1,262 @@
 name: Facebook Page Autopost
+
+# Posts DocOga's daily copy to the Facebook Page (facebook.com/DocOgaNG).
+# Runs at 09:30 Nigeria time (UTC+1) — thirty minutes after the Telegram post, so
+# the two channels never compete for the same runner minutes or the same copy.
+#
+# History this comment exists for: until 12 Oct 2026 this file was a button.
+# `workflow_dispatch` only, no schedule, and its two steps interpolated
+# `${{ inputs.message }}` straight into a shell line. It had never run — not
+# once — which is why "the Facebook automation" could be described as existing
+# while publishing nothing. It now follows the standard `telegram_autopost.yml`
+# set after that workflow's four-day silent failure (7–10 Oct 2026):
+#
+#   1. a preflight that names which credential is wrong before anything is
+#      attempted (tools/fb_preflight.py, stdlib-only so it runs before pip);
+#   2. the publisher's own write probe for `--dry-run`, so "may this token
+#      publish?" is answered by Facebook rather than inferred from a scope list;
+#   3. every step's stderr captured to a file so Meta's exact words land in the
+#      issue, not only in a run log nobody opens;
+#   4. a labelled issue when a run fails, because a red tick in a repo nobody
+#      reads is indistinguishable from silence.
+#
+# Inputs are passed to the shell through `env:` — never interpolated into the
+# command line. GitHub substitutes an unquoted `${{ }}` before the shell sees
+# it, so a dispatch message containing `"` or `$(…)` would have executed on the
+# runner with this repo's secrets in scope. That is the one class of bug a
+# manual-dispatch workflow cannot have.
+#
+# No `ref:` pin here, unlike telegram_autopost.yml: a scheduled run always uses
+# main, and a dispatch from a branch must be able to test *that branch's*
+# scripts — which is exactly how this workflow was verified before merging.
+
 on:
+  schedule:
+    - cron: '30 8 * * *'  # 08:30 UTC = 09:30 in Lagos (UTC+1, no DST)
   workflow_dispatch:
     inputs:
-      content_type:
-        description: 'Content type'
+      mode:
+        description: 'What to publish'
         required: true
         type: choice
+        default: daily
         options:
-          - text
-          - photo
-          - video
-      message:
-        description: 'Post message / caption'
-        required: true
-      media_url:
-        description: 'Public URL to image or video (for photo/video posts)'
+          - daily      # today's generated post, from scripts/generate_facebook_content.py
+          - text       # the message below, verbatim
+          - photo      # message + a public image URL
+          - video      # message as description + a public .mp4 URL
+      dry_run:
+        description: 'Preflight and the write probe only — publish nothing'
         required: false
+        default: false
+        type: boolean
+      message:
+        description: 'Post copy (text / photo caption / video description). Ignored by mode=daily'
+        required: false
+        default: ''
+      media_url:
+        description: 'Public URL of the image or video (photo / video modes only)'
+        required: false
+        default: ''
+      force:
+        description: 'Post even if the Page already has a post today'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  issues: write          # a failed run opens (or comments on) a visible issue
+
+concurrency:
+  group: facebook-autopost
+  cancel-in-progress: false   # a second post today is worse than a queued run
+
+env:
+  FB_PAGE_ACCESS_TOKEN: ${{ secrets.FB_PAGE_ACCESS_TOKEN }}
+  FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
+  # Optional. Only used to read the token's expiry and to refresh it; the post
+  # itself needs the Page token alone. Kept out of every source file, unlike
+  # before 12 Oct 2026, when the app secret had a literal default in
+  # tools/fb_publish.py and therefore lived in git history.
+  META_APP_ID: ${{ secrets.META_APP_ID }}
+  META_APP_SECRET: ${{ secrets.META_APP_SECRET }}
+  # Meta ships 3–4 Graph API versions a year and sunsets them on a roughly
+  # two-year clock (v21.0 goes 21 Jan 2027). The default is the version these
+  # scripts were written against, and a repository *variable* overrides it — so
+  # the day Meta sunsets one, the fix is one line in Settings → Actions →
+  # Variables (`META_GRAPH_VERSION = v27.0`), not a commit and a deploy.
+  META_GRAPH_VERSION: ${{ vars.META_GRAPH_VERSION || 'v26.0' }}
+  TZ: Africa/Lagos
 
 jobs:
   publish:
+    name: Preflight → generate → post
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Install dependencies
-        run: pip install requests
-
-      - name: Publish to Facebook
-        env:
-          FB_PAGE_ACCESS_TOKEN: ${{ secrets.FB_PAGE_ACCESS_TOKEN }}
-          FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
+      # Deliberately before `pip install`: it is stdlib-only, and a dead token
+      # should cost seconds. Its exit code is what fails the run, and its own
+      # message says which of token / Page id / feed access is wrong.
+      - name: Preflight — can this token reach the Page?
         run: |
-          if [ "${{ inputs.content_type }}" = "video" ]; then
-            python3 tools/fb_publish.py \
-              --video-url "${{ inputs.media_url }}" \
-              --text "${{ inputs.message }}"
-          elif [ "${{ inputs.content_type }}" = "photo" ]; then
-            python3 tools/fb_publish.py \
-              --photo-url "${{ inputs.media_url }}" \
-              --text "${{ inputs.message }}"
+          set -o pipefail
+          python3 tools/fb_preflight.py 2>&1 | tee /tmp/fb_preflight.log
+
+      - name: Install dependencies
+        run: python3 -m pip install --quiet requests
+
+      - name: Generate today's copy
+        if: ${{ github.event_name == 'schedule' || inputs.mode == 'daily' }}
+        run: |
+          set -o pipefail
+          python3 scripts/generate_facebook_content.py 2>&1 | tee /tmp/fb_generate.log
+
+      - name: Daily post
+        if: ${{ !inputs.dry_run && (github.event_name == 'schedule' || inputs.mode == 'daily') }}
+        env:
+          IN_FORCE: ${{ inputs.force }}
+        run: |
+          set -o pipefail
+          # --force is opt-in and arrives from env: the unattended schedule never
+          # sets it, so the once-a-day guard always applies to a scheduled run.
+          FORCE=""
+          [ "$IN_FORCE" = "true" ] && FORCE="--force"
+          python3 scripts/post_facebook.py $FORCE 2>&1 | tee /tmp/fb_post.log
+
+      - name: Dry run — credentials and posting rights, nothing published
+        if: ${{ inputs.dry_run && inputs.mode == 'daily' }}
+        run: |
+          set -o pipefail
+          python3 scripts/post_facebook.py --dry-run 2>&1 | tee /tmp/fb_dryrun.log
+
+      # Manual modes. $FB_MESSAGE / $FB_MEDIA come from `env:`, never from an
+      # interpolation inside the command, and every value is passed as
+      # `--flag=value` so a copy that begins with a dash cannot be read as an
+      # option by argparse.
+      - name: Manual post (text / photo / video)
+        if: ${{ !inputs.dry_run && inputs.mode != 'daily' }}
+        env:
+          FB_MODE: ${{ inputs.mode }}
+          FB_MESSAGE: ${{ inputs.message }}
+          FB_MEDIA: ${{ inputs.media_url }}
+        run: |
+          set -o pipefail
+          case "$FB_MODE" in
+            photo)
+              [ -n "$FB_MEDIA" ] || { echo "::error title=photo needs a URL::media_url is empty"; exit 4; }
+              python3 tools/fb_publish.py --photo-url="$FB_MEDIA" --text="$FB_MESSAGE" 2>&1 | tee /tmp/fb_manual.log
+              ;;
+            video)
+              [ -n "$FB_MEDIA" ] || { echo "::error title=video needs a URL::media_url is empty"; exit 4; }
+              python3 tools/fb_publish.py --video-url="$FB_MEDIA" --text="$FB_MESSAGE" 2>&1 | tee /tmp/fb_manual.log
+              ;;
+            *)
+              [ -n "$FB_MESSAGE" ] || { echo "::error title=no message::type the post copy in the message field"; exit 4; }
+              # --force: a hand-written post is on purpose, so the once-a-day
+              # guard that protects the unattended run must not veto it.
+              python3 tools/fb_publish.py --text="$FB_MESSAGE" --force 2>&1 | tee /tmp/fb_manual.log
+              ;;
+          esac
+
+      - name: Record what this run did
+        if: always()
+        run: |
+          {
+            echo ""
+            echo "### Facebook autopost — $(date -u +%FT%TZ)"
+            echo ""
+            echo "- Graph API: \`$META_GRAPH_VERSION\`"
+            echo "- FB_PAGE_ID: $( [ -n "${FB_PAGE_ID:-}" ] && echo set || echo '**not set**' )"
+            echo "- FB_PAGE_ACCESS_TOKEN: $( [ -n "${FB_PAGE_ACCESS_TOKEN:-}" ] && echo set || echo '**not set**' )"
+            for pair in "preflight:/tmp/fb_preflight.log" "generator:/tmp/fb_generate.log" \
+                        "post:/tmp/fb_post.log" "dry run:/tmp/fb_dryrun.log" "manual:/tmp/fb_manual.log"; do
+              label=${pair%%:*}; file=${pair#*:}
+              if [ -f "$file" ]; then
+                # Sanitised: the log can contain quotes and backticks from an API
+                # error body, and this file is rendered as markdown.
+                last=$(tail -1 "$file" | tr -d '`"' | cut -c1-160)
+                echo "- $label, last line: \`$last\`"
+              fi
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # A red run in a repo nobody opens is the same as silence. This makes the
+      # failure land where the owner will see it, carrying Meta's own words so
+      # triage does not need the run log.
+      - name: Open a visible issue if the run failed
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -uo pipefail
+          RUN_DATE="$(date +%F)"
+
+          PREFLIGHT_TAIL=$(tail -n 20 /tmp/fb_preflight.log 2>/dev/null || echo "(the preflight produced no output)")
+          POST_TAIL=$(tail -n 30 /tmp/fb_post.log /tmp/fb_manual.log /tmp/fb_dryrun.log 2>/dev/null || echo "(no publisher ran — the preflight or an earlier step stopped the run)")
+
+          gh label create facebook-automation --color 1877F2 \
+            --description "Unattended Facebook Page pipeline" >/dev/null 2>&1 || true
+
+          cat > /tmp/issue_body.md <<BODY
+          The unattended Facebook post for **$RUN_DATE** failed. **Nothing was published to the Page.**
+
+          - Run: $RUN_URL
+          - Graph API version: \`$META_GRAPH_VERSION\`
+
+          ### What the preflight said
+
+          \`\`\`
+          $PREFLIGHT_TAIL
+          \`\`\`
+
+          ### What the publisher said
+
+          \`\`\`
+          $POST_TAIL
+          \`\`\`
+
+          ### Reading it
+
+          - \`Facebook secrets missing\` — set \`FB_PAGE_ACCESS_TOKEN\` and \`FB_PAGE_ID\`
+            (\`gh secret set …\`). Until both exist nothing can be posted, by design:
+            there is no fallback Page id compiled into the script.
+          - \`Facebook token rejected\` / \`code 190\` — the Page token was revoked or expired,
+            or the app lost its admin grant on the Page. Mint a fresh long-lived token in
+            Meta Business Settings → Pages → this Page → Page access tokens.
+          - \`Page not reachable with this token\` — \`FB_PAGE_ID\` names a Page this token
+            cannot manage. Check the id; a token for another Page is not a warning, it is
+            the wrong destination.
+          - \`Page feed not readable\` — the duplicate guard is blind and posting rights are
+            almost certainly gone too; re-grant \`pages_manage_posts\` and \`pages_read_engagement\`.
+          - \`code 200\` / \`(#200) Permission failed\` — the token lacks a permission; it can
+            read the Page but not publish to it.
+          - \`code 4 /\` \`rate\` — the app or Page hit a rate limit; the next scheduled run
+            is unaffected.
+          - \`photo post refused\` lines followed by \`falling back to a text post\` are
+            informational — the words still went out. Only a run that posted nothing is a failure.
+          - \`Graph API version\` errors such as \`unsupported selection\` — Meta sunset a
+            version. Bump \`META_GRAPH_VERSION\` in this workflow and \`API_VERSION\` in
+            \`tools/fb_publish.py\` (see FACEBOOK_AUTOMATION.md).
+          BODY
+
+          EXISTING=$(gh issue list --label facebook-automation --state open --limit 100 \
+            --json number,title \
+            --jq "[.[] | select(.title | contains(\$ENV.RUN_DATE)) | .number][0] // empty")
+          if [ -n "$EXISTING" ]; then
+            gh issue comment "$EXISTING" --body-file /tmp/issue_body.md
+            echo "Commented on issue #$EXISTING"
           else
-            python3 tools/fb_publish.py \
-              --text "${{ inputs.message }}"
+            gh issue create --title "Facebook post failed — $RUN_DATE" \
+              --label facebook-automation --body-file /tmp/issue_body.md
           fi

@@ -22,3 +22,7 @@ node_modules/
 .venv/
 docoga-github-repo.zip
 .worker-secrets.env
+
+# Generated social content (rendered frames, per-day copy) — CI scratch space,
+# rebuilt from the same date-seeded templates on every run.
+assets/facebook/

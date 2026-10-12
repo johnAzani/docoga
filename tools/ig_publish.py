@@ -19,7 +19,12 @@ import os, sys, time, argparse, json
 import requests
 
 # ── Configuration ──
-API_VERSION = "v21.0"
+# One constant for the whole Meta surface, and it is overridable from a repository
+# variable because Meta sunsets a Graph API version roughly every two years:
+# v21.0 (this file's original pin) goes away on 21 Jan 2027, and v26.0 has been
+# current since 29 Jul 2026. A version buried in a dozen f-strings is a migration
+# you find out about from a failing post.
+API_VERSION = os.environ.get("META_GRAPH_VERSION", "v26.0")
 BASE = f"https://graph.facebook.com/{API_VERSION}"
 INSTAGRAM_BASE = f"https://graph.instagram.com/{API_VERSION}"
 
@@ -85,7 +90,7 @@ def upload_video_for_reel(video_path, token):
     print(f"Uploading video ({file_size / 1024 / 1024:.1f} MB)...")
 
     # Step 1: Start upload session
-    r = requests.post(f"https://rupload.facebook.com/media/v21.0", headers={
+    r = requests.post(f"https://rupload.facebook.com/media/{API_VERSION}", headers={
         "Authorization": f"OAuth {token}",
         "offset": "0",
         "file_size": str(file_size),
@@ -102,7 +107,7 @@ def upload_video_for_reel(video_path, token):
 
     # Step 2: Upload file
     with open(video_path, "rb") as f:
-        r = requests.post(f"https://rupload.facebook.com/media/v21.0/{upload_id}", headers={
+        r = requests.post(f"https://rupload.facebook.com/media/{API_VERSION}/{upload_id}", headers={
             "Authorization": f"OAuth {token}",
             "offset": "0",
             "file_size": str(file_size),
