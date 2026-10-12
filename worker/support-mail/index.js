@@ -50,6 +50,9 @@ export const REPLY_TEXT = [
   "  account number for the correct amount.",
   "- Everything else: the Business FAQ - docoga.com.ng/support",
   "",
+  "Prefer to talk it through? The green WhatsApp button on docoga.com.ng",
+  "reaches the support line directly.",
+  "",
   "Every message you send is kept on record.",
   "",
   "DocOga - Abuja, Nigeria",
@@ -67,6 +70,7 @@ const REPLY_HTML = (
   "<li><b>A payment that already went through:</b> don't re-send the transfer - the system verifies the exact amount automatically and your team activates on its own. If the amount was wrong, the system already emailed you a fresh account number for the correct amount.</li>" +
   "<li><b>Everything else:</b> the Business FAQ - docoga.com.ng/support</li>" +
   "</ul>" +
+  "<p>Prefer to talk it through? The green WhatsApp button on docoga.com.ng reaches the support line directly.</p>" +
   "<p>Every message you send is kept on record.</p>" +
   "<p>DocOga - Abuja, Nigeria<br>" +
   "DocOga provides self-help document templates; it is not a law firm and does not provide legal advice.</p>"

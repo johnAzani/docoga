@@ -105,6 +105,9 @@ most things are faster done than explained:
   account number for the correct amount.
 - Everything else: the Business FAQ - docoga.com.ng/support
 
+Prefer to talk it through? The green WhatsApp button on docoga.com.ng
+reaches the support line directly.
+
 Every message you send is kept on record.
 
 DocOga - Abuja, Nigeria
@@ -113,7 +116,8 @@ not provide legal advice.
 ```
 
 **Honesty contract (mandate: no deceptive copy):** this text makes NO
-human-response promise. The old "a real person answers within 1 working
+human-response promise (it points at the WhatsApp float as the optional
+human valve — a channel, not a commitment). The old "a real person answers within 1 working
 day" promise was on the live site in four places (support.html ×3, the
 team-dashboard support card in index.html) plus the FAQ doc — all removed in
 the same commit that built this lane. Whatever the site or the auto-reply
@@ -132,11 +136,18 @@ self-serve — nobody needs to WhatsApp to buy (the Business card has no
 WhatsApp CTA, Phase 0), and the support page still tells Business teams
 everything is self-serve first.
 
-## Pending owner decision (asked 12 Oct)
+## Problem-reporting channel (owner decision, 12 Oct)
 
-A **"Report a problem" form on /support** — three fields (team email + what
-happened), no email thread, no reply obligation: a record and a fix list.
-Cheap insurance against a stuck buyer becoming a chargeback. In or out?
+**No "Report a problem" form.** Owner: "Any problems can be sent to the
+WhatsApp support" — the general float (pre- and post-purchase) IS the human
+valve for the rare case the self-serve flow can't fix. Implementation
+consequence: the auto-reply carries ONE optional line pointing at the green
+button ("Prefer to talk it through? The green WhatsApp button on
+docoga.com.ng reaches the support line directly") — no `wa.me` link or raw
+number inside the email (dossier invariant: no WhatsApp links in Business
+replies), no response-time promise, and nothing in the lane *requires*
+WhatsApp (the pay-first self-serve flow is untouched; the float is an
+option, not a step).
 
 ## Rejected alternatives (12 Oct research — verified per source, to vendor docs)
 

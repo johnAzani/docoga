@@ -166,6 +166,10 @@ ok('auto-reply keeps the wrong-amount reassurance (no re-send, system verifies)'
 ok('auto-reply makes NO human-response promise (no "1 working day", no "real person")',
    !/1 working day/i.test(REPLY_TEXT) && !/real person/i.test(REPLY_TEXT) && !/owner answers/i.test(REPLY_TEXT));
 ok('auto-reply says mail is kept on record (dispute evidence)', REPLY_TEXT.includes('kept on record'));
+ok('auto-reply offers the WhatsApp float as the optional human valve (owner 12 Oct: no form)',
+   REPLY_TEXT.includes('WhatsApp button on docoga.com.ng'));
+ok('auto-reply keeps no wa.me link / raw number in the email (dossier: no WhatsApp links in Business replies)',
+   !/wa\.me/.test(REPLY_TEXT) && !/234\d{9,}/.test(REPLY_TEXT));
 
 process.exit(fails ? 1 : 0);
 console.log(fails ? `— support-mail worker: ${fails} FAILURES —` : '— support-mail worker: all checks passed —');
