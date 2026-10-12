@@ -125,9 +125,12 @@ locks the copy to that contract.
 The auto-reply is the entire lane. If a recorded case ever needs a human
 answer (e.g. a refund decision made from the archive), `CANNED.md` is the
 starting point and the answer goes out off-lane as the owner — an owner
-decision, not a step of the system. The Oga Pass WhatsApp lane (the floating
-button — consumer tier, post-purchase support) is unaffected and stays human
-by design; it is never a pre-sale channel.
+decision, not a step of the system. The WhatsApp float is DocOga's **general support channel — pre- and
+post-purchase** (owner clarification, 12 Oct); nothing in this lane touches
+it. What does NOT change: the Business *purchase flow* is pay-first and
+self-serve — nobody needs to WhatsApp to buy (the Business card has no
+WhatsApp CTA, Phase 0), and the support page still tells Business teams
+everything is self-serve first.
 
 ## Pending owner decision (asked 12 Oct)
 
