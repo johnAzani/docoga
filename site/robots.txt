@@ -1,4 +1,8 @@
 User-agent: *
 Allow: /
+# The owner dashboard. The file itself holds no secret and the API behind it is
+# authenticated, but there is no reason to hand it to a crawler or a search
+# result. The 307 from /admin.html to /admin is covered by this prefix.
+Disallow: /admin
 
 Sitemap: https://docoga.com.ng/sitemap.xml

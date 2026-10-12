@@ -1,0 +1,609 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow,noarchive,nosnippet">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#0B1B3F">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>DocOga — Owner</title>
+<link rel="icon" href="/favicon.png">
+<style>
+/* DocOga owner dashboard. One file, no build step, no CDN, no fonts: the same
+   rule as the public app, because this is opened on a phone on Nigerian data.
+   Layout is 100dvh + safe-area insets so it survives being wrapped in an
+   Android WebView (targetSdk 36 renders under the status and nav bars). */
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{height:100%}
+body{margin:0;padding:0;min-height:100%;background:#F1F5F9;color:#0B1B3F}
+@supports (height:100dvh){body{min-height:100dvh}}
+body{font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;padding-top:env(safe-area-inset-top)}
+a{color:#0040E0}
+.wrap{max-width:1080px;margin:0 auto;padding:14px 14px calc(28px + env(safe-area-inset-bottom))}
+header.top{position:sticky;top:0;z-index:5;background:#0B1B3F;color:#fff;padding:calc(10px + env(safe-area-inset-top)) 14px 10px;box-shadow:0 1px 0 rgba(255,255,255,.08)}
+.topin{max-width:1080px;margin:0 auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.brand{font-weight:800;letter-spacing:.2px;font-size:17px}
+.brand small{display:block;font-weight:600;opacity:.66;font-size:11px;letter-spacing:.4px;text-transform:uppercase}
+.topmeta{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:12px;opacity:.86;flex-wrap:wrap}
+.dot{width:8px;height:8px;border-radius:50%;background:#94A3B8;display:inline-block}
+.dot.g{background:#22C55E}.dot.a{background:#F59E0B}.dot.r{background:#EF4444}
+nav.tabs{position:sticky;top:0;z-index:4;display:flex;gap:6px;overflow-x:auto;padding:10px 0;background:#F1F5F9;scrollbar-width:none}
+nav.tabs::-webkit-scrollbar{display:none}
+.tab{flex:0 0 auto;border:1px solid #CBD5E1;background:#fff;color:#334155;padding:8px 13px;border-radius:999px;font:inherit;font-weight:700;font-size:13px;cursor:pointer}
+.tab[aria-selected=true]{background:#0B1B3F;border-color:#0B1B3F;color:#fff}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:10px;margin:6px 0 14px}
+.card,.panel{background:#fff;border:1px solid #E2E8F0;border-radius:14px;padding:12px 13px}
+.card .k{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#64748B;font-weight:700}
+.card .v{font-size:22px;font-weight:800;margin-top:3px;font-variant-numeric:tabular-nums}
+.card .s{font-size:12px;color:#64748B;margin-top:2px}
+.panel{margin-bottom:12px}
+.panel h2{margin:0 0 9px;font-size:13px;text-transform:uppercase;letter-spacing:.5px;color:#475569}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+input,select,textarea{font:inherit;color:inherit;background:#fff;border:1px solid #CBD5E1;border-radius:10px;padding:9px 11px;width:100%;max-width:340px}
+input:focus,select:focus,textarea:focus{outline:2px solid #0040E0;outline-offset:1px}
+button.btn{font:inherit;font-weight:700;background:#0B1B3F;color:#fff;border:0;border-radius:10px;padding:9px 14px;cursor:pointer}
+button.btn.sec{background:#fff;color:#0B1B3F;border:1px solid #CBD5E1}
+button.btn.danger{background:#B91C1C}
+button.btn:disabled{opacity:.5;cursor:default}
+button.mini{font:inherit;font-size:12px;font-weight:700;background:#EEF2F7;border:1px solid #DCE3EC;border-radius:8px;padding:4px 8px;cursor:pointer;color:#1E293B}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:#64748B;padding:6px 8px;border-bottom:1px solid #E2E8F0;white-space:nowrap}
+td{padding:8px;border-bottom:1px solid #EEF2F7;vertical-align:top;word-break:break-word}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tr:hover td{background:#F8FAFC}
+.chip{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;background:#EEF2F7;color:#334155}
+.chip.ok{background:#DCFCE7;color:#166534}.chip.warn{background:#FEF3C7;color:#92400E}.chip.bad{background:#FEE2E2;color:#991B1B}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;background:#F1F5F9;padding:1px 5px;border-radius:5px}
+.chart{display:flex;align-items:flex-end;gap:2px;height:96px;margin-top:4px}
+.bar{flex:1 1 auto;background:#0B1B3F;border-radius:2px 2px 0 0;min-height:2px;opacity:.88}
+.bar.zero{background:#E2E8F0}
+.barlabels{display:flex;justify-content:space-between;font-size:11px;color:#64748B;margin-top:5px}
+.msg{padding:10px 12px;border-radius:10px;font-size:13.5px;margin:0 0 12px}
+.msg.err{background:#FEE2E2;color:#991B1B}
+.msg.info{background:#EFF6FF;color:#1E40AF}
+.msg.warn{background:#FEF3C7;color:#92400E}
+.hint{font-size:12.5px;color:#64748B}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+label.f{display:block;font-size:12px;font-weight:700;color:#475569;margin:9px 0 4px}
+label.f input,label.f select{max-width:none}
+#login{max-width:390px;margin:9vh auto;background:#fff;border:1px solid #E2E8F0;border-radius:16px;padding:22px}
+#login .lg{text-align:center;margin-bottom:14px}
+#login h1{font-size:20px;margin:0 0 4px}
+.hide{display:none!important}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+footer{font-size:11.5px;color:#94A3B8;text-align:center;padding:16px 0 4px}
+@media (max-width:520px){.card .v{font-size:19px}td,th{padding:6px 5px}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="topin">
+    <div class="brand">DocOga <small>Owner dashboard</small></div>
+    <div class="topmeta">
+      <span id="sync"><span class="dot" id="sync-dot"></span><span id="sync-text">connecting…</span></span>
+      <button class="mini" id="btn-refresh" type="button">Refresh</button>
+      <button class="mini" id="btn-signout" type="button">Sign out</button>
+    </div>
+  </div>
+</header>
+
+<div id="login">
+  <div class="lg">
+    <h1>Sign in</h1>
+    <div class="hint">This page is public. The data behind it is not — it answers only to your passphrase.</div>
+  </div>
+  <div id="login-msg" class="msg hide"></div>
+  <label class="f" for="pass">Owner passphrase</label>
+  <input id="pass" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="the ADMIN_PASSPHRASE you set on the Worker">
+  <div class="row" style="margin-top:12px">
+    <button class="btn" id="btn-login" type="button">Unlock dashboard</button>
+    <span class="hint" id="lock-note"></span>
+  </div>
+  <p class="hint" style="margin-top:14px">Five wrong attempts in half an hour locks your connection for 30 minutes. The passphrase never leaves this device — it is exchanged for a 12-hour token.</p>
+</div>
+
+<main class="wrap hide" id="app">
+  <div id="banner"></div>
+  <nav class="tabs" role="tablist">
+    <button class="tab" type="button" role="tab" data-view="ov" aria-selected="true">Today</button>
+    <button class="tab" type="button" role="tab" data-view="passes">Passes</button>
+    <button class="tab" type="button" role="tab" data-view="biz">Business</button>
+    <button class="tab" type="button" role="tab" data-view="leads">Leads</button>
+    <button class="tab" type="button" role="tab" data-view="sell">Sell</button>
+    <button class="tab" type="button" role="tab" data-view="sec">Security</button>
+  </nav>
+
+  <section id="v-ov">
+    <div class="cards" id="kpis"></div>
+    <div class="grid2">
+      <div class="panel">
+        <h2>Revenue — last 31 days</h2>
+        <div class="chart" id="chart-rev"></div>
+        <div class="barlabels"><span id="chart-from"></span><span id="chart-to"></span></div>
+        <div class="hint" id="chart-note"></div>
+      </div>
+      <div class="panel">
+        <h2>Passes sold per day</h2>
+        <div class="chart" id="chart-passes"></div>
+        <div class="barlabels"><span id="pchart-from"></span><span id="pchart-to"></span></div>
+        <div class="hint" id="chart2-note"></div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="panel">
+        <h2>System health</h2>
+        <div id="health"></div>
+      </div>
+      <div class="panel">
+        <h2>Latest activity</h2>
+        <div class="scroll"><table id="recent"></table></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Expiring in the next 14 days — renewals to nudge</h2>
+      <div class="scroll"><table id="expiring"></table></div>
+      <p class="hint" id="expiring-note"></p>
+    </div>
+  </section>
+
+  <section id="v-passes" class="hide">
+    <div class="panel">
+      <h2>Find a pass</h2>
+      <div class="row">
+        <input id="q" type="search" placeholder="OGA-XXXX-… or a full email or a payment reference" autocomplete="off" spellcheck="false" style="flex:1 1 320px;max-width:520px">
+        <button class="btn" id="btn-find" type="button">Search</button>
+        <button class="btn sec" id="btn-deep" type="button">Bounded scan</button>
+        <button class="btn sec" id="btn-csv" type="button">Export CSV</button>
+      </div>
+      <p class="hint">An exact code, a reference or a full email is answered from an index in a few milliseconds. A partial word needs a scan, so it is capped and opt-in — that cap is what keeps this page working when you have 40 000 customers instead of 40.</p>
+      <div id="find-msg"></div>
+      <div class="scroll"><table id="results"></table></div>
+    </div>
+  </section>
+
+  <section id="v-biz" class="hide">
+    <div class="panel">
+      <h2>Business teams</h2>
+      <div class="scroll"><table id="teams"></table></div>
+      <p class="hint" id="teams-note"></p>
+    </div>
+    <div class="panel">
+      <h2>Open invoices — money on the way</h2>
+      <div class="scroll"><table id="invoices"></table></div>
+    </div>
+  </section>
+
+  <section id="v-leads" class="hide">
+    <div class="panel">
+      <h2>Business waitlist</h2>
+      <div class="scroll"><table id="leads"></table></div>
+      <p class="hint" id="leads-note"></p>
+    </div>
+  </section>
+
+  <section id="v-sell" class="hide">
+    <div class="panel" style="max-width:520px">
+      <h2>Mint a pass by hand</h2>
+      <p class="hint">For a sale that happened off-site — WhatsApp, a friend, a market. The buyer gets the same code as everyone else; the countdown starts the moment you mint it unless you choose “starts on first use”.</p>
+      <div id="sell-msg" class="hide"></div>
+      <label class="f" for="s-email">Buyer email (optional — leave blank to hand the code over yourself)</label>
+      <input id="s-email" type="email" autocomplete="off" spellcheck="false" placeholder="buyer@example.com">
+      <div class="row">
+        <label class="f" style="flex:1 1 140px;max-width:170px" for="s-days">Days
+          <select id="s-days"><option value="30">30</option><option value="90">90</option><option value="180">180</option><option value="365">365</option></select>
+        </label>
+        <label class="f" style="flex:1 1 140px;max-width:170px" for="s-amt">Naira received
+          <input id="s-amt" type="number" min="0" step="50" value="2000">
+        </label>
+      </div>
+      <label class="f" for="s-note">Note — who and why
+        <input id="s-note" type="text" maxlength="120" placeholder="WhatsApp — Chidi, Onitsha agent">
+      </label>
+      <div class="row" style="margin-top:10px">
+        <button class="btn" id="btn-sell" type="button">Mint code</button>
+        <span class="hint" id="sell-cap"></span>
+      </div>
+      <div id="sell-out" class="hide" style="margin-top:12px">
+        <div class="msg info">Code minted. Copy it to the buyer:<br><code id="sell-code"></code></div>
+        <div class="row"><button class="btn sec" id="btn-copy" type="button">Copy code</button></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="v-sec" class="hide">
+    <div class="panel" style="max-width:640px">
+      <h2>Signed-in sessions</h2>
+      <p class="hint">Each sign-in on a device makes one session. Revoking kills it on the very next request — you do not have to wait for it to expire.</p>
+      <div class="scroll"><table id="sessions"></table></div>
+      <div class="row" style="margin-top:10px"><button class="btn danger" id="btn-killall" type="button">Sign out every other device</button></div>
+    </div>
+    <div class="panel" style="max-width:640px">
+      <h2>How this page is protected</h2>
+      <div id="explainer" class="hint"></div>
+    </div>
+  </section>
+
+  <footer>DocOga · Abuja · <a href="https://docoga.com.ng" rel="noopener">open the storefront</a> — this page is unlisted and noindexed, but the file itself is public: it holds no secret.</footer>
+</main>
+
+<script>
+/* ================= CONFIG — mirrors the CONFIG block in index.html ================= */
+const WORKER_URL = "https://docoga-pass.johnazani.workers.dev"; // must equal index.html's (tools/qa.py enforces it)
+const SITE_URL = "https://docoga.com.ng";
+const SUPPORT_WHATSAPP = "2349021852845";
+const TOKEN_KEY = "docoga.admin.token";
+const REFRESH_MS = 60000;
+
+/* ---------------- tiny helpers (no dependencies, on purpose) ---------------- */
+const $ = (id) => document.getElementById(id);
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function ngn(n){n=Number(n)||0;return '₦'+n.toLocaleString('en-NG');}
+function dstr(ms){if(!ms)return '—';const d=new Date(Number(ms));return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'})+ ' ' + d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});}
+function donly(v){return v?String(v).slice(0,10):'—';}
+function ago(ms){if(!ms)return '—';const m=Math.max(0,Math.round((Date.now()-Number(ms))/60000));if(m<60)return m+' min ago';const h=Math.round(m/60);if(h<48)return h+' h ago';return Math.round(h/24)+' d ago';}
+let token='',ME=null;
+try{token=localStorage.getItem(TOKEN_KEY)||'';}catch(e){}
+async function api(path,body,method){
+  const opt={method:method||(body?'POST':'GET'),headers:{'content-type':'application/json'}};
+  if(token)opt.headers.authorization='Bearer '+token;
+  if(body)opt.body=JSON.stringify(body);
+  const r=await fetch(WORKER_URL+path,opt);
+  let j={};
+  try{j=await r.json();}catch(e){j={ok:false,error:'the '+r.status+' response was not JSON'};}
+  if(r.status===401){signedOut();throw new Error(j.error||'sign in required');}
+  if(!r.ok||j.ok===false){const e=new Error(j.error||('http '+r.status));e.status=r.status;e.payload=j;throw e;}
+  return j;
+}
+function note(where,text,kind){
+  const box=$(where);if(!box)return;
+  if(!text){box.className='hide';box.innerHTML='';return;}
+  box.className='msg '+(kind||'info');box.innerHTML=esc(text);
+}
+function setSync(state,text){
+  $('sync-dot').className='dot '+(state||'');
+  $('sync-text').textContent=text||'';
+}
+
+/* ---------------- auth ---------------- */
+let lockedUntil=0,lockTimer=0;
+function signedOut(){
+  token='';try{localStorage.removeItem(TOKEN_KEY);}catch(e){}
+  $('app').classList.add('hide');$('login').classList.remove('hide');
+  window.scrollTo(0,0);
+}
+async function doLogin(){
+  const pass=$('pass').value;
+  $('btn-login').disabled=true;
+  note('login-msg','');
+  try{
+    const r=await fetch(WORKER_URL+'/admin/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({pass:pass})});
+    const j=await r.json().catch(()=>({ok:false,error:'the Worker did not answer'}));
+    if(r.status===503&&j.error==='admin_disabled'){
+      note('login-msg','The dashboard is switched off on the server. Set ADMIN_PASSPHRASE and ADMIN_AUTH_SECRET on the docoga-pass Worker (ADMIN_DASHBOARD.md, step 1), then reload.','warn');return;
+    }
+    if(!r.ok||!j.token){
+      note('login-msg',j.error||'sign in failed','err');
+      if(r.status===429&&j.retryInSec)startLockCountdown(j.retryInSec);
+      return;
+    }
+    token=j.token;try{localStorage.setItem(TOKEN_KEY,token);}catch(e){}
+    $('pass').value='';
+    $('login').classList.add('hide');$('app').classList.remove('hide');
+    await load();
+  }catch(e){
+    note('login-msg','Could not reach the Worker: '+e.message+' — check your connection','err');
+  }finally{$('btn-login').disabled=false;}
+}
+function startLockCountdown(sec){
+  lockedUntil=Date.now()+sec*1000;
+  clearInterval(lockTimer);
+  lockTimer=setInterval(()=>{
+    const left=Math.max(0,Math.round((lockedUntil-Date.now())/1000));
+    $('lock-note').textContent=left?('locked — retry in '+Math.floor(left/60)+':'+String(left%60).padStart(2,'0')):'';
+    if(!left)clearInterval(lockTimer);
+  },1000);
+}
+$('btn-login').addEventListener('click',doLogin);
+$('pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+$('btn-signout').addEventListener('click',async()=>{
+  try{await api('/admin/logout',{});}catch(e){}
+  signedOut();
+});
+
+/* ---------------- data ---------------- */
+let DATA=null,ROWS=[];
+async function load(){
+  setSync('','syncing…');
+  try{
+    DATA=await api('/admin/data');
+    renderAll();
+    const ageMin=DATA.snapshotAt?Math.round((Date.now()-DATA.snapshotAt)/60000):null;
+    setSync(ageMin===null?'a':(ageMin>360?'a':'g'),ageMin===null?'live counters':(ageMin<=2?'just updated':'updated '+ago(DATA.snapshotAt)));
+  }catch(e){
+    if(e.status!==401)setSync('r','sync failed: '+e.message);
+  }
+}
+$('btn-refresh').addEventListener('click',async()=>{
+  $('btn-refresh').disabled=true;setSync('','rebuilding rollup…');
+  try{
+    await api('/admin/snapshot',{});
+  }catch(e){
+    if(e.status!==429)setSync('r','rebuild failed');
+  }
+  try{await load();}catch(e){}
+  $('btn-refresh').disabled=false;
+});
+
+function kpi(k,v,s,tone){
+  return '<div class="card"><div class="k">'+esc(k)+'</div><div class="v"'+(tone?' style="color:'+tone+'"':'')+'>'+esc(v)+'</div><div class="s">'+esc(s||'')+'</div></div>';
+}
+function renderAll(){
+  const t=DATA.today||{},y=DATA.yesterday||{},sn=DATA.snapshot||{},p=sn.passes||{},tt=sn.totals||{};
+  const rev31=tt.rev||0,biz31=tt.bizrev||0;
+  $('kpis').innerHTML=[
+    kpi('Today · revenue',ngn(t.rev),'vs '+ngn(y.rev)+' yesterday'),
+    kpi('Today · passes',(t.sold+t.manual)||0,(t.sold||0)+' online · '+(t.manual||0)+' by hand'),
+    kpi('Month · revenue',ngn(rev31),'31 days, '+(tt.sold||0)+' online sales'),
+    kpi('Business · revenue',ngn(biz31),(tt.bizpaid||0)+' teams paid of '+(tt.bizcreate||0)+' created'),
+    kpi('Active passes',p.activeEstimate==null?'—':p.activeEstimate,'index upper bound · 90-day window'),
+    kpi('Expiring ≤14d',(p.expiring||[]).length,'verified against each record'+(p.indexOnly?' · '+p.indexOnly+' index rows dropped':'')),
+    kpi('Leads waiting',(sn.leads&&sn.leads.total)||0,'Business waitlist'),
+    kpi('Offline / WhatsApp',(t.offline||0)+' today',(tt.offline||0)+' in 31 days'),
+  ].join('');
+  drawChart('chart-rev','chart-from','chart-to','chart-note',sn.series,'rev',ngn);
+  drawChart('chart-passes','pchart-from','pchart-to','chart2-note',sn.series,'sold',n=>String(n));
+  renderHealth();renderRecent();renderExpiring();renderTeams();renderLeads();renderSellCap();renderExplainer();
+  if(currentView==='sec')renderSessions();
+  const warns=[];
+  if(sn.drift&&sn.drift.suspect)warns.push('Ledger drift: '+sn.drift.codesStored+' codes are stored but only '+sn.drift.counted+' were counted in 31 days. The counters are the dashboard’s source for money, so check the day they diverge before reporting figures to anyone.');
+  if(DATA.health&&DATA.health.lastWebhookMinutesAgo===null)warns.push('No payment webhook has EVER reached the Worker. Payments will still land through the redirect path, but a buyer who closes the tab too early gets nothing — check the Flutterwave webhook endpoint.');
+  if(!sn.at)warns.push('The rollup has never been built: charts below are empty until the daily cron or a manual Refresh runs.');
+  const b=$('banner');
+  if(warns.length){b.className='';b.innerHTML=warns.map(w=>'<div class="msg warn">'+esc(w)+'</div>').join('');}
+  else{b.className='hide';b.innerHTML='';}
+  if(ROWS.length)renderRows();
+}
+function drawChart(id,fromId,toId,noteId,series,field,fmt){
+  const box=$(id);const s=Array.isArray(series)?series:[];
+  if(!s.length){box.innerHTML='<div class="hint">no snapshot yet</div>';return;}
+  const max=Math.max.apply(null,s.map(x=>Number(x[field])||0).concat([1]));
+  box.innerHTML=s.map(x=>{const v=Number(x[field])||0;const h=Math.max(2,Math.round(v/max*94));
+    return '<div class="bar'+(v?'':' zero')+'" style="height:'+h+'px" title="'+esc(x.date+' · '+fmt(v))+'"></div>';}).join('');
+  $(fromId).textContent=s[0].date.slice(5);$(toId).textContent=s[s.length-1].date.slice(5);
+  const total=s.reduce((a,x)=>a+(Number(x[field])||0),0);
+  const best=s.slice().sort((a,b)=>(Number(b[field])||0)-(Number(a[field])||0))[0];
+  $(noteId).textContent='total '+fmt(total)+' · best day '+(best?best.date+' ('+fmt(Number(best[field])||0)+')':'—');
+}
+function renderHealth(){
+  const h=DATA.health||{},sn=DATA.snapshot||{},d=sn.drift||{};
+  const lw=h.lastWebhookMinutesAgo;
+  const webhook=lw===null?chip('never received','bad'):lw<120?chip('last '+lw+' min','ok'):chip('last '+lw+' min','warn');
+  let rows=[
+    ['Payment webhook',webhook+(h.event?' · '+esc(h.event.type||'')+' '+(h.event.amount!=null?ngn(h.event.amount):''):'')],
+    ['Rollup built',chip(sn.at?ago(sn.at):'never',sn.at&&(Date.now()-sn.at)>6*3600e3?'warn':'ok')],
+    ['Ledger cross-check',d.suspect?chip('counters below stored codes by '+(d.codesStored-d.counted),'warn'):chip('counters vs '+d.codesStored+' stored codes: consistent','ok')],
+    ['This session',chip(sessionLeft(),'ok')],
+  ];
+  $('health').innerHTML='<table><tbody>'+rows.map(r=>'<tr><td style="width:42%">'+r[0]+'</td><td>'+r[1]+'</td></tr>').join('')+'</tbody></table>';
+}
+function sessionLeft(){
+  if(!ME||!ME.exp)return 'unknown';
+  const left=ME.exp-Math.floor(Date.now()/1000);
+  if(left<=0)return 'expired';
+  const h=Math.floor(left/3600),m=Math.round((left%3600)/60);
+  return (h?h+'h ':'')+m+'m left';
+}
+function chip(text,tone){return '<span class="chip '+(tone||'')+'">'+esc(text)+'</span>';}
+function renderRecent(){
+  const rows=(DATA.snapshot&&DATA.snapshot.recent)||[];
+  $('recent').innerHTML=rows.length?('<thead><tr><th>When</th><th>What</th><th>Code</th><th class="num">₦</th></tr></thead><tbody>'+
+    rows.map(r=>'<tr><td>'+esc(ago(r.at))+'</td><td>'+esc(kindLabel(r.kind))+(r.email?'<br><span class="hint">'+esc(r.email)+'</span>':'')+'</td><td><code>'+esc(r.code||'')+'</code></td><td class="num">'+(r.ngn?esc(ngn(r.ngn)):'—')+'</td></tr>').join('')+'</tbody>')
+    :'<tbody><tr><td class="hint">nothing yet today</td></tr></tbody>';
+}
+function kindLabel(k){
+  return ({online:'paid pass (webhook)',manual:'minted by hand',offline:'WhatsApp code first used',revoke:'pass revoked',extend:'pass extended'})[k]||String(k||'event');
+}
+function renderExpiring(){
+  const rows=(DATA.snapshot&&DATA.snapshot.passes&&DATA.snapshot.passes.expiring)||[];
+  $('expiring').innerHTML=rows.length?('<thead><tr><th>Code</th><th>Buyer</th><th>Source</th><th class="num">Days left</th><th></th></tr></thead><tbody>'+
+    rows.map(r=>'<tr><td><code>'+esc(r.code)+'</code>'+(r.note?'<br><span class="hint">'+esc(r.note)+'</span>':'')+'</td><td>'+esc(r.email||'no email on file')+'</td><td>'+esc(r.source||'—')+'</td><td class="num">'+(r.daysLeft<=0?chip('last day','bad'):esc(String(r.daysLeft)))+'</td><td><button class="mini" data-act="open" data-code="'+esc(r.code)+'" type="button">Open</button></td></tr>').join('')+'</tbody>')
+    :'<tbody><tr><td class="hint">nothing expiring in the next 14 days</td></tr></tbody>';
+  $('expiring-note').textContent=rows.length?('The renewal email goes out automatically at day 27 — this list is for the ones you want to nudge yourself on WhatsApp. Refusing to renew is never enforced here; you can extend instead.'):'Passes that were never activated still appear here, because the 30 days run from purchase.';
+}
+function renderTeams(){
+  const rows=(DATA.snapshot&&DATA.snapshot.teams)||[];
+  const tone={active:'ok',unpaid:'warn',grace:'warn',expired:'bad',retired:'bad'};
+  $('teams').innerHTML=rows.length?('<thead><tr><th>Firm</th><th>State</th><th class="num">Docs this month</th><th class="num">Seats</th><th class="num">Expires</th><th class="num">Total</th></tr></thead><tbody>'+
+    rows.map(r=>'<tr><td><b>'+esc(r.name||r.id)+'</b><br><span class="hint">'+esc(r.owner||'no owner email')+' · '+esc(r.segment||'—')+'</span></td>'+
+      '<td>'+chip(r.status||'?',tone[r.status]||'')+'</td>'+
+      '<td class="num">'+esc(r.used+' / '+r.docs)+'</td>'+
+      '<td class="num">'+esc(r.members+' / '+r.seats)+'</td>'+
+      '<td class="num">'+esc(r.expiry||'—')+'</td>'+
+      '<td class="num">'+esc(ngn(r.total))+'</td></tr>').join('')+'</tbody>')
+    :'<tbody><tr><td class="hint">no Business teams yet</td></tr></tbody>';
+  $('teams-note').textContent=(DATA.snapshot&&DATA.snapshot.teamScanCapped)?('Only the first '+rows.length+' teams are described in the rollup — the scan is capped on purpose. Say the word and we will page it.'):'Every figure here is read from the team record, not inferred. Seats count active members against the licence.';
+}
+function renderInvoices(){
+  const rows=[];((DATA.snapshot&&DATA.snapshot.teams)||[]).forEach(t=>{(t.openInvoices||[]).forEach(i=>rows.push(Object.assign({team:t.name||t.id},i)));});
+  $('invoices').innerHTML=rows.length?('<thead><tr><th>Invoice</th><th>Team</th><th>Status</th><th class="num">Total</th><th class="num">Created</th></tr></thead><tbody>'+
+    rows.map(r=>'<tr><td><code>'+esc(r.id)+'</code></td><td>'+esc(r.team)+'</td><td>'+chip(r.status||'open',r.status==='paid'?'ok':'warn')+'</td><td class="num">'+esc(ngn(r.total))+'</td><td class="num">'+esc(donly(r.created))+'</td></tr>').join('')+'</tbody>')
+    :'<tbody><tr><td class="hint">no open invoices</td></tr></tbody>';
+}
+function renderLeads(){
+  const sn=DATA.snapshot||{},l=sn.leads||{};
+  const segs=l.bySegment||{};
+  $('leads').innerHTML=(l.rows&&l.rows.length)?('<thead><tr><th>Email</th><th>Company</th><th>Segment</th><th>Joined</th></tr></thead><tbody>'+
+    l.rows.map(r=>'<tr><td>'+esc(r.email)+'</td><td>'+esc(r.company||'—')+'</td><td>'+chip(r.segment||'unspecified')+'</td><td>'+esc(donly(r.at))+'</td><td><a class="mini" style="text-decoration:none" href="https://wa.me/'+SUPPORT_WHATSAPP+'" rel="noopener noreferrer">'+''+'</a></td></tr>').join('')+'</tbody>')
+    :'<tbody><tr><td class="hint">nobody on the list</td></tr></tbody>';
+  $('leads-note').textContent='Segment mix: '+Object.keys(segs).map(k=>k+' ×'+segs[k]).join(' · ')+(l.total>l.rows.length?' — showing the newest '+l.rows.length+' of '+l.total:'')+'. Signups are counted the moment they arrive; this list is refreshed with the rollup.';
+}
+function renderSellCap(){
+  const n=Number(DATA.issuedByHandToday||0),cap=(DATA.limits&&DATA.limits.issuePerDay)||200;
+  $('sell-cap').textContent=n+' of '+cap+' hand-mints used today';
+  $('btn-sell').disabled=n>=cap;
+}
+function renderSessions(){
+  $('sessions').innerHTML='<tbody><tr><td class="hint">loading…</td></tr></tbody>';
+  api('/admin/sessions').then(j=>{
+    const rows=j.rows||[];
+    $('sessions').innerHTML=rows.length?('<thead><tr><th>Device</th><th>Network</th><th>Since</th><th class="num"></th></tr></thead><tbody>'+
+      rows.map(r=>'<tr><td>'+esc(shortUA(r.ua))+(r.sid===j.current?' '+chip('this device','ok'):'')+'</td><td><code>'+esc(r.ip||'—')+'</code></td><td>'+esc(dstr(r.at*1000))+'</td>'+
+        '<td class="num">'+(r.sid===j.current?'<button class="mini" data-act="killall" type="button">sign out others</button>':'<button class="mini" data-act="kill" data-sid="'+esc(r.sid)+'" type="button">revoke</button>')+'</td></tr>').join('')+'</tbody>')
+      :'<tbody><tr><td class="hint">no live sessions — how did you read this?</td></tr></tbody>';
+  }).catch(e=>{$('sessions').innerHTML='<tbody><tr><td class="hint">'+esc(e.message)+'</td></tr></tbody>';});
+}
+function shortUA(ua){
+  ua=String(ua||'');
+  const m=ua.match(/(Android|iPhone|iPad|Macintosh|Windows|Linux)[^)]*\)?/i);
+  const app=/DocOgaOwnerApk/i.test(ua)?' (in the DocOga owner app)':'';
+  return ((m?m[1]:'unknown browser').split(' ')[0])+app;
+}
+function renderExplainer(){
+  $('explainer').innerHTML='· The passphrase lives only in the Worker’s secret store; this file contains nothing but the API URL.<br>'+
+    '· Your token is sent as a header, never a cookie, so a request cannot be made on your behalf by another site — there is no CSRF surface here.<br>'+
+    '· Sessions last 12 hours and are re-checked against the server on every call: “sign out every other device” works instantly, and rotating <code>ADMIN_AUTH_SECRET</code> signs the whole world out.<br>'+
+    '· Five wrong passphrases per connection per 30 minutes locks the door for half an hour.<br>'+
+    '· Minting is capped at '+((DATA.limits&&DATA.limits.issuePerDay)||200)+' codes a day so a lost session cannot become a leak of free passes.';
+}
+
+/* ---------------- pass search + row actions ---------------- */
+async function find(deep){
+  const q=$('q').value.trim();
+  $('find-msg').innerHTML='';
+  if(!q){ROWS=[];renderRows();return;}
+  $('btn-find').disabled=true;$('btn-deep').disabled=true;
+  try{
+    const j=await api('/admin/codes?q='+encodeURIComponent(q)+(deep?'&deep=1':''));
+    ROWS=j.rows||[];
+    let msg='';
+    if(j.mode==='deep')msg='scanned '+j.scanned+' stored codes'+(j.partial?' — that is the cap, so an old code may be outside it':'');
+    if(!ROWS.length)msg='no match in '+((j.mode==='email')?'the email index':'what was searched')+'. Note that free-text search matches codes, emails, refs and notes — not names, unless you wrote the name into a note.';
+    $('find-msg').innerHTML=msg?'<p class="hint">'+esc(msg)+'</p>':'';
+    renderRows();
+    if(j.mode==='recent')$('find-msg').innerHTML='<p class="hint">showing the last activity</p>';
+  }catch(e){
+    $('find-msg').innerHTML='<div class="msg err">'+esc(e.message)+'</div>';
+  }finally{$('btn-find').disabled=false;$('btn-deep').disabled=false;}
+}
+function renderRows(){
+  if(!ROWS.length){$('results').innerHTML='<tbody><tr><td class="hint">nothing to show — search for a code, a reference or an email.</td></tr></tbody>';return;}
+  $('results').innerHTML='<thead><tr><th>Code</th><th>Buyer</th><th>Source</th><th>Status</th><th class="num">Expires</th><th class="num">Devices</th><th></th></tr></thead><tbody>'+
+    ROWS.map((r,i)=>'<tr><td><code>'+esc(r.code)+'</code>'+(r.note?'<br><span class="hint">'+esc(r.note)+'</span>':'')+(r.prev?'<br><span class="hint">topped up from '+esc(r.prev)+'</span>':'')+'</td>'+
+      '<td>'+esc(r.email||'—')+(r.ref?'<br><span class="hint">'+esc(r.ref)+'</span>':'')+'</td>'+
+      '<td>'+esc(r.source||'—')+(r.reminded?'<br><span class="hint">reminder sent</span>':'')+(r.mailFailed?'<br><span class="hint" style="color:#B91C1C">email bounced</span>':'')+'</td>'+
+      '<td>'+(r.revoked?chip('revoked','bad'):(r.succ?chip('renewed →','ok'):(r.active?chip('active','ok'):chip('expired',''))))+'<br><span class="hint">'+(r.daysLeft!=null?(r.active?r.daysLeft+' days left':Math.max(0,-r.daysLeft)+' days over'):'')+'</span></td>'+
+      '<td class="num">'+esc(dstr(r.exp))+'</td><td class="num">'+esc(String(r.devices||0))+'</td>'+
+      '<td><button class="mini" data-act="resend" data-i="'+i+'" type="button">Re-send</button> '+
+          (r.active?'<button class="mini" data-act="ext30" data-i="'+i+'" type="button">+30d</button> <button class="mini" data-act="revoke" data-i="'+i+'" type="button">Revoke</button>':'')+'</td></tr>').join('')+'</tbody>';
+}
+$('btn-find').addEventListener('click',()=>find(false));
+$('btn-deep').addEventListener('click',()=>find(true));
+$('q').addEventListener('keydown',e=>{if(e.key==='Enter')find(false);});
+$('results').addEventListener('click',async e=>{
+  const b=e.target.closest('button');if(!b)return;
+  const act=b.getAttribute('data-act');
+  if(act==='open'){showView('passes');$('q').value=b.getAttribute('data-code');await find(false);return;}
+  const row=ROWS[Number(b.getAttribute('data-i'))]||{};
+  const code=row.code;
+  if(act==='revoke'&&!confirm('Revoke '+code+'?\n\nThe buyer loses the banner-free pass on their next page load, with a message telling them to contact you. Their 30 days do not come back.'))return;
+  b.disabled=true;
+  try{
+    if(act==='resend')await api('/admin/resend',{code:code});
+    if(act==='revoke')await api('/admin/revoke',{code:code});
+    if(act==='ext30')await api('/admin/extend',{code:code,days:30});
+    await find(false);
+    await load();
+    $('find-msg').innerHTML='<p class="hint">'+esc({resend:'Re-sent to '+row.email+'.',revoke:'Revoked. The pass dies on their next load.',ext30:'Added 30 days.'}[act])+'</p>';
+  }catch(err){$('find-msg').innerHTML='<div class="msg err">'+esc(err.message)+'</div>';}
+  b.disabled=false;
+});
+/* CSV, built here rather than on the Worker: zero server cost, and the owner
+ * keeps a file on their own device. Fields that could be read as a formula by
+ * Excel are prefixed so nobody’s spreadsheet runs a customer’s text. */
+function csvCell(v){
+  v=String(v==null?'':v);
+  if(/^[=+\-@\t\r]/.test(v))v="'"+v;
+  return '"'+v.replace(/"/g,'""')+'"';
+}
+$('btn-csv').addEventListener('click',()=>{
+  if(!ROWS.length){alert('Search for something first — the export writes the rows you can see.');return;}
+  const head=['code','email','source','ref','note','issued_at','expires_at','days_left','devices','active','revoked'];
+  const body=ROWS.map(r=>[r.code,r.email,r.source,r.ref,r.note,new Date(r.issuedAt).toISOString(),new Date(r.exp).toISOString(),r.daysLeft,r.devices,r.active,r.revoked].map(csvCell).join(','));
+  const blob=new Blob([[head.join(',')].concat(body).join('\r\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);a.download='docoga-codes-'+new Date().toISOString().slice(0,10)+'.csv';
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+});
+
+/* ---------------- sell ---------------- */
+$('btn-sell').addEventListener('click',async()=>{
+  const body={email:$('s-email').value.trim(),days:Number($('s-days').value),amount:Number($('s-amt').value)||0,note:$('s-note').value.trim()};
+  if(!body.email&&!body.note){note('sell-msg','A hand-minted code with no email and no note is invisible to future-you. Write who it is for.','warn');return;}
+  $('btn-sell').disabled=true;note('sell-msg','minting…','info');
+  try{
+    const j=await api('/admin/issue',body);
+    $('sell-code').textContent=j.code;
+    $('sell-out').classList.remove('hide');
+    note('sell-msg',(j.mailed?'Code emailed to '+body.email+'. ':'Code minted. ')+(j.mailFailed?'The mail provider did not accept it — send the code yourself. ':'')+'Revenue booked: '+ngn(j.amount)+'.','info');
+    $('s-email').value='';$('s-note').value='';
+    await load();
+  }catch(e){note('sell-msg',e.message,'err');}
+  finally{$('btn-sell').disabled=false;}
+});
+$('btn-copy').addEventListener('click',async()=>{
+  const code=$('sell-code').textContent;
+  try{await navigator.clipboard.writeText(code);}catch(e){}
+  $('btn-copy').textContent='Copied';
+  setTimeout(()=>{$('btn-copy').textContent='Copy code';},1400);
+});
+
+/* ---------------- security tab actions ---------------- */
+$('v-sec').addEventListener('click',async e=>{
+  const b=e.target.closest('button');if(!b)return;
+  const act=b.getAttribute('data-act');
+  if(act!=='kill'&&act!=='killall')return;
+  if(act==='killall'&&!confirm('Sign out every other device? This dashboard stays open here.'))return;
+  b.disabled=true;
+  try{
+    if(act==='kill')await api('/admin/session',{sid:b.getAttribute('data-sid')});
+    else await api('/admin/session',{all:true});
+    renderSessions();
+  }catch(err){alert(err.message);}
+  b.disabled=false;
+});
+
+/* ---------------- tabs ---------------- */
+const VIEWS={ov:'v-ov',passes:'v-passes',biz:'v-biz',leads:'v-leads',sell:'v-sell',sec:'v-sec'};
+let currentView='ov';
+function showView(v){
+  if(!VIEWS[v])return;
+  currentView=v;
+  document.querySelectorAll('.tab').forEach(x=>x.setAttribute('aria-selected',String(x.getAttribute('data-view')===v)));
+  Object.keys(VIEWS).forEach(k=>$(VIEWS[k]).classList.toggle('hide',k!==v));
+  if(v==='biz')renderInvoices();
+  if(v==='sec')renderSessions();
+}
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
+  showView(t.getAttribute('data-view'));
+  if(t.getAttribute('data-view')!=='ov')load();
+}));
+
+/* ---------------- boot + gentle polling ---------------- */
+(async function boot(){
+  if(!token){signedOut();return;}
+  try{
+    ME=await api('/admin/me');
+    DATA={today:{},snapshot:{},limits:{},health:{}};
+    $('login').classList.add('hide');$('app').classList.remove('hide');
+    await load();
+    setInterval(async()=>{if(document.hidden||!token)return;await load();ME=await api('/admin/me').catch(()=>ME);},REFRESH_MS);
+  }catch(e){signedOut();}
+})();
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&token&&$('app').classList.contains('hide')===false)load();});
+</script>
+</body>
+</html>

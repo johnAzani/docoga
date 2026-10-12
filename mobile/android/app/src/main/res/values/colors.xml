@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The dashboard's own navy (site/admin.html sets the same #0B1B3F behind the
+         page), so the splash, the overscroll and the first paint are one colour. -->
+    <color name="docoga_navy">#0B1B3F</color>
+</resources>

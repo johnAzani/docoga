@@ -201,13 +201,27 @@ naira-priced version of what the market is already doing. Positioning: *the chea
 clean documents in Nigeria, by design.*
 
 ## 11. ADMIN DASHBOARD SYNC LAW (user directive, 23 Sep 2026)
-The owner dashboard (docoga.com.ng/admin — PWA + /api/admin Functions) is part of the product, not an add-on.
+The owner dashboard is part of the product, not an add-on.
+**As built, 12 Oct 2026** (the Netlify-era text below — PWA + `/api/admin` Functions + `x-admin-key` — died with
+the 3 Oct migration; the surface was rebuilt at ₦0 on the Cloudflare stack and this section is its record):
+`site/admin.html` (one public, inert, noindexed file) + 12 `/admin/*` routes on the `docoga-pass` Worker +
+`adm:*` KV records + the `0 7 * * *` cron that builds the rollup, wrapped for the phone as a Capacitor 8.5.3
+APK in `mobile/` that contains no secret and no bundled copy of the page. Auth is `Authorization: Bearer` from
+`ADMIN_PASSPHRASE` + `ADMIN_AUTH_SECRET` (Cloudflare **secrets**; either missing ⇒ `503 admin_disabled`).
+Operator handbook, per-card data provenance and the break-fix table: **`ADMIN_DASHBOARD.md`**.
 **Every product change that creates, moves or renames value MUST ship with a matching dashboard update in the same release:**
 - New tool(s) → confirm revenue/issue flows still read correctly; add per-tool insight when a server-side signal exists
 - New plan or price (yearly, bundles, family) → revenue card + issue card learn the new plan; stats split by plan
 - New purchase path (WhatsApp automation, Selar, agents) → dashboard reflects its sales + a card for its activity
 - New pages / major site changes → health section updated; admin notified of anything he must watch
 - KV record shape changes → /api/admin/data classification updated IN THE SAME COMMIT (lesson: OGA-QCK4 legacy record)
-Current dashboard surface: revenue · active passes · expiring ≤14d · ready-to-sell stock · offline batch ·
-webhook health · direct-sale code issue (email optional) · searchable all-codes list · fail-lock auth (x-admin-key).
-Never put the passcode or any secret in site/admin or functions source — secrets live as Pages secrets only.
+Current dashboard surface (Today · Passes · Business · Leads · Sell · Security): 31-day revenue + sold ledger ·
+active passes (expiry-index estimate, labelled) · expiring ≤14d **re-verified against each code record** · revoked ·
+manual/offline/waitlist/biz counters · hand-mint with a 200/day cap · email + code search · team + invoice state and
+grace/reminders · lead lists · CSV export (formula-escaped, built in the browser) · session list with
+kill-others · webhook health from the last payload the Worker actually saw · drift check (codes stored vs ledger).
+Fail-lock auth is `adm:fail:{ip}`, 5 per 30 min, bearer sessions in `adm:sess:{sid}` re-read per call (revocation is
+instant) · no secret in `site/admin.html`, in `mobile/`, or in any admin response.
+Ledger fields the hooks must keep firing: `sold · rev · offline · manual · revoked · wait · bizcreate · bizpaid ·
+bizrev` (`statBump` at each write point — qa.py §13 fails below 7 hooks); index writers: `expIndexAdd`
+(`adm:exp:{date}`) and `adminEmailIndex` (`adm:email:*`).

@@ -1,0 +1,44 @@
+# ── mobile/ ───────────────────────────────────────────────────────────────────
+# The Android project is committed (android/ is source, not build output) so the
+# signing config, manifest hardening and generated icons survive a fresh clone.
+# What never belongs in git is everything below.
+
+# npm
+node_modules/
+
+# The release key. It is NEVER in the repo — not in a branch, not in history.
+# CI receives it as a base64 repo secret and writes it to a temp file that only
+# exists inside the runner. If you build locally, keep the .jks outside this tree.
+*.jks
+*.keystore
+*.p12
+*.pk8
+keystore.properties
+*.p12.txt
+
+# Gradle / SDK machine state
+.gradle/
+**/build/
+local.properties
+captures/
+*.hprof
+
+# Build output (the APK is a CI artifact, not a repo file)
+*.apk
+*.aab
+
+# Capacitor sync artefacts
+android/app/src/main/assets/public/
+android/app/src/main/assets/capacitor.config.json
+android/app/src/main/res/xml/config.xml
+
+# If an iOS project is ever added it needs its own decisions (and a Mac); until
+# then it is not this repo's business.
+ios/
+
+# Scratch space for generated artwork that has not been reviewed yet
+tools/out/
+
+# CI scratch: staged APKs before upload
+mobile/dist/
+dist/

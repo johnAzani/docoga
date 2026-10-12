@@ -24,6 +24,10 @@ What it checks (every run, on every file — not just the one you touched):
  12. Hosting is Cloudflare Pages: no netlify.toml, no Netlify references in
      deployable files, README still documents the host and the `site`
      publish-directory warning (Netlify retired 3 Oct 2026)
+ 13. Owner dashboard contract (ADMIN_DASHBOARD.md sync law): the admin page is
+     unlisted and unadvertised, its API URL matches the storefront's, it holds no
+     secret, the Worker routes + ledger hooks it depends on still exist, the
+     Android wrapper still points at this origin, and both admin suites are green
 """
 import re, os, sys, glob, tempfile, subprocess
 
@@ -175,6 +179,13 @@ r = subprocess.run(["node", os.path.join(ROOT, "tools", "tests", "workertest.mjs
                    capture_output=True, text=True, cwd=ROOT)
 check("worker unit suite (workertest.mjs)", r.returncode == 0,
       (r.stderr or r.stdout)[-160:].replace("\n", " ") if r.returncode else "")
+# 9a2. owner-admin API logic, mock KV — real worker code (required: the admin
+# surface mints codes and reads revenue, so it is gated like the money path).
+admw = os.path.join(ROOT, "tools", "tests", "adminworkertest.mjs")
+if os.path.exists(admw):
+    r = subprocess.run(["node", admw], capture_output=True, text=True, cwd=ROOT)
+    check("admin API unit suite (adminworkertest.mjs)", r.returncode == 0,
+          (r.stdout or r.stderr)[-200:].replace("\n", " ") if r.returncode else "")
 # 9b. full-app DOM suite — executes the real index.html in jsdom.
 # Skipped (exit 0 + notice) when jsdom is not installed, so a fresh clone is never blocked.
 domt = os.path.join(ROOT, "tools", "tests", "domtest.mjs")
@@ -186,6 +197,17 @@ if os.path.exists(domt):
     else:
         check("full-app DOM suite (domtest.mjs)", r.returncode == 0,
               "see node tools/tests/domtest.mjs" if r.returncode else "")
+
+# 9c. the admin page is executed too (jsdom): login, render, mint, revoke.
+admd = os.path.join(ROOT, "tools", "tests", "admindomtest.mjs")
+if os.path.exists(admd):
+    r = subprocess.run(["node", admd], capture_output=True, text=True, cwd=ROOT, timeout=600)
+    out = (r.stdout or "") + (r.stderr or "")
+    if "jsdom not installed" in out:
+        warn("admin DOM suite skipped — jsdom not installed (npm i jsdom to enable)", False)
+    else:
+        check("admin page execution suite (admindomtest.mjs)", r.returncode == 0,
+              out[-200:].replace("\n", " ") if r.returncode else "")
 
 print("── 10. Anchor integrity (in-page links) ──")
 anchor_bad = []
@@ -259,6 +281,85 @@ check("README documents Cloudflare Pages as the host",
 check("README keeps the `site` output-directory warning",
       "`site` is a security setting" in rdme and "never blank" in rdme,
       "do not drop the publish-directory warning from README")
+
+print("── 13. Owner dashboard contract (ADMIN_DASHBOARD.md, 12 Oct 2026) ──")
+# The dashboard is part of the product (business plan §11), so its contract is
+# gated like the storefront. Each check below maps to a way this surface can rot
+# silently: a broken link, a leaked secret, a code path that stopped counting.
+admp = os.path.join(SITE, "admin.html")
+check("site/admin.html exists (the owner’s UI)", os.path.exists(admp))
+if os.path.exists(admp):
+    adm = open(admp, encoding="utf-8").read()
+    check("admin.html WORKER_URL == index.html", cfg(adm, "WORKER_URL") == cfg(idx, "WORKER_URL"),
+          f"{cfg(adm, 'WORKER_URL')} vs {cfg(idx, 'WORKER_URL')}")
+    check("admin.html is noindexed in the document too", 'name="robots" content="noindex' in adm)
+    au = set(re.findall(r"\$\('([A-Za-z0-9_-]+)'\)", adm))
+    ad = set(re.findall(r'id="([^"]+)"', adm))
+    check(f"all {len(au)} admin JS-referenced ids exist", not (au - ad), f"missing: {sorted(au - ad)[:6]}")
+    secret_const = re.search(r"""(SECRET|API_KEY|PASSPHRASE|TOKEN)\s*=\s*["'`][^"'`]{12,}""", adm)
+    check("admin page carries no secret-valued constant", not secret_const
+          and not re.search(r"Bearer [A-Za-z0-9+/=]{16,}", adm),
+          "the dashboard file is public: the passphrase and every API key stay in Worker secrets")
+    check("only the session token is persisted client-side (one localStorage write, known key)",
+          "localStorage.setItem" in adm and adm.count("localStorage.setItem") == 1
+          and "docoga.admin.token" in adm)
+else:
+    adm = ""
+check("the storefront does not advertise the dashboard door",
+      "/admin" not in idx and "admin.html" not in idx,
+      "linking it from index.html hands the URL to every crawler and scraper")
+check("robots.txt keeps /admin out of search", "Disallow: /admin" in robots)
+hdrp = os.path.join(SITE, "_headers")
+check("site/_headers exists and guards /admin", os.path.exists(hdrp)
+      and "/admin" in open(hdrp, encoding="utf-8").read()
+      and "frame-ancestors 'none'" in open(hdrp, encoding="utf-8").read())
+# the worker side of the contract
+check("worker answers 503 admin_disabled when unconfigured", "admin_disabled" in wsrc)
+for route in ["/admin/login", "/admin/logout", "/admin/me", "/admin/data", "/admin/snapshot",
+              "/admin/codes", "/admin/issue", "/admin/revoke", "/admin/extend", "/admin/resend",
+              "/admin/sessions", "/admin/session"]:
+    check(f"worker route {route}", f'"{route}"' in wsrc, "the page would 404 against a worker without it")
+check("admin secrets are documented in the worker header",
+      "ADMIN_PASSPHRASE" in wsrc and "ADMIN_AUTH_SECRET" in wsrc)
+# SYNC LAW: every path that creates value must feed the ledger.
+n_bumps = len(re.findall(r"await statBump\(env,", wsrc))
+check("the ledger has a hook on every value path (≥ 7 bumps)", n_bumps >= 7, f"found {n_bumps}")
+for must_count in ["issueCode", "OFFLINE_HASHES.has", "bizwait:", "handleInvoiceWebhook"]:
+    check(f"value path still present: {must_count}", must_count in wsrc)
+check("issued codes are indexed for lookup and expiry",
+      "adminEmailIndex(env" in wsrc and "expIndexAdd(env" in wsrc)
+check("the daily cron still rebuilds the owner rollup",
+      "buildAdminSnapshot(env)" in wsrc[wsrc.find("async scheduled"):])
+# the Android wrapper (mobile/) must still point here
+mcap = os.path.join(ROOT, "mobile", "capacitor.config.json")
+if os.path.exists(mcap):
+    mcs = open(mcap, encoding="utf-8").read()
+    check("the APK loads this site, not a stale one", (cfg(idx, "SITE_URL") or "docoga.com.ng") in mcs.replace("\\/", "/"))
+    check("the APK never loads the dashboard over http", "http://" not in mcs.replace("\\/", "/"))
+    mpkg = os.path.join(ROOT, "mobile", "package.json")
+    if os.path.exists(mpkg):
+        mp = _json.loads(open(mpkg, encoding="utf-8").read())
+        # @capacitor/cli is a devDependency — it never ships in the APK but it is
+        # the thing that scaffolds and syncs the project, so the CVE floor applies
+        # to it exactly as much as to the runtime packages.
+        dep = {**mp.get("dependencies", {}), **mp.get("devDependencies", {})}
+        for pkg in ["@capacitor/core", "@capacitor/cli", "@capacitor/android"]:
+            ver = dep.get(pkg, "")
+            nums = [int(x) for x in re.findall(r"\d+", ver)] or [0]
+            okver = nums[0] >= 8 and (nums[1] if len(nums) > 1 else 0) >= 5 and (nums[2] if len(nums) > 2 else 99) >= 1
+            check(f"{pkg} is ≥ 8.5.1 (CVE-2026-103922 fixed)", bool(ver) and okver, ver or "missing")
+    wap = os.path.join(ROOT, ".github", "workflows", "android-apk.yml")
+    check("the APK is built in CI (workflow exists)", os.path.exists(wap))
+    if os.path.exists(wap):
+        y = open(wap, encoding="utf-8").read()
+        check("CI builds with JDK 21 and no secret in the file",
+              "java-version" in y and re.search(r"""java-version:\s*['"]?21['"]?""", y) is not None and "ADMIN_PASSPHRASE" not in y)
+else:
+    warn("mobile/ Capacitor wrapper absent — the APK pipeline is not in this clone", False)
+# the operator doc must exist, or the next person cannot switch it on
+check("ADMIN_DASHBOARD.md documents the setup", os.path.exists(os.path.join(ROOT, "ADMIN_DASHBOARD.md")))
+rdme2 = open(os.path.join(ROOT, "README.md"), encoding="utf-8").read()
+check("README points at the dashboard doc", "ADMIN_DASHBOARD.md" in rdme2)
 
 print()
 if errors:
