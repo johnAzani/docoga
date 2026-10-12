@@ -92,6 +92,31 @@ fallback makes the answer irrelevant to ₦0).
 
 ## 2. Pre-deploy (safe NOW — the money path is sealed, everything else goes live)
 
+**Progress (12 Oct — session + owner on phone):**
+- [x] Step 1 — `TEAM_AUTH_SECRET` set on `docoga-pass` via dashboard (15:17;
+      value session-generated — keep it as secret-only, never paste it
+      anywhere else).
+- [x] Step 2 — worker deploy **not needed**: the live `docoga-pass` already
+      runs the new code (verified 15:57 in the dashboard editor — code search
+      finds the `/business/waitlist` route in the deployed bundle; the 11 Oct
+      deploy carried it). Site published by **merging PR #15 to main** (f8e53fa,
+      16:05) — CF's git-triggered build deployed it (the "Workers Builds
+      docoga-git" PR check fails on PR branches by documented design — see
+      `build-check.yml` header — and succeeds on main, as the live site proves).
+- [x] Step 3 (browser half) — verified live from the session: `docoga.com.ng/support`
+      live (de-humanized FAQ); homepage shows "Set up your team" configurator +
+      "Your team" sign-in + Business card **COMING SOON** with the "Notify me at
+      launch" form and **no** "Configure & pay online" link (the BIZ_LIVE=false
+      gate works on the rendered page — the link is in the source, removed at
+      load; fetch renders JS, so its absence is proof).
+- [ ] Step 3 (endpoint probes) — owner, via `reqbin.com` (the CF editor test
+      panel on the phone does not display status codes): POST
+      `/business/waitlist` body `{"email":"bad"}` → **400** "valid email
+      required" · POST `/business/teams` body `{"name":"x"}` → **400** · POST
+      `/business/team/renew` (no body) → **401** "sign_in_required". The
+      teams/renew probes also prove TEAM_AUTH_SECRET is in effect (without it
+      they'd 503 fail-closed).
+
 The live site today still shows the OLD Business card (the "quote by
 WhatsApp" flow you retired). The pre-deploy fixes that **without exposing a
 broken payment flow**: the site ships with the **`BIZ_LIVE = false` gate**
