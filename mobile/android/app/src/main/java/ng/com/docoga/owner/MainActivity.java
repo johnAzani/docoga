@@ -69,8 +69,11 @@ public class MainActivity extends BridgeActivity {
     }
   }
 
+  /* public, not protected: BridgeActivity.onDestroy() is public, and narrowing an
+   * override's visibility is a javac error ("weaker access privileges") — the
+   * mistake CI caught in one build minute that no local grep could have found. */
   @Override
-  protected void onDestroy() {
+  public void onDestroy() {
     if (Build.VERSION.SDK_INT >= 33 && backCallback != null) {
       try {
         getOnBackInvokedDispatcher().unregisterOnBackInvokedCallback(backCallback);

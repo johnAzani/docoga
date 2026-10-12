@@ -102,7 +102,7 @@ jobs:
             # sandbox this pipeline was written in).
             # Annotation order matters: GitHub ingests only the first ~10 per job,
             # so lead with what broke and never with the task trail.
-            grep -E "^e: |^error: |^FAILURE:|What went wrong|^Caused by:|FAILED$" /tmp/debug-build.log \
+            grep -E "error:|^FAILURE:|What went wrong|^Caused by:|FAILED$" /tmp/debug-build.log \
               | head -8 | sed 's/^/::error title=gradle debug::/'
             exit "$status"
           fi
@@ -150,7 +150,7 @@ jobs:
             -PdocogaVersionName='${{ env.VERSION_NAME_BASE }}' 2>&1 | tee /tmp/release-build.log
           status=${PIPESTATUS[0]}
           if [ "$status" != 0 ]; then
-            grep -E "^e: |^error: |^FAILURE:|What went wrong|^Caused by:|FAILED$" /tmp/release-build.log \
+            grep -E "error:|^FAILURE:|What went wrong|^Caused by:|FAILED$" /tmp/release-build.log \
               | head -8 | sed 's/^/::error title=gradle release::/'
             exit "$status"
           fi
