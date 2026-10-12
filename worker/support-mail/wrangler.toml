@@ -1,0 +1,32 @@
+# DocOga support-mail Worker — the fully-autonomous business@ lane (12 Oct 2026)
+#
+# Deploy (from the repo root, on the machine with wrangler auth):
+#   npx wrangler deploy --config worker/support-mail/wrangler.toml
+#
+# One-time Cloudflare dashboard setup (~10 min) — full walkthrough in
+# docs/support/AUTO_REPLY.md:
+#   1. Compute -> Email Service -> Email Routing -> Onboard Domain -> docoga.com.ng
+#      CF auto-adds the MX records + routing DKIM (cf2024-1._domainkey) and an
+#      SPF TXT at the apex. Then EDIT that apex SPF to merge Brevo (the
+#      worker's transactional sender) so it reads EXACTLY:
+#        v=spf1 include:spf.brevo.com include:_spf.mx.cloudflare.net ~all
+#      (one SPF record only; the brevo-code TXT and _dmarc stay as-is)
+#   2. Email Routing -> Destinations -> Add -> azanijohn2017@gmail.com -> Verify
+#   3. Email Routing -> Custom addresses -> business@docoga.com.ng
+#      -> Route to: Worker -> docoga-support-mail
+#
+# Secrets:
+#   wrangler secret put BREVO_API_KEY --config worker/support-mail/wrangler.toml
+#   (the SAME key docoga-pass uses — only consumed if CF's native reply()
+#    fails or USE_CF_REPLY=off; the CF archive forward needs no key)
+
+name = "docoga-support-mail"
+main = "index.js"
+compatibility_date = "2026-09-18"
+
+[vars]
+# Silent archive destination (record only — reading it is never required).
+ARCHIVE_TO = "azanijohn2017@gmail.com"
+# Leave USE_CF_REPLY unset: CF native reply() is primary, Brevo is the
+# fallback. Set "off" ONLY if the post-deploy test shows reply() consuming
+# the paid "Email Sending" quota — then Brevo carries the reply.

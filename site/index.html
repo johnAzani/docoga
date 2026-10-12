@@ -140,6 +140,14 @@ textarea{resize:vertical;min-height:70px}
 .sheet .receipt-box{border:2px solid #333;border-radius:8px;padding:22px 26px;max-width:640px;margin:0 auto}
 .sheet .receipt-box hr{border:none;border-top:1.5px dashed #888;margin:14px 0}
 .sheet .free-banner{margin-top:30px;border-top:1px dashed #999;padding-top:10px;font-size:10.5px;color:#8a8a8a;text-align:center;font-family:Arial,sans-serif;letter-spacing:.3px}
+.sheet .team-banner{margin-top:30px;border-top:2px solid #0B1B3F;padding-top:12px;display:flex;align-items:center;gap:12px}
+.sheet .team-logo{height:28px;max-width:130px;object-fit:contain}
+.sheet .team-name{font-size:14px;font-weight:bold;color:#0B1B3F;font-family:Arial,sans-serif}
+.sheet .team-sub{font-size:10.5px;color:#555;font-family:Arial,sans-serif}
+.badge.team{background:#0B1B3F;color:#fff}
+.team-chip{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:12px;padding:10px 12px;background:#eef3fb;border:1px solid #cdd6e4;border-radius:10px;font-size:14px}
+.team-signin{margin-top:14px;padding-top:12px;border-top:1px dashed #cdd6e4}
+.team-signin-t{font-size:14px;font-weight:600;color:#0B1B3F}
 .sheet.free::before{content:"DOCOGA · FREE";position:absolute;top:44%;left:50%;transform:translate(-50%,-50%) rotate(-28deg);font-size:52px;font-weight:900;color:rgba(4,106,56,.07);font-family:Arial,sans-serif;pointer-events:none;white-space:nowrap}
 
 /* docs list */
@@ -943,6 +951,44 @@ body.has-pass .buy-only{display:none !important}
 <div id="docs-list"></div>
 </section>
 
+<!-- ======================= BUSINESS SETUP (Phase 2 configurator, 11 Oct 2026) ======================= -->
+<section id="page-business-setup">
+<h2 class="page-title">Set up your team</h2>
+<p class="page-sub">Business — annual, per team. The price is computed from your own inputs (the published formula) — no quote, no waiting, no WhatsApp.</p>
+<div style="max-width:640px;margin:0 auto">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:16px 0">
+    <button class="btn ghost" id="biz-seg-estate-agent" onclick="bizSetSegment('estate-agent')">Estate agents</button>
+    <button class="btn ghost" id="biz-seg-property-manager" onclick="bizSetSegment('property-manager')">Property managers</button>
+    <button class="btn ghost" id="biz-seg-landlord" onclick="bizSetSegment('landlord')">Landlords (several units)</button>
+    <button class="btn ghost" id="biz-seg-hr-team" onclick="bizSetSegment('hr-team')">HR teams / employers</button>
+  </div>
+  <label style="font-size:14px;font-weight:600" for="biz-cfg-seats">Team seats <span style="font-weight:400;color:#64748B">(named members)</span></label>
+  <input id="biz-cfg-seats" type="number" min="1" max="500" value="3" style="width:100%;box-sizing:border-box;padding:12px 14px;margin:6px 0 14px;border:1px solid #cdd6e4;border-radius:10px;font-size:16px" oninput="bizUpdateQuote()">
+  <label style="font-size:14px;font-weight:600" for="biz-cfg-docs">Documents per month</label>
+  <select id="biz-cfg-docs" style="width:100%;box-sizing:border-box;padding:12px 14px;margin:6px 0 14px;border:1px solid #cdd6e4;border-radius:10px;font-size:16px;background:#fff" onchange="bizUpdateQuote()">
+    <option value="100">up to 100 / month</option>
+    <option value="300">up to 300 / month</option>
+    <option value="1000">up to 1,000 / month</option>
+    <option value="2000">up to 2,000 / month</option>
+    <option value="5000">up to 5,000 / month</option>
+  </select>
+  <label style="font-size:14px;font-weight:600" for="biz-cfg-name">Firm or company name</label>
+  <input id="biz-cfg-name" type="text" placeholder="e.g. Brightstone Properties" style="width:100%;box-sizing:border-box;padding:12px 14px;margin:6px 0 14px;border:1px solid #cdd6e4;border-radius:10px;font-size:16px">
+  <label style="font-size:14px;font-weight:600" for="biz-cfg-email">Your work email (team owner)</label>
+  <input id="biz-cfg-email" type="email" placeholder="you@firm.com" style="width:100%;box-sizing:border-box;padding:12px 14px;margin:6px 0 14px;border:1px solid #cdd6e4;border-radius:10px;font-size:16px">
+  <div id="biz-cfg-quote" style="background:#eef3fb;border:1px solid #cdd6e4;border-radius:12px;padding:14px 16px;margin:10px 0"></div>
+  <button class="btn primary" style="width:100%;justify-content:center" onclick="bizCreateTeam()">Create my team →</button>
+  <p class="guarantee" id="biz-cfg-msg" style="margin-top:10px">Fully automated: a sign-in link is emailed to you, you pay by card or bank transfer, and your team activates by itself. No WhatsApp, no chasing.</p>
+</div>
+</section>
+
+<!-- ======================= TEAM PORTAL (Phase 3) ======================= -->
+<section id="page-team">
+<h2 class="page-title">Your team</h2>
+<p class="page-sub">Licence, firm branding, seats, invoices and support — one place, no WhatsApp.</p>
+<div id="team-portal" style="max-width:720px;margin:0 auto"></div>
+</section>
+
 <!-- ======================= PRICING ======================= -->
 <section id="page-pricing">
 <h2 class="page-title">Simple pricing</h2>
@@ -981,6 +1027,7 @@ body.has-pass .buy-only{display:none !important}
 <p style="text-align:center;margin-top:8px"><button class="link-btn" onclick="openModal()">Have a code? Activate / extend →</button></p>
 </div>
 <div class="price-card">
+<span class="tag">COMING SOON</span>
 <div class="plan">Business</div>
 <div class="amount">Custom</div>
 <div class="per">annual, per team</div>
@@ -988,12 +1035,24 @@ body.has-pass .buy-only{display:none !important}
 <ul>
 <li>Everything in Oga Pass, for your whole team</li>
 <li><b>Your firm’s name and logo</b> on every document instead of ours</li>
-<li>One shared pass — no per-person codes to chase</li>
-<li>Invoice and bank transfer, no cards, no reimbursements</li>
-<li>A named human on WhatsApp who knows your account</li>
+<li>Team seats — invite and remove people by email</li>
+<li>One annual invoice with VAT — pay by card or bank transfer, auto-confirmed</li>
 </ul>
-<a class="btn primary" style="width:100%;justify-content:center" href="https://wa.me/2349021852845?text=Hello%20DocOga%20%E2%80%94%20I%27d%20like%20a%20Business%20quote%20for%20my%20team.">Get a Business quote →</a>
-<p class="guarantee">One annual invoice. Cheaper than a single lawyer-drafted agreement per branch. We quote within one working day.</p>
+<form id="biz-waitlist" onsubmit="return bizWaitlistSubmit(event)" style="margin-top:12px">
+<input id="biz-email" type="email" required placeholder="Your work email" style="width:100%;box-sizing:border-box;padding:12px 14px;margin:6px 0;border:1px solid #cdd6e4;border-radius:10px;font-size:16px" aria-label="Work email">
+<input id="biz-company" type="text" placeholder="Firm or company (optional)" style="width:100%;box-sizing:border-box;padding:12px 14px;margin:6px 0;border:1px solid #cdd6e4;border-radius:10px;font-size:16px" aria-label="Firm or company name">
+<select id="biz-seg" style="width:100%;box-sizing:border-box;padding:12px 14px;margin:6px 0;border:1px solid #cdd6e4;border-radius:10px;font-size:16px;background:#fff" aria-label="What best describes you">
+<option value="">What best describes you?</option>
+<option value="estate-agent">Estate agent</option>
+<option value="property-manager">Property manager</option>
+<option value="landlord">Landlord (several units)</option>
+<option value="hr-team">HR team / employer</option>
+</select>
+<button class="btn primary" type="submit" style="width:100%;justify-content:center">Notify me at launch →</button>
+</form>
+<p class="guarantee" id="biz-waitlist-msg">Launching soon — fully self-serve: your team signs up online, no WhatsApp, no waiting for a quote. We’ll email you when it’s live.</p>
+<div id="biz-team-box"></div>
+<p style="text-align:center;margin-top:8px"><a class="link-btn" id="biz-pay-link" href="#business-setup">Setting up a team? Configure &amp; pay online →</a></p>
 </div>
 </div>
 </section>
@@ -1005,7 +1064,7 @@ body.has-pass .buy-only{display:none !important}
 <div class="foot">
 <b style="color:var(--ink)">DocOga</b> — the Oga of Documents. Made in Abuja, Nigeria 🇳🇬
 <div class="disc"><b>Disclaimer:</b> DocOga provides self-help document templates based on standard Nigerian practice. It is not a law firm and does not provide legal advice. For complex or high-value transactions, consult a qualified Nigerian lawyer. Documents remain binding only when properly completed, signed and witnessed.</div>
-<div>© 2026 DocOga. All rights reserved. · <a href="#pricing">Oga Pass</a> · <a href="privacy.html">Privacy Policy</a> · <a href="terms.html">Terms of Use</a> · Support: <a id="foot-wa" href="#" onclick="return false">WhatsApp</a></div>
+<div>© 2026 DocOga. All rights reserved. · <a href="#pricing">Oga Pass</a> · <a href="privacy.html">Privacy Policy</a> · <a href="terms.html">Terms of Use</a> · <a href="support.html">Support</a> · <a id="foot-wa" href="#" onclick="return false">WhatsApp</a></div>
 </div>
 </footer>
 
@@ -1035,6 +1094,9 @@ const SUPPORT_WHATSAPP = "2349021852845"; // your WhatsApp number, international
 const SITE_URL = "https://docoga.com.ng";
 const WORKER_URL = "https://docoga-pass.johnazani.workers.dev"; // enables AUTOMATIC instant code delivery (see AUTOMATE.md)
 const ANALYTICS_ID = "G-GO8VZB3R28"; // Google Analytics 4 Measurement ID (GA4 property "inductive-seer-372707", web stream docoga.com.ng)
+const BIZ_LIVE = false; // Phase 5 gate (runbook): flip to true ONLY when the FLW credentials are live in production.
+                        // While false, the public "Configure & pay online" entry point is removed from the Business card
+                        // (waitlist + support stay live) — a purchase that can't complete is worse than a waitlist.
 /* ============================================================================== */
 
 const CODE_HASHES = new Set(["3d260bec","5422f3c7","3a5998f8","ed11779f","e07ad87a","28eda4d9","3b63966c","f142046e","8ce76209","b5044f89","01b7f119","591a90df","26f269f7","36fc62a2","d4c47cd8","9abd96b9","0094f361","86f21bd1","ed7d4b21","a1c06dd0","de00c669","d016062b","6d89dde0","71fe6e22","661d7c71","292aa934","6204dcc6","59dd44c9","56c4611d","251358c8","1b68b33b","437d11f4","50c7559e","7994e7db","e50fe950","6c87a93b","16f39498","27152284","26c064be","e5eb020e","aca6a617","a630bb83","6836e3c8","4858f309","98db7450","65a24cb7","bbd9728b","0f2522db","55804e40","6047fa66","16852ff2","87a400f3","734c51aa","57138c81","ddb2c042","b7b3e327","7b6ddea6","849a0ba6","eeccb007","fa03d49c","3f32e37f","72008561","70bd37d6","85874b8d","2bf8afff","d53f23d6","e2ea1e71","0637fea7","d657db78","faea3363","908ff0c0","06a80064","9286ab5e","d8f43c51","6b6a48f4","09aaab48","9e8b4f1d","1a45deca","24d7963e","bac6b3d9","12350627","494a8fb0","7c4ce14f","fcf87c21","7d6e8e1f","b2c5de33","95b7e3d7","db28e5bb","d7b748f2","9ca426f5","daeb9d6c","ae6bb231","94506965","d9a00c33","94c1b9a1","a25b705d","fe008395","37a2c744","31948af4","16fbd583","6d83b92d","b248e856","1eda74b3","16d32ca4","e1658ff0","079ab2e1","f95f3542","c4760957","3994bbad","11598317","ea8bb709","4da99fc8","a52aba3e","0380b946","693ed896","97f5ddbd","9d61b62b","08439e56","eb10cb71","b2ffafaa","ae374839","1305e3cf","c60ff85b","06d10b00","8c69a2b5","4f360266","807152b7","43c7f7b9","94ac6215","00e1018c","65062983","d93e5b52","2a9f55fe","6f5acddd","394c2517","3c3b89e0","398c78af","0223d98f","8a59787c","a8cc69be","44b06563","e3a0c804","53723b64","a7ee170c","37263ab1","bf348816","b8dac4e2","ed06edee","41029d44","d64cc342","e45bdc89","d93e457c","b50cf207","02774534","e1bb8ce2","d05aee1b","93af2bd3","b864c47b","753ab5c8","9cb513f7","516b42ef","27874e42","98875df4","0fc39c84","2045fc75","a9136bb3","66aed5da","0332d980","6d3c9326","6a4db4b6","b61e8046","18a733f7","40851103","a381429b","b91326e9","111c54ed","3d87395f","b6150aea","c2354a29","febc17d6","62093159","b5fc0ecb","abd4ab73","a5d98a23","fd1c84fd","82706c2d","95fd1880","6f44e916","d5b3063f","71d97827","e2971566","4185e412","58f8bb07","f146b7da","baf98c07","82627517","c279ac37","87486faf","f1804bfc","d3fe4ec0"]);
@@ -1124,7 +1186,8 @@ if(!code){ toast('Enter your code first.'); return; }
 const norm=code.toUpperCase().replace(/[\s-]/g,'');
 const h=fnv1a(norm).toString(16).padStart(8,'0');
 if(pass&&pass.h===h&&pass.exp>Date.now()){ closeModal(); $('pass-input').value=''; toast('✓ This code is already active on this device — '+Math.ceil((pass.exp-Date.now())/864e5)+'d left. Topping up adds 30 days to your remaining time.'); return; }
-const save=(exp,c)=>{ pass={exp,c,h}; store.setItem('docoga_pass',JSON.stringify(pass)); updatePassUI(); renderAll(); closeModal(); $('pass-input').value=''; const d=Math.max(1,Math.ceil((pass.exp-Date.now())/864e5)); toast('✅ Oga Pass active — '+d+' day'+(d>1?'s':'')+' of clean documents left.'); };
+const wasTopup=!!(pass&&pass.c); // an existing pass code before this activation = top-up
+const save=(exp,c)=>{ const oldPass=pass; pass={exp,c,h}; store.setItem('docoga_pass',JSON.stringify(pass)); trackEvent(wasTopup?'pass_topup':'pass_activated',{value:2000, currency:'NGN', prev_exp:oldPass?oldPass.exp:undefined}); updatePassUI(); renderAll(); closeModal(); $('pass-input').value=''; const d=Math.max(1,Math.ceil((pass.exp-Date.now())/864e5)); toast('✅ Oga Pass active — '+d+' day'+(d>1?'s':'')+' of clean documents left.'); };
 // 1) ask the Worker first — it owns the synced expiry and links top-ups (?prev)
 if(WORKER_URL){
 try{
@@ -1140,12 +1203,422 @@ if(j&&j.error){ toast('❌ '+j.error); return; }
 if(CODE_HASHES.has(h)){ save(Math.max((pass&&pass.exp)||0, Date.now())+30*864e5, norm); return; }
 toast('❌ Invalid code. Please check and try again.');
 }
-function buyPass(){ window.open(PAYMENT_URL,'_blank'); toast('Complete payment — you\'ll be returned here and your pass activates automatically.'); }
+function buyPass(){ trackEvent('pass_checkout_opened',{value:2000, currency:'NGN'}); window.open(PAYMENT_URL,'_blank'); toast('Complete payment — you\'ll be returned here and your pass activates automatically.'); }
+/* Business waitlist (11 Oct 2026): self-serve notify at launch. Replaces the
+   retired "quote by WhatsApp" CTA — owner instruction: the Business path must
+   run end-to-end without the customer sending a WhatsApp message. */
+async function bizWaitlistSubmit(e){
+  e.preventDefault();
+  const msg=$('biz-waitlist-msg');
+  const email=$('biz-email').value.trim();
+  if(!email){ msg.textContent='Please enter your work email.'; return false; }
+  msg.textContent='Sending…';
+  try{
+    const r=await fetch(WORKER_URL+'/business/waitlist',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,company:$('biz-company').value.trim(),segment:$('biz-seg').value})});
+    const j=await r.json();
+    if(j.ok){
+      $('biz-email').value='';$('biz-company').value='';$('biz-seg').value='';
+      msg.textContent=j.alreadyOnList?'You\u2019re already on the list \u2014 we\u2019ll email you at launch.':'You\u2019re on the list \u2014 we\u2019ll email you when your team can sign up.';
+    } else { msg.textContent=j.error||'Something went wrong \u2014 please try again.'; }
+  }catch(err){ msg.textContent='Could not reach the server \u2014 please try again in a moment.'; }
+  return false;
+}
 
 /* shared sheet helpers */
 function sheetClass(){ return passActive()?'sheet':'sheet free'; }
-function freeBanner(){ return passActive()?'':'<div class="free-banner">Created free with <b>DocOga</b> — '+esc(SITE_URL)+' — Get the Oga Pass to remove this banner.</div>'; }
-function renderBadge(type){ const b=$('badge-'+type); if(!b) return; b.innerHTML = passActive() ? '<span class="badge pro">OGA PASS</span>' : '<span class="badge free">FREE · banner on doc</span>'; }
+function freeBanner(){ if(teamActive()) return teamBrandHeader(); return passActive()?'':'<div class="free-banner">Created free with <b>DocOga</b> — '+esc(SITE_URL)+' — Get the Oga Pass to remove this banner.</div>'; }
+function renderBadge(type){ const b=$('badge-'+type); if(!b) return; b.innerHTML = teamActive() ? '<span class="badge team">TEAM · '+esc((team&&team.team&&team.team.name)||'')+'</span>' : (passActive() ? '<span class="badge pro">OGA PASS</span>' : '<span class="badge free">FREE · banner on doc</span>'); }
+
+/* ================= Business team core (Phase 1, 11 Oct 2026) =================
+   Magic-link sign-in + firm branding across all 10 renderers (C2/C4/C7). The
+   session token lives in localStorage — the site and the API are different
+   origins, so a cookie can't cross; the worker re-validates it against KV on
+   every call, so a revoked seat or expired team loses branding immediately.
+   Team mode replaces the DocOga banner with the firm's name + logo on every
+   document (the Business card's promise). */
+let team=null;
+/* Branding (firm name + logo instead of the DocOga banner) belongs to ACTIVE
+   teams only — an unpaid signed-in team still sees the free banner + the
+   checkout panel. Honest: you get the branding when you pay. */
+function teamActive(){ return !!(team && team.token && team.team && team.team.status==='active'); }
+function teamBrandHeader(){
+  const b=team.brand||{};
+  let h='<div class="team-banner">';
+  if(b.logo) h+='<img class="team-logo" src="'+b.logo+'" alt="">';
+  h+='<div><div class="team-name">'+esc(b.name||team.team.name)+'</div>';
+  if(b.address) h+='<div class="team-sub">'+esc(b.address)+'</div>';
+  if(b.footer) h+='<div class="team-sub">'+esc(b.footer)+'</div>';
+  return h+'</div></div>';
+}
+async function teamRefresh(){
+  try{
+    const r=await fetch(WORKER_URL+'/business/team',{headers:{Authorization:'Bearer '+team.token}});
+    const j=await r.json();
+    if(j.ok){ team.team.name=j.team.name; team.team.slug=j.team.slug; team.team.expiry=j.team.expiry; team.team.status=j.team.status; team.role=j.role; team.brand=j.brand||{}; team.quote=j.quote; team.seats=j.seats||[]; team.renewal=j.renewal; team.usage=j.usage; updateTeamUI(); renderAll(); return true; }
+    teamSignOut(false);
+  }catch(e){ /* offline: keep last known state; next online call re-checks */ }
+  return false;
+}
+async function bizLoginSubmit(e){
+  e.preventDefault();
+  const form=e.target;
+  const msg=$('biz-login-msg')||$('tp-login-msg');
+  const input=form&&form.querySelector('input[type=email]');
+  if(!msg||!input) return false;
+  const email=input.value.trim();
+  if(!email){ msg.textContent='Enter the email your team owner added for you.'; return false; }
+  msg.textContent='Sending your sign-in link…';
+  try{
+    const r=await fetch(WORKER_URL+'/business/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});
+    const j=await r.json();
+    if(j.ok){ input.value=''; msg.textContent='✅ Check your inbox — a sign-in link is on its way (works once, 10 minutes).'; }
+    else { msg.textContent=j.error||'Something went wrong — please try again.'; }
+  }catch(err){ msg.textContent='Could not reach the server — please try again in a moment.'; }
+  return false;
+}
+function teamSignOut(silent){
+  try{ store.removeItem('docoga_team'); }catch(e){}
+  team=null; updateTeamUI(); renderAll();
+  if(!silent) toast('Signed out — documents show the DocOga banner again.');
+}
+function updateTeamUI(){
+  const box=$('biz-team-box'); if(!box) return;
+  if(teamActive()){
+    box.innerHTML='<div class="team-chip"><span>🏢 <b>'+esc(team.team.name)+'</b> · signed in as '+esc(team.email)+(team.role==='owner'?'':'')+'</span><a class="link-btn" href="#team">Team dashboard →</a><button class="link-btn" onclick="teamSignOut()">Sign out</button></div>';
+  } else if(team && team.team && (team.team.status==='grace' || team.team.status==='free')){
+    const gtxt=team.team.status==='grace'?'licence expired — 14-day grace, renew to keep branding':'licence expired — free tier, renew to restore branding';
+    box.innerHTML='<div class="team-chip" style="align-items:flex-start;flex-direction:column;gap:6px"><span>🏢 <b>'+esc(team.team.name)+'</b> — '+gtxt+'</span>'+
+      '<div style="display:flex;gap:12px;margin-top:4px"><a class="link-btn" href="#team">Renew in the team dashboard →</a><button class="link-btn" onclick="teamSignOut()">Sign out</button></div></div>';
+  } else if(team && team.token && team.team && team.team.status==='unpaid'){
+    const q=team.quote||{};
+    box.innerHTML='<div class="team-chip" style="align-items:flex-start;flex-direction:column;gap:6px"><span>🏢 <b>'+esc(team.team.name)+'</b> — activated: pay <b>'+ngn(q.total)+'</b>/yr (incl. VAT) and your team switches on automatically</span>'+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">'+
+      '<button class="btn primary" style="justify-content:center" onclick="bizCharge(\'transfer\')">Pay by bank transfer</button>'+
+      '<button class="btn ghost" style="justify-content:center" onclick="bizCharge(\'card\')">Pay by card / USSD</button>'+
+      '</div>'+
+      '<div id="biz-va-panel" style="width:100%;margin-top:8px"></div>'+
+      '<div style="display:flex;gap:12px;margin-top:6px"><a class="link-btn" href="#team">Team dashboard →</a><button class="link-btn" onclick="teamSignOut()">Sign out</button></div></div>';
+  } else {
+    box.innerHTML='<div class="team-signin"><div class="team-signin-t">Already part of a DocOga team?</div>'+
+      '<form onsubmit="return bizLoginSubmit(event)" style="display:flex;gap:8px;margin-top:8px">'+
+      '<input id="biz-login-email" type="email" placeholder="Your work email" aria-label="Team sign-in email" style="flex:1;min-width:0;padding:12px 14px;border:1px solid #cdd6e4;border-radius:10px;font-size:16px">'+
+      '<button class="btn primary" type="submit" style="white-space:nowrap">Sign in</button></form>'+
+      '<p class="guarantee" id="biz-login-msg" style="margin-top:8px">Magic link, no password, no WhatsApp.</p></div>';
+  }
+  try{ teamPortalRender(); }catch(e){}
+}
+
+/* ================= Business configurator + checkout (Phase 2, 11 Oct 2026 — C3/C5) =================
+   The published formula (dossier §6.1 — PROPOSED bands, config not code):
+   the price is computed from the buyer's own inputs. The worker recomputes
+   the SAME formula server-side, so the display and the invoice agree on the
+   rules; the owner changes numbers in exactly one place (the worker). */
+const BIZ_TIER_TABLE=[{key:'starter',base:96000,seats:3,docs:100,brands:1},{key:'standard',base:240000,seats:8,docs:300,brands:1},{key:'growth',base:480000,seats:20,docs:1000,brands:2}];
+const BIZ_SEAT_UNIT=48000, BIZ_DOC_BLOCK_UNIT=18000, BIZ_VAT=0.075;
+const BIZ_SEGMENTS={'estate-agent':[3,300],'property-manager':[8,300],'landlord':[3,100],'hr-team':[8,100]};
+let bizSeg='';
+function ngn(n){ return '₦'+Number(n||0).toLocaleString('en-NG'); }
+function bizQuote(seats,docs){
+  const nseats=Math.max(1,Math.min(500,Math.floor(Number(seats)||1)));
+  const ndocs=Math.max(100,Math.min(100000,Math.floor(Number(docs)||100)));
+  const tier=BIZ_TIER_TABLE.find(t=>nseats<=t.seats)||BIZ_TIER_TABLE[BIZ_TIER_TABLE.length-1];
+  const extraSeats=Math.max(0,nseats-tier.seats);
+  const extraBlocks=Math.max(0,Math.ceil((ndocs-tier.docs)/100));
+  const price=tier.base+extraSeats*BIZ_SEAT_UNIT+extraBlocks*BIZ_DOC_BLOCK_UNIT;
+  const vat=Math.round(price*BIZ_VAT);
+  return {tier:tier.key,seats:nseats,docs:ndocs,extraSeats,extraBlocks,price,vat,total:price+vat};
+}
+function bizUpdateQuote(){
+  const el=$('biz-cfg-quote'); if(!el) return;
+  const q=bizQuote($('biz-cfg-seats').value,$('biz-cfg-docs').value);
+  const t=BIZ_TIER_TABLE.find(x=>x.key===q.tier);
+  let h='<div style="display:flex;justify-content:space-between;font-size:14px;margin:4px 0"><span>'+t.key.charAt(0).toUpperCase()+t.key.slice(1)+' — base ('+t.seats+' seats, '+t.docs+' docs/mo)</span><b>'+ngn(t.base)+'</b></div>';
+  if(q.extraSeats) h+='<div style="display:flex;justify-content:space-between;font-size:14px;margin:4px 0"><span>+'+q.extraSeats+' seat'+(q.extraSeats>1?'s':'')+' × '+ngn(BIZ_SEAT_UNIT)+'</span><b>'+ngn(q.extraSeats*BIZ_SEAT_UNIT)+'</b></div>';
+  if(q.extraBlocks) h+='<div style="display:flex;justify-content:space-between;font-size:14px;margin:4px 0"><span>+'+q.extraBlocks+' block'+(q.extraBlocks>1?'s':'')+' of 100 docs/mo × '+ngn(BIZ_DOC_BLOCK_UNIT)+'</span><b>'+ngn(q.extraBlocks*BIZ_DOC_BLOCK_UNIT)+'</b></div>';
+  h+='<div style="display:flex;justify-content:space-between;font-size:14px;margin:4px 0"><span>VAT (7.5%)</span><b>'+ngn(q.vat)+'</b></div>';
+  h+='<div style="display:flex;justify-content:space-between;font-size:17px;border-top:1px solid #cdd6e4;margin-top:8px;padding-top:8px"><b>Total / year</b><b>'+ngn(q.total)+'</b></div>';
+  el.innerHTML=h;
+}
+function bizSetSegment(seg){
+  const p=BIZ_SEGMENTS[seg]; if(!p) return;
+  bizSeg=seg;
+  $('biz-cfg-seats').value=String(p[0]);
+  $('biz-cfg-docs').value=String(p[1]);
+  document.querySelectorAll('[id^="biz-seg-"]').forEach(b=>b.classList.toggle('active',b.id==='biz-seg-'+seg));
+  bizUpdateQuote();
+}
+async function bizCreateTeam(){
+  const msg=$('biz-cfg-msg');
+  const email=$('biz-cfg-email').value.trim(), name=$('biz-cfg-name').value.trim();
+  if(!name){ msg.textContent='Please enter your firm name.'; return; }
+  if(!email){ msg.textContent='Please enter your work email.'; return; }
+  msg.textContent='Creating your team…';
+  try{
+    const r=await fetch(WORKER_URL+'/business/teams',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,name,seats:$('biz-cfg-seats').value,docs:$('biz-cfg-docs').value,segment:bizSeg})});
+    const j=await r.json();
+    if(j.ok){ trackEvent('business_team_created',{team_id:j.team.id, value:j.quote.total}); msg.textContent='✅ Team created — a sign-in link is on its way to '+email+'. Click it, pay by card or transfer, and your team activates automatically.'; $('biz-cfg-email').value=''; $('biz-cfg-name').value=''; }
+    else { msg.textContent=j.error||'Something went wrong — please try again.'; }
+  }catch(e){ msg.textContent='Could not reach the server — please try again in a moment.'; }
+}
+async function bizCharge(method){
+  const panel=$('biz-va-panel'); if(!panel) return;
+  panel.innerHTML='<div style="font-size:13px;color:#33415C">Creating your payment…</div>';
+  try{
+    const r=await fetch(WORKER_URL+'/business/team/charge',{method:'POST',headers:{Authorization:'Bearer '+team.token,'Content-Type':'application/json'},body:JSON.stringify({method})});
+    const j=await r.json();
+    if(!j.ok){ panel.innerHTML='<div style="font-size:13px;color:#b91c1c">'+esc(j.error||'Payment setup failed — please try again.')+'</div>'; return; }
+    trackEvent('business_charge_started',{method:method, value:j.invoice.total, reused:!!j.reused});
+    if(method==='card' && j.pay_url){
+      window.open(j.pay_url,'_blank');
+      panel.innerHTML='<div style="font-size:13px;color:#33415C">We opened the secure Flutterwave checkout. Your team activates automatically once payment lands — refresh this page if it does not update.</div>';
+      return;
+    }
+    if(j.va){
+      const va=j.va;
+      const expTxt=va.expires?new Date(va.expires).toLocaleString():'';
+      panel.innerHTML='<div style="background:#fff;border:1px solid #0B1B3F;border-radius:10px;padding:12px;font-size:13px;line-height:1.7">'+
+        '<b>Transfer exactly '+ngn(j.invoice.total)+' NGN</b> to:<br>'+
+        'Bank: <b>'+esc(va.bank)+'</b><br>Account: <b>'+esc(va.account)+'</b><br>'+
+        (expTxt?'Valid until: <b>'+expTxt+'</b><br>':'')+
+        'Your team activates the moment the exact amount lands — automatically.<br>'+
+        '<button class="link-btn" style="margin-top:4px" onclick="bizCharge(\'transfer\')">Link expired? Get a new one →</button>'+
+        '<span id="biz-va-status" style="font-size:12px;color:#33415C"></span></div>';
+      bizPollActivation();
+    }
+  }catch(e){ panel.innerHTML='<div style="font-size:13px;color:#b91c1c">Could not reach the server — please try again in a moment.</div>'; }
+}
+/* Phase 4 (C9): renewal — same machinery as first purchase, price at purchase.
+   The worker owns the window rules (T-90/grace/free) and the re-pricing is
+   server-side; the panel mirrors the checkout VA panel. */
+async function bizRenew(method){
+  const panel=$('biz-renew-panel'); if(!panel) return;
+  panel.innerHTML='<div style="font-size:13px;color:#33415C">Creating your renewal payment…</div>';
+  try{
+    const r=await fetch(WORKER_URL+'/business/team/renew',{method:'POST',headers:{Authorization:'Bearer '+team.token,'Content-Type':'application/json'},body:JSON.stringify({method})});
+    const j=await r.json();
+    if(!j.ok){ panel.innerHTML='<div style="font-size:13px;color:#b91c1c">'+esc(j.error||'Renewal setup failed — please try again.')+'</div>'; return; }
+    trackEvent('business_renewal_started',{method:method, value:j.invoice.total});
+    if(method==='card' && j.pay_url){
+      window.open(j.pay_url,'_blank');
+      panel.innerHTML='<div style="font-size:13px;color:#33415C">We opened the secure Flutterwave checkout. Your licence renews automatically once payment lands — refresh this page if it does not update.</div>';
+      return;
+    }
+    if(j.va){
+      const va=j.va;
+      const expTxt=va.expires?new Date(va.expires).toLocaleString():'';
+      panel.innerHTML='<div style="background:#fff;border:1px solid #0B1B3F;border-radius:10px;padding:12px;font-size:13px;line-height:1.7">'+
+        '<b>Transfer exactly '+ngn(j.invoice.total)+' NGN</b> to:<br>'+
+        'Bank: <b>'+esc(va.bank)+'</b><br>Account: <b>'+esc(va.account)+'</b><br>'+
+        (expTxt?'Valid until: <b>'+expTxt+'</b><br>':'')+
+        'Your licence renews the moment the exact amount lands — automatically.<br>'+
+        '<button class="link-btn" style="margin-top:4px" onclick="bizRenew(\'transfer\')">Link expired? Get a new one →</button>'+
+        '<span id="biz-renew-status" style="font-size:12px;color:#33415C"></span></div>';
+      bizPollActivation();
+    }
+  }catch(e){ panel.innerHTML='<div style="font-size:13px;color:#b91c1c">Could not reach the server — please try again in a moment.</div>'; }
+}
+/* Phase 4 (C8): best-effort usage beacon — fire-and-forget, throttled to once
+   per 10 minutes per team. The meter is honestly best-effort (generation is
+   browser-side, same as the retail pass); the print must never wait on it. */
+function usageBeacon(){
+  try{
+    if(!teamActive()) return;
+    const key='docoga_usage_ping_'+team.team.id;
+    const last=Number(store.getItem(key)||'0');
+    if(Date.now()-last < 10*60*1000) return;
+    store.setItem(key,String(Date.now()));
+    fetch(WORKER_URL+'/business/team/usage',{method:'POST',keepalive:true,headers:{Authorization:'Bearer '+team.token,'Content-Type':'application/json'},body:'{}'}).catch(function(){});
+  }catch(e){}
+}
+/* Revenue funnel events — the only scoreboard. Covers BOTH funnels:
+   Oga Pass (retail) and Business (teams). Guarded: no ANALYTICS_ID / non-https
+   / blocked gtag = silently skipped, never breaks the purchase flow. */
+function trackEvent(name,params){
+  try{ if(window.gtag) window.gtag('event',name,params||{}); }catch(e){}
+}
+async function bizPollActivation(){
+  for(let i=0;i<8;i++){
+    await new Promise(res=>setTimeout(res,15000));
+    try{
+      const r=await fetch(WORKER_URL+'/business/team',{headers:{Authorization:'Bearer '+(team&&team.token)}});
+      const j=await r.json();
+      if(j.ok && j.team.status==='active'){
+        team.team=j.team; team.brand=j.brand||{}; team.role=j.role; team.renewal=j.renewal; team.usage=j.usage;
+        updateTeamUI(); renderAll();
+        trackEvent('business_team_activated',{value:team.quote?team.quote.total:undefined});
+        toast('✅ Payment received — your team is live. Invite your team members by email.');
+        return;
+      }
+    }catch(e){ break; }
+  }
+  const st=$('biz-va-status'); if(st) st.innerHTML='If you already transferred, it usually confirms within a few minutes — just refresh this page.';
+}
+
+/* ================= Team portal (Phase 3, 11 Oct 2026) =================
+   Self-serve dashboard for team members: licence state, firm branding
+   (owner edits), seats (owner invites/revokes), invoices (C10 — each opens
+   a printable page, print → Save as PDF) and support (FAQ + business@).
+   No WhatsApp anywhere: every action is a worker call or an email. */
+function teamChip(status,label){
+  const map={paid:['#dcfce7','#166534'],open:['#fef9c3','#854d0e'],wrong:['#fee2e2','#991b1b'],active:['#dcfce7','#166534'],expired:['#fee2e2','#991b1b']};
+  const c=map[status]||map.open;
+  return '<span style="background:'+c[0]+';color:'+c[1]+';padding:4px 10px;border-radius:999px;font-size:12px;font-weight:bold;white-space:nowrap">'+label+'</span>';
+}
+function teamPortalRender(){
+  const el=$('team-portal'); if(!el) return;
+  if(!team || !team.team){
+    el.innerHTML='<div class="team-signin" style="max-width:460px;margin:0 auto"><div class="team-signin-t">Sign in to your team dashboard</div>'+
+      '<p class="guarantee" style="margin-top:6px">Licence, firm branding, seats, invoices and support — one place, no WhatsApp.</p>'+
+      '<form onsubmit="return bizLoginSubmit(event)" style="display:flex;gap:8px;margin-top:10px">'+
+      '<input id="tp-login-email" type="email" placeholder="Your work email" aria-label="Team sign-in email" style="flex:1;min-width:0;padding:12px 14px;border:1px solid #cdd6e4;border-radius:10px;font-size:16px">'+
+      '<button class="btn primary" type="submit" style="white-space:nowrap">Sign in</button></form>'+
+      '<p class="guarantee" id="tp-login-msg" style="margin-top:8px">Magic link, no password — sent to the email your team owner added for you.</p>'+
+      '<p style="text-align:center;margin-top:12px"><a class="link-btn" href="#business-setup">Setting up your first team? →</a></p></div>';
+    return;
+  }
+  const t=team.team, q=team.quote||{}, b=team.brand||{}, isOwner=team.role==='owner';
+  const exp=t.expiry?new Date(t.expiry).toLocaleDateString('en-NG',{day:'numeric',month:'long',year:'numeric'}):'—';
+  const card='<div style="background:#fff;border:1px solid #cdd6e4;border-radius:12px;padding:16px 18px;margin-bottom:14px">';
+  let h='';
+  /* 1 — licence */
+  const renewBtns=isOwner?'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn primary" style="justify-content:center" onclick="bizRenew(\'transfer\')">Renew by bank transfer</button><button class="btn ghost" style="justify-content:center" onclick="bizRenew(\'card\')">Renew by card / USSD</button></div><div id="biz-renew-panel" style="margin-top:8px"></div>':'';
+  h+=card+'<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px"><div style="font-size:16px;font-weight:bold">🏢 '+esc(t.name)+'</div>';
+  if(t.status==='unpaid'){
+    h+=teamChip('open','UNPAID — pay '+ngn(q.total||0)+' to activate');
+    h+='<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" style="justify-content:center" onclick="bizCharge(\'transfer\')">Pay by bank transfer</button><button class="btn ghost" style="justify-content:center" onclick="bizCharge(\'card\')">Pay by card / USSD</button></div>';
+  } else if(t.status==='active'){
+    h+=teamChip('active','ACTIVE · until '+exp);
+  } else if(t.status==='grace'){
+    h+=teamChip('expired','EXPIRED · 14-day grace — branding paused');
+  } else if(t.status==='free'){
+    h+=teamChip('expired','EXPIRED · free tier — data kept 90 days');
+  } else {
+    h+=teamChip('expired','LICENCE PROBLEM · email business@docoga.com.ng');
+  }
+  h+='</div><div style="margin-top:8px;font-size:13px;color:#475569">'+(q.tier?q.tier.charAt(0).toUpperCase()+q.tier.slice(1)+' licence':'Business licence')+' · '+(q.seats||'—')+' seats · '+(q.docs||'—')+' docs/month · '+(q.total?ngn(q.total)+' billed yearly, incl. VAT':'')+' · signed in as '+esc(team.email)+(isOwner?' (owner)':'')+'</div>';
+  /* Phase 4 (C9): renewal is self-serve — owner renews at the price at purchase */
+  if(isOwner && t.status==='grace'){
+    h+='<div style="margin-top:10px;font-size:13px;color:#33415C;line-height:1.6">Your licence expired on '+(t.expiry||'the last day')+'. Nothing is lost — renew below and branding comes straight back (the next 12 months start now). Data is kept 90 days after the grace period ends.</div>'+renewBtns;
+  } else if(isOwner && t.status==='free'){
+    h+='<div style="margin-top:10px;font-size:13px;color:#33415C;line-height:1.6">Your team is on the free tier — documents show the DocOga banner. Seats, branding and invoices are kept for 90 days; renew below to restore everything at the price you paid.</div>'+renewBtns;
+  } else if(isOwner && t.status==='active' && t.expiry && (new Date(t.expiry+'T23:59:59Z').getTime()-Date.now()) <= 90*864e5){
+    const price=(team.renewal&&team.renewal.total)?' '+ngn(team.renewal.total)+' incl. VAT':'';
+    h+='<div style="margin-top:10px;font-size:13px;color:#33415C;line-height:1.6">Renews <b>'+exp+'</b> — same price you paid'+price+'. Renew any time below; early renewal stacks on your remaining days (none lost).</div>'+renewBtns;
+  }
+  /* Phase 4 (C8): monthly allowance line (soft limit — stated honestly) */
+  if(team.usage && team.usage.band && t.status==='active'){
+    const pct=Math.round(team.usage.used/team.usage.band*100);
+    h+='<div style="margin-top:10px;padding:9px 12px;background:'+(pct>=100?'#fef9c3':'#f8fafc')+';border:1px solid '+(pct>=100?'#fde68a':'#e2e8f0')+';border-radius:10px;font-size:13px;color:#33415C">Documents this month: <b>'+team.usage.used+' / '+team.usage.band+'</b> ('+pct+'%)'+(pct>=100?' — you\'re over the band. The limit is soft: nothing stops, in-progress documents are never interrupted — but if this is the new normal, email <a href="mailto:business@docoga.com.ng">business@docoga.com.ng</a> and we\'ll right-size the plan by email.':'')+'</div>';
+  }
+  h+='</div>';
+  /* 2 — firm branding */
+  h+=card+'<div style="font-size:15px;font-weight:bold;margin-bottom:10px">Firm branding</div>'+
+    '<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px">'+
+    ((b.logo||team._logo)?'<img src="'+esc(b.logo||team._logo)+'" alt="" style="height:40px;max-width:160px;object-fit:contain">':'<div style="width:48px;height:40px;border:1px dashed #94a3b8;border-radius:6px"></div>')+
+    '<div><div style="font-weight:bold">'+esc(b.name||t.name)+'</div>'+(b.address?'<div style="font-size:12px;color:#64748b">'+esc(b.address)+'</div>':'')+(b.footer?'<div style="font-size:12px;color:#64748b">'+esc(b.footer)+'</div>':'')+'</div></div>';
+  if(isOwner){
+    h+='<div style="margin-top:12px;display:grid;gap:8px">'+
+      '<input id="tp-brand-name" type="text" value="'+esc(b.name||t.name)+'" placeholder="Firm or company name" aria-label="Firm name" style="width:100%;box-sizing:border-box;padding:11px 13px;border:1px solid #cdd6e4;border-radius:10px;font-size:15px">'+
+      '<input id="tp-brand-tagline" type="text" value="'+esc(b.tagline||'')+'" placeholder="Tagline (optional)" aria-label="Tagline" style="width:100%;box-sizing:border-box;padding:11px 13px;border:1px solid #cdd6e4;border-radius:10px;font-size:15px">'+
+      '<input id="tp-brand-address" type="text" value="'+esc(b.address||'')+'" placeholder="Address / contact line (optional)" aria-label="Address" style="width:100%;box-sizing:border-box;padding:11px 13px;border:1px solid #cdd6e4;border-radius:10px;font-size:15px">'+
+      '<input id="tp-brand-footer" type="text" value="'+esc(b.footer||'')+'" placeholder="Document footer line (optional)" aria-label="Footer" style="width:100%;box-sizing:border-box;padding:11px 13px;border:1px solid #cdd6e4;border-radius:10px;font-size:15px">'+
+      '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">'+
+      '<label style="font-size:14px;font-weight:600;cursor:pointer" for="tp-brand-logo">Logo (PNG/JPG/SVG ≤ 25KB)</label>'+
+      '<input id="tp-brand-logo" type="file" accept="image/png,image/jpeg,image/svg+xml" aria-label="Logo file" style="font-size:13px" onchange="teamBrandLogoChange()">'+
+      '<img id="tp-brand-logo-preview" alt="" style="height:32px;max-width:120px;object-fit:contain;display:'+(team._logo?'block':'none')+'">'+
+      '</div>'+
+      '<div><button class="btn primary" style="justify-content:center" onclick="teamBrandSave()">Save branding</button> <span id="tp-brand-msg" style="font-size:13px;color:#33415C;display:inline-block;margin-left:8px"></span></div>'+
+      '</div>';
+  } else {
+    h+='<p class="guarantee" style="margin-top:10px">Your owner manages firm branding — changes appear on every document the team produces.</p>';
+  }
+  h+='</div>';
+  /* 3 — seats */
+  const seats=team.seats||[];
+  h+=card+'<div style="font-size:15px;font-weight:bold">Team seats'+(q.seats?' <span style="font-weight:normal;color:#64748b;font-size:13px">('+seats.length+' of '+q.seats+' used)</span>':'')+'</div>';
+  if(seats.length){
+    h+=seats.map(s=>'<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #eef2f7;font-size:14px"><div><b>'+esc(s.name||'')+'</b> '+esc(s.email)+(s.role==='owner'?' <span style="font-size:11px;color:#64748b">(owner)</span>':'')+'</div>'+((isOwner&&s.role!=='owner')?'<button class="link-btn" style="color:#b91c1c" onclick="teamRevoke(\''+esc(s.email)+'\')">Remove</button>':'')+'</div>').join('');
+  } else {
+    h+='<p class="guarantee" style="margin-top:6px">No seats added yet.</p>';
+  }
+  if(isOwner){
+    h+='<div style="display:flex;gap:8px;margin-top:12px"><input id="tp-invite-email" type="email" placeholder="colleague@firm.com" aria-label="Invite email" style="flex:1;min-width:0;padding:11px 13px;border:1px solid #cdd6e4;border-radius:10px;font-size:15px"><button class="btn ghost" style="white-space:nowrap" onclick="teamInvite()">Invite →</button></div>'+
+      '<p id="tp-invite-msg" style="font-size:13px;color:#33415C;margin-top:8px"></p>'+
+      '<p class="guarantee" style="margin-top:4px">They get a sign-in link by email the moment you invite — magic link, no password. Need <b>more seats</b> this year? Email <a href="mailto:business@docoga.com.ng">business@docoga.com.ng</a> and a human confirms the addition.</p>';
+  }
+  h+='</div>';
+  /* 4 — invoices */
+  h+=card+'<div style="font-size:15px;font-weight:bold">Invoices &amp; payments</div>'+
+    '<div id="tp-invoices" style="margin-top:8px"><div style="font-size:13px;color:#33415C">Loading invoices…</div></div>'+
+    '<p class="guarantee" style="margin-top:10px">Each invoice opens as a printable page — use the print button on it (or your browser’s Print → Save as PDF). Invoices stay available for 12 months.</p></div>';
+  /* 5 — support */
+  h+=card+'<div style="font-size:15px;font-weight:bold">Support</div>'+
+    '<div style="font-size:14px;line-height:1.9;margin-top:8px">'+
+    '<a class="link-btn" href="support.html" style="display:inline-block;margin-bottom:6px">Read the Business FAQ →</a><br>'+
+'Email <a href="mailto:business@docoga.com.ng">business@docoga.com.ng</a> — an automated inbox with self-serve answers; the Business FAQ is one tap above.<br>'+
+'<span style="color:#64748b;font-size:13px">Every message is kept on record. Renewals and invoicing are self-serve in this dashboard; mid-year seat changes come with your next renewal.</span></div></div>';
+  el.innerHTML=h;
+  try{ teamInvoicesLoad(); }catch(e){}
+}
+async function teamInvite(){
+  const input=$('tp-invite-email'), msg=$('tp-invite-msg');
+  const email=input&&input.value.trim();
+  if(!email){ msg.textContent='Enter your colleague’s work email.'; return; }
+  msg.textContent='Inviting '+email+'…';
+  try{
+    const r=await fetch(WORKER_URL+'/business/team/seats',{method:'POST',headers:{Authorization:'Bearer '+team.token,'Content-Type':'application/json'},body:JSON.stringify({action:'invite',email})});
+    const j=await r.json();
+    if(j.ok){ input.value=''; msg.textContent='✅ '+email+' will receive a sign-in link by email.'; team.seats=j.seats||team.seats; }
+    else { msg.textContent=j.error||'Could not invite — please try again.'; }
+  }catch(e){ msg.textContent='Could not reach the server — please try again in a moment.'; }
+}
+async function teamRevoke(email){
+  if(!confirm('Remove '+email+' from the team? Their documents stay as they are; they simply lose the team banner.')) return;
+  try{
+    const r=await fetch(WORKER_URL+'/business/team/seats',{method:'POST',headers:{Authorization:'Bearer '+team.token,'Content-Type':'application/json'},body:JSON.stringify({action:'revoke',email})});
+    const j=await r.json();
+    if(j.ok){ team.seats=(j.seats||[]); teamPortalRender(); toast('Removed '+email+'.'); }
+    else toast('⚠️ '+(j.error||'Could not remove — please try again.'));
+  }catch(e){ toast('Could not reach the server — please try again in a moment.'); }
+}
+async function teamBrandSave(){
+  const msg=$('tp-brand-msg');
+  const brand={name:($('tp-brand-name')||{}).value, tagline:($('tp-brand-tagline')||{}).value, address:($('tp-brand-address')||{}).value, footer:($('tp-brand-footer')||{}).value};
+  brand.name=(brand.name||'').trim(); brand.tagline=(brand.tagline||'').trim(); brand.address=(brand.address||'').trim(); brand.footer=(brand.footer||'').trim();
+  if(team._logo) brand.logo=team._logo; else if(team.brand&&team.brand.logo) brand.logo=team.brand.logo;
+  msg.textContent='Saving…';
+  try{
+    const r=await fetch(WORKER_URL+'/business/team/brand',{method:'PUT',headers:{Authorization:'Bearer '+team.token,'Content-Type':'application/json'},body:JSON.stringify(brand)});
+    const j=await r.json();
+    if(j.ok){ team.brand=j.brand||brand; delete team._logo; msg.textContent='✅ Saved — your firm name now appears on every document instead of DocOga.'; updateTeamUI(); }
+    else { msg.textContent=j.error||'Could not save — please try again.'; }
+  }catch(e){ msg.textContent='Could not reach the server — please try again in a moment.'; }
+}
+function teamBrandLogoChange(){
+  const inp=$('tp-brand-logo'), msg=$('tp-brand-msg'), f=inp&&inp.files&&inp.files[0];
+  if(!f) return;
+  if(!/^image\/(png|jpe?g|svg\+xml)$/.test(f.type)){ msg.textContent='Logo must be a PNG, JPG or SVG image.'; inp.value=''; return; }
+  if(f.size>25*1024){ msg.textContent='Logo must be ≤ 25KB — please export a smaller image.'; inp.value=''; return; }
+  const rd=new FileReader();
+  rd.onload=function(){ team._logo=String(rd.result); const pv=$('tp-brand-logo-preview'); if(pv){ pv.src=team._logo; pv.style.display='block'; } msg.textContent='Logo attached — press “Save branding” to apply.'; };
+  rd.readAsDataURL(f);
+}
+async function teamInvoicesLoad(){
+  const box=$('tp-invoices'); if(!box) return;
+  box.innerHTML='<div style="font-size:13px;color:#33415C">Loading invoices…</div>';
+  try{
+    const r=await fetch(WORKER_URL+'/business/team/invoices',{headers:{Authorization:'Bearer '+team.token}});
+    const j=await r.json();
+    if(!j.ok){ box.innerHTML='<div style="font-size:13px;color:#33415C">Could not load invoices — refresh the page.</div>'; return; }
+    const list=j.invoices||[];
+    if(!list.length){ box.innerHTML='<div style="font-size:13px;color:#33415C">No invoices yet — they appear here as soon as you pay.</div>'; return; }
+    box.innerHTML=list.map(function(x){
+      const d=x.created?new Date(x.created).toLocaleDateString('en-NG'):'—';
+      const chip=x.status==='paid'?teamChip('paid','PAID'):(x.status==='wrong_amount'?teamChip('wrong','WRONG AMOUNT'):teamChip('open','OPEN'));
+      return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid #eef2f7;font-size:14px"><div><b>'+esc(x.id)+'</b><br><span style="color:#64748b;font-size:12px">'+d+' · '+ngn(x.total)+' incl. VAT</span></div><div style="display:flex;align-items:center;gap:10px">'+chip+'<a class="link-btn" style="white-space:nowrap" href="'+WORKER_URL+'/business/invoice/'+encodeURIComponent(x.id)+'" target="_blank" rel="noopener">Open / Save PDF →</a></div></div>';
+    }).join('');
+  }catch(e){ box.innerHTML='<div style="font-size:13px;color:#33415C">Could not load invoices — check your connection and refresh.</div>'; }
+}
 
 /* states */
 const STATES=["Abia","Adamawa","Akwa Ibom","Anambra","Bauchi","Bayelsa","Benue","Borno","Cross River","Delta","Ebonyi","Edo","Ekiti","Enugu","FCT (Abuja)","Gombe","Imo","Jigawa","Kaduna","Kano","Katsina","Kebbi","Kogi","Kwara","Lagos","Nasarawa","Niger","Ogun","Ondo","Osun","Oyo","Plateau","Rivers","Sokoto","Taraba","Yobe","Zamfara"];
@@ -1446,6 +1919,7 @@ function printCurrent(type){
 const html=RENDERERS[type](); // single source of truth — do not re-list renderers here
 const pr=$('print-root');
 pr.innerHTML=html;
+usageBeacon(); // C8: non-blocking, throttled, best-effort — the render never waits
 document.body.classList.add('printing');
 try{ window.print(); toast(passActive()?'Sending to printer — choose "Save as PDF" for a digital copy.':'Printing free copy — Oga Pass removes the banner.'); }
 catch(e){ toast('Printing is blocked in this preview. Open the live site to print or save as PDF.'); }
@@ -1695,7 +2169,7 @@ return html;
 }
 
 /* ================= router & init ================= */
-const PAGES=['home','agreement','notice','receipt','invoice','employment','caution','demand','payslip','warning','poa','docs','pricing'];
+const PAGES=['home','agreement','notice','receipt','invoice','employment','caution','demand','payslip','warning','poa','docs','pricing','business-setup','team'];
 function route(){
   let h=(location.hash||'#home').slice(1).split('?')[0];
   if(!PAGES.includes(h)) h='home';
@@ -1740,6 +2214,26 @@ function renderAll(){ renderAgreement(); renderNotice(); renderReceipt(); render
   window.addEventListener('hashchange',route);
   $('foot-wa').href='https://wa.me/'+SUPPORT_WHATSAPP;
   $('wa-float').href='https://wa.me/'+SUPPORT_WHATSAPP;
+  // Team session (Phase 1): magic-link pickup → restore stored session → re-validate
+  (async function teamBoot(){
+    try{
+      const q=new URLSearchParams(location.search);
+      const tk=q.get('team_token');
+      if(tk){
+        const r=await fetch(WORKER_URL+'/business/login?token='+encodeURIComponent(tk));
+        const j=await r.json();
+        if(j.ok){ const sess={token:j.token,team:{id:j.team.id,name:j.team.name,slug:j.team.slug},email:j.email,role:j.role,exp:j.exp,brand:{}};
+          store.setItem('docoga_team',JSON.stringify(sess)); team=sess; }
+        else { toast('❌ '+(j.error||'Sign-in link problem')); }
+        history.replaceState(null,'',location.pathname+(location.hash||''));
+      } else {
+        const s=store.getItem('docoga_team');
+        if(s){ const t=JSON.parse(s); if(t&&t.token&&t.team) team=t; }
+      }
+      if(team) await teamRefresh();
+    }catch(e){ team=null; }
+    updateTeamUI();
+  })();
   // Google Analytics 4 — loads only when configured AND served over http(s)
   if(ANALYTICS_ID && /^https?:/.test(location.protocol)){
     try{
@@ -1750,6 +2244,8 @@ function renderAll(){ renderAgreement(); renderNotice(); renderReceipt(); render
       window.gtag('js',new Date()); window.gtag('config',ANALYTICS_ID);
     }catch(e){}
   }
+  // Phase 5 gate: no public payment entry point until BIZ_LIVE (see the constant).
+  if(!BIZ_LIVE){ const pl=$('biz-pay-link'); if(pl) pl.remove(); }
   route(); renderAll();
 })();
 </script>

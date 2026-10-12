@@ -128,9 +128,9 @@ const win = w(dom);
 await wait(120); // let init() + inline scripts settle
 check('page loads with zero uncaught errors', dom.__errs().length === 0, dom.__errs().join(' | ').slice(0, 200));
 check('localStorage store wrapper present', typeof lex(dom, 'store') === 'object' && typeof lex(dom, 'store').getItem === 'function');
-check('router knows 13 pages', lex(dom, 'PAGES.length') === 13, 'PAGES=' + lex(dom, 'PAGES.length'));
+check('router knows 15 pages (13 + business-setup + team dashboard)', lex(dom, 'PAGES.length') === 15, 'PAGES=' + lex(dom, 'PAGES.length'));
 
-const PAGES = ['home', 'agreement', 'notice', 'receipt', 'invoice', 'employment', 'caution', 'demand', 'payslip', 'warning', 'poa', 'docs', 'pricing'];
+const PAGES = ['home', 'agreement', 'notice', 'receipt', 'invoice', 'employment', 'caution', 'demand', 'payslip', 'warning', 'poa', 'docs', 'pricing', 'business-setup'];
 let routeOk = 0, routeBad = [];
 for (const p of PAGES) {
   win.location.hash = '#' + p;
@@ -139,7 +139,7 @@ for (const p of PAGES) {
   if (el && el.style.display === 'block') routeOk++;
   else routeBad.push(p);
 }
-check('all 13 routes render their page', routeOk === 13, 'broken: ' + routeBad.join(','));
+check('all 14 routes render their page', routeOk === 14, 'broken: ' + routeBad.join(','));
 win.location.hash = '#not-a-real-page';
 win.dispatchEvent(new win.Event('hashchange'));
 check('unknown hash falls back to home', $(dom, 'page-home').style.display === 'block');
@@ -168,12 +168,38 @@ check('pricing states the real tool count on Oga Pass',
 // The newest, highest-value tool must be named on the paid tier.
 check('Oga Pass names Power of Attorney', /power of attorney/i.test(priceText));
 
-// Business tier must exist and must be contactable.
+// Business tier (owner instruction, 11 Oct 2026: the Business path must be fully
+// self-serve — no WhatsApp step for the customer). The card sits in an honest
+// "coming soon" state and carries the self-serve notify form, NOT a quote link.
 check('Business tier present', priceText.includes('Business'));
-const bizLink = priceSec.querySelector('a[href*="wa.me"]');
-check('Business tier links to WhatsApp', !!bizLink, bizLink ? bizLink.getAttribute('href').slice(0, 40) : 'none');
-check('Business WhatsApp uses the configured support number',
-      !!bizLink && bizLink.getAttribute('href').includes(lex(dom, 'SUPPORT_WHATSAPP')));
+const bizCard = [...priceSec.querySelectorAll('.price-card')].find(c => c.textContent.includes('Business'));
+check('Business card is marked coming soon (no unmet promises)', !!bizCard && /coming soon/i.test(bizCard.textContent));
+check('Business card carries no WhatsApp quote link', !!bizCard && !bizCard.querySelector('a[href*="wa.me"]'));
+check('Business card carries the self-serve notify form', !!bizCard && !!bizCard.querySelector('#biz-waitlist #biz-email') && /notify me/i.test(bizCard.textContent));
+check('Business notify form posts to the worker waitlist endpoint',
+      /\/business\/waitlist/.test(lex(dom, 'bizWaitlistSubmit.toString()')));
+check('Business card: "Configure & pay online" entry point is REMOVED while BIZ_LIVE=false (no dead-end purchase)',
+      !!bizCard && !bizCard.querySelector('#biz-pay-link') && !/configure &amp; pay online|configure & pay online/i.test(bizCard.innerHTML));
+check('BIZ_LIVE gate constant exists and defaults to false (Phase 5 flips it true only when FLW creds are live)',
+      (() => { const m = HTML.match(/const BIZ_LIVE\s*=\s*(true|false)/); return !!m && m[1] === 'false'; })());
+
+// Business team core (Phase 1, 11 Oct 2026): magic-link sign-in + firm branding
+// through the single freeBanner() chokepoint that all 10 renderers share.
+check('Business card carries the team sign-in box', !!bizCard && !!bizCard.querySelector('#biz-team-box'));
+check('team sign-in UI is generated and posts to the worker login endpoint',
+      /biz-login-email/.test(lex(dom, 'updateTeamUI.toString()')) &&
+      /\/business\/login/.test(lex(dom, 'bizLoginSubmit.toString()')));
+check('freeBanner() serves firm branding in team mode (chokepoint for all 10 renderers)',
+      /teamActive/.test(lex(dom, 'freeBanner.toString()')) && /teamBrandHeader/.test(lex(dom, 'freeBanner.toString()')));
+check('team brand header renders firm name + logo',
+      /team-logo/.test(lex(dom, 'teamBrandHeader.toString()')) && /team-name/.test(lex(dom, 'teamBrandHeader.toString()')));
+check('toolbar badge flips to TEAM in team mode', /badge team/.test(lex(dom, 'renderBadge.toString()')));
+check('team boot picks up ?team_token= magic link and stores the session',
+      /team_token/.test(HTML) && /docoga_team/.test(HTML));
+check('sign-out clears the stored session and re-renders',
+      /docoga_team/.test(lex(dom, 'teamSignOut.toString()')) && /renderAll/.test(lex(dom, 'teamSignOut.toString()')));
+check('all 10 renderers still route through freeBanner()',
+      (HTML.match(/freeBanner\(\)\+/g) || []).length === 10);
 
 // The buy button must still be wired.
 check('Oga Pass buy button present and wired',
@@ -500,6 +526,189 @@ for (const [k, v] of corrupt) {
 check('app survives ' + corrupt.length + ' corrupt-storage permutations', corruptOk === corrupt.length, corruptBad.join(' | ').slice(0, 200));
 
 /* ============================ 11. CONFIG GUARDS ========================== */
+/* ============================ BUSINESS TEAM MODE (PHASE 1) ============================ */
+section('Business team mode — branded rendering end-to-end (Phase 1 gate)');
+const teamLogo = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+const teamStorage = `
+  window.fetch = function (u, opt) {
+    u = String(u); window.__calls.push(u);
+    if (u.indexOf('/business/team') !== -1) return Promise.resolve({ ok: true, status: 200, json: function(){ return Promise.resolve({ ok: true, team: { id: 't1', slug: 'firm', name: 'Firm & Co', status: 'active', expiry: '2027-01-01', plan: 'starter' }, email: 'owner@firm.ng', role: 'owner', seats: [{ email: 'owner@firm.ng', name: 'Owner', role: 'owner', status: 'active' }], brand: { name: 'Firm & Co', address: '12 Agents Rd, Abuja', logo: ${JSON.stringify(teamLogo)} } }); } });
+    return Promise.resolve({ ok: false, status: 404, json: function(){ return Promise.resolve({ ok: false, error: 'nope' }); } });
+  };
+  try { localStorage.setItem('docoga_team', JSON.stringify({ token: 'tl_t1|owner@firm.ng|9999999999.sig', team: { id: 't1', name: 'Firm & Co', slug: 'firm' }, email: 'owner@firm.ng', role: 'owner', exp: 9999999999 })); } catch(e) {}
+`;
+const teamDom = boot({ storage: teamStorage });
+const tWin = teamDom.window;
+await new Promise(res => setTimeout(res, 60));
+check('stored team session restored + /business/team re-validated on boot', (tWin.__calls || []).some(u => u.indexOf('/business/team') !== -1));
+let brandedAll = 0, brandedBad = [];
+for (const t of RENDERERS) {
+  try {
+    tWin.printCurrent(t);
+    const pr = $(teamDom, 'print-root');
+    const tb = pr.querySelector('.team-banner');
+    const ok = tb && /Firm & Co/.test(tb.textContent) && !!pr.querySelector('img.team-logo') && !pr.querySelector('.free-banner');
+    if (ok) brandedAll++; else brandedBad.push(t);
+    tWin.document.body.classList.remove('printing');
+    $(teamDom, 'print-root').innerHTML = '';
+  } catch (e) { brandedBad.push(t + ':' + e.message); }
+}
+check('ALL 10 tools render the firm banner (name + logo) with no DocOga banner (Phase 1 gate)', brandedAll === 10, 'failed: ' + brandedBad.join(','));
+check('signed-in chip replaces the sign-in form on the Business card',
+      !!teamDom.window.document.querySelector('#biz-team-box .team-chip') && /signed in as/i.test(teamDom.window.document.querySelector('#biz-team-box').textContent));
+tWin.teamSignOut();
+tWin.printCurrent('agreement');
+const tPr2 = $(teamDom, 'print-root');
+check('sign-out restores the DocOga free banner immediately', !!tPr2.querySelector('.free-banner') && !tPr2.querySelector('.team-banner'));
+check('sign-out restores the sign-in form', !!teamDom.window.document.querySelector('#biz-team-box #biz-login-email'));
+
+/* ============================ BUSINESS CONFIGURATOR + CHECKOUT (PHASE 2) ============================ */
+section('Business configurator + checkout (Phase 2)');
+check('business-setup page registered in the router', lex(dom, "PAGES.indexOf('business-setup')") !== -1);
+check('configurator page present with the four segment presets',
+      !!dom.window.document.getElementById('page-business-setup') &&
+      !!dom.window.document.getElementById('biz-seg-estate-agent') &&
+      !!dom.window.document.getElementById('biz-seg-hr-team') &&
+      !!dom.window.document.getElementById('biz-cfg-quote'));
+check('published formula: 3/100 → ₦96,000 base, ₦103,200 total (VAT line)',
+      (() => { const q = lex(dom, 'bizQuote(3,100)'); return q.price === 96000 && q.vat === 7200 && q.total === 103200 && q.tier === 'starter'; })());
+check('published formula: 25/1000 → ₦720,000 · 8/300 → ₦240,000 · 2/5000 → ₦978,000',
+      (() => { return lex(dom, 'bizQuote(25,1000)').price === 720000 && lex(dom, 'bizQuote(8,300)').price === 240000 && lex(dom, 'bizQuote(2,5000)').price === 978000; })());
+lex(dom, 'bizUpdateQuote()');
+check('live quote renders base + VAT + total for the defaults',
+      /₦96,000/.test($(dom, 'biz-cfg-quote').textContent) && /VAT/.test($(dom, 'biz-cfg-quote').textContent) && /Total \/ year/.test($(dom, 'biz-cfg-quote').textContent));
+$(dom, 'biz-cfg-seats').value = '25';
+lex(dom, 'bizUpdateQuote()');
+check('quote recomputes on input (25 seats → growth base + 5 seat units, ₦774,000 total)',
+      /₦480,000/.test($(dom, 'biz-cfg-quote').textContent) && /\+5 seats/.test($(dom, 'biz-cfg-quote').textContent) && /₦774,000/.test($(dom, 'biz-cfg-quote').textContent));
+check('create-team posts to /business/teams; payment entry point present in SOURCE (BIZ_LIVE gate controls its runtime visibility)',
+      /\/business\/teams/.test(lex(dom, 'bizCreateTeam.toString()')) &&
+      /id="biz-pay-link"[^>]*href="#business-setup"/.test(HTML));
+check('checkout posts to /business/team/charge (transfer VA panel + card hosted URL)',
+      (() => { const s = lex(dom, 'bizCharge.toString()'); return /\/business\/team\/charge/.test(s) && /biz-va-panel/.test(s) && /pay_url/.test(s); })());
+const unpaidStorage = `
+  window.fetch = function (u, opt) {
+    u = String(u); window.__calls.push(u);
+    if (u.indexOf('/business/team') !== -1) return Promise.resolve({ ok: true, status: 200, json: function(){ return Promise.resolve({ ok: true, team: { id: 't9', slug: 'pf', name: 'Pay First', status: 'unpaid', expiry: '', plan: 'starter' }, email: 'pay@first.co', role: 'owner', seats: [], brand: {}, quote: { tier: 'starter', seats: 3, docs: 100, extraSeats: 0, extraBlocks: 0, price: 96000, vat: 7200, total: 103200 } }); } });
+    return Promise.resolve({ ok: false, status: 404, json: function(){ return Promise.resolve({ ok: false, error: 'nope' }); } });
+  };
+  try { localStorage.setItem('docoga_team', JSON.stringify({ token: 'tl_t9|pay@first.co|9999999999.sig', team: { id: 't9', name: 'Pay First', slug: 'pf', status: 'unpaid' }, email: 'pay@first.co', role: 'owner', exp: 9999999999 })); } catch(e) {}
+`;
+const upDom = boot({ storage: unpaidStorage });
+await new Promise(res => setTimeout(res, 60));
+check('unpaid team → checkout panel with total + transfer/card buttons',
+      /₦103,200/.test(upDom.window.document.querySelector('#biz-team-box').textContent) &&
+      !!upDom.window.document.querySelector('#biz-team-box [onclick*="transfer"]') &&
+      !!upDom.window.document.querySelector('#biz-team-box [onclick*="card"]'));
+upDom.window.printCurrent('agreement');
+const upPr = $(upDom, 'print-root');
+check('unpaid team documents still carry the DocOga banner (branding is what is paid for)',
+      !!upPr.querySelector('.free-banner') && !upPr.querySelector('.team-banner'));
+
+/* ============================ TEAM PORTAL (PHASE 3) ============================ */
+section('Team portal + support surface (Phase 3)');
+check('team dashboard route registered with the portal container',
+      lex(dom, "PAGES.indexOf('team')") !== -1 &&
+      !!dom.window.document.getElementById('page-team') &&
+      !!dom.window.document.getElementById('team-portal'));
+check('signed-out visitor → portal shows the sign-in hint (magic link) + setup link',
+      /Sign in to your team dashboard/.test($(dom, 'team-portal').textContent) &&
+      !!dom.window.document.querySelector('#team-portal #tp-login-email') &&
+      !!dom.window.document.querySelector('#team-portal a[href="#business-setup"]'));
+/* Phase 1 signed teamDom out (banner-restore check) — boot a fresh active-team DOM for the portal */
+const teamDom3 = boot({ storage: teamStorage });
+await new Promise(res => setTimeout(res, 80));
+const tpAct = teamDom3.window.document.querySelector('#team-portal');
+check('active team → portal shows the licence card (firm + ACTIVE + expiry)',
+      /Firm & Co/.test(tpAct.textContent) && /ACTIVE · until/.test(tpAct.textContent),
+      tpAct.textContent.slice(0, 160));
+check('owner gets the branding editor (firm name pre-filled, logo input PNG/JPG/SVG)',
+      !!teamDom3.window.document.querySelector('#team-portal #tp-brand-name') &&
+      teamDom3.window.document.querySelector('#team-portal #tp-brand-name').value === 'Firm & Co' &&
+      /image\/svg\+xml/.test(teamDom3.window.document.querySelector('#team-portal #tp-brand-logo').getAttribute('accept') || ''));
+check('seats card lists the owner seat + the invite form (owner only)',
+      /owner@firm\.ng/.test(tpAct.textContent) &&
+      !!teamDom3.window.document.querySelector('#team-portal #tp-invite-email'));
+check('invoices card present + support card links business@ and the FAQ',
+      !!teamDom3.window.document.querySelector('#team-portal #tp-invoices') &&
+      !!teamDom3.window.document.querySelector('#team-portal a[href="mailto:business@docoga.com.ng"]') &&
+      !!teamDom3.window.document.querySelector('#team-portal a[href="support.html"]'));
+check('active + unpaid chips both get the “Team dashboard →” link',
+      !!teamDom3.window.document.querySelector('#biz-team-box a[href="#team"]') &&
+      !!upDom.window.document.querySelector('#biz-team-box a[href="#team"]'));
+check('unpaid team portal → UNPAID licence card with the quote total + pay buttons',
+      /UNPAID/.test($(upDom, 'team-portal').textContent) &&
+      /₦103,200/.test($(upDom, 'team-portal').textContent) &&
+      !!upDom.window.document.querySelector('#team-portal [onclick*="transfer"]'),
+      'portal=' + $(upDom, 'team-portal').textContent.slice(0, 160) + ' | chip=' + upDom.window.document.querySelector('#biz-team-box').textContent.slice(0,120));
+check('teamRefresh persists the seats list for the portal',
+      lex(dom, 'teamRefresh.toString()').includes('team.seats=j.seats'));
+check('portal wiring: invoices list + printable invoice links + seats actions + brand PUT',
+      (() => {
+        const inv = lex(dom, 'teamInvoicesLoad.toString()');
+        const seatA = lex(dom, 'teamInvite.toString()') + lex(dom, 'teamRevoke.toString()');
+        const brand = lex(dom, 'teamBrandSave.toString()');
+        return inv.includes('/business/team/invoices') && inv.includes('/business/invoice/') &&
+               seatA.includes('/business/team/seats') && seatA.includes("action:'invite'") && seatA.includes("action:'revoke'") &&
+               brand.includes('/business/team/brand') && brand.includes("method:'PUT'");
+      })());
+check('logo upload validated client-side: type whitelist + 25KB cap',
+      (() => { const s = lex(dom, 'teamBrandLogoChange.toString()'); return s.includes('25*1024') && s.includes('png|jpe?g|svg'); })());
+const supportHtml = fs.readFileSync(path.join(ROOT, 'site', 'support.html'), 'utf8');
+check('support.html: noindex, business@ everywhere, wrong-amount + renewal + data answers',
+      /noindex/.test(supportHtml) && (supportHtml.match(/business@docoga\.com\.ng/g) || []).length >= 5 &&
+      /wrong amount/i.test(supportHtml) && /renew/i.test(supportHtml) && /Privacy Policy/.test(supportHtml));
+check('support.html makes NO fixed REFUND-window promise (§11 pending; the 14-day GRACE period is lifecycle, not refunds)',
+      !/14[- ]day[^<]{0,80}refund/i.test(supportHtml) && !/refund[^<]{0,80}14[- ]day/i.test(supportHtml));
+check('privacy.html: Business Teams section (account data spelled out) + dated 11 Oct',
+      /<h2>5\. Business teams<\/h2>/.test(fs.readFileSync(path.join(ROOT, 'site', 'privacy.html'), 'utf8')) &&
+      /11 October 2026/.test(fs.readFileSync(path.join(ROOT, 'site', 'privacy.html'), 'utf8')));
+check('footer links the public support page', !!dom.window.document.querySelector('footer a[href="support.html"]'));
+
+/* ============================ AUTONOMY (PHASE 4) ============================ */
+section('Autonomy — renewal + usage metering (Phase 4)');
+check('renewal posts to /business/team/renew (owner; server owns window + price)',
+      (() => { const s = lex(dom, 'bizRenew.toString()'); return /\/business\/team\/renew/.test(s) && s.includes("method:'POST'") && /biz-renew-panel/.test(s); })());
+check('usage beacon: best-effort, non-blocking, throttled (C8 honesty)',
+      (() => { const s = lex(dom, 'usageBeacon.toString()'); return /\/business\/team\/usage/.test(s) && s.includes('keepalive:true') && /10\*60\*1000/.test(s) && /teamActive/.test(s); })());
+check('revenue funnel events wired for BOTH funnels (retail pass + business) with gtag guard',
+      (() => { const s = HTML; const g = lex(dom, 'trackEvent.toString()');
+        return ['pass_checkout_opened','pass_activated','pass_topup','business_team_created','business_charge_started','business_team_activated','business_renewal_started'].every(n => s.includes(n)) && /window\.gtag/.test(g); })());
+const p4Team = (over) => `
+  window.fetch = function (u, opt) {
+    u = String(u); window.__calls.push(u);
+    if (u.indexOf('/business/team') !== -1) return Promise.resolve({ ok: true, status: 200, json: function(){ return Promise.resolve(${JSON.stringify(Object.assign({ ok: true, team: { id: 'tp4', slug: 'p4', name: 'P4 Firm', status: 'active', expiry: '2026-11-10', plan: 'starter' }, email: 'o@p4.ng', role: 'owner', seats: [], brand: {} }, over))}); } });
+    return Promise.resolve({ ok: false, status: 404, json: function(){ return Promise.resolve({ ok: false, error: 'nope' }); } });
+  };
+  try { localStorage.setItem('docoga_team', JSON.stringify({ token: 'tl_tp4|o@p4.ng|9999999999.sig', team: { id: 'tp4', name: 'P4 Firm', slug: 'p4', status: 'active' }, email: 'o@p4.ng', role: 'owner', exp: 9999999999 })); } catch(e) {}
+`;
+const nearDom = boot({ storage: p4Team({ team: { id: 'tp4', slug: 'p4', name: 'P4 Firm', status: 'active', expiry: '2026-11-10', plan: 'starter' }, renewal: { base: 96000, vat: 7200, total: 103200, expiry: '2026-11-10', status: 'active' }, usage: { used: 120, band: 100 } }) });
+await new Promise(res => setTimeout(res, 80));
+const nearP = nearDom.window.document.querySelector('#team-portal');
+check('active near expiry (T-30) → renewal offered at the PURCHASE price with both methods',
+      /Renews/.test(nearP.textContent) && /₦103,200/.test(nearP.textContent) &&
+      !!nearDom.window.document.querySelector('#team-portal [onclick*="bizRenew"]') &&
+      !!nearDom.window.document.querySelector('#team-portal #biz-renew-panel'));
+check('monthly allowance line renders overage honestly (120/100 = soft, no cut-off)',
+      /Documents this month:/.test(nearP.textContent) && /120 \/ 100/.test(nearP.textContent) && /soft/i.test(nearP.textContent));
+nearDom.window.printCurrent('agreement');
+check('branded print fires the usage beacon (non-blocking, throttled)',
+      (nearDom.window.__calls || []).some(u => u.indexOf('/business/team/usage') !== -1));
+const graceDom = boot({ storage: p4Team({ team: { id: 'tp4', slug: 'p4', name: 'P4 Firm', status: 'grace', expiry: '2026-09-01', plan: 'starter' }, renewal: { base: 96000, vat: 7200, total: 103200, expiry: '2026-09-01', status: 'grace' } }) });
+await new Promise(res => setTimeout(res, 80));
+const graceP = graceDom.window.document.querySelector('#team-portal');
+check('grace team → 14-day grace card + self-serve Renew + chip hint (no beacon: not active)',
+      /14-day grace/.test(graceP.textContent) &&
+      !!graceDom.window.document.querySelector('#team-portal [onclick*="bizRenew"]') &&
+      /grace/i.test(graceDom.window.document.querySelector('#biz-team-box').textContent) &&
+      !(graceDom.window.__calls || []).some(u => u.indexOf('/business/team/usage') !== -1));
+const freeDom = boot({ storage: p4Team({ team: { id: 'tp4', slug: 'p4', name: 'P4 Firm', status: 'free', expiry: '2026-09-01', plan: 'starter' }, renewal: { base: 96000, vat: 7200, total: 103200, expiry: '2026-09-01', status: 'free' } }) });
+await new Promise(res => setTimeout(res, 80));
+const freeP = freeDom.window.document.querySelector('#team-portal');
+check('free-tier team → 90-day retention notice + self-serve Renew (reactivation at purchase price)',
+      /free tier/.test(freeP.textContent) && /90 days/.test(freeP.textContent) &&
+      !!freeDom.window.document.querySelector('#team-portal [onclick*="bizRenew"]'));
+
 section('config values used by customers');
 const CFG = { PAYMENT_URL: lex(dom, 'PAYMENT_URL'), SUPPORT_WHATSAPP: lex(dom, 'SUPPORT_WHATSAPP'), SITE_URL: lex(dom, 'SITE_URL'), WORKER_URL: lex(dom, 'WORKER_URL'), ANALYTICS_ID: lex(dom, 'ANALYTICS_ID') };
 check('PAYMENT_URL is a live https link', /^https:\/\/flutterwave\.com\/pay\//.test(CFG.PAYMENT_URL), CFG.PAYMENT_URL);
