@@ -1,8 +1,15 @@
 # Canned replies — business@docoga.com.ng
 
-> Phase 3 (11 Oct 2026). Starting points, not copy-paste machines: edit each
-> reply to the actual case before sending (names, numbers, dates). The tone bar:
-> short, human, written record. No WhatsApp links in Business replies.
+> Phase 3 (11 Oct 2026). **Lane note (12 Oct 2026): the business@ lane is now
+> fully autonomous — the auto-reply is the entire lane and no human replies
+> from it (owner instruction).** These are kept as reference copy for the rare
+> off-lane answer the owner sends personally from the archive (e.g. a refund
+> decision), and the Oga Pass WhatsApp lane borrows from them. They are NOT
+> part of the automated system.
+>
+> Starting points, not copy-paste machines: edit each reply to the actual case
+> before sending (names, numbers, dates). The tone bar: short, human, written
+> record. No WhatsApp links in Business replies.
 > Every reply ends with the standard sign-off below.
 
 ## Sign-off (always)

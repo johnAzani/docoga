@@ -59,17 +59,24 @@ it show (must be "DocOga")? (c) account labelled as the business type?
 (d) displayed transaction limits ≫ ₦103,200? (e) a small test payout lands
 in your bank? **Report these answers in the session.**
 
-## 1. Make business@docoga.com.ng real (15 min — NOW, blocks nothing)
+## 1. Make business@docoga.com.ng real (~20 min — NOW, blocks the pre-deploy)
 
 The pre-deploy (step 2) publishes a support page that tells buyers to email
-business@ — so the mailbox must exist first. Follow `docs/support/AUTO_REPLY.md`:
-free Brevo mailbox on the domain (or the free-tier alternative), SPF check
-(the record must cover BOTH the worker's transactional sender and the
-mailbox), enable the **exact** auto-reply text from the doc.
+business@ — so the lane must exist first. Lane model (owner, 12 Oct):
+**fully autonomous** — the auto-reply is the entire lane; nobody reads,
+nobody replies (CANNED.md = reference only). Zoho's free signup is blocked
+for this account, so the mailbox is built from parts DocOga already runs:
+**Cloudflare Email Routing + the `docoga-support-mail` worker** (auto-reply
+AS business@ + silent archive copy to your Gmail). Full walkthrough, DNS
+records and test plan: `docs/support/AUTO_REPLY.md`.
 
-- [ ] mailbox exists and receives (test mail from a personal address)
+- [ ] CF dashboard: *Email Routing → Onboard Domain* `docoga.com.ng` (CF auto-adds MX + DKIM + SPF) → edit the apex SPF to `v=spf1 include:spf.brevo.com include:_spf.mx.cloudflare.net ~all`
+- [ ] CF dashboard: *Destinations → Add* `azanijohn2017@gmail.com` → Verify
+- [ ] Terminal: `npx wrangler secret put BREVO_API_KEY --config worker/support-mail/wrangler.toml` (same key as docoga-pass) then `npx wrangler deploy --config worker/support-mail/wrangler.toml`
+- [ ] CF dashboard: *Custom addresses* `business@docoga.com.ng` → Route to **Worker → `docoga-support-mail`**
+- [ ] Test: mail from a personal address → BOTH an archive copy in Gmail AND an auto-reply FROM business@ (text per the doc)
+- [ ] Test: a "Mail Delivery Failure"-subject mail → archive copy only, NO auto-reply
 - [ ] SPF valid (mxtoolbox free check)
-- [ ] auto-reply enabled (external senders only) with the doc's text
 
 ## 2. Pre-deploy (safe NOW — the money path is sealed, everything else goes live)
 
