@@ -71,6 +71,44 @@ This ensures the next session feels like the same person continuing.
 
 ---
 
+## 🚨 OPERATIONAL NOTE — 12 Oct 2026: the site↔worker seam was half-published (fixed same day)
+
+`docoga.com.ng` was serving the merged build (PR #15) while the worker the site
+calls (`site/index.html:1095` → `https://docoga-pass.johnazani.workers.dev`) was
+still the 11 Oct `f83be6e` revision. Every worker route the *new* site calls
+answered `{"ok":false,"error":"not found"}` in production: `/business/teams`,
+`/business/login` (POST + GET), `/business/team*`. The dashboard-editor check
+that said "the worker already has the new code" was **true but insufficient** —
+`/business/waitlist` genuinely is in `f83be6e`; the Phase 1–4 routes are not.
+
+Root cause of the miss: the last *successful* gated deploy was `f83be6e`
+(11 Oct 12:22). Phases 1–4 changed `worker/index.js` at 12:30–13:21 and every
+push after that carried no `[deploy-pass]` marker, so every run after them is
+`skipped` — a green "worker is deployed" belief on a stale revision.
+
+Fixed 12 Oct 17:21 (see the branch `arena/1913fcb7-docoga` session record):
+`Deploy docoga-pass (gated)` run **38283647993**, version
+**`8bddd363-b819-4b90-a8a5-24e373e5f2ed`**. Verified live: `/business/team` →
+**`401 sign_in_required`** (also proves `TEAM_AUTH_SECRET` is set),
+`/business/login?token=bad` → **`400 invalid link`**, `/business/team/invoices`
+→ 401, `/business/invoice/*` → "sign in required" HTML; retail `/verify` and
+`/activate` answer exactly as before. Full record:
+`docs/PRE_LAUNCH_RUNBOOK.md` §2 correction + §7 deploy log.
+
+**Three things this exposed, worth keeping:**
+1. A gated workflow reporting `success` is **not** proof of a deploy — its
+   deploy step runs `set +e` and only echoes `deploy_exit=…`. Read that line.
+   (In run 38283647993 it was `0`, and the publish did happen.)
+2. **The probe tool caches.** A repeat probe of an unchanged URL can return the
+   pre-deploy body and look like "still broken". Cache-bust (`?cb=123`) — the
+   worker ignores query params for routing (`url.pathname`).
+3. `gh workflow run` is unavailable to the session (`actions: write` → HTTP 403
+   "Resource not accessible by integration"), so `net-probe.yml` cannot be
+   triggered and the sandbox cannot POST. **GET probes via `fetch_page` are the
+   agent's live-verification path**; POST probes remain owner-side (`reqbin.com`).
+
+---
+
 ## 🚨 OPERATIONAL NOTE — 8 Oct 2026: the sandbox can reset the local branch
 
 Between turns the local branch pointer was rolled back from `ec97606` to the

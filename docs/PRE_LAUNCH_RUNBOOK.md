@@ -329,4 +329,28 @@ before and after — never the intent.
   `[triggers]` cron, so nothing new is bound or scheduled by this deploy.
 - **Action:** commit with the `[deploy-pass]` marker on
   `arena/1913fcb7-docoga` → workflow `Deploy docoga-pass (gated)`.
-- **After:** _appended below once the run finishes._
+- **After (live, read-only, **cache-busted** — the probe tool caches responses,
+  so repeated probes carry a `?cb=` param and are only trusted with it):**
+  - `GET /business/team` → **`401`** `{"ok":false,"error":"sign_in_required"}`
+    (was `not found`) — this also proves `TEAM_AUTH_SECRET` is **in effect**:
+    with the secret unset the same call would answer `503 team_auth_disabled`.
+  - `GET /business/login?token=bad` → **`400`** `{"ok":false,"error":"invalid link"}`
+  - `GET /business/team/invoices` → **`401`** `sign_in_required` (Phase 3 route)
+  - `GET /business/invoice/INV-does-not-exist` → HTML *"sign in required"* — the
+    printable-invoice route exists now; it used to fall through to `not found`.
+  - Retail (Oga Pass) untouched, same shapes as before the deploy: `GET /` →
+    `{"ok":true,"service":"docoga-pass",…}` · `GET /verify?ref=TESTREF123` →
+    `{"ok":false,"error":"payment not found or not successful yet"}` ·
+    `GET /activate?code=BOGUSTEST123` → `{"ok":false,"error":"invalid code"}`.
+- **Deploy artefact:** run
+  [38283647993](https://github.com/johnAzani/docoga/actions/runs/38283647993)
+  — every step `success`, `deploy_exit=0`, version
+  `8bddd363-b819-4b90-a8a5-24e373e5f2ed`, "Deployed docoga-pass triggers"
+  (the `0 7 * * *` cron unchanged). The full wrangler log is the deploy-log
+  comment on PR #11 (the workflow edits one comment in place — `created 8 Oct`,
+  `updated 12 Oct 17:21`; `gh run view --log` itself is unreadable from the
+  sandbox, as the workflow header says).
+- **Still not verified by the agent (needs a POST):** that the notify form's
+  `POST /business/waitlist` accepts a real address — the route was already in
+  the previously deployed revision, so this deploy does not change it — and the
+  `400`s in §2 step 3. Those remain the owner's `reqbin.com` probes.
