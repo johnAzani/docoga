@@ -114,12 +114,16 @@ jobs:
           # Gradle user-home properties, NOT the checkout: the keystore path and
           # both passwords never appear in the command line, the process table,
           # the git tree or the artifacts. $HOME dies with the runner.
+          # GRADLE_USER_HOME is honoured because setup-java's gradle cache may
+          # relocate it; the file must sit where the build will actually look.
+          GUH="${GRADLE_USER_HOME:-$HOME/.gradle}"
+          mkdir -p "$GUH"
           {
             echo "docogaKeystoreFile=$KS"
             echo "docogaKeystorePassword=$DOCOGA_APK_KEYSTORE_PASSWORD"
             echo "docogaKeystoreAlias=${DOCOGA_APK_KEY_ALIAS:-docoga-owner}"
             echo "docogaKeystoreAliasPassword=${DOCOGA_APK_KEY_PASSWORD:-$DOCOGA_APK_KEYSTORE_PASSWORD}"
-          } >> "$HOME/.gradle/gradle.properties"
+          } >> "$GUH/gradle.properties"
           echo "ok=true" >> "$GITHUB_OUTPUT"
           echo "ks=$KS" >> "$GITHUB_OUTPUT"
 
@@ -193,5 +197,5 @@ jobs:
       - name: wipe the key off the runner
         if: always() && steps.keystore.outputs.ks != ''
         run: |
-          rm -f "${{ steps.keystore.outputs.ks }}" "$HOME/.gradle/gradle.properties"
+          rm -f "${{ steps.keystore.outputs.ks }}" "${GRADLE_USER_HOME:-$HOME/.gradle}/gradle.properties"
           echo "keystore file and gradle user properties removed"
