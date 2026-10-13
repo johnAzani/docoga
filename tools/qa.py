@@ -506,6 +506,73 @@ if wf_reel:
     check("reel steps consume the decision, not the cron",
           "steps.reel_plan.outputs.reel_today" in wf_reel
           and wf_reel.index("Reels — decide") < wf_reel.index("Reels — install the renderer"))
+# ── the heartbeat (one cron that judges every other cron) ───────────────────
+# The lanes publish; nothing else asks "did they". These checks are the pre-push
+# guard for the guard: the parts that a missing dependency would hide from CI, and
+# the cross-file contracts (tool ↔ workflow ↔ docs) that each side can break alone.
+hb_paths = {
+    "tool": os.path.join(ROOT, "tools", "automation_heartbeat.py"),
+    "workflow": os.path.join(ROOT, ".github", "workflows", "automation-heartbeat.yml"),
+    "tests": os.path.join(ROOT, "tools", "tests", "test_automation_heartbeat.py"),
+}
+for hb_label, hb_path in hb_paths.items():
+    check("heartbeat: %s exists" % hb_label, os.path.exists(hb_path))
+hb_src = open(hb_paths["tool"], encoding="utf-8").read() if os.path.exists(hb_paths["tool"]) else ""
+hb_wf = open(hb_paths["workflow"], encoding="utf-8").read() if os.path.exists(hb_paths["workflow"]) else ""
+if hb_src:
+    check("heartbeat reads its lanes, never lists them",
+          "def discover_lanes(" in hb_src
+          and not re.search(r"\b(telegram|facebook|instagram|youtube)_\w*\.ya?ml", hb_src),
+          "a hardcoded lane table is stale the day a cron moves, and a stale monitor "
+          "reports a healthy repo")
+    hb_imports = {m.split(" ")[1].split(".")[0] for m in
+                  re.findall(r"^(?:import|from) .+$", hb_src, re.M)}
+    check("heartbeat imports nothing beyond stdlib + PyYAML",
+          hb_imports <= {"argparse", "base64", "collections", "datetime", "hashlib", "json",
+                         "os", "pathlib", "re", "sys", "urllib", "yaml", "__future__"},
+          "the job installs only pyyaml — one stray `import requests` is a crash at 18:00 "
+          "and a silent month of no data")
+    check("heartbeat counts the cadence from the cron, with slack capped at one cycle",
+          "def silence_deadline(" in hb_src and "min(int(jitter), max(int(gap), 3600))" in hb_src,
+          "12 h of scheduler slack is right for a daily lane and absurd for a 30-minute one")
+    check("a schedule that only exists on a branch is never called dead",
+          'options["default_crons"]' in hb_src,
+          "build_verdicts reads it out of options; rebinding a local name in main() "
+          "silently turns every unmerged lane into a false alarm")
+    check("the heartbeat can only report 'I could not look'",
+          "returning 'all clear' without data" in hb_src
+          or "refusing to report a healthy repo" in hb_src)
+    check("heartbeat exits 3 when the data is missing",
+          re.search(r"could not look.*?return 3", hb_src, re.S) is not None)
+if hb_wf:
+    check("heartbeat workflow: scheduled and manually runnable",
+          "schedule:" in hb_wf and "workflow_dispatch:" in hb_wf)
+    check("heartbeat workflow: installs what the tool needs",
+          "pip install" in hb_wf and "pyyaml" in hb_wf.lower())
+    check("heartbeat workflow: reads every key the tool prints", hb_src.count("HEARTBEAT_") > 0)
+    grep_keys = sorted(set(re.findall(r"sed -n 's/\^(HEARTBEAT_[A-Z_]+)=/", hb_wf)))
+    check("heartbeat workflow reads at least one contract key", len(grep_keys) >= 3,
+          "the sed pattern that finds them changed shape once already — an empty loop here "
+          "would prove nothing and look like a pass")
+    for key in grep_keys:
+        check("heartbeat contract: %s is printed by the tool" % key,
+              ('"%s=%%s"' % key) in hb_src or ("'%s='" % key) in hb_src,
+              "the workflow greps this out of the log; a renamed key reads as 'healthy'")
+    check("heartbeat files one issue, not one per day",
+          'grep -q "$SIGNATURE"' in hb_wf or "grep -q \"$SIGNATURE\"" in hb_wf)
+    check("heartbeat closes its own issue when the lanes heal",
+          "gh issue close" in hb_wf,
+          "an open issue about a healed lane is worse than no issue: it trains the "
+          "reader to ignore the label")
+    check("heartbeat commits nothing",
+          "git push" not in hb_wf and "permissions:" in hb_wf and "contents: read" in hb_wf,
+          "a monitor that can write to the repo is a monitor that can break it")
+    readme_hb = open(os.path.join(ROOT, "README.md"), encoding="utf-8").read()
+    growth_hb = open(os.path.join(ROOT, "docs", "GROWTH_ENGINE.md"), encoding="utf-8").read()
+    check("the heartbeat is written down where the owner looks",
+          "automation-heartbeat" in readme_hb and "automation-heartbeat" in growth_hb,
+          "a monitor nobody can find is a monitor nobody re-runs")
+
 # The unittest files are the real gate; run them when their deps are present.
 import importlib.util as _ilu
 missing_mods = [m for m in ("requests", "yaml") if _ilu.find_spec(m) is None]

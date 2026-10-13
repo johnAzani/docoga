@@ -155,6 +155,25 @@ Integration rules:
 - **Telegram channel — DONE 25 Sep** (t.me/docogadaily + @docoga_daily_bot, Bot API, ₦0 forever).
 - **YouTube Shorts — DONE 25 Sep** (DocOga channel, resumable uploads via Data API, ₦0).
 - **Facebook Page — was marked DONE 26 Sep; actually wired and first-verified 12 Oct 2026** (Pages API use-case app, non-expiring page token, ₦0, `FACEBOOK_AUTOMATION.md`). The lesson the PRE-FLIGHT LAW below already encodes: *credentials existing is not a pipeline* — step 4, "VERIFY programmatically", is the step that was skipped, and it is now a dry-run button anyone can press in ten seconds. Next free lane: Threads (Meta App Review).
+- **Silent-lane heartbeat — DONE 13 Oct 2026** (`automation-heartbeat.yml`, `tools/automation_heartbeat.py`, ₦0). The
+  failure class this closes is the one that hurt most: **Telegram silent for 4 days, 6 red Telegram runs
+  nobody was told about, Facebook described as "live" with zero runs.** Publishing lanes report themselves
+  only by *their output*, so "no output" is indistinguishable from "a quiet day" — and a human watching the
+  Actions tab is a human who is on holiday. Rules it enforces:
+  1. **cadence is read from each workflow's own `on.schedule[].cron`**, never from a table — a monitor with a
+     hardcoded lane list stops watching the moment someone edits a schedule, and reports a healthy repo.
+  2. **judged by age, not by clock**: a lane is silent when `last success` is older than `2 × its own gap +
+     scheduler slack` (slack capped at one cycle). GitHub's scheduler is measured late by up to 9 h on *this
+     repo*, so "it didn't fire at 08:00" is not a finding; "nothing has succeeded in 9 days on a daily lane" is.
+  3. **one deduped issue, red only when the set of broken lanes changes** (sha256 of `file:status`). The same
+     failure tomorrow is a green run + a comment; a new or newly-wounded lane is a red run + an email. Anything
+     else gets muted inside a week.
+  4. **`exit 3` = "I could not look"** — a monitor that cannot reach the API must never print "all clear".
+  5. **a schedule that only exists on an unmerged branch is warned, not failed**: silence there is a statement
+     about the merge queue. (Found by the tests: the Facebook lane reads ⚠️ pending, Telegram reads ❌ 9.4 days.)
+  Honest state as of 13 Oct: 3 scheduled lanes, **0 of them healthy** — Telegram has not succeeded since
+  3 Oct, YouTube has run once and failed, Facebook's `schedule:` is not on `main` yet. The heartbeat's first
+  report is not a clean one; that is what it is for.
 - ⓹ **Level 2 autonomy** — scheduled worker posts the daily story even when nobody opens chat (needs one-time 2-minute token setup by the boss; ask and I'll guide tap-by-tap).
 - ⓺ Collab engine: identify 5 complementary accounts (property/law/rent niche), draft outreach the boss sends.
 - ⓻ Format replication: winners' hooks/length/audio become templates automatically.

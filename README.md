@@ -18,11 +18,19 @@ for Nigeria. Single-file static app — no build step, no server, 0 Naira/month 
 - `worker/` — Cloudflare Worker for automatic pass-code delivery
   (deploy to Cloudflare Workers — NOT to the website)
 - `tools/` — QA gate, test suites and page generators (`npm run qa`, `npm test`)
-- social automation — `Facebook Page Autopost` posts the daily copy to the DocOga
-  Page every morning at 09:30, and renders a Reel on Mondays + Thursdays (₦0;
-  GitHub Actions is the cron). Handbook, token minting, failure matrix, the Reels
-  three-phase protocol and what is deliberately *not* automated:
-  **`FACEBOOK_AUTOMATION.md`**. Telegram: `TELEGRAM_AUTOMATION.md`
+- social automation — `facebook_autopost.yml` posts the daily copy to the DocOga Page
+  and renders a Reel on Mondays + Thursdays; `telegram_autopost.yml` and
+  `youtube_scheduled.yml` carry the other two lanes (₦0; GitHub Actions is the cron).
+  **A `schedule:` in a workflow file is a claim, not a fact** — GitHub only runs
+  schedules from the default branch, and a lane can sit red for a week without anyone
+  looking. `automation-heartbeat.yml` (daily) reads every `cron:` in
+  `.github/workflows/`, compares *age since last success* against each lane's own
+  cadence, prints a summary table of all of them, and files one labelled issue naming
+  the lane and the secrets to check. Handbook, token minting, failure matrix, the
+  Reels three-phase protocol and what is deliberately *not* automated:
+  **`FACEBOOK_AUTOMATION.md`**. Telegram: `TELEGRAM_AUTOMATION.md`.
+  Run the heartbeat by hand any time:
+  `python3 tools/automation_heartbeat.py --repo <owner>/<repo> --token "$(gh auth token)" --verbose`
 - `mobile/` — the Android app: a Capacitor shell around `/admin`, built to a
   sideloadable APK by CI (`ADMIN_DASHBOARD.md` §7, `mobile/README.md`)
 
