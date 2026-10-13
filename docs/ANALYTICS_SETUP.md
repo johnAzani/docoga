@@ -185,6 +185,18 @@ approval.
 The default-branch schedule is not active for this session branch. Default
 branch merge and any widening of provider trust are separately approval-gated.
 
+**Merge to `main` — 13 Oct 2026 (PR #20).** The workflow's `schedule` trigger
+was removed in the same change, because the provider trust above admits only
+the session ref `arena/47d148f1-docoga`: a daily cron on `main` would fail at
+the auth step every day. Consequently, after the merge:
+
+- `workflow_dispatch` and refresh-request pushes **from `main`** fail at
+  *Authenticate to Google* with Google's "attribute condition" message until
+  the owner updates the provider condition to admit `refs/heads/main` (and, if
+  wanted, the `schedule` event). That failure is the trust boundary working.
+- Re-add `schedule: - cron: "17 4 * * *"` to the workflow in the same reviewed
+  change that widens the condition — not before.
+
 ## Historical website-tag status at the 18:51 WAT report run
 
 At that point, production used the old tag `G-GO8VZB3R28`, and the dedicated

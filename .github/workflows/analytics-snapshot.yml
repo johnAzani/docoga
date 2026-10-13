@@ -8,7 +8,20 @@ name: Analytics snapshot
 # Triggers:
 #   - push touching analytics/refresh-request.json  -> the agent requests a refresh
 #   - workflow_dispatch                             -> owner taps "Run workflow"
-#   - schedule                                      -> hands-off daily (default branch only)
+#
+# No schedule — on purpose, for now. The Google WIF provider's attribute
+# condition (docs/ANALYTICS_SETUP.md "Provider trust") admits exactly ONE ref
+# and only push / workflow_dispatch events; it deliberately excludes `main` and
+# scheduled runs. A daily cron on the default branch would therefore fail at
+# the auth step every single day — a red run nobody asked for, burning the free
+# plan's minutes. Re-add
+#     schedule:
+#       - cron: "17 4 * * *"
+# in the same change that widens the provider condition to the default branch
+# and the `schedule` event (separately approval-gated, see the setup doc).
+#
+# On a ref the provider does not trust, the auth step fails with Google's own
+# "attribute condition" message. That is the correct answer, not a bug here.
 #
 # Auth: GitHub OIDC -> Google Workload Identity Federation -> the
 # docoga-analytics-reader service account -> a short-lived token scoped to
@@ -24,8 +37,6 @@ on:
     paths:
       - analytics/refresh-request.json
   workflow_dispatch: {}
-  schedule:
-    - cron: "17 4 * * *"
 
 permissions:
   contents: write
