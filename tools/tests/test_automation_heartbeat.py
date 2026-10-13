@@ -23,6 +23,7 @@ import io
 import json
 import os
 import re
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -39,6 +40,7 @@ for rel in ("tools", "scripts"):
 import automation_heartbeat as hb  # noqa: E402
 
 NOW = datetime(2026, 10, 13, 18, 0, tzinfo=timezone.utc)
+WORKFLOW_PATH = ROOT / ".github" / "workflows" / "automation-heartbeat.yml"
 
 
 def lane(file="telegram_autopost.yml", name="DocOga Telegram Auto-Post", crons=("0 8 * * *",),
@@ -778,13 +780,176 @@ class CommandLineTests(unittest.TestCase):
         self.assertIn("could not look", text)
 
 
+class IssueFlowTests(unittest.TestCase):
+    """The workflow's filing step, actually executed — against a `gh` that only logs.
+
+    This bash is the half that touches the owner's issue tracker, and nothing else in
+    the repo runs it: the tool decides a verdict, the *colour* and the *issue* are
+    decided here. Reasoning about which branch a shell script takes is how a monitor
+    ends up filing a fresh issue every morning, which is the thing that makes people
+    mute it. So each branch below is executed and the recorded `gh` calls are asserted.
+
+    `/tmp/` in the step is rewritten into a temp directory, which keeps the tests
+    parallel-safe and lets the issue body be read back.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        import yaml as _yaml
+        doc = _yaml.safe_load(WORKFLOW_PATH.read_text(encoding="utf-8"))
+        steps = doc["jobs"]["heartbeat"]["steps"]
+        cls.step = [entry for entry in steps
+                    if "File, update or close" in str(entry.get("name"))]
+        assert cls.step, "the filing step was renamed; the tests must follow it or say so"
+        cls.script = cls.step[0]["run"]
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self.bin = os.path.join(self.tmp, "bin")
+        os.makedirs(self.bin)
+        self.log = os.path.join(self.tmp, "gh.log")
+        for name in ("heartbeat.md", "heartbeat-triage.md", "heartbeat.log"):
+            with open(os.path.join(self.tmp, name), "w", encoding="utf-8") as handle:
+                handle.write("| lane | table |\n\n- Reads `TELEGRAM_BOT_TOKEN`.\n" if name.endswith(".md")
+                             else "HEARTBEAT_SIGNATURE=abc123abc123\n")
+
+    def gh_shim(self):
+        shim = os.path.join(self.bin, "gh")
+        with open(shim, "w", encoding="utf-8") as handle:
+            # Plain shell text, no %-formatting on this string: a doubled %% here would
+            # print a literal "%s" into the log and every assertion about the recorded
+            # calls would fail while the shim itself looks like it works.
+            handle.write('#!/bin/sh\n'
+                         'printf \'%s\\n\' "$*" >> "$GH_LOG"\n'
+                         'case "$1 $2" in\n'
+                         '  "issue list")  printf \'%s\\n\' "${FAKE_NUMBER:-}" ;;\n'
+                         '  "issue view")  printf \'%s\\n\' "${FAKE_BODY:-}" ;;\n'
+                         '  *) exit 0 ;;\n'
+                         'esac\n')
+        os.chmod(shim, 0o755)
+
+    @staticmethod
+    def mutations(calls):
+        """The `gh` calls that change the repo's state. Reads (`issue list`,
+        `issue view`) are how the step decides, so they belong in every branch and
+        must not be counted as side effects."""
+        return [line for line in calls if line.split()[:2] in
+                (["issue", "close"], ["issue", "comment"], ["issue", "create"],
+                 ["label", "create"])]
+
+    def run_step(self, signature="abc123abc123", state="degraded", silent="telegram_autopost.yml",
+                 code="1", dry_run="false", number="", body=""):
+        self.gh_shim()
+        env = dict(os.environ, PATH=self.bin + os.pathsep + os.environ["PATH"],
+                   GH_LOG=self.log, SIGNATURE=signature, STATE=state, SILENT=silent,
+                   CODE=code, DRY_RUN=dry_run, RUN_URL="https://example.invalid/run/1",
+                   FAKE_NUMBER=number, FAKE_BODY=body, TMPDIR=self.tmp)
+        result = subprocess.run(["bash", "-c", self.script.replace("/tmp/", self.tmp + "/")],
+                                capture_output=True, text=True, env=env, cwd=self.tmp,
+                                timeout=60)
+        calls = []
+        if os.path.exists(self.log):
+            with open(self.log, encoding="utf-8") as handle:
+                calls = [line.rstrip("\n") for line in handle]
+        return result, calls
+
+    def test_a_healthy_repo_closes_the_tracked_issue(self):
+        result, calls = self.run_step(state="healthy", number="16")
+        self.assertEqual(result.returncode, 0)
+        self.assertTrue(any(c.startswith("issue close 16") for c in calls), calls)
+        self.assertFalse(any("issue create" in c for c in calls))
+        self.assertFalse(any("issue comment" in c for c in calls),
+                         "closing with a comment is enough; a comment too is noise")
+
+    def test_healthy_with_nothing_open_is_silent_and_green(self):
+        result, calls = self.run_step(state="healthy", number="")
+        self.assertEqual(result.returncode, 0)
+        # A healthy non-dry run still makes sure the label exists — that is a
+        # preparation, not a finding. What must not happen is touching an issue.
+        self.assertEqual([c for c in self.mutations(calls) if c.startswith("issue ")], [])
+        self.assertIn("Nothing to close", result.stdout)
+
+    def test_the_same_verdict_set_comments_and_stays_green(self):
+        """The whole livability rule, in bash: same signature ⇒ comment, exit 0. If
+        this ever returns 1, every morning is a red run and an email."""
+        result, calls = self.run_step(number="16", body="verdict signature `abc123abc123`\n")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertTrue(any(c.startswith("issue comment 16") for c in calls), calls)
+        self.assertFalse(any("issue create" in c for c in calls))
+        self.assertIn("staying green", result.stdout)
+
+    def test_a_changed_verdict_set_updates_the_issue_and_goes_red(self):
+        result, calls = self.run_step(number="16", body="old signature xyz\n")
+        self.assertEqual(result.returncode, 1, "red is the email, on purpose")
+        self.assertTrue(any("--body-file" in c and c.startswith("issue comment 16") for c in calls), calls)
+        self.assertFalse(any("issue create" in c for c in calls),
+                         "one tracked issue, updated — not one per day")
+
+    def test_the_first_failure_files_one_labelled_issue(self):
+        result, calls = self.run_step(number="")
+        self.assertEqual(result.returncode, 1)
+        created = [c for c in calls if c.startswith("issue create")]
+        self.assertEqual(len(created), 1, calls)
+        self.assertIn("--label automation-heartbeat", created[0])
+        self.assertIn("--body-file", created[0])
+        self.assertTrue(any(c.startswith("label create automation-heartbeat") for c in calls),
+                        "the label must be created before it is used, or the issue fails")
+        self.assertEqual(calls[0].split()[:2], ["label", "create"],
+                         "the label is the only thing allowed before the issue")
+
+    def test_a_dry_run_prints_the_body_and_touches_nothing(self):
+        result, calls = self.run_step(dry_run="true", number="")
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(self.mutations(calls), [],
+                         "the dispatch button is how the owner looks without side effects — "
+                         "not even a label")
+        self.assertIn("Dry run", result.stdout)
+
+    def test_no_signature_is_reported_as_a_failure_to_judge(self):
+        """Empty signature means the tool never reached a verdict. Filing "0 lanes are
+        silent" in that case would be the monitor lying about its own outage."""
+        result, calls = self.run_step(signature="", number="")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("no signature was printed", result.stdout)
+        self.assertEqual([c for c in calls if c.split()[:2] in (["issue", "comment"],
+                                                                ["issue", "create"])], [])
+
+    def test_the_dry_run_still_reports_a_missing_signature(self):
+        result, _ = self.run_step(signature="", dry_run="true")
+        self.assertEqual(result.returncode, 0, "dry run must not turn a report into a failure")
+
+    def test_the_body_carries_the_table_the_triage_and_the_signature(self):
+        self.run_step(number="")
+        path = os.path.join(self.tmp, "issue_body.md")
+        with open(path, encoding="utf-8") as handle:
+            body = handle.read()
+        self.assertIn("| lane | table |", body)
+        self.assertIn("Reads `TELEGRAM_BOT_TOKEN`", body)
+        self.assertIn("abc123abc123", body)
+        self.assertIn("telegram_autopost.yml", body)
+
+    def test_no_command_injection_from_the_tool_log(self):
+        """The log tail is pasted into the issue body, and it is GitHub's API output —
+        text that arrived over a network. Backticks are stripped for a reason."""
+        with open(os.path.join(self.tmp, "heartbeat.log"), "w", encoding="utf-8") as handle:
+            handle.write("saw `id $(touch /tmp/pwned)` from the API\n")
+        self.run_step(number="")
+        with open(os.path.join(self.tmp, "issue_body.md"), encoding="utf-8") as handle:
+            body = handle.read()
+        pasted = body.split("```")[1]      # the fenced tool output, nothing else
+        self.assertNotIn("`", pasted, "the fences stay; the payload's backticks must not")
+        self.assertIn("saw id $(touch /tmp/pwned) from the API", pasted,
+                      "the text is still shown — stripping is not censoring")
+        self.assertFalse(os.path.exists("/tmp/pwned"), "the backticks must never reach a shell")
+
+
 class HeartbeatWorkflowTests(unittest.TestCase):
     """The job file, checked as a contract rather than as YAML that happens to parse."""
 
     @classmethod
     def setUpClass(cls):
         import yaml as _yaml
-        cls.path = ROOT / ".github" / "workflows" / "automation-heartbeat.yml"
+        cls.path = WORKFLOW_PATH
         cls.text = cls.path.read_text(encoding="utf-8")
         cls.doc = _yaml.safe_load(cls.text)
         cls.job = cls.doc["jobs"]["heartbeat"]

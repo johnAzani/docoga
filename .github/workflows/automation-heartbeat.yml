@@ -126,8 +126,14 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           set -uo pipefail
-          gh label create automation-heartbeat --color d73a4a \
-            --description "A scheduled DocOga lane stopped producing runs" >/dev/null 2>&1 || true
+          # Guarded, so `dry_run` means what its description says. The label is
+          # idempotent, but "report only" that writes to the repo is still a write,
+          # and the owner should be able to press the button on a Friday night
+          # without wondering what it touched.
+          if [ "${DRY_RUN:-false}" != "true" ]; then
+            gh label create automation-heartbeat --color d73a4a \
+              --description "A scheduled DocOga lane stopped producing runs" >/dev/null 2>&1 || true
+          fi
 
           if [ -z "$SIGNATURE" ]; then
             echo "::error title=Heartbeat could not judge::no signature was printed, so the tool did not reach a verdict (exit ${CODE:-?}). Not filing an issue — a monitor that reports on data it never fetched is worse than no monitor."
