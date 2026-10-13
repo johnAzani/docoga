@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">DocOga Owner</string>
+    <string name="title_activity_main">DocOga Owner</string>
+    <string name="package_name">ng.com.docoga.owner</string>
+    <string name="custom_url_scheme">ng.com.docoga.owner</string>
+</resources>

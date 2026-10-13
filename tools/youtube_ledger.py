@@ -107,17 +107,26 @@ def save(entries, path=DEFAULT_LEDGER):
     return trimmed
 
 
+def _label():
+    """The annotation title. This ledger tool serves more than one lane now
+    (Facebook Reels reuse it on logs/facebook_reels.json), and a
+    "YouTube publish ledger" warning on a Facebook run costs an afternoon of
+    reading the wrong workflow. Default keeps YouTube's wording unchanged.
+    """
+    return os.environ.get("LEDGER_LABEL", "YouTube publish ledger")
+
+
 def warn(message):
     """A GitHub Actions notice when running in CI, plain text otherwise."""
     if os.environ.get("GITHUB_ACTIONS"):
-        print("::warning title=YouTube publish ledger::%s" % message)
+        print("::warning title=%s::%s" % (_label(), message))
     else:
         print("warning: %s" % message, file=sys.stderr)
 
 
 def notice(message):
     if os.environ.get("GITHUB_ACTIONS"):
-        print("::notice title=YouTube publish ledger::%s" % message)
+        print("::notice title=%s::%s" % (_label(), message))
     else:
         print(message)
 
@@ -179,6 +188,8 @@ def cmd_record(args):
         video_id=args.video_id,
         url=args.url or ("https://youtube.com/watch?v=%s" % args.video_id),
         privacy=args.privacy,
+        state=args.state,
+        note=args.note,
         date=args.date,
         run_id=args.run_id or "",
         size_bytes=args.size_bytes,
@@ -194,12 +205,16 @@ def cmd_show(args):
         print("No Shorts recorded in %s yet." % args.ledger)
         return EXIT_CLEAR
     for entry in entries[: args.limit]:
+        state = entry.get("state", "")
+        # An older entry has no state field; "uploaded" was the only thing recorded then, so
+        # printing "?" for it would be a lie about the tool rather than about the video.
         print(
-            "%s  %-10s  %-45s  %s"
+            "%s  %-10s  %-9s %-42s  %s"
             % (
                 entry.get("date", "?")[:10],
                 entry.get("privacy", "?"),
-                (entry.get("title") or "?")[:45],
+                state or "uploaded",
+                (entry.get("title") or "?")[:42],
                 entry.get("url", "?"),
             )
         )
@@ -222,6 +237,12 @@ def build_parser():
     rec.add_argument("--video-id", required=True)
     rec.add_argument("--url", default="")
     rec.add_argument("--privacy", default="public", choices=["public", "unlisted", "private"])
+    # What the API actually reported after the upload (published / uploaded / held / rejected),
+    # as opposed to what the request asked for. An entry that says only "we PUT a file" is how a
+    # channel silently full of private videos looks green in a summary.
+    rec.add_argument("--state", default="uploaded",
+                     help="what YouTube reported after the upload, not what was requested")
+    rec.add_argument("--note", default="", help="the uploader's own words about the read-back")
     rec.add_argument("--date", required=True, help="run date, YYYY-MM-DD (WAT)")
     rec.add_argument("--run-id", default="")
     rec.add_argument("--topic", default="")

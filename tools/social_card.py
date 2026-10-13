@@ -1,0 +1,342 @@
+#!/usr/bin/env python3
+"""
+tools/social_card.py — today's copy as a JPEG Instagram is willing to fetch
+===========================================================================
+
+Instagram's publishing API does not accept a file. It accepts a **URL**, and Meta's
+servers download it. That single fact is why `instagram_autopost.yml` has been
+dispatch-only this long: the renders this repo makes live in gitignored `assets/`, and a
+URL to a gitignored file is a 404 in a foreign datacentre.
+
+The fix costs nothing, because DocOga already owns a public file host: `site/` is the
+deployed Cloudflare site at https://docoga.com.ng. A render committed under
+`site/social/` is therefore a public URL after the site deploy, at ₦0, with no new
+account, no bucket, and no third party holding our content. This file writes those
+renders; the lane waits for the URL to answer 200 (`ig_publish.py --wait-url`) before it
+creates a container, because git knows about a file before the web does.
+
+Three things this renderer guarantees, and each is checkable:
+
+  1. **1080×1350 — exactly 4:5**, the narrowest ratio Instagram accepts for a feed photo.
+     `ig_publish.jpeg_spec()` reads the header and refuses anything outside 4:5…1.91:1, so
+     a card that came from here always passes that gate, and a test proves it.
+  2. **JPEG, under `--max-kb` (default 900)** — Meta's cap is 8 MB, but a card that heavy
+     is a slow fetch that can time out on their side, and a timeout arrives as
+     "Unsupported URL request". Quality is walked down until the file fits.
+  3. **No glyph the runner cannot draw.** Inter is not installed on ubuntu-latest and the
+     brand copy is full of 🏛️ 📄 ⚠️, which DejaVu renders as empty boxes on a *public
+     post*. So emoji are stripped from what is **drawn** and kept in the **caption** — the
+     caption is text Instagram renders with its own fonts, the card is our job.
+
+The palette is `docs/BRAND_STYLE.md`'s (deep navy ground, white type, one accent), and it
+is deliberately not a second design system: same ink, same rule line, same footer voice
+as the Telegram and Facebook cards.
+
+Usage
+    python3 tools/social_card.py --from-json assets/threads/threads_content_latest.json \
+        --out site/social/2026-10-13.jpg --base-url https://docoga.com.ng
+    python3 tools/social_card.py --text "one line" --out /tmp/card.jpg --print
+"""
+
+import argparse
+import json
+import os
+import re
+import sys
+from pathlib import Path
+
+from PIL import Image, ImageDraw, ImageFont
+
+ROOT = Path(__file__).resolve().parents[1]
+
+CARD_W, CARD_H = 1080, 1350          # exactly 4:5 — the documented narrowest feed ratio
+MARGIN = 96
+FOOTER = "docoga.com.ng"
+
+# docs/BRAND_STYLE.md: navy ground, white type, one accent. Kept as literals rather than
+# a config file because a config file that is not in the image's own header is a rumour.
+INK_BG = (6, 26, 51)
+INK_RULE = (20, 41, 74)
+INK_PANEL = (13, 42, 79)
+WHITE = (255, 255, 255)
+MUTED = (143, 168, 201)
+ACCENT = (255, 201, 60)
+BLUE = (74, 140, 255)
+
+FONT_CANDIDATES = {
+    "Black": ["/usr/share/fonts/opentype/inter/Inter-Black.otf",
+              "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+              "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"],
+    "SemiBold": ["/usr/share/fonts/opentype/inter/Inter-SemiBold.otf",
+                 "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+                 "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"],
+    "Regular": ["/usr/share/fonts/opentype/inter/Inter-Regular.otf",
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+                "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"],
+}
+
+# Anything outside Latin-1 plus the punctuation this type can draw is a box on the card.
+# This is a *conservative* whitelist on purpose: a new brand glyph fails by being stripped
+# (visible in the render, easy to fix here) rather than by shipping tofu to 4,000 readers.
+DRAWABLE = re.compile(
+    "[^\\x09\\x0a\\x20-\\x7e\\xa0-\\xff"
+    " —‘’“”…•·₦ºª×÷−⁄]"
+)
+WHITESPACE = re.compile(r"[ \t]+\n|\n[ \t]+")
+
+
+def plain_for_card(text):
+    """What the card can actually draw: no emoji, no markup, no trailing spaces."""
+    out = DRAWABLE.sub("", text or "")
+    out = out.replace("**", "").replace("__", "").replace("~~", "")
+    out = WHITESPACE.sub("\n", out)
+    out = re.sub(r"\n{3,}", "\n\n", out)
+    return out.strip()
+
+
+HASHTAG_LINE = re.compile(r"^\s*(?:#[\w\u00c0-\u024f]+\s*)+$")
+
+
+def _drop_hashtags(text):
+    """Trailing hashtag lines are caption furniture, not card copy.
+
+    The caption is Instagram's own text, rendered in its own font, and that is where a
+    discovery tag does something. The same words printed at the bottom of a navy card are
+    noise that also steals vertical room from the sentence the reader came for.
+    """
+    lines = (text or "").split("\n")
+    while lines and (HASHTAG_LINE.match(lines[-1]) or not lines[-1].strip()):
+        lines.pop()
+    return "\n".join(lines)
+
+
+def _font_path(weight):
+    for candidate in FONT_CANDIDATES[weight]:
+        if Path(candidate).exists():
+            return candidate
+    return None
+
+
+def load_font(weight, size):
+    path = _font_path(weight)
+    if path:
+        return ImageFont.truetype(path, size), os.path.basename(path)
+    # Pillow 10's load_default() takes a size and scales a bitmap; anything that returns a
+    # fixed 10px font would silently produce a card with unreadable type on a runner whose
+    # fonts changed, which is exactly the failure this function exists to avoid.
+    try:
+        return ImageFont.load_default(size=size), "PIL-default"
+    except TypeError:  # older Pillow
+        return ImageFont.load_default(), "PIL-default(unsized)"
+
+
+def wrap(draw, text, font, max_width):
+    """Greedy wrap by measured width, preserving explicit newlines.
+
+    Words longer than the line (a URL) are placed on their own line rather than split:
+    a hyphenated URL on a legal card reads like a changed URL.
+    """
+    lines = []
+    for para in text.split("\n"):
+        para = para.strip()
+        if not para:
+            lines.append("")
+            continue
+        current = ""
+        for word in para.split():
+            trial = (current + " " + word).strip()
+            if draw.textlength(trial, font=font) <= max_width or not current:
+                current = trial
+            else:
+                lines.append(current)
+                current = word
+        lines.append(current)
+    return lines
+
+
+def fit_size(draw, text, weight, max_width, start, floor=34, step=2):
+    size = start
+    while size > floor:
+        font, _ = load_font(weight, size)
+        if all(draw.textlength(line, font=font) <= max_width for line in wrap(draw, text, font, max_width)):
+            return font, size
+        size -= step
+    font, _ = load_font(weight, floor)
+    return font, floor
+
+
+def render(text, out_path, kicker="", quality=88, max_kb=900, footer=FOOTER):
+    """Draw `text` on a 1080×1350 brand card and write a JPEG at `out_path`."""
+    out = Path(out_path)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    image = Image.new("RGB", (CARD_W, CARD_H), INK_BG)
+    draw = ImageDraw.Draw(image)
+
+    body = plain_for_card(_drop_hashtags(plain_for_card(text)))
+    if not body:
+        raise ValueError("nothing left to draw after stripping undrawable characters")
+
+    max_width = CARD_W - 2 * MARGIN
+    top = 150
+
+    if kicker:
+        kfont, _ = load_font("SemiBold", 26)
+        draw.text((MARGIN, top - 46), kicker.upper()[:40], font=kfont, fill=BLUE)
+
+    # The rule line is the brand's separator; it sits above the headline, not under it.
+    draw.line([(MARGIN, top - 8), (MARGIN + 96, top - 8)], fill=ACCENT, width=4)
+
+    # First line reads as the headline, the rest as body: a card is a poster, not a memo.
+    parts = [block for block in body.split("\n\n") if block.strip()] or [body]
+    headline, rest = parts[0], "\n\n".join(parts[1:]) if len(parts) > 1 else ""
+
+    hfont, hsize = fit_size(draw, headline, "Black", max_width, 74 if len(headline) < 90 else 58)
+    bfont, bsize = (None, 0)
+    if rest:
+        bfont, bsize = fit_size(draw, rest, "Regular", max_width, 42 if len(rest) < 340 else 34)
+    # An image that fills a phone screen and puts six lines of text in its upper third reads
+    # as a mistake, and on a feed nobody scrolls to the bottom to check. Measure the block
+    # first, then start it where it will look placed rather than dropped.
+    headline_lines = len(wrap(draw, headline, hfont, max_width))
+    body_lines = len(wrap(draw, rest, bfont, max_width)) if rest else 0
+    block = headline_lines * int(hsize * 1.18) + (26 + body_lines * int(bsize * 1.32) if rest else 0)
+    ceiling, floor_top = CARD_H - 200, 150
+    top = max(floor_top, min(ceiling - block, (CARD_H - 116 - block - floor_top) // 2))
+    y = top
+    for line in wrap(draw, headline, hfont, max_width):
+        draw.text((MARGIN, y), line, font=hfont, fill=WHITE)
+        y += int(hsize * 1.18)
+
+    if rest:
+        y += 26
+        for line in wrap(draw, rest, bfont, max_width):
+            if y > CARD_H - 200:
+                draw.text((MARGIN, y), "…", font=bfont, fill=MUTED)
+                break
+            draw.text((MARGIN, y), line, font=bfont, fill=MUTED if line else WHITE)
+            y += int(bsize * 1.32)
+
+    if footer:
+        ffont, _ = load_font("SemiBold", 24)
+        width = draw.textlength(footer, font=ffont)
+        draw.text(((CARD_W - width) / 2, CARD_H - 116), footer, font=ffont, fill=ACCENT)
+        draw.line([(MARGIN, CARD_H - 150), (CARD_W - MARGIN, CARD_H - 150)], fill=INK_PANEL, width=2)
+
+    data = _encode(image, quality)
+    while len(data) > max_kb * 1024 and quality > 45:
+        quality -= 7
+        data = _encode(image, quality)
+    out.write_bytes(data)
+    return {"path": str(out), "bytes": len(data), "quality": quality,
+            "width": CARD_W, "height": CARD_H, "ratio": CARD_W / CARD_H,
+            "font": load_font("Black", 60)[1], "headline_lines": len(wrap(draw, headline, hfont, max_width)),
+            "stripped": plain_for_card(text) != (text or "").strip()}
+
+
+def _encode(image, quality):
+    import io
+    buffer = io.BytesIO()
+    image.save(buffer, "JPEG", quality=quality, optimize=True, progressive=True,
+               subsampling=1)  # 4:2:0 keeps the type crisp and the bytes down
+    return buffer.getvalue()
+
+
+DATED_RENDER = re.compile(r"^\d{4}-\d{2}-\d{2}-instagram\.jpg$")
+
+
+def prune(directory, keep=60):
+    """Delete every dated render but the newest `keep`. Returns (deleted, kept).
+
+    Two details are the whole design:
+
+    * **mtime is useless here.** A CI checkout stamps every file with *today*, so the obvious
+      `find -mtime +60` matches nothing forever and `site/social/` grows one JPEG a day without
+      limit in the one directory the deploy publishes. The lane names its renders
+      `YYYY-MM-DD-instagram.jpg`, and the name is the only clock that survives a re-clone.
+    * **only its own files.** Anything else in that directory — a hand-added image, a future
+      lane's naming — is not this step's to delete, so the pattern is exact rather than a prefix.
+
+    `keep` is floored at 1 because a run that pruned today's own card would hand Instagram a URL
+    that 404s, and that failure reads as a permissions problem.
+    """
+    keep = max(1, int(keep))
+    directory = Path(directory)
+    if not directory.is_dir():
+        return [], []
+    dated = sorted(p for p in directory.iterdir() if DATED_RENDER.match(p.name))
+    if len(dated) <= keep:
+        # Nothing past the window. Written as an early return rather than a slice expression:
+        # `dated[:-0]` is `dated[0:]`, i.e. *everything*, which is the opposite of a retention
+        # rule — a `…, … if … else …` one-liner here did exactly that on its first draft.
+        return [], dated
+    split = len(dated) - keep
+    doomed, kept = dated[:split], dated[split:]
+    for path in doomed:
+        path.unlink()
+    return [p.name for p in doomed], [p.name for p in kept]
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description="Render a brand card for a URL-only API")
+    parser.add_argument("--text", help="the copy to draw")
+    parser.add_argument("--from-json", dest="from_json", help="read .text from a content JSON")
+    parser.add_argument("--kicker", default="", help="small caps line above the rule")
+    parser.add_argument("--out", help="where to write the JPEG")
+    parser.add_argument("--prune", metavar="DIR",
+                        help="delete every dated render in DIR but the newest --keep, then exit")
+    parser.add_argument("--keep", type=int, default=60, help="how many dated renders to keep")
+    parser.add_argument("--base-url", default=os.environ.get("SITE_BASE_URL", "https://docoga.com.ng"),
+                        help="public origin the file will be served from")
+    parser.add_argument("--quality", type=int, default=88)
+    parser.add_argument("--max-kb", type=int, default=900)
+    parser.add_argument("--no-footer", action="store_true")
+    parser.add_argument("--print", dest="show", action="store_true")
+    args = parser.parse_args(argv if argv is not None else sys.argv[1:])
+
+    if args.prune:
+        deleted, kept = prune(args.prune, keep=args.keep)
+        for name in deleted:
+            print("pruned %s" % name)
+        print("RENDER_PRUNED=%d RENDER_KEPT=%d" % (len(deleted), len(kept)))
+        return 0
+    if not args.out:
+        parser.error("--out is required unless --prune is doing the work")
+
+    text = args.text or ""
+    if args.from_json:
+        blob = json.loads(Path(args.from_json).read_text(encoding="utf-8"))
+        text = blob.get("text") or ""
+        args.kicker = args.kicker or (blob.get("post_type") or "")
+
+    result = render(text, args.out, kicker=args.kicker, quality=args.quality,
+                    max_kb=args.max_kb, footer="" if args.no_footer else FOOTER)
+
+    absolute = Path(result["path"]).resolve()
+    relative = absolute.relative_to(ROOT) if str(absolute).startswith(str(ROOT)) else absolute
+    serving = str(relative).replace(os.sep, "/")
+    # The public path drops `site/`: `wrangler.jsonc` publishes `./site` as the *root*, so
+    # `site/social/x.jpg` is served at `/social/x.jpg`. Building the URL from the repo path
+    # would hand Meta a `/site/` prefix that 404s forever, and Instagram's answer to a 404
+    # is "Unsupported URL request" — which reads like a permissions bug and is not one.
+    if serving.startswith("site/"):
+        serving = serving[len("site/"):]
+    url = "%s/%s" % (args.base_url.rstrip("/"), serving.lstrip("/"))
+    print("CARD_PATH=%s" % relative)
+    print("CARD_URL=%s" % url)
+    print("CARD_BYTES=%d" % result["bytes"])
+    print("CARD_SPEC=%dx%d %.3f:1 quality=%d font=%s"
+          % (result["width"], result["height"], result["ratio"], result["quality"],
+             result["font"]))
+    if result["stripped"]:
+        print("CARD_STRIPPED=1 — the copy contained characters the card cannot draw "
+              "(they stay in the caption)")
+    if not serving.startswith(("social/", "assets/")) and not str(relative).startswith("site/"):
+        print("::warning title=render is outside site/::%s will not be publicly reachable, so "
+              "Instagram cannot fetch it. Write renders under site/social/." % relative)
+    if args.show:
+        print(json.dumps(result, indent=2, default=str))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

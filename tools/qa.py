@@ -24,6 +24,10 @@ What it checks (every run, on every file — not just the one you touched):
  12. Hosting is Cloudflare Pages: no netlify.toml, no Netlify references in
      deployable files, README still documents the host and the `site`
      publish-directory warning (Netlify retired 3 Oct 2026)
+ 13. Owner dashboard contract (ADMIN_DASHBOARD.md sync law): the admin page is
+     unlisted and unadvertised, its API URL matches the storefront's, it holds no
+     secret, the Worker routes + ledger hooks it depends on still exist, the
+     Android wrapper still points at this origin, and both admin suites are green
 """
 import re, os, sys, glob, tempfile, subprocess
 
@@ -175,6 +179,13 @@ r = subprocess.run(["node", os.path.join(ROOT, "tools", "tests", "workertest.mjs
                    capture_output=True, text=True, cwd=ROOT)
 check("worker unit suite (workertest.mjs)", r.returncode == 0,
       (r.stderr or r.stdout)[-160:].replace("\n", " ") if r.returncode else "")
+# 9a2. owner-admin API logic, mock KV — real worker code (required: the admin
+# surface mints codes and reads revenue, so it is gated like the money path).
+admw = os.path.join(ROOT, "tools", "tests", "adminworkertest.mjs")
+if os.path.exists(admw):
+    r = subprocess.run(["node", admw], capture_output=True, text=True, cwd=ROOT)
+    check("admin API unit suite (adminworkertest.mjs)", r.returncode == 0,
+          (r.stdout or r.stderr)[-200:].replace("\n", " ") if r.returncode else "")
 # 9b. full-app DOM suite — executes the real index.html in jsdom.
 # Skipped (exit 0 + notice) when jsdom is not installed, so a fresh clone is never blocked.
 domt = os.path.join(ROOT, "tools", "tests", "domtest.mjs")
@@ -186,6 +197,17 @@ if os.path.exists(domt):
     else:
         check("full-app DOM suite (domtest.mjs)", r.returncode == 0,
               "see node tools/tests/domtest.mjs" if r.returncode else "")
+
+# 9c. the admin page is executed too (jsdom): login, render, mint, revoke.
+admd = os.path.join(ROOT, "tools", "tests", "admindomtest.mjs")
+if os.path.exists(admd):
+    r = subprocess.run(["node", admd], capture_output=True, text=True, cwd=ROOT, timeout=600)
+    out = (r.stdout or "") + (r.stderr or "")
+    if "jsdom not installed" in out:
+        warn("admin DOM suite skipped — jsdom not installed (npm i jsdom to enable)", False)
+    else:
+        check("admin page execution suite (admindomtest.mjs)", r.returncode == 0,
+              out[-200:].replace("\n", " ") if r.returncode else "")
 
 print("── 10. Anchor integrity (in-page links) ──")
 anchor_bad = []
@@ -259,6 +281,717 @@ check("README documents Cloudflare Pages as the host",
 check("README keeps the `site` output-directory warning",
       "`site` is a security setting" in rdme and "never blank" in rdme,
       "do not drop the publish-directory warning from README")
+
+print("── 13. Owner dashboard contract (ADMIN_DASHBOARD.md, 12 Oct 2026) ──")
+# The dashboard is part of the product (business plan §11), so its contract is
+# gated like the storefront. Each check below maps to a way this surface can rot
+# silently: a broken link, a leaked secret, a code path that stopped counting.
+admp = os.path.join(SITE, "admin.html")
+check("site/admin.html exists (the owner’s UI)", os.path.exists(admp))
+if os.path.exists(admp):
+    adm = open(admp, encoding="utf-8").read()
+    check("admin.html WORKER_URL == index.html", cfg(adm, "WORKER_URL") == cfg(idx, "WORKER_URL"),
+          f"{cfg(adm, 'WORKER_URL')} vs {cfg(idx, 'WORKER_URL')}")
+    check("admin.html is noindexed in the document too", 'name="robots" content="noindex' in adm)
+    au = set(re.findall(r"\$\('([A-Za-z0-9_-]+)'\)", adm))
+    ad = set(re.findall(r'id="([^"]+)"', adm))
+    check(f"all {len(au)} admin JS-referenced ids exist", not (au - ad), f"missing: {sorted(au - ad)[:6]}")
+    secret_const = re.search(r"""(SECRET|API_KEY|PASSPHRASE|TOKEN)\s*=\s*["'`][^"'`]{12,}""", adm)
+    check("admin page carries no secret-valued constant", not secret_const
+          and not re.search(r"Bearer [A-Za-z0-9+/=]{16,}", adm),
+          "the dashboard file is public: the passphrase and every API key stay in Worker secrets")
+    check("only the session token is persisted client-side (one localStorage write, known key)",
+          "localStorage.setItem" in adm and adm.count("localStorage.setItem") == 1
+          and "docoga.admin.token" in adm)
+else:
+    adm = ""
+check("the storefront does not advertise the dashboard door",
+      "/admin" not in idx and "admin.html" not in idx,
+      "linking it from index.html hands the URL to every crawler and scraper")
+check("robots.txt keeps /admin out of search", "Disallow: /admin" in robots)
+hdrp = os.path.join(SITE, "_headers")
+check("site/_headers exists and guards /admin", os.path.exists(hdrp)
+      and "/admin" in open(hdrp, encoding="utf-8").read()
+      and "frame-ancestors 'none'" in open(hdrp, encoding="utf-8").read())
+# the worker side of the contract
+check("worker answers 503 admin_disabled when unconfigured", "admin_disabled" in wsrc)
+for route in ["/admin/login", "/admin/logout", "/admin/me", "/admin/data", "/admin/snapshot",
+              "/admin/codes", "/admin/issue", "/admin/revoke", "/admin/extend", "/admin/resend",
+              "/admin/sessions", "/admin/session"]:
+    check(f"worker route {route}", f'"{route}"' in wsrc, "the page would 404 against a worker without it")
+check("admin secrets are documented in the worker header",
+      "ADMIN_PASSPHRASE" in wsrc and "ADMIN_AUTH_SECRET" in wsrc)
+# SYNC LAW: every path that creates value must feed the ledger.
+n_bumps = len(re.findall(r"await statBump\(env,", wsrc))
+check("the ledger has a hook on every value path (≥ 7 bumps)", n_bumps >= 7, f"found {n_bumps}")
+for must_count in ["issueCode", "OFFLINE_HASHES.has", "bizwait:", "handleInvoiceWebhook"]:
+    check(f"value path still present: {must_count}", must_count in wsrc)
+check("issued codes are indexed for lookup and expiry",
+      "adminEmailIndex(env" in wsrc and "expIndexAdd(env" in wsrc)
+check("the daily cron still rebuilds the owner rollup",
+      "buildAdminSnapshot(env)" in wsrc[wsrc.find("async scheduled"):])
+# the Android wrapper (mobile/) must still point here
+mcap = os.path.join(ROOT, "mobile", "capacitor.config.json")
+if os.path.exists(mcap):
+    mcs = open(mcap, encoding="utf-8").read()
+    check("the APK loads this site, not a stale one", (cfg(idx, "SITE_URL") or "docoga.com.ng") in mcs.replace("\\/", "/"))
+    check("the APK never loads the dashboard over http", "http://" not in mcs.replace("\\/", "/"))
+    mpkg = os.path.join(ROOT, "mobile", "package.json")
+    if os.path.exists(mpkg):
+        mp = _json.loads(open(mpkg, encoding="utf-8").read())
+        # @capacitor/cli is a devDependency — it never ships in the APK but it is
+        # the thing that scaffolds and syncs the project, so the CVE floor applies
+        # to it exactly as much as to the runtime packages.
+        dep = {**mp.get("dependencies", {}), **mp.get("devDependencies", {})}
+        for pkg in ["@capacitor/core", "@capacitor/cli", "@capacitor/android"]:
+            ver = dep.get(pkg, "")
+            nums = [int(x) for x in re.findall(r"\d+", ver)] or [0]
+            okver = nums[0] >= 8 and (nums[1] if len(nums) > 1 else 0) >= 5 and (nums[2] if len(nums) > 2 else 99) >= 1
+            check(f"{pkg} is ≥ 8.5.1 (CVE-2026-103922 fixed)", bool(ver) and okver, ver or "missing")
+    wap = os.path.join(ROOT, ".github", "workflows", "android-apk.yml")
+    check("the APK is built in CI (workflow exists)", os.path.exists(wap))
+    if os.path.exists(wap):
+        y = open(wap, encoding="utf-8").read()
+        check("CI builds with JDK 21 and no secret in the file",
+              "java-version" in y and re.search(r"""java-version:\s*['"]?21['"]?""", y) is not None and "ADMIN_PASSPHRASE" not in y)
+else:
+    warn("mobile/ Capacitor wrapper absent — the APK pipeline is not in this clone", False)
+# the operator doc must exist, or the next person cannot switch it on
+check("ADMIN_DASHBOARD.md documents the setup", os.path.exists(os.path.join(ROOT, "ADMIN_DASHBOARD.md")))
+rdme2 = open(os.path.join(ROOT, "README.md"), encoding="utf-8").read()
+check("README points at the dashboard doc", "ADMIN_DASHBOARD.md" in rdme2)
+
+print("── 14. Social automation (Facebook daily post, 12 Oct 2026) ──")
+# The Facebook pipeline claimed "live" for two weeks while its workflow had never
+# run once. So the *automation* is gated like the storefront: the files exist, the
+# schedule exists, the safety net exists, and no credential has a default.
+# Deep behaviour lives in two unittest files that CI runs
+# (`python3 -m unittest discover -s tools/tests -p 'test_*.py'`); these are the
+# cheap invariants that must also hold on a `npm run qa` before a push.
+import re as _re4
+soc = {
+    "workflow": os.path.join(ROOT, ".github", "workflows", "facebook_autopost.yml"),
+    "publisher": os.path.join(ROOT, "tools", "fb_publish.py"),
+    "preflight": os.path.join(ROOT, "tools", "fb_preflight.py"),
+    "generator": os.path.join(ROOT, "scripts", "generate_facebook_content.py"),
+    "poster": os.path.join(ROOT, "scripts", "post_facebook.py"),
+    "doc": os.path.join(ROOT, "FACEBOOK_AUTOMATION.md"),
+    "tests": os.path.join(ROOT, "tools", "tests", "test_post_facebook.py"),
+}
+for label, path in soc.items():
+    check(f"social automation: {label} exists ({os.path.relpath(path, ROOT)})", os.path.exists(path))
+wf = open(soc["workflow"], encoding="utf-8").read() if os.path.exists(soc["workflow"]) else ""
+if wf:
+    check("it is a schedule, not only a button", "on:\n  schedule" in wf or "schedule:" in wf.split("permissions:")[0],
+          "an autopost that needs a person to press it is not an autopost")
+    check("preflight runs before any post step",
+          wf.find("fb_preflight.py") != -1 and wf.find("fb_preflight.py") < wf.find("post_facebook.py"),
+          "the October Telegram lesson: name the credential that is wrong, in seconds")
+    check("a failed run opens a labelled issue", "gh issue create" in wf and "facebook-automation" in wf,
+          "a red tick in a repo nobody opens is indistinguishable from silence")
+    # Line-based on purpose: a whole-file regex with DOTALL "finds" injection
+    # across unrelated blocks. A `${{ inputs.x }}` is only dangerous when it is
+    # not the value of an env: mapping (`X: ${{ inputs.x }}` is safe).
+    # A line that *starts* with a key (`if:` or `NAME:` in env:/with:) is a
+    # mapping and is fine; anything else holding an interpolation is a command.
+    leaked = [ln.strip() for ln in wf.splitlines()
+              if "${{ inputs." in ln and not ln.strip().startswith("#")
+              and not _re4.match(r"^(if:|[A-Za-z_]+:)\s", ln.strip())]
+    check("inputs reach the shell through env:, never interpolated", not leaked,
+          ("line(s) like: %s" % leaked[:1]) if leaked else "")
+    check("it can be tested without publishing (dry_run)", "dry_run" in wf)
+    check("concurrency cannot interleave two publishes",
+          "concurrency:" in wf and "cancel-in-progress: false" in wf)
+    check("no secret is echoed into the summary", 'echo "$FB_PAGE_ACCESS_TOKEN"' not in wf)
+pub = open(soc["publisher"], encoding="utf-8").read() if os.path.exists(soc["publisher"]) else ""
+if pub:
+    check("no secret-shaped default in the publisher",
+          not _re4.search(r"""environ\.get\(\s*["'](.*(SECRET|TOKEN|PASSWORD|PASSPHRASE).*)["']\s*,\s*["']""", pub),
+          "a credential with a literal fallback lives in git history forever")
+    def _body(name):
+        i = pub.find("def %s(" % name)
+        return pub[i:pub.find("\ndef ", i + 1)] if i >= 0 else ""
+    check("Page photo posts send `caption`, not `message`",
+          all('"caption"' in _body(f) and '"message"' not in _body(f)
+              for f in ("post_photo_file", "post_photo_url")),
+          "`message` on /photos is accepted and ignored: a green run, a caption-less post")
+    check("the Graph API version comes from one constant",
+          'API_VERSION = os.environ.get("META_GRAPH_VERSION"' in pub
+          and not _re4.search(r"graph\.facebook\.com/v\d", pub))
+    # Judged on the code after the module docstring — the docstring is where the
+    # old `print(new_token[:30])` bug is *described*, and a check that reads it as
+    # code would make the file unable to document its own history.
+    pub_code = pub.split('"""')[2] if pub.count('"""') >= 2 else pub
+    check("the token is never printed, not even as a prefix",
+          not _re4.search(r"print\([^)]*\btoken\[[^\]]*\]", pub_code) and "def fingerprint(" in pub,
+          "Actions masks the exact secret only, so token[:30] is a leak")
+    check("the duplicate guard reads the Page, not a local marker file",
+          "/feed" in pub and "posted_on_date" in pub)
+    check("no fallback Page id is compiled in",
+          'environ.get("FB_PAGE_ID", "' not in pub,
+          "a silent default posts to somebody else's Page")
+gen = open(soc["generator"], encoding="utf-8").read() if os.path.exists(soc["generator"]) else ""
+if gen:
+    check("the Facebook copy is converted, not duplicated", "from telegram_mdv2 import to_plain" in gen,
+          "two template sets drift; one source, one conversion")
+    check("Telegram's white-on-transparent hero is not offered to Facebook",
+          "official-logo-white" not in gen.split("FB_PHOTO_IMAGES")[1].split("]")[0])
+post = open(soc["poster"], encoding="utf-8").read() if os.path.exists(soc["poster"]) else ""
+if post:
+    check("a run that posted nothing fails loudly", "return 3" in post and "return 0" in post)
+    check("a skipped day is not a failure (no issue for a duplicate)",
+        "skipped" in post)
+ig_wf = open(os.path.join(ROOT, ".github", "workflows", "instagram_autopost.yml"), encoding="utf-8").read() \
+    if os.path.exists(os.path.join(ROOT, ".github", "workflows", "instagram_autopost.yml")) else ""
+if ig_wf:
+    check("the Instagram path got the same input-handling fix",
+          not _re4.search(r"--caption \"\$\{\{ inputs", ig_wf) and "IG_CAPTION: ${{ inputs.caption }}" in ig_wf,
+          "the shell-injection class was in both autoposts, not only Facebook's")
+rdme3 = open(os.path.join(ROOT, "README.md"), encoding="utf-8").read()
+check("README points at the Facebook handbook", "FACEBOOK_AUTOMATION.md" in rdme3)
+check("assets/facebook/ is gitignored (generated copy, not source)",
+      "assets/facebook/" in open(os.path.join(ROOT, ".gitignore"), encoding="utf-8").read())
+# ── the Reels lane (Mon/Thu, three-phase video_reels) ──────────────────────
+reel_files = {
+    "decider": os.path.join(ROOT, "scripts", "facebook_reel_daily.py"),
+    "reel tests": os.path.join(ROOT, "tools", "tests", "test_post_facebook_reels.py"),
+}
+for label, path in reel_files.items():
+    check("reels: %s exists (%s)" % (label, os.path.relpath(path, ROOT)), os.path.exists(path))
+pub_reel = open(soc["publisher"], encoding="utf-8").read() if os.path.exists(soc["publisher"]) else ""
+if pub_reel:
+    # Judged inside post_reel()'s own body: a file-wide "does A come before B" is
+    # decided by where the definitions sit, which says nothing about call order.
+    post_reel_body = pub_reel.split("def post_reel(")[1].split("\ndef ")[0] if "def post_reel(" in pub_reel else ""
+    check("a reel is refused before any bytes move",
+          bool(post_reel_body)
+          and 0 <= post_reel_body.index("reel_spec_ok(") < post_reel_body.index("reel_start(")
+          and "spec refused" in post_reel_body,
+          "Meta accepts a non-9:16 or over-length file and then fails to publish it quietly")
+    check("phase 2 talks to rupload with headers, not body fields",
+          'RUPLOAD = "https://rupload.facebook.com/video-upload"' in pub_reel
+          and '"Authorization": "OAuth %s" % token' in pub_reel
+          and pub_reel.count("% (RUPLOAD, API_VERSION, video_id)") == 1)
+    check("a probe cannot publish a reel",
+          pub_reel.find("def reel_probe") > 0
+          and "_phase(\"finish\")" not in pub_reel.split("def reel_probe")[1].split("def ")[0])
+    check("an accepted-but-unpublished reel is recoverable",
+          "--reel-finish" in pub_reel and "publish refused after the upload was accepted" in pub_reel)
+    check("every reel failure returns a 2-tuple",
+          "refusing to finish it\" % (transferred, size))" in pub_reel
+          or "incomplete on Meta's side" in pub_reel,
+          "a 3-tuple on one branch unpacks into a ValueError in the caller")
+daily = open(reel_files["decider"], encoding="utf-8").read() if os.path.exists(reel_files["decider"]) else ""
+if daily:
+    check("the reel days never collide with the Shorts days",
+          "REEL_WEEKDAYS = (0, 3)" in daily,
+          "same weekday = same rotation index = the same frame on both platforms")
+    check("the decision does not import the renderer at module level",
+          "import generate_short_video" in daily.split("def reel_topic")[1][:400]
+          and daily.index("import generate_short_video as shorts") > daily.index("def reel_topic"),
+          "a plan step that cannot import is a skipped lane, in red")
+    check("the mode defaults to probe", '"probe"' in daily and "REELS_MODE" in daily)
+wf_reel = open(soc["workflow"], encoding="utf-8").read() if os.path.exists(soc["workflow"]) else ""
+if wf_reel:
+    check("the reel mode is a variable", "vars.FB_REELS" in wf_reel)
+    check("the reel ledger is the shared tool, pointed at a Facebook file",
+          "tools/youtube_ledger.py --ledger logs/facebook_reels.json" in wf_reel
+          and not os.path.exists(os.path.join(ROOT, "tools", "facebook_ledger.py")),
+          "a forked ledger drifts the first time someone fixes a race in the other one")
+    check("the ledger lives where it can be committed",
+          "logs/facebook_reels.json" in wf_reel
+          and "logs/" not in [ln.strip() for ln in open(os.path.join(ROOT, ".gitignore"),
+                                                          encoding="utf-8").read().splitlines()],
+          "a ledger inside a gitignored directory is a 30-day window that never fills")
+    check("reel steps consume the decision, not the cron",
+          "steps.reel_plan.outputs.reel_today" in wf_reel
+          and wf_reel.index("Reels — decide") < wf_reel.index("Reels — install the renderer"))
+# ── the heartbeat (one cron that judges every other cron) ───────────────────
+# The lanes publish; nothing else asks "did they". These checks are the pre-push
+# guard for the guard: the parts that a missing dependency would hide from CI, and
+# the cross-file contracts (tool ↔ workflow ↔ docs) that each side can break alone.
+hb_paths = {
+    "tool": os.path.join(ROOT, "tools", "automation_heartbeat.py"),
+    "workflow": os.path.join(ROOT, ".github", "workflows", "automation-heartbeat.yml"),
+    "tests": os.path.join(ROOT, "tools", "tests", "test_automation_heartbeat.py"),
+}
+for hb_label, hb_path in hb_paths.items():
+    check("heartbeat: %s exists" % hb_label, os.path.exists(hb_path))
+hb_src = open(hb_paths["tool"], encoding="utf-8").read() if os.path.exists(hb_paths["tool"]) else ""
+hb_wf = open(hb_paths["workflow"], encoding="utf-8").read() if os.path.exists(hb_paths["workflow"]) else ""
+if hb_src:
+    check("heartbeat reads its lanes, never lists them",
+          "def discover_lanes(" in hb_src
+          and not re.search(r"\b(telegram|facebook|instagram|youtube)_\w*\.ya?ml", hb_src),
+          "a hardcoded lane table is stale the day a cron moves, and a stale monitor "
+          "reports a healthy repo")
+    hb_imports = {m.split(" ")[1].split(".")[0] for m in
+                  re.findall(r"^(?:import|from) .+$", hb_src, re.M)}
+    check("heartbeat imports nothing beyond stdlib + PyYAML",
+          hb_imports <= {"argparse", "base64", "collections", "datetime", "hashlib", "json",
+                         "os", "pathlib", "re", "sys", "urllib", "yaml", "__future__"},
+          "the job installs only pyyaml — one stray `import requests` is a crash at 18:00 "
+          "and a silent month of no data")
+    check("heartbeat counts the cadence from the cron, with slack capped at one cycle",
+          "def silence_deadline(" in hb_src and "min(int(jitter), max(int(gap), 3600))" in hb_src,
+          "12 h of scheduler slack is right for a daily lane and absurd for a 30-minute one")
+    check("a schedule that only exists on a branch is never called dead",
+          'options["default_crons"]' in hb_src,
+          "build_verdicts reads it out of options; rebinding a local name in main() "
+          "silently turns every unmerged lane into a false alarm")
+    check("the heartbeat can only report 'I could not look'",
+          "returning 'all clear' without data" in hb_src
+          or "refusing to report a healthy repo" in hb_src)
+    check("heartbeat exits 3 when the data is missing",
+          re.search(r"could not look.*?return 3", hb_src, re.S) is not None)
+if hb_wf:
+    check("heartbeat workflow: scheduled and manually runnable",
+          "schedule:" in hb_wf and "workflow_dispatch:" in hb_wf)
+    check("heartbeat workflow: installs what the tool needs",
+          "pip install" in hb_wf and "pyyaml" in hb_wf.lower())
+    check("heartbeat workflow: reads every key the tool prints", hb_src.count("HEARTBEAT_") > 0)
+    grep_keys = sorted(set(re.findall(r"sed -n 's/\^(HEARTBEAT_[A-Z_]+)=/", hb_wf)))
+    check("heartbeat workflow reads at least one contract key", len(grep_keys) >= 3,
+          "the sed pattern that finds them changed shape once already — an empty loop here "
+          "would prove nothing and look like a pass")
+    for key in grep_keys:
+        check("heartbeat contract: %s is printed by the tool" % key,
+              ('"%s=%%s"' % key) in hb_src or ("'%s='" % key) in hb_src,
+              "the workflow greps this out of the log; a renamed key reads as 'healthy'")
+    check("heartbeat files one issue, not one per day",
+          'grep -q "$SIGNATURE"' in hb_wf or "grep -q \"$SIGNATURE\"" in hb_wf)
+    check("heartbeat closes its own issue when the lanes heal",
+          "gh issue close" in hb_wf,
+          "an open issue about a healed lane is worse than no issue: it trains the "
+          "reader to ignore the label")
+    check("heartbeat commits nothing",
+          "git push" not in hb_wf and "permissions:" in hb_wf and "contents: read" in hb_wf,
+          "a monitor that can write to the repo is a monitor that can break it")
+    readme_hb = open(os.path.join(ROOT, "README.md"), encoding="utf-8").read()
+    growth_hb = open(os.path.join(ROOT, "docs", "GROWTH_ENGINE.md"), encoding="utf-8").read()
+    check("the heartbeat is written down where the owner looks",
+          "automation-heartbeat" in readme_hb and "automation-heartbeat" in growth_hb,
+          "a monitor nobody can find is a monitor nobody re-runs")
+
+# ── the publish ledger: what counts as having published ────────────────────
+# Two bugs and one gap, all from 13 Oct 2026: the channel got the same post four times,
+# the lane had no durable proof of publishing, and the log that looked like proof was
+# gitignored scratch the tests themselves wrote to. These hold the three fixes in place.
+tg_poster = open(os.path.join(ROOT, "scripts", "post_telegram.py"), encoding="utf-8").read()
+tg_body = tg_poster.split("def post_to_telegram(")[1].split("\ndef ")[0]
+check("telegram ledger: the duplicate check is consulted before anything is sent",
+      0 <= tg_body.index("already_sent(") < tg_body.index("send_text_message(")
+      and 0 <= tg_body.index("already_sent(") < tg_body.index("send_photo_message("),
+      "checking after the send is bookkeeping, not protection")
+check("telegram ledger: an entry is written only for a send Telegram accepted",
+      tg_body.index("if ok:") < tg_body.index("ledger.record("),
+      "recording the intent would turn the ledger into a wish")
+check("telegram ledger: refusals are red, duplicates are green",
+      "if sent == 0 and failed:" in tg_body and "return -1" in tg_body,
+      "collapsing 'nothing to do' and 'nothing worked' is how the poster used to exit 0 on an API error")
+check("telegram ledger: the shared tool, not a fork",
+      "import youtube_ledger as ledger" in tg_poster
+      and not os.path.exists(os.path.join(ROOT, "tools", "telegram_ledger.py")),
+      "a forked ledger drifts the first time someone fixes a race in the other one")
+tg_wf = open(os.path.join(ROOT, ".github", "workflows", "telegram_autopost.yml"),
+             encoding="utf-8").read()
+check("telegram workflow: the ledger file is the same path the poster writes",
+      "telegram_sent.json" in tg_poster and "logs/telegram_sent.json" in tg_wf
+      and 'docoga_log.log_file("telegram_sent.json")' in tg_poster,
+      "the workflow commits one path and the poster writes another: the ledger stays empty "
+      "forever, and an empty ledger reads as \"nothing published\"")
+check("telegram workflow: it may commit the ledger and nothing else is write-scoped",
+      "contents: write" in tg_wf and "issues: write" in tg_wf)
+check("telegram workflow: the ledger commit cannot turn a publish red",
+      "continue-on-error: true" in tg_wf.split("Commit the publish ledger")[1][:400])
+for name in ("telegram_autopost.yml", "facebook_autopost.yml"):
+    text = open(os.path.join(ROOT, ".github", "workflows", name), encoding="utf-8").read()
+    check("%s: an auto-commit of bookkeeping does not retrigger CI" % name,
+          "[skip ci]" in text,
+          "the free plan has 2,000 minutes a month; a ledger push that fires Verify burns them")
+check("telegram workflow: force is an input, so a re-post needs no commit",
+      "force:" in tg_wf and "TELEGRAM_FORCE: ${{ inputs.force }}" in tg_wf)
+social_scripts = ["post_telegram.py", "post_facebook.py", "generate_facebook_content.py",
+                  "generate_telegram_content.py", "post_telegram_video.py"]
+for name in social_scripts:
+    text = open(os.path.join(ROOT, "scripts", name), encoding="utf-8").read()
+    check("scratch files are rooted, not cwd-relative (%s)" % name,
+          'Path("logs/' not in text and "docoga_log" in text,
+          "a relative log path is a stray logs/ directory in whoever's home ran it last")
+hb_tool = open(os.path.join(ROOT, "tools", "automation_heartbeat.py"), encoding="utf-8").read()
+check("heartbeat: run history and publish evidence are separate facts",
+      "def ledger_freshness(" in hb_tool and "green-but-quiet" in hb_tool
+      and "no publish evidence either way" in hb_tool,
+      "'nothing has succeeded' and 'nobody published' are different sentences")
+check("heartbeat: a missing ledger is never read as silence",
+      '"state": "absent"' in hb_tool and '"state": "unreadable"' in hb_tool)
+check("telegram preflight names the secret to set",
+      "gh secret set TELEGRAM_CHAT_ID" in
+      open(os.path.join(ROOT, "tools", "telegram_preflight.py"), encoding="utf-8").read(),
+      "it finds the failure; it has to finish the job and say what to type")
+
+# ── the YouTube lane: the protocol, the cause, and the probe ───────────────
+# The 9 Oct run rendered a Short for ten minutes, failed at "Upload to YouTube", and the only
+# words in the log were `Exit code 1`. Three rules keep that from being the state of play again.
+yt_wf_text = open(os.path.join(ROOT, ".github", "workflows", "youtube_scheduled.yml"),
+                  encoding="utf-8").read()
+yt_pub = open(os.path.join(ROOT, "tools", "yt_publish.py"), encoding="utf-8").read()
+
+# --- the Telegram live duplicate guard (tools/telegram_preview.py + the poster) ---------
+tg_prev_path = os.path.join(ROOT, "tools", "telegram_preview.py")
+tg_prev = open(tg_prev_path, encoding="utf-8").read() if os.path.exists(tg_prev_path) else ""
+tg_post_path = os.path.join(ROOT, "scripts", "post_telegram.py")
+tg_post = open(tg_post_path, encoding="utf-8").read() if os.path.exists(tg_post_path) else ""
+tg_flow_path = os.path.join(ROOT, ".github", "workflows", "telegram_autopost.yml")
+tg_flow = open(tg_flow_path, encoding="utf-8").read() if os.path.exists(tg_flow_path) else ""
+tg_pre = open(os.path.join(ROOT, "tools", "telegram_preflight.py"), encoding="utf-8").read()
+
+check("telegram guard: the channel is asked, not just the ledger",
+      bool(tg_prev) and "def recent_posts(" in tg_prev and "t.me/s/" in tg_prev
+      and "def channel_duplicate(" in tg_post,
+      "a lost or un-pushed ledger is how the same paragraph reached readers four times")
+check("telegram guard: it refuses only an identical message",
+      "MIN_DISTINCT_TOKENS" in tg_prev and "MIN_ANCHOR_LENGTH" in tg_prev and "need <= have" in tg_prev,
+      "templated copy reuses fixed sentences on purpose; 'similar' would silence the lane")
+check("telegram guard: it fails open, never silent and never blocking",
+      '"unavailable"' in tg_post and '"no messages"' in tg_prev and "return None, " in tg_prev,
+      "an unreadable page must cost a warning, not the day's post")
+check("telegram guard: the ledger is consulted before the network",
+      tg_post.index("already_sent(entries, key, today)")
+      < tg_post.index("guard_state, guard_detail = channel_duplicate(message)"),
+      "the free offline check runs first, so a known duplicate costs no HTTP request")
+check("telegram guard: the refusal happens before anything is sent",
+      tg_post.index("guard_state, guard_detail = channel_duplicate(message)")
+      < tg_post.index("if send_photo and photo_path:")
+      and "TELEGRAM_SKIP_CHANNEL_CHECK" in tg_post,
+      "a guard that runs after sendMessage is a log line, not a guard — and it needs a kill switch")
+check("telegram guard: the preview request carries no credentials",
+      "TELEGRAM_BOT_TOKEN" not in tg_prev and "timeout=" in tg_prev and "User-Agent" in tg_prev,
+      "t.me/s/ needs no token; a fetch that carries one is a leak waiting to land in a run log")
+check("telegram guard: the run summary reports which guard was watching",
+      "TELEGRAM_CHANNEL_GUARD=" in tg_post and "TELEGRAM_CHANNEL_GUARD=" in tg_flow,
+      "'green with a live guard' and 'green because the channel was unreadable' must not look alike")
+check("telegram guard: the preflight can be checked without a token",
+      "--preview" in tg_pre and "telegram_preview" in tg_pre,
+      "the owner has to be able to verify the guard from a terminal, with no secret in hand")
+# ── the Meta lanes (Threads + Instagram): what cannot be verified without a live token ──
+_meta_paths = {
+    "threads publisher": "tools/threads_publish.py",
+    "threads generator": "scripts/generate_threads_content.py",
+    "threads workflow": ".github/workflows/threads_autopost.yml",
+    "instagram publisher": "tools/ig_publish.py",
+    "instagram workflow": ".github/workflows/instagram_autopost.yml",
+    "card renderer": "tools/social_card.py",
+    "token vault": "tools/token_vault.py",
+}
+_meta = {}
+for _label, _rel in _meta_paths.items():
+    _present = os.path.exists(os.path.join(ROOT, _rel))
+    check("meta lanes: %s exists" % _label, _present,
+          "a lane that is documented but absent is a promise nobody can keep")
+    if _present:
+        _meta[_label] = open(os.path.join(ROOT, _rel), encoding="utf-8").read()
+
+if len(_meta) == len(_meta_paths):
+    check("meta lanes: a failed publish is a failed run",
+          "sys.exit(main())" in _meta["threads publisher"]
+          and "return 3 if exc.cause" in _meta["threads publisher"]
+          and "raise SystemExit(2)" in _meta["instagram publisher"]
+          and "machine(\"refused\", \"setup\")" in _meta["instagram publisher"]
+          and "sys.exit(main())" in _meta["instagram publisher"],
+          "ig_publish.py's first version returned None on every failure and exited 0 — a red "
+          "day wearing a green tick, the single worst property a publisher can have")
+    def _code_only(_text):
+        # Drop the module docstring: these files document the leak they closed, and a check
+        # that reads prose as code fails on the changelog instead of on the bug.
+        return re.sub(r'"""(?:[^"]|"(?!""))*"""', "", _text, count=1, flags=re.S)
+
+    # The dangerous *shapes*: slicing a secret, printing the variable, concatenating it into a
+    # message. A line merely containing the word "token" is prose about the credential ("the
+    # token was rejected") and flagging those is how a check gets switched off by the next
+    # person who has a real job to do. This mirrors the existing Facebook publisher's check.
+    _leaks = []
+    for _label in ("threads publisher", "instagram publisher"):
+        _body = _code_only(_meta[_label])
+        if re.search(r"print\([^)]*(?:\btoken\[|\bnew_token\b|% token\)|\+ token\b)", _body):
+            _leaks.append(_label)
+    check("meta lanes: neither publisher prints a credential it was not asked to hand on",
+          not _leaks and "def fingerprint(" in _meta["threads publisher"]
+          and "def fingerprint(" in _meta["instagram publisher"]
+          and "fingerprint(token)" in _meta["threads publisher"],
+          "the old --refresh-token printed 20 characters of a live token into the run log; "
+          "a fingerprint identifies *which* credential failed without being it"
+          + (" — printing a credential in: " + ", ".join(_leaks) if _leaks else ""))
+    check("meta lanes: a refreshed token is redirected, and then erased",
+          "> /tmp/threads_refresh.json" in _meta["threads workflow"]
+          and "rm -f /tmp/threads_refresh.json" in _meta["threads workflow"]
+          and "> /tmp/ig_refresh.json" in _meta["instagram workflow"]
+          and "rm -f /tmp/ig_refresh.json" in _meta["instagram workflow"],
+          "`--refresh` prints JSON on purpose so the vault can seal it — which is only safe "
+          "because stdout is redirected to a file the step then deletes")
+    check("meta lanes: both redact an API body before printing it",
+          "def redact(" in _meta["threads publisher"] and "redact(self.body)" in _meta["threads publisher"]
+          and "def redact(" in _meta["instagram publisher"] and "redact(self.body)" in _meta["instagram publisher"],
+          "Meta quotes part of the token it was handed back in its own error text")
+    check("meta lanes: the vault refuses instead of storing plaintext",
+          "refusing to store a token" in _meta["token vault"]
+          and "AESGCM" in _meta["token vault"]
+          and "os.replace" in _meta["token vault"] and "open needs --out" in _meta["token vault"],
+          "a security tool that degrades quietly into an exfiltration tool is worse than none; "
+          "the atomic write is so a killed run cannot leave half a box, and refusing to print "
+          "a plaintext token is the point of the file")
+    check("meta lanes: the vault never writes into the deployed site",
+          "refusing to write a vault file inside site/" in _meta["token vault"],
+          "site/ is the public web root; a secret box put there is published, ciphertext or not")
+    check("meta lanes: the card is exactly the ratio Instagram accepts",
+          "CARD_W, CARD_H = 1080, 1350" in _meta["card renderer"]
+          and "ASPECT_MIN, ASPECT_MAX = 0.8, 1.91" in _meta["instagram publisher"],
+          "4:5 is the narrowest ratio content publishing takes; anything else answers "
+          "'Unsupported URL request', which every human so far has misread as permissions")
+    check("meta lanes: the render URL drops the site/ prefix",
+          'if serving.startswith("site/")' in _meta["card renderer"],
+          "wrangler publishes ./site as the root, so /site/social/x.jpg 404s forever")
+    check("meta lanes: Threads copy is fitted in the platform's own units",
+          "def threads_cost(" in _meta["threads generator"]
+          and "def cost(" in _meta["threads publisher"]
+          and "MAX_COST" in _meta["threads generator"] and "MAX_COST" in _meta["threads publisher"],
+          "Meta charges an emoji at 4 bytes, so len() is not the number that decides acceptance")
+    check("meta lanes: both ask the platform what it already carries",
+          "def find_duplicate(" in _meta["threads publisher"]
+          and "def find_duplicate(" in _meta["instagram publisher"],
+          "the duplicate guard is the platform's memory; the ledger is only ours")
+    check("meta lanes: an unreadable guard warns and posts",
+          "duplicate guard unavailable" in _meta["threads publisher"]
+          and "duplicate guard unavailable" in _meta["instagram publisher"],
+          "fail-open with a name on it, or a dead endpoint silences a lane for a week")
+    check("meta lanes: the workflow reads the publisher's exit code, not its mood",
+          "THREADS_RESULT=" in _meta["threads workflow"] and "sed -n" in _meta["threads workflow"]
+          and "sent|refused-duplicate|dry-run)" in _meta["threads workflow"],
+          "a refusal is a success and a silence is not: the case statement is the whole difference")
+    check("meta lanes: the box holds the token, not Meta's response body",
+          "return read_refresh_response(args.json)[0]" in _meta["token vault"]
+          and 'json.dumps({"access_token": token' not in _meta["token vault"]
+          and "unwrapped" in _meta["token vault"],
+          "the publisher sends the file `open --out` writes as its bearer token, so sealing a "
+          "whole JSON response makes day 2 a 401 that reads like a revoked consent — and it is "
+          "invisible to any test that runs one verb at a time, which is why this line is a gate "
+          "and not only a test (the tests skip when cryptography is missing; this cannot)")
+    check("meta lanes: an empty seal is refused, not stored",
+          "refusing to seal an empty token" in _meta["token vault"],
+          "a `$(…) that came back empty` would otherwise win the fallback race against the "
+          "bootstrap secret: the lane would read a valid box containing nothing and file a "
+          "credentials issue instead of a setup one")
+    check("meta lanes: the render directory is bounded, by name not mtime",
+          "--prune site/social --keep 60" in _meta["instagram workflow"]
+          and "DATED_RENDER = re.compile" in _meta["card renderer"]
+          and "keep = max(1, int(keep))" in _meta["card renderer"],
+          "site/social/ is inside the deployed tree, so an unbounded write there is the repository "
+          "growing in public forever — and retention keyed on mtime would look correct and match "
+          "nothing, because a fresh checkout stamps every file with today")
+    check("meta lanes: no ${{ }} reaches a git push destination",
+          'git push origin "HEAD:${{' not in _meta["instagram workflow"]
+          and 'git push origin "HEAD:${{' not in _meta["threads workflow"],
+          "these two lanes hold contents:write and choose their own push destination, which is "
+          "exactly where an interpolated expression turns a slip into a write to the wrong ref")
+    check("meta lanes: the runner installs what the vault needs",
+          "cryptography" in _meta["threads workflow"]
+          and "cryptography" in _meta["instagram workflow"],
+          "tools/token_vault.py refuses to run without it rather than storing plaintext, which is "
+          "right — but a lane that forgets the dependency then skips the refresh in silence and "
+          "dies at day 60 while passing every day before that")
+
+    # A value produced in one place and consumed in another is where this repo's worst bugs live,
+    # because each half passes its own test: `$GITHUB_ENV` read in the step that wrote it, a jq
+    # needle that was never exported (Telegram's dedupe matched *every* issue this way for a week),
+    # and `steps.<id>.outputs.<key>` naming a step or key that does not exist. The auditor is its
+    # own module with its own tests — including the silences, since this checker reported five
+    # confident bugs in this repository on its first run and all five were its own mistakes.
+    try:
+        sys.path.insert(0, os.path.join(ROOT, "tools"))
+        import workflow_handoffs
+        _handoffs = workflow_handoffs.audit_dir(os.path.join(ROOT, ".github", "workflows"))
+    except Exception as exc:  # an auditor that could not run is said so, never passed silently
+        _handoffs = None
+        _handoff_error = str(exc)
+    if _handoffs is None:
+        warn("workflow handoffs audited", False,
+             "tools/workflow_handoffs.py could not run (%s) — the cross-step class of bug it catches "
+             "is the one this repository keeps rediscovering" % _handoff_error)
+    else:
+        check("every workflow handoff lands ($GITHUB_ENV, jq $ENV, steps.outputs)", not _handoffs,
+              " | ".join("%s: %s" % pair for pair in _handoffs)[:700])
+
+    # Every `run:` block in every workflow must be valid bash. A stray `done` where `fi` belongs
+    # and an input interpolated into `[ -n "${{ inputs.x }}" ]` are both mechanical errors, and
+    # both were actually written into this repo by someone in a hurry before this check existed.
+    _wf_dir = os.path.join(ROOT, ".github", "workflows")
+    _problems = []
+    try:
+        import yaml as _yaml_wf
+    except ImportError:
+        _yaml_wf = None
+    if _yaml_wf is None:
+        warn("workflow run blocks not syntax-checked — pyyaml missing locally", True,
+             "CI runs the same check through tools/tests/test_workflow_contract.py")
+    else:
+        for _wf_name in sorted(os.listdir(_wf_dir)):
+            if not _wf_name.endswith(".yml"):
+                continue
+            _text = open(os.path.join(_wf_dir, _wf_name), encoding="utf-8").read()
+            try:
+                _doc = _yaml_wf.safe_load(_text)
+            except Exception as _exc:
+                _problems.append("%s: yaml unparseable (%s)" % (_wf_name, str(_exc)[:120]))
+                continue
+            for _job in (_doc or {}).get("jobs", {}).values():
+                for _step in _job.get("steps", []) or []:
+                    _run = _step.get("run")
+                    if not _run:
+                        continue
+                    _label = "%s/%s" % (_wf_name, _step.get("name", "?"))
+                    if re.search(r'\[\s-[nz]\s*"\$\{\{', _run):
+                        _problems.append("%s: an input interpolated into a test" % _label)
+                    _sub = re.sub(r"\$\{\{[^}]*\}\}", "SAFEVALUE", _run)
+                    _proc = subprocess.run(["bash", "-n"], input=_sub, capture_output=True,
+                                           text=True)
+                    if _proc.returncode:
+                        _problems.append("%s: %s" % (_label, _proc.stderr.strip()[:160]))
+        check("every workflow run block is valid bash (bash -n, ${{ }} substituted)",
+              not _problems, "; ".join(_problems[:4])
+              or "a syntax error in a step costs a day's post, and the Actions UI points at "
+                 "the last heredoc line rather than the mistake")
+
+# --- tools/lane_status.py: the one command that answers "why is the lane red" ------------
+lane_status_path = os.path.join(ROOT, "tools", "lane_status.py")
+lane_status = open(lane_status_path, encoding="utf-8").read() if os.path.exists(lane_status_path) else ""
+check("lane_status: exists, and it is read-only",
+      bool(lane_status) and not any(verb in lane_status for verb in
+                                    ("-X POST", "--method", "gh run cancel", "gh workflow run",
+                                     "gh issue create", "gh secret")),
+      "a status tool that can write is a status tool that can break a launch mid-check")
+check("lane_status: it reads annotations, never the unreachable log bytes",
+      "check-runs" in lane_status and "/logs" not in lane_status and "annotations" in lane_status,
+      "the log host is off the sandbox allowlist; the annotations are the same text and always readable")
+check("lane_status: redaction runs before anything is printed",
+      "REDACTIONS" in lane_status and "def redact(" in lane_status
+      and '"message": redact(' in lane_status and "redact(str(exc))" in lane_status,
+      "an annotation that quotes the token it was handed must not become the leak — the message is "
+      "the only uncontrolled text this tool prints, so it is the one that passes through redact()")
+check("lane_status: bookkeeping steps are excluded by mirror, not by prefix",
+      'name.startswith("Post ") and name[len("Post "):] in names' in lane_status,
+      "`Post to Telegram` is a real step name; a prefix rule hides the failure that matters")
+check("lane_status: the runbook hands it over as the check",
+      "lane_status" in open(os.path.join(ROOT, "docs", "LAUNCH_SEQUENCE.md"),
+                            encoding="utf-8").read(),
+      "the fastest diagnosis is useless if it lives only in a docstring")
+
+# --- the failure-issue hygiene that makes the launch order safe -------------------------
+# The workflow's jq string escapes its quotes for bash, so the needle the check looks for is
+# `contains(\"[\")` — built with chr() rather than written out, because a backslash in a
+# literal is how a check ends up matching nothing at all.
+_LEGACY_NEEDLE = "contains(" + chr(92) + chr(34) + "[" + chr(92) + chr(34) + ") | not"
+
+_lane_issue_files = {
+    "telegram_autopost.yml": "telegram-automation",
+    "facebook_autopost.yml": "facebook-automation",
+    "youtube_scheduled.yml": "youtube-automation",
+    "threads_autopost.yml": "threads-automation",
+    "instagram_autopost.yml": "instagram-automation",
+}
+for _lane_file, _lane_label in _lane_issue_files.items():
+    _lane_path = os.path.join(ROOT, ".github", "workflows", _lane_file)
+    _lane_text = open(_lane_path, encoding="utf-8").read() if os.path.exists(_lane_path) else ""
+    check("%s: its failure issue is filed once per cause, not once per day" % _lane_file,
+          'CAUSE_TAG="[$CAUSE]"' in _lane_text and "--state open" in _lane_text
+          and "max // empty" in _lane_text
+          and 'gh issue comment "$EXISTING"' in _lane_text,
+          "an inbox of identical issues is how a broken lane gets ignored; the cause tag is the key")
+    check("%s: an issue filed before causes existed still absorbs today's failure" % _lane_file,
+          "LEGACY_PREFIX=" in _lane_text and _LEGACY_NEEDLE in _lane_text,
+          "#16 and #12 have no cause in their titles; without the fold-in they would sit open "
+          "beside a twin, which is the noise this change exists to remove")
+    check("%s: bookkeeping can never add a second failure" % _lane_file,
+          'gh issue comment "$EXISTING" --body-file /tmp/issue_body.md || true' in _lane_text
+          and ("::warning" in _lane_text.split("gh issue create")[-1][:400]
+               or "|| true" in _lane_text.split("gh issue create")[-1][:400]),
+          "the run is already red because the post failed; a failed issue is a warning, not a new red")
+check("the heartbeat still finds each lane by its create line",
+      all(("gh issue create" in open(os.path.join(ROOT, ".github", "workflows", f),
+                                    encoding="utf-8").read()) or not os.path.exists(
+          os.path.join(ROOT, ".github", "workflows", f)) for f in _lane_issue_files),
+      "tools/automation_heartbeat.py reads `gh issue create --label …` out of each workflow — "
+      "re-wording that line silently un-monitors the lane")
+check("launch: the sequence document exists and covers every owner-only step",
+      os.path.exists(os.path.join(ROOT, "docs", "LAUNCH_SEQUENCE.md")),
+      "four steps are owed by a human with a browser; the order is the difference between a "
+      "quiet launch and a morning of issues")
+
+check("telegram guard: the tests never reach the network for it",
+      all("fetch_preview" in open(os.path.join(ROOT, "tools", "tests", n), encoding="utf-8").read()
+          for n in ("test_post_telegram_ledger.py", "test_post_telegram_channel_guard.py")),
+      "a test that reads the real channel is a test that fails when Telegram changes")
+check("youtube: the resumable protocol is implemented, not improvised",
+      "308" in yt_pub and "Content-Range" in yt_pub and "await_finalize" in yt_pub
+      and yt_pub.count("timeout=(") >= 1 and "requests.put(" not in yt_pub,
+      "a whole-file PUT with no 308 handling fails a healthy upload, which is what the old code did")
+check("youtube: nothing in the lane can hang",
+      yt_pub.count("TIMEOUT") >= 2 and "def request(self, method, url, headers=None" in yt_pub,
+      "every request goes through Http so a timeout is impossible to forget at one call site")
+check("youtube: a failure names its kind and its fix",
+      "REASONS = {" in yt_pub and "class Problem" in yt_pub and "YT_FAIL_KIND=" in yt_pub,
+      "the issue body and the annotation are assembled from these, so the cause survives the run")
+check("youtube: a human-only repair exits differently from a crash",
+      "EXIT_NEEDS_HUMAN = 2" in yt_pub and "credentials" in yt_pub,
+      "'the code broke' and 're-author the token' are different 2 minutes")
+check("youtube: the upload is read back before anyone says 'published'",
+      "def read_back(" in yt_pub and '"held"' in yt_pub,
+      "201 means the bytes arrived; a channel that defaults uploads to private returns 201 too")
+check("youtube: the probe exists and cannot upload",
+      "def probe(" in yt_pub and "--probe" in yt_pub
+      and "def probe" in yt_pub and "ResumableUploader" in yt_pub.split("def probe(")[0],
+      "the owner is never asked to guess which of four things is wrong (PRE-FLIGHT LAW)")
+check("youtube: the scheduled preflight runs the probe",
+      "yt_publish.py --probe" in yt_wf_text,
+      "presence of secrets proved nothing on 9 Oct: the step was green with a dead token")
+check("youtube: a probe-only dispatch is available",
+      "probe_only" in yt_wf_text and 'jobs' in yt_wf_text and "name: Diagnose the YouTube lane" in yt_wf_text,
+      "diagnosis must be runnable without rendering or uploading anything")
+check("youtube: the ledger is recorded even when the upload step went red",
+      "steps.upload.outputs.video_id != ''" in yt_wf_text
+      and "if: always() && steps.guard.outputs.skip != 'yes' && steps.upload.outputs.video_id != ''"
+      in yt_wf_text,
+      "an id on the channel that is not in the ledger is a duplicate waiting for the next run")
+check("youtube: exit codes survive the log capture",
+      "code=${PIPESTATUS[0]}" in yt_wf_text,
+      "tee swallows the uploader's exit code, and the exit code is the diagnosis")
+check("youtube: the failure issue says whether a video exists",
+      "Nothing was published by this run" in yt_wf_text and "A video exists" in yt_wf_text
+      and "Nothing may have been published" not in yt_wf_text,
+      "a hedge in the first line of an issue is a morning wasted reading the channel by hand")
+for name in ("youtube_scheduled.yml", "telegram_autopost.yml", "facebook_autopost.yml",
+             "threads_autopost.yml"):
+    # instagram_autopost.yml is deliberately absent from this loop: its *render* commit must
+    # fire the site deploy, because the deploy is what makes the media URL public.
+    text = open(os.path.join(ROOT, ".github", "workflows", name), encoding="utf-8").read()
+    check("%s: an auto-commit of bookkeeping does not retrigger CI" % name,
+          "[skip ci]" in text,
+          "the free plan has 2,000 minutes a month; a ledger push that fires Verify burns them")
+check("youtube ledger: an entry carries what YouTube reported",
+      "--state" in open(os.path.join(ROOT, "tools", "youtube_ledger.py"), encoding="utf-8").read(),
+      "the difference between 'published' and 'we PUT a file and hoped'")
+
+# The unittest files are the real gate; run them when their deps are present.
+import importlib.util as _ilu
+missing_mods = [m for m in ("requests", "yaml") if _ilu.find_spec(m) is None]
+if missing_mods:
+    warn("social unittests skipped locally — missing " + ", ".join(missing_mods)
+         + " (CI runs them; install with `pip install requests pyyaml`)", False)
+else:
+    r = subprocess.run([sys.executable, "-m", "unittest", "discover", "-s",
+                        os.path.join(ROOT, "tools", "tests"), "-p", "test_*.py", "-q"],
+                       capture_output=True, text=True, cwd=ROOT, timeout=900)
+    check("python automation tests (workflows + telegram + facebook + youtube)",
+          r.returncode == 0, (r.stderr or "").strip().splitlines()[-1][:160] if r.returncode else "")
 
 print()
 if errors:

@@ -1,0 +1,389 @@
+name: DocOga Threads Auto-Post
+
+# Posts one text post a day to the DocOga Threads profile, at 09:45 in Lagos.
+#
+# Why Threads is the Meta lane that can actually run unattended, while Instagram cannot
+# yet: a Threads post is *words*. `media_type=TEXT` needs no public URL, so nothing in
+# this lane depends on a render, a CDN, or a deploy finishing before Meta fetches a file.
+# Instagram's publishing API has no such mode — every photo, Reel and carousel container
+# is fetched by URL — which is why `instagram_autopost.yml` grew the `site/social/` media
+# bridge and still cannot promise a picture without one.
+#
+# What this workflow closes, in order:
+#   1. a preflight that asks Threads who the token authorises (0 quota units, 0 writes);
+#   2. the ledger `logs/threads_sent.json` — offline, first, before any network call;
+#   3. the platform's own memory — `tools/threads_publish.py` re-reads the profile and
+#      refuses a word-for-word repeat, and says out loud when it could not read it;
+#   4. the 60-day token clock — refreshed on **every** run, sealed into `logs/` with
+#      `tools/token_vault.py`, and *not* contingent on the post succeeding, because a
+#      lane that skips posting for a benign reason must still not die in December;
+#   5. a labelled issue with a classified cause when any of it fails, one per cause.
+#
+# The vault exists because a GitHub Actions job cannot write its own repository secrets
+# (the secrets API needs the `secrets` permission, which `GITHUB_TOKEN` does not carry —
+# GitHub staff, community discussion #160560, 10 Jun 2024). So the ciphertext is committed
+# and the key stays in Actions. Without `SOCIAL_TOKEN_KEY` set, this lane still posts — it
+# just runs on the bootstrap secret and loses its memory of the refresh, which the summary
+# says plainly instead of discovering in eight weeks.
+#
+# Limits that shape the schedule (Meta's own, 2026): 250 published posts per profile per
+# rolling 24 h; 500 characters, with non-ASCII charged at UTF-8 byte length; at most 5
+# links; containers expire after 24 h; text posts need no processing wait. One post a day
+# is 0.4 % of the quota — this lane cannot exhaust its own budget, which is the point of
+# checking `threads_publishing_limit` rather than counting locally.
+
+on:
+  schedule:
+    - cron: '45 8 * * *'  # 08:45 UTC = 09:45 Lagos; 15 min after Facebook so the lanes do not share a minute
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Preflight and validate the copy only — publish nothing'
+        required: false
+        default: false
+        type: boolean
+      probe_only:
+        description: 'Ask Threads who the token authorises, then stop'
+        required: false
+        default: false
+        type: boolean
+      force:
+        description: 'Post even if today is already in the ledger or on the profile'
+        required: false
+        default: false
+        type: boolean
+      text:
+        description: 'Post this exact text instead of today generated copy (still duplicate-checked)'
+        required: false
+        type: string
+
+permissions:
+  contents: write  # the ledger and the sealed token box are committed back to the default branch
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python3 -m pip install --quiet cryptography
+          # No `requests`: tools/threads_publish.py is stdlib-only, and the fewer packages a
+          # 08:45 UTC job installs, the fewer ways it can fail for reasons that are not ours.
+
+      # The token is read from a 0600 file, not the environment, wherever the vault has it:
+      # `/proc/<pid>/environ` is world-readable to anything on the runner, and a step that
+      # dumps its own env (a debug flag, a crashed shell) would carry the token out.
+      - name: Load the credential (vault first, secret as bootstrap)
+        env:
+          THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
+        run: |
+          set -u
+          umask 077
+          if [ -f logs/threads_token.box ]; then
+            if python3 tools/token_vault.py open --name THREADS_TOKEN --out /tmp/threads_token; then
+              echo "THREADS_CREDENTIAL=vault"
+              echo "- credential: **vault** (rolling, refreshed by this lane)" >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            echo "::warning title=Token vault unreadable::falling back to the THREADS_ACCESS_TOKEN secret. The vault failed to open (a rotated SOCIAL_TOKEN_KEY, or a damaged box), so the bootstrap value is used — if that one is the 60-day-old original, this run will fail with a credentials cause and say so."
+          fi
+          if [ -z "${THREADS_ACCESS_TOKEN:-}" ]; then
+            echo "::error title=Threads is not configured::neither logs/threads_token.box nor the THREADS_ACCESS_TOKEN secret exists. This is a setup step, not an outage — see docs/THREADS_AUTOMATION.md"
+            echo "THREADS_RESULT=refused THREADS_CAUSE=setup"
+            exit 2
+          fi
+          printf '%s' "$THREADS_ACCESS_TOKEN" > /tmp/threads_token
+          chmod 600 /tmp/threads_token
+          echo "THREADS_CREDENTIAL=secret"
+          echo "- credential: **bootstrap secret** (no vault file yet)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Preflight — may this lane post?
+        env:
+          THREADS_USER_ID: ${{ secrets.THREADS_USER_ID }}
+        run: |
+          set -o pipefail
+          python3 - <<'PY' 2>&1 | tee /tmp/threads_preflight.log
+          import json, sys
+          sys.path.insert(0, "tools")
+          import threads_publish as tp
+          token = open("/tmp/threads_token", encoding="utf-8").read().strip()
+          try:
+              who = tp.whoami(token)
+          except tp.ApiError as exc:
+              print("::error title=Threads preflight (%s)::%s" % (exc.cause, exc.blurb))
+              print("THREADS_RESULT=refused THREADS_CAUSE=%s" % exc.cause)
+              sys.exit(3 if exc.cause in ("credentials", "permission") else 6)
+          print("token authorises @%s (id %s)" % (who.get("username"), who.get("id")))
+          uid = who.get("id")
+          limit = tp.publishing_limit(token, uid)
+          if limit:
+              room = limit["total"] - limit["usage"]
+              print("publishing quota: %s/%s used — %s left in this 24 h window"
+                    % (limit["usage"], limit["total"], room))
+              if room <= 0:
+                  print("::error title=Threads quota spent::250 posts per profile per 24 h, "
+                        "and the counter says there is no room. Nothing was attempted.")
+                  print("THREADS_RESULT=refused THREADS_CAUSE=quota")
+                  sys.exit(4)
+          else:
+              print("::warning title=Threads quota unreadable::publishing anyway, because "
+                    "an unreadable counter must not block a legitimate post")
+          status = json.dumps({k: who.get(k) for k in ("id", "username", "is_eligible_for_apis")})
+          print("account: %s" % status)
+          print("THREADS_RESULT=preflight-ok")
+          PY
+        continue-on-error: false
+
+      - name: Probe only — stop here
+        if: ${{ inputs.probe_only }}
+        run: |
+          echo "### Threads probe" >> "$GITHUB_STEP_SUMMARY"
+          echo >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          tail -n 12 /tmp/threads_preflight.log >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo "Probe mode — no copy was generated and nothing was published."
+
+      - name: Generate today's copy
+        if: ${{ !inputs.probe_only && !inputs.dry_run }}
+        env:
+          THREADS_TEXT: ${{ inputs.text }}
+        run: |
+          set -o pipefail
+          python3 scripts/generate_threads_content.py 2>&1 | tee /tmp/threads_generate.log
+          # A dispatch `text` replaces the day's copy. It arrives as an environment variable and
+          # python reads it from there. Interpolating an input expression into this script — or
+          # into a heredoc, which is no more quoted — turns the input into shell code on a runner
+          # holding this job's secrets. The Facebook lane closed that hole on 12 Oct 2026; a new
+          # lane must not reopen it. `bash -n` in tools/tests/test_workflow_contract.py is what
+          # noticed the `done` I wrote here where `fi` belongs.
+          if [ -n "${THREADS_TEXT:-}" ]; then
+            python3 - <<'THREADS_OVERRIDE'
+          import json, os, pathlib
+          text = os.environ["THREADS_TEXT"].strip()
+          path = pathlib.Path("assets/threads/threads_content_latest.json")
+          path.parent.mkdir(parents=True, exist_ok=True)
+          payload = {"text": text, "post_type": "manual", "date": None,
+                     "trimmed": ["dispatch text replaced the generated copy"]}
+          if path.exists():
+              payload["date"] = json.loads(path.read_text(encoding="utf-8")).get("date")
+          path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+          print("dispatch text overrides today's generated copy (%d characters)" % len(text))
+          THREADS_OVERRIDE
+          fi
+
+      - name: Ledger — has today already been posted?
+        if: ${{ !inputs.probe_only && !inputs.dry_run }}
+        env:
+          LEDGER_LABEL: Threads publish ledger
+          THREADS_FORCE: ${{ inputs.force }}
+        run: |
+          set -o pipefail
+          TITLE=$(python3 -c 'import json;print(json.load(open("assets/threads/threads_content_latest.json"))["text"][:80])')
+          RUN_DATE=$(date -u +%F)
+          if python3 tools/youtube_ledger.py --ledger logs/threads_sent.json check \
+               --title "$TITLE" --date "$RUN_DATE"; then
+            echo "THREADS_LEDGER=clear"
+          else
+            code=$?
+            FORCE_ON=""
+            case "$(printf '%s' "${THREADS_FORCE:-}" | tr '[:upper:]' '[:lower:]')" in
+              1|true|yes|on) FORCE_ON=1 ;;
+            esac
+            if [ "$code" = "3" ] && [ -z "$FORCE_ON" ]; then
+              echo "THREADS_LEDGER=duplicate"
+              echo "ledger says this copy was already published — skipping the send. force=true overrides."
+              echo "- ledger: today's copy is already recorded, so **nothing was sent** (a re-run guard working, not a failure)" >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            echo "::warning title=Ledger said no (exit $code)::continuing to the platform check, which is the authority anyway"
+            echo "THREADS_LEDGER=unreadable"
+          fi
+
+      - name: Publish to Threads
+        if: ${{ !inputs.probe_only && !inputs.dry_run }}
+        env:
+          THREADS_USER_ID: ${{ secrets.THREADS_USER_ID }}
+          THREADS_FORCE: ${{ inputs.force }}
+        run: |
+          set -o pipefail
+          ARGS=(--from-json assets/threads/threads_content_latest.json --token-file /tmp/threads_token)
+          [ -n "${THREADS_USER_ID:-}" ] || unset THREADS_USER_ID
+          # Actions hands a boolean input to the shell as the *string* "true" or "false", so
+          # `-n "$FORCE"` is true for `false` and a lane that means "no override" posts anyway.
+          # The python side of this repo already reads it correctly (`in ("1","true","yes")`);
+          # the shell has to agree with it, or the two guards disagree about the same flag.
+          FORCE_ON=""
+          case "$(printf '%s' "${THREADS_FORCE:-}" | tr '[:upper:]' '[:lower:]')" in
+            1|true|yes|on) FORCE_ON=1 ;;
+          esac
+          [ -n "$FORCE_ON" ] && ARGS+=(--force)
+          python3 tools/threads_publish.py "${ARGS[@]}" 2>&1 | tee /tmp/threads_post.log
+          # One fact per line from the publisher, so reading it back is `sed`, not a regex that
+          # has to survive two shapes of the same machine line.
+          RESULT=$(sed -n 's/^THREADS_RESULT=//p' /tmp/threads_post.log | tail -1)
+          CAUSE=$(sed -n 's/^THREADS_CAUSE=//p' /tmp/threads_post.log | tail -1)
+          PERMALINK=$(sed -n 's/^THREADS_PERMALINK=//p' /tmp/threads_post.log | tail -1)
+          {
+            echo "### Threads post"
+            echo
+            echo "- result: \`${RESULT:-?}${CAUSE:+ \`${CAUSE}\`}\`"
+            echo "- permalink: ${PERMALINK:-not reported}"
+            echo "- duplicate guard: read from the profile, not from a local counter"
+            echo "- ledger: \`logs/threads_sent.json\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+          # `refused-duplicate` and `sent` are both successes; everything else is red.
+          case "$RESULT" in
+            sent|refused-duplicate|dry-run) exit 0 ;;
+            *) exit 6 ;;
+          esac
+
+      # Every run, whatever the post did. `continue-on-error` because a run that published
+      # must not be red because a clock-winding call failed — but the failure is a *named*
+      # warning with the consequence in it, and the consequence is "expires sooner".
+      - name: Wind the 60-day token clock
+        if: always()
+        continue-on-error: true
+        env:
+          THREADS_USER_ID: ${{ secrets.THREADS_USER_ID }}
+          BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          if ! python3 tools/threads_publish.py --refresh --token-file /tmp/threads_token \
+               > /tmp/threads_refresh.json 2>/tmp/threads_refresh.err; then
+            echo "::warning title=Threads token not refreshed::$(tail -c 200 /tmp/threads_refresh.err 2>/dev/null | tr '\n' ' ') — if this repeats for weeks the lane dies at day 60. Read the expiry in the summary."
+            exit 0
+          fi
+          if ! python3 tools/token_vault.py seal --name THREADS_TOKEN \
+               --json /tmp/threads_refresh.json; then
+            echo "::warning title=Threads token not sealed::the vault is not configured (SOCIAL_TOKEN_KEY) or the box could not be written. The refresh was accepted by Meta, so the *stored* value is now the fresher one — a lane without the key cannot keep it, which is exactly why the key is worth one tap."
+            exit 0
+          fi
+          rm -f /tmp/threads_refresh.json   # never leave a plaintext token in the workspace
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f logs/threads_token.box
+          if git diff --staged --quiet; then
+            echo "Sealed box unchanged — nothing to commit."
+          else
+            git commit -q -m "Auto: wind Threads token $(date -u +%F) [skip ci]"
+            git pull --rebase --autostash origin "$BRANCH" >/dev/null 2>&1 || true
+            git push origin "HEAD:$BRANCH" || echo "::warning title=Sealed token not pushed::the new token is in this run only; the next one will use the older value"
+          fi
+          python3 tools/token_vault.py status --name THREADS_TOKEN | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Record it in the ledger
+        if: ${{ !inputs.probe_only && !inputs.dry_run }}
+        continue-on-error: true
+        env:
+          LEDGER_LABEL: Threads publish ledger
+        run: |
+          set -o pipefail
+          if ! grep -q "^THREADS_RESULT=sent" /tmp/threads_post.log 2>/dev/null; then
+            echo "Nothing was published, so nothing is recorded."
+            exit 0
+          fi
+          POST_ID=$(sed -n 's/^THREADS_POST_ID=//p' /tmp/threads_post.log | tail -1)
+          PERMALINK=$(sed -n 's/^THREADS_PERMALINK=//p' /tmp/threads_post.log | tail -1)
+          TITLE=$(python3 -c 'import json;print(json.load(open("assets/threads/threads_content_latest.json"))["text"][:80])')
+          python3 tools/youtube_ledger.py --ledger logs/threads_sent.json record \
+            --title "$TITLE" --video-id "${POST_ID:-unknown}" --url "$PERMALINK" \
+            --date "$(date -u +%F)" --run-id "${{ github.run_id }}" --topic threads \
+            --note "$(python3 -c 'import json;print(json.load(open("assets/threads/threads_content_latest.json")).get("post_type",""))')"
+
+      - name: Commit the ledger
+        if: ${{ !inputs.probe_only && !inputs.dry_run }}
+        continue-on-error: true
+        env:
+          BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          if [ ! -f logs/threads_sent.json ]; then
+            echo "No ledger file (nothing was posted)."; exit 0
+          fi
+          if [ -z "$(git status --porcelain -- logs/threads_sent.json)" ]; then
+            echo "Ledger unchanged — nothing to commit."; exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if ! git pull --rebase --autostash origin "$BRANCH"; then
+            echo "::warning title=Threads ledger not committed::the post is live but this run is not recorded, so a re-run could publish the same text again."
+            exit 1
+          fi
+          git add logs/threads_sent.json
+          git diff --staged --quiet || git commit -q -m "Auto: record Threads post $(date -u +%F) [skip ci]"
+          git push origin "HEAD:$BRANCH" || echo "::warning title=Threads ledger not pushed::the post is live, the entry did not reach $BRANCH."
+
+      # Same shape as the Telegram lane: one issue per *cause*, later failures comment on it,
+      # the create line stays on one line because tools/automation_heartbeat.py reads it.
+      - name: Open a visible issue if the run failed
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          RUN_DATE="$(date +%F)"
+          PREFLIGHT_TAIL=$(tail -n 15 /tmp/threads_preflight.log 2>/dev/null || echo "(preflight produced no output)")
+          POST_TAIL=$(tail -n 25 /tmp/threads_post.log 2>/dev/null || echo "(the publisher never ran — the preflight or the ledger stopped the run)")
+
+          gh label create threads-automation --color 111111 \
+            --description "Unattended Threads text lane" >/dev/null 2>&1 || true
+
+          cat > /tmp/issue_body.md <<BODY
+          The unattended Threads post for **$RUN_DATE** failed. **Nothing was published.**
+
+          - Run: $RUN_URL
+
+          ### What the preflight said
+
+          \`\`\`
+          $PREFLIGHT_TAIL
+          \`\`\`
+
+          ### What the publisher said
+
+          \`\`\`
+          $POST_TAIL
+          \`\`\`
+
+          ### Reading it
+
+          - \`invalid oauth access token\` / \`code 190\` — the 60-day token expired or was
+            revoked. Re-consent once (docs/THREADS_AUTOMATION.md) and check that
+            \`SOCIAL_TOKEN_KEY\` is set so the lane can keep the refreshed value.
+          - \`(#200)… permission\` / \`not approved\` — the app lost \`threads_content_publish\`,
+            or the account is not a professional one.
+          - \`THREADS_PUBLISHING_LIMIT_EXCEEDED\` — 250 posts in 24 h, which one post a day
+            cannot do alone; something else is publishing with this profile.
+          - \`LINK_LIMIT_EXCEEDED\` / \`too long\` — the copy generator, not the API: >5 links or
+            >500 characters should have been caught in \`generate_threads_content.py\`.
+          - \`transport failure\` — the runner could not reach graph.threads.net. Redial and
+            look at \`.github/workflows/net-probe.yml\`.
+          BODY
+
+          TAIL=$(cat /tmp/threads_preflight.log /tmp/threads_post.log 2>/dev/null || true)
+          case "$TAIL" in
+            *"secrets missing"*|*"not configured"*) CAUSE=setup ;;
+            *Unauthorized*|*"invalid oauth access token"*|*code*190*|*expired*) CAUSE=credentials ;;
+            *"(#200)"*|*permission*|*"not approved"*) CAUSE=permission ;;
+            *"LINK_LIMIT_EXCEEDED"*|*"too long"*|*characters*) CAUSE=copy ;;
+            *THREADS_PUBLISHING_LIMIT_EXCEEDED*|*rate*limit*|*quota*) CAUSE=quota ;;
+            *"transport failure"*) CAUSE=transport ;;
+            *) CAUSE=run ;;
+          esac
+
+          EXISTING=$(CAUSE_TAG="[$CAUSE]" LEGACY_PREFIX="Threads post failed — " \
+            gh issue list --label threads-automation --state open --limit 100 --json number,title \
+            --jq "[.[] | select((.title | contains(\$ENV.CAUSE_TAG)) or ((.title | contains(\$ENV.LEGACY_PREFIX)) and (.title | contains(\"[\") | not))) | .number] | max // empty")
+          if [ -n "$EXISTING" ]; then
+            gh issue comment "$EXISTING" --body-file /tmp/issue_body.md || true
+            echo "Same cause as issue #$EXISTING — commented instead of filing a second one"
+          else
+            gh issue create --title "Threads post failed — $RUN_DATE [$CAUSE]" --label threads-automation --body-file /tmp/issue_body.md || echo "::warning title=Issue not created::bookkeeping failed; the run log still carries the cause"
+          fi

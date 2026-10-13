@@ -17,6 +17,8 @@ So these tests pin the behaviour that makes a failure self-diagnosing:
 
 import copy
 import json
+import tempfile
+import os
 import sys
 import unittest
 from contextlib import redirect_stdout
@@ -26,6 +28,20 @@ from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
+
+# The poster opens its log at import time. Left alone, every run of this suite appends
+# to the repo's real `logs/social_media.log` — 1,468 lines of "Photo message sent (id=3)"
+# that a human would later read as publish evidence. Both telegram test modules set this
+# before importing, because whichever imports first binds the module constants for the
+# whole session.
+_TMP = tempfile.mkdtemp(prefix="docoga-telegram-tests-")
+os.environ.setdefault("TELEGRAM_LOG_FILE", os.path.join(_TMP, "social_media.log"))
+os.environ.setdefault("TELEGRAM_LEDGER", os.path.join(_TMP, "telegram_sent.json"))
+
+# The social scripts append to `logs/social_media.log`, and importing them binds that
+# path. Redirected before the import so the repo's real log stays a record of publishes
+# rather than a record of tests — see tools/docoga_log.py.
+os.environ.setdefault("DOCOGA_LOG_DIR", tempfile.mkdtemp(prefix="docoga-social-log-"))
 
 import post_telegram  # noqa: E402
 
@@ -162,7 +178,6 @@ class PosterFallbackTests(unittest.TestCase):
 
 def _temp_png():
     """A context manager yielding a throwaway PNG path (content is never parsed)."""
-    import tempfile
 
     class _Temp:
         def __enter__(self):

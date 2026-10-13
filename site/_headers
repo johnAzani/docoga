@@ -1,0 +1,22 @@
+# Cloudflare Workers static-asset headers (site/_headers is never served itself).
+# Scoped to the owner dashboard ONLY — adding a /* rule here would change the
+# caching and headers of the public storefront, which is tuned deliberately.
+#
+# Why a _headers file at all: the page itself is a static asset, so anything it
+# declares (a <meta>) can be read but not enforced by the browser for navigation.
+# frame-ancestors and X-Robots-Tag only work as response headers.
+#
+# Honest note: this is defence in depth, not the lock. The lock is the Worker —
+# /admin/* answers 401/503 without a session token (see ADMIN_DASHBOARD.md).
+# 'unsafe-inline' in script-src is unavoidable while the whole app is one inline
+# <script> with no build step, and CSP cannot stop exfiltration over https:.
+/admin
+  X-Robots-Tag: noindex, nofollow, noarchive, nosnippet
+  Referrer-Policy: no-referrer
+  X-Content-Type-Options: nosniff
+  Content-Security-Policy: default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; font-src 'none'; connect-src https:; worker-src 'none'; manifest-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+  Cross-Origin-Opener-Policy: same-origin
+/admin.html
+  X-Robots-Tag: noindex, nofollow, noarchive, nosnippet
+  Referrer-Policy: no-referrer
+  X-Content-Type-Options: nosniff

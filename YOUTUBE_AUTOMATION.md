@@ -30,6 +30,13 @@ run stops with an error naming it, and **nothing is rendered or uploaded**.
 Previously the failure surfaced only after a ten-minute render, from inside the
 uploader, without saying which secret was absent.
 
+Since 13 Oct 2026 the preflight runs `tools/yt_publish.py --probe` rather than
+a presence test, because presence proved nothing: the 9 Oct scheduled run had a
+**green** preflight and a dead token. The probe mints a token, reads
+`channels?mine=true`, prints the channel name and id it would publish to, compares
+them with `YT_CHANNEL_ID`, and prints the newest upload's `uploadStatus` and
+privacy. Cost: 1 quota unit of 10,000 a day.
+
 ### 2. A publish ledger — `logs/youtube_published.json`
 
 Every successful upload is recorded in the repo: title, topic, video id, URL,
@@ -73,6 +80,7 @@ be seen.
 |---|---|---|
 | `privacy` | `public` | Override for this run only. |
 | `force` | `false` | Publish even if the ledger already has this title inside the 7-day window. |
+| `probe_only` | `false` | Run the diagnosis and stop: no render, no upload, no ledger write. The first thing to reach for when a run is red. |
 
 To change the privacy for *every* future run without touching code: create a
 repository **variable** (Settings → Secrets and variables → Actions →
@@ -82,6 +90,10 @@ run loudly instead of publishing at the wrong privacy.
 
 ## One-time requirements
 
+> **The order across all lanes is its own document:** `docs/LAUNCH_SEQUENCE.md` — the
+> exact command or tap for every human step, the screen to expect, and what to check the
+> next morning. Doing the steps out of order costs an issue titled `… [setup]`, not a post.
+
 Create these as **repository Actions secrets** (not merely as environment
 secrets, because this job does not select a GitHub environment):
 
@@ -90,9 +102,70 @@ secrets, because this job does not select a GitHub environment):
 - `YT_REFRESH_TOKEN`
 
 The Google Cloud project must have YouTube Data API v3 enabled and the refresh
-token must include YouTube upload scope. YouTube may keep API uploads private
-until the API project satisfies its verification/audit requirements; this is a
-YouTube-side restriction, not a GitHub setting.
+token must include the `youtube.upload` scope.
+
+Two corrections to this section, checked against Google's own reference on
+8 Oct 2026 rather than remembered:
+
+* **Unverified API projects do *not* have their uploads forced private.** The
+  `videos.insert` page states the opposite in one line: "Videos uploaded from
+  unverified API projects are not restricted to private viewing mode." An audit
+  is about *quota* and about publishing the OAuth app, not about whether today's
+  Short is watchable. If a video of ours lands private, the cause is the channel's
+  own upload defaults, and `tools/yt_publish.py` now says so out loud instead of
+  letting the run go green.
+* **What *does* expire is the token.** While the OAuth consent screen is set to
+  "In testing", Google issues refresh tokens that die after **7 days**, and only
+  listed test users may use the app at all. A lane that uploads on Tuesday and
+  Friday walks into that wall every week.
+
+The one-time repair, tap by tap. **Google moved this screen** in the 2024–2026
+reorganisation: "OAuth consent screen" now *redirects* to the **Google Auth
+Platform**, and its settings are split across **Branding / Audience / Data Access /
+Clients**. The publish button is on **Audience**, not on the page the old menu item
+lands you on — so follow the path below rather than a remembered one, and expect the
+screen in brackets at each step.
+
+1. Open the deep link with your project id in it — no menu-hunting:
+   `console.cloud.google.com/auth/audience?project=<PROJECT_ID>`, and check the
+   project picker in the top bar first. *[The **Audience** page: `User type:
+   External`, and `Publishing status: In testing` (or `In production`).]*
+   If you would rather navigate: **APIs & Services → OAuth consent screen** *[the
+   Auth Platform **Overview**, with a **Get started** or the four tabs]* → click
+   **Audience**.
+
+   *If **Google Auth Platform** is missing from the sidebar entirely*: the project has
+   no OAuth-compatible API enabled yet (enable **YouTube Data API v3** under APIs &
+   Services → Library) or your account is not Owner/Editor on it. The menu appears only
+   once an OAuth-capable API is enabled — it is not a permission to request.
+2. On **Audience**, click **Publish app** *[a dialog: "Push to production?" —
+   it says the app will be available to all users]* → **Confirm**. *[Status flips
+   to **In production**.]* That single change is what stops the 7-day expiry; the
+   app stays unverified and that is fine for our own channel.
+   *If the page shows **Needs verification*** *instead of a plain publish, publishing
+   still works for your own account — verification is about other users seeing a
+   clean consent screen, not about whether the lane can upload.*
+3. *Only if you decide to stay in Testing* (you will be back here in a week):
+   **Audience → + Add users** → the DocOga Google address *[up to 100 test users,
+   effective immediately]*. A stopgap that still expires tokens every 7 days, so it
+   is a bridge and not a fix.
+4. **Clients** *(or the old **Credentials → OAuth client ID**)* → the client this
+   lane uses — confirm the type is *Desktop app* and that no redirect URIs are
+   needed *[the client list, with each client's type]*.
+5. Re-run the consent flow to mint a fresh refresh token, then
+   `gh secret set YT_REFRESH_TOKEN --body '<token>'` *(and, if the client changed,
+   `YT_CLIENT_ID` and `YT_CLIENT_SECRET` too — three secrets, replaced together;
+   replacing one of three is how the 9 Oct run stayed red for a week.)*
+6. Prove it without uploading anything:
+
+   ```bash
+   gh workflow run youtube_scheduled.yml -f probe_only=true
+   ```
+
+   *[Actions → the run → "Diagnose the YouTube lane" → "Probe credentials,
+   channel and last upload": the log ends with* `✅ probe complete — a token
+   works, the channel is named, and uploads are not held.` *If it instead prints*
+   `↳ fix:`, *do what that line says — it was written for this exact failure.]*
 
 ## Content safeguards
 
@@ -135,9 +208,84 @@ The pipeline's logic is covered by `tools/tests/`:
   outputs the workflow reads for a run;
 - `test_youtube_ledger.py` — the duplicate guard in both directions, corrupt
   and wrong-shaped ledger files, and the size cap;
-- `test_yt_publish.py` — upload exit status and the `VIDEO_ID=` line the
-  workflow parses;
+- `test_yt_publish.py` — 59 tests against a scripted Google: 256 KB chunk
+  alignment, a 308 treated as progress, a partial 308 resumed at the server's
+  range, 5xx backoff with a resume probe, one session restart on 404, every
+  documented `videos.insert` error mapped to a kind and a repair, the metadata
+  clamps, the privacy read-back, the exit-code split between "the code failed"
+  and "a human must re-author a token", and the `VIDEO_ID=` line the workflow
+  parses;
 - `test_workflow_contract.py` — static checks on the YAML: every
   `steps.<id>.outputs.<key>` reference points at a step that exists, the guard
   runs before the upload, and the permissions, concurrency group and failure
   issue are all still wired.
+
+## 13 Oct 2026 — the protocol, the read-back, and a probe
+
+The lane had a green preflight, a clean render, a working duplicate guard, and a
+red upload step whose only output was `Exit code 1`. The failure issue that ran off
+to fetch had to *guess* among four causes, and the log that would have settled it is
+not readable afterwards from the agent sandbox (Actions log storage lives on a host
+outside its allowlist). So the whole lane was rebuilt around one rule: **a failure
+has to arrive already diagnosed.**
+
+### The wire protocol, done properly
+
+`tools/yt_publish.py` now speaks Google's resumable protocol instead of approximating
+it: `X-Upload-Content-Length`/`X-Upload-Content-Type` on the session POST, then
+2 MiB chunks — a multiple of the required 256 KiB, all the same size except the last —
+each with its own `Content-Range`.
+
+* **308 is progress, not failure.** Google answers a 308 with the byte range it
+  *holds*; the client resumes from there. The previous code sent the whole file in one
+  PUT and treated anything but 200 as an error, which would have killed a perfectly
+  healthy upload. A 308 that already covers the whole file means "still finalising":
+  the code polls the session (bounded) rather than declaring defeat.
+* **5xx backs off and asks.** 408/429/5xx → exponential backoff, then an empty
+  `Content-Range: bytes */total` PUT to learn where to resume, then continue. The
+  retries are counted; giving up prints the byte offset.
+* **404/410 restarts the session once.** Google does not publish the session lifetime;
+  an expired session is a restart, not a failure — and if it dies twice, the message
+  says *the bytes never reached YouTube, so a re-run is safe*, which is the one thing a
+  reader needs to know.
+* **Nothing may hang.** Every request goes through one `Http` wrapper that attaches a
+  `(15 s, 300 s)` timeout, so there is no call site that can forget it. A hung PUT is
+  the worst failure mode in an unattended job: it eats the 30-minute ceiling and leaves
+  no error at all.
+
+### The upload is read back before anything says "published"
+
+`201` means the bytes arrived. It does not mean anybody can watch the video. The
+uploader now GETs `videos?part=status,snippet` and reports what it finds:
+`published` (processed + public), `listed` (processed, not public), `uploaded`
+(still processing — normal, and green), `held` (YouTube stored a different privacy
+than requested — the channel's upload defaults winning over the request), or
+`rejected` (with Google's own `failureReason`). `held`/`rejected` are red, on
+purpose: this lane's contract is *public*. The id is printed even then, so the ledger
+still records the video and a re-run cannot put a second copy on the channel.
+
+### Exit codes carry a decision, not just a status
+
+`0` published · `1` the code or the network failed (re-run is safe, no id) · `2` a
+human with a browser must fix it. `2` is the number that matters: it turns "the
+upload step is red again" into "this is a Google-account conversation, here is the
+sentence to follow", and the uploader has already printed that sentence — every
+documented `videos.insert` error (`invalidTitle`, `invalidTags`, `invalidCategoryId`,
+`forbiddenPrivacySetting`, `dailyUploadLimitExceeded`, …) plus `invalid_grant` and
+`invalid_client` maps to a *kind* and a *repair* in one `REASONS` table, used by the
+log, the `::error` annotation, the run summary and the issue body alike.
+
+### Deliberately not done
+
+* no `google-api-python-client` dependency — the whole lane is a dozen requests, and a
+  vendored client library is one more thing that silently breaks on a version bump;
+* no auto-retry of a red run, and no re-minting of the refresh token: consent is a
+  browser interaction, and an agent that can fake it can also lose the channel;
+* no silent `unlisted` fallback when a channel refuses `public` — the lane says
+  `held` and names the fix, because quietly changing the audience is worse than red;
+* no `containsSyntheticMedia` declaration by default. The flag exists
+  (`--synthetic-media true|false`) because the renders are AI-assembled and YouTube
+  expects self-declaration for realistic synthetic media; flipping it on is a content
+  policy decision for the owner, not a bug fix to slip into an infrastructure commit;
+* no `--license`, `--publishAt`, localizations, or scheduling: one Short, twice a
+  week, public, now.

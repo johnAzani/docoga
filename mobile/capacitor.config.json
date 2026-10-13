@@ -1,0 +1,17 @@
+{
+  "appId": "ng.com.docoga.owner",
+  "appName": "DocOga Owner",
+  "webDir": "www",
+  "server": {
+    "url": "https://docoga.com.ng/admin",
+    "cleartext": false,
+    "allowNavigation": ["docoga.com.ng", "*.docoga.com.ng"],
+    "errorPath": "error.html",
+    "appendUserAgent": "DocOgaOwnerApp/1.0"
+  },
+  "android": {
+    "allowMixedContent": false,
+    "captureInputs": false,
+    "backgroundColor": "#0B1B3F"
+  }
+}

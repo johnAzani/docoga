@@ -370,7 +370,8 @@ All in `tools/`. Key tools:
 | `weekly_report.py` | Growth report assembler |
 | `yt_suggest.py` | YouTube autocomplete research |
 | `yt_upload_long.py` | Direct long-form YT upload |
-| `qa.py` | Pre-push QA gate (8 checks) |
+| `qa.py` | Pre-push QA gate (structural checks, incl. the workflow handoff audit) |
+| `workflow_handoffs.py` | Audits every workflow for values that cross a step boundary and never arrive ($GITHUB_ENV same-step reads, jq `$ENV` needles with no export, dangling `steps.*.outputs.*`); called by `qa.py` |
 | `rebuild_ep1.py` | Unattended Episode-1 rebuild |
 | `gemini_tts.py` | Gemini TTS (voiceover) |
 | `motionstudio.py` | MotionStudio v4 |
@@ -420,8 +421,9 @@ All in `docs/`. All committed to `main`.
 | `youtube_queue.yml` | manual (one click) | Uploads next item from `youtube_queue.json`, then commits the popped queue |
 | `youtube_scheduled.yml` | Tue + Fri 6 PM WAT | Same queue, on a schedule |
 | `youtube_autopost.yml` | manual | Single upload via `tools/yt_publish.py` |
-| `facebook_autopost.yml` | manual | `tools/fb_publish.py` |
-| `instagram_autopost.yml` | manual | `tools/ig_publish.py` |
+| `facebook_autopost.yml` | 08:30 UTC daily, manual | `tools/fb_publish.py` |
+| `threads_autopost.yml` | 08:45 UTC daily, manual | `tools/threads_publish.py` (needs 2 secrets — see `INSTAGRAM_THREADS_AUTOMATION.md`) |
+| `instagram_autopost.yml` | 09:00 UTC daily, manual | `tools/ig_publish.py` + `tools/social_card.py`; media bridge is `site/social/` |
 
 - Credentials live in GitHub Actions secrets (not locally accessible)
 - The three workflows that commit back to the repo declare `permissions: contents: write`

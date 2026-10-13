@@ -1,0 +1,95 @@
+apply plugin: 'com.android.application'
+
+android {
+    namespace = "ng.com.docoga.owner"
+    compileSdk = rootProject.ext.compileSdkVersion
+    defaultConfig {
+        applicationId "ng.com.docoga.owner"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        // Overridable from CI without touching this file:
+        //   ./gradlew assembleRelease -PdocogaVersionCode=7 -PdocogaVersionName=1.6.0
+        versionCode = (project.findProperty('docogaVersionCode') ?: 1) as Integer
+        versionName = (project.findProperty('docogaVersionName') ?: '1.0').toString()
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        aaptOptions {
+             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
+             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
+            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+    // ── release signing ───────────────────────────────────────────────────────
+    // Declared at the android level (where the container lives) and *created*
+    // only when a keystore is handed to the build from outside — CI passes
+    // docogaKeystoreFile/-Password/-Alias as Gradle properties written into the
+    // runner's gradle user home, never into this file and never into the
+    // command line. No keystore is in the repo and no password is here, so a
+    // bare checkout still builds: it produces an *unsigned* release that Android
+    // refuses to install. That failure is the point — the release key stays with
+    // the owner, out of git. (See mobile/README.md for the one-time setup.)
+    //
+    // AGP needs the file to exist at configuration time, hence .exists() here as
+    // well as the property check.
+    signingConfigs {
+        def ksPath = project.findProperty('docogaKeystoreFile')
+        if (ksPath && file(ksPath.toString()).exists()) {
+            docogaRelease {
+                storeFile file(ksPath.toString())
+                storePassword project.findProperty('docogaKeystorePassword').toString()
+                keyAlias (project.findProperty('docogaKeystoreAlias') ?: 'docoga-owner').toString()
+                keyPassword (project.findProperty('docogaKeystoreAliasPassword')
+                    ?: project.findProperty('docogaKeystorePassword')).toString()
+            }
+        }
+    }
+
+    // Lint must not be able to break the build of a one-user sideload app: the
+    // gates on this repo are tools/qa.py and tools/tests/*. `./gradlew lint` is
+    // still there when someone wants it. (AGP otherwise runs lintVitalRelease as
+    // part of assembleRelease, and a fatal-severity check there fails the build.)
+    lint {
+        checkReleaseBuilds = false
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            def ksPath = project.findProperty('docogaKeystoreFile')
+            if (ksPath && file(ksPath.toString()).exists()) {
+                signingConfig signingConfigs.docogaRelease
+            }
+            // else: signingConfig stays unset → unsigned release APK. Use
+            // assembleDebug for anything you intend to install without a key.
+        }
+    }
+}
+
+repositories {
+    flatDir{
+        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
+    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation project(':capacitor-android')
+    testImplementation "junit:junit:$junitVersion"
+    androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
+    implementation project(':capacitor-cordova-android-plugins')
+}
+
+apply from: 'capacitor.build.gradle'
+
+try {
+    def servicesJSON = file('google-services.json')
+    if (servicesJSON.text) {
+        apply plugin: 'com.google.gms.google-services'
+    }
+} catch(Exception e) {
+    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
+}

@@ -113,7 +113,8 @@ Integration rules:
 **The machine (AI) — fully autonomous:**
 - Daily research + fresh frame design (house rules enforced, OCR text QC)
 - Telegram broadcasting: DocOga Daily channel (@docogadaily, t.me/docogadaily) — daily tips + funnel link via Bot API (₦0, live 25 Sep)
-- Facebook publishing: the DocOga Page (102466208923830, **facebook.com/docoga.com.ng** — vanity username taken 26 Sep) via Pages API + non-expiring page token (₦0, live 26 Sep) — photos + videos
+- Facebook publishing: the DocOga Page (102466208923830, **facebook.com/docoga.com.ng** — vanity username taken 26 Sep) via Pages API + non-expiring page token (₦0).
+  **AUDIT, 12 Oct 2026 — this line was wrong when written.** The credential existed, the code existed, and the line said "live 26 Sep — photos + videos"; `gh run list --workflow 'Facebook Page Autopost'` returned **zero runs**. Nothing had ever been published. Rebuilt to the Telegram standard that day: scheduled daily 09:30, preflight, dry-run write probe, duplicate guard that asks the Page, a labelled issue on failure, no secret defaults, Graph API v26.0 → **`FACEBOOK_AUTOMATION.md`**. Replaced "photos + videos" with "photos + text" for two weeks because the render was not in the run; on 13 Oct the render was moved inside the job and the Reels lane was built — Mon+Thu, `video_reels` three-phase, spec-gated, ledgered, **defaulted to `probe`**, so it verifies the grant daily and publishes nothing until `vars.FB_REELS = on`. Honest status: wired, 45 tests green, **not yet published once**.
 - Story publishing via API (2–3/day) with verify-then-publish checklist
 - Metrics pull + logging + weekly review + calendar re-cut
 - Comments replies (phase ⓷, building next)
@@ -153,7 +154,85 @@ Integration rules:
 - ⓸ Feed posts + reels via API — **DONE 25 Sep** (POST /api/ig/post: images now, reels with resumable poll for slow processing).
 - **Telegram channel — DONE 25 Sep** (t.me/docogadaily + @docoga_daily_bot, Bot API, ₦0 forever).
 - **YouTube Shorts — DONE 25 Sep** (DocOga channel, resumable uploads via Data API, ₦0).
-- **Facebook Page — DONE 26 Sep** (Pages API use-case app, non-expiring page token, ₦0). Next free lane: Threads (Meta App Review).
+- **Facebook Page — was marked DONE 26 Sep; actually wired and first-verified 12 Oct 2026** (Pages API use-case app, non-expiring page token, ₦0, `FACEBOOK_AUTOMATION.md`). The lesson the PRE-FLIGHT LAW below already encodes: *credentials existing is not a pipeline* — step 4, "VERIFY programmatically", is the step that was skipped, and it is now a dry-run button anyone can press in ten seconds. Next free lane: Threads (Meta App Review).
+- **Cross-step handoff audit — DONE 13 Oct 2026** (`tools/workflow_handoffs.py`, enforced by
+  `tools/qa.py`, tested both directions by `tools/tests/test_workflow_handoffs.py`). The class:
+  a value produced in one place and consumed in another, where **each half passes its own test**.
+  Three shapes, all of them history here — a `KEY=v` written to `$GITHUB_ENV` and read in the same
+  step (Actions assembles the environment only for the *next* step, so the read is empty);
+  `contains($ENV.X)` in a jq program where `X` is a shell variable that was never exported (this is
+  how Telegram's day-dedupe matched *every* open issue for a week — an empty needle in `contains("")`
+  is true for everything, which reads as "found it" rather than as a bug); and
+  `${{ steps.id.outputs.key }}` naming a step id or key that does not exist, which evaluates to the
+  empty string instead of failing. The rule for anyone adding a lane: **a value that crosses a
+  boundary needs a name at both ends**, and the gate now says so on the day it happens rather than
+  four days into an outage. The auditor's own history is the second lesson: its first run reported
+  five confident bugs in this repository and every one was a false positive (matching `$IG_USER_ID`
+  inside `${IG_USER_ID_OUT}`, and recognising only the first of a chained inline assignment) — so
+  the silences are pinned in its tests as carefully as the alarms, because a gate that cries wolf is
+  a gate that gets ignored.
+
+- **Silent-lane heartbeat — DONE 13 Oct 2026** (`automation-heartbeat.yml`, `tools/automation_heartbeat.py`, ₦0). The
+  failure class this closes is the one that hurt most: **Telegram silent for 4 days, 6 red Telegram runs
+  nobody was told about, Facebook described as "live" with zero runs.** Publishing lanes report themselves
+  only by *their output*, so "no output" is indistinguishable from "a quiet day" — and a human watching the
+  Actions tab is a human who is on holiday. Rules it enforces:
+  1. **cadence is read from each workflow's own `on.schedule[].cron`**, never from a table — a monitor with a
+     hardcoded lane list stops watching the moment someone edits a schedule, and reports a healthy repo.
+  2. **judged by age, not by clock**: a lane is silent when `last success` is older than `2 × its own gap +
+     scheduler slack` (slack capped at one cycle). GitHub's scheduler is measured late by up to 9 h on *this
+     repo*, so "it didn't fire at 08:00" is not a finding; "nothing has succeeded in 9 days on a daily lane" is.
+  3. **one deduped issue, red only when the set of broken lanes changes** (sha256 of `file:status`). The same
+     failure tomorrow is a green run + a comment; a new or newly-wounded lane is a red run + an email. Anything
+     else gets muted inside a week.
+  4. **`exit 3` = "I could not look"** — a monitor that cannot reach the API must never print "all clear".
+  5. **a schedule that only exists on an unmerged branch is warned, not failed**: silence there is a statement
+     about the merge queue. (Found by the tests: the Facebook lane reads ⚠️ pending, Telegram reads ❌ 9.4 days.)
+- **Publish evidence in the heartbeat — 13 Oct 2026.** Run history and the channel are two
+  different truths, and the Telegram lane proved it: 9.4 days since a green run, while
+  `@docogadaily` carried a post on 7 Oct. Three fixes at once: the poster now fingerprints the
+  *content* and refuses to re-post within 7 days (the channel got the same paragraph four times
+  on 3 Oct, from four runs that each knew nothing); it records every accepted message in the
+  committed `logs/telegram_sent.json` via the shared ledger tool, and the workflow pushes that
+  file back with `[skip ci]`; and the heartbeat reads the ledger and says so in both directions —
+  a green run with nothing recorded is a new failure kind (`green-but-quiet`), while a red
+  schedule with fresh entries stays red but says "readers are still being served". Missing
+  evidence is reported as missing, never as silence. Handbook: `TELEGRAM_AUTOMATION.md`.
+- **The Shorts lane stopped being able to fail silently — 13 Oct 2026.** Its 9 Oct run had a green preflight, a clean
+  render, a working duplicate guard and a red upload step whose entire output was `Exit code 1`; the issue it filed had to
+  guess among four causes, and the log that settles it is unreadable a day later. So `tools/yt_publish.py` now speaks the
+  resumable protocol properly (256 KB-aligned chunks, a 308 read as *progress* and resumed at the server's range, 5xx
+  backoff with a resume probe, one session restart on 404, a timeout on every request so nothing can hang), maps every
+  documented `videos.insert` error to a kind and a repair, **reads the upload back** before calling it published (a video
+  YouTube stored as `private` is red, not green, and its id still reaches the ledger so a re-run cannot double-post), and
+  splits exit codes between "the code broke" (1) and "a human with a browser must fix it" (2). The preflight runs a
+  1-unit `--probe` that names the channel the token actually authorises — `gh workflow run youtube_scheduled.yml -f
+  probe_only=true` reproduces the whole diagnosis with no upload — and the two myths this lane was built on are corrected
+  in `YOUTUBE_AUTOMATION.md`: unverified API projects do *not* get their uploads forced private, and "six uploads a day"
+  is stale quota arithmetic; what *is* real is that a refresh token from a consent screen still in Testing dies in 7 days,
+  which is the leading explanation for "it worked on 6 Oct and not on 9 Oct".
+- **Telegram's duplicate guard stopped trusting the repo about its own channel — 13 Oct 2026.** The ledger above is only
+  as good as the last commit that survived it, so a lost or un-pushed `logs/telegram_sent.json` reopens the exact 3 Oct
+  accident. Facebook never had that hole — the Graph API answers "what did we publish today?" — and Telegram's Bot API has
+  no read-history method for a bot, so the lane now asks the channel itself: `t.me/s/<name>`, server-rendered, ~20 newest
+  posts, no token, one GET a day, consulted *after* the ledger and *before* `sendMessage`. It refuses only a message whose
+  words are already up (compared as sets, because Telegram rewrites links and bolts a preview card into the same block),
+  never a merely similar one, and it fails open with a named warning whenever the page cannot be read — an unreadable page
+  must cost a line in the log, not the day's post. `TELEGRAM_CHANNEL_GUARD=` in the run summary says which of those
+  happened; `python3 tools/telegram_preflight.py --preview @docogadaily` proves the guard is armed with no secret in hand.
+  Its limits (private channels, edited templates, the ~20-post horizon) are written down, not implied: `TELEGRAM_AUTOMATION.md`.
+- **The launch is a sequence now, and a failing lane stays quiet about it twice — 13 Oct 2026.** Four steps are owed by a human
+  with a browser (the Telegram secret, the OAuth consent-screen publish, the merge, the next morning's three checks), and the order is
+  the difference between a quiet switch-on and a morning of reading issues — so it is written down with the exact command, the expected
+  screen and the fallback for every branch: `docs/LAUNCH_SEQUENCE.md`. Alongside it, failure issues stopped accumulating: each lane
+  derives a *cause* (`setup`, `credentials`, `chat`, `rights`, `quota`, `state`, `transport`…) from its own logs, puts it in the issue
+  title as a tag, and comments on the open issue with that tag instead of filing another one — the Shorts lane used to file ~8 issues a
+  month for a single un-published consent screen. "Never configured" is titled `setup` so it does not read as an outage, an issue that
+  cannot be filed is a warning rather than a second failure, and the classifiers are *executed* by the test suite rather than grepped,
+  because shell that only looks right in review is how a workflow ships broken.
+  Honest state as of 13 Oct: 3 scheduled lanes, **0 of them healthy** — Telegram has not succeeded since
+  3 Oct, YouTube has run once and failed, Facebook's `schedule:` is not on `main` yet. The heartbeat's first
+  report is not a clean one; that is what it is for.
 - ⓹ **Level 2 autonomy** — scheduled worker posts the daily story even when nobody opens chat (needs one-time 2-minute token setup by the boss; ask and I'll guide tap-by-tap).
 - ⓺ Collab engine: identify 5 complementary accounts (property/law/rent niche), draft outreach the boss sends.
 - ⓻ Format replication: winners' hooks/length/audio become templates automatically.

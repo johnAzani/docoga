@@ -1,50 +1,498 @@
 name: Facebook Page Autopost
+
+# Posts DocOga's daily copy to the Facebook Page (facebook.com/DocOgaNG).
+# Runs at 09:30 Nigeria time (UTC+1) — thirty minutes after the Telegram post, so
+# the two channels never compete for the same runner minutes or the same copy.
+#
+# History this comment exists for: until 12 Oct 2026 this file was a button.
+# `workflow_dispatch` only, no schedule, and its two steps interpolated
+# `${{ inputs.message }}` straight into a shell line. It had never run — not
+# once — which is why "the Facebook automation" could be described as existing
+# while publishing nothing. It now follows the standard `telegram_autopost.yml`
+# set after that workflow's four-day silent failure (7–10 Oct 2026):
+#
+#   1. a preflight that names which credential is wrong before anything is
+#      attempted (tools/fb_preflight.py, stdlib-only so it runs before pip);
+#   2. the publisher's own write probe for `--dry-run`, so "may this token
+#      publish?" is answered by Facebook rather than inferred from a scope list;
+#   3. every step's stderr captured to a file so Meta's exact words land in the
+#      issue, not only in a run log nobody opens;
+#   4. a labelled issue when a run fails, because a red tick in a repo nobody
+#      reads is indistinguishable from silence.
+#
+# A Reels lane rides this same job (Mon + Thu): the three-phase `video_reels`
+# protocol, publishing the very file the YouTube lane renders from the same
+# date-seeded rotation, because a plain Page video post only reaches roughly the
+# follower count while a Reel reaches the Reels surface. It ships defaulted to
+# `probe` (open and abandon an upload session — the only Reels check that
+# publishes nothing) and becomes `on` with one repository variable, `FB_REELS`.
+# See FACEBOOK_AUTOMATION.md §9.
+#
+# Inputs are passed to the shell through `env:` — never interpolated into the
+# command line. GitHub substitutes an unquoted `${{ }}` before the shell sees
+# it, so a dispatch message containing `"` or `$(…)` would have executed on the
+# runner with this repo's secrets in scope. That is the one class of bug a
+# manual-dispatch workflow cannot have.
+#
+# No `ref:` pin here, unlike telegram_autopost.yml: a scheduled run always uses
+# main, and a dispatch from a branch must be able to test *that branch's*
+# scripts — which is exactly how this workflow was verified before merging.
+
 on:
+  schedule:
+    - cron: '30 8 * * *'  # 08:30 UTC = 09:30 in Lagos (UTC+1, no DST)
   workflow_dispatch:
     inputs:
-      content_type:
-        description: 'Content type'
+      mode:
+        description: 'What to publish'
         required: true
         type: choice
+        default: daily
         options:
-          - text
-          - photo
-          - video
-      message:
-        description: 'Post message / caption'
-        required: true
-      media_url:
-        description: 'Public URL to image or video (for photo/video posts)'
+          - daily      # today's generated post, from scripts/generate_facebook_content.py
+          - text       # the message below, verbatim
+          - photo      # message + a public image URL
+          - video      # message as description + a public .mp4 URL
+          - reel       # render today's reel from the rotation and publish it now
+      dry_run:
+        description: 'Preflight and the write probe only — publish nothing'
         required: false
+        default: false
+        type: boolean
+      message:
+        description: 'Post copy (text / photo caption / video description). Ignored by mode=daily'
+        required: false
+        default: ''
+      media_url:
+        description: 'Public URL of the image or video (photo / video modes only)'
+        required: false
+        default: ''
+      force:
+        description: 'Post even if the Page already has a post today'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  # `write`, not `read`, for one reason: `video_reels` cannot be read, updated or
+  # deleted, so "has this frame gone out recently?" can only be answered from a
+  # ledger the job commits back — `logs/facebook_reels.json`, the only path this
+  # permission is used for. Same shape as youtube_scheduled.yml.
+  contents: write
+  issues: write          # a failed run opens (or comments on) a visible issue
+
+concurrency:
+  group: facebook-autopost
+  cancel-in-progress: false   # a second post today is worse than a queued run
+
+env:
+  FB_PAGE_ACCESS_TOKEN: ${{ secrets.FB_PAGE_ACCESS_TOKEN }}
+  FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
+  # Optional. Only used to read the token's expiry and to refresh it; the post
+  # itself needs the Page token alone. Kept out of every source file, unlike
+  # before 12 Oct 2026, when the app secret had a literal default in
+  # tools/fb_publish.py and therefore lived in git history.
+  META_APP_ID: ${{ secrets.META_APP_ID }}
+  META_APP_SECRET: ${{ secrets.META_APP_SECRET }}
+  # Meta ships 3–4 Graph API versions a year and sunsets them on a roughly
+  # two-year clock (v21.0 goes 21 Jan 2027). The default is the version these
+  # scripts were written against, and a repository *variable* overrides it — so
+  # the day Meta sunsets one, the fix is one line in Settings → Actions →
+  # Variables (`META_GRAPH_VERSION = v27.0`), not a commit and a deploy.
+  META_GRAPH_VERSION: ${{ vars.META_GRAPH_VERSION || 'v26.0' }}
+  # The Reels lane's mode: `probe` (default), `on`, `off`. A variable rather than
+  # a secret because it is not sensitive, and rather than a commit because the
+  # owner should be able to switch the lane on the morning they read a green
+  # probe line, in Settings → Actions → Variables.
+  REELS_MODE: ${{ vars.FB_REELS || 'probe' }}
+  TZ: Africa/Lagos
 
 jobs:
   publish:
+    name: Preflight → generate → post
     runs-on: ubuntu-latest
+    # 30, not 15: a moviepy render of six 1080×1920 slides plus a ~30 MB upload
+    # and Meta's processing poll is minutes of work. A job killed by a timeout
+    # after publishing is the worst possible outcome — it is red *and* live.
+    timeout-minutes: 30
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Install dependencies
-        run: pip install requests
-
-      - name: Publish to Facebook
-        env:
-          FB_PAGE_ACCESS_TOKEN: ${{ secrets.FB_PAGE_ACCESS_TOKEN }}
-          FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
+      # Deliberately before `pip install`: it is stdlib-only, and a dead token
+      # should cost seconds. Its exit code is what fails the run, and its own
+      # message says which of token / Page id / feed access is wrong.
+      - name: Preflight — can this token reach the Page?
         run: |
-          if [ "${{ inputs.content_type }}" = "video" ]; then
-            python3 tools/fb_publish.py \
-              --video-url "${{ inputs.media_url }}" \
-              --text "${{ inputs.message }}"
-          elif [ "${{ inputs.content_type }}" = "photo" ]; then
-            python3 tools/fb_publish.py \
-              --photo-url "${{ inputs.media_url }}" \
-              --text "${{ inputs.message }}"
+          set -o pipefail
+          python3 tools/fb_preflight.py 2>&1 | tee /tmp/fb_preflight.log
+
+      - name: Install dependencies
+        # Pillow, not only requests: the Reels *plan* step reads the rotation, and
+        # the rotation lives in the module that renders, which imports PIL at
+        # module level. A "decide only" step that cannot import is a skipped lane.
+        run: python3 -m pip install --quiet requests Pillow
+
+      - name: Generate today's copy
+        if: ${{ github.event_name == 'schedule' || inputs.mode == 'daily' }}
+        run: |
+          set -o pipefail
+          python3 scripts/generate_facebook_content.py 2>&1 | tee /tmp/fb_generate.log
+
+      - name: Daily post
+        if: ${{ !inputs.dry_run && (github.event_name == 'schedule' || inputs.mode == 'daily') }}
+        env:
+          IN_FORCE: ${{ inputs.force }}
+        run: |
+          set -o pipefail
+          # --force is opt-in and arrives from env: the unattended schedule never
+          # sets it, so the once-a-day guard always applies to a scheduled run.
+          FORCE=""
+          [ "$IN_FORCE" = "true" ] && FORCE="--force"
+          python3 scripts/post_facebook.py $FORCE 2>&1 | tee /tmp/fb_post.log
+
+      # ── Reels lane ─────────────────────────────────────────────────────────
+      # `POST /{page}/video_reels` upload_phase=start → raw bytes to
+      # rupload.facebook.com (Authorization: OAuth header, offset/file_size
+      # headers) → upload_phase=finish with video_state=PUBLISHED. Implemented in
+      # tools/fb_publish.py (post_reel), decided in scripts/facebook_reel_daily.py,
+      # published through scripts/post_facebook.py so the guard rules stay in one
+      # file. Mon + Thu, so the same rotation index never lands on the same day as
+      # YouTube's Tue/Fri — see scripts/facebook_reel_daily.py.
+      - name: Reels — decide (cheap; renders nothing)
+        id: reel_plan
+        if: ${{ github.event_name == 'schedule' || inputs.mode == 'daily' }}
+        run: |
+          set -o pipefail
+          python3 scripts/facebook_reel_daily.py --plan 2>&1 | tee /tmp/fb_reel_plan.log
+
+      # The renderer's own dependencies are only installed when a frame will
+      # actually be rendered: ffmpeg via apt and moviepy add ~40 seconds, and the
+      # daily text/photo post must not pay for a lane that is switched off.
+      - name: Reels — install the renderer
+        if: ${{ (steps.reel_plan.outputs.reel_today == 'yes' || inputs.mode == 'reel') && !inputs.dry_run }}
+        run: |
+          set -o pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg fonts-dejavu-core
+          python3 -m pip install --quiet -r requirements-youtube.txt
+
+      # The grant question, answered daily without publishing anything: `start`
+      # opens an upload session and the session is then deleted, or left to expire.
+      # Skipped on --dry-run because `post_facebook.py --dry-run` already probes.
+      - name: Reels — probe the grant (nothing is published)
+        if: ${{ steps.reel_plan.outputs.reel_today == 'yes' && steps.reel_plan.outputs.mode == 'probe' && !inputs.dry_run }}
+        run: |
+          set -o pipefail
+          python3 scripts/post_facebook.py --probe-reels 2>&1 | tee /tmp/fb_reel_probe.log
+
+      # 30-day anti-recycle window, i.e. the frame law in docs/GROWTH_ENGINE.md §4.
+      # The ledger is shared machinery (tools/youtube_ledger.py) pointed at a
+      # Facebook file, because the one thing this edge cannot do is be read back
+      # far enough to answer "did I publish this frame last week?".
+      - name: Reels — guard against a recycled frame
+        id: reel_guard
+        if: ${{ steps.reel_plan.outputs.reel_today == 'yes' && steps.reel_plan.outputs.mode == 'on' && !inputs.dry_run }}
+        env:
+          LEDGER_LABEL: Facebook reel ledger
+          REEL_TITLE: ${{ steps.reel_plan.outputs.title }}
+          RUN_DATE: ${{ steps.reel_plan.outputs.run_date }}
+          IN_FORCE: ${{ inputs.force }}
+        run: |
+          set +e
+          python3 tools/youtube_ledger.py --ledger logs/facebook_reels.json check \
+            --title "$REEL_TITLE" --date "$RUN_DATE" --window-days 30
+          code=$?
+          set -e
+          if [ "$code" -eq 3 ]; then
+            if [ "$IN_FORCE" = "true" ]; then
+              echo "skip=no" >> "$GITHUB_OUTPUT"
+              echo "::notice title=Frame window overridden::force=true — \"$REEL_TITLE\" went out inside 30 days, and this run was told to publish it again."
+            else
+              echo "skip=yes" >> "$GITHUB_OUTPUT"
+              echo "::notice title=Frame already used this month::\"$REEL_TITLE\" is inside the 30-day frame window — nothing was rendered. Add frames to scripts/generate_short_video.py, or re-run with force=true."
+            fi
+          elif [ "$code" -ne 0 ]; then
+            exit "$code"
           else
-            python3 tools/fb_publish.py \
-              --text "${{ inputs.message }}"
+            echo "skip=no" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Reels — render
+        id: reel_render
+        if: ${{ steps.reel_guard.outputs.skip == 'no' }}
+        run: |
+          set -o pipefail
+          python3 scripts/facebook_reel_daily.py --render --mode on 2>&1 | tee /tmp/fb_reel_render.log
+
+      - name: Reels — publish
+        id: reel_publish
+        if: ${{ steps.reel_render.outcome == 'success' }}
+        env:
+          REEL_TITLE: ${{ steps.reel_plan.outputs.title }}
+          VIDEO_PATH: ${{ steps.reel_render.outputs.video_path }}
+        run: |
+          set -o pipefail
+          python3 scripts/post_facebook.py --reel="$VIDEO_PATH" --title="$REEL_TITLE" 2>&1 | tee /tmp/fb_reel_post.log
+
+      - name: Reels — record it in the ledger
+        # Runs for the scheduled/daily publish and for a manual `mode: reel`, and
+        # every value falls back to the render log so the two paths cannot diverge
+        # in what they record.
+        if: ${{ steps.reel_publish.outcome == 'success' || (!inputs.dry_run && inputs.mode == 'reel') }}
+        env:
+          LEDGER_LABEL: Facebook reel ledger
+          REEL_TITLE: ${{ steps.reel_plan.outputs.title }}
+          REEL_TOPIC: ${{ steps.reel_plan.outputs.topic }}
+          REEL_DATE: ${{ steps.reel_plan.outputs.run_date }}
+          VIDEO_PATH: ${{ steps.reel_render.outputs.video_path }}
+        run: |
+          set -o pipefail
+          VIDEO_ID=$(sed -n 's/^REEL_VIDEO_ID=//p' /tmp/fb_reel_post.log | tail -1)
+          REEL_URL=$(sed -n 's/^REEL_URL=//p' /tmp/fb_reel_post.log | tail -1)
+          if [ -z "$VIDEO_ID" ]; then
+            echo "::warning title=Ledger not recorded::no REEL_VIDEO_ID in /tmp/fb_reel_post.log — if a reel did go out it is now unrecorded, so a re-run could publish the same frame twice"
+            exit 0
+          fi
+          TITLE="${REEL_TITLE:-$(sed -n 's/^title=//p' /tmp/fb_reel_render.log | tail -1)}"
+          TOPIC="${REEL_TOPIC:-$TITLE}"
+          RUN_DATE="${REEL_DATE:-$(date +%F)}"
+          PATH_TO_SIZE="${VIDEO_PATH:-$(sed -n 's/^video_path=//p' /tmp/fb_reel_render.log | tail -1)}"
+          python3 tools/youtube_ledger.py --ledger logs/facebook_reels.json record \
+            --title "$TITLE" \
+            --topic "$TOPIC" \
+            --video-id "$VIDEO_ID" \
+            --url "$REEL_URL" \
+            --date "$RUN_DATE" \
+            --run-id "$GITHUB_RUN_ID" \
+            --size-bytes "$(stat -c%s "$PATH_TO_SIZE" 2>/dev/null || echo 0)"
+
+      # Bookkeeping must never turn a successful publish red, so this step keeps
+      # the job green and leaves a warning — with one honest difference from
+      # silence: the warning says a duplicate is now possible.
+      - name: Reels — commit the ledger
+        if: ${{ steps.reel_publish.outcome == 'success' || (!inputs.dry_run && inputs.mode == 'reel') }}
+        continue-on-error: true
+        env:
+          RUN_DATE: ${{ steps.reel_plan.outputs.run_date }}
+          BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if ! git pull --rebase --autostash origin "$BRANCH"; then
+            echo "::warning title=Reel ledger not committed::could not rebase on $BRANCH. The reel is live; this run is simply not recorded, so a re-run could publish the same frame again."
+            exit 1
+          fi
+          git add logs/facebook_reels.json
+          if git diff --staged --quiet; then
+            echo "Ledger unchanged — nothing to commit."
+            exit 0
+          fi
+          git commit -m "Auto: record Facebook reel published $RUN_DATE [skip ci]"
+          if ! git push origin "HEAD:$BRANCH"; then
+            echo "::warning title=Reel ledger not pushed::the reel is live but the ledger entry did not reach $BRANCH — a re-run could publish it again."
+            exit 1
+          fi
+
+      - name: Dry run — credentials and posting rights, nothing published
+        if: ${{ inputs.dry_run && inputs.mode == 'daily' }}
+        run: |
+          set -o pipefail
+          python3 scripts/post_facebook.py --dry-run 2>&1 | tee /tmp/fb_dryrun.log
+
+      # Manual modes. $FB_MESSAGE / $FB_MEDIA come from `env:`, never from an
+      # interpolation inside the command, and every value is passed as
+      # `--flag=value` so a copy that begins with a dash cannot be read as an
+      # option by argparse.
+      - name: Manual post (text / photo / video / reel)
+        if: ${{ !inputs.dry_run && inputs.mode != 'daily' }}
+        env:
+          FB_MODE: ${{ inputs.mode }}
+          FB_MESSAGE: ${{ inputs.message }}
+          FB_MEDIA: ${{ inputs.media_url }}
+        run: |
+          set -o pipefail
+          case "$FB_MODE" in
+            photo)
+              [ -n "$FB_MEDIA" ] || { echo "::error title=photo needs a URL::media_url is empty"; exit 4; }
+              python3 tools/fb_publish.py --photo-url="$FB_MEDIA" --text="$FB_MESSAGE" 2>&1 | tee /tmp/fb_manual.log
+              ;;
+            video)
+              [ -n "$FB_MEDIA" ] || { echo "::error title=video needs a URL::media_url is empty"; exit 4; }
+              python3 tools/fb_publish.py --video-url="$FB_MEDIA" --text="$FB_MESSAGE" 2>&1 | tee /tmp/fb_manual.log
+              ;;
+            reel)
+              # A person asked for today's reel now: the weekday rule and the
+              # 30-day frame window are bypassed with --force, because --force is
+              # what a human request means. The ledger entry is still written.
+              python3 scripts/facebook_reel_daily.py --render --mode on 2>&1 | tee /tmp/fb_reel_render.log
+              VIDEO_PATH=$(sed -n 's/^video_path=//p' /tmp/fb_reel_render.log | tail -1)
+              if [ -z "$VIDEO_PATH" ]; then
+                echo "::error title=no render::the renderer printed no video_path — the render above is the failing step"
+                exit 3
+              fi
+              python3 scripts/post_facebook.py --reel="$VIDEO_PATH" --force 2>&1 | tee /tmp/fb_reel_post.log
+              ;;
+            *)
+              [ -n "$FB_MESSAGE" ] || { echo "::error title=no message::type the post copy in the message field"; exit 4; }
+              # --force: a hand-written post is on purpose, so the once-a-day
+              # guard that protects the unattended run must not veto it.
+              python3 tools/fb_publish.py --text="$FB_MESSAGE" --force 2>&1 | tee /tmp/fb_manual.log
+              ;;
+          esac
+
+      - name: Record what this run did
+        if: always()
+        env:
+          REEL_TODAY: ${{ steps.reel_plan.outputs.reel_today }}
+          REEL_REASON: ${{ steps.reel_plan.outputs.reason }}
+          REEL_MODE: ${{ steps.reel_plan.outputs.mode }}
+          REEL_TITLE: ${{ steps.reel_plan.outputs.title }}
+          REEL_SKIP: ${{ steps.reel_guard.outputs.skip }}
+        run: |
+          {
+            echo ""
+            echo "### Facebook autopost — $(date -u +%FT%TZ)"
+            echo ""
+            echo "- Graph API: \`$META_GRAPH_VERSION\`"
+            echo "- FB_PAGE_ID: $( [ -n "${FB_PAGE_ID:-}" ] && echo set || echo '**not set**' )"
+            echo "- FB_PAGE_ACCESS_TOKEN: $( [ -n "${FB_PAGE_ACCESS_TOKEN:-}" ] && echo set || echo '**not set**' )"
+            REEL_URL=$(sed -n 's/^REEL_URL=//p' /tmp/fb_reel_post.log 2>/dev/null | tail -1)
+            case "${REEL_TODAY}" in
+              yes)
+                if [ -n "$REEL_URL" ]; then
+                  echo "- Reels: \`${REEL_MODE}\` · ✅ published — $REEL_URL"
+                elif [ "$REEL_SKIP" = "yes" ]; then
+                  echo "- Reels: \`${REEL_MODE}\` · ⏭ frame \"$REEL_TITLE\" is inside the 30-day window — nothing rendered"
+                else
+                  echo "- Reels: \`${REEL_MODE}\` · \"$REEL_TITLE\" — no publish recorded this run (see the reel log line below)"
+                fi
+                ;;
+              no) echo "- Reels: \"$REEL_REASON\"" ;;
+              *)  echo "- Reels: not evaluated this run" ;;
+            esac
+            for pair in "preflight:/tmp/fb_preflight.log" "generator:/tmp/fb_generate.log" \
+                        "post:/tmp/fb_post.log" "dry run:/tmp/fb_dryrun.log" "manual:/tmp/fb_manual.log" \
+                        "reel plan:/tmp/fb_reel_plan.log" "reel probe:/tmp/fb_reel_probe.log" \
+                        "reel render:/tmp/fb_reel_render.log" "reel publish:/tmp/fb_reel_post.log"; do
+              label=${pair%%:*}; file=${pair#*:}
+              if [ -f "$file" ]; then
+                # Sanitised: the log can contain quotes and backticks from an API
+                # error body, and this file is rendered as markdown.
+                last=$(tail -1 "$file" | tr -d '`"' | cut -c1-160)
+                echo "- $label, last line: \`$last\`"
+              fi
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # A red run in a repo nobody opens is the same as silence. This makes the
+      # failure land where the owner will see it, carrying Meta's own words so
+      # triage does not need the run log.
+      - name: Open a visible issue if the run failed
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -uo pipefail
+          RUN_DATE="$(date +%F)"
+
+          PREFLIGHT_TAIL=$(tail -n 20 /tmp/fb_preflight.log 2>/dev/null || echo "(the preflight produced no output)")
+          POST_TAIL=$(tail -n 30 /tmp/fb_post.log /tmp/fb_manual.log /tmp/fb_dryrun.log 2>/dev/null || echo "(no publisher ran — the preflight or an earlier step stopped the run)")
+          REEL_TAIL=$(tail -n 40 /tmp/fb_reel_post.log /tmp/fb_reel_probe.log /tmp/fb_reel_render.log /tmp/fb_reel_plan.log 2>/dev/null || echo "(no reel step ran)")
+
+          gh label create facebook-automation --color 1877F2 \
+            --description "Unattended Facebook Page pipeline" >/dev/null 2>&1 || true
+
+          cat > /tmp/issue_body.md <<BODY
+          The unattended Facebook post for **$RUN_DATE** failed. **Nothing was published to the Page.**
+
+          - Run: $RUN_URL
+          - Graph API version: \`$META_GRAPH_VERSION\`
+
+          ### What the preflight said
+
+          \`\`\`
+          $PREFLIGHT_TAIL
+          \`\`\`
+
+          ### What the publisher said
+
+          \`\`\`
+          $POST_TAIL
+          \`\`\`
+
+          ### What the Reels lane said
+
+          \`\`\`
+          $REEL_TAIL
+          \`\`\`
+
+          ### Reading it
+
+          - \`Facebook secrets missing\` — set \`FB_PAGE_ACCESS_TOKEN\` and \`FB_PAGE_ID\`
+            (\`gh secret set …\`). Until both exist nothing can be posted, by design:
+            there is no fallback Page id compiled into the script.
+          - \`Facebook token rejected\` / \`code 190\` — the Page token was revoked or expired,
+            or the app lost its admin grant on the Page. Mint a fresh long-lived token in
+            Meta Business Settings → Pages → this Page → Page access tokens.
+          - \`Page not reachable with this token\` — \`FB_PAGE_ID\` names a Page this token
+            cannot manage. Check the id; a token for another Page is not a warning, it is
+            the wrong destination.
+          - \`Page feed not readable\` — the duplicate guard is blind and posting rights are
+            almost certainly gone too; re-grant \`pages_manage_posts\` and \`pages_read_engagement\`.
+          - \`code 200\` / \`(#200) Permission failed\` — the token lacks a permission; it can
+            read the Page but not publish to it.
+          - \`code 4 /\` \`rate\` — the app or Page hit a rate limit; the next scheduled run
+            is unaffected.
+          - \`photo post refused\` lines followed by \`falling back to a text post\` are
+            informational — the words still went out. Only a run that posted nothing is a failure.
+          - \`Graph API version\` errors such as \`unsupported selection\` — Meta sunset a
+            version. Bump \`META_GRAPH_VERSION\` in this workflow and \`API_VERSION\` in
+            \`tools/fb_publish.py\` (see FACEBOOK_AUTOMATION.md).
+          - \`spec refused\` — the file failed the local 9:16 / 3–90 s gate, so no bytes
+            were sent. That is the *good* outcome: Meta accepts a bad file and then
+            fails to publish it quietly.
+          - \`start refused\` on a probe — the token cannot open a Reels session. Reels
+            need the same \`pages_manage_posts\` grant; if the feed probe passed and this
+            did not, the app is missing a Reels-capable grant and \`FB_REELS\` must stay
+            \`probe\` or \`off\` until it is added.
+          - \`publish refused after the upload was accepted\` — the file is on Meta's side
+            but unpublished. Finish it by hand with
+            \`python3 tools/fb_publish.py --reel-finish <video_id>\`; the id is in the log
+            above. Do not re-render and re-upload first, or the frame goes out twice.
+          - \`still processing\` in the run log is a warning, not this failure — the reel
+            was accepted and lands on the Page when the render finishes.
+          BODY
+
+          # One issue per *cause*, not per day — see the Telegram lane for the reasoning:
+          # an identical issue every morning is noise that hides the one that matters, and
+          # `setup` is a lane that was never switched on, not an outage.
+          TAIL=$(cat /tmp/fb_preflight.log /tmp/fb_post.log /tmp/fb_reel_post.log 2>/dev/null || true)
+          case "$TAIL" in
+            *"secrets missing"*|*"not configured"*) CAUSE=setup ;;
+            *"Error validating access token"*|*invalid_grant*|*OAuth*) CAUSE=credentials ;;
+            *"Permission denied"*|*"not an admin"*|*"(#200)"*) CAUSE=rights ;;
+            *"unverified"*|*"(#32)"*) CAUSE=verification ;;
+            *) CAUSE=run ;;
+          esac
+
+          # Newest match wins (`max`), so a legacy untagged issue stops absorbing comments once
+          # a tagged one exists. One story per problem, not two.
+          EXISTING=$(CAUSE_TAG="[$CAUSE]" LEGACY_PREFIX="Facebook post failed — " \
+            gh issue list --label facebook-automation --state open --limit 100 --json number,title \
+            --jq "[.[] | select((.title | contains(\$ENV.CAUSE_TAG)) or ((.title | contains(\$ENV.LEGACY_PREFIX)) and (.title | contains(\"[\") | not))) | .number] | max // empty")
+          if [ -n "$EXISTING" ]; then
+            gh issue comment "$EXISTING" --body-file /tmp/issue_body.md || true
+            echo "Same cause as issue #$EXISTING — commented instead of filing a second one"
+          else
+            gh issue create --title "Facebook post failed — $RUN_DATE [$CAUSE]" \
+              --label facebook-automation --body-file /tmp/issue_body.md \
+              || echo "::warning title=Issue not created::bookkeeping failed; the run log still carries the cause"
           fi

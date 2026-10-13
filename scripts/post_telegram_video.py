@@ -13,7 +13,10 @@ from pathlib import Path
 
 # ===== CONFIG =====
 ASSETS_DIR = Path("assets/videos")
-LOG_FILE = Path("logs/social_media.log")
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
+import docoga_log  # noqa: E402  one answer for "where do the scratch files live"
+
+LOG_FILE = docoga_log.log_file("social_media.log")
 LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")

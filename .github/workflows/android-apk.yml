@@ -1,0 +1,234 @@
+name: Android APK (DocOga Owner)
+
+# What this is for
+# ───────────────
+# mobile/ is a Capacitor shell whose only job is to open
+# https://docoga.com.ng/admin. The APK is *build output*, so it is built here and
+# handed back as a downloadable artifact — never committed. This repo has no
+# Android toolchain locally and the release key does not live here either, so CI
+# is the only build authority.
+#
+# Free tier: ubuntu-24.04 already ships Android SDK platform 36 + build-tools
+# 36.0.0 (what Capacitor 8 targets), so no setup-android action and no extra
+# disk. A warm run is ~2–3 min of the 2,000 free monthly minutes.
+#
+# Triggers are deliberately narrow: a dashboard change that does not touch the
+# shell should not burn 25 minutes of CI. Every run can still be started by hand
+# (Actions → "Android APK (DocOga Owner)" → Run workflow).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "mobile/**"
+      - "site/admin.html"
+      - "site/_headers"
+      - "worker/index.js"
+      - ".github/workflows/android-apk.yml"
+  pull_request:
+    paths:
+      - "mobile/**"
+      - ".github/workflows/android-apk.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  VERSION_NAME_BASE: "1.0"
+
+jobs:
+  build:
+    name: assemble debug + release
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: mobile
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: setup jdk 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+
+      - name: toolchain
+        run: |
+          node -v
+          java -version 2>&1 | head -1
+          ls "$ANDROID_HOME/platforms" 2>/dev/null | tr '\n' ' '
+          echo "build-tools: $(ls "$ANDROID_HOME/build-tools" 2>/dev/null | tr '\n' ' ')"
+
+      # --ignore-scripts: no dependency in mobile/ needs a postinstall, and the
+      # native ones that do (sharp/libvips) cannot reach their CDN from every
+      # network. Icons are already generated and committed.
+      - name: install
+        run: npm ci --ignore-scripts
+
+      - name: capacitor sync
+        run: npx cap sync android
+
+      - name: gradlew executable
+        run: chmod +x android/gradlew
+
+      - name: assemble debug
+        working-directory: mobile/android
+        run: |
+          set +e
+          ./gradlew assembleDebug --no-daemon -x lint --stacktrace \
+            -PdocogaVersionCode='${{ github.run_number }}' \
+            -PdocogaVersionName='${{ env.VERSION_NAME_BASE }}-debug' 2>&1 | tee /tmp/debug-build.log
+          status=${PIPESTATUS[0]}
+          if [ "$status" != 0 ]; then
+            # Echo the useful lines as annotations: they reach `gh run view` and
+            # the Checks API, while the raw log behind results-receiver does not
+            # (it is unreachable from some CI-adjacent tooling, including the
+            # sandbox this pipeline was written in).
+            # Annotation order matters: GitHub ingests only the first ~10 per job,
+            # so lead with what broke and never with the task trail.
+            grep -E "error:|^FAILURE:|What went wrong|^Caused by:|FAILED$" /tmp/debug-build.log \
+              | head -8 | sed 's/^/::error title=gradle debug::/'
+            exit "$status"
+          fi
+
+      - name: prepare release keystore (skipped when unconfigured)
+        id: keystore
+        env:
+          DOCOGA_APK_KEYSTORE_B64: ${{ secrets.DOCOGA_APK_KEYSTORE_B64 }}
+          DOCOGA_APK_KEYSTORE_PASSWORD: ${{ secrets.DOCOGA_APK_KEYSTORE_PASSWORD }}
+          DOCOGA_APK_KEY_ALIAS: ${{ secrets.DOCOGA_APK_KEY_ALIAS }}
+          DOCOGA_APK_KEY_PASSWORD: ${{ secrets.DOCOGA_APK_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [ -z "${DOCOGA_APK_KEYSTORE_B64:-}" ]; then
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Unsigned release::DOCOGA_APK_KEYSTORE_B64 is not set — the debug APK is still built, the signed one is skipped."
+            exit 0
+          fi
+          KS="$RUNNER_TEMP/docoga-owner.jks"
+          umask 077
+          printf '%s' "$DOCOGA_APK_KEYSTORE_B64" | base64 -d > "$KS"
+          # Gradle user-home properties, NOT the checkout: the keystore path and
+          # both passwords never appear in the command line, the process table,
+          # the git tree or the artifacts. $HOME dies with the runner.
+          # GRADLE_USER_HOME is honoured because setup-java's gradle cache may
+          # relocate it; the file must sit where the build will actually look.
+          GUH="${GRADLE_USER_HOME:-$HOME/.gradle}"
+          mkdir -p "$GUH"
+          {
+            echo "docogaKeystoreFile=$KS"
+            echo "docogaKeystorePassword=$DOCOGA_APK_KEYSTORE_PASSWORD"
+            echo "docogaKeystoreAlias=${DOCOGA_APK_KEY_ALIAS:-docoga-owner}"
+            echo "docogaKeystoreAliasPassword=${DOCOGA_APK_KEY_PASSWORD:-$DOCOGA_APK_KEYSTORE_PASSWORD}"
+          } >> "$GUH/gradle.properties"
+          echo "ok=true" >> "$GITHUB_OUTPUT"
+          echo "ks=$KS" >> "$GITHUB_OUTPUT"
+
+      - name: assemble release
+        if: steps.keystore.outputs.ok == 'true'
+        working-directory: mobile/android
+        run: |
+          set +e
+          ./gradlew assembleRelease --no-daemon -x lint --stacktrace \
+            -PdocogaVersionCode='${{ github.run_number }}' \
+            -PdocogaVersionName='${{ env.VERSION_NAME_BASE }}' 2>&1 | tee /tmp/release-build.log
+          status=${PIPESTATUS[0]}
+          if [ "$status" != 0 ]; then
+            grep -E "error:|^FAILURE:|What went wrong|^Caused by:|FAILED$" /tmp/release-build.log \
+              | head -8 | sed 's/^/::error title=gradle release::/'
+            exit "$status"
+          fi
+
+      - name: collect + verify
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          cp android/app/build/outputs/apk/debug/app-debug.apk dist/docoga-owner-debug.apk
+          if [ '${{ steps.keystore.outputs.ok }}' = 'true' ]; then
+            cp android/app/build/outputs/apk/release/app-release.apk dist/docoga-owner-release.apk
+            # Prove it is actually signed. `keytool -printcert -jarfile` cannot: it
+            # reads JAR (v1) signatures, and minSdk 24 means AGP ships v2/v3 only.
+            # apksigner is the tool that sees those — it is in the SDK build-tools
+            # the runner already has, so no extra setup action is needed.
+            AS="$(ls -d "$ANDROID_HOME"/build-tools/*/apksigner 2>/dev/null | sort -V | tail -1 || true)"
+            if [ -n "$AS" ]; then
+              if "$AS" verify --print-certs dist/docoga-owner-release.apk > /tmp/certs.txt 2>&1; then
+                {
+                  echo ""
+                  echo "release APK signature verified:"
+                  grep -E 'Signer #1 (certificate DN|SHA-256 digest)' /tmp/certs.txt | sed 's/^/    /'
+                } >> "$GITHUB_STEP_SUMMARY"
+              else
+                echo "::error title=Release APK is NOT verifiably signed::refusing to publish an APK Android would refuse to install"
+                cat /tmp/certs.txt
+                exit 1
+              fi
+            else
+              echo "::warning title=apksigner missing::signature not verified in CI — check the APK before installing"
+            fi
+          fi
+          {
+            echo ""
+            echo '| artifact | size | SHA-256 (match this against the file you install) |'
+            echo '|---|---|---|'
+            for f in dist/*.apk; do
+              [ -e "$f" ] || continue
+              printf '| %s | %s | `%s` |\n' "$(basename "$f")" \
+                "$(numfmt --to=iec --suffix=B "$(stat -c%s "$f")")" \
+                "$(sha256sum "$f" | cut -d' ' -f1)"
+            done
+            echo ""
+            echo '_debug and release are signed by different keys: uninstall one before installing the other._'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # The raw log, as an artifact — the only channel this repo can be read from
+      # without a browser: annotations are capped at ~10 per job, and the log blob
+      # itself lives on a host some environments cannot reach. `gh run download
+      # <run> --name gradle-build-log` gets the whole transcript.
+      - name: attach gradle log (only when a build failed)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gradle-build-log
+          path: /tmp/*-build.log
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: docoga-owner-debug-apk
+          path: mobile/dist/docoga-owner-debug.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: upload signed release APK
+        if: steps.keystore.outputs.ok == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: docoga-owner-release-apk
+          path: mobile/dist/docoga-owner-release.apk
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: wipe the key off the runner
+        if: always() && steps.keystore.outputs.ks != ''
+        run: |
+          rm -f "${{ steps.keystore.outputs.ks }}" "${GRADLE_USER_HOME:-$HOME/.gradle}/gradle.properties"
+          echo "keystore file and gradle user properties removed"

@@ -22,6 +22,10 @@ id = "f3a5afebe7d04bb0a6018c0d7d355253"
 #   wrangler secret put BREVO_API_KEY           (email delivery — PRIMARY, brevo.com)
 #   wrangler secret put SMTP2GO_API_KEY         (optional fallback)
 #   wrangler secret put RESEND_API_KEY          (optional fallback)
+#   wrangler secret put ADMIN_PASSPHRASE        (owner dashboard: the thing you type at /admin;
+#                                                unset means every /admin/* route answers 503 admin_disabled)
+#   wrangler secret put ADMIN_AUTH_SECRET       (owner dashboard: HMAC key for the 12-hour bearer
+#                                                sessions; a DIFFERENT secret, never reused for anything)
 # Plain (non-secret) variables can also be set in the dashboard:
 #   PROVIDER = "flw" or "paystack"
 #   MAIL_FROM = "DocOga <passes@docoga.com.ng>" (must be verified by the active mail provider)
@@ -31,7 +35,9 @@ id = "f3a5afebe7d04bb0a6018c0d7d355253"
 #   SITE_URL = "https://docoga.com.ng"
 
 [triggers]
-crons = ["0 7 * * *"]  # 08:00 Nigeria time, daily — day-27 renewal reminders
+crons = ["0 7 * * *"]  # 08:00 Nigeria time, daily — day-27 renewal reminders, and
+                       # buildAdminSnapshot(): the 31-day ledger + expiry-index rollup the
+                       # owner dashboard reads (ADMIN_DASHBOARD.md §4)
 
 [vars]
 PROVIDER = "flw"

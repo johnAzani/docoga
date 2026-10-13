@@ -16,6 +16,14 @@ name: DocOga Telegram Auto-Post
 # still opens an issue if the token, chat or permissions are wrong), but
 # nothing is generated and nothing is posted. That answers "can the bot post?"
 # without publishing to the channel.
+#
+# Ledger added 13 Oct 2026, for two reasons at once. The channel carried the same
+# caution-fee paragraph four times in four hours on 3 Oct, because five runs (one
+# scheduled, four dispatches) each began with no idea what was already posted — so the
+# poster now checks `logs/telegram_sent.json` by content, before it sends. And the lane
+# had no durable record of publishing at all: `logs/social_media.log` is gitignored
+# scratch, which is how "nothing has succeeded in 9 days" and "the channel got a post
+# on 7 Oct" were both true and checkable by nobody. `force=true` re-posts anyway.
 
 on:
   schedule:
@@ -27,9 +35,17 @@ on:
         required: false
         default: false
         type: boolean
+      force:
+        description: 'Post even if this exact content is already in the ledger'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
-  contents: read
+  # `write`, and for one path only: the publish ledger this job commits back after a
+  # successful post. The comment step still gets its issue via `issues: write`. A
+  # monitor or publisher that can push must be able to say what it pushes.
+  contents: write
   issues: write          # a failed run opens (or comments on) a visible issue
 
 jobs:
@@ -77,9 +93,60 @@ jobs:
 
       - name: Post to Telegram
         if: ${{ !inputs.dry_run }}
+        env:
+          LEDGER_LABEL: Telegram publish ledger
+          TELEGRAM_FORCE: ${{ inputs.force }}
         run: |
           set -o pipefail
           python3 scripts/post_telegram.py 2>&1 | tee /tmp/telegram_post.log
+          # The poster's own counters, in the run summary as well as the log: "3 sent"
+          # and "0 sent, 3 already published" look identical in a green tick, and they
+          # mean opposite things.
+          SENT=$(sed -n 's/^TELEGRAM_SENT=//p' /tmp/telegram_post.log | tail -1)
+          SKIPPED=$(sed -n 's/^TELEGRAM_SKIPPED=//p' /tmp/telegram_post.log | tail -1)
+          GUARD=$(sed -n 's/^TELEGRAM_CHANNEL_GUARD=//p' /tmp/telegram_post.log | tail -1)
+          {
+            echo "### Telegram post"
+            echo
+            echo "- sent: ${SENT:-?} · already on the channel (skipped): ${SKIPPED:-?}"
+            echo "- duplicate guard: ${GUARD:-not reported} — the ledger, plus the channel's own page when it is public"
+            echo "- ledger: \`logs/telegram_sent.json\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # Bookkeeping must never turn a successful publish red, so the job stays green
+      # when this fails — with one honest difference from silence: the warning names the
+      # consequence, which is that a re-run can now post the same thing twice.
+      - name: Commit the publish ledger
+        if: ${{ !inputs.dry_run }}
+        continue-on-error: true
+        env:
+          BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          if [ ! -f logs/telegram_sent.json ]; then
+            echo "No ledger file was written (nothing was posted, or the poster was stopped early)."
+            exit 0
+          fi
+          if [ -z "$(git status --porcelain -- logs/telegram_sent.json)" ]; then
+            echo "Ledger unchanged — nothing to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if ! git pull --rebase --autostash origin "$BRANCH"; then
+            echo "::warning title=Telegram ledger not committed::the post is on the channel but this run is not recorded, so a re-run could publish the same text again."
+            exit 1
+          fi
+          git add logs/telegram_sent.json
+          if git diff --staged --quiet; then
+            echo "Ledger unchanged after rebase — nothing to commit."
+            exit 0
+          fi
+          git commit -m "Auto: record Telegram post $(date -u +%F) [skip ci]"
+          if ! git push origin "HEAD:$BRANCH"; then
+            echo "::warning title=Telegram ledger not pushed::the post is live but the entry did not reach $BRANCH — a re-run could publish it again."
+            exit 1
+          fi
+          echo "✅ Ledger pushed to $BRANCH."
 
       # A red run in a repo nobody opens is the same as silence. This makes the
       # failure land where the owner will actually see it, carrying Telegram's
@@ -129,13 +196,31 @@ jobs:
           - \`429 Too Many Requests\` — flood limit; the next scheduled run is unaffected.
           BODY
 
-          EXISTING=$(gh issue list --label telegram-automation --state open --limit 100 \
-            --json number,title \
-            --jq "[.[] | select(.title | contains(\$ENV.RUN_DATE)) | .number][0] // empty")
+          # One issue per *cause*, not per day. While a repair is outstanding the lane has
+          # nothing new to say, and an inbox of identical failures trains you to ignore it —
+          # so a later failure with the same cause becomes a comment on the open issue, and
+          # only a new cause opens a new one. `setup` means the lane was never configured,
+          # which is not an outage and must not read like one.
+          TAIL=$(cat /tmp/telegram_preflight.log /tmp/telegram_post.log 2>/dev/null || true)
+          case "$TAIL" in
+            *"secrets missing"*) CAUSE=setup ;;
+            *Unauthorized*|*"invalid client"*|*invalid_grant*) CAUSE=credentials ;;
+            *"chat not found"*|*"bot is not a member"*|*"bot not in the chat"*) CAUSE=chat ;;
+            *"have no rights"*|*"not enough rights"*|*can_post_messages*) CAUSE=rights ;;
+            *) CAUSE=run ;;
+          esac
+
+          # Newest match wins (`max`), so once a tagged issue exists the legacy one beside it
+          # stops collecting comments. `#16`/`#12` were filed before titles carried a cause: a
+          # lane that folds them in keeps one story per problem instead of two.
+          EXISTING=$(CAUSE_TAG="[$CAUSE]" LEGACY_PREFIX="Telegram post failed — " \
+            gh issue list --label telegram-automation --state open --limit 100 --json number,title \
+            --jq "[.[] | select((.title | contains(\$ENV.CAUSE_TAG)) or ((.title | contains(\$ENV.LEGACY_PREFIX)) and (.title | contains(\"[\") | not))) | .number] | max // empty")
           if [ -n "$EXISTING" ]; then
-            gh issue comment "$EXISTING" --body-file /tmp/issue_body.md
-            echo "Commented on issue #$EXISTING"
+            gh issue comment "$EXISTING" --body-file /tmp/issue_body.md || true
+            echo "Same cause as issue #$EXISTING — commented instead of filing a second one"
           else
-            gh issue create --title "Telegram post failed — $RUN_DATE" \
-              --label telegram-automation --body-file /tmp/issue_body.md
+            gh issue create --title "Telegram post failed — $RUN_DATE [$CAUSE]" \
+              --label telegram-automation --body-file /tmp/issue_body.md \
+              || echo "::warning title=Issue not created::bookkeeping failed; the run log still carries the cause"
           fi

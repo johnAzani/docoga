@@ -31,6 +31,8 @@ Usage:
 """
 
 import json
+
+import telegram_preview  # the same reader the poster guards with
 import os
 import sys
 import urllib.error
@@ -70,9 +72,91 @@ def call(method, token, **params):
     return False, body.get("description") or "unknown Telegram error"
 
 
+def describe_chats(token):
+    """The chats this bot can see *right now*, read out of `getUpdates`.
+
+    A last resort for the one failure that costs the most days: the chat id is wrong,
+    every run dies at `chat not found`, and the operator has no idea what the right
+    value is. `getUpdates` is read-only and free, and Telegram keeps a short window of
+    updates — so this is a hint, not a census. It can legitimately come back empty (no
+    recent activity, or a webhook is registered), and the caller must say so rather
+    than conclude the bot has no chats.
+    """
+    ok, updates = call("getUpdates", token, limit=100)
+    if not ok:
+        return None, updates          # None = "I could not ask", [] = "nothing recent"
+    found, order = {}, []
+    for item in updates or []:
+        if not isinstance(item, dict):
+            continue
+        for key in ("channel_post", "message", "my_chat_member", "chat_member"):
+            entry = item.get(key)
+            chat = entry.get("chat") if isinstance(entry, dict) else None
+            if not isinstance(chat, dict) or chat.get("id") is None:
+                continue
+            chat_id = str(chat["id"])
+            if chat_id not in found:
+                order.append(chat_id)
+            found[chat_id] = {
+                "id": chat_id,
+                "type": chat.get("type") or "?",
+                "username": chat.get("username"),
+                "title": chat.get("title"),
+            }
+    return [found[key] for key in order], None
+
+
+def chat_hint(chat_id, chats, error):
+    """What to type, given what the bot can actually see."""
+    lines = []
+    visible = [chat for chat in (chats or []) if chat.get("id") != chat_id]
+    if not chats:
+        lines.append("getUpdates returned nothing, which is normal when a webhook is "
+                     "registered or the channel has had no recent traffic — it does not "
+                     "mean the bot has no chats. The numeric id is visible in the channel's "
+                     "admin log, or by adding the bot, posting once, and calling getUpdates "
+                     "with the webhook deleted.")
+        return "\n".join(lines)
+    if "chat not found" in (error or "").lower() and str(chat_id).startswith("@"):
+        wanted = str(chat_id).lstrip("@").lower()
+        near = [chat for chat in visible
+                if (chat.get("username") or "").lower().startswith(wanted)
+                or (chat.get("title") or "").lower().replace(" ", "").startswith(wanted.replace(" ", ""))]
+        if near:
+            lines.append("`%s` does not exist; the closest chat the bot can see is **@%s** "
+                         "(%s). A public channel works by username, but the exact spelling wins:"
+                         % (chat_id, near[0].get("username") or "?", near[0].get("id")))
+            lines.append("  gh secret set TELEGRAM_CHAT_ID --body '@%s'   # or --body '%s'"
+                         % (near[0].get("username"), near[0].get("id")))
+            return "\n".join(lines)
+    lines.append("Chats this bot can see (from its last %d updates):" % len(chats))
+    for chat in visible[:8]:
+        lines.append("  %-16s %-11s %s%s" % (chat["id"], chat["type"], chat.get("title") or "—",
+                                             "  @" + chat["username"] if chat.get("username") else ""))
+    if len(visible) == 1:
+        lines.append("One candidate — set it and re-run:")
+        lines.append("  gh secret set TELEGRAM_CHAT_ID --body '%s'" % visible[0]["id"])
+    else:
+        lines.append("Pick the channel's id from the list and set it:")
+        lines.append("  gh secret set TELEGRAM_CHAT_ID --body '-100…'")
+    return "\n".join(lines)
+
+
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
     quiet = "--quiet" in argv
+
+    # `--preview [@name]` answers one question with no token and no secrets at all: is the
+    # channel's public preview readable, i.e. can the poster's live duplicate guard work?
+    # It is here because the guard is worthless if nobody can check it.
+    if "--preview" in argv:
+        positional = [a for a in argv if not a.startswith("--")]
+        handle = (positional[0].lstrip("@") if positional
+                  else telegram_preview.channel_handle(chat_id=os.getenv("TELEGRAM_CHAT_ID")))
+        state, detail = telegram_preview.describe(handle=handle)
+        if not quiet:
+            print("%s channel preview: %s" % ("✅" if state == "readable" else "⚠️", detail))
+        return 0 if state == "readable" else 1
 
     token = os.getenv("TELEGRAM_BOT_TOKEN")
     chat_id = os.getenv("TELEGRAM_CHAT_ID")
@@ -116,6 +200,16 @@ def main(argv=None):
             f"getChat({chat_id}) failed: {chat}. Either TELEGRAM_CHAT_ID is wrong "
             "or the bot is no longer a member of that channel.",
         )
+        # The four-day outage ended at exactly this line, and the run log stopped
+        # there: it said the chat was unreachable and left the operator to go find the
+        # right id by hand. So the preflight finishes the job it started.
+        chats, probe_error = describe_chats(token)
+        if chats is None:
+            annotate("warning", "Could not list the bot's chats",
+                     "getUpdates failed: %s — the id has to be found another way." % probe_error)
+        hint = chat_hint(chat_id, chats, chat)
+        if hint:
+            print(hint)
         return 4
     if not quiet:
         print(
@@ -161,6 +255,11 @@ def main(argv=None):
 
     if not quiet:
         print(f"✅ Posting rights confirmed (status: {status})")
+        # Say whether the duplicate guard can see the channel, because "green preflight" and
+        # "the guard is watching" are different claims and the operator is told both.
+        state, detail = telegram_preview.describe(chat_id=chat_id)
+        print("%s live duplicate guard: %s"
+              % ("✅" if state == "readable" else "ℹ️", detail))
     return 0
 
 

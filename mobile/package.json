@@ -1,0 +1,27 @@
+{
+  "name": "docoga-owner-android",
+  "version": "1.0.0",
+  "private": true,
+  "description": "DocOga Owner \u2014 the Android wrapper (Capacitor) around https://docoga.com.ng/admin. It contains no secret: it is a signed, self-updating door to the authenticated dashboard. Built in CI (.github/workflows/android-apk.yml); you never need Android Studio unless you want to.",
+  "scripts": {
+    "sync": "cap sync android",
+    "add": "cap add android",
+    "icons": "capacitor-assets generate --android --ios",
+    "apk:debug": "cd android && ./gradlew assembleDebug",
+    "apk:release": "cd android && ./gradlew assembleRelease -PdocogaKeystore=\"$KEYSTORE\" -PdocogaKeystorePassword=\"$KEYSTORE_PASSWORD\" -PdocogaKeyAlias=\"$KEY_ALIAS\" -PdocogaKeyPassword=\"$KEY_PASSWORD\""
+  },
+  "dependencies": {
+    "@capacitor/android": "8.5.3",
+    "@capacitor/core": "8.5.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.3"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "optionalDependencies": {},
+  "comments": {
+    "icons": "Icon densities are committed under android/app/src/main/res/mipmap-*/ic_launcher.png. Regenerate with: npm i --no-save pngjs && node tools/make-icons.mjs  (pngjs only \u2014 @capacitor/assets needs sharp, which downloads libvips and is therefore CI-hostile in a locked-down sandbox)."
+  }
+}

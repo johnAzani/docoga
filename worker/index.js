@@ -60,6 +60,12 @@
  *                       browser — no PDF lib, ₦0; binary .pdf is a v2 upgrade
  *                       if teams demand attachments). Any seat of the team;
  *                       other teams' ids are 404 (no enumeration).
+ *   /admin/*            OWNER DASHBOARD API (12 Oct 2026) — revenue, passes,
+ *                       teams, leads, webhook health + direct-sale issue /
+ *                       revoke / extend. Passphrase login → 12h KV-backed
+ *                       session. 503 admin_disabled unless BOTH
+ *                       ADMIN_PASSPHRASE and ADMIN_AUTH_SECRET are set.
+ *                       See ADMIN_DASHBOARD.md for the whole design.
  *
  * Free-tier capacity: Workers 100k req/day · KV 1k writes/day · Resend 3k emails/month.
  *
@@ -76,6 +82,11 @@
  *   RESEND_EMAIL_ENABLED set exactly to "true" only after authenticating the sender
  *   TEAM_AUTH_SECRET    long random string (secret) — required for /business/login*
  *                       and /business/team*; unset = 503 team_auth_disabled (fail-closed)
+ *   ADMIN_PASSPHRASE    the owner's dashboard passphrase (secret). Unset = the
+ *                       whole /admin/* surface is 503 admin_disabled (fail-closed)
+ *   ADMIN_AUTH_SECRET   long random string (secret) — signs admin session
+ *                       tokens. Rotating it logs every admin session out.
+ *                       Must NOT equal ADMIN_PASSPHRASE or TEAM_AUTH_SECRET.
  *   SITE_URL            e.g. https://docoga.com.ng (used inside the email)
  * KV binding: must be named KV (see wrangler.toml)
  */
@@ -246,18 +257,74 @@ async function dailyRenewalReminders(env) {
   } while (cursor);
 }
 
-/** Create a code, remember it in KV, email the buyer. Returns the code. */
-async function issueCode(env, { email, ref }) {
+/* ---------- Owner ledger ----------
+ * Every number the dashboard shows comes from an ATOMIC day counter (KV.incr),
+ * never from a keyspace scan on a request path. Why: a Workers Free invocation
+ * gets 10 ms of CPU and ~1 000 KV ops, so "SELECT *"-style dashboards are the
+ * classic thing that works at 40 customers and dies at 4 000. Counting at the
+ * moment of the event costs one extra write per sale and reads back as a
+ * handful of gets.
+ * The KV record stays authoritative: anything the dashboard LISTS is re-read
+ * from code:* before it is shown, so a counter that drifts never lies about a
+ * specific customer's pass.
+ * Field names are whitelisted: a typo must not mint an unbounded key family. */
+const STAT_FIELDS = "sold,rev,offline,manual,revoked,wait,bizcreate,bizpaid,bizrev".split(",");
+const STAT_TTL_SEC = 400 * 86400; // outlives any dashboard window we would want
+const EXP_INDEX_TTL_SEC = 130 * 86400; // buckets are only interesting around their own date
+const EXP_INDEX_CAP = 300; // max codes remembered per expiry-date
+
+async function statBump(env, field, amount = 1) {
+  if (STAT_FIELDS.indexOf(field) < 0) return;
+  const n = Number(amount);
+  if (!isFinite(n) || n === 0) return;
+  try {
+    await env.KV.incr("stat:" + field + ":" + new Date().toISOString().slice(0, 10), n, { expirationTtl: STAT_TTL_SEC });
+  } catch (e) { /* the money path never fails for a counter */ }
+}
+
+/** Remember which codes expire on a given date, so "expiring soon" and
+ *  "active passes" are 1 get per day instead of a scan of every code. */
+async function expIndexAdd(env, code, expMs) {
+  if (!code || !expMs) return;
+  const day = new Date(expMs).toISOString().slice(0, 10);
+  try {
+    const key = "adm:exp:" + day;
+    let arr = [];
+    try { arr = JSON.parse(await env.KV.get(key, { cacheTtl: 60 }) || "[]"); } catch (e) {}
+    if (!Array.isArray(arr)) arr = [];
+    if (arr.indexOf(code) < 0) {
+      arr.push(code);
+      await env.KV.put(key, JSON.stringify(arr.slice(-EXP_INDEX_CAP)), { expirationTtl: EXP_INDEX_TTL_SEC });
+    }
+  } catch (e) {}
+}
+
+/** Create a code, remember it in KV, email the buyer. Returns the code.
+ * `amount` is what the owner actually received for it: the webhook path passes
+ * PRICE_NGN implicitly, a dashboard sale carries the naira the owner typed (0 =
+ * a comp/gift, which is then counted but not revenue). */
+async function issueCode(env, { email, ref, source = "online", days = 30, note = "", amount = null }) {
   const code = makeCode();
-  const rec = { code, email: email || "", ref: ref || "", issuedAt: Date.now(), used: false, source: "online", exp: Date.now() + 30 * 864e5 }; // dies 30 days from purchase
+  const span = Math.min(Math.max(Number(days) || 30, 1), 365) * 864e5;
+  const rec = { code, email: email || "", ref: ref || "", issuedAt: Date.now(), used: false, source, exp: Date.now() + span }; // dies 30 days from purchase
+  if (note) rec.note = String(note).slice(0, 120);
   await env.KV.put("code:" + code, JSON.stringify(rec));
   if (ref) await env.KV.put("ref:" + ref, code); // idempotency: ref -> code
+  if (source === "manual") await statBump(env, "manual");
+  else await statBump(env, "sold");
+  const ngn = amount === null ? (source === "online" ? PRICE_NGN : 0) : Math.max(0, Math.round(Number(amount) || 0));
+  if (ngn > 0) await statBump(env, "rev", ngn);
+  await expIndexAdd(env, code, rec.exp);
+  await adminEmailIndex(env, rec.email, code); // support lookup by email, for every path
+  await adminRecentPush(env, { kind: source, code, email: rec.email || "", ngn, days: Math.round(span / 864e5) });
   try {
-    await emailCode(env, email, code);
+    if (email) await emailCode(env, email, code);
   } catch (e) {
     // Never log the recipient, pass code, provider response body, or secret.
     // A payment/pass remains valid even when the separate email hand-off fails.
     console.error(`[docoga-mail] pass_email_not_accepted reason=${safeMailFailureReason(e)}`);
+    rec.mailFailed = true;
+    try { await env.KV.put("code:" + code, JSON.stringify(rec)); } catch (e2) {}
   }
   return code;
 }
@@ -363,6 +430,7 @@ async function handleBusinessWaitlist(request, env, cors) {
   const existing = await env.KV.get(key);
   if (existing) return json({ ok: true, alreadyOnList: true });
   await env.KV.put(key, JSON.stringify({ email, company, segment, at: new Date().toISOString() }));
+  await statBump(env, "wait"); // lead counter: the waitlist is counted, never scanned, on the dashboard
   let emailSent = false;
   try {
     await sendMail(
@@ -732,6 +800,7 @@ async function handleBusinessTeams(request, env, cors) {
   await env.KV.put("team:" + id + ":seats", JSON.stringify([{ email, name: "", role: "owner", status: "active", invited_at: now }]));
   await env.KV.put("brand:" + id, JSON.stringify({ name }));
   await env.KV.put("seatidx:" + email, id);
+  await statBump(env, "bizcreate");
   // Magic link (best-effort: the team exists even if the email hand-off fails —
   // the owner can request a fresh link from the sign-in form)
   const token = await magicLinkToken(email);
@@ -1196,6 +1265,8 @@ async function handleInvoiceWebhook(env, d, ids) {
       await env.KV.put("team:" + inv.team, JSON.stringify(team));
     }
     inv.status = "paid"; inv.paid_at = new Date().toISOString(); inv.received_amount = amt;
+    await statBump(env, "bizpaid");
+    await statBump(env, "bizrev", Number(inv.total) || 0);
     if (d.flw_ref) inv.flw_ref = String(d.flw_ref);
     await env.KV.put("inv:" + inv.id, JSON.stringify(inv));
     try {
@@ -1453,6 +1524,7 @@ async function linkPrev(env, rec, prevRaw) {
   try {
     await env.KV.put("code:" + rec.code, JSON.stringify(rec));
     await env.KV.put("code:" + prev.code, JSON.stringify(prev));
+    await expIndexAdd(env, rec.code, rec.exp); // the carry pushed the expiry: index the new date too
   } catch (e) {}
   return rec;
 }
@@ -1481,6 +1553,8 @@ async function handleActivate(url, env, cors) {
     if (OFFLINE_HASHES.has(fnv1a(raw).toString(16).padStart(8, "0"))) {
       rec = { code: key, email: "", ref: "", issuedAt: Date.now(), used: false, source: "offline", exp: Date.now() + 30 * 864e5 };
       await env.KV.put("code:" + key, JSON.stringify(rec)); // clock starts at first activation
+      await statBump(env, "offline"); // the sale happened on WhatsApp; this is the only signal we get
+      await expIndexAdd(env, key, rec.exp);
     } else {
       return json({ ok: false, error: "invalid code" }, cors, 404);
     }
@@ -1493,6 +1567,8 @@ async function handleActivate(url, env, cors) {
     const succ = await readCode(env, normalizeCode(String(rec.succ).toUpperCase().replace(/[\s-]/g, "")));
     return json({ ok: false, error: "This code was renewed — your newest code is the active one.", renewedCode: rec.succ, exp: succ && succ.exp }, cors, 410);
   }
+  if (rec.revoked)
+    return json({ ok: false, error: "This pass was cancelled by DocOga. If that looks wrong, WhatsApp support — +234 902 185 2845." }, cors, 403);
   if (Date.now() > rec.exp)
     return json({ ok: false, error: "This code has expired — buy a new Oga Pass (₦2,000)." }, cors, 403);
   // Device fairness gate: one pass, up to 3 devices (phone + laptop + spare).
@@ -1513,9 +1589,558 @@ async function handleActivate(url, env, cors) {
   return json({ ok: true, code: rec.code, exp: rec.exp }, cors);
 }
 
+/* ============================================================================
+ * OWNER ADMIN DASHBOARD — the app owner's read/write surface over the same KV
+ * the money paths write to. UI: site/admin.html (public, inert, no secrets).
+ * Doc: ADMIN_DASHBOARD.md. Rules, each of them earned:
+ *
+ * 1. FAIL CLOSED. ADMIN_PASSPHRASE or ADMIN_AUTH_SECRET missing → every
+ *    /admin/* route answers 503 admin_disabled. A half-configured admin is a
+ *    hole, not a feature (same pattern as TEAM_AUTH_SECRET / RESEND_EMAIL_ENABLED).
+ * 2. NO SECRET EVER SHIPS. site/admin.html and the Android APK contain only the
+ *    URL of this API. The passphrase is typed by the owner and exchanged for a
+ *    12-hour session token; nothing in the repo or the bundle can be reversed
+ *    into access.
+ * 3. SESSION = random sid + HMAC(ADMIN_AUTH_SECRET) + a KV record that is
+ *    re-checked on EVERY call. "Log out everywhere" deletes the records, so a
+ *    stolen token dies immediately instead of living out its expiry.
+ * 4. BEARER HEADER, NOT A COOKIE. The site and this Worker are different
+ *    origins and no credential is attached automatically → no CSRF surface,
+ *    and the same token works from a browser and from a WebView app.
+ * 5. NEVER SCAN THE KEYSPACE ON A REQUEST PATH. Workers Free gives an
+ *    invocation 10 ms of CPU and ~1 000 KV operations, so a dashboard that
+ *    reads every `code:` key works at 40 customers and dies at 4 000 — i.e.
+ *    exactly when the product succeeds. Everything here is either an atomic
+ *    day counter (stat:*), a small capped index written at the moment of the
+ *    event (adm:exp:*, adm:em:*, adm:recent), or a 6-hour snapshot (adm:snap)
+ *    built by the daily cron. The KV record stays authoritative: every code
+ *    the dashboard shows is re-read before it is rendered.
+ * 6. PII DISCIPLINE. Customers' emails are shown (it is the owner's own
+ *    customer list) but the stored raw webhook body is never echoed, virtual
+ *    account numbers are masked to their last 4 digits, and no route returns
+ *    any secret value.
+ *
+ * Routes (session required except /admin/login):
+ *   POST /admin/login     {pass} → {token, expiresInSeconds}  (5 strikes / 30 min per IP)
+ *   GET  /admin/me        who am I + when this session expires
+ *   POST /admin/logout    drop this session
+ *   GET  /admin/data      today's counters + snapshot + webhook health   (~13 KV reads)
+ *   POST /admin/snapshot  rebuild the snapshot (throttled to 1 per 5 min)
+ *   GET  /admin/codes?q=  exact code / email / payment-ref lookup; &deep=1 = bounded scan
+ *   POST /admin/issue     direct sale: mint a code, optional email, days, naira, note
+ *   POST /admin/resend    re-send the pass email for a stored code
+ *   POST /admin/revoke    kill a pass now (also kills the device fence)
+ *   POST /admin/extend    push a pass's synced expiry
+ *   GET  /admin/sessions  list live admin sessions
+ *   POST /admin/session   {sid} drop one · {all:true} drop every other one
+ * ========================================================================== */
+const ADMIN_SESSION_TTL = 43200;      // 12 h, slid forward while the owner keeps using it
+const ADMIN_SNAP_TTL = 6 * 3600;      // freshness target for the heavy rollup
+const ADMIN_REBUILD_LOCK = 300;       // at most one rebuild per 5 min, however many tabs
+const ADMIN_FAIL_LIMIT = 5;           // wrong passphrases per IP inside the window
+const ADMIN_FAIL_WINDOW = 1800;       // 30 min, sliding from the last failure
+const ADMIN_ISSUE_CAP = 200;          // codes mintable per day (a runaway guard, not a quota)
+const ADMIN_LEDGER_DAYS = 31;         // length of the daily series in the snapshot
+const ADMIN_EXP_WINDOW = 90;          // how far ahead the expiry index is read
+const ADMIN_TEAM_CAP = 40;            // teams described per snapshot
+const ADMIN_LEAD_CAP = 150;           // waitlist rows read per snapshot
+const ADMIN_RECENT_CAP = 40;          // rolling "last events" feed
+const ADMIN_SCAN_CAP = 400;           // deep-search budget (KV ops, not rows)
+const ADMIN_EMAIL_CODES_CAP = 24;     // codes remembered per email
+const ADMIN_DAILY = 5;                // per-day reads bundled in /admin/data (today + yesterday)
+
+function adminReady(env) { return !!(env.KV && env.ADMIN_PASSPHRASE && env.ADMIN_AUTH_SECRET); }
+function adminIp(request) {
+  return ((request.headers.get("cf-connecting-ip") || request.headers.get("x-real-ip") || "unknown")
+    .replace(/[^a-zA-Z0-9.:_-]/g, "").slice(0, 64)) || "unknown";
+}
+function adminIpMask(ip) {
+  const v6 = String(ip).indexOf(":") >= 0;
+  const parts = String(ip).split(v6 ? ":" : ".");
+  return parts.slice(0, 2).join(v6 ? ":" : ".") + (v6 ? ":••" : ".••");
+}
+function adminHex(bytes) {
+  return Array.from(bytes).map(b => b.toString(16).padStart(2, "0")).join("");
+}
+/* Compare two secrets by their digests. A plain `===` on a guessable secret
+ * leaks its prefix through timing; a compare on SHA-256 digests leaks nothing
+ * about the input, and costs one hash. */
+async function adminEq(a, b) {
+  const x = await teamSha256Hex(String(a));
+  const y = await teamSha256Hex(String(b));
+  return x === y;
+}
+async function adminSig(env, payload) {
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey("raw", enc.encode(env.ADMIN_AUTH_SECRET), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const mac = await crypto.subtle.sign("HMAC", key, enc.encode(payload));
+  let bin = ""; const bytes = new Uint8Array(mac);
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin);
+}
+
+/* Rolling feed of value events, so "what happened today" costs one get. */
+async function adminRecentPush(env, row) {
+  try {
+    let arr = [];
+    try { arr = JSON.parse(await env.KV.get("adm:recent") || "[]"); } catch (e) {}
+    if (!Array.isArray(arr)) arr = [];
+    arr.unshift(Object.assign({ at: Date.now() }, row));
+    await env.KV.put("adm:recent", JSON.stringify(arr.slice(0, ADMIN_RECENT_CAP)));
+  } catch (e) {}
+}
+/* email → codes, so support lookup is O(1) instead of a scan. */
+async function adminEmailIndex(env, email, code) {
+  if (!email || !code) return;
+  try {
+    const key = "adm:em:" + String(email).toLowerCase();
+    let arr = [];
+    try { arr = JSON.parse(await env.KV.get(key) || "[]"); } catch (e) {}
+    if (!Array.isArray(arr)) arr = [];
+    if (arr.indexOf(code) < 0) {
+      arr.unshift(code);
+      await env.KV.put(key, JSON.stringify(arr.slice(0, ADMIN_EMAIL_CODES_CAP)));
+    }
+  } catch (e) {}
+}
+
+async function adminSession(request, env) {
+  if (!adminReady(env)) return null;
+  const h = request.headers.get("authorization") || "";
+  const tok = h.startsWith("Bearer ") ? h.slice(7).trim() : "";
+  const dot = tok.lastIndexOf(".");
+  if (dot < 16 || dot > 80) return null;
+  const sid = tok.slice(0, dot), sig = tok.slice(dot + 1);
+  if (!/^[a-f0-9]{16,64}$/.test(sid)) return null;
+  if (!(await adminEq(sig, await adminSig(env, "ad_" + sid)))) return null; // signature over the sid only
+  const raw = await env.KV.get("adm:sess:" + sid); // revocation is instant because this is never cached
+  if (!raw) return null;
+  let s = null; try { s = JSON.parse(raw); } catch (e) {}
+  const now = Math.floor(Date.now() / 1000);
+  if (!s || Number(s.exp) <= now) return null;
+  if (s.exp - now < ADMIN_SESSION_TTL / 2) { // slide the expiry while it is in use
+    s.exp = now + ADMIN_SESSION_TTL;
+    try { await env.KV.put("adm:sess:" + sid, JSON.stringify(s), { expirationTtl: ADMIN_SESSION_TTL }); } catch (e) {}
+  }
+  s.sid = sid;
+  return s;
+}
+
+async function handleAdminLogin(request, env, cors) {
+  if (!adminReady(env)) return json({ ok: false, error: "admin_disabled" }, cors, 503);
+  const body = await request.json().catch(() => null);
+  const pass = String((body && body.pass) || "").slice(0, 4096);
+  const ip = adminIp(request);
+  const fkey = "adm:fail:" + ip;
+  let fails = 0;
+  try { fails = Number(await env.KV.get(fkey) || "0"); } catch (e) {}
+  if (fails >= ADMIN_FAIL_LIMIT)
+    return json({ ok: false, error: "too many failed attempts — wait 30 minutes", retryInSec: ADMIN_FAIL_WINDOW }, cors, 429);
+  if (!pass || !(await adminEq(pass, env.ADMIN_PASSPHRASE))) {
+    try { await env.KV.incr(fkey, 1, { expirationTtl: ADMIN_FAIL_WINDOW }); } catch (e) {}
+    return json({ ok: false, error: "wrong passphrase" }, cors, 401);
+  }
+  try { await env.KV.delete(fkey); } catch (e) {}
+  const sid = adminHex(crypto.getRandomValues(new Uint8Array(16)));
+  const now = Math.floor(Date.now() / 1000);
+  const sess = { at: now, exp: now + ADMIN_SESSION_TTL, ip: adminIpMask(ip), ua: String(request.headers.get("user-agent") || "").slice(0, 90) };
+  await env.KV.put("adm:sess:" + sid, JSON.stringify(sess), { expirationTtl: ADMIN_SESSION_TTL });
+  try { await env.KV.put("adm:lastlogin", JSON.stringify({ at: Date.now(), ip: adminIpMask(ip) }), { expirationTtl: 400 * 86400 }); } catch (e) {}
+  return json({ ok: true, token: sid + "." + await adminSig(env, "ad_" + sid), expiresInSeconds: ADMIN_SESSION_TTL }, cors);
+}
+
+/* ---------- the read path ---------- */
+async function readCounters(env, date) {
+  const out = {};
+  const vals = await Promise.all(STAT_FIELDS.map(async (f) => {
+    try { return Number(await env.KV.get("stat:" + f + ":" + date) || "0"); } catch (e) { return 0; }
+  }));
+  STAT_FIELDS.forEach((f, i) => { out[f] = Number(vals[i] || 0); });
+  return out;
+}
+function adminWebhookVitals(env) {
+  return (async () => {
+    const v = { lastWebhookMinutesAgo: null, event: null };
+    try {
+      const [ts, raw] = await Promise.all([
+        env.KV.get("debug:last-webhook-ts", { cacheTtl: 60 }),
+        env.KV.get("debug:last-webhook", { cacheTtl: 60 }),
+      ]);
+      if (ts) v.lastWebhookMinutesAgo = Math.round((Date.now() - Number(ts)) / 60000);
+      if (raw) { // never echo the body: it carries the buyer's email and provider ids
+        let j = null; try { j = JSON.parse(raw); } catch (e) {}
+        const d = (j && j.data) || {};
+        v.event = {
+          type: String((j && (j.type || j.event)) || "").slice(0, 40),
+          status: String(d.status || "").slice(0, 20),
+          amount: Number(d.amount && d.amount.value !== undefined ? d.amount.value : d.amount) || null,
+          currency: String(d.currency || "").slice(0, 4),
+          ref: String(d.tx_ref || d.reference || "").slice(0, 40),
+        };
+      }
+    } catch (e) {}
+    return v;
+  })();
+}
+
+/** The expensive rollup: 31 days of counters, the expiry index, the team
+ *  table, the lead list and a drift self-check. Runs in the daily cron and on
+ *  an explicit refresh — never on an ordinary dashboard load. */
+async function buildAdminSnapshot(env) {
+  const now = Date.now();
+  const dayMs = 864e5;
+  const iso = (ms) => new Date(ms).toISOString().slice(0, 10);
+  const days = [];
+  for (let i = 0; i < ADMIN_LEDGER_DAYS; i++) days.push(iso(now - i * dayMs));
+  const counts = await Promise.all(days.map(d => readCounters(env, d)));
+  const series = days.map((d, i) => Object.assign({ date: d }, counts[i])).reverse(); // oldest → newest
+  const totals = {};
+  STAT_FIELDS.forEach(f => { totals[f] = series.reduce((a, x) => a + (x[f] || 0), 0); });
+
+  // Expiry buckets: distinct codes with a future expiry, plus the ≤14-day nudge list.
+  const future = new Set();
+  const expiring = [];
+  const buckets = [];
+  for (let i = 0; i <= ADMIN_EXP_WINDOW; i++) buckets.push(iso(now + i * dayMs));
+  const bucketRaw = await Promise.all(buckets.map(d => env.KV.get("adm:exp:" + d, { cacheTtl: 300 }).catch(() => null)));
+  bucketRaw.forEach((raw, i) => {
+    let arr = []; try { arr = JSON.parse(raw || "[]"); } catch (e) {}
+    if (!Array.isArray(arr)) return;
+    for (const c of arr) {
+      if (typeof c !== "string" || future.has(c)) continue;
+      future.add(c);
+      if (i <= 14) expiring.push({ code: c, expires: buckets[i], daysLeft: i });
+    }
+  });
+  expiring.sort((a, b) => a.daysLeft - b.daysLeft);
+  // The index is advisory; the record is authoritative. Re-read the ones we are
+  // about to show so a stale bucket can never print a wrong name or a revoked
+  // pass as "needs a nudge". Bounded by the same cap as the table itself.
+  const expiringRows = [];
+  {
+    const picked = expiring.slice(0, 60);
+    const live = await Promise.all(picked.map(async (x) => {
+      let r = null; try { r = JSON.parse(await env.KV.get("code:" + x.code, { cacheTtl: 60 }) || "null"); } catch (e) {}
+      return r;
+    }));
+    for (let i = 0; i < picked.length; i++) {
+      const r = live[i];
+      if (!r || r.revoked || r.succ || Number(r.exp) <= now) continue;
+      const daysLeft = Math.ceil((Number(r.exp) - now) / dayMs);
+      if (daysLeft < 0 || daysLeft > 14) continue; // stale bucket entry
+      expiringRows.push({ code: String(r.code), email: String(r.email || ""), expires: iso(r.exp), daysLeft, source: String(r.source || ""), note: String(r.note || "").slice(0, 120), amount: Number(r.amount) || 0 });
+    }
+    expiringRows.sort((a, b) => a.daysLeft - b.daysLeft);
+  }
+
+  // Keys only — no values — so "did the counter family break" costs 3 KV calls.
+  let codesStored = 0, listPage = undefined, pages = 0;
+  do {
+    try {
+      const p = await env.KV.list({ prefix: "code:", cursor: listPage });
+      codesStored += p.keys.length; pages++;
+      listPage = p.list_complete ? undefined : p.cursor;
+    } catch (e) { listPage = undefined; }
+  } while (listPage && pages < 3);
+
+  const teams = [];
+  let teamScanCapped = false;
+  try {
+    const p = await env.KV.list({ prefix: "team:", limit: 1000 });
+    const ids = p.keys.map(k => k.name).filter(n => /^team:[A-Za-z0-9_-]+$/.test(n)).map(n => n.slice(5));
+    teamScanCapped = ids.length > ADMIN_TEAM_CAP;
+    const slice = ids.slice(0, ADMIN_TEAM_CAP);
+    const month = iso(now).slice(0, 7);
+    const rows = await Promise.all(slice.map(async (id) => {
+      let t = null; try { t = JSON.parse(await env.KV.get("team:" + id) || "null"); } catch (e) {}
+      if (!t) return null;
+      let seats = []; try { seats = JSON.parse(await env.KV.get("team:" + id + ":seats") || "[]") || []; } catch (e) {}
+      let used = 0; try { used = Number(await env.KV.get("team:" + id + ":usage:" + month) || "0"); } catch (e) {}
+      let inv = []; try { inv = JSON.parse(await env.KV.get("teaminv:" + id) || "[]") || []; } catch (e) {}
+      const open = inv.filter(x => x && x.status !== "paid").slice(0, 3);
+      return {
+        id, name: String(t.name || "").slice(0, 120), status: String(t.status || ""), plan: String(t.plan || ""),
+        seats: Number(t.seats) || 0, members: Array.isArray(seats) ? seats.length : 0,
+        docs: Number(t.docs) || 0, used, expiry: String(t.expiry || ""), created: String(t.created || "").slice(0, 10),
+        total: Number(t.total) || 0, price: Number(t.price) || 0, segment: String(t.segment || ""),
+        owner: (Array.isArray(seats) && seats.find(x => x && x.role === "owner") || {}).email || "",
+        openInvoices: open.map(x => ({ id: String(x.id || "").slice(0, 40), total: Number(x.total) || 0, status: String(x.status || ""), created: String(x.created || "").slice(0, 10) })),
+      };
+    }));
+    for (const r of rows) if (r) teams.push(r);
+    teams.sort((a, b) => (a.status === "active" ? 0 : 1) - (b.status === "active" ? 0 : 1) || String(b.created).localeCompare(String(a.created)));
+  } catch (e) {}
+
+  const leads = [];
+  let leadTotal = 0;
+  try {
+    const p = await env.KV.list({ prefix: "bizwait:", limit: 1000 });
+    const keys = p.keys.map(k => k.name).filter(n => n.indexOf(":ip:") < 0);
+    leadTotal = keys.length;
+    const rows = await Promise.all(keys.slice(0, ADMIN_LEAD_CAP).map(async (k) => {
+      let j = null; try { j = JSON.parse(await env.KV.get(k) || "null"); } catch (e) {}
+      if (!j || !j.email) return null;
+      return { email: String(j.email).slice(0, 254), company: String(j.company || "").slice(0, 120), segment: String(j.segment || "").slice(0, 40), at: String(j.at || "").slice(0, 24) };
+    }));
+    for (const r of rows) if (r) leads.push(r);
+    leads.sort((a, b) => String(b.at).localeCompare(String(a.at)));
+  } catch (e) {}
+
+  let recent = []; try { recent = JSON.parse(await env.KV.get("adm:recent") || "[]") || []; } catch (e) {}
+  if (!Array.isArray(recent)) recent = [];
+  let lastlogin = null; try { lastlogin = JSON.parse(await env.KV.get("adm:lastlogin") || "null"); } catch (e) {}
+
+  // Self-check: a broken counter family must be visible, not silently optimistic.
+  const drift = { codesStored, counted: totals.sold + totals.manual + totals.offline, suspect: codesStored > totals.sold + totals.manual + totals.offline + 5 };
+
+  const snap = {
+    at: now,
+    series, totals,
+    passes: { stored: codesStored, activeEstimate: future.size, activeBasis: "distinct codes in the expiry index (an upper bound: revoked and renewed codes are only subtracted inside the 14-day verified window)", expiringWindowDays: 14, expiring: expiringRows, expiringTotal: expiring.length, indexOnly: expiring.length - expiringRows.length },
+    teams, teamScanCapped,
+    leads: { total: leadTotal, bySegment: leads.reduce((a, x) => { const k = x.segment || "unspecified"; a[k] = (a[k] || 0) + 1; return a; }, {}), rows: leads.slice(0, 60) },
+    recent: recent.slice(0, 24),
+    lastlogin,
+    drift,
+    windows: { ledgerDays: ADMIN_LEDGER_DAYS, expDays: ADMIN_EXP_WINDOW, scanCap: ADMIN_SCAN_CAP },
+  };
+  try { await env.KV.put("adm:snap", JSON.stringify(snap), { expirationTtl: 7 * 86400 }); } catch (e) {}
+  return snap;
+}
+
+async function handleAdminData(request, env, cors, ctx) {
+  const today = new Date().toISOString().slice(0, 10);
+  const [todayC, ydayC, snapRaw, vitals] = await Promise.all([
+    readCounters(env, today),
+    readCounters(env, new Date(Date.now() - 864e5).toISOString().slice(0, 10)),
+    env.KV.get("adm:snap", { cacheTtl: 60 }).catch(() => null),
+    adminWebhookVitals(env),
+  ]);
+  let snap = null; let snapFresh = false;
+  try { snap = JSON.parse(snapRaw || "null"); } catch (e) { snap = null; }
+  if (!snap) { snap = await buildAdminSnapshot(env); snapFresh = true; } // first run ever: pay it once, inline
+  else if (Date.now() - Number(snap.at || 0) > ADMIN_SNAP_TTL * 1000 && ctx && ctx.waitUntil) {
+    ctx.waitUntil(rebuildThrottled(env)); // stale: answer now, rebuild after the response
+  }
+  let issuedToday = 0;
+  try { issuedToday = Number(await env.KV.get("adm:issue:" + today) || "0"); } catch (e) {}
+  return json({
+    ok: true, now: Date.now(), date: today, priceNGN: PRICE_NGN, currency: "NGN",
+    today: todayC, yesterday: ydayC, issuedByHandToday: issuedToday,
+    snapshot: snap, snapshotAt: Number(snap && snap.at) || null, snapshotJustBuilt: snapFresh,
+    health: vitals,
+    limits: { issuePerDay: ADMIN_ISSUE_CAP },
+  }, cors);
+}
+
+async function rebuildThrottled(env) {
+  try {
+    if (await env.KV.get("adm:snap:lock")) return false;
+    await env.KV.put("adm:snap:lock", String(Date.now()), { expirationTtl: ADMIN_REBUILD_LOCK });
+  } catch (e) { return false; }
+  try { await buildAdminSnapshot(env); } catch (e) {}
+  return true;
+}
+
+async function handleAdminSnapshot(request, env, cors) {
+  let started = false;
+  try {
+    if (!(await env.KV.get("adm:snap:lock"))) {
+      started = true;
+      await env.KV.put("adm:snap:lock", String(Date.now()), { expirationTtl: ADMIN_REBUILD_LOCK });
+    }
+  } catch (e) {}
+  if (!started) return json({ ok: false, error: "a refresh ran in the last 5 minutes", retryInSec: ADMIN_REBUILD_LOCK }, cors, 429);
+  const snap = await buildAdminSnapshot(env);
+  return json({ ok: true, snapshot: snap }, cors);
+}
+
+/* ---------- code lookup ---------- */
+function adminCodeView(rec) {
+  if (!rec) return null;
+  const now = Date.now();
+  return {
+    code: String(rec.code || ""), email: String(rec.email || ""), ref: String(rec.ref || ""),
+    source: String(rec.source || ""), issuedAt: Number(rec.issuedAt) || 0, exp: Number(rec.exp) || 0,
+    active: !!rec.exp && rec.exp > now && !rec.revoked,
+    daysLeft: rec.exp ? Math.ceil((rec.exp - now) / 864e5) : null,
+    devices: Array.isArray(rec.devices) ? rec.devices.length : 0,
+    revoked: !!rec.revoked, mailFailed: !!rec.mailFailed, reminded: !!rec.remindedAt,
+    prev: rec.prev ? String(rec.prev) : "", succ: rec.succ ? String(rec.succ) : "",
+    note: String(rec.note || ""),
+  };
+}
+async function handleAdminCodes(request, url, env, cors) {
+  const q = String(url.searchParams.get("q") || "").trim();
+  const deep = url.searchParams.get("deep") === "1";
+  if (!q) {
+    let snap = null; try { snap = JSON.parse(await env.KV.get("adm:snap", { cacheTtl: 60 }) || "null"); } catch (e) {}
+    return json({ ok: true, mode: "recent", rows: (snap && snap.recent || []).filter(x => x && x.code).map(x => ({ code: String(x.code), email: String(x.email || ""), at: Number(x.at) || 0, source: String(x.kind || x.source || "") })) }, cors);
+  }
+  const norm = normalizeCode(q.toUpperCase().replace(/[\s-]/g, ""));
+  const direct = [];
+  for (const key of ["code:" + norm, "code:" + norm.replace(/-/g, "")]) {
+    let rec = null; try { rec = JSON.parse(await env.KV.get(key) || "null"); } catch (e) {}
+    if (rec) { direct.push(rec); break; }
+  }
+  if (!direct.length) {
+    let byRef = null;
+    try { byRef = await env.KV.get("ref:" + q); } catch (e) {}
+    if (byRef) {
+      try { const r = JSON.parse(await env.KV.get("code:" + byRef) || "null"); if (r) direct.push(r); } catch (e) {}
+    }
+  }
+  if (direct.length) return json({ ok: true, mode: "exact", rows: direct.map(adminCodeView) }, cors);
+  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(q)) { // email index: 1 get + one per code, capped
+    let codes = [];
+    try { codes = JSON.parse(await env.KV.get("adm:em:" + q.toLowerCase()) || "[]") || []; } catch (e) {}
+    if (!Array.isArray(codes)) codes = [];
+    const rows = await Promise.all(codes.slice(0, ADMIN_EMAIL_CODES_CAP).map(async (c) => {
+      try { return adminCodeView(JSON.parse(await env.KV.get("code:" + c) || "null")); } catch (e) { return null; }
+    }));
+    return json({ ok: true, mode: "email", rows: rows.filter(Boolean) }, cors);
+  }
+  if (!deep) return json({ ok: false, error: "paste a full OGA-code, a payment reference or an email — or ask for a bounded scan with deep=1" }, cors, 400);
+  // Bounded scan: one list page, get until the budget is spent, cap the hits.
+  let listed = [];
+  try { const p = await env.KV.list({ prefix: "code:", limit: 1000 }); listed = p.keys.map(k => k.name); } catch (e) {}
+  const needle = q.toLowerCase();
+  const out = []; let scanned = 0; let partial = listed.length === 0;
+  for (let i = 0; i < listed.length && out.length < 50 && scanned < ADMIN_SCAN_CAP; i += 8) {
+    const chunk = listed.slice(i, i + 8);
+    const got = await Promise.all(chunk.map(async (k) => {
+      try { return JSON.parse(await env.KV.get(k, { cacheTtl: 60 }) || "null"); } catch (e) { return null; }
+    }));
+    scanned += chunk.length;
+    for (const r of got) {
+      if (!r) continue;
+      const hay = (String(r.code || "") + " " + String(r.email || "") + " " + String(r.ref || "") + " " + String(r.note || "")).toLowerCase();
+      if (hay.indexOf(needle) >= 0) out.push(adminCodeView(r));
+      if (out.length >= 50) break;
+    }
+  }
+  if (scanned < listed.length) partial = true;
+  out.sort((a, b) => b.issuedAt - a.issuedAt);
+  return json({ ok: true, mode: "deep", scanned, partial, rows: out }, cors);
+}
+
+/* ---------- the write paths (money, by hand) ---------- */
+async function handleAdminIssue(request, env, cors) {
+  const body = await request.json().catch(() => null);
+  if (!body) return json({ ok: false, error: "json body required" }, cors, 400);
+  const email = String(body.email || "").trim().slice(0, 254).toLowerCase();
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json({ ok: false, error: "that email is not valid — leave it blank to skip the email" }, cors, 400);
+  const days = Math.min(Math.max(Number(body.days) || 30, 1), 365);
+  const amount = Math.min(Math.max(Number(body.amount) || 0, 0), 10000000);
+  const note = String(body.note || "").trim().slice(0, 120);
+  const today = new Date().toISOString().slice(0, 10);
+  let issued = 0;
+  try { issued = Number(await env.KV.get("adm:issue:" + today) || "0"); } catch (e) {}
+  if (issued >= ADMIN_ISSUE_CAP) return json({ ok: false, error: "daily issue cap reached (" + ADMIN_ISSUE_CAP + ") — check the ledger before minting more" }, cors, 429);
+  const ref = "MANUAL-" + adminHex(crypto.getRandomValues(new Uint8Array(5))).toUpperCase();
+  const code = await issueCode(env, { email, ref, source: "manual", days, note, amount });
+  try { await env.KV.incr("adm:issue:" + today, 1, { expirationTtl: 400 * 86400 }); } catch (e) {}
+  let rec = null; try { rec = JSON.parse(await env.KV.get("code:" + code) || "null"); } catch (e) {}
+  return json({ ok: true, code, days, amount, exp: rec && rec.exp, mailFailed: !!(rec && rec.mailFailed), mailed: !!email && !(rec && rec.mailFailed) }, cors);
+}
+
+async function loadAdminCode(env, raw) {
+  const cleaned = String(raw || "").toUpperCase().replace(/[\s-]/g, "");
+  if (!cleaned) return null;
+  const key = normalizeCode(cleaned);
+  for (const cand of [key, key.replace(/-/g, ""), cleaned]) { // a pasted code may have any dash/space shape
+    if (!cand) continue;
+    let rec = null;
+    try { rec = JSON.parse(await env.KV.get("code:" + cand) || "null"); } catch (e) { rec = null; }
+    if (rec) return rec;
+  }
+  return null;
+}
+async function saveAdminCode(env, rec) {
+  try { await env.KV.put("code:" + rec.code, JSON.stringify(rec)); } catch (e) {}
+  await expIndexAdd(env, rec.code, rec.exp);
+}
+async function handleAdminRevoke(request, env, cors) {
+  const body = await request.json().catch(() => null);
+  const rec = await loadAdminCode(env, body && body.code);
+  if (!rec) return json({ ok: false, error: "code not found" }, cors, 404);
+  if (rec.revoked) return json({ ok: true, alreadyRevoked: true, code: rec.code }, cors);
+  rec.revoked = true; rec.revokedAt = Date.now(); rec.exp = Date.now() - 1000;
+  await saveAdminCode(env, rec);
+  await statBump(env, "revoked");
+  await adminRecentPush(env, { kind: "revoke", code: rec.code, email: rec.email || "" });
+  return json({ ok: true, code: rec.code }, cors);
+}
+async function handleAdminExtend(request, env, cors) {
+  const body = await request.json().catch(() => null);
+  const rec = await loadAdminCode(env, body && body.code);
+  if (!rec) return json({ ok: false, error: "code not found" }, cors, 404);
+  const days = Math.min(Math.max(Number(body && body.days) || 0, 1), 365);
+  const wasRevoked = !!rec.revoked;
+  // A revoked pass had its expiry forced into the past: restoring it restarts
+  // the clock from today instead of resurrecting the dead date. Anything else
+  // stacks on top of whatever is left, so an early top-up never loses days.
+  rec.exp = (wasRevoked ? Date.now() : Math.max(Number(rec.exp) || 0, Date.now())) + days * 864e5;
+  rec.remindedAt = 0;          // let the renewal reminder fire again for the new date
+  if (wasRevoked) rec.revoked = false;
+  await saveAdminCode(env, rec);
+  await adminRecentPush(env, { kind: "extend", code: rec.code, email: rec.email || "", days });
+  return json({ ok: true, code: rec.code, exp: rec.exp, unrevoked: wasRevoked }, cors);
+}
+async function handleAdminResend(request, env, cors) {
+  const body = await request.json().catch(() => null);
+  const rec = await loadAdminCode(env, body && body.code);
+  if (!rec) return json({ ok: false, error: "code not found" }, cors, 404);
+  if (!rec.email) return json({ ok: false, error: "no email on this purchase — nothing to resend" }, cors, 400);
+  try {
+    await emailCode(env, rec.email, rec.code);
+    delete rec.mailFailed;
+    try { await env.KV.put("code:" + rec.code, JSON.stringify(rec)); } catch (e) {}
+  } catch (e) {
+    console.error(`[docoga-mail] admin_resend_not_accepted reason=${safeMailFailureReason(e)}`);
+    return json({ ok: false, error: "the mail provider did not accept it — try again, or send the code by hand" }, cors, 502);
+  }
+  return json({ ok: true, sent: true }, cors);
+}
+
+/* ---------- session hygiene ---------- */
+async function handleAdminSessions(request, env, cors, sid) {
+  let rows = [];
+  try {
+    const p = await env.KV.list({ prefix: "adm:sess:", limit: 100 });
+    const keys = p.keys.map(k => k.name);
+    const got = await Promise.all(keys.map(async (k) => {
+      let s = null; try { s = JSON.parse(await env.KV.get(k) || "null"); } catch (e) {}
+      return s ? { sid: k.slice(9), at: Number(s.at) || 0, exp: Number(s.exp) || 0, ip: String(s.ip || ""), ua: String(s.ua || "") } : null;
+    }));
+    rows = got.filter(Boolean).sort((a, b) => b.at - a.at);
+  } catch (e) {}
+  return json({ ok: true, rows, current: sid, sessionTtlSeconds: ADMIN_SESSION_TTL }, cors);
+}
+async function handleAdminSessionKill(request, env, cors, sid) {
+  const body = await request.json().catch(() => null);
+  const all = !!(body && body.all);
+  let killed = 0;
+  if (all) {
+    try {
+      const p = await env.KV.list({ prefix: "adm:sess:", limit: 200 });
+      for (const k of p.keys.map(x => x.name)) {
+        if (k === "adm:sess:" + sid) continue;
+        try { await env.KV.delete(k); killed++; } catch (e) {}
+      }
+    } catch (e) {}
+    return json({ ok: true, killed }, cors);
+  }
+  const target = String((body && body.sid) || sid);
+  if (!/^[a-f0-9]{16,64}$/.test(target)) return json({ ok: false, error: "unknown session" }, cors, 400);
+  try { await env.KV.delete("adm:sess:" + target); } catch (e) {}
+  return json({ ok: true, killed: 1, self: target === sid }, cors);
+}
+
 /* ---------- router ---------- */
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
+    ctx = ctx || {};
     const url = new URL(request.url);
     const cors = {
       "Access-Control-Allow-Origin": "*",
@@ -1523,6 +2148,14 @@ export default {
       "Access-Control-Allow-Methods": "GET,POST,PUT,OPTIONS",
     };
     if (request.method === "OPTIONS") return new Response(null, { headers: cors });
+    /* Admin answers carry customer emails and revenue: never cacheable, and never
+     * embeddable in someone else's frame (the dashboard is Bearer-driven, so no
+     * cookie and no CSRF — this header only closes the click-jacking door). */
+    if (url.pathname.indexOf("/admin/") === 0) {
+      cors["Cache-Control"] = "no-store";
+      cors["X-Frame-Options"] = "DENY";
+      cors["Referrer-Policy"] = "no-referrer";
+    }
 
     /* Public brand assets (served from KV — works even while the site CDN is behind) */
     if (url.pathname === "/assets/email-banner.jpg") {
@@ -1557,6 +2190,29 @@ export default {
         const parts = url.pathname.split("/");
         if (parts.length === 4) return await handleBusinessInvoice(decodeURIComponent(parts[3]), request, env, cors);
       }
+      /* ---- owner dashboard (fail-closed; see ADMIN_DASHBOARD.md) ---- */
+      if (url.pathname.indexOf("/admin/") === 0) {
+        if (!adminReady(env)) return json({ ok: false, error: "admin_disabled" }, cors, 503);
+        if (url.pathname === "/admin/login" && request.method === "POST") return await handleAdminLogin(request, env, cors);
+        const a = await adminSession(request, env);
+        if (!a) return json({ ok: false, error: "sign_in_required" }, cors, 401);
+        if (url.pathname === "/admin/logout" && request.method === "POST") {
+          try { await env.KV.delete("adm:sess:" + a.sid); } catch (e) {}
+          return json({ ok: true }, cors);
+        }
+        if (url.pathname === "/admin/me" && request.method === "GET")
+          return json({ ok: true, at: a.at, exp: a.exp, ip: a.ip, ua: a.ua }, cors);
+        if (url.pathname === "/admin/data" && request.method === "GET") return await handleAdminData(request, env, cors, ctx);
+        if (url.pathname === "/admin/snapshot" && request.method === "POST") return await handleAdminSnapshot(request, env, cors);
+        if (url.pathname === "/admin/codes" && request.method === "GET") return await handleAdminCodes(request, url, env, cors);
+        if (url.pathname === "/admin/issue" && request.method === "POST") return await handleAdminIssue(request, env, cors);
+        if (url.pathname === "/admin/resend" && request.method === "POST") return await handleAdminResend(request, env, cors);
+        if (url.pathname === "/admin/revoke" && request.method === "POST") return await handleAdminRevoke(request, env, cors);
+        if (url.pathname === "/admin/extend" && request.method === "POST") return await handleAdminExtend(request, env, cors);
+        if (url.pathname === "/admin/sessions" && request.method === "GET") return await handleAdminSessions(request, env, cors, a.sid);
+        if (url.pathname === "/admin/session" && request.method === "POST") return await handleAdminSessionKill(request, env, cors, a.sid);
+        return json({ ok: false, error: "not found" }, cors, 404);
+      }
       return json({ ok: false, error: "not found" }, cors, 404);
     } catch (e) {
       return json({ ok: false, error: String((e && e.message) || e) }, cors, 500);
@@ -1566,6 +2222,10 @@ export default {
     ctx.waitUntil((async () => {
       try { await dailyRenewalReminders(env); } catch (e) {}
       try { await dailyBusinessRenewals(env); } catch (e) {}
+      // Owner dashboard rollup, last so it counts whatever the sweeps just did.
+      // Fail-closed by construction: with no admin secrets set this skips the
+      // work entirely instead of writing a snapshot nobody may read.
+      try { if (adminReady(env)) await buildAdminSnapshot(env); } catch (e) {}
     })());
   },
 };

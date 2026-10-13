@@ -22,7 +22,9 @@ from telegram_mdv2 import escape, validate  # noqa: E402
 # ===== CONFIG =====
 ASSETS_DIR = Path("assets/telegram")
 ASSETS_DIR.mkdir(parents=True, exist_ok=True)
-LOG_FILE = Path("logs/social_media.log")
+import docoga_log  # noqa: E402  one answer for "where do the scratch files live"
+
+LOG_FILE = docoga_log.log_file("social_media.log")
 LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
 BRAND_DIR = Path("brand")
 

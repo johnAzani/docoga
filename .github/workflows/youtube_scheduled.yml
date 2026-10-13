@@ -25,6 +25,14 @@ on:
           - public
           - unlisted
           - private
+      probe_only:
+        description: 'Diagnose credentials, channel identity and the last upload, then stop — nothing is rendered or uploaded'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
       force:
         description: 'Publish even if the ledger already has this title within the duplicate window'
         required: false
@@ -40,8 +48,44 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # A separate job rather than a condition on every step, so a diagnosis run cannot reach the
+  # render or the upload by accident and so the step-level guards stay readable.
+  probe:
+    name: Diagnose the YouTube lane
+    if: github.event.inputs.probe_only == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install the upload dependency
+        run: python -m pip install --quiet "requests>=2.31,<3"
+      - name: Probe credentials, channel and last upload
+        env:
+          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+          YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+          YT_CHANNEL_ID: ${{ vars.YT_CHANNEL_ID }}
+        run: |
+          set -o pipefail
+          python3 tools/yt_publish.py --probe 2>&1 | tee /tmp/yt_probe.log
+          {
+            echo "## YouTube lane probe — $(date -u +%FT%TZ)"
+            echo
+            echo '```'
+            cat /tmp/yt_probe.log
+            echo '```'
+            echo
+            echo 'Nothing was rendered, uploaded or recorded by this run.' >> "$GITHUB_STEP_SUMMARY"
+          } >> "$GITHUB_STEP_SUMMARY"
+
   generate-and-publish:
     name: Generate and publish one Short
+    if: github.event.inputs.probe_only != 'true' || github.event_name == 'schedule'
+
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -65,9 +109,15 @@ jobs:
 
       - name: Resolve the settings for this run
         id: settings
+        env:
+          # `PRIVACY="${{ inputs.privacy }}"` would substitute first and expand
+          # `$(…)` afterwards, inside the quotes. env: keeps the value out of the
+          # command line entirely.
+          IN_PRIVACY: ${{ inputs.privacy }}
+          IN_YT_PRIVACY: ${{ vars.YT_PRIVACY }}
         run: |
-          PRIVACY="${{ inputs.privacy }}"
-          [ -n "$PRIVACY" ] || PRIVACY="${{ vars.YT_PRIVACY }}"
+          PRIVACY="$IN_PRIVACY"
+          [ -n "$PRIVACY" ] || PRIVACY="$IN_YT_PRIVACY"
           [ -n "$PRIVACY" ] || PRIVACY="public"
           case "$PRIVACY" in
             public|unlisted|private) ;;
@@ -106,7 +156,11 @@ jobs:
               exit 1
             fi
             echo "All three YouTube secrets are present."
-            python3 tools/yt_publish.py --check-token
+            # --probe, not --check-token: a token that mints is not a token that uploads to the
+            # channel you think it does. This costs 1 quota unit of the 10,000 a day and puts the
+            # channel name in every run log, which is the whole reason the Telegram lane's
+            # six-day outage was misread as a permissions problem.
+            python3 tools/yt_publish.py --probe
           } 2>&1 | tee /tmp/yt_preflight.log
 
       - name: Generate today's Short
@@ -145,42 +199,72 @@ jobs:
           YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
           YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
           YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+          YT_CHANNEL_ID: ${{ vars.YT_CHANNEL_ID }}
           VIDEO_PATH: ${{ steps.short.outputs.video_path }}
           VIDEO_TITLE: ${{ steps.short.outputs.title }}
           VIDEO_DESCRIPTION: ${{ steps.short.outputs.description }}
           VIDEO_TAGS: ${{ steps.short.outputs.tags }}
           PRIVACY: ${{ steps.settings.outputs.privacy }}
         run: |
+          # The uploader exits 2 for "a human with a browser must fix this" and 1 for "the code
+          # or the network failed". Both are red here, but only one is a Google-account
+          # conversation, so the run keeps the code and the reason and hands them to the summary
+          # and the issue steps below.
           set -o pipefail
+          set +e
           python3 tools/yt_publish.py \
             --video "$VIDEO_PATH" \
             --title "$VIDEO_TITLE" \
             --description "$VIDEO_DESCRIPTION" \
             --tags "$VIDEO_TAGS" \
-            --privacy "$PRIVACY" | tee /tmp/yt_upload.log
-          VIDEO_ID=$(sed -n 's/^VIDEO_ID=//p' /tmp/yt_upload.log | tail -1)
+            --privacy "$PRIVACY" 2>&1 | tee /tmp/yt_upload.log
+          code=${PIPESTATUS[0]}
+          set -e
+          marker() { sed -n "s/^$1=//p" /tmp/yt_upload.log | tail -1; }
+          VIDEO_ID=$(marker VIDEO_ID)
+          RESULT=$(marker YT_UPLOAD_RESULT)
+          PRIVACY_SEEN=$(marker YT_PRIVACY)
+          STATE=$(marker YT_UPLOAD_STATE)
+          NOTE=$(marker YT_NOTE)
+          FAIL_KIND=$(marker YT_FAIL_KIND)
+          FAIL_REASON=$(marker YT_FAIL_REASON)
           if [ -z "$VIDEO_ID" ]; then
-            echo "::error title=No video id::yt_publish.py exited 0 without printing VIDEO_ID — refusing to record a publish that cannot be verified."
-            exit 1
+            echo "::error title=No video id::yt_publish.py exited $code without printing VIDEO_ID — refusing to record a publish that cannot be verified. If the bytes did reach Google, a re-run may put a second copy on the channel, so read the channel before retrying."
+            exit "${code:-1}"
           fi
           {
             echo "video_id=$VIDEO_ID"
-            echo "video_url=https://youtube.com/watch?v=$VIDEO_ID"
+            echo "video_url=https://www.youtube.com/watch?v=$VIDEO_ID"
+            echo "result=${RESULT:-uploaded}"
+            echo "privacy_seen=${PRIVACY_SEEN:-unknown}"
+            echo "upload_state=${STATE:-unknown}"
+            echo "fail_kind=${FAIL_KIND:-none}"
+            echo "fail_reason=${FAIL_REASON:-none}"
+            echo "note=${NOTE:-}"
             echo "size_bytes=$(stat -c%s "$VIDEO_PATH")"
           } >> "$GITHUB_OUTPUT"
-
+          if [ "$code" -ne 0 ]; then
+            echo "::error title=YouTube named the cause (exit $code)::$(grep -m1 -A1 'kind=' /tmp/yt_upload.log | tr '\n' ' ' || true)"
+          fi
+          exit "$code"
+      # always(), plus "there is a video id": a Short YouTube stored as private is still a Short
+      # on the channel, and an id that goes unrecorded is an id a re-run will publish twice.
       - name: Record the publish in the ledger
-        if: steps.guard.outputs.skip != 'yes'
+        if: always() && steps.guard.outputs.skip != 'yes' && steps.upload.outputs.video_id != ''
         env:
           VIDEO_TITLE: ${{ steps.short.outputs.title }}
           VIDEO_TOPIC: ${{ steps.short.outputs.topic }}
           VIDEO_ID: ${{ steps.upload.outputs.video_id }}
           VIDEO_URL: ${{ steps.upload.outputs.video_url }}
           SIZE_BYTES: ${{ steps.upload.outputs.size_bytes }}
-          PRIVACY: ${{ steps.settings.outputs.privacy }}
+          PRIVACY: ${{ steps.upload.outputs.privacy_seen || steps.settings.outputs.privacy }}
+          STATE: ${{ steps.upload.outputs.result }}
+          NOTE: ${{ steps.upload.outputs.note }}
           RUN_DATE: ${{ steps.settings.outputs.run_date }}
         run: |
           python3 tools/youtube_ledger.py record \
+            --state "${STATE:-uploaded}" \
+            --note "${NOTE:-}" \
             --title "$VIDEO_TITLE" \
             --topic "$VIDEO_TOPIC" \
             --video-id "$VIDEO_ID" \
@@ -210,7 +294,7 @@ jobs:
             echo "Ledger unchanged — nothing to commit."
             exit 0
           fi
-          git commit -m "Auto: record YouTube Short published $RUN_DATE"
+          git commit -m "Auto: record YouTube Short published $RUN_DATE [skip ci]"
           if ! git push origin "HEAD:$BRANCH"; then
             echo "::warning title=Ledger not pushed::the Short is published but the ledger entry did not reach $BRANCH — a re-run could publish it again."
             exit 1
@@ -226,6 +310,10 @@ jobs:
           VIDEO_PATH: ${{ steps.short.outputs.video_path }}
           VIDEO_URL: ${{ steps.upload.outputs.video_url }}
           VIDEO_ID: ${{ steps.upload.outputs.video_id }}
+          RESULT: ${{ steps.upload.outputs.result }}
+          PRIVACY_SEEN: ${{ steps.upload.outputs.privacy_seen }}
+          UPLOAD_STATE: ${{ steps.upload.outputs.upload_state }}
+          NOTE: ${{ steps.upload.outputs.note }}
           SKIP: ${{ steps.guard.outputs.skip }}
         run: |
           RUN_DATE="${RUN_DATE:-$(date +%F)}"
@@ -240,13 +328,22 @@ jobs:
             if [ "$SKIP" = "yes" ]; then
               echo "| Result | ⏭️ Skipped — this title is already in the publish ledger |"
             elif [ -n "$VIDEO_ID" ]; then
-              echo "| Result | ✅ Published |"
+              # "Published" is reserved for what the read-back confirmed. A run that prints a tick
+              # for a video sitting private on the channel is how a lane stays green and an
+              # audience stays empty.
+              if [ "$RESULT" = "published" ]; then
+                echo "| Result | ✅ Published (public) |"
+              else
+                echo "| Result | ⚠️ On the channel as \`$RESULT\` — privacy \`$PRIVACY_SEEN\`, uploadStatus \`$UPLOAD_STATE\` |"
+                [ -n "$NOTE" ] && echo "| Why | $NOTE |"
+              fi
               echo "| Link | $VIDEO_URL |"
               echo "| Size | $(stat -c%s "$VIDEO_PATH" 2>/dev/null || echo '?') bytes |"
             else
               echo "| Result | ❌ Failed — see the failing step above |"
             fi
             echo "| Ledger | \`logs/youtube_published.json\` |"
+            echo "| Diagnosis | dispatch this workflow with \`probe_only=true\` to re-check credentials without uploading |"
           } >> "$GITHUB_STEP_SUMMARY"
 
       # A red run in a repo nobody opens is the same as silence. This makes the
@@ -258,54 +355,100 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           RUN_DATE: ${{ steps.settings.outputs.run_date }}
           TITLE: ${{ steps.short.outputs.title }}
+          VIDEO_ID: ${{ steps.upload.outputs.video_id }}
+          VIDEO_URL: ${{ steps.upload.outputs.video_url }}
+          RESULT: ${{ steps.upload.outputs.result }}
+          PRIVACY_SEEN: ${{ steps.upload.outputs.privacy_seen }}
+          FAIL_KIND: ${{ steps.upload.outputs.fail_kind }}
+          FAIL_REASON: ${{ steps.upload.outputs.fail_reason }}
+          NOTE: ${{ steps.upload.outputs.note }}
         run: |
           RUN_DATE="${RUN_DATE:-$(date +%F)}"
+          # A hedge in the first line of a failure issue is a morning wasted checking the channel
+          # by hand. The uploader prints an id only for bytes Google accepted, so the id decides
+          # what the issue says — and "re-run it" is only safe advice when nothing was uploaded.
+          if [ -n "$VIDEO_ID" ]; then
+            STATE_LINE="**A video exists**: $VIDEO_URL — reported state \`$RESULT\`, privacy \`$PRIVACY_SEEN\`. Do NOT re-run before deciding, or the channel gets a second copy."
+          else
+            STATE_LINE="**Nothing was published by this run** — no video id came back, so a re-run is safe."
+          fi
           gh label create youtube-automation --color FF5A5F \
             --description "Unattended YouTube Shorts pipeline" >/dev/null 2>&1 || true
           cat > /tmp/issue_body.md <<BODY
-          The unattended Shorts run for **$RUN_DATE** failed. **Nothing may have been published.**
+          The unattended Shorts run for **$RUN_DATE** failed.
 
           - Run: $RUN_URL
           - Intended title: ${TITLE:-unknown — the render may not have run}
+          - $STATE_LINE
+          - Cause named by the uploader: \`${FAIL_KIND:-unknown}/${FAIL_REASON:-unknown}\`${NOTE:+ — $NOTE}
 
-          ### What the credential preflight said
+          ### What the credential probe said
+
+          The probe runs on every scheduled run (1 quota unit) and names the channel the token
+          actually authorises, so "wrong account" and "wrong secret" are never confused again.
 
           \`\`\`
-          $(if [ -f /tmp/yt_preflight.log ]; then tail -n 20 /tmp/yt_preflight.log; else echo "(no preflight log — see the run)"; fi)
+          $(if [ -f /tmp/yt_preflight.log ]; then tail -n 25 /tmp/yt_preflight.log; else echo "(no preflight log — see the run)"; fi)
           \`\`\`
 
           ### What the uploader said
 
           \`\`\`
-          $(if [ -f /tmp/yt_upload.log ]; then tail -n 25 /tmp/yt_upload.log; else echo "(the uploader never ran — the preflight stopped this run)"; fi)
+          $(if [ -f /tmp/yt_upload.log ]; then tail -n 40 /tmp/yt_upload.log; else echo "(the uploader never ran — the preflight stopped this run)"; fi)
           \`\`\`
 
           ### Reading it
 
-          - **\`invalid_client\` / "The OAuth client was not found"** — the OAuth *client*
-            no longer exists in the Google Cloud project (this is what failed the 9 Oct
-            run). Re-create the client, then replace \`YT_CLIENT_ID\`, \`YT_CLIENT_SECRET\`
-            **and** \`YT_REFRESH_TOKEN\` together: a re-issued refresh token alone cannot
-            help while the client id points at a deleted client.
-          - **\`invalid_grant\`** — the refresh token was revoked or expired. Re-run the
-            one-time OAuth flow and update \`YT_REFRESH_TOKEN\`.
-          - **Secrets missing** — one of the three is absent; the preflight names it
-            before anything is rendered.
-          - **\`403\` / \`quotaExceeded\`** — the daily Data API quota is spent; the next
-            scheduled run is unaffected.
-          - **A successful upload that is not public** — Google may hold API uploads
-            private until the Cloud project passes verification. Check the video's
-            actual privacy on the channel, not this job's status.
+          The log line above already carries a \`fix:\` sentence; this is the table it is built
+          from (\`tools/yt_publish.py\`, \`REASONS\`).
 
-          The channel's own history is the ledger: \`logs/youtube_published.json\`.
+          | kind | what it means | the repair |
+          |---|---|---|
+          | \`credentials\` | the refresh token or the client is dead | Re-run the consent flow, then update \`YT_REFRESH_TOKEN\`. **If the OAuth consent screen is still "In testing", Google expires refresh tokens after 7 days** — publish the app to Production, or add this Google account as a test user, or it dies again next week. \`invalid_client\` means the client itself was deleted: recreate it and replace all three secrets together. |
+          | \`quota\` | the project or channel hit an upload cap | \`videos.insert\` costs 1 unit of a 100-a-day Video Uploads bucket, so this lane alone (2 uploads a week) cannot spend it — look for another user of the same client, then request more quota. |
+          | \`forbidden\` | YouTube refuses this channel | Check for a strike, a suspended status, or a channel without a verified phone number. |
+          | \`state\` | the upload landed but is not public | YouTube stored it as \`$PRIVACY_SEEN\` although the run asked for the configured privacy. Usually the channel's "uploads default to private" setting: publish that video by hand once, or set \`YT_PRIVACY=unlisted\` and let the lane keep working. |
+          | \`metadata\` | a template produced something Google rejects | The \`fix:\` line names the field. Titles over 100 characters and tags over 500 combined are already clamped in the uploader, so a 400 here is something else. |
+          | \`transport\` | the request never completed | Safe to re-run: no id means no video. A pattern here is the runner's network or Google's edge, not this code. |
+
+          Two claims this template used to make and no longer does: unverified API projects do
+          **not** have their uploads forced private (Google's \`videos.insert\` page says so
+          explicitly), and "roughly six uploads a day" is stale arithmetic from an old 1,600-unit
+          quota cost that \`videos.insert\` no longer charges.
+
+          The channel's own history is the ledger: \`logs/youtube_published.json\`. To re-check the
+          credentials without uploading anything:
+
+          \`\`\`
+          gh workflow run youtube_scheduled.yml -f probe_only=true
+          \`\`\`
+
+          To publish over a duplicate once the cause is fixed:
+
+          \`\`\`
+          gh workflow run youtube_scheduled.yml -f force=true
+          \`\`\`
           BODY
-          EXISTING=$(gh issue list --label youtube-automation --state open --limit 100 \
-            --json number,title \
-            --jq "[.[] | select(.title | contains(\$ENV.RUN_DATE)) | .number][0] // empty")
+          # This lane used to file a fresh issue on every failed run, which on a Tuesday-and-
+          # Friday schedule is 8 issues a month for one un-published OAuth consent screen. The
+          # uploader already classifies every failure into a `kind`, so the kind is the title's
+          # tag and the dedupe key: one open issue per cause, each later failure a comment on it
+          # with its own run link. `credentials` is the case that needs a browser, and the title
+          # says so before the inbox does.
+          CAUSE="${FAIL_KIND:-run}"
+          [ "$CAUSE" = none ] && CAUSE=run
+
+          # Newest match wins (`max`), so the untagged `#12` from 9 Oct absorbs today's comment
+          # only until a tagged issue exists — then that one does, and the old pair stops growing.
+          EXISTING=$(CAUSE_TAG="[$CAUSE]" LEGACY_PREFIX="YouTube Shorts publish failed — " \
+            gh issue list --label youtube-automation --state open --limit 100 --json number,title \
+            --jq "[.[] | select((.title | contains(\$ENV.CAUSE_TAG)) or ((.title | contains(\$ENV.LEGACY_PREFIX)) and (.title | contains(\"[\") | not))) | .number] | max // empty")
           if [ -n "$EXISTING" ]; then
-            gh issue comment "$EXISTING" --body-file /tmp/issue_body.md
-            echo "Commented on issue #$EXISTING"
+            gh issue comment "$EXISTING" --body-file /tmp/issue_body.md || true
+            echo "Same cause as issue #$EXISTING — commented instead of filing a second one"
           else
-            gh issue create --title "YouTube Shorts publish failed — $RUN_DATE" \
-              --label youtube-automation --body-file /tmp/issue_body.md
+            gh issue create --repo "$GITHUB_REPOSITORY" \
+              --title "YouTube Shorts publish failed — $RUN_DATE [$CAUSE]" \
+              --body-file /tmp/issue_body.md \
+              --label youtube-automation || echo "::warning title=Issue not created::could not open the failure issue; the run log still has the cause"
           fi

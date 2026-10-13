@@ -1,0 +1,196 @@
+name: Automation Heartbeat
+
+# Not a publisher. A monitor for the publishers.
+#
+# Every lane now files its own issue when a run *fails*. What nothing covered was
+# the lane that stops failing and simply stops: a schedule edited away, a workflow
+# GitHub disabled for inactivity, a pipeline that ran twice and never succeeded.
+# No run, no failure, no notification — which is how "Facebook is live" survived
+# two weeks at zero runs and how Telegram sat red for six consecutive mornings.
+#
+# The expectations are read from `.github/workflows/*.yml` in this checkout, so there
+# is no monitoring config to fall out of sync with the schedules. Cadence is measured
+# by enumerating the workflow's own fire times over 60 days — all `cron:` entries of a
+# file together, because GitHub treats them as one alternative set — and taking the
+# largest gap between consecutive fires. The silence deadline is
+# `2 × gap + min(12 h, one cycle)`. The 12 hours is not slack for laziness:
+# GitHub delivers `schedule` events late under load, and this repo's own history has
+# a "daily 08:30 UTC" Telegram run landing at 17:31, 14:45 and 14:19 UTC on three
+# consecutive days. Judging by wall clock instead of by age-since-last-success is how
+# a monitor learns to be ignored.
+#
+# Colour rule (the one thing that makes this livable): the verdicts are hashed into a
+# signature, and the run goes **red — one email — only when the set of broken lanes
+# changes**. A lane that stays broken gets a comment on the same issue each day and a
+# green tick. See tools/automation_heartbeat.py.
+
+on:
+  schedule:
+    # 19:00 in Lagos — after today's 08:00/08:30 UTC lanes and after Tue/Fri's
+    # 17:00 UTC Shorts run, so "nothing arrived today" is judged at the end of the
+    # day rather than the start. It is also after GitHub's measured scheduler delay
+    # has had time to stop looking like a missing run.
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Report only — no issue filed, no red run'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  actions: read     # the entire trick: read this repo's own run history
+  issues: write     # one tracked issue, updated rather than duplicated
+
+# A publisher must never be cancelled mid-publish. A monitor has no side effects,
+# so here `cancel-in-progress: true` is the right way round: two overlapping
+# judgements of the same state would only produce the same numbers twice.
+concurrency:
+  group: automation-heartbeat
+  cancel-in-progress: true
+
+env:
+  TZ: Africa/Lagos
+
+jobs:
+  heartbeat:
+    name: Judge every scheduled lane
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # PyYAML and nothing else: reading the schedules is the whole job, and every
+      # HTTP call is urllib so there is no dependency to install before a verdict.
+      - name: Install dependencies
+        run: python3 -m pip install --quiet pyyaml
+
+      # continue-on-error because the tool's exit code is a *finding*, not the
+      # job's verdict: the next step decides whether today's findings are news.
+      - name: Judge the lanes
+        id: judge
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          REF_NAME: ${{ github.ref_name }}
+          JITTER_HOURS: ${{ vars.HEARTBEAT_JITTER_HOURS }}
+          MISSES: ${{ vars.HEARTBEAT_MISSES }}
+        run: |
+          set -uo pipefail
+          EXTRA=()
+          [ -n "${JITTER_HOURS:-}" ] && EXTRA+=(--jitter-hours "$JITTER_HOURS")
+          [ -n "${MISSES:-}" ]       && EXTRA+=(--misses "$MISSES")
+          python3 tools/automation_heartbeat.py \
+            --repo "$REPOSITORY" \
+            --branch "${DEFAULT_BRANCH:-main}" \
+            --ref "$REF_NAME" \
+            --out /tmp/heartbeat.json \
+            --markdown /tmp/heartbeat.md \
+            --triage /tmp/heartbeat-triage.md \
+            --verbose "${EXTRA[@]}" 2>&1 | tee /tmp/heartbeat.log
+          # Read PIPESTATUS on the very next line: every `$(sed …)` below overwrites
+          # it, and a code captured from the wrong pipeline is a lie that still looks
+          # like a number.
+          CODE=${PIPESTATUS[0]}
+          echo "signature=$(sed -n 's/^HEARTBEAT_SIGNATURE=//p' /tmp/heartbeat.log | tail -1)" >> "$GITHUB_OUTPUT"
+          echo "state=$(sed -n 's/^HEARTBEAT_STATE=//p' /tmp/heartbeat.log | tail -1)" >> "$GITHUB_OUTPUT"
+          echo "silent=$(sed -n 's/^HEARTBEAT_SILENT=//p' /tmp/heartbeat.log | tail -1)" >> "$GITHUB_OUTPUT"
+          echo "code=$CODE" >> "$GITHUB_OUTPUT"
+
+      - name: Put the table in the run summary
+        if: always()
+        run: cat /tmp/heartbeat.md >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
+
+      # The colour rule, in one place: new signature ⇒ red + a fresh issue; same
+      # signature ⇒ comment and stay green; healthy ⇒ close the tracked issue.
+      - name: File, update or close the visible issue
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SIGNATURE: ${{ steps.judge.outputs.signature }}
+          STATE: ${{ steps.judge.outputs.state }}
+          SILENT: ${{ steps.judge.outputs.silent }}
+          CODE: ${{ steps.judge.outputs.code }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -uo pipefail
+          # Guarded, so `dry_run` means what its description says. The label is
+          # idempotent, but "report only" that writes to the repo is still a write,
+          # and the owner should be able to press the button on a Friday night
+          # without wondering what it touched.
+          if [ "${DRY_RUN:-false}" != "true" ]; then
+            gh label create automation-heartbeat --color d73a4a \
+              --description "A scheduled DocOga lane stopped producing runs" >/dev/null 2>&1 || true
+          fi
+
+          if [ -z "$SIGNATURE" ]; then
+            echo "::error title=Heartbeat could not judge::no signature was printed, so the tool did not reach a verdict (exit ${CODE:-?}). Not filing an issue — a monitor that reports on data it never fetched is worse than no monitor."
+            [ "${DRY_RUN:-false}" = "true" ] && exit 0
+            exit 1
+          fi
+
+          NUMBER=$(gh issue list --label automation-heartbeat --state open --json number --jq '.[0].number // empty')
+
+          if [ "${STATE:-healthy}" != "degraded" ]; then
+            if [ -n "$NUMBER" ]; then
+              echo "All lanes are inside their cadence again — closing #${NUMBER}."
+              [ "${DRY_RUN:-false}" = "true" ] || gh issue close "$NUMBER" --comment "All lanes back inside their cadence as of $(date -u +%FT%TZ). The heartbeat will go red again if the set of broken lanes changes."
+            else
+              echo "All lanes inside their cadence. Nothing to close."
+            fi
+            exit 0
+          fi
+
+          {
+            echo "Automatic check of every scheduled DocOga lane, $(date -u +%FT%TZ)."
+            echo
+            echo "Run: $RUN_URL"
+            echo
+            echo "Silent or disabled: \`${SILENT:-?}\` · verdict signature \`${SIGNATURE}\`"
+            cat /tmp/heartbeat.md 2>/dev/null || true
+            echo
+            echo "---"
+            cat /tmp/heartbeat-triage.md 2>/dev/null || true
+            echo
+            echo "<details><summary>tool output</summary>"
+            echo
+            echo '```'
+            tail -n 40 /tmp/heartbeat.log 2>/dev/null | tr -d '`' || echo "(none)"
+            echo '```'
+            echo
+            echo "</details>"
+          } > /tmp/issue_body.md
+
+          if [ "${DRY_RUN:-false}" = "true" ]; then
+            echo "::notice title=Dry run::would file/update an issue with this body: $(head -c 200 /tmp/issue_body.md | tr '\n' ' ')"
+            exit 0
+          fi
+
+          if [ -n "$NUMBER" ] && gh issue view "$NUMBER" --json body -q .body | grep -q "$SIGNATURE"; then
+            echo "Issue #${NUMBER} already carries today's verdict set (${SIGNATURE}) — commenting, staying green."
+            gh issue comment "$NUMBER" --body "Same verdicts on $(date -u +%F), signature \`${SIGNATURE}\`. No new lane has gone quiet and none has recovered; that is why this run is green. [Latest check]($RUN_URL)."
+            exit 0
+          fi
+
+          if [ -n "$NUMBER" ]; then
+            echo "Verdict set changed — updating #${NUMBER} and going red."
+            gh issue comment "$NUMBER" --body-file /tmp/issue_body.md
+          else
+            gh issue create --title "Automation lane(s) silent — $(date -u +%F)" \
+              --label automation-heartbeat --body-file /tmp/issue_body.md
+          fi
+          # Red on purpose: the email is the mechanism that reaches the owner. The
+          # issue carries the diagnosis; the red run is what makes them look.
+          exit 1

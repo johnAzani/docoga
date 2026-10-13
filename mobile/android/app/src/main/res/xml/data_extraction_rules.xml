@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Nothing may leave the device, including the WebView's localStorage (where the
+     12-hour dashboard session token lives). `root` + `.` excludes the whole
+     no-backup-relevant tree; `allowBackup=false` still covers the pre-12 paths.
+     Only the documented domains are named here, because the platform's backup
+     agent — not a lint task — is what rejects an unknown one, and that check runs
+     on the phone, at the worst possible time. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" path="." />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" path="." />
+    </device-transfer>
+</data-extraction-rules>
