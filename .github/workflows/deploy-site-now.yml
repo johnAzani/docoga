@@ -75,10 +75,19 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          set -u
+          set -euo pipefail
           # Appended: the probe step above wrote the header of this log.
-          npx --yes wrangler@latest deploy --config wrangler.jsonc \
-            > >(tee -a site-deploy.log) 2>&1
+          # Preserve dashboard vars and never stream raw Wrangler config diffs;
+          # remote values can contain secrets.
+          RAW_WRANGLER_LOG="${RUNNER_TEMP}/site-wrangler.raw.log"
+          trap 'rm -f "$RAW_WRANGLER_LOG"' EXIT
+          set +e
+          npx --yes wrangler@latest deploy --config wrangler.jsonc --keep-vars >"$RAW_WRANGLER_LOG" 2>&1
+          DEXIT=$?
+          set -e
+          python3 tools/redact_deploy_log.py "$RAW_WRANGLER_LOG" | tee -a site-deploy.log
+          echo "deploy_exit=$DEXIT" | tee -a site-deploy.log
+          exit "$DEXIT"
 
       # A 404 for a page that did not yet exist gets cached at the edge and
       # keeps being served after the file is uploaded — the POA page stayed a

@@ -108,11 +108,15 @@ their code in seconds, 24/7, without you touching anything.
 2. Submit the sitemap: `https://docoga.com.ng/sitemap.xml` (already included in
    the folder — it uploads automatically with the site).
 3. Repeat for Bing Webmaster Tools.
-4. **Analytics:** create a free Google Analytics 4 property
-   (`analytics.google.com`) → copy your Measurement ID (looks like
-   `G-XXXXXXXXXX`) → paste it as `ANALYTICS_ID` in the index.html CONFIG block
-   → redeploy. Now you can see visitors, which tools they use, and where they
-   come from — measure everything, guess at nothing.
+4. **Analytics:** DocOga already has a dedicated GA4 property, but measurement
+   is deliberately disabled in the current site code. Do **not** paste an ID
+   into `site/index.html` or switch on `ANALYTICS_RELEASE_ENABLED` in
+   `site/analytics-consent.js` until the privacy, Google-contract/property, and
+   Nigeria cross-border-transfer checks in `docs/ANALYTICS_SETUP.md` are
+   documented as complete. When those controls are cleared, the shared manager
+   asks for affirmative consent before loading the dedicated property, and
+   offers a persistent way to change the choice. Analytics is not a deployment
+   requirement; the app works normally while it is off.
 
 ## Step 7 — First 100 customers (Weeks 1–4, ₦0)
 

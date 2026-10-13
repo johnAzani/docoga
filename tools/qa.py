@@ -16,7 +16,7 @@ What it checks (every run, on every file — not just the one you touched):
   7. worker/index.js parses; wrangler.toml has a real KV id
   8. SECRET LEAK CHECK: nothing from .worker-secrets.env appears in any
      file that gets deployed or committed
-  9. Dependency-light test suites: worker unit suite + full-app jsdom suite
+  9. Dependency-light test suites: worker, full-app jsdom, and Analytics-consent suites
  10. Anchor integrity: every in-page href="#x" resolves to a real id
  11. Site-wide (every page, not just index.html): JSON-LD parses, every
      absolute …/#route deep link is a real SPA route, every sitemap loc is
@@ -71,6 +71,12 @@ for f in sorted(glob.glob(f"{SITE}/*.html")):
         if not good:
             ok = False; detail = err; break
     check(f"{os.path.basename(f)}: {len(scripts)} script(s) parse", ok, detail)
+consent_js_path = os.path.join(SITE, "analytics-consent.js")
+if os.path.exists(consent_js_path):
+    consent_ok, consent_err = node_check(open(consent_js_path, encoding="utf-8").read())
+    check("analytics-consent.js parses", consent_ok, consent_err or "")
+else:
+    check("analytics-consent.js exists", False)
 
 print("── 2. Placeholders & completeness ──")
 for f in sorted(glob.glob(f"{SITE}/*.html")):
@@ -186,7 +192,13 @@ if os.path.exists(admw):
     r = subprocess.run(["node", admw], capture_output=True, text=True, cwd=ROOT)
     check("admin API unit suite (adminworkertest.mjs)", r.returncode == 0,
           (r.stdout or r.stderr)[-200:].replace("\n", " ") if r.returncode else "")
-# 9b. full-app DOM suite — executes the real index.html in jsdom.
+# 9b. Analytics consent suite — fake DOM, local storage, and script sink only;
+# it never makes a request to Google or any other external service.
+consent_test = os.path.join(ROOT, "tools", "tests", "analytics_consent.test.mjs")
+r = subprocess.run(["node", consent_test], capture_output=True, text=True, cwd=ROOT)
+check("Analytics consent suite (analytics_consent.test.mjs)", r.returncode == 0,
+      (r.stderr or r.stdout)[-240:].replace("\n", " ") if r.returncode else "")
+# 9c. full-app DOM suite — executes the real index.html in jsdom.
 # Skipped (exit 0 + notice) when jsdom is not installed, so a fresh clone is never blocked.
 domt = os.path.join(ROOT, "tools", "tests", "domtest.mjs")
 if os.path.exists(domt):

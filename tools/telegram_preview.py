@@ -19,7 +19,12 @@ import os
 import re
 from collections import Counter
 
-import requests
+try:
+    import requests
+except ImportError:  # the preflight runs before `pip install` — stdlib must be enough
+    requests = None
+import urllib.error
+import urllib.request
 
 from telegram_mdv2 import to_plain
 
@@ -156,9 +161,29 @@ def parse_preview(html):
     return posts
 
 
+class _Fetched:
+    """The two attributes the reader uses, so urllib and requests look the same."""
+    __slots__ = ("status_code", "text")
+
+    def __init__(self, status_code, text):
+        self.status_code, self.text = status_code, text
+
+
 def fetch_preview(url):
-    """One GET. Its own function so a test can script a page without a network."""
-    return requests.get(url, timeout=PREVIEW_TIMEOUT, headers={"User-Agent": PREVIEW_UA})
+    """One GET. Its own function so a test can script a page without a network.
+
+    `requests` when it is installed (the poster's path); plain urllib when it is not — the
+    workflow deliberately runs the preflight BEFORE `pip install`, so this module has to
+    work with the standard library alone (13 Oct 2026: it did not, and the preflight died
+    with ModuleNotFoundError before asking Telegram a single question)."""
+    if requests is not None:
+        return requests.get(url, timeout=PREVIEW_TIMEOUT, headers={"User-Agent": PREVIEW_UA})
+    req = urllib.request.Request(url, headers={"User-Agent": PREVIEW_UA})
+    try:
+        with urllib.request.urlopen(req, timeout=PREVIEW_TIMEOUT) as resp:
+            return _Fetched(resp.status, resp.read().decode("utf-8", "replace"))
+    except urllib.error.HTTPError as exc:
+        return _Fetched(exc.code, "")
 
 
 def recent_posts(handle=None, pages=1, chat_id=None):

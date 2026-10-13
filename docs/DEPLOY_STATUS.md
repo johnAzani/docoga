@@ -1,7 +1,24 @@
-# Deployment status — measured 8 Oct 2026
+# Deployment status — measured 8–9 Oct 2026
 
 Rule Zero: everything below is measured, with the method stated. Where I could
 not determine a cause, it says so rather than guessing.
+
+**Current status — 9 Oct:** §§1–7 below preserve the 8 Oct pre-deployment
+snapshot. Their statements that the payment worker and recent site work were not
+live are historical and are superseded by §§8–9. PR #11 merged as `7ee8d79`, and
+the site serves the Business tier and POA page. Worker deploy run `37890401771`
+succeeded as version `2ddb599e-ef40-4b6a-a789-bf5742c97874`, but its Wrangler
+output exposed values from Cloudflare dashboard `vars`; the PR comment was
+redacted, while deleting the run log was denied to this integration. The owner
+now reports replacing the exposed credentials as Worker Secrets. A subsequent
+qualifying live payment returned a pass code and activated it for 30 days. The
+Worker root showed `lastWebhookMinutesAgo: 6` when checked, which supports a
+recent authenticated webhook but does not by itself identify the event. Brevo's
+detailed event now identifies the email failure: one attempt, 0% delivered, and
+an `Error` rejecting the default sender `noreply@docoga.com.ng` as invalid until
+the sender is validated or the domain authenticated. This is a sender-identity
+rejection, not a spam-folder or recipient-server bounce diagnosis. **Do not take
+another payment or blindly resend.**
 
 ## 1. Can the agent reach workers.dev?
 
@@ -23,7 +40,7 @@ a name problem. The `fetch_page` tool runs on different infrastructure and is
 **Proof it works:** `https://docoga-git.johnazani.workers.dev/` returned the full
 live DocOga homepage.
 
-## 2. The payment worker is NOT deployed
+## 2. 8 Oct snapshot: the payment worker was not deployed
 
 `https://docoga-pass.johnazani.workers.dev` returns Cloudflare's empty
 "There is nothing here yet" page on **all three** of:
@@ -57,10 +74,12 @@ offline path — 200 pre-generated hashes hard-coded in `worker/index.js`
 (`site/index.html:1137`). So manual selling with those codes still works;
 automatic payment→code does not.
 
-Note the tension: a real ₦100 Flutterwave webhook was logged on 19 Sep 2026
-(`logs/2026-09-19-first-real-payment-webhook.json`), so this *was* working.
+The 19 Sep 2026 log (`logs/2026-09-19-first-real-payment-webhook.json`) records a
+successful ₦100 Flutterwave charge. That proves a payment settled, **not** that a
+pass was issued: `PRICE_NGN` is ₦2,000, so this underpayment is intentionally
+ignored by the webhook and cannot serve as an end-to-end test.
 
-## 3. None of the recent revenue work is live
+## 3. 8 Oct snapshot: recent revenue work was not yet live
 
 - The live site lists **9 tools** — the Power of Attorney tool is absent.
 - `docoga.com.ng/power-of-attorney-nigeria.html` returns **404**.
@@ -68,7 +87,7 @@ Note the tension: a real ₦100 Flutterwave webhook was logged on 19 Sep 2026
 So the sticky bars on 56 pages, the POA tool, the Business tier and the POA
 landing page are all in the repo and passing tests, but not on the internet.
 
-## 4. Why: PR #11's Cloudflare build fails
+## 4. 8 Oct diagnosis: why PR #11's Cloudflare build failed
 
 | Commit | Workers Builds |
 |---|---|
@@ -104,11 +123,12 @@ is not fetchable as a page. Everything above is inference from controls.
   (`results-receiver.actions.githubusercontent.com` is not allowlisted) but can
   read PR comments via `api.github.com`. Currently: **pass**.
 - **`.github/workflows/net-probe.yml`** — `workflow_dispatch` with a URL,
-  method and body; curls any host and returns status, headers and body. GitHub
-  only registers `workflow_dispatch` from the **default branch**, so this is
-  dispatchable once it lands on `main` (it is in PR #11).
+  method and body; curls any host and returns status, headers and body. PR #11
+  has since merged as `7ee8d79`, so the workflow is on the default branch;
+  however, the Arena integration still cannot dispatch Actions when GitHub
+  returns 403. The marker-gated deploy workflows in §11 are the reliable route.
 
-## 8. Token diagnosis — measured 8 Oct 2026
+## 8. Token diagnosis and live state — measured 8–9 Oct 2026
 
 A Cloudflare API token was added to the repo as `CLOUDFLARE_API_TOKEN` and used
 from GitHub Actions. Result per endpoint:
@@ -177,7 +197,7 @@ that would need `/pages/projects`, which needs a Pages permission this token lac
 `docoga-pass` will be this account's first actual Worker, so wrangler's secrets probe
 hits a script that does not exist yet — with Edit it will create it rather than 403.
 
-### LIVE — deployed 9 Oct 2026
+### Initial deployment — 9 Oct 2026 (version superseded by run 37890401771)
 
 Fourth token attempt, fingerprint `f3f99ca0ab153423`, finally had both
 `Account → Workers Scripts → Write` and `Account → Workers KV Storage → Write`.
@@ -187,7 +207,7 @@ Deploy succeeded on the first try:
 Deployed docoga-pass triggers (0.74 sec)
   https://docoga-pass.johnazani.workers.dev
   schedule: 0 7 * * *
-Current Version ID: f6370c2d-853d-46db-8aa6-d2754fb9dc88
+Initial Version ID: f6370c2d-853d-46db-8aa6-d2754fb9dc88 (superseded by run 37890401771)
 ```
 
 Bindings confirmed live: `env.KV` → `f3a5afebe7d04bb0a6018c0d7d355253` ("docoga-kv"),
@@ -206,38 +226,96 @@ worker simply had never been deployed under that name.
 Both were 404 before. `/activate` is the endpoint the storefront actually calls
 (`site/index.html:1132`), so **activation is restored**.
 
-### Remaining: the worker has zero secrets
+### Runtime credentials and webhook — incident update, 9 Oct 2026
 
-A fresh Worker starts with no secrets, and `wrangler deploy` never sets them.
-Confirmed empty via `GET .../workers/scripts/docoga-pass/secrets`.
+The owner had reported `FLW_SECRET_KEY`, `FLW_WEBHOOK_HASH`, and `BREVO_API_KEY`
+set in Cloudflare, and saved
+`https://docoga-pass.johnazani.workers.dev/flw-webhook` in Flutterwave. A later
+`[deploy-pass]` run (`37890401771`) deployed successfully as version
+`2ddb599e-ef40-4b6a-a789-bf5742c97874`, but its Wrangler config diff exposed the
+values for those three names. The values were reported under remote dashboard
+`vars`, not as Worker Secrets. Wrangler's default deploy removes dashboard vars
+missing from `wrangler.toml`; this deployment did not use `--keep-vars`, so at that
+time the payment/email configuration had to be treated as absent. The owner now
+reports replacing the exposed values as Worker Secrets, but that restoration, the
+active key types, and the match between the active webhook hash and Flutterwave's
+saved hash are not independently verified here. The exposed `FLW_SECRET_KEY` was
+the wrong key type (public key, not a secret key), so it would not authenticate the
+v3 `/verify` call.
 
-What each gates:
+**Security response:** the PR #11 deploy comment has been replaced with a
+redacted warning. The Arena integration received 403 when asked to delete the
+workflow run/log; the owner still needs to attempt deletion of run `37890401771`
+from GitHub Actions and report whether it succeeded. Treat the exposed credentials
+as compromised regardless of the repo's private visibility. The owner reports
+rotating/replacing the Worker secrets; this is not independently verified. Never
+put values in this repo, a PR comment, or chat. Before any further deploy, the
+owner must confirm current production secrets are in place and the webhook hash
+matches Flutterwave's saved setting. Do not take a payment to test this.
 
-| Secret | Gates | Status without it |
+| Name | Purpose | Current state / required action |
 |---|---|---|
-| `FLW_CLIENT_ID` + `FLW_CLIENT_SECRET` (v4), or `FLW_SECRET_KEY` (v3) | `/verify` confirming payment with Flutterwave | `/verify` cannot confirm payment |
-| `ISSUE_SECRET` | `POST /issue` (Selar/Zapier bridge, line 197) | returns 401 `unauthorized` |
-| `BREVO_API_KEY` / `RESEND_API_KEY` | `emailCode()` delivering the pass | code issued but never emailed |
+| `FLW_SECRET_KEY` | Classic v3 `/verify` lookup | owner reports replacement; confirm the active Worker Secret is a genuine secret key, not the exposed public key |
+| `FLW_WEBHOOK_HASH` | `POST /flw-webhook` authentication | owner reports replacement; confirm the active Worker Secret matches Flutterwave's saved hash |
+| `BREVO_API_KEY` | `emailCode()` pass delivery | owner reports replacement; confirm the active Worker Secret is the rotated key |
+| `ISSUE_SECRET` | `POST /issue` (Selar/Zapier bridge) | not reported; separate from direct Flutterwave checkout |
+
+### Post-rotation live check — owner-reported, 9 Oct 2026
+
+The owner reports replacing the exposed Worker secrets and completing a live
+qualifying purchase. The success page returned a pass and reported auto-activation
+for 30 days, confirming the browser `/verify` path for this transaction. The
+Worker root later showed `lastWebhookMinutesAgo: 6`; the webhook handler updates
+that timestamp only after signature validation, so this supports a recent validly
+signed webhook, though it is not transaction-specific without the prior timestamp
+or provider delivery record. The detailed Brevo event shows one attempt, 0%
+delivered, and an `Error`: the configured sender `noreply@docoga.com.ng` is not
+valid; Brevo instructs validating the sender or authenticating its domain. This
+confirms rejection at sender validation, not a recipient-server bounce or spam
+placement issue. The event's recipient has not been explicitly compared with the
+checkout address; do not record or repeat either address. No code-only change to
+an unverified sender will fix this. Authenticate `docoga.com.ng` in Brevo or use a
+sender Brevo already verifies. Do not repeat the purchase or blindly resend.
+
+The pass chip showed 30 days after purchase. The owner confirms the earlier
+11-day chip was in the same browser. The top-up path should carry remaining days
+when the Worker recognizes the previous code. Code inspection found the site kept
+a cached pass displayed if `/activate` explicitly returned `invalid code` (it only
+cleared on `expired`); the site now clears cache on either definitive response.
+This makes a stale 11-day badge a plausible explanation, but does not prove it was
+the cause or restore any lost days. The client-side fix needs a future site deploy.
+No pass code, recipient address, or transaction identifier is recorded here.
+
+A local no-charge `/resend-email` recovery path is now implemented: it resolves the
+existing issued pass from its stored purchase reference, follows top-ups to the
+newest active code, sends only to the email stored with that code, never returns
+the code, and throttles by pass (one attempt per 60 seconds, at most three per
+UTC day). It is **fail-closed** unless the Worker runtime variable
+`RESEND_EMAIL_ENABLED` is exactly `true`; leave it unset/false until Brevo confirms
+the sender/domain is authenticated. The success page now offers an explicit
+customer-initiated resend button. The Worker/UI changes are local, tested, and not
+deployed; any mail-provider acceptance is not proof of inbox delivery.
+
+A qualifying webhook still requires a matching `verif-hash` (or valid v4 HMAC),
+`charge.completed`, a successful/succeeded status, `NGN`, and amount ≥ ₦2,000. An
+authenticated ₦100 event intentionally returns HTTP 200 with body `ignored` and
+issues no code. A qualifying live purchase has already confirmed the redirect
+issuance path; do not take another payment. After the sender is authenticated and
+the security/deployment gates are satisfied, use the existing pass's explicit
+resend control and verify the provider's delivery event. Local tests are not
+live-delivery proof.
 
 Not needed: the offline-batch path is unaffected. Those codes are validated by a
 hardcoded set of **FNV-1a** hashes (`OFFLINE_HASHES` in `worker/index.js:49`), not by
 `ISSUE_SECRET`, so they work with no secrets at all. `unlock-codes.txt` is
 gitignored on purpose (paid-product inventory) and must stay out of git.
 
-These are live financial credentials: set them in the **Cloudflare dashboard**, not in
-chat and not in GitHub. Workers & Pages → docoga-pass → Settings → Variables and
-Secrets.
-
-Also confirmed correct, so stop re-checking these:
-- Account `276c50d7329e162bd36d1ef8eb3e7566` ("Azanijohn2017@gmail.com's Account")
-- Zone `docoga.com.ng` (`38e545caefd3f31acf6cc732ffe663ba`), status **active**,
-  on the Free plan, nameservers `beau.ns.cloudflare.com` / `elly.ns.cloudflare.com`
-
-Separate bug found and fixed in passing: `npx wrangler deploy` run from `worker/`
-was picking up the **root `wrangler.jsonc`** and targeting `docoga-git` instead of
-`worker/wrangler.toml` / `docoga-pass`. Fixed by passing `--config wrangler.toml`
-explicitly. After that the deploy targeted `docoga-pass` correctly and failed only
-on permissions.
+The deploy itself uses the explicit `worker/wrangler.toml` config and reached
+`docoga-pass`. Both marker-gated workflows already preserve dashboard vars and
+redact Wrangler output; no deployment has been run for the current local changes.
+Do not deploy until the owner has attempted the old-log cleanup and confirms
+production secrets are in place (see §11). Repository Actions secrets are separate;
+the Arena agent cannot write them.
 
 ## 9. The site: deployed, and the 404 that was really a cache
 
@@ -306,15 +384,279 @@ just noisy.
 
 All 48 unit tests, `pre_push_verify.sh` and `qa.py` pass.
 
-## 11. To let the agent fix this itself
+## 11. Agent limits, deploy routes, and run-result reporting
 
-Give the repo a Cloudflare API token as a secret:
+**The Arena agent cannot write repository Actions secrets.** `gh secret set`
+returns `403 Resource not accessible by integration` for this integration. Do
+not ask the agent to run it or assume a secret was saved. When deploy credentials
+are absent, the owner must add `CLOUDFLARE_API_TOKEN` and
+`CLOUDFLARE_ACCOUNT_ID` in GitHub → repository **Settings → Secrets and
+variables → Actions**. These repository secrets are separate from Cloudflare
+Worker runtime secrets such as `FLW_SECRET_KEY`, `FLW_WEBHOOK_HASH`, and
+`BREVO_API_KEY`.
 
-```
-gh secret set CLOUDFLARE_API_TOKEN
-gh secret set CLOUDFLARE_ACCOUNT_ID
-```
+Deploys use the marker-gated workflows already in the repo:
 
-With those, the agent can (a) read the real build log, (b) deploy
-`worker/` as `docoga-pass`, and (c) redeploy the site — all by triggering
-workflows, with no dashboard access.
+- **Worker:** `.github/workflows/deploy-pass-now.yml`, triggered by a commit
+  message containing **`[deploy-pass]`**.
+- **Marketing site:** `.github/workflows/deploy-site-now.yml`, triggered by a
+  commit message containing **`[deploy-site]`**.
+
+The Arena session cannot read GitHub Actions run logs directly. Both workflows
+therefore post captured output as a comment on **PR #11**; use that comment as
+the result record, not the unreadable run log. The workflow token must have
+**`pull-requests: write`** for this comment. **`issues: write` alone is not the
+right permission** for commenting on a pull request (even though the workflow
+uses GitHub's issues-comment REST endpoint).
+
+**Log hygiene is mandatory.** Run `37890401771` exposed dashboard `vars` in
+Wrangler's config diff. Its PR comment has been replaced with a redacted warning;
+this integration received 403 when attempting to delete the Actions log. The owner
+reports rotating/restoring the runtime credentials; deletion of the old run/log
+remains an owner-side best-effort cleanup. Both marker-gated deploy workflows now
+pass `--keep-vars` and sanitize captured Wrangler output before it reaches Actions
+logs or PR comments. The payment-to-code path has since passed once; do not make
+another purchase to debug email. Any future deploy must use the hardened workflow
+and preserve fresh Worker Secrets.
+
+**Owner cleanup attempt — 10 Oct 2026:** screenshot of run `37890401771`'s
+summary ellipsis menu shows only **Create status badge**; **Delete all logs** is
+not offered. Status: **attempted, option unavailable**, NOT confirmed deleted.
+This satisfies the best-effort attempt requirement only; credential safety still
+requires owner confirmation of current production Secrets and live webhook hash.
+No workflow rerun or job-log download was performed during this check.
+
+**Current deployment gate:** do not deploy this branch's local Worker/site changes
+until the owner has (1) attempted best-effort deletion of run `37890401771` and
+(2) confirmed the required production Worker secrets are present and correctly
+configured. That confirmation remains owner-reported, not independently verified
+by this session. The Brevo sender/domain must also be authenticated before anyone
+sets `RESEND_EMAIL_ENABLED=true`; keep the resend path disabled otherwise. No
+payment or blind resend is part of verification.
+
+**Re-verified 9 Oct 2026 (continuation session — branch `arena/47d148f1-docoga` at
+`5cc840e`):** this gate is present at the branch head, and commit `c5283e1` does not
+exist in the repository (`git cat-file -t` → not a valid object). All app-side suites
+were re-run locally and are green: worker unit suite (including the six `/resend-email`
+tests), DOM suite 97/97, Python suite 52/52, `qa.py` 0 errors, `pre_push_verify.sh`
+✅. `RESEND_EMAIL_ENABLED` is not set anywhere in the repo; it can only be enabled as
+a Worker runtime variable in the dashboard. No deploy, resend, or payment was performed,
+and the owner-side gates above are unchanged.
+
+## 12. Owner-side checklist — researched 9 Oct 2026
+
+Everything below is sourced to the vendor's own documentation (fetched 9 Oct 2026).
+The agent cannot perform any of it from this session, and none of it has been done
+or verified by the agent.
+
+### 12.1 Brevo: authenticate `docoga.com.ng` (gates `RESEND_EMAIL_ENABLED`)
+
+> **Status 10 Oct 2026: COMPLETE (owner-performed).** The new guided Brevo flow
+> (Manual, Cloudflare) generated four records, all added to the existing zone and
+> verified by Brevo: TXT `@` brevo-code; CNAME `brevo1._domainkey` →
+> `b1.docoga-com-ng.dkim.brevo.com`; CNAME `brevo2._domainkey` →
+> `b2.docoga-com-ng.dkim.brevo.com` (both DNS only, TTL Auto); TXT `_dmarc`
+> `v=DMARC1; p=none; rua=mailto:rua@dmarc.brevo.com`. Brevo displayed **"Your
+> domain has been authenticated."** The two pre-existing Worker `100::` records
+> were not modified; there was no prior DMARC record, so exactly one exists now.
+> Evidence is owner screenshots; not independently verified by the agent. Steps
+> below remain as the reference procedure.
+>
+> **Sender status 10 Oct 2026 (owner-performed):** `DocOga <noreply@docoga.com.ng>`
+> added under Brevo → Senders and shows **Verified** (the address behind the
+> Worker's default `MAIL_FROM` and the previously observed sender-invalid event).
+> The pre-existing Gmail sender remains Verified but flagged non-compliant with
+> Google/Yahoo/Microsoft requirements — expected for a gmail.com From address and
+> not used by the Worker. Branded-subdomain offer skipped (not required).
+
+1. Brevo → **Settings → Senders, Domains, IPs → Domains → Add a domain** → enter
+   `docoga.com.ng`. (Some accounts have a newer guided "Set up your domain" flow;
+   the manual route below works regardless.)
+2. Choose **manual** authentication ("Authenticate the domain yourself"). Automatic
+   setup will offer to **replace** an existing DMARC record — manual is the route
+   that preserves the current policy. [Brevo help, art. 12163873383186]
+3. Add exactly the records Brevo generates — typically **3–4**: **Brevo code (TXT)**,
+   **DKIM (1 TXT or 2 CNAME)**, **DMARC (TXT)**. Copy Brevo's names/values; do not
+   guess. [Brevo help]
+4. Keep **exactly one** DMARC record. Multiple DMARC records are a documented
+   Brevo failure mode. If Brevo's DMARC value differs from the existing policy,
+   preserve the existing policy first — Brevo's own troubleshooting frames the
+   requirement as detecting *a* DMARC policy. Only if Brevo still reports the
+   domain unauthenticated after the propagation window should the conflict be
+   escalated (owner decision, not agent).
+5. In Cloudflare, add the Brevo DKIM CNAMEs **DNS-only (grey cloud, not proxied)**
+   and turn **CNAME flattening off** — both zone-wide (zone DNS settings → "CNAME
+   flattening for all CNAME records") and per-record ("Flatten" off). A proxied
+   CNAME, zone-wide flattening, per-record flattening, or a stray NS record all
+   break CNAME verification. [Cloudflare DNS docs]
+6. Wait **up to 48 hours** for propagation and verification. Check public DNS with
+   Google Admin Toolbox Dig or MX Toolbox before expecting delivery. [Brevo
+   troubleshooting]
+7. Once the domain shows authenticated, confirm the **sender** — the exact
+   `MAIL_FROM` identity the Worker sends as — is present and compliant under
+   Brevo → Senders. Unauthenticated/unverified senders may be rejected or Brevo
+   may substitute a sender domain; neither behavior proves inbox delivery. The
+   observed event specifically reported sender-invalid. [Brevo troubleshooting]
+8. Only then may `RESEND_EMAIL_ENABLED` be set to exactly `true` as a Worker
+   runtime variable — in the intentional gated release, never before.
+
+### 12.2 Cloudflare Worker secrets + Flutterwave webhook hash (gates deploy)
+
+> **Observed 10 Oct 2026 (owner screenshots, no edits):** production `docoga-pass`
+> lists `BREVO_API_KEY`, `FLW_SECRET_KEY`, `FLW_WEBHOOK_HASH` as encrypted Secrets;
+> variables `PAYMENT_URL`, `PROVIDER`, `SITE_URL`; KV binding `KV` → `docoga-kv`.
+> `ISSUE_SECRET`, `MAIL_FROM`, `RESEND_EMAIL_ENABLED` are not listed. The owner
+> subsequently replied **Yes** that all three encrypted Secrets are the replacement
+> credentials saved after the exposed log (owner-confirmed currentness, not
+> independently verified). In a separate subsequent reply the owner confirmed
+> the LIVE webhook hash is the same one saved as `FLW_WEBHOOK_HASH` (not
+> independently verified; no value recorded).
+> Investigate `/issue` bridge use
+> before any ISSUE_SECRET remediation; do not choose a random replacement.
+> No deployment or resend authorized by this inspection.
+
+- Workers & Pages → `docoga-pass` → Settings → Variables and Secrets: confirm
+  `FLW_SECRET_KEY` (or `FLW_CLIENT_ID`/`FLW_CLIENT_SECRET`), `ISSUE_SECRET`,
+  `BREVO_API_KEY`, and `FLW_WEBHOOK_HASH` are present. Names only — never values in
+  chat, git, or logs.
+> **Latest LIVE webhook screenshot, 10 Oct 2026:** V3 Live webhooks with masked
+> hash and Enable v3 webhooks checked. Earlier cropped screen said V4; no version
+> switch/save is confirmed. The URL path is clipped in the screenshot, but the
+> owner subsequently confirmed the complete URL:
+> `https://docoga-pass.johnazani.workers.dev/flw-webhook`. URL and LIVE hash match
+> are now owner-confirmed, not independently verified. Recipient comparison and
+> `/issue` bridge status remain open; no release authorization. Do not use
+> Save, Switch to V4 webhook, or dashboard resend/test to inspect configuration.
+
+- Flutterwave dashboard → **Settings → Webhooks** → the **secret hash** field is
+  what the Worker's `FLW_WEBHOOK_HASH` must equal. **Live and test environments
+  have separate hashes** — the Worker needs the **live** one. [Flutterwave support,
+  "What is a Secret Hash?"]
+- The earlier deploy log exposed these values; the owner reports rotating them.
+  That rotation is **owner-reported and not independently verified**. Confirm the
+  Worker holds the *current* dashboard values based on completed setup. Saved
+  Secrets are hidden, so presence alone is not correctness proof; do not overwrite
+  rotated credentials needlessly. Secret edits use Deploy and are production
+  changes. Never retype values into chat.
+
+### 12.3 GitHub Actions run `37890401771` — log cleanup
+
+- Best-effort deletion of the run and its logs (Actions → the run → delete run /
+  **⋯ → Delete all logs**). The integration received 403 when attempting this;
+  owner-side write permissions are required. Report success or best-effort failure
+  honestly. Deletion is not credential revocation; the rotation remains owner-
+  reported, not independently verified.
+
+### 12.4 GA baseline (corrected after code inspection)
+
+Pull sessions/users, channels and **Engagement → Landing page** by sessions from
+GA `G-GO8VZB3R28`. Pages and screens reports views, not entry pages. The repo has
+homepage analytics but NO GA tag or verified-payment event in success.html.
+Success-page visits would not prove payment even if tagged. Do not call a proposed
+pricing/click/success funnel or views/sessions a measured purchase conversion rate.
+Proper privacy-safe verified-payment tracking is an app-side follow-up.
+
+### 12.5 Exact owner clicks and pre-release caveats
+
+See `docs/OWNER_CLICK_GUIDE.md` for researched direct links, classic/new Brevo UI,
+field mapping, Free-plan flattening controls, single preserved DMARC/reporting tags,
+private recipient comparison, and STOP-before-release checkpoints. Cloudflare
+flattening returns IP addresses instead of the CNAME; it does NOT convert to TXT.
+Do not use a generic DMARC reporting value in place of account instructions.
+
+**Updated 10 Oct 2026 — repaired on session branch, not released:** Worker deploy
+now propagates DEXIT; manual dry-run runs an isolated no-credential build and skips
+all production/API/probe/report steps. Explicit worker config throughout, no
+ambiguous dry-run config probe; verbose token fingerprints/account dumps removed.
+Both marker deploy scripts sanitize captured raw output, fail on sanitizer errors,
+and remove raw files using EXIT traps. Worker live probe is now /activate without
+a code (400/code required before KV access), NOT /verify. Python 57/57 including
+stub-executed exit/cleanup/dry-run regressions; Worker/DOM green; real local Worker
+build --dry-run passed. Historical green runs remain insufficient deployment proof.
+Legacy deploy-pass.yml/build-check.yml are NOT the release route and have not been
+hardened by these fixes; do not dispatch them or rerun old commits.
+
+### 12.6 Latest gate state — 10 Oct 2026
+
+- Brevo domain Authenticated and default sender Verified (owner screenshots).
+- Old Actions logs: deletion attempted, option unavailable; NOT confirmed deleted.
+- Three production Secrets: encrypted per screenshots, replacements current per
+  owner confirmation. LIVE webhook URL and hash equality owner-confirmed.
+- Recipient: **matches** between existing qualifying purchase customer/checkout and
+  OLD Brevo failed event, from owner screenshots; no private values recorded.
+  Old Error is historical, not a new failure after authentication.
+- ISSUE_SECRET absent: code/tests show only /issue uses it and fails closed without
+  it; Flutterwave does not require it. Owner replied **"Nothing else for now"**
+  to the question about other issuing tools: Flutterwave only currently. Leave
+  ISSUE_SECRET absent and the separate /issue bridge disabled. Dependency scoped;
+  no replacement secret required for this release.
+- Resend flag absent from supplied table; no enablement. No deployment authorization.
+  After explicit approval: marker Worker then site, later intentional enablement,
+  ONE existing-pass resend, NEW event plus actual receipt. No payment or blind retry.
+
+**Release readiness, not release approval:** at code commit `0f258c8`, Verify and
+Cloudflare build check succeeded; both marker deploy jobs skipped. Owner checks
+and bridge scope are recorded above; next ask permission for the corrected Worker
+and site deployments with resend still disabled. No release/flag enablement or
+resend is authorized by the owner's "Nothing else" reply about tool usage.
+
+### 12.7 Authorized release — 10 Oct 2026 (blocked before publish)
+
+Owner replied **Yes** to publishing the corrected Worker, then website after
+Worker success, with resend disabled. Authorization does not include email resend,
+new payment, changing Secrets or enabling the unused /issue bridge. Starting the
+hardened marker Worker release from session branch. Run `38044377472` on
+`87d858b` failed at user-token verification, curl exit22. HTTP status/body were
+not retrievable, so invalid credential versus endpoint mismatch is unproven.
+Deployment/probe skipped; Worker/site unchanged. Verify/build success; site skipped.
+
+Read-only `[check-pass-auth]` diagnostic now supports user and account verification:
+structured 400/401/403/404 API client rejection permits account-endpoint check;
+network/malformed/server/throttle/inactive responses stop. Both paths require
+HTTP200/success/active and account Workers read before deployment may proceed.
+No redirects, credential/body/account-ID logging or auth bypass; numeric API error
+codes/statuses only. Python 63 tests passed. Diagnostic cannot deploy or probe,
+even if a deploy marker is also present. Diagnostic result pending; site remains
+blocked until actual Worker deploy exit and no-code live probe succeed.
+
+Sources inspected through official Cloudflare GitHub documentation and bundled
+Cloudflare SDK: account tokens support Workers/KV and account verification is
+`/accounts/{account_id}/tokens/verify` (SDK `accounts.tokens.verify`).
+https://github.com/cloudflare/cloudflare-docs/blob/production/src/content/docs/fundamentals/api/get-started/account-owned-tokens.mdx
+
+**Read-only authentication result — 10 Oct:** run `38044854641` on `caefff4`
+succeeded with publish/probe skipped: user endpoint HTTP401/API1000, account
+endpoint HTTP200/active, deployment account read HTTP200. Account-token endpoint
+mismatch confirmed for this credential; no credential change. Authorized Worker
+retry starting with corrected validation; site still blocked pending actual
+deploy exit and harmless probe. Resend remains disabled.
+
+**Worker release succeeded — 10 Oct:** `79dbe42`, run `38044892137`,
+actual `deploy_exit=0`, version `44552c88-d7d0-4df6-bbfc-c47f55263eae`.
+Live missing-code /activate probe passed (400/code required, no issuance/email).
+Dashboard vars preserved via --keep-vars. Authorized site release starting next;
+site result pending. Resend remains disabled; no email/payment test performed.
+
+**Release complete — 10 Oct 2026:** site `1335863`, run `38044933960`,
+actual `deploy_exit=0`, version `8817b0c7-5863-49b6-becc-00f284ea411a`.
+Only ./site uploaded; index.html and success.html updated, 63 assets unchanged.
+Cache purge API success=true. Verify/build succeeded; Worker job skipped on
+site marker. Worker-first/site-second release complete. Public browser rendering
+not independently checked from restricted sandbox. Resend still disabled; no
+new payment, issuance or email. Next owner-guided step requires separate explicit
+resend enablement and ONE existing-pass resend approval, then NEW Brevo event
+and actual receipt. Never use logs/dashboard Resend or /verify as a test.
+
+**Resend enabled and verified — 10 Oct 2026 (owner-performed, screenshot evidence):**
+Owner added Production Text variable `RESEND_EMAIL_ENABLED=true` in the dashboard
+(Secret unticked, Previews unticked); Cloudflare deployment `b70c569e` ("Add
+variable") became Active at 100%, above Worker release `44552c88`. Dashboard
+secrets/vars survived. Owner reopened the saved success page for the EXISTING
+qualifying purchase and tapped Resend ONCE (battery-low phone, so the on-page
+status line was not screenshotted). At about 12:00 the pass email arrived in the
+owner's **Primary** inbox from DocOga with the pass subject line (screenshot).
+Receipt confirms sender authentication works end-to-end. No new payment, no
+Brevo-log Resend, no repeat attempt; no code/recipient/reference stored. The NEW
+Brevo event was not separately inspected; receipt was the decisive proof. Flag
+stays enabled; endpoint limit is 60s spacing/3 attempts per UTC day per pass,
+not globally atomic. Old Brevo failure is historical.

@@ -1,0 +1,40 @@
+{
+  "date_range": {
+    "end": "2026-10-08",
+    "start": "2026-10-02"
+  },
+  "generated_at_utc": "2026-10-10T17:50:32Z",
+  "github_ref": "refs/heads/arena/47d148f1-docoga",
+  "github_run_id": "38073371592",
+  "github_sha": "40628324c9053ced7dfeedeef917d09a1d9f6ea6",
+  "mode": "live",
+  "privacy": "Aggregate counts by session default channel group only. No user identifiers, emails, locations, pass codes, payment references, or URLs are requested or stored.",
+  "property_currency": "NGN",
+  "property_currency_source": "GA4 response metadata",
+  "property_id": "558370565",
+  "property_timezone": "Africa/Lagos",
+  "property_timezone_source": "GA4 response metadata",
+  "report_definition": {
+    "dimensions": [
+      "sessionDefaultChannelGroup"
+    ],
+    "metrics": [
+      "sessions",
+      "totalUsers",
+      "engagementRate"
+    ]
+  },
+  "rows": [],
+  "warnings": {
+    "data_loss_from_other_row": null,
+    "empty_reason": null,
+    "pages_fetched": 1,
+    "pagination_complete": true,
+    "returned_rows": 0,
+    "row_count": 0,
+    "row_count_source": "implicit_empty_response",
+    "sampling_metadatas": [],
+    "schema_restriction": null,
+    "subject_to_thresholding": null
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "note": "Owner-approved single retry after the empty-RunReport rowCount parser fix was pushed. This triggers one read-only Analytics request; the workflow writes only the sanitized aggregate report, with no secrets here.",
+  "requested_at_utc": "2026-10-10T17:49:59Z",
+  "requested_by": "agent",
+  "scope": "One 7-day aggregate snapshot for GA4 property 558370565; commit the sanitized report to the session branch only."
+}

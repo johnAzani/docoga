@@ -14,12 +14,14 @@ this fixture instead of to live bytes; if Telegram renames a class, the block-sp
 `data-post` still works, and if it changes more than that, the callers fail *open*.
 """
 
+import os
 import sys
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
+TOOLS = ROOT / "tools"
 sys.path.insert(0, str(ROOT / "tools"))
 
 import telegram_preview as tp  # noqa: E402
@@ -256,6 +258,60 @@ class Fetching(unittest.TestCase):
         state, detail = tp.describe(handle=None, chat_id="-1001234567890")
         self.assertEqual(state, "unavailable")
         self.assertIn("ledger is the only duplicate guard", detail)
+
+
+class StdlibOnly(unittest.TestCase):
+    """The workflow runs the preflight BEFORE `pip install`, on purpose: a dead token should
+    cost seconds. On 13 Oct 2026 the preflight imported this module, this module imported
+    `requests`, and the lane died with ModuleNotFoundError before asking Telegram anything —
+    six days after the owner fixed the secret it was meant to check. Never again."""
+
+    def _without_requests(self, module_path):
+        import subprocess
+        code = (
+            "import builtins, runpy, sys\n"
+            "real = builtins.__import__\n"
+            "def hide(name, *a, **k):\n"
+            "    if name == 'requests' or name.startswith('requests.'):\n"
+            "        raise ImportError('hidden by test')\n"
+            "    return real(name, *a, **k)\n"
+            "builtins.__import__ = hide\n"
+            "sys.path.insert(0, %r)\n"
+            "sys.argv = [%r]\n"
+            "try:\n"
+            "    runpy.run_path(%r, run_name='__main__')\n"
+            "except SystemExit as e:\n"
+            "    sys.exit(e.code)\n"
+        ) % (str(TOOLS), module_path, module_path)
+        env = {k: v for k, v in os.environ.items() if not k.startswith("TELEGRAM_")}
+        return subprocess.run([sys.executable, "-c", code], capture_output=True, text=True,
+                              cwd=str(TOOLS.parent), env=env, timeout=60)
+
+    def test_the_reader_imports_without_requests(self):
+        import importlib
+        import builtins
+        real = builtins.__import__
+
+        def hide(name, *a, **k):
+            if name == "requests" or name.startswith("requests."):
+                raise ImportError("hidden by test")
+            return real(name, *a, **k)
+
+        with patch.object(builtins, "__import__", hide):
+            fresh = importlib.reload(tp)
+        try:
+            self.assertIsNone(fresh.requests)
+            self.assertTrue(callable(fresh.fetch_preview))
+        finally:
+            importlib.reload(tp)
+
+    def test_the_preflight_reaches_its_own_verdict_without_requests(self):
+        r = self._without_requests(str(TOOLS / "telegram_preflight.py"))
+        out = r.stdout + r.stderr
+        self.assertNotIn("ModuleNotFoundError", out, out)
+        self.assertNotIn("Traceback", out, out)
+        self.assertIn("TELEGRAM_BOT_TOKEN", out, "the preflight must name the missing secret, in its own words")
+        self.assertEqual(r.returncode, 2, out)
 
 
 if __name__ == "__main__":

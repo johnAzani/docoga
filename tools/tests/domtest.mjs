@@ -59,6 +59,7 @@ function check(name, cond, detail = '') {
 function section(t) { console.log('\n— ' + t + ' —'); }
 
 const HTML = fs.readFileSync(INDEX, 'utf8');
+const ANALYTICS_MANAGER = fs.readFileSync(path.join(ROOT, 'site', 'analytics-consent.js'), 'utf8');
 const DAY = 864e5;
 
 /* Boot a fresh DOM of the real page.
@@ -660,9 +661,9 @@ check('support.html: noindex, business@ everywhere, wrong-amount + renewal + dat
       /wrong amount/i.test(supportHtml) && /renew/i.test(supportHtml) && /Privacy Policy/.test(supportHtml));
 check('support.html makes NO fixed REFUND-window promise (§11 pending; the 14-day GRACE period is lifecycle, not refunds)',
       !/14[- ]day[^<]{0,80}refund/i.test(supportHtml) && !/refund[^<]{0,80}14[- ]day/i.test(supportHtml));
-check('privacy.html: Business Teams section (account data spelled out) + dated 11 Oct',
+check('privacy.html: Business Teams section (account data spelled out) + dated 13 Oct',
       /<h2>5\. Business teams<\/h2>/.test(fs.readFileSync(path.join(ROOT, 'site', 'privacy.html'), 'utf8')) &&
-      /11 October 2026/.test(fs.readFileSync(path.join(ROOT, 'site', 'privacy.html'), 'utf8')));
+      /13 October 2026/.test(fs.readFileSync(path.join(ROOT, 'site', 'privacy.html'), 'utf8')));
 check('footer links the public support page', !!dom.window.document.querySelector('footer a[href="support.html"]'));
 
 /* ============================ AUTONOMY (PHASE 4) ============================ */
@@ -710,13 +711,16 @@ check('free-tier team → 90-day retention notice + self-serve Renew (reactivati
       !!freeDom.window.document.querySelector('#team-portal [onclick*="bizRenew"]'));
 
 section('config values used by customers');
-const CFG = { PAYMENT_URL: lex(dom, 'PAYMENT_URL'), SUPPORT_WHATSAPP: lex(dom, 'SUPPORT_WHATSAPP'), SITE_URL: lex(dom, 'SITE_URL'), WORKER_URL: lex(dom, 'WORKER_URL'), ANALYTICS_ID: lex(dom, 'ANALYTICS_ID') };
+const CFG = { PAYMENT_URL: lex(dom, 'PAYMENT_URL'), SUPPORT_WHATSAPP: lex(dom, 'SUPPORT_WHATSAPP'), SITE_URL: lex(dom, 'SITE_URL'), WORKER_URL: lex(dom, 'WORKER_URL') };
 check('PAYMENT_URL is a live https link', /^https:\/\/flutterwave\.com\/pay\//.test(CFG.PAYMENT_URL), CFG.PAYMENT_URL);
 check('SUPPORT_WHATSAPP is intl format (no + or spaces)', /^\d{10,15}$/.test(CFG.SUPPORT_WHATSAPP), CFG.SUPPORT_WHATSAPP);
 check('SITE_URL is the live domain', CFG.SITE_URL === 'https://docoga.com.ng', CFG.SITE_URL);
 check('WORKER_URL points at the deployed worker', /^https:\/\/[a-z0-9.-]+\.workers\.dev$/i.test(CFG.WORKER_URL || ''), CFG.WORKER_URL);
 check('whatsapp support links are wired', $(dom, 'wa-float').href === 'https://wa.me/' + CFG.SUPPORT_WHATSAPP);
-check('GA4 measurement id configured', /^G-[A-Z0-9]{6,}$/.test(CFG.ANALYTICS_ID || ''), CFG.ANALYTICS_ID);
+check('legacy GA loader removed; dedicated tag is consent/release-gated',
+      !HTML.includes('G-GO8VZB3R28') && !/googletagmanager\.com\/gtag\/js/.test(HTML) &&
+      ANALYTICS_MANAGER.includes("var GA4_ID = 'G-BQ1YTR0ZZJ'") &&
+      ANALYTICS_MANAGER.includes('var ANALYTICS_RELEASE_ENABLED = false;'));
 
 /* ============================ RESULT ===================================== */
 console.log('\n' + '═'.repeat(78));
