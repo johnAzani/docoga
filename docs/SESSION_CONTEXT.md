@@ -370,7 +370,8 @@ All in `tools/`. Key tools:
 | `weekly_report.py` | Growth report assembler |
 | `yt_suggest.py` | YouTube autocomplete research |
 | `yt_upload_long.py` | Direct long-form YT upload |
-| `qa.py` | Pre-push QA gate (8 checks) |
+| `qa.py` | Pre-push QA gate (structural checks, incl. the workflow handoff audit) |
+| `workflow_handoffs.py` | Audits every workflow for values that cross a step boundary and never arrive ($GITHUB_ENV same-step reads, jq `$ENV` needles with no export, dangling `steps.*.outputs.*`); called by `qa.py` |
 | `rebuild_ep1.py` | Unattended Episode-1 rebuild |
 | `gemini_tts.py` | Gemini TTS (voiceover) |
 | `motionstudio.py` | MotionStudio v4 |

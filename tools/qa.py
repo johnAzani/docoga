@@ -800,6 +800,27 @@ if len(_meta) == len(_meta_paths):
           "right — but a lane that forgets the dependency then skips the refresh in silence and "
           "dies at day 60 while passing every day before that")
 
+    # A value produced in one place and consumed in another is where this repo's worst bugs live,
+    # because each half passes its own test: `$GITHUB_ENV` read in the step that wrote it, a jq
+    # needle that was never exported (Telegram's dedupe matched *every* issue this way for a week),
+    # and `steps.<id>.outputs.<key>` naming a step or key that does not exist. The auditor is its
+    # own module with its own tests — including the silences, since this checker reported five
+    # confident bugs in this repository on its first run and all five were its own mistakes.
+    try:
+        sys.path.insert(0, os.path.join(ROOT, "tools"))
+        import workflow_handoffs
+        _handoffs = workflow_handoffs.audit_dir(os.path.join(ROOT, ".github", "workflows"))
+    except Exception as exc:  # an auditor that could not run is said so, never passed silently
+        _handoffs = None
+        _handoff_error = str(exc)
+    if _handoffs is None:
+        warn("workflow handoffs audited", False,
+             "tools/workflow_handoffs.py could not run (%s) — the cross-step class of bug it catches "
+             "is the one this repository keeps rediscovering" % _handoff_error)
+    else:
+        check("every workflow handoff lands ($GITHUB_ENV, jq $ENV, steps.outputs)", not _handoffs,
+              " | ".join("%s: %s" % pair for pair in _handoffs)[:700])
+
     # Every `run:` block in every workflow must be valid bash. A stray `done` where `fi` belongs
     # and an input interpolated into `[ -n "${{ inputs.x }}" ]` are both mechanical errors, and
     # both were actually written into this repo by someone in a hurry before this check existed.

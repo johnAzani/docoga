@@ -155,6 +155,23 @@ Integration rules:
 - **Telegram channel — DONE 25 Sep** (t.me/docogadaily + @docoga_daily_bot, Bot API, ₦0 forever).
 - **YouTube Shorts — DONE 25 Sep** (DocOga channel, resumable uploads via Data API, ₦0).
 - **Facebook Page — was marked DONE 26 Sep; actually wired and first-verified 12 Oct 2026** (Pages API use-case app, non-expiring page token, ₦0, `FACEBOOK_AUTOMATION.md`). The lesson the PRE-FLIGHT LAW below already encodes: *credentials existing is not a pipeline* — step 4, "VERIFY programmatically", is the step that was skipped, and it is now a dry-run button anyone can press in ten seconds. Next free lane: Threads (Meta App Review).
+- **Cross-step handoff audit — DONE 13 Oct 2026** (`tools/workflow_handoffs.py`, enforced by
+  `tools/qa.py`, tested both directions by `tools/tests/test_workflow_handoffs.py`). The class:
+  a value produced in one place and consumed in another, where **each half passes its own test**.
+  Three shapes, all of them history here — a `KEY=v` written to `$GITHUB_ENV` and read in the same
+  step (Actions assembles the environment only for the *next* step, so the read is empty);
+  `contains($ENV.X)` in a jq program where `X` is a shell variable that was never exported (this is
+  how Telegram's day-dedupe matched *every* open issue for a week — an empty needle in `contains("")`
+  is true for everything, which reads as "found it" rather than as a bug); and
+  `${{ steps.id.outputs.key }}` naming a step id or key that does not exist, which evaluates to the
+  empty string instead of failing. The rule for anyone adding a lane: **a value that crosses a
+  boundary needs a name at both ends**, and the gate now says so on the day it happens rather than
+  four days into an outage. The auditor's own history is the second lesson: its first run reported
+  five confident bugs in this repository and every one was a false positive (matching `$IG_USER_ID`
+  inside `${IG_USER_ID_OUT}`, and recognising only the first of a chained inline assignment) — so
+  the silences are pinned in its tests as carefully as the alarms, because a gate that cries wolf is
+  a gate that gets ignored.
+
 - **Silent-lane heartbeat — DONE 13 Oct 2026** (`automation-heartbeat.yml`, `tools/automation_heartbeat.py`, ₦0). The
   failure class this closes is the one that hurt most: **Telegram silent for 4 days, 6 red Telegram runs
   nobody was told about, Facebook described as "live" with zero runs.** Publishing lanes report themselves
