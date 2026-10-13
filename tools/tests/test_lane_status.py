@@ -245,6 +245,24 @@ class FailureModes(unittest.TestCase):
         self.assertEqual(code, 2)
         self.assertIn("known lanes", err.getvalue())
 
+    def test_a_lane_that_exists_only_on_a_branch_is_not_called_a_typo(self):
+        """The file is here, GitHub has never seen it: "unmerged", not "unknown".
+
+        `threads_autopost.yml` was in this repository for a full day with a correct `cron:`, and
+        the only answer the tool gave was "no workflow named … known lanes: threads" — which reads
+        like the lane is broken rather than like the merge has not happened yet.
+        """
+        gh = FakeGh({"actions/workflows$": workflows_payload(
+            ".github/workflows/telegram_autopost.yml")})
+        import io as _io
+        from contextlib import redirect_stderr
+        err = _io.StringIO()
+        with redirect_stderr(err):
+            code = lane_status.main(["--lane", "threads"], run=gh)
+        self.assertEqual(code, 2)
+        self.assertIn("not on the default branch yet", err.getvalue())
+        self.assertIn("Merge it", err.getvalue(), "the answer to an unmerged lane is the merge")
+
     def test_a_workflow_that_has_never_run_says_so_rather_than_lying_green(self):
         gh = FakeGh({
             "actions/workflows$": workflows_payload(".github/workflows/automation-heartbeat.yml"),

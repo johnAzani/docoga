@@ -196,6 +196,19 @@ def main(argv=None, run=None):
     try:
         found = resolve(workflow, args.repo, run=run)
         if not found:
+            # Two different problems used to wear one sentence: a misspelt lane, and a lane whose
+            # file exists in this checkout but has not reached the default branch. GitHub only
+            # lists (and only schedules) a workflow it has seen there, so a brand-new lane reads
+            # exactly like a typo — which is how a finished lane can be written off as broken for
+            # a day before anyone notices the file is fine and merely unmerged.
+            here = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                                ".github", "workflows", workflow)
+            if os.path.exists(here):
+                print("lane_status: %s exists in this checkout but GitHub has never listed it — "
+                      "it is not on the default branch yet, so its cron is not armed. Merge it; "
+                      "the schedule, not this tool, creates the first run." % workflow,
+                      file=sys.stderr)
+                return 2
             print("lane_status: no workflow named %s in %s — known lanes: %s"
                   % (workflow, args.repo, ", ".join(sorted(LANES))), file=sys.stderr)
             return 2
