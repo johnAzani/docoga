@@ -692,8 +692,26 @@ class DiscoveryTests(unittest.TestCase):
         self.assertIn("telegram_autopost.yml", by_file)
         self.assertEqual(by_file["telegram_autopost.yml"]["crons"], ["0 8 * * *"])
         self.assertTrue(by_file["facebook_autopost.yml"]["scheduled"])
-        self.assertFalse(by_file["instagram_autopost.yml"]["scheduled"],
-                         "Instagram is dispatch-only on purpose; the heartbeat must say so, not alarm")
+        # Instagram *was* dispatch-only, because a render had nowhere public to live. Since
+        # 13 Oct 2026 the lane commits the card under site/social/ and waits for the deployed
+        # URL, so it is scheduled — and the heartbeat is what notices if that ever stops being
+        # true, which is exactly why this test reads the real files instead of a fixture.
+        self.assertTrue(by_file["instagram_autopost.yml"]["scheduled"],
+                        "the media bridge exists; a lane that went back to dispatch-only "
+                        "should be loud about it, not quietly off the monitor")
+        self.assertEqual(by_file["instagram_autopost.yml"]["crons"], ["0 9 * * *"])
+        self.assertIn("threads_autopost.yml", by_file)
+        self.assertEqual(by_file["threads_autopost.yml"]["crons"], ["45 8 * * *"],
+                         "Threads sits 15 minutes after Facebook so two lanes never share a "
+                         "minute and one broken runner cannot look like two broken lanes")
+        # A lane the monitor cannot classify is a lane nobody is watching.
+        for name in ("threads_autopost.yml", "instagram_autopost.yml"):
+            with self.subTest(lane=name):
+                self.assertTrue(by_file[name]["labels"],
+                                "discover_lanes reads the label out of the workflow's own "
+                                "`gh issue create` line, so the file and the monitor cannot drift")
+        self.assertIn("threads-automation", by_file["threads_autopost.yml"]["labels"])
+        self.assertIn("instagram-automation", by_file["instagram_autopost.yml"]["labels"])
         self.assertIn("automation-heartbeat.yml", by_file,
                       "the monitor must judge itself — a silent monitor is the failure it exists for")
         for lane_entry in lanes:
@@ -708,6 +726,13 @@ class DiscoveryTests(unittest.TestCase):
         key, and stale advice in an issue is worse than no advice."""
         lanes = {lane["file"]: lane
                  for lane in hb.discover_lanes(str(ROOT / ".github" / "workflows"))}
+        for name, keys in (("threads_autopost.yml", ("THREADS_ACCESS_TOKEN", "THREADS_USER_ID")),
+                           ("instagram_autopost.yml", ("IG_ACCESS_TOKEN",))):
+            with self.subTest(lane=name):
+                for key in keys:
+                    self.assertIn(key, lanes[name]["secrets"],
+                                  "a new lane must tell the owner what to set, in the issue")
+                self.assertNotIn("GITHUB_TOKEN", lanes[name]["secrets"])
         telegram = lanes["telegram_autopost.yml"]
         self.assertIn("TELEGRAM_BOT_TOKEN", telegram["secrets"])
         self.assertIn("TELEGRAM_CHAT_ID", telegram["secrets"])

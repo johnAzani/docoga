@@ -1,45 +1,97 @@
-# Instagram Page autopost — manual dispatch only, on purpose (see the note at the
-# bottom of FACEBOOK_AUTOMATION.md): the Reels API needs a public media URL, and
-# rendered Shorts live in gitignored assets/, so an unattended run today would
-# publish nothing more often than not. The publishing path is shared with
-# tools/ig_publish.py and hardened the same way as Facebook's on 12 Oct 2026:
-# inputs via env (never interpolated), Graph API version from one constant, and
-# the carousel argument list built as a real bash array.
-name: Instagram Autopost
+name: DocOga Instagram Auto-Post
+
+# Posts one brand card a day to @docogadaily's Instagram at 10:00 in Lagos — 09:00 UTC.
+#
+# This lane used to be dispatch-only, and the reason in the old header was true but
+# incomplete: "the Reels API needs a public media URL, and rendered Shorts live in
+# gitignored assets/, so an unattended run today would publish nothing more often than
+# not." Two separate problems were hiding in that sentence, and they have different fixes:
+#
+#   1. **No public URL.** Fixed without spending anything and without a new account:
+#      `site/` is already deployed as the web root at https://docoga.com.ng, so a render
+#      committed to `site/social/` *is* a public URL once the site build finishes. The lane
+#      renders with `tools/social_card.py` (1080×1350 — exactly the 4:5 Instagram accepts),
+#      commits it, and then `--wait-url` polls the URL until it answers 200. That last step
+#      is the honest handling of a race we created: git knows about a file before the edge
+#      does, and Instagram's error for a 404 is "Unsupported URL request", which has sent
+#      people hunting for a permissions bug for years.
+#   2. **A publish that fails silently.** `tools/ig_publish.py` used to `return None` on
+#      every failure path into a `main()` that ignored it, so a red day printed a green tick.
+#      It now has an exit code per outcome (see its header) and the summary prints
+#      `IG_RESULT=`/`IG_CAUSE=` from the publisher's own log line, not from hope.
+#
+# What this lane still cannot promise, stated rather than buried: Reels. A Reel needs a
+# video URL, and the Shorts render is a `assets/videos/` scratch file with no public home
+# and no free host that Meta will accept. So `content_type` defaults to `card` (photo) and
+# `reel` refuses early with cause=media instead of timing out. If a video host ever exists,
+# the container code is already there.
+#
+# The caption is today's Threads copy, deliberately: `generate_telegram_content.py` owns
+# the words for every lane, so Instagram, Threads and Facebook say the same thing on the
+# same Tuesday with the shape each platform reads. A fourth template file is a fourth
+# voice, and the drift would be found by a reader, not by us.
+#
+# Standard Access is enough for this: Meta's App Review and Business Verification gates are
+# for apps publishing on *other* people's accounts. Posting to your own profile from an app
+# you own is what Standard Access exists for — the claim that this lane was blocked on
+# business verification was wrong, and `docs/INSTAGRAM_THREADS_AUTOMATION.md` says what is actually
+# required (a professional account, JPEG, ≤8 MB, 4:5…1.91:1, 100 posts per 24 h, 60-day
+# token that `tools/token_vault.py` keeps alive).
+
 on:
+  schedule:
+    - cron: '0 9 * * *'  # 09:00 UTC = 10:00 Lagos, after Threads so a shared failure is still two visible runs
   workflow_dispatch:
     inputs:
+      dry_run:
+        description: 'Preflight, render, and stop before creating any container'
+        required: false
+        default: false
+        type: boolean
+      probe_only:
+        description: 'Ask Instagram who the token authorises, then stop'
+        required: false
+        default: false
+        type: boolean
       content_type:
-        description: 'Content type'
-        required: true
+        description: 'What to post'
+        required: false
+        default: 'card'
         type: choice
         options:
+          - card
           - reel
           - photo
           - carousel
-      video_url:
-        description: 'Public video URL (for Reels)'
-        required: false
       image_url:
-        description: 'Public image URL (for photos)'
+        description: 'Public image URL (photo/carousel) — skips the render step'
         required: false
       image_urls:
-        description: 'Public image URLs, comma-separated (for carousels)'
+        description: 'Public image URLs, comma-separated (carousel, 2-10)'
+        required: false
+      video_url:
+        description: 'Public video URL (reel)'
         required: false
       caption:
-        description: 'Post caption'
-        required: true
-      cover_url:
-        description: 'Public cover image URL (for Reels)'
+        description: 'Caption override (still duplicate-checked)'
         required: false
+        type: string
+      force:
+        description: 'Post even if today is already in the ledger or on the account'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
-  contents: read
+  contents: write  # the render under site/social/ and the ledger are committed back
 
 jobs:
   publish:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 30  # > the 15-minute media-liveness wait, or the deadline is fiction
+    env:
+      META_GRAPH_VERSION: ${{ vars.META_GRAPH_VERSION || 'v26.0' }}
+      IG_API_PATH: ${{ vars.IG_API_PATH || 'instagram-login' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -49,68 +101,347 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install requests
+        run: |
+          python3 -m pip install --quiet pillow cryptography
+          # pillow draws the card; cryptography is tools/token_vault.py's only requirement, and
+          # that tool refuses to run without it rather than storing a token in plaintext.
 
-      # Inputs reach the script through `env:` only. Interpolating `${{ inputs.… }}`
-      # into the command line means a caption with an apostrophe, a quote or
-      # `$(…)` is shell code executed on the runner with this job's secrets in
-      # scope — the same defect that made the Facebook workflow unsafe to hand a
-      # sentence. `--flag=value` form also keeps a caption starting with `-` from
-      # being read as an option by argparse.
-      - name: Publish to Instagram
+      - name: Load the credential (vault first, secret as bootstrap)
         env:
           IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
-          IG_USER_ID: ${{ secrets.IG_USER_ID }}
-          META_APP_ID: ${{ secrets.META_APP_ID }}
-          META_APP_SECRET: ${{ secrets.META_APP_SECRET }}
-          META_GRAPH_VERSION: v26.0
-          IG_MODE: ${{ inputs.content_type }}
-          IG_CAPTION: ${{ inputs.caption }}
-          IG_VIDEO: ${{ inputs.video_url }}
-          IG_IMAGE: ${{ inputs.image_url }}
-          IG_IMAGES: ${{ inputs.image_urls }}
-          IG_COVER: ${{ inputs.cover_url }}
         run: |
-          set -euo pipefail
-          python3 -m pip install --quiet requests
-          case "$IG_MODE" in
+          set -u
+          umask 077
+          if [ -f logs/ig_access_token.box ]; then
+            if python3 tools/token_vault.py open --name IG_ACCESS_TOKEN --out /tmp/ig_token; then
+              echo "IG_CREDENTIAL=vault"
+              echo "- credential: **vault** (rolling, refreshed by this lane)" >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "::warning title=Token vault unreadable::falling back to the IG_ACCESS_TOKEN secret — the vault box exists but did not open, so either SOCIAL_TOKEN_KEY rotated or the file is damaged."
+              printf '%s' "${IG_ACCESS_TOKEN:-}" > /tmp/ig_token
+              chmod 600 /tmp/ig_token
+            fi
+          elif [ -n "${IG_ACCESS_TOKEN:-}" ]; then
+            printf '%s' "$IG_ACCESS_TOKEN" > /tmp/ig_token
+            chmod 600 /tmp/ig_token
+            echo "IG_CREDENTIAL=secret"
+          else
+            echo "::error title=Instagram is not configured::no IG_ACCESS_TOKEN secret and no logs/ig_access_token.box. Setup step, not an outage — see docs/INSTAGRAM_THREADS_AUTOMATION.md"
+            echo "IG_RESULT=refused"
+            echo "IG_CAUSE=setup"
+            exit 2
+          fi
+          # The token reaches the publisher as a 0600 file, not an environment variable:
+          # anything that dumps the step's env (a debug flag, a crashed shell) would carry it
+          # into a log Actions does not scrub line by line.
+          echo "IG_TOKEN_FILE=/tmp/ig_token" >> "$GITHUB_ENV"
+
+      - name: Preflight — may this lane post?
+        run: |
+          set -o pipefail
+          # `--probe` costs one read call and creates nothing, so a green preflight is not a
+          # published post. It also refuses a non-professional account *before* the render,
+          # which is the difference between a 20-second red run and a 6-minute one.
+          IG_ACCESS_TOKEN="$(cat /tmp/ig_token)" python3 tools/ig_publish.py --probe \
+            2>&1 | tee /tmp/ig_preflight.log
+          IG_USER_ID_OUT=$(sed -n 's/.*id \([0-9]*\).*/\1/p' /tmp/ig_preflight.log | head -1)
+          echo "IG_USER_ID=${IG_USER_ID_OUT:-}" >> "$GITHUB_ENV"
+
+      - name: Probe only — stop here
+        if: ${{ inputs.probe_only }}
+        run: |
+          {
+            echo "### Instagram probe"
+            echo
+            echo '```'
+            tail -n 12 /tmp/ig_preflight.log
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "Probe mode — nothing was rendered and no container was created."
+
+      - name: Today's caption
+        if: ${{ !inputs.probe_only && !inputs.dry_run }}
+        env:
+          IG_CAPTION: ${{ inputs.caption }}
+        run: |
+          set -o pipefail
+          # One day, one message, three shapes. Threads' copy is already de-escaped, already
+          # fitted to 500 characters, and already seeded on the date, so a re-run of this
+          # lane produces the *same* caption — which is what makes the duplicate guard below
+          # able to recognise its own yesterday.
+          python3 scripts/generate_threads_content.py 2>&1 | tee /tmp/ig_generate.log
+          if [ ! -f assets/threads/threads_content_latest.json ]; then
+            echo "::error title=no copy generated::assets/threads/threads_content_latest.json is missing"
+            exit 5
+          fi
+          if [ -n "${IG_CAPTION:-}" ]; then
+            python3 - <<'IG_CAPTION'
+          import json, os, pathlib
+          path = pathlib.Path("assets/threads/threads_content_latest.json")
+          payload = json.loads(path.read_text(encoding="utf-8"))
+          payload["text"] = os.environ["IG_CAPTION"].strip()
+          payload["post_type"] = "manual"
+          payload.setdefault("trimmed", []).append("dispatch caption replaced the generated copy")
+          path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+          print("dispatch caption override in force (%d characters)" % len(payload["text"]))
+          IG_CAPTION
+          fi
+
+      # The render is written into the deployed tree on purpose: it is the only ₦0 way to
+      # give Meta a URL it can fetch. That also means a failed run can leave an orphan JPEG
+      # under site/social/ — harmless, unreachable, and reclaimed next month.
+      #
+      # Note the *missing* `[skip ci]` on this commit, against the house rule for automated
+      # commits: the render has to trigger the site deploy, because the deploy is what makes
+      # the URL exist. Bookkeeping commits skip CI to protect the free plan's minutes; this
+      # commit is not bookkeeping, it is the publish. Skipping it would hang the run on a
+      # 15-minute wait for a page that was never going to change.
+      - name: Render the card
+        if: ${{ !inputs.probe_only && !inputs.dry_run && inputs.content_type != 'reel' }}
+        run: |
+          set -o pipefail
+          DAY=$(date -u +%F)
+          OUT="site/social/${DAY}-instagram.jpg"
+          python3 tools/social_card.py \
+            --from-json assets/threads/threads_content_latest.json \
+            --kicker "$(python3 -c 'import json;print(json.load(open("assets/threads/threads_content_latest.json")).get("post_type",""))')" \
+            --out "$OUT" 2>&1 | tee /tmp/ig_render.log
+          tee -a "$GITHUB_STEP_SUMMARY" < /tmp/ig_render.log > /dev/null
+          CARD_URL=$(sed -n 's/^CARD_URL=//p' /tmp/ig_render.log | tail -1)
+          echo "IG_MEDIA_URL=${CARD_URL}" >> "$GITHUB_ENV"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f "$OUT"
+          if git diff --staged --quiet; then
+            echo "Render already committed on this branch — nothing to push."
+          else
+            git commit -q -m "Auto: Instagram card ${DAY}"
+            git push origin "HEAD:${{ github.event.repository.default_branch }}" \
+              || echo "::warning title=Card not pushed::the JPEG exists only in this run, so the URL Instagram will be given is not published yet. If the push failed, the media-liveness wait below will fail with cause=media — which is the honest outcome, not a mystery."
+          fi
+
+      - name: Ledger — has today already been posted?
+        if: ${{ !inputs.probe_only && !inputs.dry_run }}
+        env:
+          LEDGER_LABEL: Instagram publish ledger
+          IG_FORCE: ${{ inputs.force }}
+        run: |
+          set -o pipefail
+          TITLE=$(python3 -c 'import json;print(json.load(open("assets/threads/threads_content_latest.json"))["text"][:80])')
+          RUN_DATE=$(date -u +%F)
+          if python3 tools/youtube_ledger.py --ledger logs/instagram_sent.json check \
+               --title "$TITLE" --date "$RUN_DATE"; then
+            echo "IG_LEDGER=clear"
+          else
+            code=$?
+            FORCE_ON=""
+            case "$(printf '%s' "${IG_FORCE:-}" | tr '[:upper:]' '[:lower:]')" in
+              1|true|yes|on) FORCE_ON=1 ;;
+            esac
+            if [ "$code" = "3" ] && [ -z "$FORCE_ON" ]; then
+              echo "IG_LEDGER=duplicate"
+              echo "- ledger: today's caption is already recorded, so **nothing was sent**" >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            echo "::warning title=Ledger said no (exit $code)::continuing — the account itself is the authority"
+            echo "IG_LEDGER=unreadable"
+          fi
+
+      - name: Publish to Instagram
+        if: ${{ !inputs.probe_only && !inputs.dry_run }}
+        env:
+          IG_FORCE: ${{ inputs.force }}
+        env:
+          IG_CONTENT_TYPE: ${{ inputs.content_type }}
+          IG_IMAGE_URL_OVERRIDE: ${{ inputs.image_url }}
+        run: |
+          set -o pipefail
+          # Dispatch strings reach this script through `env:` only. Interpolating an input into
+          # the command line is the injection hole the Facebook lane closed on 12 Oct: a caption
+          # or URL containing `$(…)` becomes shell code running with this job's secrets in scope.
+          case "${IG_CONTENT_TYPE:-card}" in
             reel)
-              [ -n "$IG_VIDEO" ] || { echo "::error title=reel needs a URL::video_url is empty"; exit 4; }
-              if [ -n "$IG_COVER" ]; then
-                python3 tools/ig_publish.py --video-url="$IG_VIDEO" --caption="$IG_CAPTION" --cover-url="$IG_COVER"
-              else
-                python3 tools/ig_publish.py --video-url="$IG_VIDEO" --caption="$IG_CAPTION"
-              fi
-              ;;
-            photo)
-              [ -n "$IG_IMAGE" ] || { echo "::error title=photo needs a URL::image_url is empty"; exit 4; }
-              python3 tools/ig_publish.py --image-url="$IG_IMAGE" --caption="$IG_CAPTION"
+              echo "::error title=Reels need a public video URL::this lane has no free public host for a rendered video, so it refuses instead of creating a container that will fail to fetch. docs/INSTAGRAM_THREADS_AUTOMATION.md has the two real options."
+              exit 5
               ;;
             carousel)
-              # ig_publish.py takes the list with nargs="+"; the previous draft
-              # built a URL_ARGS string it never passed and then handed
-              # unquoted, word-split URLs to --image-urls.
-              [ -n "$IG_IMAGES" ] || { echo "::error title=carousel needs URLs::image_urls is empty"; exit 4; }
-              ARGS=()
-              IFS=',' read -ra PARTS <<< "$IG_IMAGES"
-              for part in "${PARTS[@]}"; do
-                trimmed="$(echo "$part" | xargs)"   # strip the spaces a typed "a, b" leaves behind
-                [ -n "$trimmed" ] && ARGS+=("$trimmed")
-              done
-              [ ${#ARGS[@]} -ge 2 ] || { echo "::error title=carousel needs 2+ images::got ${#ARGS[@]}"; exit 4; }
-              python3 tools/ig_publish.py --image-urls "${ARGS[@]}" --caption="$IG_CAPTION"
-              ;;
-            *)
-              echo "::error title=unknown content_type::'$IG_MODE' is not reel, photo or carousel"
-              exit 4
+              echo "::error title=carousel needs URLs::the daily pipeline renders one card; pass image_urls on a dispatch (see the workflow inputs) for a multi-slide post."
+              exit 5
               ;;
           esac
+          CAPTION=$(python3 -c 'import json;print(json.load(open("assets/threads/threads_content_latest.json"))["text"])')
+          ARGS=(--caption "$CAPTION" --wait-url --wait-url-deadline 900)
+          if [ -n "${IG_IMAGE_URL_OVERRIDE:-}" ]; then
+            ARGS+=(--image-url "$IG_IMAGE_URL_OVERRIDE")
+          else
+            [ -n "${IG_MEDIA_URL:-}" ] || { echo "::error title=no card URL::the render step did not produce CARD_URL"; exit 5; }
+            ARGS+=(--image-url "$IG_MEDIA_URL")
+          fi
+          FORCE_ON=""
+          case "$(printf '%s' "${IG_FORCE:-}" | tr '[:upper:]' '[:lower:]')" in
+            1|true|yes|on) FORCE_ON=1 ;;
+          esac
+          [ -n "$FORCE_ON" ] && ARGS+=(--force)
+          # IG_ACCESS_TOKEN via env because argparse reads the environment; the value stays in
+          # this step's process, never in the commit, the summary, or the issue body.
+          set +e
+          IG_ACCESS_TOKEN="$(cat /tmp/ig_token)" IG_USER_ID="${IG_USER_ID:-}" \
+            python3 tools/ig_publish.py "${ARGS[@]}" 2>&1 | tee /tmp/ig_post.log
+          PIPE_STATUS=${PIPESTATUS[0]}
+          set -e
+          RESULT=$(sed -n 's/^IG_RESULT=//p' /tmp/ig_post.log | tail -1)
+          CAUSE=$(sed -n 's/^IG_CAUSE=//p' /tmp/ig_post.log | tail -1)
+          PERMALINK=$(sed -n 's/^IG_PERMALINK=//p' /tmp/ig_post.log | tail -1)
+          {
+            echo "### Instagram post"
+            echo
+            echo "- result: \`${RESULT:-?}${CAUSE:+ · cause \`${CAUSE}\`}\`"
+            echo "- permalink: ${PERMALINK:-not reported}"
+            echo "- media: ${IG_MEDIA_URL:-dispatch URL} — served from the deployed site, which is why the wait exists"
+            echo "- ledger: \`logs/instagram_sent.json\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+          # sent / refused-duplicate / probed are successes; a red publisher is a red run.
+          case "$RESULT" in
+            sent|refused-duplicate) exit 0 ;;
+            *) exit "${PIPE_STATUS:-6}" ;;
+          esac
 
-      - name: Refresh token
+      - name: Wind the 60-day token clock
         if: always()
+        continue-on-error: true
         env:
-          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
-          META_APP_ID: ${{ secrets.META_APP_ID }}
-          META_APP_SECRET: ${{ secrets.META_APP_SECRET }}
+          BRANCH: ${{ github.event.repository.default_branch }}
         run: |
-          python3 tools/ig_publish.py --refresh-token || echo "Token refresh skipped"
+          if ! IG_ACCESS_TOKEN="$(cat /tmp/ig_token)" python3 tools/ig_publish.py --refresh-token \
+               > /tmp/ig_refresh.json 2>/tmp/ig_refresh.err; then
+            echo "::warning title=Instagram token not refreshed::$(tail -c 200 /tmp/ig_refresh.err 2>/dev/null | tr '\n' ' ') — repeated for weeks, this ends in an expired token and a credentials issue."
+            exit 0
+          fi
+          if ! python3 tools/token_vault.py seal --name IG_ACCESS_TOKEN --json /tmp/ig_refresh.json; then
+            rm -f /tmp/ig_refresh.json
+            echo "::warning title=Instagram token not sealed::SOCIAL_TOKEN_KEY is not set, so the refreshed value dies with this run. One tap fixes it permanently: gh secret set SOCIAL_TOKEN_KEY. Until then this lane has 60 days, not forever."
+            exit 0
+          fi
+          rm -f /tmp/ig_refresh.json
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f logs/ig_access_token.box
+          if git diff --staged --quiet; then
+            echo "Sealed box unchanged."
+          else
+            git commit -q -m "Auto: wind Instagram token $(date -u +%F) [skip ci]"
+            git pull --rebase --autostash origin "$BRANCH" >/dev/null 2>&1 || true
+            git push origin "HEAD:$BRANCH" || echo "::warning title=Sealed token not pushed::next run will use the older value"
+          fi
+          python3 tools/token_vault.py status --name IG_ACCESS_TOKEN | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Record it in the ledger
+        if: ${{ !inputs.probe_only && !inputs.dry_run }}
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          if ! grep -q '^IG_RESULT=sent$' /tmp/ig_post.log 2>/dev/null; then
+            echo "Nothing was published, so nothing is recorded."
+            exit 0
+          fi
+          MEDIA_ID=$(sed -n 's/^IG_MEDIA_ID=//p' /tmp/ig_post.log | tail -1)
+          PERMALINK=$(sed -n 's/^IG_PERMALINK=//p' /tmp/ig_post.log | tail -1)
+          TITLE=$(python3 -c 'import json;print(json.load(open("assets/threads/threads_content_latest.json"))["text"][:80])')
+          python3 tools/youtube_ledger.py --ledger logs/instagram_sent.json record \
+            --title "$TITLE" --video-id "${MEDIA_ID:-unknown}" --url "$PERMALINK" \
+            --date "$(date -u +%F)" --run-id "${{ github.run_id }}" --topic instagram-card
+
+      - name: Commit the ledger
+        if: ${{ !inputs.probe_only && !inputs.dry_run }}
+        continue-on-error: true
+        env:
+          BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          if [ ! -f logs/instagram_sent.json ]; then echo "No ledger file."; exit 0; fi
+          if [ -z "$(git status --porcelain -- logs/instagram_sent.json)" ]; then
+            echo "Ledger unchanged — nothing to commit."; exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add logs/instagram_sent.json
+          git commit -q -m "Auto: record Instagram post $(date -u +%F) [skip ci]" || exit 0
+          git pull --rebase --autostash origin "$BRANCH" || { echo "::warning title=Instagram ledger not rebased::the post is live but unrecorded, so a re-run could publish it again."; exit 1; }
+          git push origin "HEAD:$BRANCH" || echo "::warning title=Instagram ledger not pushed::the post is live, the entry did not reach $BRANCH."
+
+      - name: Open a visible issue if the run failed
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          RUN_DATE="$(date +%F)"
+          PREFLIGHT_TAIL=$(tail -n 15 /tmp/ig_preflight.log 2>/dev/null || echo "(preflight produced no output)")
+          POST_TAIL=$(tail -n 25 /tmp/ig_post.log 2>/dev/null || echo "(the publisher never ran — the preflight, the render, or the ledger stopped the run)")
+          RENDER_TAIL=$(tail -n 8 /tmp/ig_render.log 2>/dev/null || echo "(no render log)")
+
+          gh label create instagram-automation --color E1306C \
+            --description "Unattended Instagram card lane" >/dev/null 2>&1 || true
+
+          cat > /tmp/issue_body.md <<BODY
+          The unattended Instagram post for **$RUN_DATE** failed. **Nothing was published.**
+
+          - Run: $RUN_URL
+
+          ### What the preflight said
+
+          \`\`\`
+          $PREFLIGHT_TAIL
+          \`\`\`
+
+          ### What the publisher said
+
+          \`\`\`
+          $POST_TAIL
+          \`\`\`
+
+          ### What the render said
+
+          \`\`\`
+          $RENDER_TAIL
+          \`\`\`
+
+          ### Reading it
+
+          - \`Unsupported URL request\` / \`media\` — the JPEG was not public when Instagram
+            looked. Either the site deploy was still running (the lane waits 15 min), the
+            push of \`site/social/…\` failed, or the URL was built with a \`/site/\` prefix.
+          - \`profile_type\` is not business/creator — Instagram's API has no path for a
+            personal account. Switch it in the app, then re-run with probe_only=true.
+          - \`error code 190\` / \`the access token is invalid\` — the 60-day token expired.
+            Re-consent once; if \`SOCIAL_TOKEN_KEY\` is set the lane keeps it alive after that.
+          - \`(#200)\` / \`permission\` — the app lost \`instagram_business_content_publish\`,
+            or the credential is for the other login path (\`vars.IG_API_PATH\`).
+          - \`code 32\` / \`rate limit\` — 100 API-published posts per 24 h per account. One a
+            day cannot do that alone; look for another publisher using the same token.
+          - \`IG_CAUSE=setup\` — nothing is configured yet. Not an outage; a step.
+          BODY
+
+          TAIL=$(cat /tmp/ig_preflight.log /tmp/ig_post.log /tmp/ig_render.log 2>/dev/null || true)
+          case "$TAIL" in
+            *"secrets missing"*|*"not configured"*) CAUSE=setup ;;
+            *190*|*"access token is invalid"*|*expired*|*Unauthorized*) CAUSE=credentials ;;
+            *"(#200)"*|*permission*|*"not approved"*) CAUSE=permission ;;
+            *"Unsupported URL"*|*"media rejected"*|*"never became public"*|*"not-jpeg"*|*"no-SOF"*) CAUSE=media ;;
+            *"profile_type"*|*"business account"*|*"professional account"*) CAUSE=account ;;
+            *"content_publishing_limit"*|*"rate limit"*|*"quota"*) CAUSE=quota ;;
+            *"transport failure"*) CAUSE=transport ;;
+            *) CAUSE=run ;;
+          esac
+
+          # Newest match wins, and a pre-13-Oct issue with no cause in its title is folded in
+          # rather than doubled — the same rule the Telegram lane learned the hard way when #16
+          # swallowed four days of failures because an empty jq needle matched everything.
+          EXISTING=$(CAUSE_TAG="[$CAUSE]" LEGACY_PREFIX="Instagram post failed — " \
+            gh issue list --label instagram-automation --state open --limit 100 --json number,title \
+            --jq "[.[] | select((.title | contains(\$ENV.CAUSE_TAG)) or ((.title | contains(\$ENV.LEGACY_PREFIX)) and (.title | contains(\"[\") | not))) | .number] | max // empty")
+          if [ -n "$EXISTING" ]; then
+            gh issue comment "$EXISTING" --body-file /tmp/issue_body.md || true
+            echo "Same cause as issue #$EXISTING — commented instead of filing a second one"
+          else
+            gh issue create --title "Instagram post failed — $RUN_DATE [$CAUSE]" --label instagram-automation --body-file /tmp/issue_body.md || echo "::warning title=Issue not created::bookkeeping failed; the run log still carries the cause"
+          fi

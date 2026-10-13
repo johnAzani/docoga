@@ -239,7 +239,11 @@ class FailureIssueHygieneTests(unittest.TestCase):
     STEP = "Open a visible issue if the run failed"
     LANES = {"telegram_autopost.yml": "telegram-automation",
              "facebook_autopost.yml": "facebook-automation",
-             "youtube_scheduled.yml": "youtube-automation"}
+             "youtube_scheduled.yml": "youtube-automation",
+             # The Meta lanes join the same contract on the day they are written, not "later":
+             # every rule in this class exists because a lane without one hid a failure for days.
+             "threads_autopost.yml": "threads-automation",
+             "instagram_autopost.yml": "instagram-automation"}
 
     @classmethod
     def setUpClass(cls):

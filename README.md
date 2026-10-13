@@ -29,6 +29,8 @@ for Nigeria. Single-file static app — no build step, no server, 0 Naira/month 
   the lane and the secrets to check. Handbook, token minting, failure matrix, the
   Reels three-phase protocol and what is deliberately *not* automated:
   **`FACEBOOK_AUTOMATION.md`**. Telegram: `TELEGRAM_AUTOMATION.md`.
+- Instagram + Threads (the two Meta lanes, incl. the token vault and the Standard-Access
+  correction): **`INSTAGRAM_THREADS_AUTOMATION.md`**.
   Run the heartbeat by hand any time:
   `python3 tools/automation_heartbeat.py --repo <owner>/<repo> --token "$(gh auth token)" --verbose`
 - `mobile/` — the Android app: a Capacitor shell around `/admin`, built to a

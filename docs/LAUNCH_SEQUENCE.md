@@ -4,7 +4,7 @@
 matters because merging starts the clocks — and because one of the two repairs below, done first,
 would let an *old* unguarded poster start publishing to your readers tonight. **Step 1 is the merge**, steps 2 and 3 are the two
 repairs it exposes (Telegram's chat id, Google's consent screen), step 4 is how you know it
-worked, step 5 is the decision that is not urgent.
+worked, step 5 turns on the two Meta lanes.
 
 The order below is not the order the steps were written in. It is the order that is safe, and it
 comes from reading `main` rather than trusting this document's first draft (see the table under
@@ -74,7 +74,8 @@ What the merge turns on, exactly:
 | `facebook_autopost.yml` | 08:30 UTC daily | post to the Page, and to Reels when a render exists; asks Graph API before repeating itself |
 | `youtube_scheduled.yml` | 17:00 UTC Tue & Fri | render → upload → read back → record `logs/youtube_published.json` |
 | `automation-heartbeat.yml` | 18:00 UTC daily | judge each lane from run history **and** the ledgers; file/update/close one issue |
-| `instagram_autopost.yml` | never (dispatch only) | nothing. Decide its fate in step 5. |
+| `threads_autopost.yml` | 08:45 UTC daily | needs two secrets (step 5). Until they exist it files **one** `[setup]` issue and stops — it does not pretend. |
+| `instagram_autopost.yml` | 09:00 UTC daily | same contract: `[setup]` issue until `IG_ACCESS_TOKEN` exists, then a card on the profile with the render committed under `site/social/`. |
 
 The three ledgers are **absent from `main` today** — no lane has ever recorded a publish there.
 After the first successful run of each, `git show main:logs/telegram_sent.json` should exist.
@@ -236,18 +237,47 @@ is not an error; it is the lane telling you it posted on the ledger's word alone
 
 ---
 
-## Step 5 — Instagram: decide, don't drift
+## Step 5 — the two Meta lanes: 20 minutes, then they are unattended
 
-`instagram_autopost.yml` is `workflow_dispatch`-only and its media container path needs a Meta
-app with `instagram_content_publish` approved — which is a business-verification conversation,
-not a code task. Two honest options: give it credentials and a schedule when that approval
-exists, or leave it dispatch-only and let the heartbeat stop treating it as a lane. What is not
-honest is a workflow that looks maintained and cannot run. Say which and I will do it.
+This step used to read *"Instagram needs App Review and business verification, so it stays
+dispatch-only"*. That was wrong, and the correction is the reason the lane is schedulable now:
+**Standard Access** covers an app publishing to accounts its own owner manages — no review, no
+verification, no queue. Full research, the requirement matrix, the tap list and the failure table
+are in `INSTAGRAM_THREADS_AUTOMATION.md`; what is here is the shortest honest path.
+
+```bash
+gh secret set THREADS_USER_ID     --repo johnAzani/docoga --body '<numeric id>'
+gh secret set THREADS_ACCESS_TOKEN --repo johnAzani/docoga --body '<60-day token>'
+gh secret set SOCIAL_TOKEN_KEY    --repo johnAzani/docoga --body "$(openssl rand -hex 32)"
+gh workflow run threads_autopost.yml -f dry_run=true    # expects: exit 3 + a chat-free reason
+gh workflow run threads_autopost.yml                    # the real post
+```
+
+`SOCIAL_TOKEN_KEY` is the tap people skip, and it is the one that decides whether you are back
+here in sixty days: with it, each run refreshes the Meta token and seals the new value into
+`logs/*_token.box` in the repo (keyed on a secret a workflow cannot write — that is why the key
+has to be set by a human exactly once); without it, the lane still posts and silently loses every
+refresh. The workflow says which state you are in rather than letting you discover it in
+December.
+
+| check | expected |
+|---|---|
+| `gh run list --limit 4` | `Threads autopost` success, `Instagram autopost` success or one open `[setup]` issue |
+| `git show main:logs/threads_sent.json` | an entry with a `threads.net` permalink |
+| the run summary | `THREADS_RESULT=published`, `TOKEN_EXPIRES_IN_DAYS=59` (60 after a refresh) |
+| `python3 tools/lane_status.py --lane threads` | exit 0 and no failing step |
+
+**Instagram's extra step is the file, not the token**: the card is rendered into `site/social/`,
+committed, and the lane waits for the deployed URL to answer before creating the container
+(`--wait-url`), because Meta downloads the image rather than receiving it. Reels remain refused
+for the same reason — no public video host yet — and that refusal is one line in the log with
+`IG_CAUSE=media`, not a timeout.
 
 ---
 
 ## What this page is not
 
 Not a status page: the current truth is `gh run list` and the ledgers. Not a substitute for the
-per-lane handbooks — `TELEGRAM_AUTOMATION.md`, `FACEBOOK_AUTOMATION.md`, `YOUTUBE_AUTOMATION.md`
-hold the structure research, the failure tables and the reasoning; this page holds only the order.
+per-lane handbooks — `TELEGRAM_AUTOMATION.md`, `FACEBOOK_AUTOMATION.md`, `YOUTUBE_AUTOMATION.md`,
+`INSTAGRAM_THREADS_AUTOMATION.md` hold the structure research, the failure tables and the
+reasoning; this page holds only the order.

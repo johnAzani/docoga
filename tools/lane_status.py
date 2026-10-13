@@ -34,6 +34,7 @@ LANES = {
     "youtube": "youtube_scheduled.yml",
     "youtube-legacy": "youtube_autopost.yml",
     "instagram": "instagram_autopost.yml",
+    "threads": "threads_autopost.yml",
     "heartbeat": "automation-heartbeat.yml",
 }
 

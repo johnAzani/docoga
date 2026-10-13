@@ -26,3 +26,4 @@ docoga-github-repo.zip
 # Generated social content (rendered frames, per-day copy) — CI scratch space,
 # rebuilt from the same date-seeded templates on every run.
 assets/facebook/
+assets/threads/

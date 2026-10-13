@@ -674,6 +674,141 @@ check("telegram guard: the run summary reports which guard was watching",
 check("telegram guard: the preflight can be checked without a token",
       "--preview" in tg_pre and "telegram_preview" in tg_pre,
       "the owner has to be able to verify the guard from a terminal, with no secret in hand")
+# ── the Meta lanes (Threads + Instagram): what cannot be verified without a live token ──
+_meta_paths = {
+    "threads publisher": "tools/threads_publish.py",
+    "threads generator": "scripts/generate_threads_content.py",
+    "threads workflow": ".github/workflows/threads_autopost.yml",
+    "instagram publisher": "tools/ig_publish.py",
+    "instagram workflow": ".github/workflows/instagram_autopost.yml",
+    "card renderer": "tools/social_card.py",
+    "token vault": "tools/token_vault.py",
+}
+_meta = {}
+for _label, _rel in _meta_paths.items():
+    _present = os.path.exists(os.path.join(ROOT, _rel))
+    check("meta lanes: %s exists" % _label, _present,
+          "a lane that is documented but absent is a promise nobody can keep")
+    if _present:
+        _meta[_label] = open(os.path.join(ROOT, _rel), encoding="utf-8").read()
+
+if len(_meta) == len(_meta_paths):
+    check("meta lanes: a failed publish is a failed run",
+          "sys.exit(main())" in _meta["threads publisher"]
+          and "return 3 if exc.cause" in _meta["threads publisher"]
+          and "raise SystemExit(2)" in _meta["instagram publisher"]
+          and "machine(\"refused\", \"setup\")" in _meta["instagram publisher"]
+          and "sys.exit(main())" in _meta["instagram publisher"],
+          "ig_publish.py's first version returned None on every failure and exited 0 — a red "
+          "day wearing a green tick, the single worst property a publisher can have")
+    def _code_only(_text):
+        # Drop the module docstring: these files document the leak they closed, and a check
+        # that reads prose as code fails on the changelog instead of on the bug.
+        return re.sub(r'"""(?:[^"]|"(?!""))*"""', "", _text, count=1, flags=re.S)
+
+    # The dangerous *shapes*: slicing a secret, printing the variable, concatenating it into a
+    # message. A line merely containing the word "token" is prose about the credential ("the
+    # token was rejected") and flagging those is how a check gets switched off by the next
+    # person who has a real job to do. This mirrors the existing Facebook publisher's check.
+    _leaks = []
+    for _label in ("threads publisher", "instagram publisher"):
+        _body = _code_only(_meta[_label])
+        if re.search(r"print\([^)]*(?:\btoken\[|\bnew_token\b|% token\)|\+ token\b)", _body):
+            _leaks.append(_label)
+    check("meta lanes: neither publisher prints a credential it was not asked to hand on",
+          not _leaks and "def fingerprint(" in _meta["threads publisher"]
+          and "def fingerprint(" in _meta["instagram publisher"]
+          and "fingerprint(token)" in _meta["threads publisher"],
+          "the old --refresh-token printed 20 characters of a live token into the run log; "
+          "a fingerprint identifies *which* credential failed without being it"
+          + (" — printing a credential in: " + ", ".join(_leaks) if _leaks else ""))
+    check("meta lanes: a refreshed token is redirected, and then erased",
+          "> /tmp/threads_refresh.json" in _meta["threads workflow"]
+          and "rm -f /tmp/threads_refresh.json" in _meta["threads workflow"]
+          and "> /tmp/ig_refresh.json" in _meta["instagram workflow"]
+          and "rm -f /tmp/ig_refresh.json" in _meta["instagram workflow"],
+          "`--refresh` prints JSON on purpose so the vault can seal it — which is only safe "
+          "because stdout is redirected to a file the step then deletes")
+    check("meta lanes: both redact an API body before printing it",
+          "def redact(" in _meta["threads publisher"] and "redact(self.body)" in _meta["threads publisher"]
+          and "def redact(" in _meta["instagram publisher"] and "redact(self.body)" in _meta["instagram publisher"],
+          "Meta quotes part of the token it was handed back in its own error text")
+    check("meta lanes: the vault refuses instead of storing plaintext",
+          "refusing to store a token" in _meta["token vault"]
+          and "AESGCM" in _meta["token vault"]
+          and "os.replace" in _meta["token vault"] and "open needs --out" in _meta["token vault"],
+          "a security tool that degrades quietly into an exfiltration tool is worse than none; "
+          "the atomic write is so a killed run cannot leave half a box, and refusing to print "
+          "a plaintext token is the point of the file")
+    check("meta lanes: the vault never writes into the deployed site",
+          "refusing to write a vault file inside site/" in _meta["token vault"],
+          "site/ is the public web root; a secret box put there is published, ciphertext or not")
+    check("meta lanes: the card is exactly the ratio Instagram accepts",
+          "CARD_W, CARD_H = 1080, 1350" in _meta["card renderer"]
+          and "ASPECT_MIN, ASPECT_MAX = 0.8, 1.91" in _meta["instagram publisher"],
+          "4:5 is the narrowest ratio content publishing takes; anything else answers "
+          "'Unsupported URL request', which every human so far has misread as permissions")
+    check("meta lanes: the render URL drops the site/ prefix",
+          'if serving.startswith("site/")' in _meta["card renderer"],
+          "wrangler publishes ./site as the root, so /site/social/x.jpg 404s forever")
+    check("meta lanes: Threads copy is fitted in the platform's own units",
+          "def threads_cost(" in _meta["threads generator"]
+          and "def cost(" in _meta["threads publisher"]
+          and "MAX_COST" in _meta["threads generator"] and "MAX_COST" in _meta["threads publisher"],
+          "Meta charges an emoji at 4 bytes, so len() is not the number that decides acceptance")
+    check("meta lanes: both ask the platform what it already carries",
+          "def find_duplicate(" in _meta["threads publisher"]
+          and "def find_duplicate(" in _meta["instagram publisher"],
+          "the duplicate guard is the platform's memory; the ledger is only ours")
+    check("meta lanes: an unreadable guard warns and posts",
+          "duplicate guard unavailable" in _meta["threads publisher"]
+          and "duplicate guard unavailable" in _meta["instagram publisher"],
+          "fail-open with a name on it, or a dead endpoint silences a lane for a week")
+    check("meta lanes: the workflow reads the publisher's exit code, not its mood",
+          "THREADS_RESULT=" in _meta["threads workflow"] and "sed -n" in _meta["threads workflow"]
+          and "sent|refused-duplicate|dry-run)" in _meta["threads workflow"],
+          "a refusal is a success and a silence is not: the case statement is the whole difference")
+
+    # Every `run:` block in every workflow must be valid bash. A stray `done` where `fi` belongs
+    # and an input interpolated into `[ -n "${{ inputs.x }}" ]` are both mechanical errors, and
+    # both were actually written into this repo by someone in a hurry before this check existed.
+    _wf_dir = os.path.join(ROOT, ".github", "workflows")
+    _problems = []
+    try:
+        import yaml as _yaml_wf
+    except ImportError:
+        _yaml_wf = None
+    if _yaml_wf is None:
+        warn("workflow run blocks not syntax-checked — pyyaml missing locally", True,
+             "CI runs the same check through tools/tests/test_workflow_contract.py")
+    else:
+        for _wf_name in sorted(os.listdir(_wf_dir)):
+            if not _wf_name.endswith(".yml"):
+                continue
+            _text = open(os.path.join(_wf_dir, _wf_name), encoding="utf-8").read()
+            try:
+                _doc = _yaml_wf.safe_load(_text)
+            except Exception as _exc:
+                _problems.append("%s: yaml unparseable (%s)" % (_wf_name, str(_exc)[:120]))
+                continue
+            for _job in (_doc or {}).get("jobs", {}).values():
+                for _step in _job.get("steps", []) or []:
+                    _run = _step.get("run")
+                    if not _run:
+                        continue
+                    _label = "%s/%s" % (_wf_name, _step.get("name", "?"))
+                    if re.search(r'\[\s-[nz]\s*"\$\{\{', _run):
+                        _problems.append("%s: an input interpolated into a test" % _label)
+                    _sub = re.sub(r"\$\{\{[^}]*\}\}", "SAFEVALUE", _run)
+                    _proc = subprocess.run(["bash", "-n"], input=_sub, capture_output=True,
+                                           text=True)
+                    if _proc.returncode:
+                        _problems.append("%s: %s" % (_label, _proc.stderr.strip()[:160]))
+        check("every workflow run block is valid bash (bash -n, ${{ }} substituted)",
+              not _problems, "; ".join(_problems[:4])
+              or "a syntax error in a step costs a day's post, and the Actions UI points at "
+                 "the last heredoc line rather than the mistake")
+
 # --- tools/lane_status.py: the one command that answers "why is the lane red" ------------
 lane_status_path = os.path.join(ROOT, "tools", "lane_status.py")
 lane_status = open(lane_status_path, encoding="utf-8").read() if os.path.exists(lane_status_path) else ""
@@ -708,6 +843,8 @@ _lane_issue_files = {
     "telegram_autopost.yml": "telegram-automation",
     "facebook_autopost.yml": "facebook-automation",
     "youtube_scheduled.yml": "youtube-automation",
+    "threads_autopost.yml": "threads-automation",
+    "instagram_autopost.yml": "instagram-automation",
 }
 for _lane_file, _lane_label in _lane_issue_files.items():
     _lane_path = os.path.join(ROOT, ".github", "workflows", _lane_file)
@@ -779,7 +916,10 @@ check("youtube: the failure issue says whether a video exists",
       "Nothing was published by this run" in yt_wf_text and "A video exists" in yt_wf_text
       and "Nothing may have been published" not in yt_wf_text,
       "a hedge in the first line of an issue is a morning wasted reading the channel by hand")
-for name in ("youtube_scheduled.yml", "telegram_autopost.yml", "facebook_autopost.yml"):
+for name in ("youtube_scheduled.yml", "telegram_autopost.yml", "facebook_autopost.yml",
+             "threads_autopost.yml"):
+    # instagram_autopost.yml is deliberately absent from this loop: its *render* commit must
+    # fire the site deploy, because the deploy is what makes the media URL public.
     text = open(os.path.join(ROOT, ".github", "workflows", name), encoding="utf-8").read()
     check("%s: an auto-commit of bookkeeping does not retrigger CI" % name,
           "[skip ci]" in text,
