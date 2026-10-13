@@ -438,9 +438,11 @@ jobs:
           CAUSE="${FAIL_KIND:-run}"
           [ "$CAUSE" = none ] && CAUSE=run
 
-          EXISTING=$(CAUSE_TAG="[$CAUSE]" gh issue list --label youtube-automation --state open \
-            --limit 100 --json number,title \
-            --jq "[.[] | select(.title | contains(\$ENV.CAUSE_TAG)) | .number][0] // empty")
+          # Newest match wins (`max`), so the untagged `#12` from 9 Oct absorbs today's comment
+          # only until a tagged issue exists — then that one does, and the old pair stops growing.
+          EXISTING=$(CAUSE_TAG="[$CAUSE]" LEGACY_PREFIX="YouTube Shorts publish failed — " \
+            gh issue list --label youtube-automation --state open --limit 100 --json number,title \
+            --jq "[.[] | select((.title | contains(\$ENV.CAUSE_TAG)) or ((.title | contains(\$ENV.LEGACY_PREFIX)) and (.title | contains(\"[\") | not))) | .number] | max // empty")
           if [ -n "$EXISTING" ]; then
             gh issue comment "$EXISTING" --body-file /tmp/issue_body.md || true
             echo "Same cause as issue #$EXISTING — commented instead of filing a second one"

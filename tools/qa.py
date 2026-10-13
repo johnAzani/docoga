@@ -675,6 +675,11 @@ check("telegram guard: the preflight can be checked without a token",
       "--preview" in tg_pre and "telegram_preview" in tg_pre,
       "the owner has to be able to verify the guard from a terminal, with no secret in hand")
 # --- the failure-issue hygiene that makes the launch order safe -------------------------
+# The workflow's jq string escapes its quotes for bash, so the needle the check looks for is
+# `contains(\"[\")` — built with chr() rather than written out, because a backslash in a
+# literal is how a check ends up matching nothing at all.
+_LEGACY_NEEDLE = "contains(" + chr(92) + chr(34) + "[" + chr(92) + chr(34) + ") | not"
+
 _lane_issue_files = {
     "telegram_autopost.yml": "telegram-automation",
     "facebook_autopost.yml": "facebook-automation",
@@ -685,8 +690,13 @@ for _lane_file, _lane_label in _lane_issue_files.items():
     _lane_text = open(_lane_path, encoding="utf-8").read() if os.path.exists(_lane_path) else ""
     check("%s: its failure issue is filed once per cause, not once per day" % _lane_file,
           'CAUSE_TAG="[$CAUSE]"' in _lane_text and "--state open" in _lane_text
+          and "max // empty" in _lane_text
           and 'gh issue comment "$EXISTING"' in _lane_text,
           "an inbox of identical issues is how a broken lane gets ignored; the cause tag is the key")
+    check("%s: an issue filed before causes existed still absorbs today's failure" % _lane_file,
+          "LEGACY_PREFIX=" in _lane_text and _LEGACY_NEEDLE in _lane_text,
+          "#16 and #12 have no cause in their titles; without the fold-in they would sit open "
+          "beside a twin, which is the noise this change exists to remove")
     check("%s: bookkeeping can never add a second failure" % _lane_file,
           'gh issue comment "$EXISTING" --body-file /tmp/issue_body.md || true' in _lane_text
           and ("::warning" in _lane_text.split("gh issue create")[-1][:400]

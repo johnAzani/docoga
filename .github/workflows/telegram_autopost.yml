@@ -210,9 +210,12 @@ jobs:
             *) CAUSE=run ;;
           esac
 
-          EXISTING=$(CAUSE_TAG="[$CAUSE]" gh issue list --label telegram-automation --state open \
-            --limit 100 --json number,title \
-            --jq "[.[] | select(.title | contains(\$ENV.CAUSE_TAG)) | .number][0] // empty")
+          # Newest match wins (`max`), so once a tagged issue exists the legacy one beside it
+          # stops collecting comments. `#16`/`#12` were filed before titles carried a cause: a
+          # lane that folds them in keeps one story per problem instead of two.
+          EXISTING=$(CAUSE_TAG="[$CAUSE]" LEGACY_PREFIX="Telegram post failed — " \
+            gh issue list --label telegram-automation --state open --limit 100 --json number,title \
+            --jq "[.[] | select((.title | contains(\$ENV.CAUSE_TAG)) or ((.title | contains(\$ENV.LEGACY_PREFIX)) and (.title | contains(\"[\") | not))) | .number] | max // empty")
           if [ -n "$EXISTING" ]; then
             gh issue comment "$EXISTING" --body-file /tmp/issue_body.md || true
             echo "Same cause as issue #$EXISTING — commented instead of filing a second one"

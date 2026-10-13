@@ -318,18 +318,62 @@ class FailureIssueHygieneTests(unittest.TestCase):
 
     @unittest.skipIf(subprocess.run(["bash", "-c", "command -v jq"], capture_output=True).returncode != 0,
                      "jq is not installed")
-    def test_the_selector_finds_the_open_issue_with_the_same_cause(self):
-        issues = ('[{"number":16,"title":"Telegram post failed — 2026-10-11 [setup]"},'
-                  '{"number":12,"title":"Telegram post failed — 2026-10-09 [chat]"},'
-                  '{"number":11,"title":"an unrelated issue"}]')
-        filter_ = '[.[] | select(.title | contains($ENV.CAUSE_TAG)) | .number][0] // empty'
-        for tag, expected in (("[chat]", "12"), ("[setup]", "16"), ("[rights]", "")):
-            with self.subTest(tag=tag):
-                # Single quotes around the filter, for the reason the workflow escapes it: inside
-                # double quotes bash expands `$ENV` away and jq is left with a bare `.CAUSE_TAG`.
-                script = "echo %s | CAUSE_TAG=%s jq -r %s" % (
-                    chr(39) + issues + chr(39), chr(34) + tag + chr(34), chr(39) + filter_ + chr(39))
+    def test_the_real_filter_selects_the_real_titles(self):
+        """The selector is *read out of the workflow* and run, not re-typed here.
+
+        A test that copies the jq filter is a test of the copy: it stays green while the
+        workflow drifts. So this lifts the filter text, unescapes it the way bash would, and
+        feeds it the titles the lane has actually filed — including `#16` and `#12`, which were
+        filed before a cause lived in the title and must be folded in rather than doubled.
+        """
+        text = self.steps["telegram_autopost.yml"]
+        # The filter contains its own escaped quotes, so a non-greedy `"(.*?)"` stops inside
+        # `contains("[\")`. Take it by its ends instead: after `--jq "`, up to the closing of the
+        # selector — and fail loudly if that shape ever changes, rather than testing a truncation.
+        head = "--jq " + chr(34)
+        tail = "max // empty" + chr(34) + ")"
+        self.assertIn(head, text, "the selector's --jq argument is gone")
+        self.assertIn(tail, text, "the selector no longer ends where this test reads it from")
+        start = text.index(head) + len(head)
+        filter_ = text[start:text.index(tail, start) + len("max // empty")]
+        filter_ = filter_.replace(chr(92) + chr(34), chr(34)).replace(chr(92) + chr(36), chr(36))
+        self.assertIn("CAUSE_TAG", filter_)
+
+        def issue(number, title):
+            return '{"number": %d, "title": %s}' % (number, chr(34) + title + chr(34))
+
+        def json_array(*entries):
+            return chr(91) + ",".join(entries) + chr(93)
+
+        legacy_issue = issue(16, "Telegram post failed — 2026-10-11")
+        tagged_issue = issue(21, "Telegram post failed — 2026-10-14 [setup]")
+        other_cause = issue(22, "Telegram post failed — 2026-10-14 [chat]")
+        tag_only = issue(9, "Some other title carrying [setup]")
+
+        # The fold-in rule, stated once so the cases below are about behaviour and not syntax:
+        # an issue filed *before* causes lived in the title has no cause to disagree about, so
+        # today's failure comments on it; once titles carry causes, a new cause is a new issue.
+        cases = [
+            ("both a legacy and a tagged issue are open", json_array(legacy_issue, tagged_issue),
+             "[setup]", "21"),
+            ("a legacy issue absorbs a failure of any cause", json_array(legacy_issue),
+             "[chat]", "16"),
+            ("a new cause opens its own issue", json_array(other_cause), "[setup]", ""),
+            # The title is not enough to identify a lane's issue — the *label* is, and the
+            # `gh issue list --label` scoping upstream of this filter is what makes it safe for
+            # the filter to trust a bare `[setup]`. Asserted so nobody "tightens" the filter and
+            # simultaneously loosens the label, which would break one of the two.
+            ("an issue that matches only by tag is still ours, because the label is the scope",
+             json_array(tag_only), "[setup]", "9"),
+        ]
+        for name, issues, tag, expected in cases:
+            with self.subTest(case=name):
+                script = ("echo " + chr(39) + issues + chr(39)
+                          + " | CAUSE_TAG=" + chr(34) + tag + chr(34)
+                          + " LEGACY_PREFIX=" + chr(34) + "Telegram post failed — " + chr(34)
+                          + " jq -r " + chr(39) + filter_ + chr(39))
                 done = subprocess.run(["bash", "-c", script], capture_output=True, text=True, timeout=30)
+                self.assertEqual(done.returncode, 0, done.stderr)
                 self.assertEqual(done.stdout.strip(), expected)
 
     def test_commenting_and_filing_can_never_make_a_run_more_broken_than_it_already_is(self):

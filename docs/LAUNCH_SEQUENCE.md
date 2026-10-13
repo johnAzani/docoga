@@ -162,7 +162,7 @@ gh issue list --label automation-heartbeat                 # and it is *closed*?
 
 | what you see | verdict |
 |---|---|
-| run green + a ledger entry with a permalink + heartbeat issue closed | the engine is running. Open issues #16 and #12 can be closed with the run link. |
+| run green + a ledger entry with a permalink + heartbeat issue closed | the engine is running. **Close #16 and #12** with the run link: until they are closed, a new failure folds its comment into them instead of opening a tagged issue, because an issue filed before 13 Oct has no cause in its title to match on. |
 | run green, no ledger entry | `green-but-quiet` — the heartbeat files this on purpose; read the summary line that says which step skipped and why |
 | run red with `[setup]` | a secret from step 1/2 is missing or unreadable — the issue body names which |
 | run red with `[credentials]` on YouTube | the consent screen is still in testing. Step 2, taps 1–3. |

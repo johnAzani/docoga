@@ -483,9 +483,11 @@ jobs:
             *) CAUSE=run ;;
           esac
 
-          EXISTING=$(CAUSE_TAG="[$CAUSE]" gh issue list --label facebook-automation --state open \
-            --limit 100 --json number,title \
-            --jq "[.[] | select(.title | contains(\$ENV.CAUSE_TAG)) | .number][0] // empty")
+          # Newest match wins (`max`), so a legacy untagged issue stops absorbing comments once
+          # a tagged one exists. One story per problem, not two.
+          EXISTING=$(CAUSE_TAG="[$CAUSE]" LEGACY_PREFIX="Facebook post failed — " \
+            gh issue list --label facebook-automation --state open --limit 100 --json number,title \
+            --jq "[.[] | select((.title | contains(\$ENV.CAUSE_TAG)) or ((.title | contains(\$ENV.LEGACY_PREFIX)) and (.title | contains(\"[\") | not))) | .number] | max // empty")
           if [ -n "$EXISTING" ]; then
             gh issue comment "$EXISTING" --body-file /tmp/issue_body.md || true
             echo "Same cause as issue #$EXISTING — commented instead of filing a second one"
