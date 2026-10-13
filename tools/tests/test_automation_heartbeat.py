@@ -22,6 +22,7 @@ import base64
 import io
 import json
 import os
+import re
 import sys
 import tempfile
 import unittest
@@ -665,9 +666,17 @@ class CommandLineTests(unittest.TestCase):
             json.dump([{"commit": {"committer": {"date": "2026-09-01T00:00:00Z"}}}], handle)
 
     def drive(self, *extra):
+        """`--ref` and `--branch` are pinned, not inherited: main() reads them from
+        $GITHUB_REF_NAME / $HEARTBEAT_BRANCH, and this whole class runs on `main`'s
+        fixtures. A CI job on a pull request has GITHUB_REF_NAME=`19/merge`, which
+        turns on the branch-only-schedule downgrade and quietly flips the expected
+        exit code — a test whose answer depends on which ref happened to trigger the
+        job is not a test, and that is exactly how this one failed in Actions while
+        passing on every laptop."""
         out = io.StringIO()
         argv = ["--repo", "x/y", "--fixture", self.fixture, "--workflows", self.workflow_dir,
-                "--now", "2026-10-13T18:00:00Z"] + list(extra)
+                "--now", "2026-10-13T18:00:00Z", "--branch", "main", "--ref", "main"]
+        argv += list(extra)
         with redirect_stdout(out):
             code = hb.main(argv)
         return code, out.getvalue()
@@ -715,12 +724,7 @@ class CommandLineTests(unittest.TestCase):
                   encoding="utf-8") as handle:
             json.dump({"content": base64.b64encode(main_copy.encode()).decode()}, handle)
 
-        out = io.StringIO()
-        with redirect_stdout(out):
-            code = hb.main(["--repo", "x/y", "--fixture", self.fixture,
-                            "--workflows", self.workflow_dir, "--now", "2026-10-13T18:00:00Z",
-                            "--ref", "feature/x"])
-        text = out.getvalue()
+        code, text = self.drive("--ref", "feature/x")
         self.assertEqual(code, 0, "an unmerged schedule is not a dead lane")
         self.assertIn("HEARTBEAT_STATE=healthy", text)
         self.assertIn("HEARTBEAT_SILENT=-", text)
@@ -728,17 +732,31 @@ class CommandLineTests(unittest.TestCase):
         self.assertNotIn("HEARTBEAT_SIGNATURE=-\n", text,
                          "the signature must still be a hash, or the workflow's grep is comparing noise")
 
-        out = io.StringIO()
-        with redirect_stdout(out):
-            code = hb.main(["--repo", "x/y", "--fixture", self.fixture,
-                            "--workflows", self.workflow_dir, "--now", "2026-10-13T18:00:00Z"])
+        code, text = self.drive()
         self.assertEqual(code, 1, "the same numbers read on main are a real failure")
-        self.assertIn("HEARTBEAT_STATE=degraded", out.getvalue())
+        self.assertIn("HEARTBEAT_STATE=degraded", text)
+
+    def test_every_cli_call_pins_the_ref(self):
+        """Ambient `$GITHUB_REF_NAME` is `19/merge` in a pull-request check and `main`
+        on the schedule — and one test in this file changed its expected exit code
+        between the two (it passed on every laptop and failed in Actions). main()
+        reads the ref from the environment on purpose; the tests must not.
+
+        The rule has no exceptions because the one call that does not need a ref does
+        not need a fixture either: `test_no_repo_is_a_refusal_to_guess` proves the
+        refusal happens before any I/O, so it passes neither."""
+        src = Path(__file__).read_text(encoding="utf-8")
+        offenders = [block for block in re.findall(r"hb\.main\(\[.*?\]\)", src, re.S)
+                     if "--ref" not in block and "--fixture" in block]
+        self.assertEqual([], offenders, "route new CLI tests through self.drive() — it pins --ref/--branch")
 
     def test_no_repo_is_a_refusal_to_guess(self):
+        """No `--fixture`, no `--ref`, nothing else: the point is that this refusal
+        needs no data at all, which is also why it is the one main() call in this file
+        that does not care which ref the runner thinks it is on."""
         out = io.StringIO()
         with patch.dict(os.environ, {}, clear=True), redirect_stdout(out):
-            code = hb.main(["--fixture", self.fixture, "--workflows", self.workflow_dir])
+            code = hb.main(["--workflows", self.workflow_dir])
         self.assertEqual(code, 3)
         self.assertIn("--repo owner/name is required", out.getvalue())
 
@@ -747,22 +765,17 @@ class CommandLineTests(unittest.TestCase):
         printable as 'everything is fine'."""
         empty = os.path.join(self.tmp, "nothing")
         os.makedirs(empty, exist_ok=True)
-        out = io.StringIO()
-        with redirect_stdout(out):
-            code = hb.main(["--repo", "x/y", "--fixture", self.fixture, "--workflows", empty])
+        code, text = self.drive("--workflows", empty)
         self.assertEqual(code, 3)
-        self.assertIn("refusing to report a healthy repo", out.getvalue())
+        self.assertIn("refusing to report a healthy repo", text)
 
     def test_a_broken_api_call_is_exit_three(self):
         with open(os.path.join(self.fixture, "repos/x/y/actions/workflows.json"), "w",
                   encoding="utf-8") as handle:
             handle.write("{ this is not json")
-        out = io.StringIO()
-        with redirect_stdout(out):
-            code = hb.main(["--repo", "x/y", "--fixture", self.fixture,
-                            "--workflows", self.workflow_dir])
+        code, text = self.drive()
         self.assertEqual(code, 3)
-        self.assertIn("could not look", out.getvalue())
+        self.assertIn("could not look", text)
 
 
 class HeartbeatWorkflowTests(unittest.TestCase):
