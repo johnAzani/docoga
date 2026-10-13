@@ -21,6 +21,11 @@ failure in Oct 2026. In short:
     feed) rather than trusting a file, because a runner's filesystem does not
     survive between runs. Skipping is exit 0 — a skipped day is not a failure,
     and a failure is what opens an issue.
+  * **A Reel is refused before any bytes leave the runner** if the file is not 9:16
+    or not 3-90 s. Meta accepts such a file and then fails to publish it quietly,
+    which is the single worst failure mode on that edge. See `--reel` and
+    `tools/fb_publish.reel_spec_ok()`.
+
   * **Both attempts' errors are printed.** Logging the first and discarding the
     retry's is exactly what made the October outage expensive to diagnose.
 
@@ -104,6 +109,13 @@ def main(argv=None):
     parser.add_argument("--force", action="store_true", help="post even if today is already taken")
     parser.add_argument("--text", help="override the generated copy (manual dispatch)")
     parser.add_argument("--photo-file", help="override the photo (path relative to the repo root)")
+    parser.add_argument("--reel", help="publish this .mp4 as a Reel instead of a feed post "
+                        "(the daily job only passes it on a reel day, with FB_REELS=on)")
+    parser.add_argument("--title", default="", help="title for --reel (also what the duplicate guard matches on)")
+    parser.add_argument("--description", default="", help="caption for --reel (defaults to the day's copy)")
+    parser.add_argument("--reel-draft", action="store_true", help="with --reel: leave it as a draft")
+    parser.add_argument("--probe-reels", action="store_true",
+                        help="prove the Reels grant is live (open and abandon a session); publish nothing")
     args = parser.parse_args(sys.argv[1:] if argv is None else argv)
 
     day = date.fromisoformat(args.date) if args.date else datetime.now(LAGOS).date()
@@ -122,8 +134,51 @@ def main(argv=None):
         content, source = load_today(day)
         print("would post (%s): %s" % (source, content["message"][:160].replace("\n", " ⏎ ")))
         print("photo: %s" % (content.get("photo_path") or "none (text post)"))
-        summary("| Facebook dry run | %s |" % ("✅ page reachable, rights: %s" % allowed))
+        reel_ok, reel_detail = fb_publish.reel_probe(token, page_id)
+        print("%s reels grant: %s" % ("✅" if reel_ok else "⚠️", reel_detail))
+        summary("| Facebook dry run | %s — reels: %s |"
+                % (("✅ page reachable, rights: %s" % allowed), "✅" if reel_ok else "⚠️"))
         return 0
+
+    if args.probe_reels:
+        ok, detail = fb_publish.reel_probe(token, page_id)
+        print("%s %s" % ("✅" if ok else "❌", detail))
+        summary("| Reels probe %s | %s %s |" % (day.isoformat(), "✅" if ok else "❌", detail))
+        return 0 if ok else 3
+
+    if args.reel:
+        description = args.description or None
+        if description is None:
+            description = load_today(day)[0]["message"]
+        if not (args.text or args.force):
+            guard, dup = fb_publish.posted_on_date(token, page_id, edge="videos",
+                                                   want_title=args.title or None)
+            if guard is True:
+                print("⏭ skipped — this Reel is already on the Page today (%s)." % dup)
+                summary("| Facebook reel %s | ⏭ skipped — already published today |" % day.isoformat())
+                return 0
+            if guard is None:
+                log("⚠️  the duplicate guard could not read the videos edge (%s) — continuing" % dup)
+        ok, result = fb_publish.post_reel(token, page_id, args.reel, title=args.title,
+                                         description=description, draft=args.reel_draft)
+        if ok:
+            link = result.get("permalink") or ""
+            print("✅ reel %s: video_id %s%s" % (result.get("state", "published"),
+                                                 result.get("video_id"), " " + link if link else ""))
+            # Machine-readable lines for the workflow, because the ledger must
+            # record what was actually published and a human line is not a
+            # contract. Same shape as tools/yt_publish.py's VIDEO_ID= line — the
+            # step that records the publish greps for exactly these.
+            print("REEL_VIDEO_ID=%s" % result.get("video_id"))
+            if link:
+                print("REEL_URL=%s" % link)
+            summary("| Facebook reel %s | ✅ %s `%s`%s |" % (
+                day.isoformat(), result.get("state", "published"), result.get("video_id"),
+                " [link](%s)" % link if link else ""))
+            return 0
+        print("❌ reel not published — %s" % result)
+        summary("| Facebook reel %s | ❌ failed — `%s` |" % (day.isoformat(), str(result)[:200]))
+        return fb_publish.reel_exit_code(result)
 
     if not (args.text or args.force):
         guard, detail = fb_publish.posted_on_date(token, page_id)

@@ -352,7 +352,7 @@ class FacebookAutopostTests(unittest.TestCase):
         dispatch = (self.on.get("workflow_dispatch") or {}).get("inputs") or {}
         self.assertIn("dry_run", dispatch,
                       "without a dry-run switch, the only way to test credentials is to publish")
-        for name in ("Daily post", "Manual post (text / photo / video)"):
+        for name in ("Daily post", "Manual post (text / photo / video / reel)"):
             with self.subTest(step=name):
                 self.assertIn("!inputs.dry_run", str(self.by_name[name].get("if")))
 
@@ -367,7 +367,7 @@ class FacebookAutopostTests(unittest.TestCase):
         self.assertIn("post_facebook.py $FORCE", daily, "and the only way the flag reaches the script")
 
     def test_manual_posts_bypass_the_guard_because_a_person_asked_for_it(self):
-        self.assertIn("--force", self.blob("Manual post (text / photo / video)"))
+        self.assertIn("--force", self.blob("Manual post (text / photo / video / reel)"))
 
     def test_the_graph_api_version_is_current_and_comes_from_one_constant(self):
         """Meta sunsets a version roughly every two years: v21.0 goes on 21 Jan
@@ -442,3 +442,181 @@ class FacebookAutopostTests(unittest.TestCase):
         self.assertTrue((ROOT / "FACEBOOK_AUTOMATION.md").exists(),
                         "an automation nobody can configure is not finished")
         self.assertIn("FACEBOOK_AUTOMATION.md", readme, "the repo map must lead to it")
+
+
+class FacebookReelsContractTests(unittest.TestCase):
+    """The Reels lane's wiring, asserted where YAML mistakes actually happen.
+
+    `test_post_facebook_reels.py` proves the protocol speaks Graph API correctly;
+    this proves the *job* is buildable around it: that the cheap decision runs
+    before anything expensive, that nothing renders while the lane is only
+    probing, that a published reel is recorded somewhere the next run can read,
+    and that `contents: write` — which this job did not need before the reel
+    ledger — is spent on exactly one path.
+
+    The ordering rules matter more here than anywhere else in the repo: a job that
+    renders for two minutes and *then* discovers it should have skipped is a job
+    that burns the month's free runner minutes on skips.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.path = WORKFLOWS / "facebook_autopost.yml"
+        cls.text = cls.path.read_text(encoding="utf-8")
+        cls.doc = yaml.safe_load(cls.text)
+        cls.job = cls.doc["jobs"]["publish"]
+        cls.steps = cls.job["steps"]
+        cls.names = [st.get("name") for st in cls.steps]
+        cls.by_name = {st.get("name"): st for st in cls.steps}
+
+    def cond(self, name):
+        return str(self.by_name[name].get("if", ""))
+
+    def blob(self, name):
+        step = self.by_name[name]
+        return "\n".join([str(step.get("run", "")), str(step.get("if", "")),
+                           str(step.get("env", ""))])
+
+    def index(self, name):
+        self.assertIn(name, self.names, "the Reels lane lost a step: %s" % name)
+        return self.names.index(name)
+
+    def test_the_reel_steps_run_in_the_only_order_that_works(self):
+        order = ["Reels — decide (cheap; renders nothing)",
+                 "Reels — install the renderer",
+                 "Reels — guard against a recycled frame",
+                 "Reels — render",
+                 "Reels — publish",
+                 "Reels — record it in the ledger",
+                 "Reels — commit the ledger"]
+        indices = [self.index(name) for name in order]
+        self.assertEqual(indices, sorted(indices),
+                         "each step consumes the previous one's output; a reorder is a silent no-op")
+
+    def test_the_installer_waits_for_the_decision(self):
+        """`apt-get install ffmpeg` + moviepy is ~40 s and only ever needed for a
+        render. Gating it on the decision — not on the cron — is why a probe-only
+        day and an `off` day stay cheap."""
+        install = self.by_name["Reels — install the renderer"]
+        self.assertIn("steps.reel_plan.outputs.reel_today", str(install.get("if")))
+        self.assertLess(self.index("Reels — decide (cheap; renders nothing)"),
+                        self.index("Reels — install the renderer"),
+                        "an `if:` that reads a step output cannot precede that step — "
+                        "it would evaluate to empty and the renderer would never install")
+
+    def test_probe_mode_never_renders_or_publishes(self):
+        probe = self.cond("Reels — probe the grant (nothing is published)")
+        self.assertIn("steps.reel_plan.outputs.mode == 'probe'", probe)
+        guard = self.cond("Reels — guard against a recycled frame")
+        self.assertIn("steps.reel_plan.outputs.mode == 'on'", guard)
+        self.assertNotIn("rupload", self.by_name["Reels — probe the grant (nothing is published)"]["run"])
+        self.assertIn("--probe-reels", self.by_name["Reels — probe the grant (nothing is published)"]["run"])
+
+    def test_the_publish_goes_through_the_poster_not_the_raw_tool(self):
+        """`scripts/post_facebook.py` owns the guards. A workflow that calls
+        `tools/fb_publish.py --reel` directly publishes without asking the Page
+        whether today's frame already went out."""
+        run = self.by_name["Reels — publish"]["run"]
+        self.assertIn("scripts/post_facebook.py --reel=", run)
+        self.assertNotIn("tools/fb_publish.py --reel ", run)
+
+    def test_a_published_reel_is_recorded_in_a_file_the_next_run_can_read(self):
+        """`video_reels` cannot be read back, so the ledger is the only memory this
+        lane has — and a ledger in a gitignored directory is a ledger nobody reads.
+        (assets/ is ignored in this repo; that is not a hypothetical.)"""
+        record = self.blob("Reels — record it in the ledger")
+        self.assertIn("--ledger logs/facebook_reels.json", record)
+        self.assertIn("tools/youtube_ledger.py", record,
+                      "one ledger implementation, two files — a fork drifts")
+        gitignore = (ROOT / ".gitignore").read_text(encoding="utf-8")
+        self.assertNotIn("logs/", [line.strip() for line in gitignore.splitlines()],
+                         "the ledger must be committable, or the 30-day window is a myth")
+
+    def test_the_window_is_the_frame_law_not_an_arbitrary_number(self):
+        """docs/GROWTH_ENGINE.md §4: never reuse a frame that has been live in the
+        last 30 days. The number in the YAML is that law, not a guess."""
+        self.assertIn("--window-days 30", self.blob("Reels — guard against a recycled frame"))
+
+    def test_the_guard_can_be_overridden_only_by_a_human(self):
+        step = self.by_name["Reels — guard against a recycled frame"]
+        # Read the parsed mapping, not the YAML text: `blob()` stringifies a dict,
+        # and asserting against that representation is how an assertion starts
+        # passing for the wrong reason.
+        self.assertEqual((step.get("env") or {}).get("IN_FORCE"), "${{ inputs.force }}",
+                         "force must arrive from the dispatch input through env:, never "
+                         "interpolated into the shell line")
+        self.assertIn('"$IN_FORCE" = "true"', str(step["run"]))
+        self.assertIn("skip=yes", str(step["run"]),
+                      "a skip must be a step output, so the render step can stand down")
+
+    def test_the_mode_is_a_variable_whose_default_publishes_nothing(self):
+        env = self.job.get("env") or self.doc.get("env") or {}
+        self.assertEqual(env.get("REELS_MODE"), "${{ vars.FB_REELS || 'probe' }}",
+                         "on by default would mean the first-ever reel is published by an "
+                         "unattended run, on a spelling of upload_phase nobody has probed yet")
+        script = (ROOT / "scripts" / "facebook_reel_daily.py").read_text(encoding="utf-8")
+        self.assertIn('"probe"', script, "the script's default must match the workflow's")
+
+    def test_contents_write_is_spent_on_exactly_one_path(self):
+        self.assertEqual((self.doc.get("permissions") or {}).get("contents"), "write")
+        added = re.findall(r"git add (\S+)", self.text)
+        self.assertEqual(added, ["logs/facebook_reels.json"],
+                         "write access that touches anything else is a bigger question than a ledger")
+
+    def test_the_reel_logs_reach_the_summary_and_the_issue(self):
+        summary = self.blob("Record what this run did")
+        for log in ("fb_reel_plan.log", "fb_reel_probe.log", "fb_reel_render.log", "fb_reel_post.log"):
+            with self.subTest(log=log):
+                self.assertIn(log, summary)
+        issue = self.blob("Open a visible issue if the run failed")
+        self.assertIn("fb_reel_post.log", issue)
+        self.assertIn("--reel-finish", issue,
+                      "an accepted-but-unpublished reel is recoverable; the issue must say how")
+
+    def test_the_manual_reel_mode_exists_and_bypasses_the_day_rule(self):
+        on = self.doc[True] if True in self.doc else self.doc["on"]
+        options = on["workflow_dispatch"]["inputs"]["mode"]["options"]
+        self.assertIn("reel", options)
+        blob = self.blob("Manual post (text / photo / video / reel)")
+        self.assertIn("--render --mode on", blob, "a person asked for one today, weekday rule aside")
+        self.assertIn("--force", blob, "and the 30-day window is theirs to override, not ours to enforce")
+
+    def test_the_job_has_room_for_a_render(self):
+        self.assertGreaterEqual(self.job.get("timeout-minutes", 0), 25,
+                                "a timeout after a publish is red *and* live — the worst outcome "
+                                "an unattended lane can have")
+
+
+class StepReferenceTests(unittest.TestCase):
+    """`steps.<id>` may only be read from a step that runs *after* the one that
+    wrote it, and only for an id that exists.
+
+    This rule exists because the Facebook Reels installer step was first written
+    *above* the decision step whose output its `if:` tested. The YAML parsed, the
+    `if:` was simply false forever, and the only symptom would have been "the
+    renderer was never installed" on the days it was needed. GitHub does not warn
+    about a reference to a step that has not run yet — it hands you an empty
+    string, which is exactly how a pipeline ends up quietly doing nothing.
+    """
+
+    def test_every_reference_resolves_to_an_earlier_declared_step(self):
+        reference = re.compile(r"steps\.([A-Za-z0-9_-]+)\.")
+        for path in sorted(WORKFLOWS.glob("*.yml")):
+            doc = yaml.safe_load(path.read_text(encoding="utf-8"))
+            jobs = (doc or {}).get("jobs") or {}
+            for job_name, job in jobs.items():
+                steps = job.get("steps") or []
+                ids = [step.get("id") for step in steps]
+                position = {sid: index for index, sid in enumerate(ids) if sid}
+                for index, step in enumerate(steps):
+                    text = "\n".join([str(step.get("if", "")), str(step.get("env", "")),
+                                      str(step.get("run", "")), str(step.get("with", ""))])
+                    for target in reference.findall(text):
+                        with self.subTest(workflow=path.name, job=job_name,
+                                         step=step.get("name"), refers_to=target):
+                            self.assertIn(target, position,
+                                          "`steps.%s.…` names a step with no id: %s" % (target, path.name))
+                            self.assertLess(position[target], index,
+                                            "`steps.%s` is read by %r, which runs at index %d — "
+                                            "the writer is at index %d, so this evaluates to empty"
+                                            % (target, step.get("name"), index, position[target]))

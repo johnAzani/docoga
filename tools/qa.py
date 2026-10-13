@@ -451,6 +451,61 @@ rdme3 = open(os.path.join(ROOT, "README.md"), encoding="utf-8").read()
 check("README points at the Facebook handbook", "FACEBOOK_AUTOMATION.md" in rdme3)
 check("assets/facebook/ is gitignored (generated copy, not source)",
       "assets/facebook/" in open(os.path.join(ROOT, ".gitignore"), encoding="utf-8").read())
+# ── the Reels lane (Mon/Thu, three-phase video_reels) ──────────────────────
+reel_files = {
+    "decider": os.path.join(ROOT, "scripts", "facebook_reel_daily.py"),
+    "reel tests": os.path.join(ROOT, "tools", "tests", "test_post_facebook_reels.py"),
+}
+for label, path in reel_files.items():
+    check("reels: %s exists (%s)" % (label, os.path.relpath(path, ROOT)), os.path.exists(path))
+pub_reel = open(soc["publisher"], encoding="utf-8").read() if os.path.exists(soc["publisher"]) else ""
+if pub_reel:
+    # Judged inside post_reel()'s own body: a file-wide "does A come before B" is
+    # decided by where the definitions sit, which says nothing about call order.
+    post_reel_body = pub_reel.split("def post_reel(")[1].split("\ndef ")[0] if "def post_reel(" in pub_reel else ""
+    check("a reel is refused before any bytes move",
+          bool(post_reel_body)
+          and 0 <= post_reel_body.index("reel_spec_ok(") < post_reel_body.index("reel_start(")
+          and "spec refused" in post_reel_body,
+          "Meta accepts a non-9:16 or over-length file and then fails to publish it quietly")
+    check("phase 2 talks to rupload with headers, not body fields",
+          'RUPLOAD = "https://rupload.facebook.com/video-upload"' in pub_reel
+          and '"Authorization": "OAuth %s" % token' in pub_reel
+          and pub_reel.count("% (RUPLOAD, API_VERSION, video_id)") == 1)
+    check("a probe cannot publish a reel",
+          pub_reel.find("def reel_probe") > 0
+          and "_phase(\"finish\")" not in pub_reel.split("def reel_probe")[1].split("def ")[0])
+    check("an accepted-but-unpublished reel is recoverable",
+          "--reel-finish" in pub_reel and "publish refused after the upload was accepted" in pub_reel)
+    check("every reel failure returns a 2-tuple",
+          "refusing to finish it\" % (transferred, size))" in pub_reel
+          or "incomplete on Meta's side" in pub_reel,
+          "a 3-tuple on one branch unpacks into a ValueError in the caller")
+daily = open(reel_files["decider"], encoding="utf-8").read() if os.path.exists(reel_files["decider"]) else ""
+if daily:
+    check("the reel days never collide with the Shorts days",
+          "REEL_WEEKDAYS = (0, 3)" in daily,
+          "same weekday = same rotation index = the same frame on both platforms")
+    check("the decision does not import the renderer at module level",
+          "import generate_short_video" in daily.split("def reel_topic")[1][:400]
+          and daily.index("import generate_short_video as shorts") > daily.index("def reel_topic"),
+          "a plan step that cannot import is a skipped lane, in red")
+    check("the mode defaults to probe", '"probe"' in daily and "REELS_MODE" in daily)
+wf_reel = open(soc["workflow"], encoding="utf-8").read() if os.path.exists(soc["workflow"]) else ""
+if wf_reel:
+    check("the reel mode is a variable", "vars.FB_REELS" in wf_reel)
+    check("the reel ledger is the shared tool, pointed at a Facebook file",
+          "tools/youtube_ledger.py --ledger logs/facebook_reels.json" in wf_reel
+          and not os.path.exists(os.path.join(ROOT, "tools", "facebook_ledger.py")),
+          "a forked ledger drifts the first time someone fixes a race in the other one")
+    check("the ledger lives where it can be committed",
+          "logs/facebook_reels.json" in wf_reel
+          and "logs/" not in [ln.strip() for ln in open(os.path.join(ROOT, ".gitignore"),
+                                                          encoding="utf-8").read().splitlines()],
+          "a ledger inside a gitignored directory is a 30-day window that never fills")
+    check("reel steps consume the decision, not the cron",
+          "steps.reel_plan.outputs.reel_today" in wf_reel
+          and wf_reel.index("Reels — decide") < wf_reel.index("Reels — install the renderer"))
 # The unittest files are the real gate; run them when their deps are present.
 import importlib.util as _ilu
 missing_mods = [m for m in ("requests", "yaml") if _ilu.find_spec(m) is None]

@@ -107,17 +107,26 @@ def save(entries, path=DEFAULT_LEDGER):
     return trimmed
 
 
+def _label():
+    """The annotation title. This ledger tool serves more than one lane now
+    (Facebook Reels reuse it on logs/facebook_reels.json), and a
+    "YouTube publish ledger" warning on a Facebook run costs an afternoon of
+    reading the wrong workflow. Default keeps YouTube's wording unchanged.
+    """
+    return os.environ.get("LEDGER_LABEL", "YouTube publish ledger")
+
+
 def warn(message):
     """A GitHub Actions notice when running in CI, plain text otherwise."""
     if os.environ.get("GITHUB_ACTIONS"):
-        print("::warning title=YouTube publish ledger::%s" % message)
+        print("::warning title=%s::%s" % (_label(), message))
     else:
         print("warning: %s" % message, file=sys.stderr)
 
 
 def notice(message):
     if os.environ.get("GITHUB_ACTIONS"):
-        print("::notice title=YouTube publish ledger::%s" % message)
+        print("::notice title=%s::%s" % (_label(), message))
     else:
         print(message)
 
