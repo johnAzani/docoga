@@ -12,8 +12,10 @@ comes from reading `main` rather than trusting this document's first draft (see 
 is already scheduled on `main` and a corrected chat id starts posting through the *old* unguarded
 poster the next morning.
 
-Everything verifiable from the agent side was verified before this page was written — 427 python
-tests, `tools/qa.py`, `tools/pre_push_verify.sh`, both npm DOM suites, CI on the branch head. What
+Everything verifiable from the agent side was verified before this page was written: the full
+python suite, `tools/qa.py`, `tools/pre_push_verify.sh`, both npm DOM suites, and CI on the branch
+head. `python3 tools/lane_status.py --lane <lane>` is the one command for all of it on the GitHub
+side. What
 is *not* verifiable from the sandbox is named in each step: no `gh secret` write (`403` — not even
 a *list* of names), no workflow dispatch (`403`), no `t.me`, no Google. What **is** readable from
 here, and is how every step below gets checked: run history, job/step conclusions, check-run
@@ -159,14 +161,20 @@ documented in `YOUTUBE_AUTOMATION.md`: **while an OAuth consent screen is "In te
 expires refresh tokens after 7 days** — which fits "worked 6 Oct, dead 9 Oct" exactly. So the fix
 is not the code, it is the app's status.
 
-Five taps, in Cloud Console (`console.cloud.google.com` → APIs & Services → OAuth consent screen):
+Google moved this screen: "OAuth consent screen" now *redirects* to the **Google Auth Platform**,
+whose settings are split into **Branding / Audience / Data Access / Clients**, and the publish
+button is on **Audience** — not on the page the old menu lands you on. Full reasoning and the
+fallbacks are in `YOUTUBE_AUTOMATION.md`; the taps are:
 
-1. top-right project picker → **the project that owns the YouTube client** (not "My Project").
-2. **Audience** → User type: `External` → *Publish*. Expected: a banner that reads
-   *"The app has been published to production."*
-3. **Test users** → your Google account may stay listed; publishing is what removes the 7-day
-   expiry, not the test user.
-4. **Credentials** → your OAuth client → *Download JSON* if you want a copy. Do not rotate it
+1. Open `console.cloud.google.com/auth/audience?project=<PROJECT_ID>` and check the project picker
+   first (not "My Project"). *[Audience: `User type: External`,
+   `Publishing status: In testing`.]*
+2. **Publish app** → *"Push to production?"* → **Confirm**. *[Status flips to **In production** —
+   that one change is what stops the 7-day token expiry.]* A **Needs verification** notice is not a
+   blocker for your own channel.
+3. Only if you would rather stay in Testing: **Audience → + Add users** → the DocOga Google address.
+   A bridge, not a fix — tokens still die weekly.
+4. **Clients** → this lane's client → confirm *Desktop app*, no redirect URIs. Do not rotate it
    unless it was deleted.
 5. Re-mint the refresh token on your machine (the consent flow is the only place a browser is
    needed), then:
@@ -181,8 +189,12 @@ Then ask the lane what it can actually see — **1 quota unit, no upload, nothin
 
 ```bash
 gh workflow run youtube_scheduled.yml -f probe_only=true
-gh run view --log                                       # or the run's job log
+python3 tools/lane_status.py --lane youtube             # what the run said, without the log
 ```
+
+`gh run view --log` is *not* the check: the log bytes live on a host a sandbox (or a locked-down
+runner) often cannot reach. `tools/lane_status.py` reads the job, the step conclusions and the
+annotations — the same text the preflight wrote with `::error` — over ordinary REST.
 
 **Expected screen:**
 
@@ -214,7 +226,7 @@ gh issue list --label automation-heartbeat                 # and it is *closed*?
 | what you see | verdict |
 |---|---|
 | run green + a ledger entry with a permalink + heartbeat issue closed | the engine is running. **Close #16 and #12** with the run link: until they are closed, a new failure folds its comment into them instead of opening a tagged issue, because an issue filed before 13 Oct has no cause in its title to match on. |
-| you want the *cause* of a red run without opening the log | the log bytes live on a host sandboxes often cannot reach, but the annotations do not: `gh api repos/johnAzani/docoga/actions/runs/<id>/jobs --jq '.jobs[0].id'` then `gh api repos/johnAzani/docoga/check-runs/<job_id>/annotations --jq '.[] | "\(.annotation_level) \(.message)"'`. That is how `chat not found` was found on 13 Oct, and it is the same text the `::error` lines wrote |
+| you want the *cause* of a red run without opening the log | `python3 tools/lane_status.py --lane telegram --limit 3` — one command, read-only, exit code usable as a gate. It prints the failing steps, what never ran, and the annotations; a repeated conclusion is called a pattern. Without the repo checked out: `gh api repos/johnAzani/docoga/actions/runs/<id>/jobs --jq '.jobs[0].id'` then `gh api repos/johnAzani/docoga/check-runs/<job_id>/annotations` — that is how `chat not found` was found on 13 Oct, four days into an outage nobody had been told about |
 | run green, no ledger entry | `green-but-quiet` — the heartbeat files this on purpose; read the summary line that says which step skipped and why |
 | run red with `[setup]` | a secret from step 2 or 3 is missing or unreadable — the issue body names which |
 | run red with `[credentials]` on YouTube | the consent screen is still in testing. Step 3, taps 1–5. |

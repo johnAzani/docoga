@@ -674,6 +674,30 @@ check("telegram guard: the run summary reports which guard was watching",
 check("telegram guard: the preflight can be checked without a token",
       "--preview" in tg_pre and "telegram_preview" in tg_pre,
       "the owner has to be able to verify the guard from a terminal, with no secret in hand")
+# --- tools/lane_status.py: the one command that answers "why is the lane red" ------------
+lane_status_path = os.path.join(ROOT, "tools", "lane_status.py")
+lane_status = open(lane_status_path, encoding="utf-8").read() if os.path.exists(lane_status_path) else ""
+check("lane_status: exists, and it is read-only",
+      bool(lane_status) and not any(verb in lane_status for verb in
+                                    ("-X POST", "--method", "gh run cancel", "gh workflow run",
+                                     "gh issue create", "gh secret")),
+      "a status tool that can write is a status tool that can break a launch mid-check")
+check("lane_status: it reads annotations, never the unreachable log bytes",
+      "check-runs" in lane_status and "/logs" not in lane_status and "annotations" in lane_status,
+      "the log host is off the sandbox allowlist; the annotations are the same text and always readable")
+check("lane_status: redaction runs before anything is printed",
+      "REDACTIONS" in lane_status and "def redact(" in lane_status
+      and '"message": redact(' in lane_status and "redact(str(exc))" in lane_status,
+      "an annotation that quotes the token it was handed must not become the leak — the message is "
+      "the only uncontrolled text this tool prints, so it is the one that passes through redact()")
+check("lane_status: bookkeeping steps are excluded by mirror, not by prefix",
+      'name.startswith("Post ") and name[len("Post "):] in names' in lane_status,
+      "`Post to Telegram` is a real step name; a prefix rule hides the failure that matters")
+check("lane_status: the runbook hands it over as the check",
+      "lane_status" in open(os.path.join(ROOT, "docs", "LAUNCH_SEQUENCE.md"),
+                            encoding="utf-8").read(),
+      "the fastest diagnosis is useless if it lives only in a docstring")
+
 # --- the failure-issue hygiene that makes the launch order safe -------------------------
 # The workflow's jq string escapes its quotes for bash, so the needle the check looks for is
 # `contains(\"[\")` — built with chr() rather than written out, because a backslash in a
