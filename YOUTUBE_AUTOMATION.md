@@ -90,6 +90,10 @@ run loudly instead of publishing at the wrong privacy.
 
 ## One-time requirements
 
+> **The order across all lanes is its own document:** `docs/LAUNCH_SEQUENCE.md` — the
+> exact command or tap for every human step, the screen to expect, and what to check the
+> next morning. Doing the steps out of order costs an issue titled `… [setup]`, not a post.
+
 Create these as **repository Actions secrets** (not merely as environment
 secrets, because this job does not select a GitHub environment):
 

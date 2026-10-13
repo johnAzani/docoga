@@ -204,6 +204,15 @@ Integration rules:
   must cost a line in the log, not the day's post. `TELEGRAM_CHANNEL_GUARD=` in the run summary says which of those
   happened; `python3 tools/telegram_preflight.py --preview @docogadaily` proves the guard is armed with no secret in hand.
   Its limits (private channels, edited templates, the ~20-post horizon) are written down, not implied: `TELEGRAM_AUTOMATION.md`.
+- **The launch is a sequence now, and a failing lane stays quiet about it twice — 13 Oct 2026.** Four steps are owed by a human
+  with a browser (the Telegram secret, the OAuth consent-screen publish, the merge, the next morning's three checks), and the order is
+  the difference between a quiet switch-on and a morning of reading issues — so it is written down with the exact command, the expected
+  screen and the fallback for every branch: `docs/LAUNCH_SEQUENCE.md`. Alongside it, failure issues stopped accumulating: each lane
+  derives a *cause* (`setup`, `credentials`, `chat`, `rights`, `quota`, `state`, `transport`…) from its own logs, puts it in the issue
+  title as a tag, and comments on the open issue with that tag instead of filing another one — the Shorts lane used to file ~8 issues a
+  month for a single un-published consent screen. "Never configured" is titled `setup` so it does not read as an outage, an issue that
+  cannot be filed is a warning rather than a second failure, and the classifiers are *executed* by the test suite rather than grepped,
+  because shell that only looks right in review is how a workflow ships broken.
   Honest state as of 13 Oct: 3 scheduled lanes, **0 of them healthy** — Telegram has not succeeded since
   3 Oct, YouTube has run once and failed, Facebook's `schedule:` is not on `main` yet. The heartbeat's first
   report is not a clean one; that is what it is for.

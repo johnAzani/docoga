@@ -196,13 +196,28 @@ jobs:
           - \`429 Too Many Requests\` — flood limit; the next scheduled run is unaffected.
           BODY
 
-          EXISTING=$(gh issue list --label telegram-automation --state open --limit 100 \
-            --json number,title \
-            --jq "[.[] | select(.title | contains(\$ENV.RUN_DATE)) | .number][0] // empty")
+          # One issue per *cause*, not per day. While a repair is outstanding the lane has
+          # nothing new to say, and an inbox of identical failures trains you to ignore it —
+          # so a later failure with the same cause becomes a comment on the open issue, and
+          # only a new cause opens a new one. `setup` means the lane was never configured,
+          # which is not an outage and must not read like one.
+          TAIL=$(cat /tmp/telegram_preflight.log /tmp/telegram_post.log 2>/dev/null || true)
+          case "$TAIL" in
+            *"secrets missing"*) CAUSE=setup ;;
+            *Unauthorized*|*"invalid client"*|*invalid_grant*) CAUSE=credentials ;;
+            *"chat not found"*|*"bot is not a member"*|*"bot not in the chat"*) CAUSE=chat ;;
+            *"have no rights"*|*"not enough rights"*|*can_post_messages*) CAUSE=rights ;;
+            *) CAUSE=run ;;
+          esac
+
+          EXISTING=$(CAUSE_TAG="[$CAUSE]" gh issue list --label telegram-automation --state open \
+            --limit 100 --json number,title \
+            --jq "[.[] | select(.title | contains(\$ENV.CAUSE_TAG)) | .number][0] // empty")
           if [ -n "$EXISTING" ]; then
-            gh issue comment "$EXISTING" --body-file /tmp/issue_body.md
-            echo "Commented on issue #$EXISTING"
+            gh issue comment "$EXISTING" --body-file /tmp/issue_body.md || true
+            echo "Same cause as issue #$EXISTING — commented instead of filing a second one"
           else
-            gh issue create --title "Telegram post failed — $RUN_DATE" \
-              --label telegram-automation --body-file /tmp/issue_body.md
+            gh issue create --title "Telegram post failed — $RUN_DATE [$CAUSE]" \
+              --label telegram-automation --body-file /tmp/issue_body.md \
+              || echo "::warning title=Issue not created::bookkeeping failed; the run log still carries the cause"
           fi

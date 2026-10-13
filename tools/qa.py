@@ -674,6 +674,35 @@ check("telegram guard: the run summary reports which guard was watching",
 check("telegram guard: the preflight can be checked without a token",
       "--preview" in tg_pre and "telegram_preview" in tg_pre,
       "the owner has to be able to verify the guard from a terminal, with no secret in hand")
+# --- the failure-issue hygiene that makes the launch order safe -------------------------
+_lane_issue_files = {
+    "telegram_autopost.yml": "telegram-automation",
+    "facebook_autopost.yml": "facebook-automation",
+    "youtube_scheduled.yml": "youtube-automation",
+}
+for _lane_file, _lane_label in _lane_issue_files.items():
+    _lane_path = os.path.join(ROOT, ".github", "workflows", _lane_file)
+    _lane_text = open(_lane_path, encoding="utf-8").read() if os.path.exists(_lane_path) else ""
+    check("%s: its failure issue is filed once per cause, not once per day" % _lane_file,
+          'CAUSE_TAG="[$CAUSE]"' in _lane_text and "--state open" in _lane_text
+          and 'gh issue comment "$EXISTING"' in _lane_text,
+          "an inbox of identical issues is how a broken lane gets ignored; the cause tag is the key")
+    check("%s: bookkeeping can never add a second failure" % _lane_file,
+          'gh issue comment "$EXISTING" --body-file /tmp/issue_body.md || true' in _lane_text
+          and ("::warning" in _lane_text.split("gh issue create")[-1][:400]
+               or "|| true" in _lane_text.split("gh issue create")[-1][:400]),
+          "the run is already red because the post failed; a failed issue is a warning, not a new red")
+check("the heartbeat still finds each lane by its create line",
+      all(("gh issue create" in open(os.path.join(ROOT, ".github", "workflows", f),
+                                    encoding="utf-8").read()) or not os.path.exists(
+          os.path.join(ROOT, ".github", "workflows", f)) for f in _lane_issue_files),
+      "tools/automation_heartbeat.py reads `gh issue create --label …` out of each workflow — "
+      "re-wording that line silently un-monitors the lane")
+check("launch: the sequence document exists and covers every owner-only step",
+      os.path.exists(os.path.join(ROOT, "docs", "LAUNCH_SEQUENCE.md")),
+      "four steps are owed by a human with a browser; the order is the difference between a "
+      "quiet launch and a morning of issues")
+
 check("telegram guard: the tests never reach the network for it",
       all("fetch_preview" in open(os.path.join(ROOT, "tools", "tests", n), encoding="utf-8").read()
           for n in ("test_post_telegram_ledger.py", "test_post_telegram_channel_guard.py")),

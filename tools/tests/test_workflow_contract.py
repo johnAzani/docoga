@@ -15,6 +15,7 @@ point at something that isn't there.
 """
 import os
 import re
+import subprocess
 import sys
 import unittest
 from pathlib import Path
@@ -217,6 +218,139 @@ class ScheduledShortsWorkflowTests(unittest.TestCase):
             if "gh " in str(step.get("run", "")):
                 with self.subTest(step=step.get("name")):
                     self.assertIn("GH_TOKEN", str(step.get("env", "")))
+
+
+@unittest.skipIf(yaml is None, "PyYAML is required for the workflow contract tests")
+class FailureIssueHygieneTests(unittest.TestCase):
+    """The three lanes file issues; this pins *how*, because a noisy inbox is a dead lane.
+
+    Two rules the launch sequence depends on, both easy to lose in a later edit:
+
+      * one issue per cause, not per day — a lane failing for the same reason every morning
+        comments on its open issue instead of filing a new one (the Shorts lane used to file
+        eight issues a month for one un-published OAuth consent screen); and
+      * "never configured" is titled `setup`, not `run`, so a secret the boss has not set yet
+        does not read like an outage.
+
+    The telegram and facebook classifiers are *executed* here rather than grepped: they are
+    shell, and shell that only looks right in a review is how a workflow ships broken.
+    """
+
+    STEP = "Open a visible issue if the run failed"
+    LANES = {"telegram_autopost.yml": "telegram-automation",
+             "facebook_autopost.yml": "facebook-automation",
+             "youtube_scheduled.yml": "youtube-automation"}
+
+    @classmethod
+    def setUpClass(cls):
+        cls.steps = {}
+        for name in cls.LANES:
+            doc = yaml.safe_load((WORKFLOWS / name).read_text(encoding="utf-8"))
+            found = [s for job in doc["jobs"].values() for s in job.get("steps", [])
+                     if s.get("name") == cls.STEP]
+            assert len(found) == 1, "%s: expected exactly one %r step" % (name, cls.STEP)
+            step = found[0]
+            # if/env/run as one blob: what a step *does* includes what it is handed.
+            blob = "\n".join([str(step.get("if", "")), str(step.get("run", ""))]
+                             + ["%s: %s" % kv for kv in (step.get("env") or {}).items()])
+            cls.steps[name] = blob
+
+    def classify(self, workflow, log_text):
+        """Run the workflow's own classifier with a log body and report the cause it chose."""
+        # Only the `case` itself: the real step reads `TAIL=$(cat …)`, and replaying that line
+        # here would blank the log the test is trying to classify.
+        block = re.search(r"case .\$TAIL. in.*?\n\s*esac", self.steps[workflow], re.S)
+        self.assertIsNotNone(block, "the lane has no log classifier to test")
+        quote = chr(39)  # a single quote, so the fixture text stays readable
+        # An apostrophe in a Telegram error message ("can't parse entities") is the reason this
+        # needs escaping and not just quoting.
+        log_text = log_text.replace(quote, quote + chr(92) + quote + quote)
+        script = "TAIL=" + quote + log_text + quote + chr(10) + block.group(0) + chr(10) + "printf %s " + chr(34) + chr(36) + "CAUSE" + chr(34)
+        done = subprocess.run(["bash", "-c", script], capture_output=True, text=True, timeout=30)
+        self.assertEqual(done.returncode, 0, done.stderr)
+        return done.stdout.strip()
+
+    def test_a_missing_secret_is_setup_and_not_an_outage(self):
+        self.assertEqual(self.classify("telegram_autopost.yml",
+                                       "ERROR: Telegram secrets missing — set TELEGRAM_CHAT_ID"), "setup")
+        self.assertEqual(self.classify("facebook_autopost.yml",
+                                       "The page access token is not configured on this repository"), "setup")
+
+    def test_a_dead_credential_is_named_as_one(self):
+        self.assertEqual(self.classify("telegram_autopost.yml", "getMe failed: Unauthorized"), "credentials")
+        self.assertEqual(self.classify("facebook_autopost.yml",
+                                       "Error validating access token: the session has been invalidated"),
+                         "credentials")
+
+    def test_a_wrong_channel_and_a_refused_right_are_told_apart(self):
+        self.assertEqual(self.classify("telegram_autopost.yml",
+                                       "Forbidden: bot is not a member of the channel chat"), "chat")
+        self.assertEqual(self.classify("telegram_autopost.yml",
+                                       "Bad Request: have no rights to send a message"), "rights")
+
+    def test_an_unrecognised_failure_still_becomes_a_run_never_an_empty_title(self):
+        self.assertEqual(self.classify("telegram_autopost.yml",
+                                       "can't find end of entities"), "run")
+        self.assertEqual(self.classify("facebook_autopost.yml", "something nobody has seen yet"), "run")
+
+    def test_the_shorts_lane_borrows_the_uploaders_kind(self):
+        """The uploader classifies; the workflow must not re-guess it."""
+        text = self.steps["youtube_scheduled.yml"]
+        self.assertIn('CAUSE="${FAIL_KIND:-run}"', text)
+        self.assertIn("FAIL_KIND: ${{ steps.upload.outputs.fail_kind }}", text)
+        self.assertIn('CAUSE=run', text)
+        block = re.search(r"CAUSE=.*?CAUSE=run", text, re.S).group(0)
+        for value, expected in (("quota", "quota"), ("", "run"), ("none", "run")):
+            with self.subTest(FAIL_KIND=value):
+                script = "FAIL_KIND=%s\n%s\nprintf %%s \"$CAUSE\"" % (value, block)
+                done = subprocess.run(["bash", "-c", script], capture_output=True, text=True, timeout=30)
+                self.assertEqual(done.stdout.strip(), expected)
+
+    def test_the_cause_tag_is_both_the_title_and_the_dedupe_key(self):
+        for name in self.LANES:
+            with self.subTest(workflow=name):
+                text = self.steps[name]
+                self.assertIn('CAUSE_TAG="[$CAUSE]"', text)
+                self.assertIn("contains(", text)
+                self.assertIn("$ENV.CAUSE_TAG", text)
+                self.assertIn("[$CAUSE]", text, "the tag has to be in the title to be found again")
+                self.assertIn("--state open", text, "a closed issue must not absorb a new failure")
+
+    @unittest.skipIf(subprocess.run(["bash", "-c", "command -v jq"], capture_output=True).returncode != 0,
+                     "jq is not installed")
+    def test_the_selector_finds_the_open_issue_with_the_same_cause(self):
+        issues = ('[{"number":16,"title":"Telegram post failed — 2026-10-11 [setup]"},'
+                  '{"number":12,"title":"Telegram post failed — 2026-10-09 [chat]"},'
+                  '{"number":11,"title":"an unrelated issue"}]')
+        filter_ = '[.[] | select(.title | contains($ENV.CAUSE_TAG)) | .number][0] // empty'
+        for tag, expected in (("[chat]", "12"), ("[setup]", "16"), ("[rights]", "")):
+            with self.subTest(tag=tag):
+                # Single quotes around the filter, for the reason the workflow escapes it: inside
+                # double quotes bash expands `$ENV` away and jq is left with a bare `.CAUSE_TAG`.
+                script = "echo %s | CAUSE_TAG=%s jq -r %s" % (
+                    chr(39) + issues + chr(39), chr(34) + tag + chr(34), chr(39) + filter_ + chr(39))
+                done = subprocess.run(["bash", "-c", script], capture_output=True, text=True, timeout=30)
+                self.assertEqual(done.stdout.strip(), expected)
+
+    def test_commenting_and_filing_can_never_make_a_run_more_broken_than_it_already_is(self):
+        for name in self.LANES:
+            with self.subTest(workflow=name):
+                text = self.steps[name]
+                self.assertIn('gh issue comment "$EXISTING" --body-file /tmp/issue_body.md || true', text)
+                create = text[text.index("gh issue create"):]
+                self.assertTrue('|| echo "::warning' in create or "|| true" in create,
+                                "an issue that cannot be filed is a warning, not a second failure")
+
+    def test_the_heartbeat_still_finds_each_lane_by_its_create_line(self):
+        """`tools/automation_heartbeat.py` discovers a lane's label by reading the
+        `gh issue create --label …` line out of the workflow, so re-wording that line edits
+        the monitor's data classification. Asserted, not assumed."""
+        hb = (ROOT / "tools" / "automation_heartbeat.py").read_text(encoding="utf-8")
+        self.assertRegex(hb, r"_ISSUE_LABEL\s*=\s*re\.compile")
+        for name, label in self.LANES.items():
+            with self.subTest(workflow=name):
+                found = re.search(r"gh issue create.*?--label (\S+)", self.steps[name], re.S)
+                self.assertEqual(found.group(1).rstrip("\\").strip(), label)
 
 
 if __name__ == "__main__":

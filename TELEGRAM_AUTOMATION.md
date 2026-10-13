@@ -312,6 +312,11 @@ real.
 
 ### What is owed by a human, once
 
+> **The order of the steps is its own document:** `docs/LAUNCH_SEQUENCE.md` — it lists
+> what a human owes, the exact command or tap for each, and the screen you should see.
+> Merge before the secrets and you get a `[setup]` issue, not an outage; that page says
+> why, and what to check the next morning.
+
 `gh secret set` and `gh variable set` are **not** runnable from the agent sandbox (the
 Actions token gets `403 Resource not accessible by integration` on those endpoints, and
 this `gh` build has no `variable` subcommand), and values are write-only everywhere. So:

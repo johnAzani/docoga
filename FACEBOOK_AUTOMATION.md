@@ -46,6 +46,10 @@ Nothing here is a server, a queue, or a paid service. A GitHub runner is the cro
 
 ## 2. One-time setup — the only manual thing (10 minutes)
 
+> **The order across all lanes is its own document:** `docs/LAUNCH_SEQUENCE.md` — the
+> exact command or tap for every human step, the screen to expect, and what to check the
+> next morning. Doing the steps out of order costs an issue titled `… [setup]`, not a post.
+
 ### 2a. Mint the Page token
 
 1. <https://developers.facebook.com/tools/explorer/> → app picker → **the DocOga use-case app**.
