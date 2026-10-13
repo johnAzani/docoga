@@ -809,7 +809,7 @@ if len(_meta) == len(_meta_paths):
     try:
         sys.path.insert(0, os.path.join(ROOT, "tools"))
         import workflow_handoffs
-        _handoffs = workflow_handoffs.audit_dir(os.path.join(ROOT, ".github", "workflows"))
+        _handoffs = workflow_handoffs.audit_repo(ROOT)
     except Exception as exc:  # an auditor that could not run is said so, never passed silently
         _handoffs = None
         _handoff_error = str(exc)
@@ -818,7 +818,8 @@ if len(_meta) == len(_meta_paths):
              "tools/workflow_handoffs.py could not run (%s) — the cross-step class of bug it catches "
              "is the one this repository keeps rediscovering" % _handoff_error)
     else:
-        check("every workflow handoff lands ($GITHUB_ENV, jq $ENV, steps.outputs)", not _handoffs,
+        check("every workflow handoff lands ($GITHUB_ENV, jq $ENV, steps.outputs, sed keys)",
+              not _handoffs,
               " | ".join("%s: %s" % pair for pair in _handoffs)[:700])
 
     # Every `run:` block in every workflow must be valid bash. A stray `done` where `fi` belongs

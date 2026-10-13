@@ -158,13 +158,15 @@ Integration rules:
 - **Cross-step handoff audit — DONE 13 Oct 2026** (`tools/workflow_handoffs.py`, enforced by
   `tools/qa.py`, tested both directions by `tools/tests/test_workflow_handoffs.py`). The class:
   a value produced in one place and consumed in another, where **each half passes its own test**.
-  Three shapes, all of them history here — a `KEY=v` written to `$GITHUB_ENV` and read in the same
+  Four shapes, three of them history here — a `KEY=v` written to `$GITHUB_ENV` and read in the same
   step (Actions assembles the environment only for the *next* step, so the read is empty);
   `contains($ENV.X)` in a jq program where `X` is a shell variable that was never exported (this is
   how Telegram's day-dedupe matched *every* open issue for a week — an empty needle in `contains("")`
   is true for everything, which reads as "found it" rather than as a bug); and
   `${{ steps.id.outputs.key }}` naming a step id or key that does not exist, which evaluates to the
-  empty string instead of failing. The rule for anyone adding a lane: **a value that crosses a
+  empty string instead of failing; and — the same class one layer down — a `sed -n 's/^KEY=//p'` in a
+  workflow reading a machine line no file ever prints, which is how a lane that published can record
+  `unknown` in its ledger and look half-broken forever. The rule for anyone adding a lane: **a value that crosses a
   boundary needs a name at both ends**, and the gate now says so on the day it happens rather than
   four days into an outage. The auditor's own history is the second lesson: its first run reported
   five confident bugs in this repository and every one was a false positive (matching `$IG_USER_ID`
