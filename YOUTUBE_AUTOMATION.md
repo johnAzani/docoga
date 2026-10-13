@@ -102,7 +102,10 @@ secrets, because this job does not select a GitHub environment):
 - `YT_REFRESH_TOKEN`
 
 The Google Cloud project must have YouTube Data API v3 enabled and the refresh
-token must include the `youtube.upload` scope.
+token must carry **two** scopes: `youtube.upload` (the upload itself) **and**
+`youtube.readonly` (the probe's `channels.list` and the post-upload read-back —
+with upload-only, those answer `403 insufficientPermissions` even though the
+token is otherwise perfect).
 
 Two corrections to this section, checked against Google's own reference on
 8 Oct 2026 rather than remembered:
@@ -150,13 +153,37 @@ screen in brackets at each step.
    effective immediately]*. A stopgap that still expires tokens every 7 days, so it
    is a bridge and not a fix.
 4. **Clients** *(or the old **Credentials → OAuth client ID**)* → the client this
-   lane uses — confirm the type is *Desktop app* and that no redirect URIs are
-   needed *[the client list, with each client's type]*.
-5. Re-run the consent flow to mint a fresh refresh token, then
-   `gh secret set YT_REFRESH_TOKEN --body '<token>'` *(and, if the client changed,
-   `YT_CLIENT_ID` and `YT_CLIENT_SECRET` too — three secrets, replaced together;
-   replacing one of three is how the 9 Oct run stayed red for a week.)*
-6. Prove it without uploading anything:
+   lane uses *[the client list, with each client's type]*. If the list is empty or
+   the lane reports `invalid_client` ("The OAuth client was not found" — 13 Oct
+   2026), the client was deleted: **+ Create client** → type **Web application**
+   → name `docoga-youtube` → under *Authorised redirect URIs* add exactly
+   `https://developers.google.com/oauthplayground` → **Create** → copy the
+   **Client ID** and **Client secret** (the secret is shown once).
+   *(A Desktop-app client also works for the lane — the uploader only ever calls
+   the token endpoint — but it cannot be used with the Playground route below.)*
+5. Mint the refresh token **from any browser, including a phone** — no code, no
+   terminal — with Google's OAuth Playground:
+   1. Open `https://developers.google.com/oauthplayground` → the **⚙ gear** (top
+      right) → tick **Use your own OAuth credentials** → paste the Client ID and
+      Client secret from step 4 → close the panel. *(Without this tick the
+      Playground uses Google's demo client and revokes the token within 24 h.)*
+   2. In **Step 1**, scroll past the list to the **Input your own scopes** box and
+      paste, space-separated:
+      `https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly`
+      → **Authorize APIs** → pick the Google account that **owns the DocOga
+      channel** (check the account picker — the wrong account mints a token for a
+      channel with zero videos) → *"Google hasn't verified this app"* →
+      **Continue** → tick both permissions → **Continue**.
+   3. In **Step 2**, click **Exchange authorization code for tokens**. Copy the
+      **Refresh token** (starts with `1//`). The access token beside it is
+      irrelevant; it dies in an hour by design.
+   4. GitHub → **Settings → Secrets and variables → Actions** → update **all
+      three**: `YT_CLIENT_ID`, `YT_CLIENT_SECRET`, `YT_REFRESH_TOKEN`. Three
+      secrets, replaced together — replacing one of three is how the 9 Oct run
+      stayed red for a week. *(From a terminal: `gh secret set YT_REFRESH_TOKEN
+      --body '<token>'` etc.)*
+6. Prove it without uploading anything — **Actions → YouTube Shorts Auto-Generate
+   and Publish → Run workflow → tick `probe_only` → Run** (or from a terminal:)
 
    ```bash
    gh workflow run youtube_scheduled.yml -f probe_only=true
