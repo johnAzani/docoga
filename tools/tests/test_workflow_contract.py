@@ -117,7 +117,15 @@ class ScheduledShortsWorkflowTests(unittest.TestCase):
     def test_the_upload_is_skipped_when_the_guard_says_skip(self):
         for name in ("Upload to YouTube", "Record the publish in the ledger", "Commit the publish ledger"):
             with self.subTest(step=name):
-                self.assertEqual(self.by_name[name].get("if"), "steps.guard.outputs.skip != 'yes'")
+                condition = self.by_name[name].get("if") or ""
+                self.assertIn("steps.guard.outputs.skip != 'yes'", condition,
+                              "a re-run of a duplicate must still be refused")
+        # Recording is gated on *an id existing*, not on the upload step being green: a video
+        # YouTube stored as private is on the channel, and an unrecorded id is a duplicate waiting
+        # for the next run.
+        record = self.by_name["Record the publish in the ledger"].get("if") or ""
+        self.assertIn("always()", record)
+        self.assertIn("steps.upload.outputs.video_id != ''", record)
 
     def test_the_guard_treats_force_true_as_clear_to_publish(self):
         """Regression: the first draft exited 3 (the duplicate code) when force
@@ -125,6 +133,52 @@ class ScheduledShortsWorkflowTests(unittest.TestCase):
         guard = self.blob("Duplicate guard (publish ledger)")
         self.assertIn('"$FORCE" = "true"', guard)
         self.assertNotIn('"$FORCE" != "true"', guard)
+
+    def test_the_upload_step_carries_the_uploaders_verdict(self):
+        """The step parses YT_* markers into outputs; the ledger, the summary and the issue body
+        all read them, so a cause cannot be lost between the uploader and the human."""
+        upload = self.blob("Upload to YouTube")
+        for marker in ("YT_UPLOAD_RESULT", "YT_PRIVACY", "YT_FAIL_KIND", "YT_FAIL_REASON",
+                       "YT_UPLOAD_STATE", "YT_NOTE"):
+            with self.subTest(marker=marker):
+                self.assertIn(marker, upload)
+        self.assertIn("code=${PIPESTATUS[0]}", upload,
+                      "tee swallows the uploader's exit code, which is the whole diagnosis")
+        self.assertIn('exit "$code"', upload, "and the step must still fail the run with it")
+        for output in ("result", "privacy_seen", "fail_kind", "fail_reason", "note"):
+            with self.subTest(output=output):
+                self.assertIn('echo "%s=' % output, upload)
+
+    def test_the_failure_issue_says_whether_a_video_exists(self):
+        """'Nothing may have been published' sends a person to check the channel first; the id
+        already knows the answer, so the issue must state it."""
+        issue = self.blob("Open a visible issue if the run failed")
+        self.assertIn("Nothing was published by this run", issue)
+        self.assertIn("Do NOT re-run before deciding", issue)
+        self.assertIn("In testing", issue, "the 7-day refresh-token expiry is the cause this lane kept missing")
+        self.assertNotIn("Nothing may have been published", issue)
+
+    def test_a_probe_only_run_uploads_nothing_and_renders_nothing(self):
+        doc = self.doc
+        probe = doc["jobs"]["probe"]
+        self.assertEqual(probe.get("if"), "github.event.inputs.probe_only == 'true'")
+        names = [s.get("name") for s in probe["steps"]]
+        self.assertNotIn("Generate today's Short", names)
+        self.assertTrue(any("--probe" in (s.get("run") or "") for s in probe["steps"]))
+        publish = doc["jobs"]["generate-and-publish"]
+        self.assertIn("github.event.inputs.probe_only != 'true'", publish.get("if") or "")
+        self.assertIn("github.event_name == 'schedule'", publish.get("if") or "",
+                      "the schedule must never be silenced by an input it does not have")
+
+    def test_the_preflight_proves_more_than_presence(self):
+        preflight = self.blob("Preflight — are the YouTube secrets present and usable?")
+        self.assertIn("--probe", preflight,
+                      "presence proved nothing on 9 Oct: the step was green with a dead token")
+
+    def test_ledger_bookkeeping_does_not_retrigger_ci(self):
+        commit = self.blob("Commit the publish ledger")
+        self.assertIn("[skip ci]", commit,
+                      "a ledger push that fires Verify burns the free plan's minutes")
 
     def test_the_uploader_video_id_is_captured_or_the_run_fails(self):
         """yt_publish.py prints VIDEO_ID=; without it the ledger entry is blank."""

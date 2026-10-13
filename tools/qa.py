@@ -630,6 +630,59 @@ check("telegram preflight names the secret to set",
       open(os.path.join(ROOT, "tools", "telegram_preflight.py"), encoding="utf-8").read(),
       "it finds the failure; it has to finish the job and say what to type")
 
+# ── the YouTube lane: the protocol, the cause, and the probe ───────────────
+# The 9 Oct run rendered a Short for ten minutes, failed at "Upload to YouTube", and the only
+# words in the log were `Exit code 1`. Three rules keep that from being the state of play again.
+yt_wf_text = open(os.path.join(ROOT, ".github", "workflows", "youtube_scheduled.yml"),
+                  encoding="utf-8").read()
+yt_pub = open(os.path.join(ROOT, "tools", "yt_publish.py"), encoding="utf-8").read()
+check("youtube: the resumable protocol is implemented, not improvised",
+      "308" in yt_pub and "Content-Range" in yt_pub and "await_finalize" in yt_pub
+      and yt_pub.count("timeout=(") >= 1 and "requests.put(" not in yt_pub,
+      "a whole-file PUT with no 308 handling fails a healthy upload, which is what the old code did")
+check("youtube: nothing in the lane can hang",
+      yt_pub.count("TIMEOUT") >= 2 and "def request(self, method, url, headers=None" in yt_pub,
+      "every request goes through Http so a timeout is impossible to forget at one call site")
+check("youtube: a failure names its kind and its fix",
+      "REASONS = {" in yt_pub and "class Problem" in yt_pub and "YT_FAIL_KIND=" in yt_pub,
+      "the issue body and the annotation are assembled from these, so the cause survives the run")
+check("youtube: a human-only repair exits differently from a crash",
+      "EXIT_NEEDS_HUMAN = 2" in yt_pub and "credentials" in yt_pub,
+      "'the code broke' and 're-author the token' are different 2 minutes")
+check("youtube: the upload is read back before anyone says 'published'",
+      "def read_back(" in yt_pub and '"held"' in yt_pub,
+      "201 means the bytes arrived; a channel that defaults uploads to private returns 201 too")
+check("youtube: the probe exists and cannot upload",
+      "def probe(" in yt_pub and "--probe" in yt_pub
+      and "def probe" in yt_pub and "ResumableUploader" in yt_pub.split("def probe(")[0],
+      "the owner is never asked to guess which of four things is wrong (PRE-FLIGHT LAW)")
+check("youtube: the scheduled preflight runs the probe",
+      "yt_publish.py --probe" in yt_wf_text,
+      "presence of secrets proved nothing on 9 Oct: the step was green with a dead token")
+check("youtube: a probe-only dispatch is available",
+      "probe_only" in yt_wf_text and 'jobs' in yt_wf_text and "name: Diagnose the YouTube lane" in yt_wf_text,
+      "diagnosis must be runnable without rendering or uploading anything")
+check("youtube: the ledger is recorded even when the upload step went red",
+      "steps.upload.outputs.video_id != ''" in yt_wf_text
+      and "if: always() && steps.guard.outputs.skip != 'yes' && steps.upload.outputs.video_id != ''"
+      in yt_wf_text,
+      "an id on the channel that is not in the ledger is a duplicate waiting for the next run")
+check("youtube: exit codes survive the log capture",
+      "code=${PIPESTATUS[0]}" in yt_wf_text,
+      "tee swallows the uploader's exit code, and the exit code is the diagnosis")
+check("youtube: the failure issue says whether a video exists",
+      "Nothing was published by this run" in yt_wf_text and "A video exists" in yt_wf_text
+      and "Nothing may have been published" not in yt_wf_text,
+      "a hedge in the first line of an issue is a morning wasted reading the channel by hand")
+for name in ("youtube_scheduled.yml", "telegram_autopost.yml", "facebook_autopost.yml"):
+    text = open(os.path.join(ROOT, ".github", "workflows", name), encoding="utf-8").read()
+    check("%s: an auto-commit of bookkeeping does not retrigger CI" % name,
+          "[skip ci]" in text,
+          "the free plan has 2,000 minutes a month; a ledger push that fires Verify burns them")
+check("youtube ledger: an entry carries what YouTube reported",
+      "--state" in open(os.path.join(ROOT, "tools", "youtube_ledger.py"), encoding="utf-8").read(),
+      "the difference between 'published' and 'we PUT a file and hoped'")
+
 # The unittest files are the real gate; run them when their deps are present.
 import importlib.util as _ilu
 missing_mods = [m for m in ("requests", "yaml") if _ilu.find_spec(m) is None]

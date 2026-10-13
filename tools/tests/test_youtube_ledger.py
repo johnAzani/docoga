@@ -169,5 +169,57 @@ class LedgerGrowthTests(LedgerTestCase):
         self.assertEqual(entry["privacy"], "public")
 
 
+class WhatYoutubeSaidTests(unittest.TestCase):
+    """An entry that only says "we sent a file" cannot distinguish a published Short from a
+    private one, which is the difference between a lane working and a lane nobody can see."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.path = Path(self.tmp.name) / "youtube_published.json"
+
+    def test_record_keeps_the_state_and_the_note(self):
+        entries = []
+        ledger.record(entries, path=str(self.path), title="T", video_id="abc",
+                              date="2026-10-13", privacy="public", state="held",
+                              note="YouTube stored it as private")
+        entry = ledger.load(self.path)[0]
+        self.assertEqual("held", entry["state"])
+        self.assertIn("private", entry["note"])
+
+    def test_the_cli_accepts_them(self):
+        out = io.StringIO()
+        with redirect_stdout(out):
+            rc = ledger.main([
+                "--ledger", str(self.path), "record", "--title", "T", "--video-id", "abc",
+                "--date", "2026-10-13", "--state", "published", "--note", "uploadStatus=processed",
+            ])
+        self.assertEqual(ledger.EXIT_CLEAR, rc)
+        entry = ledger.load(self.path)[0]
+        self.assertEqual("published", entry["state"])
+        self.assertEqual("uploadStatus=processed", entry["note"])
+
+    def test_a_show_line_prints_the_state(self):
+        ledger.record([], path=str(self.path), title="A rather long Short title here",
+                              video_id="abc", date="2026-10-13", privacy="public",
+                              state="held", url="https://youtu.be/abc")
+        ledger.record(ledger.load(self.path), path=str(self.path),
+                      title="Old entry with no state at all",
+                              video_id="def", date="2026-10-06", privacy="public",
+                              url="https://youtu.be/def")
+        out = io.StringIO()
+        with redirect_stdout(out):
+            ledger.main(["--ledger", str(self.path), "show"])
+        lines = out.getvalue().splitlines()
+        self.assertEqual(2, len(lines))
+        # Newest first, so match on the title rather than the row: the order is the ledger's
+        # business, and asserting it here would only test the sort.
+        held = [l for l in lines if "A rather long" in l][0]
+        legacy = [l for l in lines if "Old entry" in l][0]
+        self.assertIn("held", held)
+        self.assertIn("uploaded", legacy,
+                      "an entry written before the state field existed is not an unknown state")
+
+
 if __name__ == "__main__":
     unittest.main()

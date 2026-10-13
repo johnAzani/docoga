@@ -181,6 +181,19 @@ Integration rules:
   a green run with nothing recorded is a new failure kind (`green-but-quiet`), while a red
   schedule with fresh entries stays red but says "readers are still being served". Missing
   evidence is reported as missing, never as silence. Handbook: `TELEGRAM_AUTOMATION.md`.
+- **The Shorts lane stopped being able to fail silently — 13 Oct 2026.** Its 9 Oct run had a green preflight, a clean
+  render, a working duplicate guard and a red upload step whose entire output was `Exit code 1`; the issue it filed had to
+  guess among four causes, and the log that settles it is unreadable a day later. So `tools/yt_publish.py` now speaks the
+  resumable protocol properly (256 KB-aligned chunks, a 308 read as *progress* and resumed at the server's range, 5xx
+  backoff with a resume probe, one session restart on 404, a timeout on every request so nothing can hang), maps every
+  documented `videos.insert` error to a kind and a repair, **reads the upload back** before calling it published (a video
+  YouTube stored as `private` is red, not green, and its id still reaches the ledger so a re-run cannot double-post), and
+  splits exit codes between "the code broke" (1) and "a human with a browser must fix it" (2). The preflight runs a
+  1-unit `--probe` that names the channel the token actually authorises — `gh workflow run youtube_scheduled.yml -f
+  probe_only=true` reproduces the whole diagnosis with no upload — and the two myths this lane was built on are corrected
+  in `YOUTUBE_AUTOMATION.md`: unverified API projects do *not* get their uploads forced private, and "six uploads a day"
+  is stale quota arithmetic; what *is* real is that a refresh token from a consent screen still in Testing dies in 7 days,
+  which is the leading explanation for "it worked on 6 Oct and not on 9 Oct".
   Honest state as of 13 Oct: 3 scheduled lanes, **0 of them healthy** — Telegram has not succeeded since
   3 Oct, YouTube has run once and failed, Facebook's `schedule:` is not on `main` yet. The heartbeat's first
   report is not a clean one; that is what it is for.
