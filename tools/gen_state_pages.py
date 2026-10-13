@@ -208,7 +208,7 @@ footer{{margin-top:34px;border-top:1px solid #DCE4F0;padding-top:16px;font-size:
 
 <div class="box">
 <h2>Make it in 2 minutes \u2014 free</h2>
-<p>DocOga\u2019s {tool} generator works on your phone: answer simple questions, get a clean, standard Nigerian document. Free version carries a small banner; the Oga Pass (\u20a62,000/30 days) unlocks unlimited clean copies \u2014 all 9 tools.</p>
+<p>DocOga\u2019s {tool} generator works on your phone: answer simple questions, get a clean, standard Nigerian document. Free version carries a small banner; the Oga Pass (\u20a62,000/30 days) unlocks unlimited clean copies \u2014 all 10 tools.</p>
 <a class="cta" href="https://docoga.com.ng/{hash}">Create your {verb} free \u2192</a>
 <p style="font-size:14.5px;margin-top:2px">Need it clean \u2014 no banner, unlimited copies? <a class="cta2" href="https://docoga.com.ng/#pricing">Get the Oga Pass, \u20a62,000 for 30 days \u2192</a></p>
 </div>
@@ -228,15 +228,16 @@ footer{{margin-top:34px;border-top:1px solid #DCE4F0;padding-top:16px;font-size:
 </div>
 
 <footer>
-<b>DocOga</b> \u2014 free Nigerian document tools: tenancy agreement, notice to quit, rent receipt, invoice, employment contract, caution fee receipt, letter of demand, payslip, warning letter.
+<b>DocOga</b> \u2014 free Nigerian document tools: tenancy agreement, notice to quit, rent receipt, invoice, employment contract, caution fee receipt, letter of demand, payslip, warning letter and power of attorney.
 <br><br>This page is general information about Nigerian tenancy practice, current as at September 2026 \u2014 it is not legal advice.
 </footer>
 </div>
 
 <div class="stickycta">
-<span><b>Oga Pass</b> \u2014 \u20a62,000 \u00b7 30 days \u00b7 all 9 tools \u00b7 no banner</span>
+<span><b>Oga Pass</b> \u2014 \u20a62,000 \u00b7 30 days \u00b7 all 10 tools \u00b7 no banner</span>
 <a href="https://docoga.com.ng/#pricing">Get the Pass</a>
 </div>
+<script src="/analytics-consent.js" data-track-page="true" defer></script>
 </body>
 </html>
 '''

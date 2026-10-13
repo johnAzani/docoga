@@ -20,7 +20,7 @@ p,li{font-size:15px;color:#38443B}
 <div class="wrap">
 <a class="top" href="index.html">← Back to DocOga</a>
 <h1>Privacy Policy</h1>
-<p><b>DocOga</b> · Last updated: 11 October 2026 · Abuja, Nigeria</p>
+<p><b>DocOga</b> · Last updated: 13 October 2026 · Abuja, Nigeria</p>
 
 <div class="box"><b>The short version:</b> your documents are created on your own device. We do not see, receive, or store them. Free users need no account at all. The one exception is a small team account, held only when your firm pays for the Business licence (see section 5).</div>
 
@@ -28,7 +28,11 @@ p,li{font-size:15px;color:#38443B}
 <p>DocOga is a browser-based tool. Everything you type — names, addresses, rent amounts, property details — is processed and saved <b>only on your device</b> (browser local storage). It is never transmitted to us or to any server. If you clear your browser data, your saved documents are deleted from your device. This is equally true for documents produced while signed in to a Business team.</p>
 
 <h2>2. Website analytics</h2>
-<p>We may use Google Analytics to understand aggregate usage — pages visited, approximate location, device type. This data is aggregated and does not identify you personally. You can block analytics with any standard browser setting or extension.</p>
+<p><b>Google Analytics is currently disabled in this site build.</b> No Google Analytics tag is loaded and no page-view or interaction data is sent to Google. Pages using the first-party privacy manager expire accessible `_ga` cookies left by the older implementation; while Analytics is disabled, the manager does not request or write an Analytics preference. The persistent <b>Privacy choices</b> control reports that Analytics is off.</p>
+<p>If DocOga enables the dedicated Google Analytics 4 property in a later release, it will be optional: the tag will not load until you actively choose <b>Accept analytics</b>. Choosing <b>Reject analytics</b> on the first prompt leaves all document tools available and keeps the Analytics library unloaded. The persistent <b>Privacy choices</b> control will then let you review or change your choice. A saved choice expires after 180 days. If you later withdraw acceptance, the site records the rejection in browser storage where available; if the Google tag has already loaded, it updates Google consent to denied. The site stops sending subsequent page views and removes first-party Analytics cookies on a best-effort basis. A request already sent cannot be recalled, and withdrawal does not erase data Google already received.</p>
+<p>If enabled, the intended measurement is limited to page names and allowlisted DocOga app routes, basic browser/device information, approximate location, and GA4's built-in session/engagement timing signals. Other interaction metadata may include scrolls, outbound-link clicks, and form identifiers (not field values) only if those property settings are separately enabled after review. The site is designed not to send document contents, names entered into forms, Oga Pass codes, payment references, raw URL fragments, or non-allowlisted query parameters to Analytics. Only fixed, approved `utm_source` and `utm_medium` labels may be retained; campaign names, content, IDs and search terms are excluded. External referrers are reduced to their origin; the payment-success page remains untagged. Analytics and advertising-personalisation signals are configured separately, and the intended settings disable Google Signals and ad-personalisation signals.</p>
+<p>For visitors outside the European Economic Area, the United Kingdom and Switzerland, Google says it uses raw IP addresses briefly for basic service functions, spam detection and coarse location, then discards them after use without associating them with Google Analytics user identifiers. This describes Google's stated handling, not a promise that data stays in Nigeria; linked Google products or different regional settings may affect processing and must be checked before activation.</p>
+<p>Google may process Analytics data outside Nigeria. Analytics will remain disabled until DocOga has verified and documented the applicable Nigeria Data Protection Act transfer basis and safeguards, Google’s relevant contract terms, property data-sharing and linked-product settings, retention, and measurement controls. This notice will be updated with the confirmed data flow before Analytics is enabled. See the <a href="https://policies.google.com/privacy">Google Privacy Policy</a> for Google's own handling of information.</p>
 
 <h2>3. Payments</h2>
 <p>Payments for the Oga Pass and Business licences are processed by our licensed payment provider (Flutterwave). Your card details, bank details and payment information are handled entirely by the provider on their secure platform — DocOga never sees or stores them. The provider's own privacy policy applies to payment data. We store only the reference, amount and status needed to run the service (for example, to activate your licence or show you your invoices).</p>
@@ -51,7 +55,8 @@ p,li{font-size:15px;color:#38443B}
 <h2>9. Contact</h2>
 <p>WhatsApp (Oga Pass individuals): see the WhatsApp button on our homepage · Business teams: <a href="mailto:business@docoga.com.ng">business@docoga.com.ng</a> · DocOga, Abuja, Nigeria.</p>
 
-<script>/* This page intentionally has no tracking. */</script>
+<script>/* Support number is configured on the homepage. Privacy settings are handled by the first-party consent manager. */</script>
 </div>
+<script src="/analytics-consent.js" defer></script>
 </body>
 </html>

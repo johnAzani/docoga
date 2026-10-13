@@ -57,13 +57,13 @@ SITE = os.path.join(ROOT, "site")
 DOMAIN = "https://docoga.com.ng"
 AS_AT = "October 2026"
 
-# The 9 SPA tools, in homepage order — used for the "All DocOga tools" footer block.
+# The 10 SPA tools, in homepage order — used for the "All DocOga tools" footer block.
 TOOLS = [
     ("agreement", "Tenancy Agreement"), ("notice", "Notice to Quit"),
     ("receipt", "Rent Receipt"), ("invoice", "Invoice"),
     ("employment", "Employment Contract"), ("caution", "Caution Fee Receipt"),
     ("demand", "Letter of Demand"), ("payslip", "Payslip"),
-    ("warning", "Warning Letter"),
+    ("warning", "Warning Letter"), ("poa", "Power of Attorney"),
 ]
 
 STATES = [("lagos", "Lagos"), ("abuja", "Abuja (FCT)"), ("rivers", "Rivers"),
@@ -674,7 +674,7 @@ PAGES["invoice-format-nigeria.html"] = dict(
 # ------------------------------------------------------------------ rendering
 CSS = """*{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;color:#141F33;background:#F5F7FB;line-height:1.6}
-.wrap{max-width:760px;margin:0 auto;padding:20px 18px 60px}
+.wrap{max-width:760px;margin:0 auto;padding:20px 18px 110px}
 .brand{display:inline-block;font-weight:900;font-size:20px;color:#0040E0;text-decoration:none;padding:10px 0}
 h1{font-size:26px;line-height:1.25;margin:10px 0 14px}
 .lead{font-size:16px;color:#37455E}
@@ -693,7 +693,11 @@ summary{font-weight:700;cursor:pointer}
 p{margin:8px 0}
 .links{font-size:14px}
 .links a{color:#0040E0;text-decoration:none;font-weight:600;margin-right:12px;white-space:nowrap;display:inline-block}
-footer{margin-top:34px;border-top:1px solid #DCE4F0;padding-top:16px;font-size:12.5px;color:#5B6B85}"""
+footer{margin-top:34px;border-top:1px solid #DCE4F0;padding-top:16px;font-size:12.5px;color:#5B6B85}
+.stickycta{position:fixed;left:0;right:0;bottom:0;z-index:60;background:#fff;border-top:1px solid #DCE4F0;box-shadow:0 -2px 14px rgba(20,31,51,.10);padding:10px 16px;display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap}
+.stickycta span{font-size:13.5px;color:#141F33;font-weight:600}
+.stickycta a{background:#0040E0;color:#fff;font-weight:800;text-decoration:none;border-radius:9px;padding:11px 18px;font-size:14.5px;white-space:nowrap}
+@media print{.stickycta{display:none}}"""
 
 
 def render(fname, p):
@@ -742,7 +746,7 @@ def render(fname, p):
 <h2>Make it in 2 minutes \u2014 free</h2>
 <p>DocOga works on your phone: answer simple questions, get a clean, standard Nigerian document you
 can print, save as PDF or share on WhatsApp. The free version carries a small banner; the Oga Pass
-(\u20a62,000/30 days) unlocks unlimited clean copies across all 9 tools.</p>
+(\u20a62,000/30 days) unlocks unlimited clean copies across all 10 tools.</p>
 <a class="cta" href="%(domain)s/#%(cta_hash)s">%(cta_label)s</a>
 </div>
 
@@ -762,12 +766,18 @@ can print, save as PDF or share on WhatsApp. The free version carries a small ba
 
 <footer>
 <b>DocOga</b> \u2014 free Nigerian document tools: tenancy agreement, notice to quit, rent receipt,
-invoice, employment contract, caution fee receipt, letter of demand, payslip, warning letter.
+invoice, employment contract, caution fee receipt, letter of demand, payslip, warning letter,
+and power of attorney.
 <br><br>This page is general information about Nigerian law and practice, current as at %(as_at)s \u2014
 it is not legal advice. Laws differ by state and change over time; confirm the current position for
 your case with a qualified Nigerian lawyer or your accountant.
 </footer>
 </div>
+<div class="stickycta">
+<span><b>Oga Pass</b> — ₦2,000 · 30 days · all 10 tools · no banner</span>
+<a href="%(domain)s/#pricing">Get the Pass</a>
+</div>
+<script src="/analytics-consent.js" data-track-page="true" defer></script>
 </body>
 </html>
 """ % dict(title=p["title"], desc=p["desc"], h1=p["h1"], lead=p["lead"], boxes=boxes,

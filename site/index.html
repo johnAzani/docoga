@@ -1093,7 +1093,6 @@ const PAYMENT_URL = "https://flutterwave.com/pay/ynznvgof2r21"; // Flutterwave p
 const SUPPORT_WHATSAPP = "2349021852845"; // your WhatsApp number, international format, no +
 const SITE_URL = "https://docoga.com.ng";
 const WORKER_URL = "https://docoga-pass.johnazani.workers.dev"; // enables AUTOMATIC instant code delivery (see AUTOMATE.md)
-const ANALYTICS_ID = "G-GO8VZB3R28"; // Google Analytics 4 Measurement ID (GA4 property "inductive-seer-372707", web stream docoga.com.ng)
 const BIZ_LIVE = false; // Phase 5 gate (runbook): flip to true ONLY when the FLW credentials are live in production.
                         // While false, the public "Configure & pay online" entry point is removed from the Business card
                         // (waitlist + support stay live) — a purchase that can't complete is worse than a waitlist.
@@ -1145,8 +1144,9 @@ if(c&&j.exp&&(!pass||pass.c!==c||pass.exp!==j.exp)){
 pass={exp:j.exp,c,h:fnv1a(String(c).replace(/[\s-]/g,'')).toString(16).padStart(8,'0')};
 store.setItem('docoga_pass',JSON.stringify(pass)); updatePassUI();
 }
-} else if(j&&j.error&&/expired/i.test(j.error)&&pass&&pass.exp>Date.now()){
-store.removeItem('docoga_pass'); pass=null; updatePassUI(); renderAll(); toast('Your Oga Pass has expired.');
+} else if(j&&j.error&&/(expired|invalid code)/i.test(j.error)&&pass){
+store.removeItem('docoga_pass'); pass=null; updatePassUI(); renderAll();
+toast('Your saved Oga Pass could not be verified. Please contact support if you believe it is still active.');
 }
 }).catch(()=>{});
 }
@@ -1431,7 +1431,7 @@ function usageBeacon(){
   }catch(e){}
 }
 /* Revenue funnel events — the only scoreboard. Covers BOTH funnels:
-   Oga Pass (retail) and Business (teams). Guarded: no ANALYTICS_ID / non-https
+   Oga Pass (retail) and Business (teams). Guarded: no consent / non-https
    / blocked gtag = silently skipped, never breaks the purchase flow. */
 function trackEvent(name,params){
   try{ if(window.gtag) window.gtag('event',name,params||{}); }catch(e){}
@@ -1925,6 +1925,7 @@ try{ window.print(); toast(passActive()?'Sending to printer — choose "Save as 
 catch(e){ toast('Printing is blocked in this preview. Open the live site to print or save as PDF.'); }
 setTimeout(()=>{ document.body.classList.remove('printing'); pr.innerHTML=''; }, 2500);
 }
+// Keep WhatsApp share copy deliberately static: never include generated document text or form values in a destination URL.
 function shareDoc(type){
 const msgs={
 agreement:'I just drafted a tenancy agreement in 2 minutes with DocOga — free Nigerian document maker 📄',
@@ -1939,7 +1940,7 @@ warning:'Issued a formal written warning the right way with DocOga 🇳🇬 — 
 poa:'Drafted a Power of Attorney for my Nigerian property with DocOga — from abroad, in minutes 🇳🇬'
 };
 const url='https://wa.me/?text='+encodeURIComponent(msgs[type]+' → '+SITE_URL);
-try{ window.open(url,'_blank'); }catch(e){ toast('Open the live site to share on WhatsApp.'); }
+try{ window.open(url,'_blank','noopener,noreferrer'); }catch(e){ toast('Open the live site to share on WhatsApp.'); }
 }
 /* ================= PAYSLIP ================= */
 function collectPayslip(){ return { p_biz:$('p_biz').value,p_addr:$('p_addr').value,p_emp:$('p_emp').value,p_role:$('p_role').value,p_id:$('p_id').value,
@@ -2234,20 +2235,11 @@ function renderAll(){ renderAgreement(); renderNotice(); renderReceipt(); render
     }catch(e){ team=null; }
     updateTeamUI();
   })();
-  // Google Analytics 4 — loads only when configured AND served over http(s)
-  if(ANALYTICS_ID && /^https?:/.test(location.protocol)){
-    try{
-      const s=document.createElement('script'); s.async=true;
-      s.src='https://www.googletagmanager.com/gtag/js?id='+ANALYTICS_ID;
-      document.head.appendChild(s);
-      window.dataLayer=window.dataLayer||[]; window.gtag=function(){window.dataLayer.push(arguments);};
-      window.gtag('js',new Date()); window.gtag('config',ANALYTICS_ID);
-    }catch(e){}
-  }
   // Phase 5 gate: no public payment entry point until BIZ_LIVE (see the constant).
   if(!BIZ_LIVE){ const pl=$('biz-pay-link'); if(pl) pl.remove(); }
   route(); renderAll();
 })();
 </script>
+<script src="/analytics-consent.js" data-track-page="true" defer></script>
 </body>
 </html>

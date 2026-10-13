@@ -32,6 +32,8 @@ p{color:var(--muted);font-size:14.5px;margin-bottom:8px}
     <div class="code-box" id="code"></div>
     <button id="copy-btn" onclick="(function(b){var t=document.getElementById('code').textContent;try{navigator.clipboard.writeText(t)}catch(e){var x=document.createElement('textarea');x.value=t;document.body.appendChild(x);x.select();document.execCommand('copy');document.body.removeChild(x)}b.textContent='\u2705 Copied!';setTimeout(function(){b.textContent='\uD83D\uDCCB Copy code'},1600)})(this)" style="background:#0047E1;color:#fff;border:none;border-radius:10px;padding:10px 20px;font-weight:700;font-size:14px;cursor:pointer;margin-top:2px">📋 Copy code</button>
     <a id="wa-save" href="#" rel="noopener" style="display:inline-block;background:#25D366;color:#fff;font-weight:700;text-decoration:none;border-radius:10px;padding:10px 20px;font-size:14px;margin-top:12px">📲 Save my pass to WhatsApp</a>
+    <button id="resend-email-btn" type="button" style="display:block;background:#fff;color:#0047E1;border:1px solid #0047E1;border-radius:10px;padding:10px 20px;font-weight:700;font-size:14px;cursor:pointer;margin:12px auto 0">📧 Email didn’t arrive? Resend pass email</button>
+    <p id="resend-email-status" class="small" role="status" aria-live="polite"></p>
     <p id="auto-msg">It has also been <b>auto-activated on this device</b> for 30 days.</p>
     <a class="btn" href="index.html#agreement">Start creating clean documents →</a>
   </div>
@@ -77,6 +79,34 @@ const SUPPORT_WHATSAPP = "2349021852845"; // your WhatsApp number, intl format, 
     .map((k) => q.get(k)).filter(Boolean);
   const ref = candidates[0];
   if (!WORKER_URL || !ref) { show("state-manual"); return; }
+
+  const resendButton = document.getElementById("resend-email-btn");
+  const resendStatus = document.getElementById("resend-email-status");
+  if (resendButton) resendButton.addEventListener("click", async () => {
+    resendButton.disabled = true;
+    if (resendStatus) resendStatus.textContent = "Requesting another email…";
+    try {
+      const response = await fetch(WORKER_URL + "/resend-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: candidates }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (response.ok && result.ok) {
+        if (resendStatus) resendStatus.textContent = "The mail service accepted the resend request. Check your inbox and spam folder.";
+      } else if (response.status === 429) {
+        if (resendStatus) resendStatus.textContent = "Please wait before requesting another email.";
+      } else if (result.error === "resend_disabled") {
+        if (resendStatus) resendStatus.textContent = "Email resend is not available yet. Your pass is active; use the code above or contact support.";
+      } else {
+        if (resendStatus) resendStatus.textContent = "The email could not be resent. Your pass is still active; use the code above or contact support.";
+      }
+    } catch (e) {
+      if (resendStatus) resendStatus.textContent = "Could not reach the email service. Your pass is still active; use the code above or contact support.";
+    } finally {
+      setTimeout(() => { resendButton.disabled = false; }, 60000);
+    }
+  });
 
   let prevCode = "";
   try { const p = JSON.parse(localStorage.getItem("docoga_pass") || "null"); if (p && p.c) prevCode = String(p.c).replace(/[\s-]/g, ""); } catch (e) {}
