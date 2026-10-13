@@ -119,24 +119,44 @@ Two corrections to this section, checked against Google's own reference on
   listed test users may use the app at all. A lane that uploads on Tuesday and
   Friday walks into that wall every week.
 
-The one-time repair, tap by tap (the expected screen in brackets):
+The one-time repair, tap by tap. **Google moved this screen** in the 2024–2026
+reorganisation: "OAuth consent screen" now *redirects* to the **Google Auth
+Platform**, and its settings are split across **Branding / Audience / Data Access /
+Clients**. The publish button is on **Audience**, not on the page the old menu item
+lands you on — so follow the path below rather than a remembered one, and expect the
+screen in brackets at each step.
 
-1. console.cloud.google.com → pick the DocOga project → **APIs & Services →
-   OAuth consent screen** *[a page with a "Publish app" button and a status of
-   "In testing" or "In production"]*.
-2. If the status is **In testing**, click **Publish app** *[a confirmation
-   saying the app will be available to all users; for an internal upload bot that
-   asks for nothing but `youtube.upload`, that is the intent]*. Until it is
-   published, add the DocOga Google account under **Test users** instead — a
-   working stopgap that still expires tokens weekly.
-3. **Credentials → OAuth client ID → the client this lane uses** — confirm the
-   type is *Desktop app* and that no redirect URIs are needed *[the client list
-   shows the client and its type]*.
-4. Re-run the consent flow to mint a fresh refresh token, then
+1. Open the deep link with your project id in it — no menu-hunting:
+   `console.cloud.google.com/auth/audience?project=<PROJECT_ID>`, and check the
+   project picker in the top bar first. *[The **Audience** page: `User type:
+   External`, and `Publishing status: In testing` (or `In production`).]*
+   If you would rather navigate: **APIs & Services → OAuth consent screen** *[the
+   Auth Platform **Overview**, with a **Get started** or the four tabs]* → click
+   **Audience**.
+
+   *If **Google Auth Platform** is missing from the sidebar entirely*: the project has
+   no OAuth-compatible API enabled yet (enable **YouTube Data API v3** under APIs &
+   Services → Library) or your account is not Owner/Editor on it. The menu appears only
+   once an OAuth-capable API is enabled — it is not a permission to request.
+2. On **Audience**, click **Publish app** *[a dialog: "Push to production?" —
+   it says the app will be available to all users]* → **Confirm**. *[Status flips
+   to **In production**.]* That single change is what stops the 7-day expiry; the
+   app stays unverified and that is fine for our own channel.
+   *If the page shows **Needs verification*** *instead of a plain publish, publishing
+   still works for your own account — verification is about other users seeing a
+   clean consent screen, not about whether the lane can upload.*
+3. *Only if you decide to stay in Testing* (you will be back here in a week):
+   **Audience → + Add users** → the DocOga Google address *[up to 100 test users,
+   effective immediately]*. A stopgap that still expires tokens every 7 days, so it
+   is a bridge and not a fix.
+4. **Clients** *(or the old **Credentials → OAuth client ID**)* → the client this
+   lane uses — confirm the type is *Desktop app* and that no redirect URIs are
+   needed *[the client list, with each client's type]*.
+5. Re-run the consent flow to mint a fresh refresh token, then
    `gh secret set YT_REFRESH_TOKEN --body '<token>'` *(and, if the client changed,
    `YT_CLIENT_ID` and `YT_CLIENT_SECRET` too — three secrets, replaced together;
    replacing one of three is how the 9 Oct run stayed red for a week.)*
-5. Prove it without uploading anything:
+6. Prove it without uploading anything:
 
    ```bash
    gh workflow run youtube_scheduled.yml -f probe_only=true

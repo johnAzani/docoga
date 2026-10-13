@@ -385,6 +385,31 @@ class FailureIssueHygieneTests(unittest.TestCase):
                 self.assertTrue('|| echo "::warning' in create or "|| true" in create,
                                 "an issue that cannot be filed is a warning, not a second failure")
 
+    def test_a_jq_env_needle_is_never_an_unexported_shell_variable(self):
+        """`$ENV.X` reads the *environment*; `X=…` on its own line is a shell variable.
+
+        This is how `main`'s Telegram dedupe has been matching nothing since it was written:
+        `RUN_DATE="$(date +%F)"` then `contains($ENV.RUN_DATE)` — jq receives an empty string,
+        `contains("")` is true for every issue, and the lane comments on whatever happens to be
+        open instead of deduping by day. The fix is one word (`X=v command`) or `export`, and the
+        test is here so the next person does not have to read an annotation to find it.
+        """
+        needle = re.compile(r"\$ENV\.([A-Z_][A-Z0-9_]*)")
+        offenders = []
+        for path in sorted(WORKFLOWS.glob("*.yml")):
+            lines = path.read_text(encoding="utf-8").split("\n")
+            for number, line in enumerate(lines):
+                for name in needle.findall(line):
+                    window = "\n".join(lines[max(0, number - 4):number + 1])
+                    supplied = re.search(r"(?m)^\s*(export\s+)?" + name + "=", window) \
+                        or re.search(name + "=\"?[^\n]*\\?\s*$", window) \
+                        or (name + "=" in window and "gh " in window)
+                    if not supplied:
+                        offenders.append("%s:%d $ENV.%s" % (path.name, number + 1, name))
+        self.assertEqual(offenders, [],
+                         "these jq needles can never see their value — put VAR=x on the same "
+                         "command as `gh`, or export it: " + "; ".join(offenders))
+
     def test_the_heartbeat_still_finds_each_lane_by_its_create_line(self):
         """`tools/automation_heartbeat.py` discovers a lane's label by reading the
         `gh issue create --label …` line out of the workflow, so re-wording that line edits

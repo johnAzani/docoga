@@ -317,12 +317,40 @@ real.
 > Merge before the secrets and you get a `[setup]` issue, not an outage; that page says
 > why, and what to check the next morning.
 
-`gh secret set` and `gh variable set` are **not** runnable from the agent sandbox (the
-Actions token gets `403 Resource not accessible by integration` on those endpoints, and
-this `gh` build has no `variable` subcommand), and values are write-only everywhere. So:
+`gh secret set` and `gh variable set` are **not** runnable from the agent sandbox — the Actions
+token gets `403 Resource not accessible by integration` on those endpoints, this `gh` build has no
+`variable` subcommand, and `gh secret list` gets the same 403, so an agent cannot even tell you
+whether a name exists. Values are write-only everywhere. What *is* readable, from a sandbox with
+no rights at all, is what a run says about itself:
+
+```bash
+gh api repos/johnAzani/docoga/actions/runs/<id>/jobs --jq '.jobs[0].id'
+gh api repos/johnAzani/docoga/check-runs/<job_id>/annotations --jq '.[] | "\(.annotation_level) \(.message)"'
+```
+
+That is where `chat not found` came from, and it is why every step of `docs/LAUNCH_SEQUENCE.md`
+can be verified after the fact instead of trusted. So:
+
+**Corrected 13 Oct 2026, from the run's own annotations.** The sentence above used to read "set
+   it", on the assumption the secret was missing. It is **not** missing — it is set to a value
+   Telegram rejects. The last scheduled run on `main` (12 Oct, 17:31 UTC) annotated itself:
+
+   ```
+   getChat(***) failed: Bad Request: chat not found. Either TELEGRAM_CHAT_ID is wrong or the
+   bot is no longer a member of that channel.          ← preflight exit 4, poster never ran
+   ```
+
+   Five consecutive scheduled failures (8–12 Oct), one issue (#16, filed 11 Oct) and **zero
+   comments on it**: on 12 Oct the dedupe filter's needle was an unexported shell variable
+   (`$ENV.RUN_DATE` reading an empty string, which matches every open issue), so the run tried to
+   comment on #16 instead of filing, the comment call exited non-zero, and the failure left no
+   trace. Both halves are fixed in `arena/bae11bd0-docoga`: the selector's variables are supplied
+   on the `gh` command line, and a step that cannot file an issue is a warning, never a red run.
 
 1. GitHub → **Settings → Secrets and variables → Actions → Repository secrets →
-   `TELEGRAM_CHAT_ID`** → set it to `@docogadaily` (or the `-100…` numeric id).
+   `TELEGRAM_CHAT_ID`** → *overwrite* it with `@docogadaily` (or the `-100…` numeric id the
+   preflight prints). If `getChat` still says `chat not found`, the bot has been removed from the
+   channel — re-add it as admin with *Post messages* rather than changing the value again.
 2. Then Actions → **DocOga Telegram Auto-Post** → **Run workflow** with
    `dry_run=true`. Expected screen: a green run whose log ends with
    `✅ Chat reachable — DocOga Daily (channel) id …` and `✅ Posting rights confirmed`.
