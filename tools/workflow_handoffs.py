@@ -40,6 +40,15 @@ OUTPUT_WRITE = re.compile(r"([A-Za-z_][A-Za-z0-9_]*)=[^\n]*?>>\s*[\"']?\$GITHUB_
 JQ_ENV = re.compile(r"\$ENV\.([A-Z][A-Z0-9_]*)")
 STEP_OUT = re.compile(r"\$\{\{\s*steps\.([A-Za-z0-9_-]+)\.outputs\.([A-Za-z0-9_-]+)\s*\}\}")
 CALLER = re.compile(r"(?:^|[\s|;&(])(?:command\s+)?(?:gh|jq|python3?)\b")
+# The machine lines the lanes read back. A producer is either a literal `print("KEY=…")` (or an
+# echo/printf of one) or a keyword argument to the shared `machine()` helper — whose keys exist only
+# at runtime. That second form is not optional knowledge: without it, rule 4 reported `IG_PERMALINK`
+# and `IG_MEDIA_ID` as dangling in a lane that printed both correctly, and a checker that indicts
+# working code is worse than one that misses a bug.
+SED_READ = re.compile(r"""sed -n 's/\^([A-Z][A-Z0-9_]*)=""")
+PRINTED = re.compile(r"""(?:print\(\s*f?["']|echo\s+(?:-[ne]+\s+)*["']|printf\s+(?:-n\s+)?["'])([A-Z][A-Z0-9_]*)=""")
+MACHINE_CALL = re.compile(r"machine\(([^)\n]*)\)")
+MACHINE_KW = re.compile(r"\b([A-Z][A-Z0-9_]+)=")
 
 
 def _reference(name):
@@ -145,6 +154,49 @@ def audit_text(text, label=""):
     return problems
 
 
+def _python_files(root):
+    for sub in ("tools", "scripts"):
+        directory = os.path.join(root, sub)
+        if not os.path.isdir(directory):
+            continue
+        for name in sorted(os.listdir(directory)):
+            if name.endswith(".py"):
+                path = os.path.join(directory, name)
+                with open(path, encoding="utf-8") as handle:
+                    yield path, handle.read()
+
+
+def audit_machine_lines(root):
+    """Every `sed -n 's/^KEY=//p'` a workflow runs must have a producer.
+
+    Exit codes and ids travel from a publisher to a workflow as one-line facts in its log. A key
+    that nothing prints does not fail loudly: sed answers with an empty string, the ledger records
+    `unknown`, the summary says "not reported", and a lane that worked is indistinguishable from one
+    that half-worked — which is how a real signal gets dismissed a week later.
+    """
+    wf_dir = os.path.join(root, ".github", "workflows")
+    if not os.path.isdir(wf_dir):
+        return []
+    read, produced = {}, set()
+    for name in sorted(os.listdir(wf_dir)):
+        if not name.endswith((".yml", ".yaml")):
+            continue
+        with open(os.path.join(wf_dir, name), encoding="utf-8") as handle:
+            text = handle.read()
+        for key in SED_READ.findall(text):
+            read.setdefault(key, set()).add(name)
+        produced.update(PRINTED.findall(text))   # some keys are echoed by an earlier step
+    for _path, text in _python_files(root):
+        produced.update(PRINTED.findall(text))
+        for call in MACHINE_CALL.findall(text):
+            produced.update(MACHINE_KW.findall(call))
+    return [("machine line with no producer",
+             "%s read by %s with `sed -n 's/^%s=//p'` matches nothing any file prints — the read "
+             "yields an empty string, so print it or pass it to `machine()`" % (
+                 key, ", ".join(sorted(files)), key))
+            for key, files in sorted(read.items()) if key not in produced]
+
+
 def audit_file(path):
     with open(path, encoding="utf-8") as handle:
         return audit_text(handle.read(), os.path.basename(path))
@@ -160,10 +212,15 @@ def audit_dir(workflows_dir):
     return found
 
 
+def audit_repo(root):
+    """Everything: the per-workflow rules, plus the machine lines across the repository."""
+    return audit_dir(os.path.join(root, ".github", "workflows")) + audit_machine_lines(root)
+
+
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
     root = argv[0] if argv else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    problems = audit_dir(os.path.join(root, ".github", "workflows"))
+    problems = audit_repo(root)
     for _kind, detail in problems:
         print("%s: %s" % (_kind, detail), file=sys.stderr)
     print("workflow handoffs: %d suspect(s) in %s" % (len(problems), root))
