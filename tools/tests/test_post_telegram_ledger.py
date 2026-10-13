@@ -49,6 +49,7 @@ os.environ.setdefault("TELEGRAM_LEDGER", os.path.join(_TMP, "telegram_sent.json"
 os.environ.setdefault("DOCOGA_LOG_DIR", tempfile.mkdtemp(prefix="docoga-social-log-"))
 
 import post_telegram  # noqa: E402
+import telegram_preview  # noqa: E402  the live guard the poster consults
 import youtube_ledger as ledger  # noqa: E402
 
 
@@ -87,6 +88,16 @@ class LedgerTestCase(unittest.TestCase):
             patch.object(post_telegram, "TELEGRAM_CHAT_ID", "@docogadaily"),
             patch.object(post_telegram, "FORCE", False),
             patch.object(post_telegram, "load_content", lambda: copy.deepcopy(self.POSTS)),
+            # No test here reaches the network. The rig pins the channel preview to one
+            # unrelated post, so the guard answers "clear" from a fixture and the *behaviour*
+            # under test stays the ledger's. The guard's own branches are tested in
+            # test_post_telegram_channel_guard.py.
+            patch.object(telegram_preview, "fetch_preview",
+                         lambda url: FakeResponse(
+                             '<div class="tgme_widget_message" data-post="docogadaily/1">'
+                             '<div class="tgme_widget_message_text">An unrelated post about '
+                             'the six month notice period in Lagos.</div></div>')),
+            patch.dict(os.environ, {"TELEGRAM_SKIP_CHANNEL_CHECK": ""}),
         ]
         for patcher in patchers:
             patcher.start()

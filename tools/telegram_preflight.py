@@ -31,6 +31,8 @@ Usage:
 """
 
 import json
+
+import telegram_preview  # the same reader the poster guards with
 import os
 import sys
 import urllib.error
@@ -144,6 +146,18 @@ def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
     quiet = "--quiet" in argv
 
+    # `--preview [@name]` answers one question with no token and no secrets at all: is the
+    # channel's public preview readable, i.e. can the poster's live duplicate guard work?
+    # It is here because the guard is worthless if nobody can check it.
+    if "--preview" in argv:
+        positional = [a for a in argv if not a.startswith("--")]
+        handle = (positional[0].lstrip("@") if positional
+                  else telegram_preview.channel_handle(chat_id=os.getenv("TELEGRAM_CHAT_ID")))
+        state, detail = telegram_preview.describe(handle=handle)
+        if not quiet:
+            print("%s channel preview: %s" % ("✅" if state == "readable" else "⚠️", detail))
+        return 0 if state == "readable" else 1
+
     token = os.getenv("TELEGRAM_BOT_TOKEN")
     chat_id = os.getenv("TELEGRAM_CHAT_ID")
 
@@ -241,6 +255,11 @@ def main(argv=None):
 
     if not quiet:
         print(f"✅ Posting rights confirmed (status: {status})")
+        # Say whether the duplicate guard can see the channel, because "green preflight" and
+        # "the guard is watching" are different claims and the operator is told both.
+        state, detail = telegram_preview.describe(chat_id=chat_id)
+        print("%s live duplicate guard: %s"
+              % ("✅" if state == "readable" else "ℹ️", detail))
     return 0
 
 

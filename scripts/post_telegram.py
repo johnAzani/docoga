@@ -30,6 +30,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
 from telegram_mdv2 import to_plain  # noqa: E402
 import docoga_log  # noqa: E402  where the scratch files live
+import telegram_preview  # noqa: E402  reads the channel's own public preview page
 import youtube_ledger as ledger  # noqa: E402  — the same bookkeeping the Shorts and
 # Reels lanes use, pointed at this lane's file. A forked ledger drifts.
 
@@ -74,6 +75,43 @@ MAX_CAPTION_CHARS = 1024
 
 # Telegram's parse errors, in the shapes the API actually returns.
 PARSE_ERROR_MARKERS = ("can't parse", "can't find end of", "unsupported start tag")
+
+# ===== THE LIVE DUPLICATE GUARD =====
+# The ledger refuses a duplicate only as well as the last successful commit did: a ledger
+# push that failed, a fresh clone, a run from another branch — and the channel is free to
+# receive the same paragraph twice again, which is the complaint that started this. The
+# reading itself lives in tools/telegram_preview.py so the preflight and the poster cannot
+# disagree about what "already on the channel" means; what stays here is the policy.
+PREVIEW_PAGES = int(os.getenv("TELEGRAM_CHANNEL_GUARD_PAGES", "1"))
+CHANNEL_GUARD_ENABLED = os.getenv("TELEGRAM_SKIP_CHANNEL_CHECK", "").lower() not in ("1", "true", "yes")
+# A message shorter than this is not compared at all: a few words are far too easy to find
+# inside somebody else's sentence, and refusing on that would silence the lane over a
+# coincidence. The ledger still guards them, as it always did.
+GUARD_MIN_CHARS = int(os.getenv("TELEGRAM_CHANNEL_GUARD_MIN", "24"))
+
+
+def channel_duplicate(message):
+    """(state, detail) for one outgoing message: clear | match | unavailable | skipped.
+
+    Fail-open by design. A CDN blip, a private channel or a Telegram markup change must not
+    cost the channel its daily post: this guard is an addition to the ledger, never a
+    replacement for it, and never a reason for silence.
+    """
+    if not CHANNEL_GUARD_ENABLED:
+        return "skipped", "TELEGRAM_SKIP_CHANNEL_CHECK is set — the ledger is the only guard"
+    if not telegram_preview.channel_handle():
+        return "skipped", "TELEGRAM_CHAT_ID is numeric, so the channel has no public preview to read"
+    if len(telegram_preview.normalize_for_match(message)) < GUARD_MIN_CHARS:
+        return "skipped", "the message is too short to compare safely"
+    posts, error = telegram_preview.recent_posts(pages=PREVIEW_PAGES)
+    if error:
+        return "unavailable", error
+    hit = telegram_preview.find(message, posts)
+    if hit:
+        channel, message_id = hit
+        return "match", "t.me/%s/%d already carries this text" % (channel, message_id)
+    return "clear", "%d recent channel post(s) checked, none of them this message" % len(posts)
+
 
 
 def log(message):
@@ -327,6 +365,7 @@ def post_to_telegram():
     sent = 0
     skipped = 0
     failed = 0
+    guard_states = []
     for i, post in enumerate(posts):
         log("\n\U0001f4dd Posting message %d/%d..." % (i + 1, len(posts)))
 
@@ -346,6 +385,23 @@ def post_to_telegram():
         if duplicate and FORCE:
             log("   \u26a0\ufe0f force is on: re-posting %s, already recorded on %s"
                 % (key, duplicate.get("date")))
+
+        # The live guard runs *after* the ledger, which is free and offline, and *before*
+        # anything is sent. A "match" is the refusal the ledger would have made had it been
+        # told; "unavailable" only logs, because an unreadable page must not cost the post.
+        guard_state, guard_detail = channel_duplicate(message)
+        guard_states.append(guard_state)
+        if guard_state == "match" and not FORCE:
+            skipped += 1
+            log("   \u23ed Skipped — %s. The channel is the authority, so this is refused even "
+                "though the ledger never saw it." % guard_detail)
+            continue
+        if guard_state == "match":
+            log("   \u26a0\ufe0f force is on: re-posting text the channel already carries (%s)"
+                % guard_detail)
+        elif guard_state in ("unavailable", "skipped") and i == 0:
+            log("   \u2139\ufe0f live channel guard %s — %s. The ledger is guarding this run."
+                % (guard_state, guard_detail))
 
         if send_photo and photo_path:
             ok = send_photo_message(photo_path, caption=message)
@@ -388,6 +444,16 @@ def post_to_telegram():
     print("TELEGRAM_SKIPPED=%d" % skipped)
     print("TELEGRAM_FAILED=%d" % failed)
     print("TELEGRAM_LEDGER=%s" % LEDGER_FILE)
+    # One word for the run summary, so "the guard was watching" and "the guard could not read
+    # the channel" are never again the same-looking green run.
+    if "match" in guard_states:
+        print("TELEGRAM_CHANNEL_GUARD=refused-a-duplicate")
+    elif "clear" in guard_states:
+        print("TELEGRAM_CHANNEL_GUARD=live")
+    elif "unavailable" in guard_states:
+        print("TELEGRAM_CHANNEL_GUARD=unavailable")
+    else:
+        print("TELEGRAM_CHANNEL_GUARD=%s" % (guard_states[0] if guard_states else "none"))
     # Three outcomes, not two. "Already published" is the lane working; "Telegram
     # refused everything" is the four-day outage, and it has to be red even though
     # `sent == 0` in both cases. Collapsing them is how a poster used to exit 0 on an
@@ -406,7 +472,7 @@ if __name__ == "__main__":
         # Nothing went out and nothing was wrong: every post in the file is already on
         # the channel. Exiting 1 here would open a failure issue for a lane that is
         # working; exiting 0 in silence would hide a content file that went empty.
-        log("\u2139\ufe0f Nothing posted — the ledger says today's content is already on the channel.")
+        log("\u2139\ufe0f Nothing posted — the ledger or the channel already has today's content.")
         sys.exit(0)
     log("❌ Telegram auto-posting failed!")
     sys.exit(1)

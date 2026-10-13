@@ -104,10 +104,12 @@ jobs:
           # mean opposite things.
           SENT=$(sed -n 's/^TELEGRAM_SENT=//p' /tmp/telegram_post.log | tail -1)
           SKIPPED=$(sed -n 's/^TELEGRAM_SKIPPED=//p' /tmp/telegram_post.log | tail -1)
+          GUARD=$(sed -n 's/^TELEGRAM_CHANNEL_GUARD=//p' /tmp/telegram_post.log | tail -1)
           {
             echo "### Telegram post"
             echo
             echo "- sent: ${SENT:-?} · already on the channel (skipped): ${SKIPPED:-?}"
+            echo "- duplicate guard: ${GUARD:-not reported} — the ledger, plus the channel's own page when it is public"
             echo "- ledger: \`logs/telegram_sent.json\`"
           } >> "$GITHUB_STEP_SUMMARY"
 

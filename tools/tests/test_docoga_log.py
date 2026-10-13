@@ -78,7 +78,8 @@ class NoStrayPathsTests(unittest.TestCase):
         `DOCOGA_LOG_DIR` before importing any social script, so the repo's own log is
         out of reach however the tests are ordered."""
         for name in ("test_post_facebook.py", "test_post_facebook_reels.py",
-                     "test_post_telegram.py", "test_post_telegram_ledger.py"):
+                     "test_post_telegram.py", "test_post_telegram_ledger.py",
+                     "test_post_telegram_channel_guard.py"):
             text = (ROOT / "tools" / "tests" / name).read_text(encoding="utf-8")
             guard_at = text.index("DOCOGA_LOG_DIR")
             found = [text.find(marker) for marker in ("import post_", "import generate_")

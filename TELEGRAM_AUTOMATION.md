@@ -192,7 +192,7 @@ ledger is right.
 
 ---
 
-## 🧾 13 Oct 2026 — one publish per content, and the ledger that proves it
+## 🧾 13 Oct 2026 — one publish per content, the ledger that proves it, and the channel that double-checks it
 
 Two bugs in the same shape, found while building the silent-lane heartbeat
 (`automation-heartbeat.yml`, `tools/automation_heartbeat.py`):
@@ -227,6 +227,89 @@ The heartbeat then reads that file and crosses it with run history, in both dire
 | silent past the deadline | a publish inside it | ❌ still red (the cron *is* broken) with the note "readers are still being served — fix the schedule, don't write off the audience" |
 | silent | no ledger file on `main` yet | ❌ with "no publish evidence either way", which is not the same sentence as "nothing was published" |
 
+### The second guard: asking the channel, not the bookkeeping
+
+A ledger is a file, and a file can be lost. If the ledger commit fails, if someone runs the
+workflow from a branch that predates it, or if the repo is re-cloned, the poster wakes up with
+zero knowledge again — the exact state that posted the caution-fee paragraph four times. The
+Facebook lane never had that weakness, because `scripts/post_facebook.py` asks the Graph API
+what it published today. Telegram has no such call for a bot, so the lane asked its own
+history from a different direction: **every public channel publishes a server-rendered
+preview at `t.me/s/<name>`** — the ~20 newest posts in plain HTML, no token, no login, no
+rate limit worth mentioning for one GET a day. That page is now consulted before anything is
+sent.
+
+```
+tools/telegram_preview.py   reads and interprets the page (shared with the preflight)
+scripts/post_telegram.py    decides what to do about it
+```
+
+The rules, all of them load-bearing:
+
+* **the ledger runs first, free and offline.** If the key is already recorded, no HTTP request
+  is made at all; the live check exists only for what the ledger was not told about.
+* **only an identical message is refused.** MarkdownV2 markup, HTML tags, entities and
+  whitespace are stripped from both sides, and a channel post is matched against the words of
+  the message that produced it. Links made this harder than it looks: Telegram rewrites
+  `[docoga.com.ng](https://docoga.com.ng)` into an anchor whose URL sits in an attribute, and
+  bolts a link-preview card with *the linked page's* words into the same block. So the guard
+  compares the message body (`.tgme_widget_message_text`) rather than the whole block, and it
+  compares **sets of words**, not counts — the source spells a link twice, the post shows it
+  once, and a multiset would have missed the very duplicate this exists to catch.
+* **two floors keep it from getting creative.** A message under 24 normalized characters, or
+  under 6 distinct words with none longer than 5, is not judged at all. Refusing a post
+  because it "rhymes" with an older one is a worse failure than the duplicate.
+* **it fails open.** A CDN blip, a 503, a private channel, a Telegram markup change — all
+  produce one warning line (`live channel guard unavailable — …`) and the post goes out. This
+  guard may never become the reason the channel goes quiet.
+* **a refusal is evidence, not a mystery.** The log names the permalink
+  (`t.me/docogadaily/41 already carries this text`), the run stays green, nothing is written
+  to the ledger, and `TELEGRAM_CHANNEL_GUARD=refused-a-duplicate` goes in the summary.
+
+Each run reports which guard was watching, in the step summary:
+
+| marker | meaning |
+|---|---|
+| `TELEGRAM_CHANNEL_GUARD=live` | the channel was read and did not have this text |
+| `TELEGRAM_CHANNEL_GUARD=refused-a-duplicate` | the channel already had it — nothing was sent |
+| `TELEGRAM_CHANNEL_GUARD=unavailable` | the page could not be read; the ledger guarded alone |
+| `TELEGRAM_CHANNEL_GUARD=skipped` | nothing to compare against (numeric chat id, or too short) |
+
+Knobs, all optional, all read once at import:
+
+| variable | default | why you would set it |
+|---|---|---|
+| `TELEGRAM_SKIP_CHANNEL_CHECK` | unset | `1` turns the live guard off (an incident switch, not a setting) |
+| `TELEGRAM_CHANNEL_GUARD_PAGES` | `1` | extra pages walk backwards with `?before=`; 1 page ≈ 3 weeks of a daily lane |
+| `TELEGRAM_CHANNEL_GUARD_MIN` | `24` | the shortest message the guard is allowed to judge |
+| `TELEGRAM_CHANNEL_USERNAME` | derived from `TELEGRAM_CHAT_ID` | set it when the chat id is numeric but the channel *is* public |
+| `TELEGRAM_PREVIEW_BASE` | `https://t.me/s/` | pointed at a fixture by the tests; nothing else should touch it |
+
+**What it cannot catch, said plainly:** a template line that recurs *with different surrounding
+words* (by design, not a bug); a duplicate older than the ~20 newest posts; a post somebody
+deleted by hand — the guard then sees no copy and re-posts, which is the correct answer to a
+channel whose history was edited; and any channel that is not public, where there is nothing
+to read and the ledger is the whole of the protection.
+
+### Checking the guard without a secret in your hand
+
+```bash
+python3 tools/telegram_preflight.py --preview @docogadaily
+```
+
+No token, no network write, no chat access — one GET. Expected screens:
+
+* `✅ channel preview: 20 post(s) visible at t.me/s/docogadaily (ids 1-20, newest 20)` → the
+  live guard is armed on every run from now on;
+* `⚠️ channel preview: docogadaily — the page carried no messages` → the channel is private or
+  the name is wrong, and the ledger is guarding alone; the run is still correct, just single-
+  guarded.
+
+The full preflight (`python3 tools/telegram_preflight.py`, which needs the token) prints the
+same line under `✅ Posting rights confirmed`, because "may the bot post?" and "can we see what
+it already posted?" are two questions and the second one decides whether the duplicate guard is
+real.
+
 ### What is owed by a human, once
 
 `gh secret set` and `gh variable set` are **not** runnable from the agent sandbox (the
@@ -252,7 +335,13 @@ this `gh` build has no `variable` subcommand), and values are write-only everywh
 * no second channel, no cross-posting to WhatsApp/IG from this workflow — one lane, one
   destination, so the ledger means one thing;
 * the ledger never blocks a publish on a corrupt file: it warns, starts fresh, and leaves
-  the unreadable file beside itself as `*.corrupt-<timestamp>`.
+  the unreadable file beside itself as `*.corrupt-<timestamp>`;
+* no fuzzy or similarity matching on the channel page — a paragraph that merely *resembles*
+  an older post is a new post, and the lane has survived three years on that reading;
+* no `getUpdates`/`deleteWebhook` trickery to read history through the bot: the Bot API has no
+  read-channel-history method, and inventing one is someone else's changelog;
+* the preview is never cached to disk — a cached page is a second ledger with the same
+  weakness this guard exists to remove.
 
 ---
 

@@ -194,6 +194,16 @@ Integration rules:
   in `YOUTUBE_AUTOMATION.md`: unverified API projects do *not* get their uploads forced private, and "six uploads a day"
   is stale quota arithmetic; what *is* real is that a refresh token from a consent screen still in Testing dies in 7 days,
   which is the leading explanation for "it worked on 6 Oct and not on 9 Oct".
+- **Telegram's duplicate guard stopped trusting the repo about its own channel — 13 Oct 2026.** The ledger above is only
+  as good as the last commit that survived it, so a lost or un-pushed `logs/telegram_sent.json` reopens the exact 3 Oct
+  accident. Facebook never had that hole — the Graph API answers "what did we publish today?" — and Telegram's Bot API has
+  no read-history method for a bot, so the lane now asks the channel itself: `t.me/s/<name>`, server-rendered, ~20 newest
+  posts, no token, one GET a day, consulted *after* the ledger and *before* `sendMessage`. It refuses only a message whose
+  words are already up (compared as sets, because Telegram rewrites links and bolts a preview card into the same block),
+  never a merely similar one, and it fails open with a named warning whenever the page cannot be read — an unreadable page
+  must cost a line in the log, not the day's post. `TELEGRAM_CHANNEL_GUARD=` in the run summary says which of those
+  happened; `python3 tools/telegram_preflight.py --preview @docogadaily` proves the guard is armed with no secret in hand.
+  Its limits (private channels, edited templates, the ~20-post horizon) are written down, not implied: `TELEGRAM_AUTOMATION.md`.
   Honest state as of 13 Oct: 3 scheduled lanes, **0 of them healthy** — Telegram has not succeeded since
   3 Oct, YouTube has run once and failed, Facebook's `schedule:` is not on `main` yet. The heartbeat's first
   report is not a clean one; that is what it is for.

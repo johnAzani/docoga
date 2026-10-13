@@ -636,6 +636,48 @@ check("telegram preflight names the secret to set",
 yt_wf_text = open(os.path.join(ROOT, ".github", "workflows", "youtube_scheduled.yml"),
                   encoding="utf-8").read()
 yt_pub = open(os.path.join(ROOT, "tools", "yt_publish.py"), encoding="utf-8").read()
+
+# --- the Telegram live duplicate guard (tools/telegram_preview.py + the poster) ---------
+tg_prev_path = os.path.join(ROOT, "tools", "telegram_preview.py")
+tg_prev = open(tg_prev_path, encoding="utf-8").read() if os.path.exists(tg_prev_path) else ""
+tg_post_path = os.path.join(ROOT, "scripts", "post_telegram.py")
+tg_post = open(tg_post_path, encoding="utf-8").read() if os.path.exists(tg_post_path) else ""
+tg_flow_path = os.path.join(ROOT, ".github", "workflows", "telegram_autopost.yml")
+tg_flow = open(tg_flow_path, encoding="utf-8").read() if os.path.exists(tg_flow_path) else ""
+tg_pre = open(os.path.join(ROOT, "tools", "telegram_preflight.py"), encoding="utf-8").read()
+
+check("telegram guard: the channel is asked, not just the ledger",
+      bool(tg_prev) and "def recent_posts(" in tg_prev and "t.me/s/" in tg_prev
+      and "def channel_duplicate(" in tg_post,
+      "a lost or un-pushed ledger is how the same paragraph reached readers four times")
+check("telegram guard: it refuses only an identical message",
+      "MIN_DISTINCT_TOKENS" in tg_prev and "MIN_ANCHOR_LENGTH" in tg_prev and "need <= have" in tg_prev,
+      "templated copy reuses fixed sentences on purpose; 'similar' would silence the lane")
+check("telegram guard: it fails open, never silent and never blocking",
+      '"unavailable"' in tg_post and '"no messages"' in tg_prev and "return None, " in tg_prev,
+      "an unreadable page must cost a warning, not the day's post")
+check("telegram guard: the ledger is consulted before the network",
+      tg_post.index("already_sent(entries, key, today)")
+      < tg_post.index("guard_state, guard_detail = channel_duplicate(message)"),
+      "the free offline check runs first, so a known duplicate costs no HTTP request")
+check("telegram guard: the refusal happens before anything is sent",
+      tg_post.index("guard_state, guard_detail = channel_duplicate(message)")
+      < tg_post.index("if send_photo and photo_path:")
+      and "TELEGRAM_SKIP_CHANNEL_CHECK" in tg_post,
+      "a guard that runs after sendMessage is a log line, not a guard — and it needs a kill switch")
+check("telegram guard: the preview request carries no credentials",
+      "TELEGRAM_BOT_TOKEN" not in tg_prev and "timeout=" in tg_prev and "User-Agent" in tg_prev,
+      "t.me/s/ needs no token; a fetch that carries one is a leak waiting to land in a run log")
+check("telegram guard: the run summary reports which guard was watching",
+      "TELEGRAM_CHANNEL_GUARD=" in tg_post and "TELEGRAM_CHANNEL_GUARD=" in tg_flow,
+      "'green with a live guard' and 'green because the channel was unreadable' must not look alike")
+check("telegram guard: the preflight can be checked without a token",
+      "--preview" in tg_pre and "telegram_preview" in tg_pre,
+      "the owner has to be able to verify the guard from a terminal, with no secret in hand")
+check("telegram guard: the tests never reach the network for it",
+      all("fetch_preview" in open(os.path.join(ROOT, "tools", "tests", n), encoding="utf-8").read()
+          for n in ("test_post_telegram_ledger.py", "test_post_telegram_channel_guard.py")),
+      "a test that reads the real channel is a test that fails when Telegram changes")
 check("youtube: the resumable protocol is implemented, not improvised",
       "308" in yt_pub and "Content-Range" in yt_pub and "await_finalize" in yt_pub
       and yt_pub.count("timeout=(") >= 1 and "requests.put(" not in yt_pub,
