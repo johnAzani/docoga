@@ -367,6 +367,192 @@ class DefaultBranchScheduleTests(unittest.TestCase):
         self.assertIn("no file content", str(caught.exception))
 
 
+class PublishEvidenceTests(unittest.TestCase):
+    """The second source of truth: what the lane says it published, not what CI remembers.
+
+    On 13 Oct 2026 the Telegram lane had two true and contradictory sentences — "no
+    scheduled run has succeeded in 9.4 days" and "the channel carried a post on 7 Oct".
+    A monitor that reads only run history prints the first and gets "nothing was
+    published", which is a different claim. And its inverse is nastier: a green run that
+    published nothing, which nothing else in the system looks at because it is green.
+    """
+
+    def ledger(self, age=None, state="ok", url="https://t.me/docogadaily/33", path="logs/telegram_sent.json"):
+        item = {"path": path, "state": state, "newest": None if age is None else NOW - age}
+        if url and age is not None:
+            item["url"] = url
+        return item
+
+    def apply(self, verdict, ledgers):
+        return hb.apply_publish_evidence(verdict, ledgers, NOW)
+
+    def test_a_green_lane_with_a_stale_ledger_is_a_failure(self):
+        verdict = judge(runs=[run(hours_ago=3)])
+        self.assertEqual(verdict["status"], "ok")
+        self.apply(verdict, [self.ledger(age=timedelta(days=9))])
+        self.assertEqual((verdict["status"], verdict["kind"]), ("fail", "green-but-quiet"))
+        self.assertIn("runs go green", verdict["reason"])
+        self.assertIn("`logs/telegram_sent.json`", verdict["reason"])
+        self.assertIn("without recording a publish", verdict["reason"])
+
+    def test_a_fresh_ledger_makes_a_green_lane_boringly_correct(self):
+        verdict = judge(runs=[run(hours_ago=3)])
+        self.apply(verdict, [self.ledger(age=timedelta(hours=2))])
+        self.assertEqual(verdict["status"], "ok")
+        self.assertEqual(verdict["kind"], "ok")
+        self.assertEqual(verdict["last_publish"], hb.iso(NOW - timedelta(hours=2)))
+
+    def test_a_silent_lane_with_a_fresh_ledger_keeps_the_verdict_and_adds_the_fact(self):
+        """Downgrading to "warn" would hide the broken cron; leaving "9 days, nothing
+        published" would invent a worse fact than the true one. So: same colour, better
+        sentence."""
+        verdict = judge(runs=[run(hours_ago=24 * 10)])
+        self.assertEqual((verdict["status"], verdict["kind"]), ("fail", "silent"))
+        self.apply(verdict, [self.ledger(age=timedelta(hours=6))])
+        self.assertEqual(verdict["status"], "fail", "the schedule is still broken")
+        self.assertIn("records a publish 6.0h ago", verdict["publish_note"])
+        self.assertIn("t.me/docogadaily/33", verdict["publish_note"])
+        self.assertIn("fix the cron", verdict["publish_note"],
+                      "the note must say what to do, not only that the numbers disagree")
+
+    def test_an_absent_ledger_proves_nothing(self):
+        """`absent` is "this lane has never written evidence", not "it never published".
+        Reading it as the second would turn a brand-new lane into an accusation."""
+        verdict = judge(runs=[run(hours_ago=24 * 10)])
+        before = dict(verdict)
+        self.apply(verdict, [self.ledger(age=None, state="absent")])
+        self.assertEqual(verdict["status"], before["status"])
+        self.assertIn("not on the default branch yet", verdict["publish_note"])
+
+    def test_an_unreadable_ledger_is_not_read_as_silence(self):
+        verdict = judge(runs=[run(hours_ago=3)])
+        self.apply(verdict, [self.ledger(age=None, state="unreadable")])
+        self.assertEqual(verdict["status"], "ok", "a corrupt file is the ledger tool's "
+                                                "problem to survive, not a lane failure")
+        self.assertIn("does not parse", verdict["publish_note"])
+
+    def test_an_empty_ledger_is_evidence_of_nothing_published(self):
+        """`empty` is the one state that *does* mean "no publishes" — the file exists
+        and is readable and has nothing in it."""
+        verdict = judge(runs=[run(hours_ago=3)])
+        self.apply(verdict, [self.ledger(age=None, state="empty")])
+        self.assertEqual(verdict["status"], "ok",
+                         "with no timestamp there is no deadline to miss; say it in the "
+                         "row, do not guess a failure")
+        self.assertIn("empty", verdict["publish_evidence"])
+
+    def test_the_newest_of_several_ledgers_wins(self):
+        verdict = judge(runs=[run(hours_ago=3)])
+        self.apply(verdict, [self.ledger(age=timedelta(days=30), path="logs/a.json"),
+                             self.ledger(age=timedelta(minutes=5), path="logs/b.json")])
+        self.assertEqual(verdict["publish_age"], 300)
+
+    def test_the_table_shows_the_number_that_answers_the_question(self):
+        verdict = judge(runs=[run(hours_ago=24 * 10)])
+        self.apply(verdict, [self.ledger(age=timedelta(hours=6))])
+        text = hb.markdown([verdict], now=NOW, repo="o/r")
+        self.assertIn("· ledger", text, "the row must not claim the last run is the last publish")
+        self.assertEqual(len([line for line in text.splitlines() if "Telegram" in line][0].split("|")), 6)
+
+    def test_only_a_contradiction_gets_a_blockquote(self):
+        """Three lanes each saying "no ledger yet" in near-identical sentences buries the
+        one sentence that matters. The quiet case is counted on one line; the
+        disagreement is quoted."""
+        silent = judge(runs=[run(hours_ago=24 * 10)])
+        self.apply(silent, [self.ledger(age=None, state="absent", path="logs/a.json")])
+        other = judge(one_lane=lane(file="youtube_queue.yml", name="Other"),
+                      runs=[run(hours_ago=24 * 10)], since=NOW - timedelta(days=30))
+        self.apply(other, [self.ledger(age=None, state="absent", path="logs/b.json")])
+        text = hb.markdown([silent, other], now=NOW, repo="o/r", branch_hint="main")
+        self.assertIn("2 lane(s) declare a publish ledger", text)
+        self.assertNotIn("> no publish evidence either way", text)
+        loud = judge(runs=[run(hours_ago=24 * 10)])
+        self.apply(loud, [self.ledger(age=timedelta(hours=6), path="logs/c.json")])
+        text = hb.markdown([loud], now=NOW, repo="o/r", branch_hint="main")
+        self.assertIn("> `logs/c.json` records a publish", text)
+
+    def test_the_notes_survive_as_one_blockquote(self):
+        verdict = judge(runs=[run(hours_ago=24 * 10)])
+        other = judge(one_lane=lane(file="youtube_queue.yml", name="Other"),
+                      runs=[run(hours_ago=24 * 10)], since=NOW - timedelta(days=30))
+        self.apply(verdict, [self.ledger(age=timedelta(hours=6))])
+        text = hb.markdown([verdict, other], now=NOW, repo="o/r")
+        self.assertEqual(text.count("records a publish 6.0h ago"), 1,
+                         "two lanes saying it is two notes; the same note twice is noise")
+
+    def test_triage_reads_the_ledger_step_first(self):
+        verdict = judge(runs=[run(hours_ago=3)])
+        self.apply(verdict, [self.ledger(age=timedelta(days=9))])
+        text = hb.triage([verdict], ref="main")
+        self.assertIn("ledger step", text)
+        self.assertIn("git push", text, "a swallowed warning there is the usual cause")
+
+    def test_triage_carries_the_contradiction_into_the_issue(self):
+        verdict = judge(runs=[run(hours_ago=24 * 10)])
+        self.apply(verdict, [self.ledger(age=timedelta(hours=6))])
+        self.assertIn("records a publish", hb.triage([verdict], ref="main"))
+
+    def test_the_signature_moves_when_a_lane_goes_green_but_quiet(self):
+        healthy = judge(runs=[run(hours_ago=3)])
+        quiet = judge(runs=[run(hours_ago=3)])
+        self.apply(quiet, [self.ledger(age=timedelta(days=9))])
+        self.assertNotEqual(hb.signature([healthy]), hb.signature([quiet]))
+
+
+class LedgerDiscoveryTests(unittest.TestCase):
+    """`logs/x.json` references are read out of the workflows, like everything else."""
+
+    def test_a_lane_that_writes_a_ledger_is_found(self):
+        lanes = {lane["file"]: lane
+                 for lane in hb.discover_lanes(str(ROOT / ".github" / "workflows"))}
+        self.assertIn("telegram_sent.json", lanes["telegram_autopost.yml"]["ledgers"])
+        self.assertIn("facebook_reels.json", lanes["facebook_autopost.yml"]["ledgers"])
+        self.assertEqual(lanes["verify.yml"]["ledgers"], [],
+                         "a workflow with no ledger must not be judged for lacking one")
+
+    def test_the_states_come_back_from_the_contents_api(self):
+        import base64 as _b64
+
+        def fixture(entries):
+            tmp = tempfile.mkdtemp()
+            where = os.path.join(tmp, "repos/x/y/contents/logs")
+            os.makedirs(where)
+            body = _b64.b64encode(json.dumps(entries).encode("utf-8")).decode()
+            with open(os.path.join(where, "telegram_sent.json.json"), "w", encoding="utf-8") as handle:
+                json.dump({"content": body}, handle)
+            return hb.GitHub("x", "y", fixture=tmp)
+
+        client = fixture([{"title": "telegram tip abc", "date": "2026-10-07",
+                           "recorded_at": "2026-10-07T11:18:00+01:00",
+                           "url": "https://t.me/docogadaily/32"}])
+        found = hb.ledger_freshness(client, "logs/telegram_sent.json", "main", NOW)
+        self.assertEqual(found["state"], "ok")
+        self.assertEqual(found["url"], "https://t.me/docogadaily/32")
+        self.assertEqual(found["newest"].utcoffset(), timedelta(hours=1))
+        self.assertEqual(found["entries"], 1)
+
+        client = fixture([])
+        self.assertEqual(hb.ledger_freshness(client, "logs/telegram_sent.json", "main", NOW)["state"],
+                         "empty")
+        client = fixture({"entries": [{"date": "not a date"}]})
+        self.assertEqual(hb.ledger_freshness(client, "logs/telegram_sent.json", "main", NOW)["state"],
+                         "empty", "an entry nobody can place in time is not a publish")
+        missing = hb.GitHub("x", "y", fixture=tempfile.mkdtemp())
+        self.assertEqual(hb.ledger_freshness(missing, "logs/telegram_sent.json", "main", NOW)["state"],
+                         "absent")
+
+    def test_a_ledger_entry_without_a_timestamp_is_ignored_not_invented(self):
+        import base64 as _b64
+        tmp = tempfile.mkdtemp()
+        where = os.path.join(tmp, "repos/x/y/contents/logs")
+        os.makedirs(where)
+        body = _b64.b64encode(json.dumps([{"title": "x"}]).encode()).decode()
+        with open(os.path.join(where, "l.json.json"), "w", encoding="utf-8") as handle:
+            json.dump({"content": body}, handle)
+        found = hb.ledger_freshness(hb.GitHub("x", "y", fixture=tmp), "logs/l.json", "main", NOW)
+        self.assertEqual(found["state"], "empty")
+
+
 class SignatureTests(unittest.TestCase):
     def verdict(self, file, status, reason="x", **extra):
         out = {"file": file, "status": status, "reason": reason, "lane": file}

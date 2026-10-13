@@ -573,6 +573,63 @@ if hb_wf:
           "automation-heartbeat" in readme_hb and "automation-heartbeat" in growth_hb,
           "a monitor nobody can find is a monitor nobody re-runs")
 
+# ── the publish ledger: what counts as having published ────────────────────
+# Two bugs and one gap, all from 13 Oct 2026: the channel got the same post four times,
+# the lane had no durable proof of publishing, and the log that looked like proof was
+# gitignored scratch the tests themselves wrote to. These hold the three fixes in place.
+tg_poster = open(os.path.join(ROOT, "scripts", "post_telegram.py"), encoding="utf-8").read()
+tg_body = tg_poster.split("def post_to_telegram(")[1].split("\ndef ")[0]
+check("telegram ledger: the duplicate check is consulted before anything is sent",
+      0 <= tg_body.index("already_sent(") < tg_body.index("send_text_message(")
+      and 0 <= tg_body.index("already_sent(") < tg_body.index("send_photo_message("),
+      "checking after the send is bookkeeping, not protection")
+check("telegram ledger: an entry is written only for a send Telegram accepted",
+      tg_body.index("if ok:") < tg_body.index("ledger.record("),
+      "recording the intent would turn the ledger into a wish")
+check("telegram ledger: refusals are red, duplicates are green",
+      "if sent == 0 and failed:" in tg_body and "return -1" in tg_body,
+      "collapsing 'nothing to do' and 'nothing worked' is how the poster used to exit 0 on an API error")
+check("telegram ledger: the shared tool, not a fork",
+      "import youtube_ledger as ledger" in tg_poster
+      and not os.path.exists(os.path.join(ROOT, "tools", "telegram_ledger.py")),
+      "a forked ledger drifts the first time someone fixes a race in the other one")
+tg_wf = open(os.path.join(ROOT, ".github", "workflows", "telegram_autopost.yml"),
+             encoding="utf-8").read()
+check("telegram workflow: the ledger file is the same path the poster writes",
+      "telegram_sent.json" in tg_poster and "logs/telegram_sent.json" in tg_wf
+      and 'docoga_log.log_file("telegram_sent.json")' in tg_poster,
+      "the workflow commits one path and the poster writes another: the ledger stays empty "
+      "forever, and an empty ledger reads as \"nothing published\"")
+check("telegram workflow: it may commit the ledger and nothing else is write-scoped",
+      "contents: write" in tg_wf and "issues: write" in tg_wf)
+check("telegram workflow: the ledger commit cannot turn a publish red",
+      "continue-on-error: true" in tg_wf.split("Commit the publish ledger")[1][:400])
+for name in ("telegram_autopost.yml", "facebook_autopost.yml"):
+    text = open(os.path.join(ROOT, ".github", "workflows", name), encoding="utf-8").read()
+    check("%s: an auto-commit of bookkeeping does not retrigger CI" % name,
+          "[skip ci]" in text,
+          "the free plan has 2,000 minutes a month; a ledger push that fires Verify burns them")
+check("telegram workflow: force is an input, so a re-post needs no commit",
+      "force:" in tg_wf and "TELEGRAM_FORCE: ${{ inputs.force }}" in tg_wf)
+social_scripts = ["post_telegram.py", "post_facebook.py", "generate_facebook_content.py",
+                  "generate_telegram_content.py", "post_telegram_video.py"]
+for name in social_scripts:
+    text = open(os.path.join(ROOT, "scripts", name), encoding="utf-8").read()
+    check("scratch files are rooted, not cwd-relative (%s)" % name,
+          'Path("logs/' not in text and "docoga_log" in text,
+          "a relative log path is a stray logs/ directory in whoever's home ran it last")
+hb_tool = open(os.path.join(ROOT, "tools", "automation_heartbeat.py"), encoding="utf-8").read()
+check("heartbeat: run history and publish evidence are separate facts",
+      "def ledger_freshness(" in hb_tool and "green-but-quiet" in hb_tool
+      and "no publish evidence either way" in hb_tool,
+      "'nothing has succeeded' and 'nobody published' are different sentences")
+check("heartbeat: a missing ledger is never read as silence",
+      '"state": "absent"' in hb_tool and '"state": "unreadable"' in hb_tool)
+check("telegram preflight names the secret to set",
+      "gh secret set TELEGRAM_CHAT_ID" in
+      open(os.path.join(ROOT, "tools", "telegram_preflight.py"), encoding="utf-8").read(),
+      "it finds the failure; it has to finish the job and say what to type")
+
 # The unittest files are the real gate; run them when their deps are present.
 import importlib.util as _ilu
 missing_mods = [m for m in ("requests", "yaml") if _ilu.find_spec(m) is None]

@@ -171,6 +171,16 @@ Integration rules:
   4. **`exit 3` = "I could not look"** — a monitor that cannot reach the API must never print "all clear".
   5. **a schedule that only exists on an unmerged branch is warned, not failed**: silence there is a statement
      about the merge queue. (Found by the tests: the Facebook lane reads ⚠️ pending, Telegram reads ❌ 9.4 days.)
+- **Publish evidence in the heartbeat — 13 Oct 2026.** Run history and the channel are two
+  different truths, and the Telegram lane proved it: 9.4 days since a green run, while
+  `@docogadaily` carried a post on 7 Oct. Three fixes at once: the poster now fingerprints the
+  *content* and refuses to re-post within 7 days (the channel got the same paragraph four times
+  on 3 Oct, from four runs that each knew nothing); it records every accepted message in the
+  committed `logs/telegram_sent.json` via the shared ledger tool, and the workflow pushes that
+  file back with `[skip ci]`; and the heartbeat reads the ledger and says so in both directions —
+  a green run with nothing recorded is a new failure kind (`green-but-quiet`), while a red
+  schedule with fresh entries stays red but says "readers are still being served". Missing
+  evidence is reported as missing, never as silence. Handbook: `TELEGRAM_AUTOMATION.md`.
   Honest state as of 13 Oct: 3 scheduled lanes, **0 of them healthy** — Telegram has not succeeded since
   3 Oct, YouTube has run once and failed, Facebook's `schedule:` is not on `main` yet. The heartbeat's first
   report is not a clean one; that is what it is for.

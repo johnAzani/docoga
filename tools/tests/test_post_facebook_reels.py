@@ -34,6 +34,12 @@ for rel in ("tools", "scripts"):
     if str(ROOT / rel) not in sys.path:
         sys.path.insert(0, str(ROOT / rel))
 
+# The social scripts append to `logs/social_media.log`, and importing them binds that
+# path. Redirected before the import so the repo's real log stays a record of publishes
+# rather than a record of tests — see tools/docoga_log.py.
+os.environ.setdefault("DOCOGA_LOG_DIR", tempfile.mkdtemp(prefix="docoga-social-log-"))
+
+
 import fb_publish  # noqa: E402
 import facebook_reel_daily  # noqa: E402
 import post_facebook  # noqa: E402

@@ -18,21 +18,48 @@ Failure-handling contract (hardened 11 Oct 2026, after the four-day outage):
      can raise a visible issue.
 """
 
+import hashlib
 import os
 import sys
 import json
 import requests
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 # Shared escaper/stripper. tools/ is a sibling of scripts/.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
 from telegram_mdv2 import to_plain  # noqa: E402
+import docoga_log  # noqa: E402  where the scratch files live
+import youtube_ledger as ledger  # noqa: E402  — the same bookkeeping the Shorts and
+# Reels lanes use, pointed at this lane's file. A forked ledger drifts.
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+
 
 # ===== CONFIG =====
-ASSETS_DIR = Path("assets/telegram")
-LOG_FILE = Path("logs/social_media.log")
+# Absolute and rooted at the repo, like the ledger tool's own default: `logs/…`
+# relative to the cwd works in CI (cwd happens to be the checkout) and writes a stray
+# `logs/` directory wherever a human last cd'd to.
+ASSETS_DIR = REPO_ROOT / "assets" / "telegram"
+# Both paths are overridable, and the difference matters more than it looks. The log
+# is gitignored scratch; the ledger is committed, because it is the only answer in the
+# repo to "did this lane ever publish?". `python3 -m unittest` used to scribble 1,400
+# lines into the real log file — the tests set TELEGRAM_LOG_FILE to a temp path now.
+LOG_FILE = Path(os.getenv("TELEGRAM_LOG_FILE") or docoga_log.log_file("social_media.log"))
+LEDGER_FILE = Path(os.getenv("TELEGRAM_LEDGER") or docoga_log.log_file("telegram_sent.json"))
 LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+
+# What "already published" means: the same text (not merely the same day) inside this
+# window. On 3 Oct 2026 the channel received the same caution-fee paragraph four times
+# in four hours, because every retry and every manual dispatch started from zero
+# knowledge. 7 days blocks the accident and still lets the rotation come back.
+DUPLICATE_WINDOW_DAYS = int(os.getenv("TELEGRAM_DUP_WINDOW_DAYS", "7"))
+FORCE = os.getenv("TELEGRAM_FORCE", "").lower() in ("1", "true", "yes")
+
+# West Africa Time, the same clock the ledger tool stamps and the same one the
+# "daily" cadence is promised on. Deriving the date in UTC would call a 00:30 Lagos
+# post yesterday's, and a lane that posts at 08:00 UTC is on the same day either way.
+WAT = timedelta(hours=1)
 
 # Load environment variables
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
@@ -50,12 +77,44 @@ PARSE_ERROR_MARKERS = ("can't parse", "can't find end of", "unsupported start ta
 
 
 def log(message):
-    """Log messages to file and console"""
+    """Log messages to file and console.
+
+    A missing or unwritable log must not cost the channel its post: this is the only
+    place the file is opened, and it stays quiet on failure for that reason.
+    """
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     log_msg = f"[{timestamp}] {message}\n"
     print(log_msg, end="")
-    with open(LOG_FILE, "a") as f:
-        f.write(log_msg)
+    docoga_log.append(LOG_FILE, log_msg)
+
+
+def run_date():
+    return (datetime.utcnow() + WAT).date()
+
+
+def content_key(post_type, message):
+    """Ledger title: the text's own fingerprint, not the date.
+
+    `telegram photo 6f2c1a…`. Keying on the content is what catches the Oct 3 shape —
+    the same paragraph posted four times in one afternoon — while leaving a legitimate
+    re-use of a topic a week later alone. Keying on the date would have missed three of
+    those four posts, because they came from four separate runs of the same file.
+    """
+    digest = hashlib.sha1((message or "").strip().encode("utf-8")).hexdigest()[:10]
+    return "telegram %s %s" % (post_type or "text", digest)
+
+
+def channel_link(message_id):
+    """A URL that outlives the run log. For a public channel, the real permalink;
+    otherwise the id itself, which is still answerable from the Bot API."""
+    if message_id is None:
+        return ""
+    username = os.getenv("TELEGRAM_CHANNEL_USERNAME") or ""
+    if not username and str(TELEGRAM_CHAT_ID or "").startswith("@"):
+        username = str(TELEGRAM_CHAT_ID)[1:]
+    if username:
+        return "https://t.me/%s/%s" % (username, message_id)
+    return "https://t.me/telegram-message-id/%s" % message_id
 
 
 def _clamp(text, limit, label):
@@ -114,7 +173,9 @@ def send_text_message(text, parse_mode="MarkdownV2"):
         if result.get("ok"):
             msg_id = result["result"].get("message_id")
             log(f"✅ Text message sent (id={msg_id})")
-            return True
+            # The id, not True: the ledger needs the permalink, and an id of 0 would
+            # be falsy only in theory — Telegram starts counting at 1.
+            return msg_id or True
 
         description = result.get("description", "Unknown error")
         log(f"❌ Telegram API error: {_describe(r)}")
@@ -128,7 +189,7 @@ def send_text_message(text, parse_mode="MarkdownV2"):
             r2_result = r2.json()
             if r2_result.get("ok"):
                 log("✅ Sent as plain text fallback")
-                return True
+                return (r2_result.get("result") or {}).get("message_id") or True
             # The old code threw this error away. It is the one that says what
             # is really wrong (token, chat rights, payload), so it is logged.
             log(f"❌ Plain-text retry also failed: {_describe(r2)}")
@@ -170,7 +231,7 @@ def send_photo_message(photo_path, caption=None, parse_mode="MarkdownV2"):
         if result.get("ok"):
             msg_id = result["result"].get("message_id")
             log(f"✅ Photo message sent (id={msg_id})")
-            return True
+            return msg_id or True
 
         description = result.get("description", "Unknown error")
         log(f"❌ Photo API error: {_describe(r)}")
@@ -189,7 +250,7 @@ def send_photo_message(photo_path, caption=None, parse_mode="MarkdownV2"):
             r2_result = r2.json()
             if r2_result.get("ok"):
                 log("✅ Photo sent with plain caption")
-                return True
+                return (r2_result.get("result") or {}).get("message_id") or True
             log(f"❌ Plain-caption retry also failed: {_describe(r2)}")
 
         # Not a markup problem, or the plain retry failed too: post the words.
@@ -226,27 +287,65 @@ def load_content():
         return []
 
 
+def already_sent(entries, key, on_date):
+    """The ledger's own rule, wrapped so this file has one opinion about duplicates."""
+    return ledger.already_published(entries, key, on_date, DUPLICATE_WINDOW_DAYS)
+
+
 def post_to_telegram():
-    """Main function: generate and post content to Telegram"""
-    log("🚀 Starting Telegram auto-post...")
+    """Main function: generate and post content to Telegram.
+
+    Returns the number of messages that reached the channel. The ledger is consulted
+    before each send and written after it, which is the whole duplicate fix: a retry, a
+    second dispatch, or an operator re-running yesterday's file now costs the channel
+    nothing it has already carried. `TELEGRAM_FORCE=1` overrides, and says so in the
+    log, because the override has to exist for the day the ledger is the thing that is
+    wrong.
+    """
+    global FORCE
+    if "--force" in sys.argv:
+        FORCE = True
+    log("\U0001f680 Starting Telegram auto-post...")
 
     if not validate_credentials():
         log("❌ Cannot post — missing credentials")
-        return False
+        return -1
 
     posts = load_content()
     if not posts:
         log("❌ No content to post")
-        return False
+        return -1
 
-    success_count = 0
+    today = run_date()
+    entries = ledger.load(str(LEDGER_FILE))
+    if entries:
+        log("   ledger: %d previous publish(es), newest %s"
+            % (len(entries), entries[0].get("date") or entries[0].get("recorded_at") or "?"))
+    else:
+        log("   ledger: empty (%s) \u2014 every post today counts as new" % LEDGER_FILE)
+
+    sent = 0
+    skipped = 0
+    failed = 0
     for i, post in enumerate(posts):
-        log(f"\n📝 Posting message {i + 1}/{len(posts)}...")
+        log("\n\U0001f4dd Posting message %d/%d..." % (i + 1, len(posts)))
 
         message = post.get("message", "")
         post_type = post.get("post_type", "unknown")
         send_photo = post.get("send_photo", False)
         photo_path = post.get("photo_path")
+
+        key = content_key(post_type, message)
+        duplicate = already_sent(entries, key, today)
+        if duplicate and not FORCE:
+            skipped += 1
+            log("   \u26a0\ufe0f Skipped \u2014 this exact text is already in the ledger (%s, %s). "
+                "Set TELEGRAM_FORCE=1 or pass --force to post it again."
+                % (duplicate.get("date", "undated"), duplicate.get("url") or "no url"))
+            continue
+        if duplicate and FORCE:
+            log("   \u26a0\ufe0f force is on: re-posting %s, already recorded on %s"
+                % (key, duplicate.get("date")))
 
         if send_photo and photo_path:
             ok = send_photo_message(photo_path, caption=message)
@@ -254,20 +353,60 @@ def post_to_telegram():
             ok = send_text_message(message)
 
         if ok:
-            success_count += 1
-            log(f"   ✅ Posted {post_type} message")
+            sent += 1
+            log("   \u2705 Posted %s message" % post_type)
+            message_id = ok if isinstance(ok, int) else None
+            # Re-read before writing: a second lane sharing this file (or a re-run that
+            # got as far as recording) must not have its entries dropped by a stale list.
+            entries = ledger.load(str(LEDGER_FILE))
+            ledger.record(
+                entries,
+                path=str(LEDGER_FILE),
+                title=key,
+                topic=post_type or "text",
+                # The content key, not (date, index): `record` de-duplicates by
+                # video_id, so an index would overwrite a different post's entry on the
+                # same day — which is how "2 entries" quietly became 1.
+                video_id=key,
+                url=channel_link(message_id),
+                date=today.isoformat(),
+                run_id=os.getenv("GITHUB_RUN_ID", ""),
+                privacy="channel",
+                characters=len(message or ""),
+                chat=str(TELEGRAM_CHAT_ID or ""),
+            )
         else:
-            log(f"   ❌ Failed to post {post_type} message")
+            failed += 1
+            log("   \u274c Failed to post %s message" % post_type)
 
-    log(f"\n📊 Complete: {success_count}/{len(posts)} messages sent")
-    return success_count > 0
+    log("\n\U0001f4ca Complete: %d sent, %d already published, %d refused, %d in the file"
+        % (sent, skipped, failed, len(posts)))
+    # Machine-readable for the workflow, in the same style as the reel lane's
+    # REEL_VIDEO_ID line: the steps after this one read the log, and a lane that has to
+    # re-parse prose gets it wrong on the day the prose changes.
+    print("TELEGRAM_SENT=%d" % sent)
+    print("TELEGRAM_SKIPPED=%d" % skipped)
+    print("TELEGRAM_FAILED=%d" % failed)
+    print("TELEGRAM_LEDGER=%s" % LEDGER_FILE)
+    # Three outcomes, not two. "Already published" is the lane working; "Telegram
+    # refused everything" is the four-day outage, and it has to be red even though
+    # `sent == 0` in both cases. Collapsing them is how a poster used to exit 0 on an
+    # API error, which is the sentence this whole file exists to make impossible.
+    if sent == 0 and failed:
+        return -1
+    return sent
 
 
 if __name__ == "__main__":
-    success = post_to_telegram()
-    if success:
+    result = post_to_telegram()
+    if result > 0:
         log("✅ Telegram auto-posting completed successfully!")
         sys.exit(0)
-    else:
-        log("❌ Telegram auto-posting failed!")
-        sys.exit(1)
+    if result == 0:
+        # Nothing went out and nothing was wrong: every post in the file is already on
+        # the channel. Exiting 1 here would open a failure issue for a lane that is
+        # working; exiting 0 in silence would hide a content file that went empty.
+        log("\u2139\ufe0f Nothing posted — the ledger says today's content is already on the channel.")
+        sys.exit(0)
+    log("❌ Telegram auto-posting failed!")
+    sys.exit(1)

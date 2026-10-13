@@ -50,7 +50,9 @@ from telegram_mdv2 import to_plain          # noqa: E402  (shared markup strippe
 import generate_telegram_content as tg       # noqa: E402  (the copy lives there)
 
 ASSETS_DIR = Path("assets/facebook")
-LOG_FILE = Path("logs/social_media.log")
+import docoga_log  # noqa: E402  one answer for "where do the scratch files live"
+
+LOG_FILE = docoga_log.log_file("social_media.log")
 
 LAGOS = timezone(timedelta(hours=1))
 

@@ -323,6 +323,10 @@ def human_duration(seconds):
 _REFERENCES = re.compile(r"secrets\.([A-Za-z_][A-Za-z0-9_]*)")
 _VAR_REFERENCES = re.compile(r"vars\.([A-Za-z_][A-Za-z0-9_]*)")
 _ISSUE_LABEL = re.compile(r"--label ([a-z0-9][a-z0-9-]*)")
+# Which durable record a lane promises to write, read from the workflow's own text for
+# the same reason the cadence is: the day a lane grows a ledger (or renames one), the
+# monitor should notice without anyone editing a list in here.
+_LEDGER_FILE = re.compile(r"\blogs/([A-Za-z0-9_.-]+\.json)")
 
 
 def _named(names, drop=None):
@@ -357,7 +361,7 @@ def discover_lanes(workflows_dir=WORKFLOWS_DIR):
         except Exception as exc:
             lanes.append({"file": name, "error": "unreadable YAML (%s)" % exc.__class__.__name__,
                           "crons": [], "name": name, "scheduled": False,
-                          "secrets": [], "vars": [], "labels": []})
+                          "secrets": [], "vars": [], "labels": [], "ledgers": []})
             continue
         on = doc.get("on") if isinstance(doc.get("on"), dict) else doc.get(True) or {}
         if not isinstance(on, dict):
@@ -391,6 +395,7 @@ def discover_lanes(workflows_dir=WORKFLOWS_DIR):
             # `gh issue create --label …` line in the same file. The advice below can
             # then say "open the lane's issue" instead of guessing from a table.
             "labels": _named(_ISSUE_LABEL.findall(text)),
+            "ledgers": _named(_LEDGER_FILE.findall(text)),
         })
     return lanes
 
@@ -569,6 +574,101 @@ def file_age(client, path, ref=None):
 
 
 # ── the verdict ─────────────────────────────────────────────────────────────
+def ledger_freshness(client, path, ref, now):
+    """What one ledger file says about the lane's last publish, as of `ref`.
+
+    Four states, because collapsing them is how a monitor lies:
+
+      * `ok`         — parsed, and the newest entry has a usable timestamp;
+      * `empty`      — parsed, nothing usable in it: the file exists, no publish inside;
+      * `absent`     — no file on the default branch: the lane has never recorded a post;
+      * `unreadable` — it is there and does not parse, which is *not* "nothing published".
+
+    A ledger is the lane's own evidence, written at the moment the platform accepted the
+    post. Run history is only the CI's memory, and the two disagree in both directions.
+    """
+    try:
+        body = json.loads(client.contents(path, ref))
+    except RuntimeError:
+        return {"path": path, "state": "absent", "newest": None}
+    except ValueError as exc:
+        return {"path": path, "state": "unreadable", "newest": None,
+                "detail": type(exc).__name__}
+    entries = body.get("entries") if isinstance(body, dict) else body
+    if not isinstance(entries, list):
+        return {"path": path, "state": "unreadable", "newest": None,
+                "detail": "the ledger is not a list"}
+    newest, newest_stamp, url = None, "", ""
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        stamp = entry.get("recorded_at") or entry.get("date") or ""
+        moment = parse_stamp(stamp)
+        if moment is None:
+            continue
+        if newest is None or moment > newest:
+            newest, newest_stamp, url = moment, str(stamp), entry.get("url") or ""
+    return {"path": path, "state": "ok" if newest else "empty", "newest": newest,
+            "newest_stamp": newest_stamp, "url": url, "entries": len(entries)}
+
+
+def apply_publish_evidence(verdict, ledgers, now):
+    """Cross-check the CI story against the lane's own record of publishing.
+
+    The two directions are deliberately not symmetric:
+
+      * CI is silent and the ledger is fresh -> still a failure, because the schedule
+        really is broken, but the note says so. "The lane died" and "nobody received
+        anything" are different sentences, and on 13 Oct 2026 this repo's Telegram lane
+        is the case where only one of them was true.
+      * CI is green and the ledger is stale -> *that* failure is its own kind, and the
+        scarier one: a run that reports success without recording a publish is green, so
+        nothing else in the system looks at it.
+
+    An absent or unreadable ledger changes nothing. Missing evidence is not evidence of a
+    missing publish.
+    """
+    verdict["publish_evidence"] = ", ".join(
+        "%s=%s" % (item["path"], item["state"]) for item in (ledgers or [])) or "no ledger declared"
+    if ledgers and not verdict.get("ledgers"):
+        # Whatever assembled this verdict, the renderer is told what was actually read.
+        # A lane's declared ledger and the file the monitor fetched are the same fact,
+        # and the summary line must not silently disappear when one of the two paths is
+        # built by hand (tests, or a future caller).
+        verdict["ledgers"] = [item["path"] for item in ledgers]
+    known = [item for item in (ledgers or []) if item.get("state") == "ok" and item.get("newest")]
+    if known:
+        newest = max(item["newest"] for item in known)
+        where = [item for item in known if item["newest"] == newest][0]
+        verdict["last_publish"] = iso(newest)
+        verdict["publish_age"] = int((now - newest).total_seconds())
+        deadline = verdict.get("silent_after")
+        if verdict["status"] == "ok" and deadline and verdict["publish_age"] > deadline:
+            verdict["status"] = "fail"
+            verdict["kind"] = "green-but-quiet"
+            verdict["reason"] = (
+                "the runs go green, but %s has nothing newer than %s (%s old, past the %s "
+                "silence deadline) - a run that succeeds without recording a publish"
+                % ("`%s`" % where["path"], verdict["last_publish"],
+                   human_duration(verdict["publish_age"]), human_duration(deadline)))
+        elif verdict["status"] in ("fail", "unknown", "warn") and deadline \
+                and verdict["publish_age"] <= deadline:
+            verdict["publish_note"] = (
+                "%s records a publish %s ago%s, so the schedule is broken while readers are "
+                "still being served: fix the cron, but do not write \"nothing was published\""
+                % ("`%s`" % where["path"], human_duration(verdict["publish_age"]),
+                   " at " + where["url"] if where.get("url") else ""))
+    elif any(item.get("state") == "absent" for item in (ledgers or [])):
+        verdict["publish_note"] = (
+            "no publish evidence either way: %s is not on the default branch yet"
+            % ", ".join("`%s`" % item["path"] for item in ledgers if item.get("state") == "absent"))
+    elif any(item.get("state") == "unreadable" for item in (ledgers or [])):
+        verdict["publish_note"] = (
+            "the ledger exists and does not parse, which is not \"nothing published\" - the "
+            "ledger tool backs such a file up and starts fresh")
+    return verdict
+
+
 def judge(lane, info, runs, lane_since, now, grace=DEFAULT_LANE_GRACE,
           jitter=SCHEDULE_JITTER, misses=MISSES_BEFORE_SILENT):
     """One lane → one verdict. Returns a dict; `status` ∈ ok|warn|fail|manual|unknown."""
@@ -589,6 +689,11 @@ def judge(lane, info, runs, lane_since, now, grace=DEFAULT_LANE_GRACE,
         "secrets": list(lane.get("secrets") or []),
         "vars": list(lane.get("vars") or []),
         "labels": list(lane.get("labels") or []),
+        "ledgers": list(lane.get("ledgers") or []),
+        "last_publish": "",
+        "publish_age": None,
+        "publish_evidence": "",
+        "publish_note": "",
     }
     if lane.get("error"):
         # Before the "no schedule" answer: a file this tool could not parse also has
@@ -713,6 +818,8 @@ def build_verdicts(lanes, index, runs_by_id, since_by_path, now, options):
         # from this checkout. On a branch that has not merged, "never ran" is a
         # statement about the merge, not about the lane — and a monitor that calls a
         # pending merge a failure gets muted within a week. Downgrade, and say why.
+        apply_publish_evidence(verdict, (options.get("ledger_data") or {}).get(lane.get("path")),
+                               now)
         judged = options.get("ref")
         pending_here = bool(judged) and judged != options.get("branch")
         silence_claims = ("never-run", "silent", "streak")
@@ -751,7 +858,7 @@ def signature(verdicts):
     return digest[:12]
 
 
-def markdown(verdicts, now=None, repo=None):
+def markdown(verdicts, now=None, repo=None, branch_hint=None):
     lines = ["", "## Automation heartbeat — %s" % (iso(now) if now else ""), ""]
     if repo:
         lines.append("Repo: `%s` · rules: `tools/automation_heartbeat.py`" % repo)
@@ -771,6 +878,17 @@ def markdown(verdicts, now=None, repo=None):
         last = item.get("last_successful") or item.get("last_run") or "never"
         if last != "never" and item.get("last_conclusion"):
             last = "%s · %s" % (last, item["last_conclusion"])
+        # When the lane's own ledger is newer than the last green run, that is the
+        # number the owner needs in the table: it is the difference between "nothing has
+        # been published for 9 days" and "the cron has been broken for 9 days".
+        publish = item.get("last_publish") or ""
+        # Compare the moments, not the strings: a ledger timestamp is +01:00 and a run
+        # timestamp is Z, and "…19:43:59+00:00" sorts before "…10:18:00+01:00" as text
+        # while being later as time.
+        if publish:
+            publish_at, run_at = parse_stamp(publish), parse_stamp(item.get("last_run") or "")
+            if run_at is None or publish_at > run_at:
+                last = "%s · ledger" % publish
         lines.append("| %s %s | %s | %s | %s |" % (
             glyph.get(item["status"], "•"), item["lane"], cadence, last,
             (item.get("reason") or "").replace("|", "/")))
@@ -779,6 +897,28 @@ def markdown(verdicts, now=None, repo=None):
         lines.append("_%d more workflow(s) have no `schedule:` (dispatch/deploy/CI) and are not "
                      "judged: %s_" % (len(manual), ", ".join("`%s`" % m["file"] for m in manual)))
     failures = [item for item in verdicts if item["status"] in ("fail", "unknown")]
+    # Only the notes that *contradict* the table get a blockquote: three lanes saying
+    # "no ledger yet" in three near-identical sentences buries the one line that says
+    # "the schedule is broken and the channel is still being served". The rest is
+    # counted, once.
+    disagreed = [item["publish_note"] for item in verdicts
+                 if item.get("publish_note") and "records a publish" in item["publish_note"]]
+    if disagreed:
+        lines.append("")
+        lines.extend("> %s" % note for note in dict.fromkeys(disagreed))
+    declared = [item for item in verdicts if item.get("ledgers")]
+    if declared:
+        quiet = [item for item in declared if "not on the default branch yet" in item.get("publish_note", "")]
+        lines.append("")
+        if quiet:
+            lines.append("_%d of %d lane(s) declare a publish ledger; %s have no file on `%s` "
+                         "yet, so their rows above are run-history only, not proof of silence._"
+                         % (len(declared), len(judged_rows) or len(declared),
+                            "all of them" if len(quiet) == len(declared) else "%d of them" % len(quiet),
+                            (branch_hint or "main")))
+        else:
+            lines.append("_%d lane(s) keep a publish ledger; the table's last column and the "
+                         "· ledger marker above are read from it._" % len(declared))
     lines.append("")
     if failures:
         lines.append("**%d lane(s) need a decision.** Each row above says which and why; the "
@@ -814,6 +954,13 @@ def triage(verdicts, ref="main"):
                          "`gh variable list` show names only; when in doubt, re-set it."
                          % ", ".join(named + knobs))
         kind = item.get("kind")
+        if item.get("publish_note"):
+            lines.append("- %s" % item["publish_note"])
+        if kind == "green-but-quiet":
+            lines.append("- The run is green and the ledger has nothing new, so the gap is "
+                         "between \"the job finished\" and \"the post exists\": read the "
+                         "ledger step first, because a failed `git push` there is a warning "
+                         "on purpose, and a lost warning is exactly this shape.")
         if kind == "never-run":
             lines.append("- A `schedule:` that has never fired usually means the workflow is not on "
                          "the **default branch** yet — GitHub runs scheduled workflows only from there. "
@@ -901,6 +1048,16 @@ def main(argv=None):
             if info and info.get("id") is not None:
                 runs_by_id[info["id"]] = recent_runs(client, info["id"], args.branch)
             since_by_path[lane.get("path")] = file_age(client, lane.get("path"))
+        # Publish evidence comes from the default branch, always: a ledger on a branch
+        # proves nobody outside CI published, which is the opposite of what this is for.
+        ledger_data = {}
+        for lane in lanes:
+            wanted = lane.get("ledgers") or []
+            if wanted and not lane.get("error"):
+                ledger_data[lane.get("path")] = [
+                    ledger_freshness(client, "logs/" + name, args.branch, now)
+                    for name in wanted]
+        options["ledger_data"] = ledger_data
         if args.ref and args.ref != args.branch:
             # Assigned into `options`, not rebound locally: `options` already holds the
             # empty dict, so `default_crons = …` here would look correct and hand
@@ -916,7 +1073,7 @@ def main(argv=None):
     sig = signature(verdicts)
     fails = [item for item in verdicts if item["status"] in ("fail", "unknown")]
 
-    print(markdown(verdicts, now=now, repo=repo))
+    print(markdown(verdicts, now=now, repo=repo, branch_hint=args.branch))
     for item in verdicts:
         if args.verbose or item["status"] in ("fail", "unknown", "warn"):
             print("%-4s %-38s %s" % (item["status"].upper(), str(item["lane"])[:38], item["reason"]))
@@ -938,7 +1095,7 @@ def main(argv=None):
                 handle.write("\n")
         if args.markdown:
             with open(args.markdown, "a", encoding="utf-8") as handle:
-                handle.write(markdown(verdicts, now=now, repo=repo))
+                handle.write(markdown(verdicts, now=now, repo=repo, branch_hint=args.branch))
         if args.triage and fails:
             with open(args.triage, "w", encoding="utf-8") as handle:
                 handle.write(triage(verdicts, ref=args.branch) + "\n")

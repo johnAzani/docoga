@@ -49,7 +49,12 @@ import fb_publish  # noqa: E402  the Graph API layer
 import generate_facebook_content  # noqa: E402  the copy
 
 ASSETS_DIR = Path("assets/facebook")
-LOG_FILE = Path("logs/social_media.log")
+# Rooted at the repo and overridable in one place: see tools/docoga_log.py. A log the
+# test suite appends to is not evidence, and a relative path is a stray directory in
+# whoever's home folder ran it last.
+import docoga_log  # noqa: E402
+
+LOG_FILE = docoga_log.log_file("social_media.log")
 LAGOS = timezone(timedelta(hours=1))
 
 

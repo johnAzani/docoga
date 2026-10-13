@@ -49,12 +49,21 @@ docoga/
 
 ### Step 2: Create Telegram Channel
 
-1. Create a new **public channel** (e.g., `@DocOgaUpdates`)
-2. Add your bot as an **admin** to the channel
-3. Get your **Channel ID**:
-   - Send a message to [@username_to_id_bot](https://t.me/username_to_id_bot)
-   - Paste your channel username (e.g., `@DocOgaUpdates`)
-   - **Copy the ID** (e.g., `-1001234567890`)
+1. Create a new **public channel** (DocOga's is `@docogadaily`)
+2. Add your bot as an **admin** to the channel, with **Post messages** enabled
+3. Get your **Channel ID** — and note that for a *public* channel the numeric id is
+   optional, because Telegram accepts `@yourchannel` as a `chat_id`:
+
+   - fastest: run `python3 tools/telegram_preflight.py` with the token exported. It
+     calls `getChat` and, when the configured chat is unreachable, prints every chat the
+     bot can actually see with the exact `gh secret set` line for each;
+   - or send a message to [@username_to_id_bot](https://t.me/username_to_id_bot) and paste
+     the channel username (e.g. `@docogadaily`);
+   - **Copy the ID** (e.g., `-1001234567890`).
+
+   Write down the **exact** username. The four-day outage of 7–12 Oct 2026 was this field
+   holding `@docoga` — the *website's* handle, not the channel's — and every run died at
+   `getChat: chat not found`, which reads like a permissions problem and is not one.
 
 ### Step 3: Add Secrets to GitHub
 
@@ -163,15 +172,87 @@ export TELEGRAM_CHAT_ID="your_chat_id"
 python scripts/post_telegram.py
 ```
 
-### Check Logs
+### Check what was actually published
 ```bash
-# View recent logs
-tail -f logs/social_media.log
+# The record of publishing — committed, so CI and the heartbeat can read it too:
+python3 tools/youtube_ledger.py --ledger logs/telegram_sent.json show --limit 10
+
+# The scratch log — useful for the API's own words, and NOT evidence of anything:
+tail -n 40 logs/social_media.log
 ```
+
+`logs/social_media.log` is gitignored, appended to by whoever runs the script, and was
+for a while mostly test noise. `logs/telegram_sent.json` is the durable one: one entry per
+message Telegram accepted, carrying its `t.me/…/<id>` permalink. If the two disagree, the
+ledger is right.
 
 ### Verify on Telegram
 1. Check your Telegram channel
 2. You should see the posted message
+
+---
+
+## 🧾 13 Oct 2026 — one publish per content, and the ledger that proves it
+
+Two bugs in the same shape, found while building the silent-lane heartbeat
+(`automation-heartbeat.yml`, `tools/automation_heartbeat.py`):
+
+1. **the channel got the same post four times.** On 3 Oct 2026 `@docogadaily` carried the
+   caution-fee paragraph at 15:44, 15:45, 17:02 and 17:50 — four runs (one scheduled,
+   three dispatches) each starting from zero knowledge of what was already up. The poster
+   now fingerprints the *text* (sha1 of the message, plus its `post_type`) and refuses to
+   re-send anything already in the ledger within 7 days. Content, not date: a new
+   sentence in the same slot still posts, and the same sentence a week later still posts.
+
+   ```bash
+   # to publish something the ledger already knows (a deliberate re-post):
+   gh workflow run telegram_autopost.yml -f force=true
+   ```
+
+2. **nothing proved a publish.** A green run was the only signal, and "the run went red
+   for six days" fought with "the channel got a post on 7 Oct" with no referee. So the
+   poster writes `logs/telegram_sent.json` through `tools/youtube_ledger.py` — the same
+   machinery as the Shorts and Reels lanes, pointed at this lane's file, because a forked
+   ledger drifts the first time someone fixes a race in the other one. The workflow
+   commits it back to the default branch with `[skip ci]`, and *bookkeeping can never turn
+   a successful publish red*: a failed commit is a warning that names the consequence
+   ("a re-run could post this again"), not a red X.
+
+The heartbeat then reads that file and crosses it with run history, in both directions:
+
+| run history | ledger | verdict |
+|---|---|---|
+| recent success | entry inside the cadence | ✅ healthy |
+| recent success | nothing new | ❌ `green-but-quiet` — a run that succeeds without publishing is green, so nothing else looks at it |
+| silent past the deadline | a publish inside it | ❌ still red (the cron *is* broken) with the note "readers are still being served — fix the schedule, don't write off the audience" |
+| silent | no ledger file on `main` yet | ❌ with "no publish evidence either way", which is not the same sentence as "nothing was published" |
+
+### What is owed by a human, once
+
+`gh secret set` and `gh variable set` are **not** runnable from the agent sandbox (the
+Actions token gets `403 Resource not accessible by integration` on those endpoints, and
+this `gh` build has no `variable` subcommand), and values are write-only everywhere. So:
+
+1. GitHub → **Settings → Secrets and variables → Actions → Repository secrets →
+   `TELEGRAM_CHAT_ID`** → set it to `@docogadaily` (or the `-100…` numeric id).
+2. Then Actions → **DocOga Telegram Auto-Post** → **Run workflow** with
+   `dry_run=true`. Expected screen: a green run whose log ends with
+   `✅ Chat reachable — DocOga Daily (channel) id …` and `✅ Posting rights confirmed`.
+   If instead it lists the chats the bot *can* see, copy the id it printed and re-set the
+   secret.
+3. Then run it with `dry_run=false`. Expected: one message on the channel within the
+   minute, and the next scheduled run at 08:00 UTC (09:00 WAT) — the heartbeat's row for
+   `telegram_autopost.yml` goes ✅ the morning after that.
+
+### Deliberately not done
+
+* no auto-rotation or re-minting of the bot token — @BotFather is a human conversation;
+* no deleting a webhook to make `getUpdates` answer: that would silently break whatever
+  registered it, so the preflight only *suggests* it;
+* no second channel, no cross-posting to WhatsApp/IG from this workflow — one lane, one
+  destination, so the ledger means one thing;
+* the ledger never blocks a publish on a corrupt file: it warns, starts fresh, and leaves
+  the unreadable file beside itself as `*.corrupt-<timestamp>`.
 
 ---
 

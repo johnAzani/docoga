@@ -22,6 +22,7 @@ import io
 import json
 import os
 import sys
+import tempfile
 import unittest
 from contextlib import redirect_stdout
 from datetime import date
@@ -32,6 +33,12 @@ ROOT = Path(__file__).resolve().parents[2]
 for rel in ("tools", "scripts"):
     if str(ROOT / rel) not in sys.path:
         sys.path.insert(0, str(ROOT / rel))
+
+# The social scripts append to `logs/social_media.log`, and importing them binds that
+# path. Redirected before the import so the repo's real log stays a record of publishes
+# rather than a record of tests — see tools/docoga_log.py.
+os.environ.setdefault("DOCOGA_LOG_DIR", tempfile.mkdtemp(prefix="docoga-social-log-"))
+
 
 import fb_publish  # noqa: E402
 import generate_facebook_content  # noqa: E402
