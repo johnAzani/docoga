@@ -157,8 +157,10 @@ REASONS = {
     "invalidPublishAt": ("metadata", "The scheduled publish time was invalid.",
                          "publishAt must be >= 1 minute in the future; this lane does not use it."),
     "authError": ("credentials", "The access token was not accepted by YouTube.",
-                  "Usually a token minted for the wrong scope. The flow must ask for "
-                  "https://www.googleapis.com/auth/youtube.upload."),
+                  "Usually a token minted for the wrong scope. The flow must ask for BOTH "
+                  "https://www.googleapis.com/auth/youtube.upload (the upload) and "
+                  "https://www.googleapis.com/auth/youtube.readonly (channels.list and the "
+                  "read-back — upload-only answers insufficientPermissions there)."),
     "userAuthError": ("credentials", "The Google account behind the token is not authorized.",
                       "Re-consent as the channel owner, checking the account picker lands on "
                       "the DocOga channel."),
@@ -286,7 +288,7 @@ def refresh_access_token(client_id, client_secret, refresh_token, http=None):
     if "access_token" not in payload:
         raise Problem("credentials", "no_access_token",
                       "Google answered 200 without an access_token: %s" % str(payload)[:200],
-                      "Check that the client is authorized for the youtube.upload scope.")
+                      "Check that the consent asked for youtube.upload AND youtube.readonly.")
     return payload
 
 
