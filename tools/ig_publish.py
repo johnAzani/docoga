@@ -144,15 +144,24 @@ class ApiError(Exception):
         return "run"
 
 
-def machine(result, cause=None, **extra):
+def machine(result, cause=None, *, stream=None, **extra):
     """One fact per line: the workflow reads these with `sed`, and a shell should not have
-    to split a compound line to find out whether a post happened."""
-    print("IG_RESULT=%s" % result)
+    to split a compound line to find out whether a post happened.
+
+    `stream` exists because the token-refresh path runs with stdout redirected into the file
+    handed to `token_vault.py seal`: a machine line in that file is a parse error, so its facts
+    go to stderr instead. It defaults to `None` and resolves `sys.stdout` *per call* on purpose —
+    a default of `sys.stdout` is bound at import time, which quietly defeats every test (and every
+    `$(…)` capture) that redirects the stream. Found the hard way: the machine lines simply
+    stopped appearing in the lane's own output.
+    """
+    stream = stream or sys.stdout
+    print("IG_RESULT=%s" % result, file=stream)
     if cause:
-        print("IG_CAUSE=%s" % cause)
+        print("IG_CAUSE=%s" % cause, file=stream)
     for key, value in extra.items():
         if value:
-            print("%s=%s" % (key, value))
+            print("%s=%s" % (key, value), file=stream)
 
 
 def api_path(token=None):
@@ -544,8 +553,12 @@ def main(argv=None):
         try:
             payload = refresh_token(token, app_id, app_secret)
         except ApiError as exc:
-            print("::error title=Instagram refresh failed (%s)::%s" % (exc.cause, exc.blurb))
-            machine("refresh-failed", exc.cause)
+            # See tools/threads_publish.py's `--refresh`: the same two reasons — stdout is the
+            # vault's input, and the workflows downgrade this to a warning because Meta allows one
+            # refresh per 24 h, which setup day trips for real.
+            print("instagram refresh failed (%s): %s" % (exc.cause, redact(exc.blurb)),
+                  file=sys.stderr)
+            machine("refresh-failed", exc.cause, stream=sys.stderr)
             return 3 if exc.cause == "credentials" else 6
         if payload is None:
             return 0

@@ -265,6 +265,7 @@ December.
 | `gh run list --limit 4` | `Threads autopost` success, `Instagram autopost` success or one open `[setup]` issue |
 | `git show main:logs/threads_sent.json` | an entry with a `threads.net` permalink |
 | the run summary | `THREADS_RESULT=published`, `TOKEN_EXPIRES_IN_DAYS=59` (60 after a refresh) |
+| a **warning** reading `Threads token not refreshed … less than 24 hours old` | expected on the run you do the same day you set the secret: Meta allows one refresh per 24 h. It is a warning and a green tick because there is nothing to fix; the sealed box shows up the next morning |
 | `python3 tools/lane_status.py --lane threads` | exit 0 and no failing step |
 
 **Instagram's extra step is the file, not the token**: the card is rendered into `site/social/`,

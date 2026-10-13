@@ -89,6 +89,41 @@ def recent_runs(workflow_id, repo, branch=None, limit=1, run=None):
     return data.get("workflow_runs", [])
 
 
+def executed(item, repo, run=None):
+    """Did the runner actually run this, or did Actions only file it?
+
+    A `push` that touches a workflow file whose copy on the default branch differs from the
+    pushed one produces a run with `conclusion=failure` and **no jobs**: nothing executed, nothing
+    annotated, nothing posted. `lane_status` used to print that as the lane's latest failure, and
+    it is a convincing lie — on 13 Oct 2026 it sent the author of the Instagram lane hunting for a
+    posting failure that had never touched the API. So ask the one question that decides it, and
+    only ask it when a run would otherwise be believed.
+    """
+    if item.get("conclusion") not in ("failure", "cancelled", "timed_out"):
+        return True  # a run that *succeeded* obviously executed; asking would cost a call to
+                     # confirm good news. The artefact's shape is a completed failure with no jobs,
+                     # so only those are questioned.
+    data = gh_api("repos/%s/actions/runs/%s/jobs" % (repo, item.get("id")), run=run)
+    return bool(data.get("jobs"))
+
+
+def drop_unexecuted(runs, repo, run=None):
+    """Drop the runs Actions filed without executing, and count them.
+
+    The whole list is filtered rather than truncated to the requested `--limit`: the history and
+    the consecutive-failure streak are computed from it, and a report that quietly kept one run
+    would turn "5 consecutive failures" into "no pattern" — which `tools/tests/test_lane_status.py`
+    caught the day this function was written.
+    """
+    kept, skipped = [], 0
+    for item in runs:
+        if executed(item, repo, run=run):
+            kept.append(item)
+        else:
+            skipped += 1
+    return kept, skipped
+
+
 def job_detail(run_id, repo, run=None):
     """Every job, its failing steps, and its annotations — the whole story of one run."""
     jobs = []
@@ -174,9 +209,18 @@ def main(argv=None, run=None):
         print("lane_status: %s has never run on %s" % (workflow, args.branch or "the default branch"))
         return 2
 
+    runs, skipped = drop_unexecuted(runs, args.repo, run=run)
+    if not runs:
+        print("lane_status: %s has %d recent run(s) on record and the runner executed none of "
+              "them — Actions files an empty run when a workflow's copy on a branch differs from "
+              "the default branch's. Nothing was posted and nothing failed; merge the file."
+              % (workflow, skipped))
+        return 2
+
     newest = runs[0]
     report = {
         "workflow": workflow,
+        "unexecuted_runs_ignored": skipped,
         "state": found.get("state"),
         "run_id": newest.get("id"),
         "created": newest.get("created_at"),
@@ -191,6 +235,9 @@ def main(argv=None, run=None):
         print("%s — %s" % (workflow, report["state"]))
         print("  latest: %s  [%s]  %s on %s" % (report["created"], report["conclusion"],
                                                 report["event"], report["branch"]))
+        if skipped:
+            print("  · %d run(s) with no jobs ignored: Actions filed them without executing the "
+                  "file — they are not lane outcomes" % skipped)
         for line in describe(newest.get("id"), args.repo, run=run):
             print(line)
         if len(runs) > 1:

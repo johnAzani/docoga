@@ -351,9 +351,17 @@ def main(argv=None):
         try:
             payload = refresh_token(token, user_id)
         except ApiError as exc:
-            print("::error title=Threads refresh failed::%s" % exc.blurb)
-            print("THREADS_RESULT=refresh-failed")
-            print("THREADS_CAUSE=%s" % exc.cause)
+            # stderr, and no `::error`. Two reasons, both load-bearing:
+            #   * stdout is the pipe into `token_vault.py seal --json`, which must never be handed
+            #     anything that is not the JSON it expects;
+            #   * the caller decides severity. Both workflows downgrade this to a warning, because
+            #     Meta allows one refresh per 24 h and setup day trips that rule for real. A tool
+            #     that files a red annotation for a deliberate warning is a lane that looks broken
+            #     the morning after a correct setup.
+            print("threads refresh failed (%s): %s" % (exc.cause, redact(exc.blurb)),
+                  file=sys.stderr)
+            print("THREADS_RESULT=refresh-failed", file=sys.stderr)
+            print("THREADS_CAUSE=%s" % exc.cause, file=sys.stderr)
             return 3 if exc.cause == "credentials" else 6
         # The value goes to stdout *only* so the caller can pipe it into
         # `token_vault.py seal`. Nothing here prints it to the log: the workflow that

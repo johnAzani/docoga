@@ -74,7 +74,7 @@ and "posting daily".
 |---|---|
 | `.github/workflows/threads_autopost.yml` | 08:45 UTC daily. preflight → ledger → **read the profile for the exact wording** → publish → wind the token → record → commit. `dry_run` / `probe_only` / `force` / `text` on dispatch. |
 | `.github/workflows/instagram_autopost.yml` | 09:00 UTC daily. preflight → caption → render card → **commit it to `site/social/`** → ledger → wait for the URL to be public → container → publish → read back → record → wind the token. |
-| `scripts/generate_threads_content.py` | today's post, de-escaped, fitted to 500 **bytes-weighted** characters, ≤5 links, deterministic for the day. |
+| `scripts/generate_threads_content.py` | today's post, de-escaped, fitted to 500 **bytes-weighted** characters, ≤5 links, deterministic for the day. It writes `assets/threads/threads_content_latest.json` and **that file's `text` field is what gets published**; `--print` is a human preview with a frame and trim notes around the same text, so its byte count is not the number the API judges (730 bytes of preview box around a 271-byte post — measured 13 Oct, and it will look like an over-length bug if you read the wrong output). |
 | `tools/threads_publish.py` | stdlib-only Threads publisher. `--probe`, `--dry-run`, `--refresh`, exit code per cause. |
 | `tools/ig_publish.py` | Instagram publisher, rewritten: an exit code for every outcome, a JPEG header gate, `--wait-url` for the deploy race, redaction before any print. |
 | `tools/social_card.py` | 1080×1350 brand card from the same copy; strips the emoji the runner's fonts cannot draw (the caption keeps them). |
@@ -123,6 +123,12 @@ gh secret set SOCIAL_TOKEN_KEY --repo johnAzani/docoga --body "$(openssl rand -h
 
 * Expected: `✓ Set secret …` for each. No output is normal; secret **names** are not even
   listable from an Actions token.
+* **Meta allows one refresh per 24 hours.** So the run you do the same day you set the secret
+  will be told `Cannot refresh a token that is less than 24 hours old`, and the lane answers with
+  a **warning** and a green tick — correctly, because there is nothing to fix. The box appears the
+  next morning. Both publishers deliberately keep that message off the red channel and off stdout
+  (stdout is the pipe into `token_vault.py seal`, which must never be handed a sentence), so if
+  the warning body ever comes back empty, the tool is printing to the wrong stream again.
 * **`SOCIAL_TOKEN_KEY` is the one that buys "never again".** With it, every run refreshes the
   token and seals the new value into `logs/threads_token.box`; without it, the refreshed value
   dies with the run and the lane expires at day 60. `THREADS_USER_ID` is optional (the publisher
@@ -156,6 +162,13 @@ gh secret set SOCIAL_TOKEN_KEY --repo johnAzani/docoga --body "$(openssl rand -h
 this particular tap is yours, or run it from the Actions page (button **Run workflow**).
 
 ### T5 — Next morning: three checks
+
+The one thing that will confuse you here: on a **branch** whose copy of a workflow differs from
+`main`'s, Actions files runs with `conclusion=failure` and **no jobs** — nothing executed, nothing
+posted, nothing wrong. `python3 tools/lane_status.py --lane instagram` now says so in words
+("the runner executed none of them … Nothing was posted and nothing failed; merge the file")
+instead of showing you a posting failure that never happened. That sentence is load-bearing: it is
+how this lane was briefly believed broken on 13 Oct 2026, an hour after it was finished.
 
 ```bash
 gh run list --limit 8                    # threads + instagram green?
@@ -198,6 +211,12 @@ additional authenticated data, so a box copied between lanes refuses to open ins
 Threads token to Instagram. `seal` writes atomically and never echoes the value; `open` refuses to
 print to stdout; the tool **exits 6 rather than falling back to plaintext** if `cryptography` is
 missing; and it refuses any path under `site/`, because `site/` is served to the whole internet.
+Threads has **no refresh token to keep**: the long-lived access token is exchanged for a new
+long-lived access token (`grant_type=th_refresh_token`, and the current answer from Meta's API is
+that nothing else comes back), which is why exactly one value is sealed per lane and why there is
+no `THREADS_REFRESH_TOKEN` to set. If Meta ever starts rotating it, the fix is one more
+`--name` on the seal step, not a redesign.
+
 What this does *not* do is protect you from someone who can read Actions secrets — they already
 have the bootstrap token. Its whole job is to make the refresh chain survivable, so that "no
 manual intervention after setup" is a true statement about a Meta lane instead of a promise that

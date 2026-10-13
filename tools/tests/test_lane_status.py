@@ -307,3 +307,108 @@ class Integration(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class UnexecutedRuns(unittest.TestCase):
+    """A run the runner never executed is not a lane outcome.
+
+    These are the runs Actions files when a `push` touches a workflow file whose copy on the
+    default branch differs from the pushed one: `conclusion=failure`, zero jobs, no annotations.
+    Before this class existed, `--lane instagram` printed one of those as the lane's verdict and it
+    read exactly like "the Instagram lane is broken", which is a sentence that has ended more than
+    one automation project.
+    """
+
+    def test_the_newest_executed_run_is_the_one_reported(self):
+        gh = FakeGh({
+            "actions/workflows$": workflows_payload(".github/workflows/instagram_autopost.yml"),
+            "/runs?per_page": runs_payload("failure", "failure", "success"),
+            "/runs/900/jobs": {"jobs": [], "total_count": 0},   # filed, never executed
+            "/runs/901/jobs": {"jobs": [], "total_count": 0},
+            "/jobs": jobs_payload(),
+            "/annotations": ANNOTATIONS,
+        })
+        import io as _io
+        from contextlib import redirect_stdout
+        out = _io.StringIO()
+        with redirect_stdout(out):
+            lane_status.main(["--lane", "instagram"], run=gh)
+        text = out.getvalue()
+        self.assertIn("2 run(s) with no jobs ignored", text,
+                      "both artefacts are counted, so the number the owner reads is the number "
+                      "of runs they can stop worrying about")
+        self.assertIn("Preflight", text, "the run the runner really executed is the diagnosis")
+        self.assertNotIn("3 consecutive", text, "an artefact must not inflate a failure streak")
+
+    def test_the_streak_survives_the_filter(self):
+        """The artefacts go; the pattern they were hiding does not.
+
+        Filtering to the requested `--limit` would leave one run in the history and print no streak
+        on a lane failing five days running, which is the opposite of what this tool is for.
+        """
+        gh = FakeGh({
+            "actions/workflows$": workflows_payload(".github/workflows/instagram_autopost.yml"),
+            "/runs?per_page": runs_payload("failure", "failure", "failure"),
+            "/runs/900/jobs": {"jobs": [], "total_count": 0},
+            "/jobs": jobs_payload(),
+            "/annotations": [],
+        })
+        import io as _io
+        from contextlib import redirect_stdout
+        out = _io.StringIO()
+        with redirect_stdout(out):
+            lane_status.main(["--lane", "instagram", "--limit", "3"], run=gh)
+        text = out.getvalue()
+        self.assertIn("2 consecutive runs with conclusion=failure", text)
+        self.assertIn("1 run(s) with no jobs ignored", text)
+
+    def test_a_lane_that_has_only_ever_been_filed_says_so_and_lies_about_neither(self):
+        gh = FakeGh({
+            "actions/workflows$": workflows_payload(".github/workflows/instagram_autopost.yml"),
+            "/runs?per_page": runs_payload("failure", "failure"),
+            "/jobs": {"jobs": [], "total_count": 0},
+        })
+        import io as _io
+        from contextlib import redirect_stdout
+        out = _io.StringIO()
+        with redirect_stdout(out):
+            code = lane_status.main(["--lane", "instagram"], run=gh)
+        text = out.getvalue()
+        self.assertEqual(code, 2, "neither green nor red: the tool cannot tell you about the lane")
+        self.assertIn("executed none of them", text)
+        self.assertIn("Nothing was posted and nothing failed", text)
+
+    def test_json_carries_the_count_because_a_gate_reads_it(self):
+        gh = FakeGh({
+            "actions/workflows$": workflows_payload(".github/workflows/instagram_autopost.yml"),
+            "/runs?per_page": runs_payload("failure", "success"),
+            "/runs/900/jobs": {"jobs": [], "total_count": 0},
+            "/jobs": jobs_payload(),
+            "/annotations": [],
+        })
+        import io as _io
+        import json as _json
+        from contextlib import redirect_stdout
+        out = _io.StringIO()
+        with redirect_stdout(out):
+            lane_status.main(["--lane", "instagram", "--json"], run=gh)
+        report = _json.loads(out.getvalue())
+        self.assertEqual(report["unexecuted_runs_ignored"], 1)
+
+    def test_a_run_still_in_progress_is_not_mistaken_for_an_artefact(self):
+        """In-progress runs have no jobs *yet*; calling that "never executed" would hide a live
+        run from the one command that exists to answer "did today's post go out?".
+        """
+        gh = FakeGh({
+            "actions/workflows$": workflows_payload(".github/workflows/instagram_autopost.yml"),
+            "/runs?per_page": runs_payload("neutral", status="in_progress"),
+            "/jobs": jobs_payload(),
+            "/annotations": [],
+        })
+        import io as _io
+        from contextlib import redirect_stdout
+        out = _io.StringIO()
+        with redirect_stdout(out):
+            code = lane_status.main(["--lane", "instagram"], run=gh)
+        self.assertNotIn("no jobs ignored", out.getvalue())
+        self.assertIn("in_progress", out.getvalue())

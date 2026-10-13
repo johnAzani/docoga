@@ -346,6 +346,25 @@ class ThreadsPublisher(unittest.TestCase):
         self.assertIn("THREADS_RESULT=dry-run", out)
         self.assertFalse(fake.wrote_anything())
 
+    def test_a_refused_refresh_is_the_callers_severity_not_the_tools(self):
+        """Meta allows one refresh per 24 h, so the morning after setup the answer is "no".
+
+        That is not a red run, and stdout is the pipe into `token_vault.py seal`: a `::error` or a
+        machine line landing in that file would either scare the owner into re-consenting or make
+        the seal parse a sentence as JSON. So the failure is reported on stderr only.
+        """
+        _env, token_path = threads_env(self.tmp)
+        routes = self._routes(extra={"GET /42/refresh_access_token": (400, json.dumps(
+            {"error": {"message": "Cannot refresh a token that is less than 24 hours old",
+                       "code": 100, "type": "OAuthException"}}))})
+        code, out, _fake = self._publish(routes, argv=["--refresh", "--token-file", token_path])
+        self.assertNotEqual(code, 0, "a refused refresh is still a non-zero tool, so the "
+                                    "workflow's `if !` branch runs and prints its warning")
+        self.assertNotIn("::error", out, "the severity belongs to the caller, which chose warning")
+        self.assertIn("24 hours", out, "the reason has to survive into the warning body, which is "
+                                       "the tail of stderr — an empty warning is a worse lie than "
+                                       "a red one")
+
     def test_refresh_hands_json_to_the_caller_and_nothing_else(self):
         routes = self._routes(extra={"GET /42/refresh_access_token": ok(
             {"access_token": "NEWtok", "expires_in": 5184000})})
