@@ -189,7 +189,9 @@ jobs:
 
       # The render is written into the deployed tree on purpose: it is the only ₦0 way to
       # give Meta a URL it can fetch. That also means a failed run can leave an orphan JPEG
-      # under site/social/ — harmless, unreachable, and reclaimed next month.
+      # under site/social/, so the lane bounds its own footprint at the end of a successful run
+      # (see "Prune old renders"): 60 dated renders, and nothing older accumulates in the one
+      # directory the site publishes.
       #
       # Note the *missing* `[skip ci]` on this commit, against the house rule for automated
       # commits: the render has to trigger the site deploy, because the deploy is what makes
@@ -198,6 +200,8 @@ jobs:
       # 15-minute wait for a page that was never going to change.
       - name: Render the card
         if: ${{ !inputs.probe_only && !inputs.dry_run && inputs.content_type != 'reel' }}
+        env:
+          BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           set -o pipefail
           DAY=$(date -u +%F)
@@ -216,7 +220,10 @@ jobs:
             echo "Render already committed on this branch — nothing to push."
           else
             git commit -q -m "Auto: Instagram card ${DAY}"
-            git push origin "HEAD:${{ github.event.repository.default_branch }}" \
+            # `${{ … }}` stays out of the command line: this is the one step that pushes, and a
+            # push destination built from an interpolated expression is where a trust mistake
+            # becomes a write to the wrong ref.
+            git push origin "HEAD:${BRANCH}" \
               || echo "::warning title=Card not pushed::the JPEG exists only in this run, so the URL Instagram will be given is not published yet. If the push failed, the media-liveness wait below will fail with cause=media — which is the honest outcome, not a mystery."
           fi
 
@@ -367,6 +374,36 @@ jobs:
           git commit -q -m "Auto: record Instagram post $(date -u +%F) [skip ci]" || exit 0
           git pull --rebase --autostash origin "$BRANCH" || { echo "::warning title=Instagram ledger not rebased::the post is live but unrecorded, so a re-run could publish it again."; exit 1; }
           git push origin "HEAD:$BRANCH" || echo "::warning title=Instagram ledger not pushed::the post is live, the entry did not reach $BRANCH."
+
+      # Bounded by the lane, not by a monthly intention: `site/social/` is inside the deployed
+      # tree, so an unbounded write there is the repository growing in public forever. The count is
+      # by *filename* on purpose — a checkout stamps every file with today's mtime, which is the
+      # reason a `find -mtime +60` retention step would have looked correct, passed every test,
+      # and never deleted anything. Housekeeping commits `[skip ci]`: nobody is waiting on a
+      # deletion, and the free plan's minutes are not for that.
+      - name: Prune old renders
+        env:
+          BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -o pipefail
+          python3 tools/social_card.py --prune site/social --keep 60 | tee /tmp/ig_prune.log
+          tee -a "$GITHUB_STEP_SUMMARY" < /tmp/ig_prune.log > /dev/null
+          N=$(sed -n 's/^RENDER_PRUNED=\([0-9]*\).*/\1/p' /tmp/ig_prune.log | tail -1)
+          if [ "${N:-0}" -eq 0 ]; then
+            echo "No render past the retention window — nothing to delete."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A site/social
+          if git diff --staged --quiet; then
+            echo "Nothing staged: those files were never committed, so nothing is public to undo."
+            exit 0
+          fi
+          git commit -q -m "Auto: prune Instagram renders $(date -u +%F) [skip ci]"
+          git pull --rebase --autostash origin "$BRANCH" >/dev/null 2>&1 || true
+          git push origin "HEAD:${BRANCH}" \
+            || echo "::warning title=Renders not pruned::gone from this checkout only; the next run tries again"
 
       - name: Open a visible issue if the run failed
         if: failure()

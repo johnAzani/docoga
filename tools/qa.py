@@ -768,6 +768,31 @@ if len(_meta) == len(_meta_paths):
           "THREADS_RESULT=" in _meta["threads workflow"] and "sed -n" in _meta["threads workflow"]
           and "sent|refused-duplicate|dry-run)" in _meta["threads workflow"],
           "a refusal is a success and a silence is not: the case statement is the whole difference")
+    check("meta lanes: the box holds the token, not Meta's response body",
+          "return read_refresh_response(args.json)[0]" in _meta["token vault"]
+          and 'json.dumps({"access_token": token' not in _meta["token vault"]
+          and "unwrapped" in _meta["token vault"],
+          "the publisher sends the file `open --out` writes as its bearer token, so sealing a "
+          "whole JSON response makes day 2 a 401 that reads like a revoked consent — and it is "
+          "invisible to any test that runs one verb at a time, which is why this line is a gate "
+          "and not only a test (the tests skip when cryptography is missing; this cannot)")
+    check("meta lanes: an empty seal is refused, not stored",
+          "refusing to seal an empty token" in _meta["token vault"],
+          "a `$(…) that came back empty` would otherwise win the fallback race against the "
+          "bootstrap secret: the lane would read a valid box containing nothing and file a "
+          "credentials issue instead of a setup one")
+    check("meta lanes: the render directory is bounded, by name not mtime",
+          "--prune site/social --keep 60" in _meta["instagram workflow"]
+          and "DATED_RENDER = re.compile" in _meta["card renderer"]
+          and "keep = max(1, int(keep))" in _meta["card renderer"],
+          "site/social/ is inside the deployed tree, so an unbounded write there is the repository "
+          "growing in public forever — and retention keyed on mtime would look correct and match "
+          "nothing, because a fresh checkout stamps every file with today")
+    check("meta lanes: no ${{ }} reaches a git push destination",
+          'git push origin "HEAD:${{' not in _meta["instagram workflow"]
+          and 'git push origin "HEAD:${{' not in _meta["threads workflow"],
+          "these two lanes hold contents:write and choose their own push destination, which is "
+          "exactly where an interpolated expression turns a slip into a write to the wrong ref")
     check("meta lanes: the runner installs what the vault needs",
           "cryptography" in _meta["threads workflow"]
           and "cryptography" in _meta["instagram workflow"],

@@ -24,6 +24,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 import urllib.parse
 from pathlib import Path
@@ -827,3 +828,174 @@ class LaneRegistration(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
+
+class VaultPipeline(unittest.TestCase):
+    """seal → open → the bytes the next run authenticates with, across real processes.
+
+    Every test in this file before it was written exercised *one verb* in one process, and the
+    vault had a bug that only exists between two of them: `seal --json` stored Meta's whole
+    response body, `open --out` wrote that body into the token file, and the publisher sent it as
+    a bearer token. Day 1 posts (the bootstrap secret is a bare token), day 2 is red with
+    `code 190 Invalid OAuth access token`, forever alternating — invisible to any single-call test
+    and to any in-process test, because nothing in one process has to agree with anything.
+    """
+
+    VAULT = ROOT / "tools" / "token_vault.py"
+
+    @classmethod
+    def setUpClass(cls):
+        if importlib.util.find_spec("cryptography") is None:
+            raise unittest.SkipTest("cryptography is not installed (the lanes pip-install it)")
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp())
+        self.key = "ab" * 32
+        self.box = self.tmp / "logs" / "threads_token.box"
+
+    def _run(self, argv):
+        env = {"PATH": os.environ.get("PATH", "/usr/bin:/bin"), "SOCIAL_TOKEN_KEY": self.key}
+        done = subprocess.run([sys.executable, str(self.VAULT)] + argv, capture_output=True,
+                              text=True, env=env, cwd=str(ROOT), timeout=60,
+                              # A `--stdin` verb with an inherited stdin is a test that
+                              # hangs the suite until CI kills the job.
+                              stdin=subprocess.DEVNULL)
+        return done.returncode, done.stdout, done.stderr
+
+    def test_seal_json_then_open_yields_the_bare_token_and_nothing_else(self):
+        refresh = self.tmp / "refresh.json"
+        refresh.write_text(json.dumps({"access_token": "AAA-fresh-token",
+                                       "token_type": "bearer", "expires_in": 5184000}),
+                           encoding="utf-8")
+        code, out, err = self._run(["seal", "--name", "THREADS_TOKEN", "--json", str(refresh),
+                                    "--in", str(self.box)])
+        self.assertEqual(code, 0, out + err)
+        self.assertNotIn("refresh token was dropped", err, "nothing was dropped from this response")
+
+        token_file = self.tmp / "next_run_token"
+        code, out, err = self._run(["open", "--name", "THREADS_TOKEN", "--in", str(self.box),
+                                    "--out", str(token_file)])
+        self.assertEqual(code, 0, out + err)
+        raw = token_file.read_text(encoding="utf-8")
+        self.assertEqual(raw, "AAA-fresh-token",
+                         "this exact string is what the lane sends as its bearer token")
+        self.assertNotIn("{", raw, "a JSON body here is a 401 on the next run, not a style "
+                                   "preference")
+        self.assertNotIn("AAA-fresh-token", out + err, "opening a vault must not print the token")
+
+    def test_the_expiry_reaches_the_summary_from_a_json_seal(self):
+        """Without this the lane says nothing about the 60-day clock it is supposed to be winding."""
+        refresh = self.tmp / "refresh.json"
+        refresh.write_text(json.dumps({"access_token": "AAA", "expires_in": 5184000}),
+                           encoding="utf-8")
+        self._run(["seal", "--name", "THREADS_TOKEN", "--json", str(refresh), "--in", str(self.box)])
+        code, out, _err = self._run(["status", "--name", "THREADS_TOKEN", "--in", str(self.box)])
+        self.assertEqual(code, 0, out)
+        self.assertIn("TOKEN_EXPIRES_IN_DAYS=59", out, "60 days minus the day it was sealed")
+
+    def test_a_box_sealed_as_a_json_body_still_opens(self):
+        """Tolerance for the shape the previous version wrote, so a lane self-heals."""
+        import token_vault
+        legacy_box = self.tmp / "legacy.box"
+        with mock.patch.dict(os.environ, {"SOCIAL_TOKEN_KEY": self.key}):
+            token_vault.seal("THREADS_TOKEN", json.dumps({"access_token": "LEGACY-token",
+                                                          "refresh_token": None,
+                                                          "expires_in": 5184000}),
+                             path=str(legacy_box), out=io.StringIO())
+        token_file = self.tmp / "tok"
+        code, _out, err = self._run(["open", "--name", "THREADS_TOKEN", "--in", str(legacy_box),
+                                     "--out", str(token_file)])
+        self.assertEqual(code, 0, err)
+        self.assertEqual(token_file.read_text(encoding="utf-8"), "LEGACY-token")
+        self.assertIn("unwrapped", err, "and it says what it did, rather than silently patching "
+                                        "over a box nobody will ever re-seal")
+
+    def test_a_dropped_refresh_token_is_announced(self):
+        refresh = self.tmp / "refresh.json"
+        refresh.write_text(json.dumps({"access_token": "AAA", "refresh_token": "RRR",
+                                       "expires_in": 5184000}), encoding="utf-8")
+        code, _out, err = self._run(["seal", "--name", "THREADS_TOKEN", "--json", str(refresh),
+                                     "--in", str(self.box)])
+        self.assertEqual(code, 0, err)
+        self.assertIn("refresh token was dropped", err, "the vault keeps one secret on purpose; "
+                                                         "if the platform ever needs two, that has "
+                                                         "to be a message and not a 401")
+
+    def test_an_empty_stdin_is_refused_rather_than_sealed(self):
+        """A `$(…)` that came back empty used to become a perfectly valid box of nothing."""
+        code, _out, err = self._run(["seal", "--name", "THREADS_TOKEN", "--stdin",
+                                     "--in", str(self.box)])
+        self.assertEqual(code, 5, err)
+        self.assertIn("empty", err)
+        self.assertFalse(self.box.exists(), "a box of nothing is worse than no box: it wins the "
+                                            "fallback race against the bootstrap secret")
+
+
+class RenderRetention(unittest.TestCase):
+    """`site/social/` is inside the deployed tree, so the lane has to bound it.
+
+    The interesting property is not "old files go" — it is that *old* is decided by filename,
+    because a CI checkout gives every file today's mtime and a `find -mtime` step would pass every
+    test here and never delete anything on a runner.
+    """
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp())
+
+    def _make(self, *names):
+        for name in names:
+            (self.tmp / name).write_bytes(jpeg_bytes())
+        return self.tmp
+
+    def test_the_newest_by_name_survive_and_the_rest_go(self):
+        d = self._make(*["2026-09-%02d-instagram.jpg" % day for day in range(1, 12)],
+                       "2026-10-01-instagram.jpg", "2026-10-02-instagram.jpg")
+        deleted, kept = social_card.prune(d, keep=3)
+        self.assertEqual(sorted(kept), ["2026-09-11-instagram.jpg", "2026-10-01-instagram.jpg",
+                                        "2026-10-02-instagram.jpg"])
+        # Thirteen dated renders in, three kept, so ten gone. The `kept` names above and this
+        # count are the same fact stated twice, which is the only reason a wrong expectation on
+        # either end gets caught rather than agreed with.
+        self.assertEqual(len(deleted), 10)
+        self.assertFalse((d / "2026-09-01-instagram.jpg").exists())
+
+    def test_a_checkout_that_resets_every_mtime_does_not_fool_it(self):
+        """The whole reason this is not `find -mtime +60`."""
+        d = self._make(*["2020-01-%02d-instagram.jpg" % day for day in range(1, 6)])
+        now = time.time()
+        for path in d.iterdir():
+            os.utime(path, (now, now))          # what `actions/checkout` effectively does
+        deleted, kept = social_card.prune(d, keep=2)
+        self.assertEqual(len(deleted), 3, "the dates are 2020; a mtime rule would keep all five")
+        self.assertEqual(len(kept), 2)
+
+    def test_files_the_lane_did_not_name_are_left_alone(self):
+        d = self._make(*["2026-09-%02d-instagram.jpg" % day for day in range(1, 6)])
+        (d / "brand-mark.jpg").write_bytes(jpeg_bytes())
+        (d / "2026-09-30-threads.jpg").write_bytes(jpeg_bytes())
+        deleted, _kept = social_card.prune(d, keep=1)
+        self.assertNotIn("brand-mark.jpg", deleted)
+        self.assertNotIn("2026-09-30-threads.jpg", deleted,
+                         "another lane's render is not this lane's to delete")
+        self.assertTrue((d / "brand-mark.jpg").exists())
+
+    def test_todays_own_card_cannot_be_pruned(self):
+        """`keep` is floored at 1: pruning the file about to be handed to Meta is a 404 that
+        reads like a permissions problem."""
+        d = self._make("2026-10-13-instagram.jpg")
+        deleted, kept = social_card.prune(d, keep=0)
+        self.assertEqual(deleted, [])
+        self.assertEqual(len(kept), 1)
+
+    def test_the_lanes_step_runs_the_pruner_and_skips_ci_for_housekeeping(self):
+        text = (ROOT / ".github/workflows/instagram_autopost.yml").read_text(encoding="utf-8")
+        self.assertIn("python3 tools/social_card.py --prune site/social --keep 60", text)
+        head = text.split("Auto: prune Instagram renders", 1)
+        self.assertEqual(len(head), 2, "the prune commit has to say what it is")
+        self.assertIn("[skip ci]", head[1][:60], "a deletion nobody is waiting for must not spend "
+                                                 "a site deploy")
+        self.assertLess(text.index("- name: Prune old renders"),
+                        text.index("- name: Open a visible issue"),
+                        "pruning is housekeeping on a good day: it must not run before the "
+                        "publish it is cleaning up after, or a failed publish loses the file that "
+                        "would have explained it")

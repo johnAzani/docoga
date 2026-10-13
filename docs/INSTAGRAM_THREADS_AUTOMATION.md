@@ -73,7 +73,7 @@ and "posting daily".
 | piece | what it does |
 |---|---|
 | `.github/workflows/threads_autopost.yml` | 08:45 UTC daily. preflight → ledger → **read the profile for the exact wording** → publish → wind the token → record → commit. `dry_run` / `probe_only` / `force` / `text` on dispatch. |
-| `.github/workflows/instagram_autopost.yml` | 09:00 UTC daily. preflight → caption → render card → **commit it to `site/social/`** → ledger → wait for the URL to be public → container → publish → read back → record → wind the token. |
+| `.github/workflows/instagram_autopost.yml` | 09:00 UTC daily. preflight → caption → render card → **commit it to `site/social/`** → ledger → wait for the URL to be public → container → publish → read back → record → wind the token → prune. The prune keeps 60 dated renders, by **filename**: `site/social/` is inside the deployed tree, and retention keyed on mtime would never fire, because a fresh checkout stamps every file with today. |
 | `scripts/generate_threads_content.py` | today's post, de-escaped, fitted to 500 **bytes-weighted** characters, ≤5 links, deterministic for the day. It writes `assets/threads/threads_content_latest.json` and **that file's `text` field is what gets published**; `--print` is a human preview with a frame and trim notes around the same text, so its byte count is not the number the API judges (730 bytes of preview box around a 271-byte post — measured 13 Oct, and it will look like an over-length bug if you read the wrong output). |
 | `tools/threads_publish.py` | stdlib-only Threads publisher. `--probe`, `--dry-run`, `--refresh`, exit code per cause. |
 | `tools/ig_publish.py` | Instagram publisher, rewritten: an exit code for every outcome, a JPEG header gate, `--wait-url` for the deploy race, redaction before any print. |
@@ -216,6 +216,16 @@ long-lived access token (`grant_type=th_refresh_token`, and the current answer f
 that nothing else comes back), which is why exactly one value is sealed per lane and why there is
 no `THREADS_REFRESH_TOKEN` to set. If Meta ever starts rotating it, the fix is one more
 `--name` on the seal step, not a redesign.
+
+**The box holds exactly one secret: the bare access token.** Not Meta's response body —
+`open --out` writes the box's contents into the file the publisher sends as its bearer token, so a
+JSON envelope in the box is an `Invalid OAuth access token` on the *second* run and a green first
+one (the bootstrap secret is a bare token). That was the shape until 13 Oct 2026, it passed every
+single-verb test in the repo, and it is now pinned twice: cross-process in
+`tools/tests/test_meta_lanes.py::VaultPipeline`, and in `tools/qa.py` so it stays pinned on a
+machine where those tests skip for want of `cryptography`. `expires_in` becomes an `expires_at`
+*beside* the ciphertext — metadata next to the box is not encrypted, which is also why a second
+secret would get its own box rather than a second key in this one.
 
 What this does *not* do is protect you from someone who can read Actions secrets — they already
 have the bootstrap token. Its whole job is to make the refresh chain survivable, so that "no

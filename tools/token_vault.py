@@ -59,7 +59,7 @@ import binascii
 import json
 import os
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -203,21 +203,46 @@ def status(name, path=None, out=sys.stdout):
     return 0
 
 
+def read_refresh_response(path):
+    """`(access_token, expires_at, saw_a_refresh_token)` from a Meta refresh response.
+
+    The box holds **one** secret: the bare access token. Threads and Instagram both roll the
+    access token itself (`grant_type=th_refresh_token` / `ig_refresh_token` exchange a long-lived
+    token for a new long-lived token), so nothing else needs keeping — and the metadata that
+    travels *beside* the ciphertext in the box file is not encrypted, so a second secret belongs in
+    a box of its own, never there.
+    """
+    blob = json.loads(Path(path).read_text(encoding="utf-8"))
+    token = blob.get("access_token") or blob.get("token")
+    if not token:
+        raise SystemExit(_fail("%s has no access_token key — refusing to seal a value no reader "
+                               "will accept" % path, 5))
+    expires_at = None
+    if blob.get("expires_in"):
+        expires_at = (datetime.now(timezone.utc)
+                      + timedelta(seconds=int(blob["expires_in"]))).isoformat(timespec="seconds")
+    return str(token), expires_at, bool(blob.get("refresh_token"))
+
+
 def _read_plaintext(args):
+    """The exact bytes the next run will authenticate with — see the note in main().
+
+    `open --out` writes whatever this returns into the file the lane passes to `--token-file`,
+    and the publisher sends that file's contents as its bearer token. Which is why sealing
+    Meta's whole JSON response is fatal rather than untidy: it worked here on day 1 (the
+    bootstrap secret is a bare token) and every day after that would have authenticated with
+    `{"access_token": "AAA", "refresh_token": null, …}` and been answered `code 190 Invalid
+    OAuth access token`. Pinned cross-process by
+    tools/tests/test_meta_lanes.py::VaultPipeline, because every in-process test of one verb at a
+    time was green while the lane was dead.
+    """
     if args.stdin:
-        return sys.stdin.read().strip()
+        value = sys.stdin.read().strip()
+        if not value:
+            raise SystemExit(_fail("stdin was empty — refusing to seal an empty token", 5))
+        return value
     if args.json:
-        blob = json.loads(Path(args.json).read_text(encoding="utf-8"))
-        token = blob.get("access_token") or blob.get("token")
-        if not token:
-            raise SystemExit(_fail("%s has no access_token key" % args.json, 5))
-        # Meta's refresh responses carry expires_in (seconds) but not an absolute date,
-        # and the *refresh token* is single-use. Store both, in one box, so a lane that
-        # writes the access token and loses the refresh token has written a time bomb.
-        body = json.dumps({"access_token": token,
-                           "refresh_token": blob.get("refresh_token"),
-                           "expires_in": blob.get("expires_in")})
-        return body
+        return read_refresh_response(args.json)[0]
     raise SystemExit(_fail("seal needs --stdin or --json", 5))
 
 
@@ -237,14 +262,24 @@ def main(argv=None):
 
     if args.verb == "seal":
         expires = args.expires_at
-        plaintext = _read_plaintext(args)
-        if not expires and args.json:
-            blob = json.loads(Path(args.json).read_text(encoding="utf-8"))
-            if blob.get("expires_in"):
-                from datetime import timedelta
-                expires = (datetime.now(timezone.utc)
-                           + timedelta(seconds=int(blob["expires_in"]))).isoformat(timespec="seconds")
-        return seal(args.name, plaintext, expires_at=expires, path=args.path)
+        dropped_refresh = False
+        if args.json:
+            plaintext, derived, dropped_refresh = read_refresh_response(args.json)
+            if not expires:
+                expires = derived
+        else:
+            plaintext = _read_plaintext(args)
+        rc = seal(args.name, plaintext, expires_at=expires, path=args.path)
+        if rc == 0 and dropped_refresh:
+            # Loud, because the day Meta starts rotating refresh tokens is the day this lane
+            # starts dying again — and "we chose not to store it" is not something to discover
+            # from a 401 sixty days later.
+            print("::warning title=a refresh token was dropped::the response carried "
+                  "`refresh_token`, which this vault does not store (Threads and Instagram roll "
+                  "the access token, so there is normally nothing to keep). If Meta has changed "
+                  "shape, the fix is one more box: seal --name <LANE>_REFRESH_TOKEN.",
+                  file=sys.stderr)
+        return rc
 
     # open
     try:
@@ -260,6 +295,18 @@ def main(argv=None):
                      "damaged. The lane will fall back to the bootstrap secret." % (args.name, exc), 4)
     if not args.out:
         return _fail("open needs --out: a token is not something to print into a run log", 5)
+    # A box sealed by the version above that stored the whole JSON response still has to open:
+    # unwrapping three lines here beats a lane that dies on whichever commit happened to seal it.
+    stripped = (plaintext or "").strip()
+    if stripped.startswith("{") and '"access_token"' in stripped:
+        try:
+            inner = json.loads(stripped).get("access_token")
+        except ValueError:
+            inner = None
+        if inner:
+            print("token_vault: note — the box held a JSON response, not a token; unwrapped it. "
+                  "Re-seal once so the next run reads a plain value.", file=sys.stderr)
+            plaintext = str(inner)
     target = Path(args.out)
     target.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     fd = os.open(str(target), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)

@@ -241,12 +241,50 @@ def _encode(image, quality):
     return buffer.getvalue()
 
 
+DATED_RENDER = re.compile(r"^\d{4}-\d{2}-\d{2}-instagram\.jpg$")
+
+
+def prune(directory, keep=60):
+    """Delete every dated render but the newest `keep`. Returns (deleted, kept).
+
+    Two details are the whole design:
+
+    * **mtime is useless here.** A CI checkout stamps every file with *today*, so the obvious
+      `find -mtime +60` matches nothing forever and `site/social/` grows one JPEG a day without
+      limit in the one directory the deploy publishes. The lane names its renders
+      `YYYY-MM-DD-instagram.jpg`, and the name is the only clock that survives a re-clone.
+    * **only its own files.** Anything else in that directory — a hand-added image, a future
+      lane's naming — is not this step's to delete, so the pattern is exact rather than a prefix.
+
+    `keep` is floored at 1 because a run that pruned today's own card would hand Instagram a URL
+    that 404s, and that failure reads as a permissions problem.
+    """
+    keep = max(1, int(keep))
+    directory = Path(directory)
+    if not directory.is_dir():
+        return [], []
+    dated = sorted(p for p in directory.iterdir() if DATED_RENDER.match(p.name))
+    if len(dated) <= keep:
+        # Nothing past the window. Written as an early return rather than a slice expression:
+        # `dated[:-0]` is `dated[0:]`, i.e. *everything*, which is the opposite of a retention
+        # rule — a `…, … if … else …` one-liner here did exactly that on its first draft.
+        return [], dated
+    split = len(dated) - keep
+    doomed, kept = dated[:split], dated[split:]
+    for path in doomed:
+        path.unlink()
+    return [p.name for p in doomed], [p.name for p in kept]
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Render a brand card for a URL-only API")
     parser.add_argument("--text", help="the copy to draw")
     parser.add_argument("--from-json", dest="from_json", help="read .text from a content JSON")
     parser.add_argument("--kicker", default="", help="small caps line above the rule")
-    parser.add_argument("--out", required=True, help="where to write the JPEG")
+    parser.add_argument("--out", help="where to write the JPEG")
+    parser.add_argument("--prune", metavar="DIR",
+                        help="delete every dated render in DIR but the newest --keep, then exit")
+    parser.add_argument("--keep", type=int, default=60, help="how many dated renders to keep")
     parser.add_argument("--base-url", default=os.environ.get("SITE_BASE_URL", "https://docoga.com.ng"),
                         help="public origin the file will be served from")
     parser.add_argument("--quality", type=int, default=88)
@@ -254,6 +292,15 @@ def main(argv=None):
     parser.add_argument("--no-footer", action="store_true")
     parser.add_argument("--print", dest="show", action="store_true")
     args = parser.parse_args(argv if argv is not None else sys.argv[1:])
+
+    if args.prune:
+        deleted, kept = prune(args.prune, keep=args.keep)
+        for name in deleted:
+            print("pruned %s" % name)
+        print("RENDER_PRUNED=%d RENDER_KEPT=%d" % (len(deleted), len(kept)))
+        return 0
+    if not args.out:
+        parser.error("--out is required unless --prune is doing the work")
 
     text = args.text or ""
     if args.from_json:
