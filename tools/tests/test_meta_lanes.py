@@ -529,6 +529,38 @@ class CardRenderer(unittest.TestCase):
         self.assertNotIn("\U0001f3db", drawn)
         self.assertIn("Stamp Duty", drawn)
 
+    def test_the_machine_line_the_lane_seds_is_the_one_the_renderer_prints(self):
+        """`CARD_URL=` is a contract between two files, and neither end had a test.
+
+        That is the same gap that cost the *second day* of this lane: `token_vault seal` and
+        `token_vault open` were each verified alone, and the bug lived in the bytes between them.
+        A rename on either side here would leave the lane with an empty media URL, and Instagram's
+        answer to that is a sentence about unsupported URLs, so it reads as a platform problem.
+        """
+        workflow = (ROOT / ".github/workflows/instagram_autopost.yml").read_text(encoding="utf-8")
+        self.assertIn("sed -n 's/^CARD_URL=//p' /tmp/ig_render.log | tail -1", workflow,
+                      "the lane reads the line by exact text, so the exact text is what is pinned")
+
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            code = social_card.main(["--text", "Rent is due on the first.",
+                                     "--out", str(Path(self.tmp) / "card.jpg")])
+        self.assertEqual(code, 0)
+        printed = {}
+        for line in out.getvalue().splitlines():
+            if "=" in line and not line.startswith(("·", "✅")):
+                key, value = line.split("=", 1)
+                printed[key.strip()] = value.strip()
+        self.assertIn("CARD_URL", printed, "the machine-readable line is the interface; "
+                                           "print(text) is not")
+        self.assertTrue(printed["CARD_URL"].startswith("https://docoga.com.ng/"),
+                        printed["CARD_URL"])
+        self.assertTrue(printed["CARD_URL"].endswith("/card.jpg"), printed["CARD_URL"])
+        self.assertNotIn("/site/", printed["CARD_URL"],
+                         "`site/` is the repo directory, not part of the served path")
+        self.assertIn("CARD_BYTES", printed, "the size the lane reports is the size Instagram "
+                                             "checks against its 8 MB cap")
+
     def test_hashtags_are_furniture_for_the_caption_not_the_card(self):
         dropped = social_card._drop_hashtags("Rent is due on the first.\n\n#DocOga #Nigeria")
         self.assertNotIn("#DocOga", dropped)
