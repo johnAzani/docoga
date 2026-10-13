@@ -521,6 +521,16 @@ class CardRenderer(unittest.TestCase):
         self.assertEqual(ig.jpeg_spec(b"GIF89a" + b"\x00" * 100), (None, None, "not-jpeg"))
 
 
+def jpeg_bytes(width=1080, height=1350):
+    """A media file Instagram's rules can be checked against, with no file and no network.
+
+    SOI + JFIF + SOF0 carrying the dimensions, which is all `jpeg_spec` reads.
+    """
+    return (b"\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x00\x00\x01\x00\x01\x00\x00"
+            b"\xff\xc0\x00\x11\x08" + height.to_bytes(2, "big") + width.to_bytes(2, "big")
+            + b"\x03\x01\x11\x00\x02\x11\x01\x03\x11\x01")
+
+
 class InstagramPublisher(unittest.TestCase):
     CAPTION = "Stamp duty in Lagos is 0.78% of the rent, a government tax."
 
@@ -528,6 +538,25 @@ class InstagramPublisher(unittest.TestCase):
         self.tmp = tempfile.mkdtemp()
         self.env = {"IG_ACCESS_TOKEN": "IGTOKabc123", "IG_USER_ID": "1784",
                     "IG_API_PATH": "instagram-login"}
+        # `media_spec_ok` reads the media with plain urllib, so faking `http` does NOT cover it.
+        # That gap cost a day: this sandbox cannot resolve docoga.com.ng, so a test that reached
+        # for the real URL passed here and failed on a runner that can — where the real 404 made
+        # the lane refuse before publishing. The default now raises instead: forgetting the seam
+        # fails in every environment, which is the only kind of test worth having.
+        patcher = mock.patch.object(ig, "raw_head", side_effect=AssertionError(
+            "a test asked the internet for a media file: call self.public_media() first"))
+        # `.start()` returns the mock; `patch.object(...)` returns the *patcher*, and a patcher
+        # happily accepts `patcher.side_effect = None` without touching the mock — which is how
+        # this file managed to configure a stub that was never in effect.
+        self.head = patcher.start()
+        self.addCleanup(patcher.stop)
+        self.public_media()
+
+    def public_media(self, width=1080, height=1350, status=200):
+        """What the media server says about the card, injected rather than fetched."""
+        body = jpeg_bytes(width, height)
+        self.head.side_effect = None
+        self.head.return_value = (status, {"Content-Length": str(len(body))}, body)
 
     def _base_routes(self, extra=None):
         routes = {
@@ -573,15 +602,15 @@ class InstagramPublisher(unittest.TestCase):
         self.assertIn("IG_CAUSE=permission", out)
 
     def test_media_rejected_before_the_container_exists(self):
-        # The media gate is what is being tested, so it is stubbed to refuse; everything down-
-        # stream of it (including the fake HTTP) is the *real* code.
-        with mock.patch.object(ig, "media_spec_ok",
-                               lambda url, allow=False: (False, "1080x2400 is 0.450:1")):
-            code, out, fake = self._publish(self._base_routes(),
-                                            ["--image-url", "https://x/y.jpg",
-                                             "--caption", self.CAPTION])
-        self.assertEqual(code, 5)
+        # The *file* is what is wrong here, so the fake says "a 1080x2400 JPEG" and the real
+        # media_spec_ok does the judging. Stubbing the judgement would only test the stub.
+        self.public_media(width=1080, height=2400)
+        code, out, fake = self._publish(self._base_routes(),
+                                       ["--image-url", "https://x/y.jpg",
+                                        "--caption", self.CAPTION])
+        self.assertEqual(code, 5, out)
         self.assertIn("media", out)
+        self.assertIn("0.450:1", out, "the refusal should quote the ratio a human can verify")
         self.assertFalse(fake.wrote_anything(),
                          "the API must never see a URL we already know is bad; Meta's answer to "
                          "a bad media URL is a sentence about permissions")
@@ -614,6 +643,21 @@ class InstagramPublisher(unittest.TestCase):
                                             "current token into the run log")
         self.assertNotIn("New token: NEwTOKENvalue", out)
         self.assertIn("fingerprint", out)
+
+    def test_a_url_that_404s_is_media_and_not_permissions(self):
+        """Meta says "Unsupported URL request"; a 404 is a file *we* did not deploy.
+
+        Reading a missing file as a scope problem is how this lane got abandoned once, so the
+        cause has to survive from media_spec_ok all the way to the run summary.
+        """
+        self.public_media(status=404)
+        code, out, fake = self._publish(self._base_routes(),
+                                       ["--image-url", "https://docoga.com.ng/social/x.jpg",
+                                        "--caption", self.CAPTION])
+        self.assertEqual(code, 5, out)
+        self.assertIn("IG_CAUSE=media", out)
+        self.assertNotIn("permission", out.lower(), "a 404 must not be dressed up as a scope problem")
+        self.assertFalse(fake.wrote_anything())
 
     def test_the_url_is_waited_for_because_git_is_ahead_of_the_web(self):
         statuses = iter([404, 404, 200])

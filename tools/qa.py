@@ -768,6 +768,12 @@ if len(_meta) == len(_meta_paths):
           "THREADS_RESULT=" in _meta["threads workflow"] and "sed -n" in _meta["threads workflow"]
           and "sent|refused-duplicate|dry-run)" in _meta["threads workflow"],
           "a refusal is a success and a silence is not: the case statement is the whole difference")
+    check("meta lanes: the runner installs what the vault needs",
+          "cryptography" in _meta["threads workflow"]
+          and "cryptography" in _meta["instagram workflow"],
+          "tools/token_vault.py refuses to run without it rather than storing plaintext, which is "
+          "right — but a lane that forgets the dependency then skips the refresh in silence and "
+          "dies at day 60 while passing every day before that")
 
     # Every `run:` block in every workflow must be valid bash. A stray `done` where `fi` belongs
     # and an input interpolated into `[ -n "${{ inputs.x }}" ]` are both mechanical errors, and

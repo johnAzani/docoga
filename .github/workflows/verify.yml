@@ -43,10 +43,32 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq fonts-dejavu-core
           # PyYAML is for the workflow contract tests (tools/tests/test_workflow_contract.py).
-          python -m pip install requests 'Pillow>=10,<13' 'PyYAML>=6,<7'
+          # Pillow draws the social card, and cryptography is what makes tools/token_vault.py's
+          # tests run here at all — without it they `skipUnless` away, and the code that keeps the
+          # Meta tokens alive would be tested on no machine but a laptop.
+          python -m pip install requests 'Pillow>=10,<13' 'PyYAML>=6,<7' 'cryptography>=41'
 
       - name: YouTube automation regression tests
         run: python3 -m unittest discover -s tools/tests -p 'test_*.py' -v
+
+      # Only on a red suite. This repo's own disease is "a red tick and no explanation", and the
+      # runner's log bytes live on a host a sandbox (or a locked-down network) often cannot reach,
+      # so a failing job used to be unreadable from anywhere but a browser. Naming the tests as
+      # annotations costs 10 seconds on a run that is already broken and makes `gh api
+      # .../check-runs/<id>/annotations` the whole diagnosis — the same trick
+      # tools/lane_status.py uses for the posting lanes.
+      - name: Name the failing tests
+        if: failure()
+        run: |
+          set +e
+          log="$(mktemp)"
+          python3 -m unittest discover -s tools/tests -p 'test_*.py' >"$log" 2>&1
+          echo "$log" > /tmp/qa_log_path
+          grep -E '^(FAIL|ERROR): ' "$log" | sed 's/ (.*//' | sort -u | head -12 \
+            | while IFS= read -r broken; do echo "::error::failing test: ${broken}"; done
+          summary="$(grep -E '^(Ran [0-9]+ tests|FAILED|OK)' "$log" | tr '\n' ' ')"
+          echo "::error::suite summary: ${summary}"
+          exit 0
 
       - name: Repo integrity (pre_push_verify.sh)
         run: bash tools/pre_push_verify.sh
