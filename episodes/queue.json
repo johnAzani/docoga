@@ -1,4 +1,7 @@
 {
   "_comment": "Episodes the nightly Deep-Dive tick works through, in order. An episode leaves the queue when its YouTube title appears in logs/youtube_longform.json. Add the next id here when its episodes/<id>/ folder is ready.",
-  "queue": ["dd2"]
+  "queue": [
+    "dd2",
+    "dd3"
+  ]
 }

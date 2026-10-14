@@ -554,14 +554,25 @@ Documented in `docs/GROWTH_JOURNAL.md`. Key milestones:
   Vosk sync, nine-scene parallel render, banked on release `deepdive-<id>`, publishes unlisted.
   `GEMINI_API_KEY` added by the owner 14 Oct. Nightly tick 03:00 WAT works `episodes/queue.json`;
   quota = green pause; music + SFX synthesized by `tools/soundkit.py`. Runbook `docs/LONGFORM_AUTOMATION.md`.
-  **DD2 published 14 Oct 2026** → https://www.youtube.com/watch?v=n45ufAFv5OM (unlisted; owner: "fantastic" but no
-  audible music → bed re-voiced A3–A4 + A-weighted levels 16/8 dB(A); re-master + force-publish, delete old copy).
+  **DD2 published 14 Oct 2026** → re-mastered copy https://www.youtube.com/watch?v=pl5Z8ueg1ZI (public; owner:
+  "everything is perfect"; old n45ufAFv5OM to be deleted by the owner). Bed 15 dB(A) under the voice is the reference.
+  **DD3 queued 14 Oct 2026** — `episodes/dd3/` *The Rent Receipt* (45 beats, 1,368 words ≈ 9:18; Lagos Tenancy
+  Law 2011 s.5 cited for Lagos only). `episodes/queue.json` = `["dd2","dd3"]`, so the 03:00 WAT tick produces and
+  publishes it unlisted; the owner's only job is to watch and tap Public. New plates: `calendar`, `phone`.
+  **Shorts ↔ Deep-Dives (14 Oct 2026, from the first stats snapshot):** every rotation topic in
+  `scripts/generate_short_video.py` carries `parent` (`dd3`, `dd2` or `yt:<legacy id>`); `tools/deepdive_links.py`
+  resolves it through `logs/youtube_longform.json` and the Short's description leads with the watch link
+  (pinned-comment text is printed in the run summary — the uploader token lacks `youtube.force-ssl`). Hooks are
+  STAKES two-beat lines ("Pay without a receipt. Pay twice.") — 108 views vs 2–16 for question hooks; pinned by
+  `tools/tests/test_shorts_parent_links.py`.
   **YouTube numbers:** `tools/yt_stats.py` weekly (Mon 06:00 WAT) → `docs/YOUTUBE_PERFORMANCE.md` — read it before
   choosing hooks/episodes. Analytics-API depth needs `yt-analytics.readonly` on the token (optional owner step).
   🔒 **VOICE LOCKED (owner, 14 Oct 2026):** Gemini Orus + "Narrate this in a natural Nigerian English accent,
   like a confident Lagos radio presenter:" — defined once in `tools/deepdive.py`, fingerprint `697e3233c630…`,
   pinned by tests + qa.py. Never change it; revert whatever breaks the check.
 - `episodes/dd2/` — Caution Fee: The Refund War (51 beats, 1,462 words ≈ 10 min) — first episode on the lane
+- `episodes/dd3/` — The Rent Receipt (45 beats, 1,368 words ≈ 9:18) — queued; the Tenancy Agreement long-form
+  already exists on the channel (08wCJ0EmTkU), so it was skipped as the lane's DD3
 - `docs/dd1/` — 66 Years of Tenancy Law (48 slides)
 - `docs/dd2/` — Caution Fee (47 beats, legacy)
 - `docs/dd3/` — Tenancy Agreement (49 beats)

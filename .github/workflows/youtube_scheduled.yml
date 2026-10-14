@@ -316,6 +316,8 @@ jobs:
           UPLOAD_STATE: ${{ steps.upload.outputs.upload_state }}
           NOTE: ${{ steps.upload.outputs.note }}
           SKIP: ${{ steps.guard.outputs.skip }}
+          PARENT_URL: ${{ steps.short.outputs.parent_url }}
+          PINNED_COMMENT: ${{ steps.short.outputs.pinned_comment }}
         run: |
           RUN_DATE="${RUN_DATE:-$(date +%F)}"
           {
@@ -345,6 +347,17 @@ jobs:
             fi
             echo "| Ledger | \`logs/youtube_published.json\` |"
             echo "| Diagnosis | dispatch this workflow with \`probe_only=true\` to re-check credentials without uploading |"
+            if [ -n "$PARENT_URL" ]; then
+              echo "| Parent Deep-Dive | $PARENT_URL (linked in the description) |"
+              echo
+              echo "**Pin this comment from the YouTube app** (the uploader token cannot post comments):"
+              echo
+              echo '```'
+              echo "$PINNED_COMMENT"
+              echo '```'
+            else
+              echo "| Parent Deep-Dive | not published yet — the link appears automatically once the Deep-Dive lane uploads it |"
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
 
       # A red run in a repo nobody opens is the same as silence. This makes the

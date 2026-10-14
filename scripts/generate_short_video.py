@@ -81,33 +81,44 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 # ===== FACT-SAFE CONTENT SCRIPTS =====
 # These are practical record-keeping prompts, not legal conclusions. Every Short
 # ends with a reminder that rules vary by state and agreement.
+# Hook law (data, 14 Oct 2026 — docs/YOUTUBE_PERFORMANCE.md): the STAKES pattern
+# "Do the careless thing. Suffer the consequence." took 108 views on its first
+# outing ("Change the lock. Become the defendant."); every QUESTION hook on the
+# channel sits at 2–16. So the opening slide of every rotation topic is a
+# two-beat consequence line — imperative, no question mark — and the title is
+# that same line, because the title is what the Shorts feed shows under the
+# frame. `parent` names the Deep-Dive each Short trails (tools/deepdive_links.py
+# turns it into the watch link in the description).
 VIDEO_SCRIPTS = [
     {
-        "title": "Keep a Rent Paper Trail",
+        "title": "Pay without a receipt. Pay twice.",
+        "parent": "dd3",
         "slides": [
-            {"bg": NAVY, "text": "KEEP A PAPER TRAIL", "sub": "for every rent payment", "color": SKY_BLUE, "duration": 3},
-            {"bg": DARK, "text": "SAVE YOUR RECEIPT", "sub": "after each payment", "color": WHITE, "duration": 4},
+            {"bg": NAVY, "text": "PAY WITHOUT A RECEIPT.\nPAY TWICE.", "sub": "cash leaves no trail — paper does", "color": SKY_BLUE, "duration": 3},
+            {"bg": DARK, "text": "TAKE THE RECEIPT", "sub": "on the day — not \"later\"", "color": WHITE, "duration": 4},
             {"bg": DARK, "text": "KEEP THE TRANSFER RECORD", "sub": "date · amount · reference", "color": YELLOW, "duration": 4},
-            {"bg": DARK, "text": "SAVE YOUR AGREEMENT", "sub": "and messages about changes", "color": SKY_BLUE, "duration": 4},
-            {"bg": BRAND_BLUE, "text": "ONE FOLDER. EASY TO FIND.", "sub": "Keep copies somewhere safe", "color": WHITE, "duration": 4},
+            {"bg": DARK, "text": "SAY WHAT IT WAS FOR", "sub": "\"rent, flat 4, Jan to Dec\" — keep the reply", "color": SKY_BLUE, "duration": 4},
+            {"bg": BRAND_BLUE, "text": "ONE FOLDER. TWO PLACES.", "sub": "phone plus cloud — proof survives", "color": WHITE, "duration": 4},
             {"bg": NAVY, "text": "GENERAL INFO ONLY", "sub": "Rules vary by state and agreement", "color": YELLOW, "duration": 4},
         ],
     },
     {
-        "title": "Before You Pay an Agent",
+        "title": "Pay the wrong agent. Lose the flat.",
+        "parent": "dd3",
         "slides": [
-            {"bg": NAVY, "text": "BEFORE YOU PAY", "sub": "pause and verify", "color": SKY_BLUE, "duration": 3},
+            {"bg": NAVY, "text": "PAY THE WRONG AGENT.\nLOSE THE FLAT.", "sub": "verify before money moves", "color": SKY_BLUE, "duration": 3},
             {"bg": DARK, "text": "SEE THE PROPERTY", "sub": "in person, if you can", "color": WHITE, "duration": 4},
-            {"bg": DARK, "text": "CHECK WHO IS LETTING IT", "sub": "ask how they are authorised", "color": YELLOW, "duration": 4},
+            {"bg": DARK, "text": "ASK FOR WRITTEN AUTHORITY", "sub": "who says this person may collect rent?", "color": YELLOW, "duration": 4},
             {"bg": DARK, "text": "GET TERMS IN WRITING", "sub": "fees · dates · who receives payment", "color": SKY_BLUE, "duration": 4},
-            {"bg": BRAND_BLUE, "text": "KEEP PAYMENT PROOF", "sub": "and ask for a receipt", "color": WHITE, "duration": 4},
+            {"bg": BRAND_BLUE, "text": "RECEIPT IN THE LANDLORD'S NAME", "sub": "not the agent's — keep payment proof", "color": WHITE, "duration": 4},
             {"bg": NAVY, "text": "GENERAL INFO ONLY", "sub": "Rules vary by state and agreement", "color": YELLOW, "duration": 4},
         ],
     },
     {
-        "title": "Moving In? Record the Condition",
+        "title": "Skip the photos. Pay for old damage.",
+        "parent": "dd2",
         "slides": [
-            {"bg": NAVY, "text": "MOVING IN?", "sub": "make a simple record", "color": SKY_BLUE, "duration": 3},
+            {"bg": NAVY, "text": "SKIP THE PHOTOS.\nPAY FOR OLD DAMAGE.", "sub": "moving in — make a simple record", "color": SKY_BLUE, "duration": 3},
             {"bg": DARK, "text": "PHOTOGRAPH EACH ROOM", "sub": "include visible damage", "color": WHITE, "duration": 4},
             {"bg": DARK, "text": "NOTE THE DATE", "sub": "keep original photos and videos", "color": YELLOW, "duration": 4},
             {"bg": DARK, "text": "RECORD METER READINGS", "sub": "where applicable", "color": SKY_BLUE, "duration": 4},
@@ -116,20 +127,22 @@ VIDEO_SCRIPTS = [
         ],
     },
     {
-        "title": "Caution Fee: Ask These Questions",
+        "title": "Sign without asking. Fund the repaint.",
+        "parent": "dd2",
         "slides": [
-            {"bg": NAVY, "text": "CAUTION FEE?", "sub": "get the details first", "color": SKY_BLUE, "duration": 3},
-            {"bg": DARK, "text": "HOW MUCH IS IT?", "sub": "ask what the payment covers", "color": WHITE, "duration": 4},
-            {"bg": DARK, "text": "WHAT CAN BE DEDUCTED?", "sub": "ask for the conditions in writing", "color": YELLOW, "duration": 4},
-            {"bg": DARK, "text": "WHEN IS IT RETURNED?", "sub": "clarify the process and timeline", "color": SKY_BLUE, "duration": 4},
+            {"bg": NAVY, "text": "SIGN WITHOUT ASKING.\nFUND THE REPAINT.", "sub": "caution fee — get the details first", "color": SKY_BLUE, "duration": 3},
+            {"bg": DARK, "text": "ASK WHAT IT COVERS", "sub": "and how much it is", "color": WHITE, "duration": 4},
+            {"bg": DARK, "text": "WRITE DOWN THE DEDUCTIONS", "sub": "what may be taken, and for what", "color": YELLOW, "duration": 4},
+            {"bg": DARK, "text": "FIX THE RETURN DATE", "sub": "clarify the process and timeline", "color": SKY_BLUE, "duration": 4},
             {"bg": BRAND_BLUE, "text": "KEEP A SEPARATE RECEIPT", "sub": "save it with your agreement", "color": WHITE, "duration": 4},
             {"bg": NAVY, "text": "GENERAL INFO ONLY", "sub": "Rules vary by state and agreement", "color": YELLOW, "duration": 4},
         ],
     },
     {
-        "title": "Tenancy Agreement Checklist",
+        "title": "Sign it unread. Live by it anyway.",
+        "parent": "yt:08wCJ0EmTkU",
         "slides": [
-            {"bg": NAVY, "text": "BEFORE YOU SIGN", "sub": "check the key details", "color": SKY_BLUE, "duration": 3},
+            {"bg": NAVY, "text": "SIGN IT UNREAD.\nLIVE BY IT ANYWAY.", "sub": "tenancy agreement — check the key details", "color": SKY_BLUE, "duration": 3},
             {"bg": DARK, "text": "NAMES AND CONTACTS", "sub": "are they written correctly?", "color": WHITE, "duration": 4},
             {"bg": DARK, "text": "PROPERTY AND RENT", "sub": "check the address and amount", "color": YELLOW, "duration": 4},
             {"bg": DARK, "text": "DATES AND RESPONSIBILITIES", "sub": "who handles what, and when?", "color": SKY_BLUE, "duration": 4},
@@ -138,9 +151,10 @@ VIDEO_SCRIPTS = [
         ],
     },
     {
-        "title": "Keep Records of Repairs",
+        "title": "Report it by mouth. Own the repair bill.",
+        "parent": "dd2",
         "slides": [
-            {"bg": NAVY, "text": "NEED A REPAIR?", "sub": "make the request clear", "color": SKY_BLUE, "duration": 3},
+            {"bg": NAVY, "text": "REPORT IT BY MOUTH.\nOWN THE REPAIR BILL.", "sub": "need a repair — make the request clear", "color": SKY_BLUE, "duration": 3},
             {"bg": DARK, "text": "DESCRIBE THE ISSUE", "sub": "what happened and where", "color": WHITE, "duration": 4},
             {"bg": DARK, "text": "ADD A PHOTO IF USEFUL", "sub": "include the date", "color": YELLOW, "duration": 4},
             {"bg": DARK, "text": "SEND IT IN WRITING", "sub": "keep your message and reply", "color": SKY_BLUE, "duration": 4},
