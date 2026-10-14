@@ -1,7 +1,7 @@
 # Long-form (Deep-Dive) automation — owner runbook
 
-**Status (14 Oct 2026):** built, tested end-to-end with a synthetic voice in the sandbox, waiting
-for one thing from the owner — the free **Gemini API key** — before the first unattended run.
+**Status (14 Oct 2026):** built, tested end-to-end with a synthetic voice in the sandbox; the owner added
+`GEMINI_API_KEY`. The nightly tick now produces DD2 by itself; a manual run gets it sooner.
 
 The owner said: *"I don't want to narrate it myself."* So the voice is Google's Gemini TTS
 (free tier), the word-sync is Vosk (free, runs on the GitHub runner), the pictures are
@@ -50,17 +50,57 @@ That is the only new secret. The YouTube secrets the Shorts lane already uses
 (`YT_CLIENT_ID`, `YT_CLIENT_SECRET`, `YT_REFRESH_TOKEN`) are reused as they are.
 
 > The free tier gives roughly 10 TTS requests a day. One episode is 9 chunks, so the voice of
-> one episode fits in one day. If the bucket is empty mid-run the workflow goes red, says
-> *"quota — chunks banked, re-run tomorrow"*, and the next run continues from the banked chunks.
+> one episode usually fits in one day. If the bucket empties mid-run the job ends **green** with
+> *"N/9 banked"* and the 03:00 WAT tick continues the next day. Nothing to press.
 
 ---
+
+## Free plan, forever — how the lane stays inside it
+
+- **Hard cap:** the engine makes at most 12 Gemini requests per run (`--max-requests 12`),
+  whatever plan the key is on. One episode is 9. There is no path that spends more.
+- **Quota = pause, not failure.** When Google answers "quota", the chunks already minted are
+  banked on the release, the run ends **green** with *"N/9 banked"*, and nothing is lost.
+- **Nightly tick, 03:00 WAT.** The workflow also runs on a schedule. It reads
+  `episodes/queue.json`, takes the first episode whose title is not yet in
+  `logs/youtube_longform.json`, and continues from whatever the bank holds — more voice
+  chunks, or straight to render/publish if the voice is complete. You press nothing twice.
+- **Nothing banked is redone.** A banked master skips voice and render and goes straight
+  to publish; a complete voice skips TTS entirely (zero requests).
+- Google can't move a project onto a paid plan by itself — billing is something you would
+  have to switch on in Cloud Console. Don't, and the key stays free.
+
+## Music and sound effects — ₦0, owned, precise
+
+No downloaded "free" tracks: a CC0 file can be re-licensed, its host can vanish, and a
+Content ID claim on the channel costs a morning. The kit is **synthesized** by
+`tools/soundkit.py` from sine waves and shaped noise, with a fixed seed, so it is ours
+outright and identical on every render.
+
+| Sound | When | Level vs. the voice |
+|---|---|---|
+| Bed — A-minor pad, one chord per section, soft sub pulse at 72 BPM | whole episode, fades out over the last 4 s | −27 dB under speech, swells to −18 dB in the gaps (side-chain ducked from the narrator's own level) |
+| Riser (1.2 s) + hit | into / on every section title | −19 / −13 dB |
+| Whoosh (250 ms) | every other beat change | −16 dB |
+| Tick | each numbered row as it appears | −20 dB |
+| Stinger (A-major swell) | the end card | −14 dB |
+
+- The cue sheet is derived from the **same timings the renderer uses** (`scene_timing`), so a
+  whoosh lands on the frame the headline appears — millisecond precision, no drift.
+  See it: `python3 tools/deepdive.py dd2 cues` (≈70 cues for DD2). It is also banked as
+  `dd2-cues.json` on the release.
+- The plan is written in `episodes/<id>/episode.json` → `audio` (levels, BPM, seed, `bed: false`
+  to go voice-only).
+- QA refuses a master whose bed is less than 14 dB under the voice, or that clips. The mix
+  report (`dd2-mix_report.json`) records the measured separation.
+- Audition the kit by ear: `python3 -c "import sys;sys.path.insert(0,'tools');import soundkit;print(soundkit.export_kit('ffmpeg','/tmp/kit'))"`.
 
 ## Produce and publish an episode (phone)
 
 1. **github.com/johnAzani/docoga → Actions → "Deep-Dive — produce and publish one long-form episode"**
    → **Run workflow**.
 2. Leave `episode = dd2`, `stage = all`, `privacy = unlisted` → **Run workflow**.
-3. Come back in ~45–60 minutes. The run page shows four blocks: *Voice*, *Render scene 1…9*,
+3. Come back in ~45–60 minutes. The run page shows the blocks *Which episode*, *Voice*, *Render scene 1…9*,
    *Master + cover + QA*, *Publish to YouTube*. The **Summary** at the top has the title, the
    link, and six frames from the episode.
 4. Watch it on YouTube (it is *unlisted* — only the link opens it). Happy? → YouTube Studio →
@@ -115,12 +155,11 @@ The workflow refuses synthetic timings on purpose — nothing pace-estimated rea
 
 ## What is intentionally not done
 
-- **No schedule.** Long-form is one episode per run, started by the owner, because the
-  script is the product and the free TTS quota is a day's worth per episode. The Shorts lane
-  stays on its Tue/Fri cron.
-- **No b-roll, no music.** Stills with camera drift, grain, the left gradient and the
-  caption line — the Deep-Dive grammar in `docs/BRAND_STYLE.md`. A music bed can be added
-  later as a committed file under `episodes/assets/` and mixed in `stage_master`.
+- **No b-roll.** Stills with camera drift, grain, the left gradient and the caption line —
+  the Deep-Dive grammar in `docs/BRAND_STYLE.md`.
+- **No downloaded audio.** See the sound section: the kit is synthesized, not sourced.
+- **The nightly tick publishes only what is queued.** `episodes/queue.json` is the gate; an
+  episode folder that is not listed there is never touched by the schedule.
 - **The legacy `make_longform*.py`, `tts_batch_dd2.py`, `dd2_align.py`, `mux_dd2.py`,
   `yt_upload_long.py`** are superseded by `tools/deepdive.py`; they are kept only for the
   DD3/DD4 beat lists.

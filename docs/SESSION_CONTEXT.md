@@ -552,7 +552,8 @@ Documented in `docs/GROWTH_JOURNAL.md`. Key milestones:
 ### Deep-Dives:
 - **Lane (14 Oct 2026):** `tools/deepdive.py` + `.github/workflows/deepdive.yml` — Gemini TTS voice,
   Vosk sync, nine-scene parallel render, banked on release `deepdive-<id>`, publishes unlisted.
-  Owner step pending: add `GEMINI_API_KEY` secret → runbook `docs/LONGFORM_AUTOMATION.md`.
+  `GEMINI_API_KEY` added by the owner 14 Oct. Nightly tick 03:00 WAT works `episodes/queue.json`;
+  quota = green pause; music + SFX synthesized by `tools/soundkit.py`. Runbook `docs/LONGFORM_AUTOMATION.md`.
 - `episodes/dd2/` — Caution Fee: The Refund War (51 beats, 1,462 words ≈ 10 min) — first episode on the lane
 - `docs/dd1/` — 66 Years of Tenancy Law (48 slides)
 - `docs/dd2/` — Caution Fee (47 beats, legacy)

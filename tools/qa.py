@@ -1089,6 +1089,20 @@ if os.path.isfile(dd_wf) and os.path.isfile(dd_tool):
     check("deepdive: exit codes survive the log capture",
           "code=${PIPESTATUS[0]}" in dd_wf_text)
     check("deepdive: the ledger commit does not retrigger CI", "[skip ci]" in dd_wf_text)
+    check("deepdive: a quota pause ends green and the nightly tick resumes it (free plan forever)",
+          "\"$code\" -eq 5" in dd_wf_text and "complete=false" in dd_wf_text
+          and "cron: '0 2 * * *'" in dd_wf_text and "deepdive_queue.py next" in dd_wf_text
+          and "--max-requests 12" in dd_wf_text,
+          "the owner presses nothing twice; an empty free bucket is a pause, not a failure")
+    check("deepdive: music and SFX are synthesized by the repo, not downloaded",
+          os.path.isfile(os.path.join(ROOT, "tools", "soundkit.py"))
+          and "soundkit.render_mix" in dd_tool_text
+          and "http" not in open(os.path.join(ROOT, "tools", "soundkit.py"), encoding="utf-8").read().lower(),
+          "a 'free' track can be re-licensed or Content-ID'd; sine waves cannot")
+    check("deepdive: QA refuses a bed that masks the voice",
+          "MIN_BED_SEPARATION_DB" in dd_tool_text and "bed_separation_db" in dd_tool_text)
+    check("deepdive: the sound plan is written down per episode",
+          all("audio" in open(os.path.join(d, "episode.json"), encoding="utf-8").read() for d in eps))
     check("deepdive: the runbook tells the owner how to add the key and run it",
           os.path.isfile(os.path.join(ROOT, "docs", "LONGFORM_AUTOMATION.md"))
           and "GEMINI_API_KEY" in open(os.path.join(ROOT, "docs", "LONGFORM_AUTOMATION.md"),

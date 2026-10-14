@@ -8,6 +8,20 @@
     "name": "Orus",
     "instruction": "Narrate this in a natural Nigerian English accent, like a confident Lagos radio presenter, at an unhurried documentary pace:"
   },
+  "audio": {
+    "_comment": "Sound plan — synthesized by tools/soundkit.py, cued from the beats (python3 tools/deepdive.py dd2 cues). Levels are dB relative to the narrator's own speech level.",
+    "bed": true,
+    "bpm": 72,
+    "seed": 7,
+    "bed_gap_db": -18,
+    "bed_speech_db": -27,
+    "sfx_db": -16,
+    "hit_db": -13,
+    "tick_db": -20,
+    "riser_db": -19,
+    "stinger_db": -14,
+    "tail_fade_s": 4
+  },
   "youtube": {
     "title": "Caution Fee in Nigeria: The Only 4 Deductions a Landlord Can Make (Deep-Dive 2)",
     "description": "Your caution fee is not the landlord's income — it is your money, held in security. This Deep-Dive explains what a caution fee is, the only four things a landlord may lawfully deduct, the five-line receipt that protects you, the myth of \"gone money\", what Lagos and Abuja law actually say, and the three-step ladder when a refund is refused.\n\nFree documents for every step — caution fee receipt, tenancy agreement with a refund clause, move-in condition report, demand letter: https://docoga.com.ng\n\nGeneral information for tenants and landlords in Nigeria. Not legal advice; rules vary by state and by your agreement. Case cited: Ihenacho v. Uzochukwu (1997), Supreme Court of Nigeria.",
@@ -25,81 +39,624 @@
     "sub": "receipts beat excuses — every time"
   },
   "sections": [
-    {"n": 1, "title": "The Hook"},
-    {"n": 2, "title": "What a Caution Fee Is"},
-    {"n": 3, "title": "The Only Four Deductions"},
-    {"n": 4, "title": "The Receipt"},
-    {"n": 5, "title": "Five Protections on Payment Day"},
-    {"n": 6, "title": "The Myth, Killed"},
-    {"n": 7, "title": "State Differences"},
-    {"n": 8, "title": "The Escalation Ladder"},
-    {"n": 9, "title": "What to Do Right Now"}
+    {
+      "n": 1,
+      "title": "The Hook"
+    },
+    {
+      "n": 2,
+      "title": "What a Caution Fee Is"
+    },
+    {
+      "n": 3,
+      "title": "The Only Four Deductions"
+    },
+    {
+      "n": 4,
+      "title": "The Receipt"
+    },
+    {
+      "n": 5,
+      "title": "Five Protections on Payment Day"
+    },
+    {
+      "n": 6,
+      "title": "The Myth, Killed"
+    },
+    {
+      "n": 7,
+      "title": "State Differences"
+    },
+    {
+      "n": 8,
+      "title": "The Escalation Ladder"
+    },
+    {
+      "n": 9,
+      "title": "What to Do Right Now"
+    }
   ],
   "beats": [
-    {"sec": 1, "trig": null, "head": "CAUTION FEE", "sub": "the refund war — Deep-Dive 2", "img": "naira"},
-    {"sec": 1, "trig": ["two", "hundred", "thousand"], "head": "TWO HUNDRED THOUSAND NAIRA", "sub": "the deposit every tenant fears losing", "img": "kiosk"},
-    {"sec": 1, "trig": ["gone"], "head": "GONE.", "sub": "management fee. repainting. admin.", "img": "dusk"},
-    {"sec": 1, "trig": ["the", "law", "does", "not"], "head": "NOT THE LANDLORD'S MONEY", "sub": "yours — held in security", "img": "market"},
-    {"sec": 1, "trig": ["paperwork"], "head": "THE DIFFERENCE IS PAPERWORK", "sub": "not luck", "img": "letter"},
-    {"sec": 1, "trig": ["this", "is", "docoga"], "head": "DOCOGA", "sub": "Nigeria's document engine", "img": "naira"},
-
-    {"sec": 2, "trig": null, "head": "WHAT A CAUTION FEE IS", "sub": "and what it is not", "img": "kiosk"},
-    {"sec": 2, "trig": ["not", "rent"], "head": "NOT RENT. NOT A GIFT.", "sub": "not the landlord's income", "img": "letter"},
-    {"sec": 2, "trig": ["parked"], "head": "YOUR MONEY, PARKED", "sub": "against the day you move out", "img": "naira"},
-    {"sec": 2, "trig": ["five", "to", "ten"], "head": "THE MARKET NORM: 5–10%", "sub": "of annual rent — or 1–3 months'", "img": "market"},
-    {"sec": 2, "trig": ["push", "back"], "head": "HIGH DEMAND, HARD PUSH", "sub": "push back harder", "img": "danfo"},
-    {"sec": 2, "trig": ["red", "flag"], "head": "IF THE TOTALS DON'T ADD UP", "sub": "not a negotiation — a red flag", "img": "keke"},
-
-    {"sec": 3, "trig": null, "head": "WHAT A LANDLORD MAY DEDUCT", "sub": "only four things", "img": "court"},
-    {"sec": 3, "trig": ["four", "things"], "head": "THE ONLY FOUR DEDUCTIONS", "sub": "", "img": "court",
-     "rows": ["damage beyond fair wear and tear", "unpaid rent", "unpaid utilities", "written breach costs"],
-     "row_trigs": [["damage", "beyond"], ["unpaid", "rent"], ["light", "water"], ["written", "into"]]},
-    {"sec": 3, "trig": ["faded", "naturally"], "head": "FAIR WEAR AND TEAR", "sub": "the landlord's cost — not yours", "img": "ankara"},
-    {"sec": 3, "trig": ["broken", "window"], "head": "A BROKEN WINDOW IS DAMAGE", "sub": "that may come out", "img": "door"},
-    {"sec": 3, "trig": ["repainting"], "head": "REPAINTING IS NOT AUTOMATIC", "sub": "unless the walls were actually damaged", "img": "ankara"},
-    {"sec": 3, "trig": ["listed", "and", "proved"], "head": "LISTED AND PROVED", "sub": "every single naira", "img": "letter"},
-
-    {"sec": 4, "trig": null, "head": "THE RECEIPT", "sub": "the part most tenants skip", "img": "market"},
-    {"sec": 4, "trig": ["receipted", "separately"], "head": "RECEIPT IT SEPARATELY", "sub": "never lump it into the rent figure", "img": "market"},
-    {"sec": 4, "trig": ["five", "things"], "head": "A PROPER RECEIPT: FIVE THINGS", "sub": "", "img": "pen",
-     "rows": ["the parties", "the property", "amount — figures and words", "the date", "the refund clause"],
-     "row_trigs": [["names", "of", "the"], ["the", "property", "with"], ["in", "figures"], ["the", "date", "it"], ["refund", "clause"]]},
-    {"sec": 4, "trig": ["one", "line"], "head": "THE REFUND CLAUSE", "sub": "worth more than ten arguments on moving day", "img": "letter"},
-    {"sec": 4, "trig": ["refund", "deadline"], "head": "ADD A REFUND DEADLINE", "sub": "seven to thirty days after handover", "img": "dusk"},
-    {"sec": 4, "trig": ["whenever", "the"], "head": "NO DEADLINE = NEVER", "sub": "state it — in writing", "img": "dusk"},
-
-    {"sec": 5, "trig": null, "head": "FIVE PROTECTIONS", "sub": "set up on payment day", "img": "artisan"},
-    {"sec": 5, "trig": ["complete", "armour"], "head": "THE COMPLETE ARMOUR", "sub": "thirty minutes of work", "img": "artisan",
-     "rows": ["receipt it separately", "the written refund clause", "the refund deadline", "the move-in condition record", "the itemised-deduction clause"],
-     "row_trigs": [["one", "the", "receipt"], ["two", "the", "written"], ["three", "the", "refund"], ["four", "the", "move"], ["five", "the", "itemised"]]},
-    {"sec": 5, "trig": ["years", "of"], "head": "THIRTY MINUTES OF WORK", "sub": "years of protection afterwards", "img": "rooftops"},
-
-    {"sec": 6, "trig": null, "head": "THE MYTH", "sub": "everyone has heard it", "img": "danfo"},
-    {"sec": 6, "trig": ["gone", "money"], "head": "DEPOSITS NEVER COME BACK?", "sub": "a story told by tenants who lost", "img": "danfo"},
-    {"sec": 6, "trig": ["held", "in", "security"], "head": "THE LAW SEES IT AS YOURS", "sub": "held in security — not his", "img": "court"},
-    {"sec": 6, "trig": ["justify", "every"], "head": "JUSTIFY EVERY NAIRA", "sub": "or refund it all", "img": "pen"},
-    {"sec": 6, "trig": ["seizing", "a", "tenant's"], "head": "SEIZING YOUR GENERATOR?", "sub": "that is self-help", "img": "generator"},
-    {"sec": 6, "trig": ["ihenacho"], "head": "Ihenacho v. Uzochukwu (1997)", "sub": "Supreme Court — self-help is trespass", "img": "court"},
-    {"sec": 6, "trig": ["paid", "back", "twice"], "head": "RECOVER IT LAWFULLY", "sub": "or pay it back twice", "img": "generator"},
-
-    {"sec": 7, "trig": null, "head": "DOES YOUR STATE CHANGE IT?", "sub": "the deposit rules live in your agreement", "img": "rooftops"},
-    {"sec": 7, "trig": ["lagos", "the"], "head": "LAGOS: TENANCY LAW 2011", "sub": "advance-rent limits + receipts demanded", "img": "kiosk"},
-    {"sec": 7, "trig": ["tenancy", "bill"], "head": "A NEW BILL IS MOVING", "sub": "a bill — not law. do not quote it yet", "img": "keke"},
-    {"sec": 7, "trig": ["abuja"], "head": "ABUJA: RECOVERY OF PREMISES ACT", "sub": "procedure governs possession", "img": "rooftops"},
-    {"sec": 7, "trig": ["agreement", "and", "the"], "head": "YOUR AGREEMENT IS THE DEPOSIT LAW", "sub": "that matters most", "img": "letter"},
-
-    {"sec": 8, "trig": null, "head": "THE ESCALATION LADDER", "sub": "climb it in order", "img": "dusk"},
-    {"sec": 8, "trig": ["step", "one"], "head": "STEP 1 — THE WRITTEN DEMAND", "sub": "dated letter, 7–14 day deadline", "img": "letter"},
-    {"sec": 8, "trig": ["step", "two"], "head": "STEP 2 — WITNESSES + MEDIATION", "sub": "agents, associations, mediation centre", "img": "trader"},
-    {"sec": 8, "trig": ["step", "three"], "head": "STEP 3 — MAGISTRATES' COURT", "sub": "a simple money claim", "img": "court"},
-    {"sec": 8, "trig": ["exhibits"], "head": "YOUR EXHIBITS DO THE TALKING", "sub": "receipt + record + photographs", "img": "pen"},
-    {"sec": 8, "trig": ["whoever", "kept"], "head": "WHOEVER KEEPS THE PAPERWORK WINS", "sub": "not who shouted. not who suffered.", "img": "naira"},
-
-    {"sec": 9, "trig": null, "head": "WHAT TO DO RIGHT NOW", "sub": "both paths start with paper", "img": "celebration"},
-    {"sec": 9, "trig": ["paying", "a", "caution"], "head": "PAYING THIS WEEK?", "sub": "receipt + clause + deadline + record", "img": "market"},
-    {"sec": 9, "trig": ["owed", "a", "refund"], "head": "OWED A REFUND?", "sub": "send the written demand this week", "img": "letter"},
-    {"sec": 9, "trig": ["landlord", "watching"], "head": "LANDLORD?", "sub": "a refund reputation is the cheapest advert", "img": "rooftops"},
-    {"sec": 9, "trig": ["free", "to", "start"], "head": "FREE TO START", "sub": "no signup. no card.", "img": "celebration"},
-    {"sec": 9, "trig": ["docoga", "dot", "com"], "head": "DOCOGA", "sub": "docoga.com.ng — link in the description", "img": "celebration", "endcard": true}
+    {
+      "sec": 1,
+      "trig": null,
+      "head": "CAUTION FEE",
+      "sub": "the refund war — Deep-Dive 2",
+      "img": "naira"
+    },
+    {
+      "sec": 1,
+      "trig": [
+        "two",
+        "hundred",
+        "thousand"
+      ],
+      "head": "TWO HUNDRED THOUSAND NAIRA",
+      "sub": "the deposit every tenant fears losing",
+      "img": "kiosk"
+    },
+    {
+      "sec": 1,
+      "trig": [
+        "gone"
+      ],
+      "head": "GONE.",
+      "sub": "management fee. repainting. admin.",
+      "img": "dusk"
+    },
+    {
+      "sec": 1,
+      "trig": [
+        "the",
+        "law",
+        "does",
+        "not"
+      ],
+      "head": "NOT THE LANDLORD'S MONEY",
+      "sub": "yours — held in security",
+      "img": "market"
+    },
+    {
+      "sec": 1,
+      "trig": [
+        "paperwork"
+      ],
+      "head": "THE DIFFERENCE IS PAPERWORK",
+      "sub": "not luck",
+      "img": "letter"
+    },
+    {
+      "sec": 1,
+      "trig": [
+        "this",
+        "is",
+        "docoga"
+      ],
+      "head": "DOCOGA",
+      "sub": "Nigeria's document engine",
+      "img": "naira"
+    },
+    {
+      "sec": 2,
+      "trig": null,
+      "head": "WHAT A CAUTION FEE IS",
+      "sub": "and what it is not",
+      "img": "kiosk"
+    },
+    {
+      "sec": 2,
+      "trig": [
+        "not",
+        "rent"
+      ],
+      "head": "NOT RENT. NOT A GIFT.",
+      "sub": "not the landlord's income",
+      "img": "letter"
+    },
+    {
+      "sec": 2,
+      "trig": [
+        "parked"
+      ],
+      "head": "YOUR MONEY, PARKED",
+      "sub": "against the day you move out",
+      "img": "naira"
+    },
+    {
+      "sec": 2,
+      "trig": [
+        "five",
+        "to",
+        "ten"
+      ],
+      "head": "THE MARKET NORM: 5–10%",
+      "sub": "of annual rent — or 1–3 months'",
+      "img": "market"
+    },
+    {
+      "sec": 2,
+      "trig": [
+        "push",
+        "back"
+      ],
+      "head": "HIGH DEMAND, HARD PUSH",
+      "sub": "push back harder",
+      "img": "danfo"
+    },
+    {
+      "sec": 2,
+      "trig": [
+        "red",
+        "flag"
+      ],
+      "head": "IF THE TOTALS DON'T ADD UP",
+      "sub": "not a negotiation — a red flag",
+      "img": "keke"
+    },
+    {
+      "sec": 3,
+      "trig": null,
+      "head": "WHAT A LANDLORD MAY DEDUCT",
+      "sub": "only four things",
+      "img": "court"
+    },
+    {
+      "sec": 3,
+      "trig": [
+        "four",
+        "things"
+      ],
+      "head": "THE ONLY FOUR DEDUCTIONS",
+      "sub": "",
+      "img": "court",
+      "rows": [
+        "damage beyond fair wear and tear",
+        "unpaid rent",
+        "unpaid utilities",
+        "written breach costs"
+      ],
+      "row_trigs": [
+        [
+          "damage",
+          "beyond"
+        ],
+        [
+          "unpaid",
+          "rent"
+        ],
+        [
+          "light",
+          "water"
+        ],
+        [
+          "written",
+          "into"
+        ]
+      ]
+    },
+    {
+      "sec": 3,
+      "trig": [
+        "faded",
+        "naturally"
+      ],
+      "head": "FAIR WEAR AND TEAR",
+      "sub": "the landlord's cost — not yours",
+      "img": "ankara"
+    },
+    {
+      "sec": 3,
+      "trig": [
+        "broken",
+        "window"
+      ],
+      "head": "A BROKEN WINDOW IS DAMAGE",
+      "sub": "that may come out",
+      "img": "door"
+    },
+    {
+      "sec": 3,
+      "trig": [
+        "repainting"
+      ],
+      "head": "REPAINTING IS NOT AUTOMATIC",
+      "sub": "unless the walls were actually damaged",
+      "img": "ankara"
+    },
+    {
+      "sec": 3,
+      "trig": [
+        "listed",
+        "and",
+        "proved"
+      ],
+      "head": "LISTED AND PROVED",
+      "sub": "every single naira",
+      "img": "letter"
+    },
+    {
+      "sec": 4,
+      "trig": null,
+      "head": "THE RECEIPT",
+      "sub": "the part most tenants skip",
+      "img": "market"
+    },
+    {
+      "sec": 4,
+      "trig": [
+        "receipted",
+        "separately"
+      ],
+      "head": "RECEIPT IT SEPARATELY",
+      "sub": "never lump it into the rent figure",
+      "img": "market"
+    },
+    {
+      "sec": 4,
+      "trig": [
+        "five",
+        "things"
+      ],
+      "head": "A PROPER RECEIPT: FIVE THINGS",
+      "sub": "",
+      "img": "pen",
+      "rows": [
+        "the parties",
+        "the property",
+        "amount — figures and words",
+        "the date",
+        "the refund clause"
+      ],
+      "row_trigs": [
+        [
+          "names",
+          "of",
+          "the"
+        ],
+        [
+          "the",
+          "property",
+          "with"
+        ],
+        [
+          "in",
+          "figures"
+        ],
+        [
+          "the",
+          "date",
+          "it"
+        ],
+        [
+          "refund",
+          "clause"
+        ]
+      ]
+    },
+    {
+      "sec": 4,
+      "trig": [
+        "one",
+        "line"
+      ],
+      "head": "THE REFUND CLAUSE",
+      "sub": "worth more than ten arguments on moving day",
+      "img": "letter"
+    },
+    {
+      "sec": 4,
+      "trig": [
+        "refund",
+        "deadline"
+      ],
+      "head": "ADD A REFUND DEADLINE",
+      "sub": "seven to thirty days after handover",
+      "img": "dusk"
+    },
+    {
+      "sec": 4,
+      "trig": [
+        "whenever",
+        "the"
+      ],
+      "head": "NO DEADLINE = NEVER",
+      "sub": "state it — in writing",
+      "img": "dusk"
+    },
+    {
+      "sec": 5,
+      "trig": null,
+      "head": "FIVE PROTECTIONS",
+      "sub": "set up on payment day",
+      "img": "artisan"
+    },
+    {
+      "sec": 5,
+      "trig": [
+        "complete",
+        "armour"
+      ],
+      "head": "THE COMPLETE ARMOUR",
+      "sub": "thirty minutes of work",
+      "img": "artisan",
+      "rows": [
+        "receipt it separately",
+        "the written refund clause",
+        "the refund deadline",
+        "the move-in condition record",
+        "the itemised-deduction clause"
+      ],
+      "row_trigs": [
+        [
+          "one",
+          "the",
+          "receipt"
+        ],
+        [
+          "two",
+          "the",
+          "written"
+        ],
+        [
+          "three",
+          "the",
+          "refund"
+        ],
+        [
+          "four",
+          "the",
+          "move"
+        ],
+        [
+          "five",
+          "the",
+          "itemised"
+        ]
+      ]
+    },
+    {
+      "sec": 5,
+      "trig": [
+        "years",
+        "of"
+      ],
+      "head": "THIRTY MINUTES OF WORK",
+      "sub": "years of protection afterwards",
+      "img": "rooftops"
+    },
+    {
+      "sec": 6,
+      "trig": null,
+      "head": "THE MYTH",
+      "sub": "everyone has heard it",
+      "img": "danfo"
+    },
+    {
+      "sec": 6,
+      "trig": [
+        "gone",
+        "money"
+      ],
+      "head": "DEPOSITS NEVER COME BACK?",
+      "sub": "a story told by tenants who lost",
+      "img": "danfo"
+    },
+    {
+      "sec": 6,
+      "trig": [
+        "held",
+        "in",
+        "security"
+      ],
+      "head": "THE LAW SEES IT AS YOURS",
+      "sub": "held in security — not his",
+      "img": "court"
+    },
+    {
+      "sec": 6,
+      "trig": [
+        "justify",
+        "every"
+      ],
+      "head": "JUSTIFY EVERY NAIRA",
+      "sub": "or refund it all",
+      "img": "pen"
+    },
+    {
+      "sec": 6,
+      "trig": [
+        "seizing",
+        "a",
+        "tenant's"
+      ],
+      "head": "SEIZING YOUR GENERATOR?",
+      "sub": "that is self-help",
+      "img": "generator"
+    },
+    {
+      "sec": 6,
+      "trig": [
+        "ihenacho"
+      ],
+      "head": "Ihenacho v. Uzochukwu (1997)",
+      "sub": "Supreme Court — self-help is trespass",
+      "img": "court"
+    },
+    {
+      "sec": 6,
+      "trig": [
+        "paid",
+        "back",
+        "twice"
+      ],
+      "head": "RECOVER IT LAWFULLY",
+      "sub": "or pay it back twice",
+      "img": "generator"
+    },
+    {
+      "sec": 7,
+      "trig": null,
+      "head": "DOES YOUR STATE CHANGE IT?",
+      "sub": "the deposit rules live in your agreement",
+      "img": "rooftops"
+    },
+    {
+      "sec": 7,
+      "trig": [
+        "lagos",
+        "the"
+      ],
+      "head": "LAGOS: TENANCY LAW 2011",
+      "sub": "advance-rent limits + receipts demanded",
+      "img": "kiosk"
+    },
+    {
+      "sec": 7,
+      "trig": [
+        "tenancy",
+        "bill"
+      ],
+      "head": "A NEW BILL IS MOVING",
+      "sub": "a bill — not law. do not quote it yet",
+      "img": "keke"
+    },
+    {
+      "sec": 7,
+      "trig": [
+        "abuja"
+      ],
+      "head": "ABUJA: RECOVERY OF PREMISES ACT",
+      "sub": "procedure governs possession",
+      "img": "rooftops"
+    },
+    {
+      "sec": 7,
+      "trig": [
+        "agreement",
+        "and",
+        "the"
+      ],
+      "head": "YOUR AGREEMENT IS THE DEPOSIT LAW",
+      "sub": "that matters most",
+      "img": "letter"
+    },
+    {
+      "sec": 8,
+      "trig": null,
+      "head": "THE ESCALATION LADDER",
+      "sub": "climb it in order",
+      "img": "dusk"
+    },
+    {
+      "sec": 8,
+      "trig": [
+        "step",
+        "one"
+      ],
+      "head": "STEP 1 — THE WRITTEN DEMAND",
+      "sub": "dated letter, 7–14 day deadline",
+      "img": "letter"
+    },
+    {
+      "sec": 8,
+      "trig": [
+        "step",
+        "two"
+      ],
+      "head": "STEP 2 — WITNESSES + MEDIATION",
+      "sub": "agents, associations, mediation centre",
+      "img": "trader"
+    },
+    {
+      "sec": 8,
+      "trig": [
+        "step",
+        "three"
+      ],
+      "head": "STEP 3 — MAGISTRATES' COURT",
+      "sub": "a simple money claim",
+      "img": "court"
+    },
+    {
+      "sec": 8,
+      "trig": [
+        "exhibits"
+      ],
+      "head": "YOUR EXHIBITS DO THE TALKING",
+      "sub": "receipt + record + photographs",
+      "img": "pen"
+    },
+    {
+      "sec": 8,
+      "trig": [
+        "whoever",
+        "kept"
+      ],
+      "head": "WHOEVER KEEPS THE PAPERWORK WINS",
+      "sub": "not who shouted. not who suffered.",
+      "img": "naira"
+    },
+    {
+      "sec": 9,
+      "trig": null,
+      "head": "WHAT TO DO RIGHT NOW",
+      "sub": "both paths start with paper",
+      "img": "celebration"
+    },
+    {
+      "sec": 9,
+      "trig": [
+        "paying",
+        "a",
+        "caution"
+      ],
+      "head": "PAYING THIS WEEK?",
+      "sub": "receipt + clause + deadline + record",
+      "img": "market"
+    },
+    {
+      "sec": 9,
+      "trig": [
+        "owed",
+        "a",
+        "refund"
+      ],
+      "head": "OWED A REFUND?",
+      "sub": "send the written demand this week",
+      "img": "letter"
+    },
+    {
+      "sec": 9,
+      "trig": [
+        "landlord",
+        "watching"
+      ],
+      "head": "LANDLORD?",
+      "sub": "a refund reputation is the cheapest advert",
+      "img": "rooftops"
+    },
+    {
+      "sec": 9,
+      "trig": [
+        "free",
+        "to",
+        "start"
+      ],
+      "head": "FREE TO START",
+      "sub": "no signup. no card.",
+      "img": "celebration"
+    },
+    {
+      "sec": 9,
+      "trig": [
+        "docoga",
+        "dot",
+        "com"
+      ],
+      "head": "DOCOGA",
+      "sub": "docoga.com.ng — link in the description",
+      "img": "celebration",
+      "endcard": true
+    }
   ]
 }

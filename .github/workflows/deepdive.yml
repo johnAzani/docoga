@@ -1,29 +1,33 @@
 name: Deep-Dive — produce and publish one long-form episode
 
 # The long-form lane: words → Gemini voice → Vosk word-sync → nine scenes rendered in
-# parallel → master (−16 LUFS) → cover → QA → YouTube. Every expensive intermediate is
-# BANKED on a GitHub Release (`deepdive-<episode>`), because the voice costs daily TTS
-# quota and a 10-minute render costs minutes — a re-run must never pay twice for the
-# same bytes, and nothing may live only on a runner's disk (that is how DD1–DD4's voice
-# was lost in Sep 2026).
+# parallel → master with the synthesized sound kit (−16 LUFS) → cover → QA → YouTube.
+# Every expensive intermediate is BANKED on a GitHub Release (`deepdive-<episode>`),
+# because the voice costs daily TTS quota and a 10-minute render costs minutes — a re-run
+# must never pay twice for the same bytes, and nothing may live only on a runner's disk
+# (that is how DD1–DD4's voice was lost in Sep 2026).
 #
-# Stages (input `stage`):
-#   all      voice → render → master → publish
-#   voice    bank the voice + word timings only (useful while the TTS quota is being harvested)
+# FREE PLAN, BY DESIGN. Gemini's free tier allows roughly ten TTS requests a day. The
+# engine never makes more than --max-requests calls per run, reads Google's own "retry
+# in N s" instead of hammering, and treats an empty bucket as a PAUSE, not a failure:
+# the chunks minted so far are banked, the run ends green with "N/9 banked", and the
+# nightly tick (03:00 WAT) picks the episode up again. The owner presses nothing twice.
+#
+# Stages (input `stage`, or `all` on the nightly tick):
+#   all      voice → render → master → publish (skipping whatever the bank already holds)
+#   voice    bank the voice + word timings only
 #   render   assume the voice is banked; render, master, QA, bank the master — publish nothing
 #   publish  assume the master is banked; upload it
-#
-# Exit 5 from the TTS stage means "the daily Gemini bucket is empty": whatever chunks were
-# minted are banked, the run goes red with that said in plain words, and tomorrow's re-run
-# picks up where it stopped.
 
 on:
+  schedule:
+    - cron: '0 2 * * *'          # 03:00 WAT — resume whatever episodes/queue.json says is next
   workflow_dispatch:
     inputs:
       episode:
-        description: 'Episode id (a folder under episodes/)'
-        required: true
-        default: dd2
+        description: 'Episode id (a folder under episodes/); blank = next in episodes/queue.json'
+        required: false
+        default: ''
         type: string
       stage:
         description: 'How far to go'
@@ -48,21 +52,80 @@ permissions:
   issues: write     # a failed run opens a visible issue
 
 concurrency:
-  group: deepdive-${{ inputs.episode }}
+  group: deepdive
   cancel-in-progress: false
 
+# Job-level `env` below repeats the three episode paths: a workflow-level env cannot read
+# `needs`, and the episode id is decided by the `pick` job, not by the trigger.
 env:
   TZ: Africa/Lagos
-  EPISODE: ${{ inputs.episode }}
-  RELEASE_TAG: deepdive-${{ inputs.episode }}
-  BUILD_DIR: build/deepdive/${{ inputs.episode }}
 
 jobs:
+  pick:
+    name: Which episode, how far
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      episode: ${{ steps.pick.outputs.episode }}
+      stage: ${{ steps.pick.outputs.stage }}
+      privacy: ${{ steps.pick.outputs.privacy }}
+      force: ${{ steps.pick.outputs.force }}
+      has_master: ${{ steps.bank.outputs.has_master }}
+      banked: ${{ steps.bank.outputs.banked }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: pick
+        env:
+          IN_EPISODE: ${{ inputs.episode }}
+          IN_STAGE: ${{ inputs.stage }}
+          IN_PRIVACY: ${{ inputs.privacy }}
+          IN_FORCE: ${{ inputs.force }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          EP="$IN_EPISODE"
+          [ -n "$EP" ] || EP="$(python3 tools/deepdive_queue.py next)"
+          {
+            echo "episode=$EP"
+            echo "stage=${IN_STAGE:-all}"
+            echo "privacy=${IN_PRIVACY:-unlisted}"
+            echo "force=${IN_FORCE:-false}"
+          } >> "$GITHUB_OUTPUT"
+          if [ -z "$EP" ]; then
+            echo "## Deep-Dive — nothing to do" >> "$GITHUB_STEP_SUMMARY"
+            echo "Every episode in \`episodes/queue.json\` is already in the long-form ledger. Add the next id to the queue when its folder is ready." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "episode=$EP stage=${IN_STAGE:-all} event=$EVENT"
+          fi
+      - id: bank
+        if: steps.pick.outputs.episode != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EP: ${{ steps.pick.outputs.episode }}
+        run: |
+          TAG="deepdive-$EP"
+          ASSETS="$(gh release view "$TAG" --json assets -q '.assets[].name' 2>/dev/null || true)"
+          HAS=false; echo "$ASSETS" | grep -qx "$EP-episode.mp4" && HAS=true
+          BANKED=0
+          if echo "$ASSETS" | grep -qx "$EP-status.json"; then
+            gh release download "$TAG" --pattern "$EP-status.json" -D /tmp >/dev/null 2>&1 && \
+              BANKED="$(python3 -c "import json;print(json.load(open('/tmp/$EP-status.json')).get('banked',0))")"
+          fi
+          echo "has_master=$HAS" >> "$GITHUB_OUTPUT"
+          echo "banked=$BANKED" >> "$GITHUB_OUTPUT"
+          echo "bank: master=$HAS voice=$BANKED/9 ($TAG)"
+
   voice:
     name: Voice (Gemini TTS) + word-sync
-    if: ${{ inputs.stage == 'all' || inputs.stage == 'voice' }}
+    needs: [pick]
+    if: ${{ needs.pick.outputs.episode != '' && (needs.pick.outputs.stage == 'voice' || (needs.pick.outputs.stage == 'all' && needs.pick.outputs.has_master != 'true')) }}
     runs-on: ubuntu-latest
+    env:
+      EPISODE: ${{ needs.pick.outputs.episode }}
+      RELEASE_TAG: deepdive-${{ needs.pick.outputs.episode }}
+      BUILD_DIR: build/deepdive/${{ needs.pick.outputs.episode }}
     timeout-minutes: 90
+    outputs:
+      complete: ${{ steps.tts.outputs.complete }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -91,29 +154,43 @@ jobs:
           else
             echo "no banked voice yet for $RELEASE_TAG"
           fi
-      - name: Gemini TTS (resumable; waits for a quota slot up to 35 min)
+      - name: Gemini TTS (free tier · resumable · waits for a quota slot up to 35 min)
         id: tts
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_TTS_MODEL: ${{ vars.GEMINI_TTS_MODEL }}
         run: |
           set +e
-          python3 tools/deepdive.py "$EPISODE" tts --wait-budget-min 35 2>&1 | tee /tmp/tts.log
+          python3 tools/deepdive.py "$EPISODE" tts --wait-budget-min 35 --max-requests 12 2>&1 | tee /tmp/tts.log
           code=${PIPESTATUS[0]}
           set -e
+          BANKED="$(ls "$BUILD_DIR"/voice/c*.ok 2>/dev/null | wc -l | tr -d ' ')"
           echo "code=$code" >> "$GITHUB_OUTPUT"
-          if [ "$code" -eq 5 ]; then
-            echo "::warning title=TTS quota::The daily Gemini TTS bucket ran dry. The chunks minted so far are banked below — re-run this workflow tomorrow (stage=voice or all) and it continues from there."
-          elif [ "$code" -ne 0 ]; then
-            echo "::error title=TTS failed::see the log above"
+          echo "banked=$BANKED" >> "$GITHUB_OUTPUT"
+          if [ "$code" -eq 0 ]; then
+            echo "complete=true" >> "$GITHUB_OUTPUT"
+          elif [ "$code" -eq 5 ]; then
+            # An empty free-tier bucket is a pause, not a failure. The job stays green.
+            echo "complete=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Voice paused — free quota::$BANKED/9 chunks banked. The nightly tick (03:00 WAT) continues from here; nothing to press."
+            {
+              echo "## Deep-Dive $EPISODE — voice paused on the free quota"
+              echo
+              echo "**$BANKED of 9** chunks are banked on release \`$RELEASE_TAG\`. Gemini's free tier refills daily; the 03:00 WAT tick resumes automatically. Nothing to do."
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "complete=false" >> "$GITHUB_OUTPUT"
+            echo "::error title=TTS failed::not a quota pause — see the log above"
           fi
       - name: Word-sync (Vosk)
-        if: steps.tts.outputs.code == '0'
+        if: steps.tts.outputs.complete == 'true'
         run: python3 tools/deepdive.py "$EPISODE" align
       - name: Bank the voice on the release
         if: always()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BANKED: ${{ steps.tts.outputs.banked }}
+          COMPLETE: ${{ steps.tts.outputs.complete }}
         run: |
           [ -d "$BUILD_DIR/voice" ] || { echo "nothing to bank"; exit 0; }
           tar -czf "/tmp/$EPISODE-voice.tar.gz" -C "$BUILD_DIR" voice $( [ -f "$BUILD_DIR/words.json" ] && echo words.json )
@@ -121,25 +198,33 @@ jobs:
             gh release create "$RELEASE_TAG" --prerelease --title "Deep-Dive bank: $EPISODE" \
               --notes "Intermediates for episodes/$EPISODE — voice chunks, word timings, master, cover. Managed by .github/workflows/deepdive.yml."
           gh release upload "$RELEASE_TAG" "/tmp/$EPISODE-voice.tar.gz" --clobber
+          python3 -c "import json,os,datetime;json.dump({'episode':os.environ['EPISODE'],'banked':int(os.environ.get('BANKED') or 0),'total':9,'complete':os.environ.get('COMPLETE')=='true','updated':datetime.datetime.utcnow().isoformat()+'Z'},open('/tmp/%s-status.json' % os.environ['EPISODE'],'w'))"
+          gh release upload "$RELEASE_TAG" "/tmp/$EPISODE-status.json" --clobber
           echo "banked $EPISODE-voice.tar.gz ($(stat -c%s /tmp/$EPISODE-voice.tar.gz) bytes)"
       - name: Hand the timings to the render jobs
-        if: steps.tts.outputs.code == '0'
+        if: steps.tts.outputs.complete == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.episode }}-words
+          name: ${{ needs.pick.outputs.episode }}-words
           path: |
             ${{ env.BUILD_DIR }}/words.json
             ${{ env.BUILD_DIR }}/voice/manifest.json
           retention-days: 7
-      - name: Fail the job if the voice is incomplete
-        if: steps.tts.outputs.code != '0'
-        run: exit ${{ steps.tts.outputs.code }}
+      - name: Fail the job only on a real error (quota is a pause)
+        if: steps.tts.outputs.code != '0' && steps.tts.outputs.code != '5'
+        env:
+          CODE: ${{ steps.tts.outputs.code }}
+        run: exit "$CODE"
 
   render:
     name: Render scene ${{ matrix.scene }}
-    needs: [voice]
-    if: ${{ always() && !cancelled() && (inputs.stage == 'render' || (inputs.stage == 'all' && needs.voice.result == 'success')) }}
+    needs: [pick, voice]
+    if: ${{ always() && !cancelled() && needs.pick.outputs.episode != '' && needs.pick.outputs.has_master != 'true' && (needs.pick.outputs.stage == 'render' || (needs.pick.outputs.stage == 'all' && needs.voice.outputs.complete == 'true')) }}
     runs-on: ubuntu-latest
+    env:
+      EPISODE: ${{ needs.pick.outputs.episode }}
+      RELEASE_TAG: deepdive-${{ needs.pick.outputs.episode }}
+      BUILD_DIR: build/deepdive/${{ needs.pick.outputs.episode }}
     timeout-minutes: 40
     strategy:
       fail-fast: true
@@ -172,15 +257,19 @@ jobs:
         run: python3 tools/deepdive.py "$EPISODE" render "$SCENE"
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.episode }}-scene-${{ matrix.scene }}
+          name: ${{ needs.pick.outputs.episode }}-scene-${{ matrix.scene }}
           path: ${{ env.BUILD_DIR }}/scenes/s${{ matrix.scene }}.mp4
           retention-days: 7
 
   master:
     name: Master + cover + QA
-    needs: [render]
+    needs: [pick, render]
     if: ${{ always() && !cancelled() && needs.render.result == 'success' }}
     runs-on: ubuntu-latest
+    env:
+      EPISODE: ${{ needs.pick.outputs.episode }}
+      RELEASE_TAG: deepdive-${{ needs.pick.outputs.episode }}
+      BUILD_DIR: build/deepdive/${{ needs.pick.outputs.episode }}
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -199,7 +288,7 @@ jobs:
       - name: Collect the nine scenes
         uses: actions/download-artifact@v4
         with:
-          pattern: ${{ inputs.episode }}-scene-*
+          pattern: ${{ needs.pick.outputs.episode }}-scene-*
           path: ${{ env.BUILD_DIR }}/scenes
           merge-multiple: true
       - name: Master, cover, QA
@@ -208,12 +297,15 @@ jobs:
           python3 tools/deepdive.py "$EPISODE" master
           python3 tools/deepdive.py "$EPISODE" cover
           python3 tools/deepdive.py "$EPISODE" qa
-      - name: Bank the master and the cover
+      - name: Bank the master, the cover and the cue sheet
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cp "$BUILD_DIR/words.json" "/tmp/$EPISODE-words.json"
-          gh release upload "$RELEASE_TAG" "$BUILD_DIR/$EPISODE-episode.mp4" "$BUILD_DIR/$EPISODE-cover.jpg" "/tmp/$EPISODE-words.json" --clobber
+          cp "$BUILD_DIR/cues.json" "/tmp/$EPISODE-cues.json"
+          cp "$BUILD_DIR/mix_report.json" "/tmp/$EPISODE-mix_report.json"
+          gh release upload "$RELEASE_TAG" "$BUILD_DIR/$EPISODE-episode.mp4" "$BUILD_DIR/$EPISODE-cover.jpg" \
+            "/tmp/$EPISODE-words.json" "/tmp/$EPISODE-cues.json" "/tmp/$EPISODE-mix_report.json" --clobber
           echo "::notice title=Master banked::$(gh release view "$RELEASE_TAG" --json url -q .url)"
       - name: Contact sheet for the run summary
         run: |
@@ -234,19 +326,25 @@ jobs:
             echo
             python3 tools/deepdive.py "$EPISODE" meta | sed -n 's/^title=/**Title:** /p; s/^video_path=/**File:** /p'
             echo
+            echo "**Sound:** $(python3 tools/deepdive.py "$EPISODE" cues | tail -1 | sed 's/^ *//') — bed $(python3 -c "import json;r=json.load(open('$BUILD_DIR/mix_report.json'));print('%.0f dB under the voice' % r['bed_separation_db'])")"
+            echo
             echo "Six frames across the episode (download the master from the release to watch it):"
           } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.episode }}-contact-sheet
+          name: ${{ needs.pick.outputs.episode }}-contact-sheet
           path: /tmp/sheet/contact.jpg
           retention-days: 14
 
   publish:
     name: Publish to YouTube
-    needs: [master]
-    if: ${{ always() && !cancelled() && ((inputs.stage == 'all' && needs.master.result == 'success') || inputs.stage == 'publish') }}
+    needs: [pick, voice, master]
+    if: ${{ always() && !cancelled() && needs.pick.outputs.episode != '' && (needs.pick.outputs.stage == 'publish' || (needs.pick.outputs.stage == 'all' && (needs.master.result == 'success' || needs.pick.outputs.has_master == 'true'))) }}
     runs-on: ubuntu-latest
+    env:
+      EPISODE: ${{ needs.pick.outputs.episode }}
+      RELEASE_TAG: deepdive-${{ needs.pick.outputs.episode }}
+      BUILD_DIR: build/deepdive/${{ needs.pick.outputs.episode }}
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
@@ -277,7 +375,7 @@ jobs:
         id: guard
         env:
           VIDEO_TITLE: ${{ steps.meta.outputs.title }}
-          FORCE: ${{ inputs.force }}
+          FORCE: ${{ needs.pick.outputs.force }}
         run: |
           set +e
           python3 tools/youtube_ledger.py --ledger logs/youtube_longform.json check --title "$VIDEO_TITLE" --date "$(date +%F)" --window-days 3650
@@ -304,7 +402,7 @@ jobs:
           VIDEO_DESCRIPTION: ${{ steps.meta.outputs.description }}
           VIDEO_TAGS: ${{ steps.meta.outputs.tags }}
           CATEGORY: ${{ steps.meta.outputs.category }}
-          PRIVACY: ${{ inputs.privacy }}
+          PRIVACY: ${{ needs.pick.outputs.privacy }}
         run: |
           set -o pipefail
           set +e
@@ -344,7 +442,7 @@ jobs:
           VIDEO_TOPIC: ${{ steps.meta.outputs.topic }}
           VIDEO_ID: ${{ steps.upload.outputs.video_id }}
           VIDEO_URL: ${{ steps.upload.outputs.video_url }}
-          PRIVACY: ${{ steps.upload.outputs.privacy_seen || inputs.privacy }}
+          PRIVACY: ${{ steps.upload.outputs.privacy_seen || needs.pick.outputs.privacy }}
           STATE: ${{ steps.upload.outputs.result }}
           SIZE_BYTES: ${{ steps.upload.outputs.size_bytes }}
         run: |
@@ -370,7 +468,7 @@ jobs:
           VIDEO_URL: ${{ steps.upload.outputs.video_url }}
           RESULT: ${{ steps.upload.outputs.result }}
           PRIVACY_SEEN: ${{ steps.upload.outputs.privacy_seen }}
-          PRIVACY_ASKED: ${{ inputs.privacy }}
+          PRIVACY_ASKED: ${{ needs.pick.outputs.privacy }}
           SKIP: ${{ steps.guard.outputs.skip }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -401,18 +499,32 @@ jobs:
             "$EPISODE" "$RUN_URL" "${TITLE:-unknown}" "$STATE_LINE" "$(tail -n 40 /tmp/yt_upload.log 2>/dev/null || tail -n 25 /tmp/yt_preflight.log 2>/dev/null || echo '(no uploader log)')" > /tmp/issue.md
           gh issue create --title "Deep-Dive $EPISODE publish failed — $(date +%F)" --label youtube-automation --body-file /tmp/issue.md
 
-  # A red voice job is usually "quota" — say so where the owner will see it.
+  # A red voice job is now a REAL error (quota pauses stay green) — say so where the owner looks.
   voice-report:
     name: Voice report
-    needs: [voice]
+    needs: [pick, voice]
     if: ${{ always() && needs.voice.result == 'failure' }}
     runs-on: ubuntu-latest
+    env:
+      EPISODE: ${{ needs.pick.outputs.episode }}
+      RELEASE_TAG: deepdive-${{ needs.pick.outputs.episode }}
+      BUILD_DIR: build/deepdive/${{ needs.pick.outputs.episode }}
     permissions:
       issues: write
     steps:
       - env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          REPO: ${{ github.repository }}
         run: |
-          echo "## Deep-Dive $EPISODE — voice stage did not finish" >> "$GITHUB_STEP_SUMMARY"
-          echo "Most likely the daily Gemini TTS quota. Chunks minted so far are banked on release \`$RELEASE_TAG\`; re-run tomorrow with stage=voice (or all) and it continues. Run: $RUN_URL" >> "$GITHUB_STEP_SUMMARY"
+          echo "## Deep-Dive $EPISODE — voice stage failed (not a quota pause)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Quota pauses end green; this is something else — a bad key, a model that moved, or Vosk refusing. Run: $RUN_URL" >> "$GITHUB_STEP_SUMMARY"
+          gh label create youtube-automation --color FF5A5F --description "Unattended YouTube pipelines" -R "$REPO" >/dev/null 2>&1 || true
+          # one open issue per episode; comment on it rather than piling up
+          EXISTING="$(gh issue list -R "$REPO" --label youtube-automation --state open --search "Deep-Dive $EPISODE voice failed" --json number -q '.[0].number')"
+          if [ -n "$EXISTING" ]; then
+            gh issue comment "$EXISTING" -R "$REPO" --body "Failed again: $RUN_URL"
+          else
+            gh issue create -R "$REPO" --title "Deep-Dive $EPISODE voice failed — $(date +%F)" --label youtube-automation \
+              --body "The Gemini TTS / Vosk stage failed for a reason other than quota. Run: $RUN_URL — open the *Voice* job log; the engine prints what it saw."
+          fi

@@ -78,6 +78,7 @@ PREAMBLE_WORDS = ("narrate", "narrator", "narrates", "accent", "presenter", "art
                   "radio", "instruction")
 
 MIN_EPISODE_SECONDS = 240      # under four minutes is not a Deep-Dive
+MIN_BED_SEPARATION_DB = 14    # music under speech, at least this far below the voice
 MAX_EPISODE_SECONDS = 1500
 
 
@@ -446,6 +447,11 @@ def stage_tts(ep, args):
         text = ep.sections[i - 1]
         p = ep.chunk(i)
         for attempt in range(3):
+            if args.max_requests and requests_made >= args.max_requests:
+                voice_manifest(ep)
+                print("  --max-requests %d reached mid-chunk; %d of %d banked — continuing tomorrow"
+                      % (args.max_requests, len(list(ep.voice_dir.glob("c*.ok"))), ep.n))
+                sys.exit(5)
             print("  c%d → Gemini TTS (%s, %d words)…" % (i, voice, len(text.split())), flush=True)
             status, wait = gemini_tts(text, voice, instruction, p)
             requests_made += 1
@@ -788,6 +794,56 @@ def seg_cmd(path):
             "-vf", "noise=alls=3:allf=t", str(path)]
 
 
+def scene_timing(ep, n, sw, t0, beats=None, verbose=True):
+    """When each beat of scene n fires, and when each numbered row appears.
+
+    One function for the picture AND the sound: the renderer and the cue sheet read the same
+    timings, so a whoosh can never land on a different frame than the headline it announces.
+    """
+    beats = ep.beats(n) if beats is None else beats
+    spans, cursor = [], 0
+    for b in beats:
+        if b["trig"] is None:
+            st = t0
+        else:
+            i = find_idx(sw, b["trig"], cursor)
+            if i is None:
+                if verbose:
+                    print("  ⚠️  scene %d: trigger %r not heard — '%s' snaps to the previous beat + 2.5s"
+                          % (n, " ".join(b["trig"]), b["head"]))
+                st = (spans[-1][1] + 2.5) if spans else t0
+            else:
+                st, cursor = sw[i]["t0"], i
+        spans.append((b, st))
+    row_times = {}
+    for b, _ in spans:
+        if b["rows"]:
+            ts = []
+            for rt in b["row_trigs"]:
+                i = find_idx(sw, rt, 0)
+                ts.append(sw[i]["t0"] if i is not None else None)
+            row_times[id(b)] = ts
+    return spans, row_times
+
+
+def plan_cues(ep, d):
+    """The episode's sound cue sheet from its word timings. Pure apart from reading `d`."""
+    import soundkit
+    secs = d["sections"]
+    by_sec = {}
+    for w in d["words"]:
+        by_sec.setdefault(w["sec"], []).append(w)
+    all_spans, all_rows = [], {}
+    for sec in secs:
+        n = sec["sec"]
+        spans, rows = scene_timing(ep, n, by_sec.get(n, []), sec["start"], verbose=False)
+        all_spans += [(n, b, st) for b, st in spans]
+        all_rows.update(rows)
+    cfg = {**soundkit.DEFAULTS, **ep.meta.get("audio", {})}
+    starts = [sec["start"] for sec in secs]
+    return soundkit.cue_sheet(all_spans, all_rows, starts, secs[-1]["end"], cfg), cfg, starts
+
+
 def render_scene(ep, n, words, secs, by_sec, out_path=None, preview_every=0):
     ep.scene_dir.mkdir(parents=True, exist_ok=True)
     sec = [s for s in secs if s["sec"] == n][0]
@@ -798,31 +854,11 @@ def render_scene(ep, n, words, secs, by_sec, out_path=None, preview_every=0):
     sw = by_sec.get(n, [])
     caps = caption_groups(sw)
 
-    spans, cursor = [], 0
-    for b in beats:
-        if b["trig"] is None:
-            st = t0
-        else:
-            i = find_idx(sw, b["trig"], cursor)
-            if i is None:
-                print("  ⚠️  scene %d: trigger %r not heard — '%s' snaps to the previous beat + 2.5s"
-                      % (n, " ".join(b["trig"]), b["head"]))
-                st = (spans[-1][1] + 2.5) if spans else t0
-            else:
-                st, cursor = sw[i]["t0"], i
-        spans.append((b, st))
+    spans, row_times = scene_timing(ep, n, sw, t0, beats=beats)
     layers = [(b, st, endcard_layer(ep.meta) if b["endcard"] else
                beat_layer(b["head"], b["sub"], b.get("accent") and tuple(b["accent"]) or YELLOW,
                           WHITE, b["center"], top=bool(b["rows"])))
               for b, st in spans]
-    row_times = {}
-    for b, _ in spans:
-        if b["rows"]:
-            ts = []
-            for rt in b["row_trigs"]:
-                i = find_idx(sw, rt, 0)
-                ts.append(sw[i]["t0"] if i is not None else None)
-            row_times[id(b)] = ts
 
     kicker_f, label_f, cap_f = font("SemiBold", 30), font("SemiBold", 28), font("Medium", 40)
     kicker = ep.meta.get("kicker", "DOCOGA — DEEP-DIVE")
@@ -933,13 +969,41 @@ def stage_master(ep, args):
     voice = ep.build / "voice.mp3"
     subprocess.run([ff, "-y", "-f", "concat", "-safe", "0", "-i", str(vlst), "-c", "copy", str(voice)],
                    check=True, capture_output=True)
-    subprocess.run([ff, "-y", "-i", str(video), "-i", str(voice),
+    audio_in = voice
+    if not args.no_music:
+        import soundkit
+        cues, cfg, starts = plan_cues(ep, d)
+        (ep.build / "cues.json").write_text(json.dumps(cues, indent=1), encoding="utf-8")
+        report = soundkit.render_mix(ff, voice, cues, starts, secs[-1]["end"], cfg,
+                                     ep.build / "mix.wav", ep.build / "mix_report.json")
+        audio_in = ep.build / "mix.wav"
+        print("  🎚  bed %s · %d cues · bed under speech %s dB below the voice · peak %.1f dBFS"
+              % ("on" if cfg["bed"] else "off", len(cues),
+                 ("%.1f" % report["bed_separation_db"]) if report.get("bed_separation_db") is not None else "—",
+                 report["mix_peak_db"]))
+    subprocess.run([ff, "-y", "-i", str(video), "-i", str(audio_in),
                     "-af", "loudnorm=I=-16:TP=-1.5:LRA=11",
                     "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-shortest",
                     "-movflags", "+faststart", str(ep.master_path)], check=True, capture_output=True)
     print("  ✅ %s (%.1f s, %d MB)%s" % (ep.master_path, media_duration(ep.master_path),
                                          ep.master_path.stat().st_size // (1024 * 1024),
                                          "  ⚠️ SYNTHETIC PREVIEW" if d.get("synthetic") else ""))
+
+
+# ───────────────────────────── stage: cues ─────────────────────────────
+def stage_cues(ep, args):
+    """Print the sound cue sheet — every effect, the second it lands, and why."""
+    d, words, secs, by_sec = ep.load_words()
+    cues, cfg, _ = plan_cues(ep, d)
+    print("  bed %s · %d BPM · gaps %.0f dB / under speech %.0f dB vs voice · seed %d"
+          % ("on" if cfg["bed"] else "off", cfg["bpm"], cfg["bed_gap_db"], cfg["bed_speech_db"], cfg["seed"]))
+    for c in cues:
+        m, sec = divmod(c["t"], 60)
+        print("  %02d:%06.3f  %-8s %6.1f dB  %s" % (int(m), sec, c["kind"], c["db"], c["why"]))
+    kinds = {}
+    for c in cues:
+        kinds[c["kind"]] = kinds.get(c["kind"], 0) + 1
+    print("  %d cues: %s" % (len(cues), ", ".join("%d %s" % (v, k) for k, v in sorted(kinds.items()))))
 
 
 # ───────────────────────────── stage: cover ─────────────────────────────
@@ -1020,6 +1084,22 @@ def stage_qa(ep, args):
                 fails.append("master is %.1fs but the voice is %.1fs — scenes and audio drifted" % (dur, want))
         if ep.master_path.stat().st_size < 5_000_000:
             fails.append("master is suspiciously small (%d bytes)" % ep.master_path.stat().st_size)
+        rep_path = ep.build / "mix_report.json"
+        if rep_path.is_file():
+            rep = json.loads(rep_path.read_text(encoding="utf-8"))
+            sep = rep.get("bed_separation_db")
+            if sep is not None and sep < MIN_BED_SEPARATION_DB:
+                fails.append("music bed sits only %.1f dB under the voice (need ≥ %d) — it would mask the words"
+                             % (sep, MIN_BED_SEPARATION_DB))
+            if rep.get("mix_peak_db", 0) > -0.1:
+                fails.append("mix clips (peak %.2f dBFS)" % rep["mix_peak_db"])
+            if rep.get("cues", 0) < ep.n:
+                warns.append("only %d sound cues for %d sections" % (rep.get("cues", 0), ep.n))
+            if rep.get("speech_fraction", 1) < 0.5 and not d.get("synthetic"):
+                warns.append("narrator speaks for only %.0f%% of the runtime — long silences?"
+                             % (100 * rep["speech_fraction"]))
+        elif not args.no_music:
+            warns.append("no mix_report.json — master was built without the sound kit")
     if not ep.cover_path.is_file():
         fails.append("cover missing")
     for p in fails:
@@ -1066,11 +1146,13 @@ def chapters_text(ep):
 def main(argv=None):
     ap = argparse.ArgumentParser(description="DocOga Deep-Dive long-form engine")
     ap.add_argument("episode", help="episode id, e.g. dd2")
-    ap.add_argument("stage", choices=["check", "tts", "align", "render", "master", "cover", "qa", "meta", "env"])
+    ap.add_argument("stage", choices=["check", "tts", "align", "render", "master", "cues", "cover", "qa", "meta", "env"])
     ap.add_argument("scene", nargs="?", default="all", help="render: scene number or 'all'")
     ap.add_argument("--wait-budget-min", type=int, default=0,
                     help="tts: how long to wait for a quota slot before giving up (exit 5)")
-    ap.add_argument("--max-requests", type=int, default=0, help="tts: stop after N requests")
+    ap.add_argument("--max-requests", type=int, default=12,
+                    help="tts: never make more than N Gemini requests in one run (free-tier guard)")
+    ap.add_argument("--no-music", action="store_true", help="master/qa: voice only, no bed or SFX")
     ap.add_argument("--install-deps", action="store_true", help="pip install vosk + download the model")
     ap.add_argument("--no-asr", action="store_true", help="tts: skip the ASR verification/trim")
     ap.add_argument("--synthetic", action="store_true", help="align: pace-estimated timings (preview only)")
@@ -1096,7 +1178,7 @@ def main(argv=None):
     if ms.check_environment():
         die("; ".join(ms.check_environment()), 2)
     {"tts": stage_tts, "align": stage_align, "render": stage_render, "master": stage_master,
-     "cover": stage_cover, "qa": stage_qa, "meta": stage_meta}[args.stage](ep, args)
+     "cues": stage_cues, "cover": stage_cover, "qa": stage_qa, "meta": stage_meta}[args.stage](ep, args)
 
 
 if __name__ == "__main__":
