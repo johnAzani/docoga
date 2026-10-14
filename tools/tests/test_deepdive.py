@@ -457,3 +457,38 @@ class LockedVoiceTests(unittest.TestCase):
         self.assertIn("LOCKED", doc.split("### TTS voice", 1)[1][:400])
         self.assertIn(LOCKED_INSTRUCTION, doc)
         self.assertIn(LOCKED_SHA256[:12], doc)
+
+
+class LastMileTests(unittest.TestCase):
+    """Run #1 (14 Oct 2026): a finished master, banked, and the publish job died on a font check."""
+
+    def test_meta_and_cues_do_not_need_render_tools(self):
+        src = (TOOLS_DIR / "deepdive.py").read_text(encoding="utf-8")
+        self.assertIn("if args.stage in RENDERING_STAGES and ms.check_environment():", src)
+        self.assertIn('RENDERING_STAGES = ("tts", "align", "render", "master", "cover", "qa")', src)
+        self.assertNotIn('"meta"', src.split("RENDERING_STAGES = ", 1)[1].split("\n", 1)[0])
+
+    def test_publish_job_installs_the_same_deps_as_every_other_job(self):
+        src = WORKFLOW.read_text(encoding="utf-8")
+        publish = src.split("\n  publish:", 1)[1]
+        self.assertIn("bash tools/install_motionstudio_deps.sh", publish.split("Restore the master", 1)[0])
+
+    @unittest.skipUnless(ENGINE_OK, "deepdive engine not importable (PIL/numpy)")
+    def test_meta_runs_with_no_fonts_and_no_ffmpeg(self):
+        import io, contextlib, tempfile, os
+        ep = episodes()[0]
+        with tempfile.TemporaryDirectory() as td:
+            build = Path(td)
+            with patch.object(dd, "BUILD", build), \
+                 patch.object(dd.ms, "check_environment", return_value=["Inter is not installed", "ffmpeg not found"]), \
+                 patch.dict(os.environ, {"GITHUB_OUTPUT": str(build / "out.txt")}):
+                e = dd.Episode(ep.id)
+                (build / ep.id).mkdir(parents=True)
+                (build / ep.id / "words.json").write_text(json.dumps(dd.synthetic_words(e, [60.0] * e.n)), encoding="utf-8")
+                buf = io.StringIO()
+                with contextlib.redirect_stdout(buf):
+                    try:
+                        dd.main([ep.id, "meta"])
+                    except SystemExit as exc:
+                        self.assertIn(exc.code, (None, 0))
+                self.assertIn("title=", buf.getvalue())
