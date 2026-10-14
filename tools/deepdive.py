@@ -124,8 +124,9 @@ PREAMBLE_WORDS = ("narrate", "narrator", "narrates", "accent", "presenter", "art
                   "radio", "instruction")
 
 MIN_EPISODE_SECONDS = 240      # under four minutes is not a Deep-Dive
+MAX_BED_SEPARATION_DB = 22    # further than this and the owner hears no music at all (run #1 was 27 by raw power)
 RENDERING_STAGES = ("tts", "align", "render", "master", "cover", "qa")   # need Inter + ffmpeg
-MIN_BED_SEPARATION_DB = 14    # music under speech, at least this far below the voice
+MIN_BED_SEPARATION_DB = 11    # music under speech, at least this far below the voice — A-weighted (as heard)
 MAX_EPISODE_SECONDS = 1500
 
 
@@ -1031,9 +1032,10 @@ def stage_master(ep, args):
         report = soundkit.render_mix(ff, voice, cues, starts, secs[-1]["end"], cfg,
                                      ep.build / "mix.wav", ep.build / "mix_report.json")
         audio_in = ep.build / "mix.wav"
-        print("  🎚  bed %s · %d cues · bed under speech %s dB below the voice · peak %.1f dBFS"
+        print("  🎚  bed %s · %d cues · bed %s dB(A) under speech, %s dB(A) under in the gaps · peak %.1f dBFS"
               % ("on" if cfg["bed"] else "off", len(cues),
                  ("%.1f" % report["bed_separation_db"]) if report.get("bed_separation_db") is not None else "—",
+                 ("%.1f" % report["bed_gap_separation_db"]) if report.get("bed_gap_separation_db") is not None else "—",
                  report["mix_peak_db"]))
     subprocess.run([ff, "-y", "-i", str(video), "-i", str(audio_in),
                     "-af", "loudnorm=I=-16:TP=-1.5:LRA=11",
@@ -1143,8 +1145,11 @@ def stage_qa(ep, args):
             rep = json.loads(rep_path.read_text(encoding="utf-8"))
             sep = rep.get("bed_separation_db")
             if sep is not None and sep < MIN_BED_SEPARATION_DB:
-                fails.append("music bed sits only %.1f dB under the voice (need ≥ %d) — it would mask the words"
+                fails.append("music bed sits only %.1f dB(A) under the voice (need ≥ %d) — it would mask the words"
                              % (sep, MIN_BED_SEPARATION_DB))
+            if sep is not None and sep > MAX_BED_SEPARATION_DB:
+                fails.append("music bed is %.1f dB(A) under the voice — inaudible on a phone (DD2 run #1 lesson; max %d)"
+                             % (sep, MAX_BED_SEPARATION_DB))
             if rep.get("mix_peak_db", 0) > -0.1:
                 fails.append("mix clips (peak %.2f dBFS)" % rep["mix_peak_db"])
             if rep.get("cues", 0) < ep.n:

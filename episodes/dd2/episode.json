@@ -10,17 +10,17 @@
     "instruction": "Narrate this in a natural Nigerian English accent, like a confident Lagos radio presenter:"
   },
   "audio": {
-    "_comment": "Sound plan — synthesized by tools/soundkit.py, cued from the beats (python3 tools/deepdive.py dd2 cues). Levels are dB relative to the narrator's own speech level.",
+    "_comment": "Sound plan — synthesized by tools/soundkit.py, cued from the beats (python3 tools/deepdive.py dd2 cues). Bed levels are dB(A) relative to the narrator's speech; SFX are dB below the voice peak. Run #1 (-27 raw) was inaudible on phones — these are broadcast-documentary levels.",
     "bed": true,
     "bpm": 72,
     "seed": 7,
-    "bed_gap_db": -18,
-    "bed_speech_db": -27,
-    "sfx_db": -16,
-    "hit_db": -13,
-    "tick_db": -20,
-    "riser_db": -19,
-    "stinger_db": -14,
+    "bed_gap_db": -8,
+    "bed_speech_db": -16,
+    "sfx_db": -12,
+    "hit_db": -9,
+    "tick_db": -16,
+    "riser_db": -14,
+    "stinger_db": -9,
     "tail_fade_s": 4
   },
   "youtube": {

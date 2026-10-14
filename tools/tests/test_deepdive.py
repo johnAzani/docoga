@@ -288,7 +288,7 @@ class SoundKitTests(unittest.TestCase):
         self.assertEqual(kinds, [(0.0, "hit"), (4.92, "whoosh"), (28.8, "riser"), (30.0, "hit"),
                                  (31.0, "tick"), (33.0, "tick"), (40.0, "stinger")])
         self.assertTrue(all(c["t"] == round(c["t"], 3) for c in cues), "millisecond precision, no drift")
-        self.assertTrue(all(c["db"] <= -13 for c in cues), "nothing in the kit is louder than the voice")
+        self.assertTrue(all(c["db"] <= -9 for c in cues), "nothing in the kit is louder than the voice")
 
     def test_no_riser_when_the_episode_opens_cold(self):
         cfg = dict(self.sk.DEFAULTS)
@@ -317,17 +317,48 @@ class SoundKitTests(unittest.TestCase):
         self.assertGreater(float(mask[int(2.5 * sr)]), 0.95)
         self.assertLess(float(mask[int(5.5 * sr)]), 0.05)
 
-    def test_qa_threshold_is_the_one_the_mixer_defaults_clear(self):
-        self.assertGreaterEqual(-self.sk.DEFAULTS["bed_speech_db"], dd.MIN_BED_SEPARATION_DB + 6,
-                                "defaults must clear the QA gate with margin, or every master fails")
+    def test_qa_window_is_the_one_the_mixer_defaults_sit_inside(self):
+        sep = -self.sk.DEFAULTS["bed_speech_db"]
+        self.assertGreaterEqual(sep, dd.MIN_BED_SEPARATION_DB + 4, "clear of the masking gate with margin")
+        self.assertLessEqual(sep, dd.MAX_BED_SEPARATION_DB - 4, "clear of the inaudible gate with margin")
 
-    def test_episode_audio_plan_is_explicit_and_quiet(self):
+    def test_episode_audio_plan_is_explicit_audible_and_never_masking(self):
+        """DD2 run #1: -27 dB by raw power → 'I did not hear background music'. Audible AND clear."""
         for ep in episodes():
             a = ep.meta.get("audio", {})
             with self.subTest(episode=ep.id):
                 self.assertIn("bed", a, "the sound plan lives in episode.json, not in someone's head")
-                self.assertLessEqual(a.get("bed_speech_db", -27), -24)
-                self.assertLessEqual(a.get("sfx_db", -16), -12)
+                self.assertLessEqual(a.get("bed_speech_db", -16), -14, "never masks the words")
+                self.assertGreaterEqual(a.get("bed_speech_db", -16), -20, "never inaudible on a phone")
+                self.assertGreaterEqual(a.get("bed_gap_db", -8), -12, "the bed must breathe in the gaps")
+                self.assertLessEqual(a.get("sfx_db", -12), -9)
+
+    def test_levels_are_measured_as_ears_hear_them(self):
+        """A-weighting: 1 kHz is the 0 dB reference; 55 Hz (the sub pulse) counts ~30 dB less."""
+        import numpy as np
+        g = self.sk.a_weight_gain(np.array([55.0, 200.0, 1000.0, 3000.0]))
+        self.assertAlmostEqual(20 * np.log10(g[2]), 0.0, delta=0.2)
+        self.assertLess(20 * np.log10(g[0]), -28)
+        self.assertLess(20 * np.log10(g[1]), -8)
+        self.assertGreater(20 * np.log10(g[3]), 0.5)
+
+    def test_the_bed_lives_where_phone_speakers_can_play_it(self):
+        import numpy as np
+        y = self.sk.bed(12.0, [0.0, 6.0], 72, 7)
+        seg = y[2 * self.sk.SR:6 * self.sk.SR]
+        spec = np.abs(np.fft.rfft(seg)) ** 2
+        f = np.fft.rfftfreq(len(seg), 1 / self.sk.SR)
+        w = self.sk.a_weight_gain(f) ** 2
+        heard = spec * w
+        above = heard[f >= 200].sum() / heard.sum()
+        self.assertGreater(above, 0.9, "as heard, ≥90%% of the bed is above 200 Hz (got %.0f%%)" % (100 * above))
+
+    def test_mix_report_is_a_weighted_and_qa_has_both_gates(self):
+        src = (TOOLS_DIR / "deepdive.py").read_text(encoding="utf-8")
+        qa = src.split("def stage_qa", 1)[1]
+        self.assertIn("MAX_BED_SEPARATION_DB", qa)
+        self.assertIn("MIN_BED_SEPARATION_DB", qa)
+        self.assertIn('"weighting": "A"', (TOOLS_DIR / "soundkit.py").read_text(encoding="utf-8"))
 
     def test_master_uses_the_kit_and_qa_reads_the_report(self):
         src = (TOOLS_DIR / "deepdive.py").read_text(encoding="utf-8")

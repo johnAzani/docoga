@@ -1126,6 +1126,16 @@ if os.path.isfile(dd_wf) and os.path.isfile(dd_tool):
           "GEMINI_VOICE" not in dd_tool_text and '"--voice"' not in dd_tool_text
           and 'meta["voice"]' not in _tts_body and _ep_voices_ok,
           "the lock has one definition; every other path to the narrator is closed")
+    check("deepdive: the bed is audible AND clear — A-weighted gates on both sides (run #1 lesson)",
+          "MAX_BED_SEPARATION_DB" in dd_tool_text and "a_weight_gain" in
+          open(os.path.join(ROOT, "tools", "soundkit.py"), encoding="utf-8").read(),
+          "-27 dB by raw power was 'I did not hear background music'")
+    check("youtube stats: the channel's numbers are pulled weekly, read-only, into the repo",
+          os.path.isfile(os.path.join(ROOT, "tools", "yt_stats.py"))
+          and os.path.isfile(os.path.join(ROOT, ".github", "workflows", "youtube_stats.yml"))
+          and "docs/YOUTUBE_PERFORMANCE.md" in open(os.path.join(ROOT, ".github", "workflows", "youtube_stats.yml"),
+                                                   encoding="utf-8").read(),
+          "decisions on data, not memory")
     check("deepdive: the runbook tells the owner how to add the key and run it",
           os.path.isfile(os.path.join(ROOT, "docs", "LONGFORM_AUTOMATION.md"))
           and "GEMINI_API_KEY" in open(os.path.join(ROOT, "docs", "LONGFORM_AUTOMATION.md"),

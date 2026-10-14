@@ -189,7 +189,7 @@ Any trace of AI → asset is dead. Regenerated + re-treated instantly.
 - Progress bar at bottom
 - End card: DOCOGA + docoga.com.ng + disclaimer line, on a navy wash
 - Voice: 🔒 LOCKED — Gemini Orus with the exact instruction in §7 "TTS voice"; word-sync by Vosk on the runner
-- Sound: synthesized DocOga kit (`tools/soundkit.py`) — A-minor pad bed at 72 BPM ducked −27 dB under speech / −18 dB in gaps, riser+hit on section titles, whoosh on beats, tick per row, stinger on the end card; cue sheet from the beats (`deepdive.py <ep> cues`); nothing downloaded, nothing licensed
+- Sound: synthesized DocOga kit (`tools/soundkit.py`) — A-minor pad voiced A3–A4 with a plucked arpeggio at 72 BPM, ducked to 16 dB(A) under speech / 8 dB(A) in gaps (A-weighted, i.e. as heard — raw-power levels fooled us on DD2 run #1), riser+hit on section titles, whoosh on beats, tick per row, stinger on the end card; cue sheet from the beats (`deepdive.py <ep> cues`); nothing downloaded, nothing licensed
 - Pictures: committed 16:9 stills in `episodes/assets/`, duotoned at render time — never text in the plate
 - Tools: `tools/deepdive.py` (engine) + `.github/workflows/deepdive.yml` (lane) — runbook `docs/LONGFORM_AUTOMATION.md`
 - Legacy `make_longform*.py` kept only for the DD3/DD4 beat lists
