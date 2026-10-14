@@ -1103,6 +1103,29 @@ if os.path.isfile(dd_wf) and os.path.isfile(dd_tool):
           "MIN_BED_SEPARATION_DB" in dd_tool_text and "bed_separation_db" in dd_tool_text)
     check("deepdive: the sound plan is written down per episode",
           all("audio" in open(os.path.join(d, "episode.json"), encoding="utf-8").read() for d in eps))
+    # THE VOICE — LOCKED (owner, 14 Oct 2026: "not even by one sentence or word, not even by mistake")
+    import hashlib as _hl
+    _lock_name = "Orus"
+    _lock_ins = "Narrate this in a natural Nigerian English accent, like a confident Lagos radio presenter:"
+    _lock_sha = "697e3233c630632bfa394317cc8902f0ab51e6d70670921c360d2161e6cff663"
+    check("deepdive: THE VOICE IS LOCKED — Orus + the exact instruction, fingerprint %s…" % _lock_sha[:12],
+          _hl.sha256((_lock_name + "\n" + _lock_ins).encode("utf-8")).hexdigest() == _lock_sha
+          and 'LOCKED_VOICE_NAME = "Orus"' in dd_tool_text
+          and ('LOCKED_VOICE_SHA256 = "%s"' % _lock_sha) in dd_tool_text
+          and '"Narrate this in a natural Nigerian English accent, "' in dd_tool_text
+          and '"like a confident Lagos radio presenter:"' in dd_tool_text
+          and "voice, instruction = locked_voice()" in dd_tool_text,
+          "owner instruction 14 Oct 2026 — revert the change; never edit this check")
+    _tts_body = dd_tool_text.split("def stage_tts", 1)[1].split("\ndef ", 1)[0]
+    _ep_voices_ok = True
+    for d in eps:
+        _v = _json.loads(open(os.path.join(d, "episode.json"), encoding="utf-8").read()).get("voice")
+        if _v is not None and (_v.get("name") != _lock_name or _v.get("instruction") != _lock_ins):
+            _ep_voices_ok = False
+    check("deepdive: no episode file, env var or flag can pick another narrator",
+          "GEMINI_VOICE" not in dd_tool_text and '"--voice"' not in dd_tool_text
+          and 'meta["voice"]' not in _tts_body and _ep_voices_ok,
+          "the lock has one definition; every other path to the narrator is closed")
     check("deepdive: the runbook tells the owner how to add the key and run it",
           os.path.isfile(os.path.join(ROOT, "docs", "LONGFORM_AUTOMATION.md"))
           and "GEMINI_API_KEY" in open(os.path.join(ROOT, "docs", "LONGFORM_AUTOMATION.md"),

@@ -55,6 +55,20 @@ That is the only new secret. The YouTube secrets the Shorts lane already uses
 
 ---
 
+## The voice — 🔒 locked
+
+Owner, 14 Oct 2026: *"Lock that voice in. On no occasion shall it change — not even by one
+sentence or word, not even by mistake."*
+
+**Gemini Orus**, instruction byte for byte:
+`Narrate this in a natural Nigerian English accent, like a confident Lagos radio presenter:`
+
+It is defined once, in `tools/deepdive.py` (`LOCKED_VOICE_*`), fingerprinted
+(`697e3233c630…`), and checked before every TTS request. An episode file that says anything
+different is refused; so is any request that reaches the API with another voice. The unit
+tests and `tools/qa.py` pin the exact bytes, so a change cannot merge. Adding DD3, DD4 or
+any later episode needs no voice setting at all — they inherit it.
+
 ## Free plan, forever — how the lane stays inside it
 
 - **Hard cap:** the engine makes at most 12 Gemini requests per run (`--max-requests 12`),
