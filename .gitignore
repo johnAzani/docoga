@@ -27,3 +27,6 @@ docoga-github-repo.zip
 # rebuilt from the same date-seeded templates on every run.
 assets/facebook/
 assets/threads/
+
+# Deep-Dive build tree (voice chunks, scene segments, masters) — banked on GitHub Releases, never in git
+build/

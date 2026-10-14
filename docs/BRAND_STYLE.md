@@ -178,8 +178,11 @@ Any trace of AI → asset is dead. Regenerated + re-treated instantly.
 - Left gradient + navy canvas + film grain
 - Rows layer for numbered lists
 - Progress bar at bottom
-- End card: DOCOGA + docoga.com.ng
-- Tools: `make_longform*.py`
+- End card: DOCOGA + docoga.com.ng + disclaimer line, on a navy wash
+- Voice: Gemini TTS (Orus, Nigerian-English radio-presenter read); word-sync by Vosk on the runner
+- Pictures: committed 16:9 stills in `episodes/assets/`, duotoned at render time — never text in the plate
+- Tools: `tools/deepdive.py` (engine) + `.github/workflows/deepdive.yml` (lane) — runbook `docs/LONGFORM_AUTOMATION.md`
+- Legacy `make_longform*.py` kept only for the DD3/DD4 beat lists
 
 ### Shorts (1080×1920, vertical)
 - Cut from Deep-Dive episodes

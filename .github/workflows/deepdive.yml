@@ -1,0 +1,418 @@
+name: Deep-Dive — produce and publish one long-form episode
+
+# The long-form lane: words → Gemini voice → Vosk word-sync → nine scenes rendered in
+# parallel → master (−16 LUFS) → cover → QA → YouTube. Every expensive intermediate is
+# BANKED on a GitHub Release (`deepdive-<episode>`), because the voice costs daily TTS
+# quota and a 10-minute render costs minutes — a re-run must never pay twice for the
+# same bytes, and nothing may live only on a runner's disk (that is how DD1–DD4's voice
+# was lost in Sep 2026).
+#
+# Stages (input `stage`):
+#   all      voice → render → master → publish
+#   voice    bank the voice + word timings only (useful while the TTS quota is being harvested)
+#   render   assume the voice is banked; render, master, QA, bank the master — publish nothing
+#   publish  assume the master is banked; upload it
+#
+# Exit 5 from the TTS stage means "the daily Gemini bucket is empty": whatever chunks were
+# minted are banked, the run goes red with that said in plain words, and tomorrow's re-run
+# picks up where it stopped.
+
+on:
+  workflow_dispatch:
+    inputs:
+      episode:
+        description: 'Episode id (a folder under episodes/)'
+        required: true
+        default: dd2
+        type: string
+      stage:
+        description: 'How far to go'
+        required: true
+        default: all
+        type: choice
+        options: [all, voice, render, publish]
+      privacy:
+        description: 'YouTube privacy for the upload'
+        required: true
+        default: unlisted
+        type: choice
+        options: [unlisted, private, public]
+      force:
+        description: 'Publish even if this title is already in the long-form ledger'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write   # releases (the bank) + the ledger commit
+  issues: write     # a failed run opens a visible issue
+
+concurrency:
+  group: deepdive-${{ inputs.episode }}
+  cancel-in-progress: false
+
+env:
+  TZ: Africa/Lagos
+  EPISODE: ${{ inputs.episode }}
+  RELEASE_TAG: deepdive-${{ inputs.episode }}
+  BUILD_DIR: build/deepdive/${{ inputs.episode }}
+
+jobs:
+  voice:
+    name: Voice (Gemini TTS) + word-sync
+    if: ${{ inputs.stage == 'all' || inputs.stage == 'voice' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install MotionStudio deps (ffmpeg + Inter) and the ASR engine
+        run: |
+          bash tools/install_motionstudio_deps.sh
+          python -m pip install --quiet "requests>=2.31,<3" vosk
+          mkdir -p /tmp/vosk && cd /tmp/vosk
+          curl -fsSL -o model.zip https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip
+          unzip -q -o model.zip && rm model.zip
+          cd "$GITHUB_WORKSPACE" && python3 tools/deepdive.py "$EPISODE" env
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      - name: Script ↔ beats contract
+        run: python3 tools/deepdive.py "$EPISODE" check
+      - name: Restore the banked voice (if any)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p "$BUILD_DIR"
+          if gh release download "$RELEASE_TAG" --pattern "$EPISODE-voice.tar.gz" -D /tmp 2>/dev/null; then
+            tar -xzf "/tmp/$EPISODE-voice.tar.gz" -C "$BUILD_DIR"
+            echo "restored: $(ls "$BUILD_DIR/voice" | tr '\n' ' ')"
+          else
+            echo "no banked voice yet for $RELEASE_TAG"
+          fi
+      - name: Gemini TTS (resumable; waits for a quota slot up to 35 min)
+        id: tts
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_TTS_MODEL: ${{ vars.GEMINI_TTS_MODEL }}
+        run: |
+          set +e
+          python3 tools/deepdive.py "$EPISODE" tts --wait-budget-min 35 2>&1 | tee /tmp/tts.log
+          code=${PIPESTATUS[0]}
+          set -e
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          if [ "$code" -eq 5 ]; then
+            echo "::warning title=TTS quota::The daily Gemini TTS bucket ran dry. The chunks minted so far are banked below — re-run this workflow tomorrow (stage=voice or all) and it continues from there."
+          elif [ "$code" -ne 0 ]; then
+            echo "::error title=TTS failed::see the log above"
+          fi
+      - name: Word-sync (Vosk)
+        if: steps.tts.outputs.code == '0'
+        run: python3 tools/deepdive.py "$EPISODE" align
+      - name: Bank the voice on the release
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          [ -d "$BUILD_DIR/voice" ] || { echo "nothing to bank"; exit 0; }
+          tar -czf "/tmp/$EPISODE-voice.tar.gz" -C "$BUILD_DIR" voice $( [ -f "$BUILD_DIR/words.json" ] && echo words.json )
+          gh release view "$RELEASE_TAG" >/dev/null 2>&1 || \
+            gh release create "$RELEASE_TAG" --prerelease --title "Deep-Dive bank: $EPISODE" \
+              --notes "Intermediates for episodes/$EPISODE — voice chunks, word timings, master, cover. Managed by .github/workflows/deepdive.yml."
+          gh release upload "$RELEASE_TAG" "/tmp/$EPISODE-voice.tar.gz" --clobber
+          echo "banked $EPISODE-voice.tar.gz ($(stat -c%s /tmp/$EPISODE-voice.tar.gz) bytes)"
+      - name: Hand the timings to the render jobs
+        if: steps.tts.outputs.code == '0'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.episode }}-words
+          path: |
+            ${{ env.BUILD_DIR }}/words.json
+            ${{ env.BUILD_DIR }}/voice/manifest.json
+          retention-days: 7
+      - name: Fail the job if the voice is incomplete
+        if: steps.tts.outputs.code != '0'
+        run: exit ${{ steps.tts.outputs.code }}
+
+  render:
+    name: Render scene ${{ matrix.scene }}
+    needs: [voice]
+    if: ${{ always() && !cancelled() && (inputs.stage == 'render' || (inputs.stage == 'all' && needs.voice.result == 'success')) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: true
+      matrix:
+        scene: [1, 2, 3, 4, 5, 6, 7, 8, 9]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install MotionStudio deps (ffmpeg + Inter)
+        run: bash tools/install_motionstudio_deps.sh
+      - name: Fetch the word timings (artifact from this run, else the bank)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p "$BUILD_DIR"
+          if gh run download "$GITHUB_RUN_ID" -n "$EPISODE-words" -D "$BUILD_DIR" 2>/dev/null && [ -f "$BUILD_DIR/words.json" ]; then
+            echo "timings from this run"
+          else
+            gh release download "$RELEASE_TAG" --pattern "$EPISODE-voice.tar.gz" -D /tmp
+            tar -xzf "/tmp/$EPISODE-voice.tar.gz" -C "$BUILD_DIR"
+            echo "timings from the bank"
+          fi
+          python3 -c "import json,sys; d=json.load(open('$BUILD_DIR/words.json')); sys.exit(1 if d.get('synthetic') else 0)" \
+            || { echo '::error title=Synthetic timings::words.json is pace-estimated, not aligned to the voice — refusing to render for publish'; exit 1; }
+      - name: Render
+        env:
+          SCENE: ${{ matrix.scene }}
+        run: python3 tools/deepdive.py "$EPISODE" render "$SCENE"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.episode }}-scene-${{ matrix.scene }}
+          path: ${{ env.BUILD_DIR }}/scenes/s${{ matrix.scene }}.mp4
+          retention-days: 7
+
+  master:
+    name: Master + cover + QA
+    needs: [render]
+    if: ${{ always() && !cancelled() && needs.render.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install MotionStudio deps (ffmpeg + Inter)
+        run: bash tools/install_motionstudio_deps.sh
+      - name: Restore the voice + timings from the bank
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p "$BUILD_DIR"
+          gh release download "$RELEASE_TAG" --pattern "$EPISODE-voice.tar.gz" -D /tmp
+          tar -xzf "/tmp/$EPISODE-voice.tar.gz" -C "$BUILD_DIR"
+      - name: Collect the nine scenes
+        uses: actions/download-artifact@v4
+        with:
+          pattern: ${{ inputs.episode }}-scene-*
+          path: ${{ env.BUILD_DIR }}/scenes
+          merge-multiple: true
+      - name: Master, cover, QA
+        run: |
+          ls -la "$BUILD_DIR/scenes"
+          python3 tools/deepdive.py "$EPISODE" master
+          python3 tools/deepdive.py "$EPISODE" cover
+          python3 tools/deepdive.py "$EPISODE" qa
+      - name: Bank the master and the cover
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cp "$BUILD_DIR/words.json" "/tmp/$EPISODE-words.json"
+          gh release upload "$RELEASE_TAG" "$BUILD_DIR/$EPISODE-episode.mp4" "$BUILD_DIR/$EPISODE-cover.jpg" "/tmp/$EPISODE-words.json" --clobber
+          echo "::notice title=Master banked::$(gh release view "$RELEASE_TAG" --json url -q .url)"
+      - name: Contact sheet for the run summary
+        run: |
+          set -e
+          ff="$(command -v ffmpeg || python3 -c 'import imageio_ffmpeg;print(imageio_ffmpeg.get_ffmpeg_exe())')"
+          mkdir -p /tmp/sheet
+          dur=$(python3 -c "import json;print(int(json.load(open('$BUILD_DIR/words.json'))['sections'][-1]['end']))")
+          for k in 1 2 3 4 5 6; do t=$(( dur * k / 7 )); "$ff" -loglevel error -ss "$t" -i "$BUILD_DIR/$EPISODE-episode.mp4" -frames:v 1 -vf scale=480:270 "/tmp/sheet/f$k.png"; done
+          python3 - <<'PY'
+          from PIL import Image
+          ims=[Image.open('/tmp/sheet/f%d.png'%k) for k in range(1,7)]
+          out=Image.new('RGB',(480*3+20,270*2+10),(40,40,40))
+          for i,im in enumerate(ims): out.paste(im,((i%3)*490,(i//3)*280))
+          out.save('/tmp/sheet/contact.jpg',quality=80)
+          PY
+          {
+            echo "## Deep-Dive $EPISODE — master"
+            echo
+            python3 tools/deepdive.py "$EPISODE" meta | sed -n 's/^title=/**Title:** /p; s/^video_path=/**File:** /p'
+            echo
+            echo "Six frames across the episode (download the master from the release to watch it):"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.episode }}-contact-sheet
+          path: /tmp/sheet/contact.jpg
+          retention-days: 14
+
+  publish:
+    name: Publish to YouTube
+    needs: [master]
+    if: ${{ always() && !cancelled() && ((inputs.stage == 'all' && needs.master.result == 'success') || inputs.stage == 'publish') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install the uploader's dependencies
+        run: python -m pip install --quiet "requests>=2.31,<3" "Pillow>=10,<13" "numpy>=1.24,<3"
+      - name: Restore the master, cover and timings from the bank
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p "$BUILD_DIR"
+          gh release download "$RELEASE_TAG" --pattern "$EPISODE-episode.mp4" --pattern "$EPISODE-cover.jpg" --pattern "$EPISODE-words.json" -D "$BUILD_DIR"
+          mv "$BUILD_DIR/$EPISODE-words.json" "$BUILD_DIR/words.json"
+          ls -la "$BUILD_DIR"
+      - name: Upload metadata
+        id: meta
+        run: python3 tools/deepdive.py "$EPISODE" meta
+      - name: Preflight — credentials usable, channel named
+        env:
+          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+          YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+          YT_CHANNEL_ID: ${{ vars.YT_CHANNEL_ID }}
+        run: python3 tools/yt_publish.py --probe 2>&1 | tee /tmp/yt_preflight.log
+      - name: Duplicate guard (long-form ledger)
+        id: guard
+        env:
+          VIDEO_TITLE: ${{ steps.meta.outputs.title }}
+          FORCE: ${{ inputs.force }}
+        run: |
+          set +e
+          python3 tools/youtube_ledger.py --ledger logs/youtube_longform.json check --title "$VIDEO_TITLE" --date "$(date +%F)" --window-days 3650
+          code=$?
+          set -e
+          if [ "$code" -eq 3 ] && [ "$FORCE" != "true" ]; then
+            echo "skip=yes" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Already published::\"$VIDEO_TITLE\" is in logs/youtube_longform.json — nothing uploaded. Re-run with force=true to publish again."
+          elif [ "$code" -ne 0 ] && [ "$code" -ne 3 ]; then
+            exit "$code"
+          else
+            echo "skip=no" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Upload to YouTube
+        id: upload
+        if: steps.guard.outputs.skip != 'yes'
+        env:
+          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+          YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+          YT_CHANNEL_ID: ${{ vars.YT_CHANNEL_ID }}
+          VIDEO_PATH: ${{ steps.meta.outputs.video_path }}
+          VIDEO_TITLE: ${{ steps.meta.outputs.title }}
+          VIDEO_DESCRIPTION: ${{ steps.meta.outputs.description }}
+          VIDEO_TAGS: ${{ steps.meta.outputs.tags }}
+          CATEGORY: ${{ steps.meta.outputs.category }}
+          PRIVACY: ${{ inputs.privacy }}
+        run: |
+          set -o pipefail
+          set +e
+          python3 tools/yt_publish.py --video "$VIDEO_PATH" --title "$VIDEO_TITLE" \
+            --description "$VIDEO_DESCRIPTION" --tags "$VIDEO_TAGS" --category "$CATEGORY" \
+            --privacy "$PRIVACY" 2>&1 | tee /tmp/yt_upload.log
+          code=${PIPESTATUS[0]}
+          set -e
+          marker() { sed -n "s/^$1=//p" /tmp/yt_upload.log | tail -1; }
+          VIDEO_ID=$(marker VIDEO_ID)
+          if [ -z "$VIDEO_ID" ]; then
+            echo "::error title=No video id::yt_publish.py exited $code without a VIDEO_ID — nothing is recorded; read the channel before retrying."
+            exit "${code:-1}"
+          fi
+          {
+            echo "video_id=$VIDEO_ID"
+            echo "video_url=https://www.youtube.com/watch?v=$VIDEO_ID"
+            echo "result=$(marker YT_UPLOAD_RESULT)"
+            echo "privacy_seen=$(marker YT_PRIVACY)"
+            echo "size_bytes=$(stat -c%s "$VIDEO_PATH")"
+          } >> "$GITHUB_OUTPUT"
+          exit "$code"
+      - name: Set the thumbnail (never fails the publish)
+        if: steps.upload.outputs.video_id != ''
+        continue-on-error: true
+        env:
+          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+          YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+          VIDEO_ID: ${{ steps.upload.outputs.video_id }}
+          COVER: ${{ steps.meta.outputs.cover_path }}
+        run: python3 tools/yt_thumbnail.py --video-id "$VIDEO_ID" --image "$COVER"
+      - name: Record in the long-form ledger
+        if: always() && steps.upload.outputs.video_id != ''
+        env:
+          VIDEO_TITLE: ${{ steps.meta.outputs.title }}
+          VIDEO_TOPIC: ${{ steps.meta.outputs.topic }}
+          VIDEO_ID: ${{ steps.upload.outputs.video_id }}
+          VIDEO_URL: ${{ steps.upload.outputs.video_url }}
+          PRIVACY: ${{ steps.upload.outputs.privacy_seen || inputs.privacy }}
+          STATE: ${{ steps.upload.outputs.result }}
+          SIZE_BYTES: ${{ steps.upload.outputs.size_bytes }}
+        run: |
+          python3 tools/youtube_ledger.py --ledger logs/youtube_longform.json record \
+            --state "${STATE:-uploaded}" --title "$VIDEO_TITLE" --topic "$VIDEO_TOPIC" \
+            --video-id "$VIDEO_ID" --url "$VIDEO_URL" --privacy "$PRIVACY" \
+            --date "$(date +%F)" --run-id "$GITHUB_RUN_ID" --size-bytes "${SIZE_BYTES:-0}"
+      - name: Commit the ledger
+        if: always() && steps.upload.outputs.video_id != ''
+        continue-on-error: true
+        env:
+          BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git pull --rebase --autostash origin "$BRANCH" || { echo "::warning title=Ledger not committed::could not rebase on $BRANCH"; exit 1; }
+          git add logs/youtube_longform.json
+          git diff --staged --quiet || { git commit -m "Auto: record Deep-Dive $EPISODE published $(date +%F) [skip ci]" && git push origin "HEAD:$BRANCH"; }
+      - name: Run summary
+        if: always()
+        env:
+          TITLE: ${{ steps.meta.outputs.title }}
+          VIDEO_URL: ${{ steps.upload.outputs.video_url }}
+          RESULT: ${{ steps.upload.outputs.result }}
+          PRIVACY_SEEN: ${{ steps.upload.outputs.privacy_seen }}
+          PRIVACY_ASKED: ${{ inputs.privacy }}
+          SKIP: ${{ steps.guard.outputs.skip }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          {
+            echo "## Deep-Dive $EPISODE — publish"
+            echo
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Title | $TITLE |"
+            echo "| Privacy | ${PRIVACY_SEEN:-$PRIVACY_ASKED} |"
+            if [ "$SKIP" = "yes" ]; then echo "| Result | ⏭️ already in the ledger — nothing uploaded |";
+            elif [ -n "$VIDEO_URL" ]; then echo "| Result | ✅ ${RESULT:-uploaded} — $VIDEO_URL |";
+            else echo "| Result | ❌ not uploaded — see the log |"; fi
+            echo "| Bank | $(gh release view "$RELEASE_TAG" --json url -q .url 2>/dev/null || echo "release $RELEASE_TAG") |"
+          } >> "$GITHUB_STEP_SUMMARY"
+        shell: bash
+      - name: Open a visible issue if the publish failed
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          TITLE: ${{ steps.meta.outputs.title }}
+          VIDEO_URL: ${{ steps.upload.outputs.video_url }}
+        run: |
+          gh label create youtube-automation --color FF5A5F --description "Unattended YouTube pipelines" >/dev/null 2>&1 || true
+          if [ -n "$VIDEO_URL" ]; then STATE_LINE="**A video exists**: $VIDEO_URL — do NOT re-run before checking it."; else STATE_LINE="**Nothing was published** — a re-run is safe."; fi
+          printf 'The Deep-Dive publish for **%s** failed.\n\n- Run: %s\n- Title: %s\n- %s\n\n```\n%s\n```\n' \
+            "$EPISODE" "$RUN_URL" "${TITLE:-unknown}" "$STATE_LINE" "$(tail -n 40 /tmp/yt_upload.log 2>/dev/null || tail -n 25 /tmp/yt_preflight.log 2>/dev/null || echo '(no uploader log)')" > /tmp/issue.md
+          gh issue create --title "Deep-Dive $EPISODE publish failed — $(date +%F)" --label youtube-automation --body-file /tmp/issue.md
+
+  # A red voice job is usually "quota" — say so where the owner will see it.
+  voice-report:
+    name: Voice report
+    needs: [voice]
+    if: ${{ always() && needs.voice.result == 'failure' }}
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          echo "## Deep-Dive $EPISODE — voice stage did not finish" >> "$GITHUB_STEP_SUMMARY"
+          echo "Most likely the daily Gemini TTS quota. Chunks minted so far are banked on release \`$RELEASE_TAG\`; re-run tomorrow with stage=voice (or all) and it continues. Run: $RUN_URL" >> "$GITHUB_STEP_SUMMARY"
