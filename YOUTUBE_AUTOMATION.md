@@ -204,9 +204,33 @@ legal advice.
 
 ## Brand rules applied to every frame
 
-These are locked rules from `docs/DESIGN_SYSTEM.md` and
-`docs/SESSION_CONTEXT.md`, and each one is enforced by a test so a future edit
-cannot quietly undo it:
+**The Short is a MotionStudio render (14 Oct 2026).** `scripts/youtube_short_daily.py`
+takes the day's *words* from the rotation in `scripts/generate_short_video.py`
+and renders them through `tools/shorts_reel.py` → `tools/motionstudio.py`: Inter
+Black cascades on `#061A33`, the green check badge per tip, `FREE.` with the
+yellow underline sweep, the `docoga.com.ng` pill, film grain, 30 fps — the locked
+style in `docs/BRAND_STYLE.md` §5 / `docs/DESIGN_SYSTEM.md` §6. MotionStudio's own
+five-category video QA (typography, animation, timing, composition, consistency)
+must pass or the engine refuses to encode and the lane fails red.
+
+The first pipeline Short (run #5, `SgkOucdmHYM`) shipped from the old static-card
+renderer in `generate_short_video.py` — `#002040` canvas, `#0060e0`/`#FFD700`
+accents, DejaVu Sans, 24 fps stills. That renderer is **retired from every lane**;
+`tools/qa.py` §15 and `tools/tests/test_shorts_reel.py` fail if a lane imports it
+to render, if the bridge carries a colour or font literal, or if a workflow
+installs DejaVu instead of Inter. The runner gets Inter + ffmpeg from
+`tools/install_motionstudio_deps.sh`, which ends with `motionstudio.py --check`.
+
+Render tonight's topic locally (≈3 min of CPU):
+
+```bash
+bash tools/install_motionstudio_deps.sh          # once per machine
+python3 tools/shorts_reel.py --dry-run            # the solved spec, no frames
+python3 tools/shorts_reel.py --out /tmp/short.mp4 # the actual file
+```
+
+Older locked rules from `docs/DESIGN_SYSTEM.md` and `docs/SESSION_CONTEXT.md`,
+each still enforced by a test:
 
 - **No logo on video.** Owner direction 21 Sep 2026: the logo is not stamped
   on social posts, and `docs/SESSION_CONTEXT.md` is explicit that it is never
@@ -214,11 +238,12 @@ cannot quietly undo it:
   *static* images, by `tools/add_logo.py`. An earlier revision of
   `scripts/generate_short_video.py` broke this — it composited the official
   logo onto every slide, where it also collided with the CTA bar.
-- **Film grain, σ≈2.2** — `BRAND_STYLE.md` §3 lists grain as always present on
-  every finished piece, video included.
-- **CTA present** — `DOCOGA.COM.NG` on every slide, in the locked `BRAND_BLUE`.
-- **Safe areas** — type is centred above the CTA bar with an 84px margin, so
-  nothing is clipped on mobile or hidden behind the platform UI.
+- **Film grain** — `BRAND_STYLE.md` §3 lists grain as always present on every
+  finished piece, video included (MotionStudio adds it at encode: `noise=alls=4`).
+- **CTA present** — the `docoga.com.ng` pill in the conclusion scene, plus the
+  `GENERAL INFO · RULES VARY BY STATE` kicker under it.
+- **Safe areas** — MotionStudio's layout solver keeps every beat inside
+  top 300 / bottom 1240 / 80 px sides, so nothing hides behind the platform UI.
 
 `tests` covering these live in
 `tools/tests/test_youtube_short_generation.py` and run on every push and pull

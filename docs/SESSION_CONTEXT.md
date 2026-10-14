@@ -376,7 +376,8 @@ All in `tools/`. Key tools:
 | `gemini_tts.py` | Gemini TTS (voiceover) |
 | `motionstudio.py` | MotionStudio v4 |
 | `dd2_shorts.py` | DD2 Shorts A/B/C |
-| `generate_short_video.py` | Short-form video — no logo, film grain σ≈2.2, CTA bar (tests enforce) |
+| `shorts_reel.py` | Shorts/Reels bridge (14 Oct 2026): rotation words → MotionStudio spec → `motionstudio.build` — the only renderer the YouTube/Facebook/Telegram video lanes may use (qa.py §15) |
+| `generate_short_video.py` | WORDS only (`VIDEO_SCRIPTS`, `script_for_date`); its static-card renderer is retired from every lane |
 | `lead_magnets.py` | Lead magnets |
 | `auto_caption.py` | Auto-caption |
 | `reframe.py` | 9:16 → 1:1 reframe |

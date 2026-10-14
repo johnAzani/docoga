@@ -177,7 +177,7 @@ Inherited from the Telegram rewrite (four silent failed days, 7–10 Oct 2026):
 | `Page feed not readable` | `pages_read_engagement` missing; the guard is blind too | re-grant both scopes; the dry run will show whether the probe passes |
 | `code 200` / `(#200) Permission failed`, subcode `534` | the token can read but not publish | the app needs `pages_manage_posts`, and the human must hold Page **admin** (not editor) |
 | `code 4`, `code 613`, `rate` | app/Page rate limit | wait; the next scheduled run is unaffected |
-| `spec refused — aspect ratio is …` | the render is not 9:16, or not 3–90 s, or not H.264 | **good news**: the gate stopped a file Meta would have accepted and then not published. Fix the frames in `scripts/generate_short_video.py` |
+| `spec refused — aspect ratio is …` | the render is not 9:16, or not 3–90 s, or not H.264 | **good news**: the gate stopped a file Meta would have accepted and then not published. Fix the words in `scripts/generate_short_video.py` (the picture is MotionStudio's, via `tools/shorts_reel.py`) |
 | `start refused` while the feed probe passed | the token can post to the feed but cannot open a Reels session | keep `FB_REELS` at `probe`/`off`; the app needs the Reels-capable grant before the lane can be switched on |
 | `publish refused after the upload was accepted` | the bytes are on Meta's side, unpublished | finish it once: `python3 tools/fb_publish.py --reel-finish <video_id>` (the id is in the log). Do **not** re-render and re-upload first |
 | `rupload stored N of M bytes` | a truncated transfer | usually transient; re-run the same day with `force=true`. The Page-side guard still protects every other post |
@@ -284,7 +284,7 @@ Settings → Actions → **Variables** (`FB_REELS = on`), reversible the same wa
 
 ### The cadence, and the law behind it
 
-Mondays and Thursdays, from the same `scripts/generate_short_video.py` rotation the
+Mondays and Thursdays, from the same `scripts/generate_short_video.py` rotation (rendered by MotionStudio through `tools/shorts_reel.py`) the
 Shorts lane uses. Not Tue/Fri, which is `youtube_scheduled.yml`'s: the rotation is
 indexed by date, so **the same weekday on both lanes means the same topic on both
 platforms on the same day**, which the 30-day frame law in `docs/GROWTH_ENGINE.md`
@@ -338,7 +338,8 @@ topic it could not read, instead of a traceback.
 | photo frequency | `PHOTO_ODDS` |
 | whether Reels publish at all | repository **variable** `FB_REELS` = `probe` (default) / `on` / `off` |
 | which days get a Reel | `REEL_WEEKDAYS` in `scripts/facebook_reel_daily.py` (keep it off YouTube's Tue/Fri — the collision rule is in that file's header) |
-| the reel's frames | `VIDEO_SCRIPTS` in `scripts/generate_short_video.py` — both the 3–90 s window and the 30-day window apply |
+| the reel's words | `VIDEO_SCRIPTS` in `scripts/generate_short_video.py` — both the 3–90 s window and the 30-day window apply |
+| the reel's look | `tools/shorts_reel.py` (spec) → `tools/motionstudio.py` (engine) — the locked brand style; `tools/qa.py` §15 refuses any other renderer |
 | API version | repository variable `META_GRAPH_VERSION`, then the default in `tools/fb_publish.py` |
 | one-off post today | Actions → *Facebook Page Autopost* → Run workflow → `mode=text` (manual modes bypass the once-a-day guard, because a human asked) |
 

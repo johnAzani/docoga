@@ -155,8 +155,16 @@ def post_video():
     # Generate video
     log("🎥 Generating video...")
     try:
-        from generate_short_video import generate_video
-        video_path, title = generate_video()
+        # MotionStudio, through the one bridge every publish lane uses — never the
+        # old static-card renderer (docs/BRAND_STYLE.md: on-brand or it doesn't ship).
+        from zoneinfo import ZoneInfo
+        import shorts_reel
+        day = datetime.now(ZoneInfo("Africa/Lagos")).date()
+        topic = shorts_reel.topic_for(day)
+        title = topic["title"]
+        video_path = str(shorts_reel.render_topic(
+            topic, shorts_reel.default_output_path(day, prefix="docoga_telegram"),
+            tag="tg", platform="Telegram"))
         log(f"✅ Video generated: {title}")
     except Exception as e:
         log(f"❌ Video generation failed: {type(e).__name__}: {e}")
