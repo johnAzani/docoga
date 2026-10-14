@@ -64,6 +64,52 @@ PLATE_DARK = (2, 10, 22)        # the duotone's black point — a shade of the c
 PLATE_LIGHT = (202, 222, 248)   # the duotone's white point
 GLASS = (4, 16, 33)             # caption / rows panel fill (alpha applied at draw time)
 
+# ───────────────────────────── THE VOICE — LOCKED ─────────────────────────────
+# Owner instruction, 14 Oct 2026: "Lock that voice in. On no occasion shall it change — not
+# even by one sentence or word, not even by mistake."
+#
+# This is the DocOga narrator for every Deep-Dive, now and later. It is the only place the
+# voice is defined. episode.json cannot override it, no environment variable reaches it, no
+# CLI flag selects another, and the TTS request is built from these two strings alone.
+# If a future episode file carries a different `voice` block the engine refuses to run.
+# tools/tests/test_deepdive.py and tools/qa.py pin the exact bytes by SHA-256; editing this
+# block (even whitespace) turns CI red. Do not edit it.
+LOCKED_VOICE_NAME = "Orus"
+LOCKED_VOICE_INSTRUCTION = ("Narrate this in a natural Nigerian English accent, "
+                            "like a confident Lagos radio presenter:")
+LOCKED_VOICE_SHA256 = "697e3233c630632bfa394317cc8902f0ab51e6d70670921c360d2161e6cff663"
+LOCKED_VOICE_NOTE = "voice is locked by the owner (14 Oct 2026) — do not edit"
+
+
+def locked_voice():
+    """The narrator, verified against its own fingerprint before every use."""
+    import hashlib
+    digest = hashlib.sha256((LOCKED_VOICE_NAME + "\n" + LOCKED_VOICE_INSTRUCTION).encode("utf-8")).hexdigest()
+    if digest != LOCKED_VOICE_SHA256:
+        die("LOCKED VOICE TAMPERED: the narrator constants in tools/deepdive.py no longer match their "
+            "fingerprint. " + LOCKED_VOICE_NOTE, 2)
+    return LOCKED_VOICE_NAME, LOCKED_VOICE_INSTRUCTION
+
+
+def voice_problems(meta):
+    """An episode may omit `voice`, or restate the locked one exactly. Anything else is refused."""
+    v = meta.get("voice")
+    if v is None:
+        return []
+    if not isinstance(v, dict):
+        return ["episode.json `voice` must be absent or exactly the locked voice — " + LOCKED_VOICE_NOTE]
+    probs = []
+    if v.get("name") != LOCKED_VOICE_NAME:
+        probs.append("episode.json voice.name is %r; the narrator is %r — %s"
+                     % (v.get("name"), LOCKED_VOICE_NAME, LOCKED_VOICE_NOTE))
+    if v.get("instruction") != LOCKED_VOICE_INSTRUCTION:
+        probs.append("episode.json voice.instruction differs from the locked instruction — " + LOCKED_VOICE_NOTE)
+    extra = set(v) - {"name", "instruction", "_locked"}
+    if extra:
+        probs.append("episode.json voice has unexpected keys %s — %s" % (sorted(extra), LOCKED_VOICE_NOTE))
+    return probs
+
+
 EPISODES = ROOT / "episodes"
 ASSETS = EPISODES / "assets"
 BUILD = ROOT / "build" / "deepdive"
@@ -159,6 +205,9 @@ class Episode:
         n = len(self.meta["sections"])
         if len(self.sections) != n:
             die("%s: script has %d sections, episode.json declares %d" % (ep_id, len(self.sections), n))
+        vp = voice_problems(self.meta)
+        if vp:
+            die("%s: %s" % (ep_id, "; ".join(vp)), 2)
         self.build = BUILD / ep_id
         self.voice_dir = self.build / "voice"
         self.scene_dir = self.build / "scenes"
@@ -222,10 +271,12 @@ def check_triggers(ep, verbose=True):
                 if find_idx(toks, rt, 0) is None:
                     problems.append("section %d: row trigger %r for '%s' not found"
                                     % (s, " ".join(rt), b["head"]))
+    problems += voice_problems(ep.meta)
     words = sum(len(norm_tokens(t)) for t in ep.sections)
     if verbose:
         for p in problems:
             print("  ❌ " + p)
+        print("  narrator: %s — locked by the owner, fingerprint %s…" % (locked_voice()[0], LOCKED_VOICE_SHA256[:12]))
         est = words / 2.45
         print("  script: %d words ≈ %d:%02d at narration pace · %d beats · %d sections"
               % (words, est // 60, est % 60, len(ep.beats()), ep.n))
@@ -254,6 +305,8 @@ def parse_retry_seconds(body):
 
 def gemini_tts(text, voice, instruction, out_mp3, models=None):
     """One request → one mp3. Returns ('ok', 0) | ('wait', seconds) | ('fail', 0)."""
+    if (voice, instruction) != locked_voice():
+        die("refusing to synthesize with a voice other than the locked narrator — " + LOCKED_VOICE_NOTE, 2)
     key = gemini_key()
     if not key:
         die("GEMINI_API_KEY is not set (repository secret on CI; .worker-secrets.env locally)", 2)
@@ -417,8 +470,8 @@ def stage_tts(ep, args):
         die("Vosk (ASR) is not available — needed to verify and trim each chunk. "
             "Run with --install-deps on a machine that can reach alphacephei.com, or --no-asr "
             "to generate unverified chunks.", 2)
-    voice = ep.meta["voice"]["name"]
-    instruction = ep.meta["voice"].get("instruction", "")
+    voice, instruction = locked_voice()          # never from episode.json, env, or flags
+    print("  narrator: %s — locked (%s…)" % (voice, LOCKED_VOICE_SHA256[:12]))
     budget_end = time.time() + 60 * args.wait_budget_min
     requests_made = 0
     pending = []

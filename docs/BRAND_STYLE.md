@@ -142,10 +142,19 @@ Any trace of AI → asset is dead. Regenerated + re-treated instantly.
 - Target: VVSA 70–90% (viewers watched / saw)
 - Thumbnail must promise exactly what the hook delivers
 
-### TTS voice:
-- **Gemini Orus** — natural Nigerian English accent
-- Instruction: "Narrate this in a natural Nigerian English accent, like a confident Lagos radio presenter"
-- Every chunk ASR-verified clean (no preamble leaks)
+### TTS voice — 🔒 LOCKED (owner instruction, 14 Oct 2026)
+> "Lock that voice in. On no occasion shall it change — not even by one sentence or word, not even by mistake."
+
+- Voice: **Gemini Orus**
+- Instruction, byte for byte: `Narrate this in a natural Nigerian English accent, like a confident Lagos radio presenter:`
+- Fingerprint (SHA-256 of `name\ninstruction`): `697e3233c630632bfa394317cc8902f0ab51e6d70670921c360d2161e6cff663`
+- Where it lives: `tools/deepdive.py` → `LOCKED_VOICE_NAME` / `LOCKED_VOICE_INSTRUCTION` — the **only** definition.
+  `episode.json` may omit `voice` or restate it exactly; anything else makes the engine refuse to run.
+  No environment variable, flag or episode field can pick another narrator; the request boundary
+  (`gemini_tts`) re-checks before every call.
+- Guards: `tools/tests/test_deepdive.py::LockedVoiceTests` + `tools/qa.py` §16 pin the exact bytes and
+  the fingerprint. If a change turns them red, revert the change — never the test.
+- Every chunk is still ASR-verified clean (no preamble leaks) before it is banked.
 
 ---
 
@@ -179,7 +188,7 @@ Any trace of AI → asset is dead. Regenerated + re-treated instantly.
 - Rows layer for numbered lists
 - Progress bar at bottom
 - End card: DOCOGA + docoga.com.ng + disclaimer line, on a navy wash
-- Voice: Gemini TTS (Orus, Nigerian-English radio-presenter read); word-sync by Vosk on the runner
+- Voice: 🔒 LOCKED — Gemini Orus with the exact instruction in §7 "TTS voice"; word-sync by Vosk on the runner
 - Sound: synthesized DocOga kit (`tools/soundkit.py`) — A-minor pad bed at 72 BPM ducked −27 dB under speech / −18 dB in gaps, riser+hit on section titles, whoosh on beats, tick per row, stinger on the end card; cue sheet from the beats (`deepdive.py <ep> cues`); nothing downloaded, nothing licensed
 - Pictures: committed 16:9 stills in `episodes/assets/`, duotoned at render time — never text in the plate
 - Tools: `tools/deepdive.py` (engine) + `.github/workflows/deepdive.yml` (lane) — runbook `docs/LONGFORM_AUTOMATION.md`

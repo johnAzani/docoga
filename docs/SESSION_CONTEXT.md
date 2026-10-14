@@ -554,6 +554,9 @@ Documented in `docs/GROWTH_JOURNAL.md`. Key milestones:
   Vosk sync, nine-scene parallel render, banked on release `deepdive-<id>`, publishes unlisted.
   `GEMINI_API_KEY` added by the owner 14 Oct. Nightly tick 03:00 WAT works `episodes/queue.json`;
   quota = green pause; music + SFX synthesized by `tools/soundkit.py`. Runbook `docs/LONGFORM_AUTOMATION.md`.
+  🔒 **VOICE LOCKED (owner, 14 Oct 2026):** Gemini Orus + "Narrate this in a natural Nigerian English accent,
+  like a confident Lagos radio presenter:" — defined once in `tools/deepdive.py`, fingerprint `697e3233c630…`,
+  pinned by tests + qa.py. Never change it; revert whatever breaks the check.
 - `episodes/dd2/` — Caution Fee: The Refund War (51 beats, 1,462 words ≈ 10 min) — first episode on the lane
 - `docs/dd1/` — 66 Years of Tenancy Law (48 slides)
 - `docs/dd2/` — Caution Fee (47 beats, legacy)

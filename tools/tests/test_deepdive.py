@@ -384,3 +384,76 @@ class FreePlanResilienceTests(unittest.TestCase):
     def test_dd2_is_queued(self):
         import json as _json
         self.assertIn("dd2", _json.loads((ROOT / "episodes" / "queue.json").read_text(encoding="utf-8"))["queue"])
+
+
+# ───────────────────────────── THE VOICE — LOCKED ─────────────────────────────
+# Owner, 14 Oct 2026: "Lock that voice in. On no occasion shall it change — not even by one
+# sentence or word, not even by mistake." These tests are that sentence made executable.
+# If any of them fails, the fix is to revert the change that broke it — never to edit the test.
+LOCKED_NAME = "Orus"
+LOCKED_INSTRUCTION = "Narrate this in a natural Nigerian English accent, like a confident Lagos radio presenter:"
+LOCKED_SHA256 = "697e3233c630632bfa394317cc8902f0ab51e6d70670921c360d2161e6cff663"
+
+
+class LockedVoiceTests(unittest.TestCase):
+    def test_the_fingerprint_in_this_file_matches_the_strings_in_this_file(self):
+        import hashlib
+        self.assertEqual(hashlib.sha256((LOCKED_NAME + "\n" + LOCKED_INSTRUCTION).encode("utf-8")).hexdigest(),
+                         LOCKED_SHA256)
+
+    def test_the_engine_constants_are_byte_for_byte_the_locked_voice(self):
+        src = (TOOLS_DIR / "deepdive.py").read_text(encoding="utf-8")
+        self.assertIn('LOCKED_VOICE_NAME = "Orus"', src)
+        self.assertIn('LOCKED_VOICE_SHA256 = "%s"' % LOCKED_SHA256, src)
+        self.assertIn('"Narrate this in a natural Nigerian English accent, "', src)
+        self.assertIn('"like a confident Lagos radio presenter:"', src)
+
+    @unittest.skipUnless(ENGINE_OK, "deepdive engine not importable (PIL/numpy)")
+    def test_locked_voice_returns_exactly_this(self):
+        self.assertEqual(dd.locked_voice(), (LOCKED_NAME, LOCKED_INSTRUCTION))
+        self.assertEqual(dd.LOCKED_VOICE_SHA256, LOCKED_SHA256)
+
+    @unittest.skipUnless(ENGINE_OK, "deepdive engine not importable (PIL/numpy)")
+    def test_tts_builds_the_request_from_the_lock_not_from_the_episode(self):
+        src = (TOOLS_DIR / "deepdive.py").read_text(encoding="utf-8")
+        tts = src.split("def stage_tts", 1)[1].split("\ndef ", 1)[0]
+        self.assertIn("voice, instruction = locked_voice()", tts)
+        self.assertNotIn('meta["voice"]', tts)
+        self.assertNotIn("GEMINI_VOICE", src, "no environment variable may choose the narrator")
+        self.assertNotIn('"--voice"', src, "no CLI flag may choose the narrator")
+
+    @unittest.skipUnless(ENGINE_OK, "deepdive engine not importable (PIL/numpy)")
+    def test_the_request_boundary_refuses_any_other_voice(self):
+        with self.assertRaises(SystemExit) as cm:
+            dd.gemini_tts("x", "Charon", LOCKED_INSTRUCTION, "/tmp/never.mp3")
+        self.assertEqual(cm.exception.code, 2)
+        with self.assertRaises(SystemExit):
+            dd.gemini_tts("x", LOCKED_NAME, LOCKED_INSTRUCTION + " slowly", "/tmp/never.mp3")
+
+    @unittest.skipUnless(ENGINE_OK, "deepdive engine not importable (PIL/numpy)")
+    def test_a_one_word_drift_in_an_episode_file_is_refused(self):
+        meta = {"voice": {"name": LOCKED_NAME, "instruction": LOCKED_INSTRUCTION.replace("confident", "calm")}}
+        self.assertTrue(dd.voice_problems(meta))
+        meta = {"voice": {"name": LOCKED_NAME, "instruction": LOCKED_INSTRUCTION + " "}}
+        self.assertTrue(dd.voice_problems(meta), "not even trailing whitespace")
+        meta = {"voice": {"name": "Charon", "instruction": LOCKED_INSTRUCTION}}
+        self.assertTrue(dd.voice_problems(meta))
+        meta = {"voice": {"name": LOCKED_NAME, "instruction": LOCKED_INSTRUCTION, "speed": 1.1}}
+        self.assertTrue(dd.voice_problems(meta), "no extra knobs")
+        self.assertEqual(dd.voice_problems({}), [], "an episode may simply omit `voice`")
+        self.assertEqual(dd.voice_problems({"voice": {"name": LOCKED_NAME, "instruction": LOCKED_INSTRUCTION,
+                                                      "_locked": "note"}}), [])
+
+    def test_every_committed_episode_carries_the_locked_voice_or_none(self):
+        for p in EPISODE_DIRS:
+            v = json.loads((p / "episode.json").read_text(encoding="utf-8")).get("voice")
+            with self.subTest(episode=p.name):
+                if v is not None:
+                    self.assertEqual(v.get("name"), LOCKED_NAME)
+                    self.assertEqual(v.get("instruction"), LOCKED_INSTRUCTION)
+
+    def test_brand_style_records_the_lock(self):
+        doc = (ROOT / "docs" / "BRAND_STYLE.md").read_text(encoding="utf-8")
+        self.assertIn("LOCKED", doc.split("### TTS voice", 1)[1][:400])
+        self.assertIn(LOCKED_INSTRUCTION, doc)
+        self.assertIn(LOCKED_SHA256[:12], doc)

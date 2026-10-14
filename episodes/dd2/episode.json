@@ -5,8 +5,9 @@
   "kicker": "DOCOGA — DEEP-DIVE · EPISODE 2",
   "disclaimer": "GENERAL INFORMATION · NOT LEGAL ADVICE · RULES VARY BY STATE AND AGREEMENT",
   "voice": {
+    "_locked": "LOCKED by the owner 14 Oct 2026 — must equal tools/deepdive.py LOCKED_VOICE_*; the engine refuses anything else",
     "name": "Orus",
-    "instruction": "Narrate this in a natural Nigerian English accent, like a confident Lagos radio presenter, at an unhurried documentary pace:"
+    "instruction": "Narrate this in a natural Nigerian English accent, like a confident Lagos radio presenter:"
   },
   "audio": {
     "_comment": "Sound plan — synthesized by tools/soundkit.py, cued from the beats (python3 tools/deepdive.py dd2 cues). Levels are dB relative to the narrator's own speech level.",
