@@ -239,3 +239,148 @@ class WorkflowWiringTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# ───────────────────────── the sound kit and the free-plan resilience ─────────────────────────
+@unittest.skipUnless(ENGINE_OK, "deepdive engine not importable (PIL/numpy)")
+class SoundKitTests(unittest.TestCase):
+    """Synthesized bed + SFX, cued from the beats. Nothing is downloaded; nothing is licensed."""
+
+    def setUp(self):
+        import soundkit
+        self.sk = soundkit
+
+    def test_every_effect_synthesizes_clean_and_peak_normalised(self):
+        import numpy as np
+        rng = np.random.default_rng(1)
+        for kind in ("riser", "hit", "whoosh", "tick", "stinger"):
+            y = self.sk.sfx(kind, rng)
+            with self.subTest(kind=kind):
+                self.assertTrue(np.all(np.isfinite(y)))
+                self.assertAlmostEqual(float(np.max(np.abs(y))), 1.0, places=3)
+                self.assertEqual(y.dtype, np.float32)
+
+    def test_the_kit_is_deterministic(self):
+        import numpy as np
+        a = self.sk.sfx("whoosh", np.random.default_rng(7))
+        b = self.sk.sfx("whoosh", np.random.default_rng(7))
+        self.assertTrue(np.array_equal(a, b), "same seed, same sound, same video on every render")
+
+    def test_bed_changes_chord_per_section_and_never_clips(self):
+        import numpy as np
+        y = self.sk.bed(12.0, [0.0, 4.0, 8.0], 72, 7)
+        self.assertEqual(len(y), 12 * self.sk.SR)
+        self.assertLessEqual(float(np.max(np.abs(y))), 1.0)
+        # spectral centroid differs between the first and second chord (F below A)
+        def centroid(seg):
+            spec = np.abs(np.fft.rfft(seg)); f = np.fft.rfftfreq(len(seg), 1 / self.sk.SR)
+            return float((spec * f).sum() / spec.sum())
+        self.assertNotAlmostEqual(centroid(y[int(1 * self.sk.SR):int(3 * self.sk.SR)]),
+                                  centroid(y[int(5 * self.sk.SR):int(7 * self.sk.SR)]), delta=3.0)
+
+    def test_cue_sheet_puts_a_hit_on_every_title_a_riser_before_it_and_a_stinger_on_the_card(self):
+        cfg = dict(self.sk.DEFAULTS)
+        b1 = {"head": "ONE", "endcard": False}; b2 = {"head": "TWO", "endcard": False}
+        b3 = {"head": "THREE", "endcard": False, "rows": ["a", "b"]}; card = {"head": "END", "endcard": True}
+        spans = [(1, b1, 0.0), (1, b2, 5.0), (2, b3, 30.0), (2, card, 40.0)]
+        cues = self.sk.cue_sheet(spans, {id(b3): [31.0, None, 33.0]}, [0.0, 30.0], 45.0, cfg)
+        kinds = [(c["t"], c["kind"]) for c in cues]
+        self.assertEqual(kinds, [(0.0, "hit"), (4.92, "whoosh"), (28.8, "riser"), (30.0, "hit"),
+                                 (31.0, "tick"), (33.0, "tick"), (40.0, "stinger")])
+        self.assertTrue(all(c["t"] == round(c["t"], 3) for c in cues), "millisecond precision, no drift")
+        self.assertTrue(all(c["db"] <= -13 for c in cues), "nothing in the kit is louder than the voice")
+
+    def test_no_riser_when_the_episode_opens_cold(self):
+        cfg = dict(self.sk.DEFAULTS)
+        cues = self.sk.cue_sheet([(1, {"head": "A", "endcard": False}, 0.4)], {}, [0.0], 10.0, cfg)
+        self.assertEqual([c["kind"] for c in cues], ["hit"])
+
+    def test_the_sheet_follows_the_renderer_timings(self):
+        """plan_cues and render_scene share scene_timing — one source of truth for picture + sound."""
+        ep = episodes()[0]
+        d = dd.synthetic_words(ep, [20.0] * ep.n)
+        cues, cfg, starts = dd.plan_cues(ep, d)
+        self.assertEqual(starts, [s["start"] for s in d["sections"]])
+        hits = [c for c in cues if c["kind"] == "hit"]
+        self.assertEqual([h["t"] for h in hits], [round(s, 3) for s in starts], "a hit on every section title")
+        self.assertEqual(sum(1 for c in cues if c["kind"] == "stinger"), 1)
+        self.assertEqual(sum(1 for c in cues if c["kind"] == "tick"),
+                         sum(len(b["rows"]) for b in ep.beats()), "one tick per numbered row")
+
+    def test_speech_mask_ducks_under_speech_and_releases_in_gaps(self):
+        import numpy as np
+        sr = self.sk.SR
+        v = np.zeros(6 * sr, dtype=np.float32)
+        v[1 * sr:3 * sr] = np.random.default_rng(0).standard_normal(2 * sr).astype(np.float32) * 0.2
+        mask, gate = self.sk.speech_mask(v, 0.1, 0.5)
+        self.assertLess(float(mask[int(0.5 * sr)]), 0.05)
+        self.assertGreater(float(mask[int(2.5 * sr)]), 0.95)
+        self.assertLess(float(mask[int(5.5 * sr)]), 0.05)
+
+    def test_qa_threshold_is_the_one_the_mixer_defaults_clear(self):
+        self.assertGreaterEqual(-self.sk.DEFAULTS["bed_speech_db"], dd.MIN_BED_SEPARATION_DB + 6,
+                                "defaults must clear the QA gate with margin, or every master fails")
+
+    def test_episode_audio_plan_is_explicit_and_quiet(self):
+        for ep in episodes():
+            a = ep.meta.get("audio", {})
+            with self.subTest(episode=ep.id):
+                self.assertIn("bed", a, "the sound plan lives in episode.json, not in someone's head")
+                self.assertLessEqual(a.get("bed_speech_db", -27), -24)
+                self.assertLessEqual(a.get("sfx_db", -16), -12)
+
+    def test_master_uses_the_kit_and_qa_reads_the_report(self):
+        src = (TOOLS_DIR / "deepdive.py").read_text(encoding="utf-8")
+        self.assertIn("soundkit.render_mix", src)
+        self.assertIn("mix_report.json", src.split("def stage_qa", 1)[1])
+        self.assertIn("bed_separation_db", src.split("def stage_qa", 1)[1])
+
+
+class FreePlanResilienceTests(unittest.TestCase):
+    def setUp(self):
+        self.src = WORKFLOW.read_text(encoding="utf-8")
+
+    def test_a_nightly_tick_resumes_the_queue(self):
+        import yaml
+        wf = yaml.safe_load(self.src)
+        on = wf[True] if True in wf else wf["on"]
+        self.assertEqual(on["schedule"][0]["cron"], "0 2 * * *", "03:00 WAT")
+        self.assertIn("deepdive_queue.py next", self.src)
+
+    def test_quota_is_a_pause_not_a_failure(self):
+        voice = self.src.split("  voice:", 1)[1].split("\n  render:", 1)[0]
+        self.assertIn('"$code" -eq 5', voice)
+        self.assertIn("complete=false", voice)
+        self.assertIn("steps.tts.outputs.code != '0' && steps.tts.outputs.code != '5'", voice,
+                      "only a non-quota exit turns the job red")
+        self.assertIn("--max-requests 12", voice, "a hard cap per run, whatever the key's plan")
+
+    def test_nothing_banked_is_redone(self):
+        self.assertIn("has_master != 'true'", self.src, "a banked master skips voice and render")
+        self.assertIn("$EPISODE-status.json", self.src)
+
+    def test_concurrency_serialises_nightly_and_manual_runs(self):
+        self.assertIn("group: deepdive\n", self.src)
+
+    def test_engine_caps_requests_inside_the_retry_loop(self):
+        src = (TOOLS_DIR / "deepdive.py").read_text(encoding="utf-8")
+        tts = src.split("def stage_tts", 1)[1].split("\ndef ", 1)[0]
+        self.assertEqual(tts.count("requests_made >= args.max_requests"), 2,
+                         "the cap is checked before every request, not only per chunk")
+        self.assertIn('default=12', src.split('"--max-requests"', 1)[1][:80])
+
+    def test_queue_tool_skips_published_titles(self):
+        import tempfile, json as _json
+        import deepdive_queue as q
+        with tempfile.TemporaryDirectory() as td:
+            queue = Path(td) / "queue.json"; ledger = Path(td) / "ledger.json"
+            queue.write_text(_json.dumps({"queue": ["dd2", "nope"]}), encoding="utf-8")
+            title = _json.loads((ROOT / "episodes" / "dd2" / "episode.json").read_text(encoding="utf-8"))["youtube"]["title"]
+            ledger.write_text("[]", encoding="utf-8")
+            self.assertEqual([r[1] for r in q.entries(queue, ledger)], ["pending", "missing"])
+            ledger.write_text(_json.dumps([{"title": title}]), encoding="utf-8")
+            self.assertEqual(q.entries(queue, ledger)[0][1], "published")
+
+    def test_dd2_is_queued(self):
+        import json as _json
+        self.assertIn("dd2", _json.loads((ROOT / "episodes" / "queue.json").read_text(encoding="utf-8"))["queue"])
