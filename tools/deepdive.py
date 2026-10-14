@@ -124,6 +124,7 @@ PREAMBLE_WORDS = ("narrate", "narrator", "narrates", "accent", "presenter", "art
                   "radio", "instruction")
 
 MIN_EPISODE_SECONDS = 240      # under four minutes is not a Deep-Dive
+RENDERING_STAGES = ("tts", "align", "render", "master", "cover", "qa")   # need Inter + ffmpeg
 MIN_BED_SEPARATION_DB = 14    # music under speech, at least this far below the voice
 MAX_EPISODE_SECONDS = 1500
 
@@ -1228,7 +1229,10 @@ def main(argv=None):
     print("DEEPDIVE · %s — %s · stage %s" % (ep.id, ep.meta["title"], args.stage))
     if args.stage == "check":
         sys.exit(1 if check_triggers(ep) else 0)
-    if ms.check_environment():
+    # Only the stages that draw or encode need Inter and ffmpeg. `meta` and `cues` read JSON;
+    # the publish job (14 Oct 2026, run #1) died on exactly this check with a finished master
+    # banked and nothing uploaded — the environment must not gate stages that don't use it.
+    if args.stage in RENDERING_STAGES and ms.check_environment():
         die("; ".join(ms.check_environment()), 2)
     {"tts": stage_tts, "align": stage_align, "render": stage_render, "master": stage_master,
      "cues": stage_cues, "cover": stage_cover, "qa": stage_qa, "meta": stage_meta}[args.stage](ep, args)
