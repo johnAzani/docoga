@@ -1052,6 +1052,48 @@ check("youtube ledger: an entry carries what YouTube reported",
       "--state" in open(os.path.join(ROOT, "tools", "youtube_ledger.py"), encoding="utf-8").read(),
       "the difference between 'published' and 'we PUT a file and hoped'")
 
+# ── the Deep-Dive lane: long-form ships through tools/deepdive.py, banked, unattended ──
+# Sep 2026: DD1–DD4 were produced on a laptop; the voice, the word timings and the plates
+# were never committed and were lost with the machine. 14 Oct 2026: the owner does not want
+# to narrate — the voice is Gemini TTS, the sync is Vosk, both on the runner, and every
+# intermediate goes to a GitHub Release so a re-run never pays for the same bytes twice.
+print("\n── 16. Deep-Dive lane — inputs committed, intermediates banked, brand from the engine ──")
+dd_wf = os.path.join(ROOT, ".github", "workflows", "deepdive.yml")
+dd_tool = os.path.join(ROOT, "tools", "deepdive.py")
+check("deepdive: the workflow and the engine exist", os.path.isfile(dd_wf) and os.path.isfile(dd_tool))
+if os.path.isfile(dd_wf) and os.path.isfile(dd_tool):
+    dd_wf_text = open(dd_wf, encoding="utf-8").read()
+    dd_tool_text = open(dd_tool, encoding="utf-8").read()
+    eps = sorted(d for d in glob.glob(os.path.join(ROOT, "episodes", "*"))
+                 if os.path.isdir(d) and os.path.basename(d) != "assets")
+    check("deepdive: every episode commits its script AND its beats",
+          bool(eps) and all(os.path.isfile(os.path.join(d, "script.txt"))
+                            and os.path.isfile(os.path.join(d, "episode.json")) for d in eps),
+          "episodes/<id>/script.txt + episode.json — the inputs that were lost in Sep 2026")
+    check("deepdive: the plates are in git, not on a laptop",
+          len(glob.glob(os.path.join(ROOT, "episodes", "assets", "*.jpg"))) >= 8)
+    check("deepdive: palette, Inter and ffmpeg come from MotionStudio",
+          "import motionstudio as ms" in dd_tool_text and "DejaVu" not in dd_tool_text)
+    check("deepdive: the voice is banked on a release even when the quota runs out",
+          "gh release upload \"$RELEASE_TAG\" \"/tmp/$EPISODE-voice.tar.gz\"" in dd_wf_text
+          and "\"$code\" -eq 5" in dd_wf_text)
+    check("deepdive: the master is banked before anything is uploaded",
+          dd_wf_text.find("$EPISODE-episode.mp4\" \"$BUILD_DIR/$EPISODE-cover.jpg") <
+          dd_wf_text.find("tools/yt_publish.py --video"))
+    check("deepdive: nothing pace-estimated reaches the channel",
+          "Synthetic timings" in dd_wf_text and "allow_synthetic" in dd_tool_text)
+    check("deepdive: long-form has its own ledger and the duplicate guard reads it",
+          "--ledger logs/youtube_longform.json check" in dd_wf_text)
+    check("deepdive: the publish is never public by default",
+          "default: unlisted" in dd_wf_text)
+    check("deepdive: exit codes survive the log capture",
+          "code=${PIPESTATUS[0]}" in dd_wf_text)
+    check("deepdive: the ledger commit does not retrigger CI", "[skip ci]" in dd_wf_text)
+    check("deepdive: the runbook tells the owner how to add the key and run it",
+          os.path.isfile(os.path.join(ROOT, "docs", "LONGFORM_AUTOMATION.md"))
+          and "GEMINI_API_KEY" in open(os.path.join(ROOT, "docs", "LONGFORM_AUTOMATION.md"),
+                                       encoding="utf-8").read())
+
 # The unittest files are the real gate; run them when their deps are present.
 import importlib.util as _ilu
 missing_mods = [m for m in ("requests", "yaml") if _ilu.find_spec(m) is None]
