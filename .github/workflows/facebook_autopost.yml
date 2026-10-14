@@ -179,8 +179,9 @@ jobs:
         if: ${{ (steps.reel_plan.outputs.reel_today == 'yes' || inputs.mode == 'reel') && !inputs.dry_run }}
         run: |
           set -o pipefail
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq ffmpeg fonts-dejavu-core
+          # Same renderer as the YouTube Short: MotionStudio (Inter + ffmpeg). The
+          # script ends with `motionstudio.py --check` and fails by name if either is absent.
+          bash tools/install_motionstudio_deps.sh
           python3 -m pip install --quiet -r requirements-youtube.txt
 
       # The grant question, answered daily without publishing anything: `start`

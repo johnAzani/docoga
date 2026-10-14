@@ -500,7 +500,8 @@ if daily:
           "same weekday = same rotation index = the same frame on both platforms")
     check("the decision does not import the renderer at module level",
           "import generate_short_video" in daily.split("def reel_topic")[1][:400]
-          and daily.index("import generate_short_video as shorts") > daily.index("def reel_topic"),
+          and "import shorts_reel" not in daily.split("def render(")[0]
+          and daily.index("import generate_short_video as words") > daily.index("def reel_topic"),
           "a plan step that cannot import is a skipped lane, in red")
     check("the mode defaults to probe", '"probe"' in daily and "REELS_MODE" in daily)
 wf_reel = open(soc["workflow"], encoding="utf-8").read() if os.path.exists(soc["workflow"]) else ""
@@ -518,6 +519,65 @@ if wf_reel:
     check("reel steps consume the decision, not the cron",
           "steps.reel_plan.outputs.reel_today" in wf_reel
           and wf_reel.index("Reels — decide") < wf_reel.index("Reels — install the renderer"))
+# ── brand gate: motion ships through MotionStudio or it doesn't ship ─────────
+# 14 Oct 2026: the first pipeline Short reached YouTube off-palette, in DejaVu, as
+# static cards — rendered by scripts/generate_short_video.py instead of the owner's
+# tools/motionstudio.py. docs/BRAND_STYLE.md: "every piece of content follows this
+# or it doesn't ship." These checks make that sentence executable for the lanes.
+print("\n── 15. Brand gate — Shorts/Reels render through MotionStudio (14 Oct 2026) ──")
+bridge_path = os.path.join(ROOT, "tools", "shorts_reel.py")
+engine_path = os.path.join(ROOT, "tools", "motionstudio.py")
+check("the MotionStudio bridge exists", os.path.exists(bridge_path))
+bridge = open(bridge_path, encoding="utf-8").read() if os.path.exists(bridge_path) else ""
+engine = open(engine_path, encoding="utf-8").read() if os.path.exists(engine_path) else ""
+if bridge:
+    check("the bridge builds a spec and hands it to motionstudio.build",
+          "import motionstudio as ms" in bridge and "ms.build(reel, tag)" in bridge)
+    bridge_body = bridge.split('"""', 2)[2] if bridge.count('"""') >= 2 else bridge
+    check("the bridge carries no colour literal — palette lives in the engine",
+          not re.search(r"#[0-9a-fA-F]{6}\b", bridge_body)
+          and not re.search(r"\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*\)", bridge),
+          "a hex or RGB tuple here is a second palette; the first one is NAVY/WHITE/MUTED/"
+          "FAINT/BLUE/YELLOW/RED/GREEN in tools/motionstudio.py")
+    check("the bridge carries no typeface — Inter is resolved by the engine",
+          "truetype(" not in bridge and "DejaVu" not in bridge)
+    check("the bridge keeps the disclaimer in the conclusion",
+          "GENERAL INFO" in bridge and "VARY BY STATE" in bridge)
+    check("the bridge uses only asset-free grammar (no icon grid, no cycler, no strike)",
+          '"icons"' not in bridge and '"cycler"' not in bridge and "strike=" not in bridge,
+          "social/assets/icon-*.png are not in the repo; a strike is for an external price")
+for lane in ("youtube_short_daily.py", "facebook_reel_daily.py", "post_telegram_video.py"):
+    lp = os.path.join(ROOT, "scripts", lane)
+    if not os.path.exists(lp):
+        continue
+    lsrc = open(lp, encoding="utf-8").read()
+    check("%s renders through the MotionStudio bridge" % lane,
+          "shorts_reel.render_topic(" in lsrc and "generate_video(" not in lsrc
+          and "create_slide_image" not in lsrc,
+          "the retired card renderer is off-palette (#002040, #0060e0, #FFD700) and off-typeface")
+if engine:
+    check("the engine resolves Inter and ffmpeg (CI runners are not the owner's laptop)",
+          "def find_font_template" in engine and "def find_ffmpeg" in engine
+          and "MOTIONSTUDIO_FONT_DIR" in engine and "'--check'" in engine)
+    check("the engine's palette is the brand palette",
+          "NAVY   = (6, 26, 51)" in engine and "YELLOW, RED, GREEN = (74, 140, 255), (255, 201, 60)" in engine)
+    check("the engine renders before it QA-checks the same event registry",
+          engine.index("events_of(reel)  #") < engine.index("fd, n = render_reel(reel, tag)"),
+          "render_reel reads strike_at_local, which events_of registers — KeyError otherwise")
+for wf_name in ("youtube_scheduled.yml", "facebook_autopost.yml"):
+    wfp = os.path.join(ROOT, ".github", "workflows", wf_name)
+    if not os.path.exists(wfp):
+        continue
+    wsrc = open(wfp, encoding="utf-8").read()
+    check("%s installs Inter + ffmpeg through tools/install_motionstudio_deps.sh" % wf_name,
+          "tools/install_motionstudio_deps.sh" in wsrc and "fonts-dejavu-core" not in wsrc,
+          "DejaVu on the runner is how the 14 Oct Short shipped in the wrong face")
+inst = os.path.join(ROOT, "tools", "install_motionstudio_deps.sh")
+check("the installer proves the environment before any render",
+      os.path.exists(inst) and 'motionstudio.py" --check' in open(inst, encoding="utf-8").read())
+check("the bridge has its own tests",
+      os.path.exists(os.path.join(ROOT, "tools", "tests", "test_shorts_reel.py")))
+
 # ── the heartbeat (one cron that judges every other cron) ───────────────────
 # The lanes publish; nothing else asks "did they". These checks are the pre-push
 # guard for the guard: the parts that a missing dependency would hide from CI, and

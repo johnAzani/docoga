@@ -40,6 +40,7 @@ SAFE_W = SAFE['right'] - SAFE['left']
 EXIT, FLASH = 0.22, 0.09
 TRANS_DUR = {'flash': FLASH, 'whip': 0.20, 'dissolve': 0.30}
 REEL_CAP = 15.6
+DISPLAY_FLOOR = 96   # smallest size a multi-word cascade may shrink to before it wraps
 
 NAVY   = (6, 26, 51)
 NAVY2  = (12, 38, 70)
@@ -47,7 +48,52 @@ PANEL  = (15, 61, 124)
 WHITE, MUTED, FAINT = (255, 255, 255), (143, 168, 201), (96, 128, 170)
 BLUE, YELLOW, RED, GREEN = (74, 140, 255), (255, 201, 60), (255, 90, 95), (46, 204, 107)
 
-F = '/usr/share/fonts/opentype/inter/Inter-{}.otf'
+# Inter is the only typeface (docs/BRAND_STYLE.md §2). Resolve it once, in this order:
+#   1. $MOTIONSTUDIO_FONT_DIR  — explicit override (CI, laptops with a custom install)
+#   2. the Debian/Ubuntu `fonts-inter` package locations (what the publish lanes install)
+#   3. a repo-local brand/fonts/ drop
+# Any directory wins only if it holds every weight the renderers use.
+FONT_WEIGHTS = ('Black', 'Bold', 'SemiBold', 'Medium', 'Regular', 'Light')
+_FONT_DIRS = [os.environ.get('MOTIONSTUDIO_FONT_DIR', ''),
+              '/usr/share/fonts/opentype/inter', '/usr/share/fonts/truetype/inter',
+              '/usr/local/share/fonts/inter', os.path.expanduser('~/.local/share/fonts/inter'),
+              os.path.expanduser('~/.fonts/inter'),
+              os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'brand', 'fonts')]
+
+def find_font_template():
+    for d in _FONT_DIRS:
+        if not d or not os.path.isdir(d):
+            continue
+        for ext in ('otf', 'ttf'):
+            tpl = os.path.join(d, 'Inter-{}.' + ext)
+            if all(os.path.isfile(tpl.format(w)) for w in FONT_WEIGHTS):
+                return tpl
+    return None
+
+F = find_font_template() or '/usr/share/fonts/opentype/inter/Inter-{}.otf'
+
+def find_ffmpeg():
+    """$FFMPEG_BIN, then PATH, then the imageio-ffmpeg wheel if it is installed."""
+    import shutil
+    cand = os.environ.get('FFMPEG_BIN') or shutil.which('ffmpeg')
+    if cand:
+        return cand
+    try:
+        import imageio_ffmpeg
+        return imageio_ffmpeg.get_ffmpeg_exe()
+    except Exception:
+        return None
+
+def check_environment():
+    """Return a list of human-readable problems; empty means a render can proceed."""
+    problems = []
+    if not find_font_template():
+        problems.append('Inter is not installed (need Inter-{%s}.otf/.ttf in one of: %s)'
+                        % (','.join(FONT_WEIGHTS), ', '.join(d for d in _FONT_DIRS if d)))
+    if not find_ffmpeg():
+        problems.append('ffmpeg not found (set FFMPEG_BIN, install ffmpeg, or pip install imageio-ffmpeg)')
+    return problems
+
 try:
     from PIL import features
     RAQM = features.check('raqm')
@@ -184,13 +230,18 @@ def solve_sizes(reel):
             if b['kind'] not in ('cascade', 'headline', 'wordpop', 'kicker', 'support', 'odometer') or not b['text']:
                 continue
             want, s = b['size'], b['size']
-            while s > 32 and tw(b['text'], weight_of(b), s) > SAFE_W:
+            # Display text wraps before it shrinks below DISPLAY_FLOOR — a four-word
+            # cascade at 64px is body copy, not a headline (BRAND_STYLE §2: display 96–190).
+            # Only cascades know how to draw two lines, so only they get the early wrap.
+            floor = DISPLAY_FLOOR if (b['kind'] == 'cascade' and ' ' in b['text']) else 32
+            while s > floor and tw(b['text'], weight_of(b), s) > SAFE_W:
                 s -= 4
-            if s <= 32 and tw(b['text'], weight_of(b), s) > SAFE_W and ' ' in b['text']:
+            if s <= floor and tw(b['text'], weight_of(b), s) > SAFE_W and ' ' in b['text']:
                 b['lines'] = linebreak(b['text'], weight_of(b), s)
-                log.append(f"  LINEBREAK '{b['text'][:22]}' → 2 lines")
+                s = want   # two shorter lines earn the size back; shrink again only if they must
                 while s > 32 and max(tw(l, weight_of(b), s) for l in b['lines']) > SAFE_W:
                     s -= 4
+                log.append(f"  LINEBREAK '{b['text'][:22]}' → 2 lines @ {s}px")
             elif s != want:
                 log.append(f"  REJECTED '{b['text'][:20]}' @ {want}px → {s}px")
             b['size'] = s
@@ -312,13 +363,14 @@ def schedule(reel):
             prev_settle = max(prev_settle, settle)
             t = max(t, settle + 0.12)
     total = round(sum(sc['dur'] for sc in reel['scenes']), 2)
-    if total > REEL_CAP:
+    cap = float(reel.get('cap') or REEL_CAP)   # Reels: 15.6 s · Shorts may declare a longer cap
+    if total > cap:
         for sc in reel['scenes']:
-            if total <= REEL_CAP: break
+            if total <= cap: break
             need = max(b['t0'] + entrance_dur(b) + max(reading_time(b), 0.8)
                        for b in sc['beats']) + (EXIT + 0.15 if sc is not reel['scenes'][-1] else 0.10)
             if sc['dur'] > need:
-                take = round(min(sc['dur'] - need, total - REEL_CAP), 2)
+                take = round(min(sc['dur'] - need, total - cap), 2)
                 sc['dur'] = round(sc['dur'] - take, 2)
                 total = round(total - take, 2)
                 fixes.append(f"  AUTO-FIX trim: scene {sc['id']} -{take:.2f}s")
@@ -689,7 +741,10 @@ def render_reel(reel, tag):
     return fd, n
 
 def encode(fd, out, dur):
-    cmd = ['ffmpeg', '-y', '-framerate', str(FPS), '-i', fd + '/f_%04d.png',
+    ff = find_ffmpeg()
+    if not ff:
+        raise SystemExit('encode failed: ffmpeg not found (set FFMPEG_BIN or install ffmpeg)')
+    cmd = [ff, '-y', '-framerate', str(FPS), '-i', fd + '/f_%04d.png',
            '-f', 'lavfi', '-t', f'{dur:.2f}', '-i', 'anullsrc=r=44100:cl=stereo',
            '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '20',
            '-vf', 'noise=alls=4:allf=t', '-x264-params', 'rc-lookahead=25',
@@ -857,6 +912,7 @@ def build(reel, tag):
 
     for attempt in range(3):
         print(f'── 5. RENDER (pass {attempt + 1}) ──')
+        events_of(reel)  # registers strike_at_local etc. — the render must see the same registry QA checks
         fd, n = render_reel(reel, tag)
         print('── 6. VIDEO QA ENGINE ──')
         V = qa_reel(reel, fd, n)
@@ -877,8 +933,15 @@ def build(reel, tag):
     return False
 
 if __name__ == '__main__':
-    os.makedirs(OUT, exist_ok=True)
     args = sys.argv[1:]
+    if '--check' in args:
+        probs = check_environment()
+        print(f'  fonts  : {find_font_template() or "MISSING"}')
+        print(f'  ffmpeg : {find_ffmpeg() or "MISSING"}')
+        for pr in probs: print('  ❌ ' + pr)
+        print('  ✅ MotionStudio environment OK' if not probs else '  → fix the above before rendering')
+        sys.exit(0 if not probs else 2)
+    os.makedirs(OUT, exist_ok=True)
     sel = [a for a in args if a in ('reel1', 'reel2', 'all')] or ['all']
     if 'all' in sel: sel = ['reel1', 'reel2']
     ok = True

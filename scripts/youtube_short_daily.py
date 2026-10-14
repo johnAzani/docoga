@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
-"""Render one safe, date-selected DocOga Short and expose upload metadata."""
+"""Render one safe, date-selected DocOga Short with MotionStudio and expose upload metadata.
+
+The words come from the date-seeded rotation in `scripts/generate_short_video.py`
+(`script_for_date`). The picture comes from `tools/motionstudio.py`, through the
+one bridge in `tools/shorts_reel.py` — Inter on #061A33, springs, the yellow
+underline, the grain. Nothing else may render a Short that this lane uploads
+(docs/BRAND_STYLE.md: "every piece of content follows this or it doesn't ship").
+"""
 
 import os
 import sys
@@ -9,18 +16,21 @@ from zoneinfo import ZoneInfo
 
 
 SCRIPTS_DIR = Path(__file__).resolve().parent
-sys.path.insert(0, str(SCRIPTS_DIR))
+TOOLS_DIR = SCRIPTS_DIR.parent / "tools"
+for _p in (SCRIPTS_DIR, TOOLS_DIR):
+    if str(_p) not in sys.path:
+        sys.path.insert(0, str(_p))
 
-import generate_short_video as shorts  # noqa: E402
+import shorts_reel  # noqa: E402  — MotionStudio bridge (the only renderer this lane knows)
 
 
 def main():
     run_date = datetime.now(ZoneInfo("Africa/Lagos")).date()
-    script = shorts.script_for_date(run_date)
-    output_path = shorts.OUTPUT_DIR / f"docoga_short_{run_date:%Y%m%d}.mp4"
-    video_path, _ = shorts.generate_video(script=script, output_path=output_path)
+    script = shorts_reel.topic_for(run_date)
+    output_path = shorts_reel.default_output_path(run_date, prefix="docoga_short")
+    video = Path(shorts_reel.render_topic(script, output_path, tag="yt",
+                                          platform="YouTube Shorts"))
 
-    video = Path(video_path)
     if video.suffix.lower() != ".mp4" or not video.is_file() or video.stat().st_size < 10_000:
         raise RuntimeError(f"Video generation did not produce a usable MP4: {video}")
 

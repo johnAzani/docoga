@@ -228,7 +228,10 @@ class DailyShortOutputTests(unittest.TestCase):
     def _run_daily(self):
         import youtube_short_daily as daily
 
-        with patch.object(shorts, "generate_video", return_value=(str(self.video), "Keep a Rent Paper Trail")):
+        # The lane renders through the MotionStudio bridge (tools/shorts_reel.py), never
+        # the retired card renderer in this module — so that is what gets mocked. A real
+        # render is ~3 minutes of CPU and belongs in the lane, not in a unit test.
+        with patch.object(daily.shorts_reel, "render_topic", return_value=self.video):
             with patch.dict(os.environ, {"GITHUB_OUTPUT": str(self.output_file)}):
                 daily.main()
         return dict(
@@ -250,11 +253,9 @@ class DailyShortOutputTests(unittest.TestCase):
         # used to hardcode "Keep a Rent Paper Trail" and broke CI on 2026-10-09
         # when the rotation moved to "Before You Pay an Agent".
         #
-        # The mock in _run_daily() returns a topic from generate_video(), but
-        # youtube_short_daily.main() discards that second return value and uses
-        # script["title"] instead. In production the two are always identical
-        # (generate_video returns script["title"]), so the mock was decorative —
-        # which is exactly why the hardcoded assertion ever passed.
+        # The mock in _run_daily() only stands in for the render; the topic is
+        # whatever the rotation says today, which is exactly why no fixed string
+        # can be asserted here.
         outputs = self._run_daily()
         self.assertTrue(outputs["title"].endswith("#Shorts"))
         # The test name promises this; the original never actually checked it.
@@ -266,6 +267,16 @@ class DailyShortOutputTests(unittest.TestCase):
         outputs = self._run_daily()
         self.assertIn("https://docoga.com.ng", outputs["description"])
         self.assertIn("not legal advice", outputs["description"].lower())
+
+    def test_the_lane_renders_with_motionstudio_not_the_retired_card_renderer(self):
+        """Owner direction 14 Oct 2026 ("I want my quality shorts back"): the Short
+        that reaches YouTube is a MotionStudio render. The lane may import this
+        module's *words* through the bridge, but never its `generate_video`."""
+        source = (SCRIPTS_DIR / "youtube_short_daily.py").read_text(encoding="utf-8")
+        self.assertIn("import shorts_reel", source)
+        self.assertIn("shorts_reel.render_topic(", source)
+        self.assertNotIn("generate_video(", source)
+        self.assertNotIn("import generate_short_video", source)
 
 
 if __name__ == "__main__":

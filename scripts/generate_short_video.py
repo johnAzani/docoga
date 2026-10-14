@@ -1,8 +1,20 @@
 #!/usr/bin/env python3
 """
-DocOga Short-Form Video Generator
-Creates 30-60 second vertical videos (9:16) for Telegram, YouTube Shorts, Reels
-Uses moviepy with FFmpeg for video creation
+DocOga Short-Form Video — the WORDS of the daily rotation
+=========================================================
+
+Publish lanes (YouTube Shorts, Facebook Reels, Telegram video) take only
+`VIDEO_SCRIPTS` / `script_for_date()` from this module. The picture is rendered
+by MotionStudio (`tools/motionstudio.py`) through `tools/shorts_reel.py` —
+Inter on #061A33, springs, the yellow underline, the grain (docs/BRAND_STYLE.md).
+
+The static-card renderer below (`create_slide_image`, `generate_video`) is
+RETIRED from every publish lane: it is off-palette and off-typeface and was the
+reason the 14 Oct 2026 Short shipped looking like nothing else DocOga makes.
+It stays only for its own regression tests and for local previews of the copy;
+`tools/qa.py` refuses any lane that imports it to render.
+
+Legacy notes (the old card renderer; not the brand palette):
 
 BRAND COLORS (sampled from the official brand mark, 18 Sep 2026):
   Navy:        #002040  RGB(0, 32, 64)

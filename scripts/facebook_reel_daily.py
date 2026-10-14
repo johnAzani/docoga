@@ -17,11 +17,12 @@ minutes. That is why the workflow calls the plan step first: deciding is cheap,
 and a pipeline that only discovers it had nothing to do after rendering is a
 pipeline that burns its free minutes on a skip.
 
-The video itself is **the same render as the YouTube Short** — same
-`scripts/generate_short_video.py`, same date-seeded rotation, same brand rules
-(no logo on motion, per `docs/DESIGN_SYSTEM.md` §1, enforced by that module's own
-tests). One content source, two conversion points; a second reel generator would
-drift within a week.
+The video itself is **the same render as the YouTube Short** — the words from
+the date-seeded rotation in `scripts/generate_short_video.py`, the picture from
+`tools/motionstudio.py` through the one bridge `tools/shorts_reel.py` (Inter on
+#061A33, springs, yellow underline, grain — `docs/BRAND_STYLE.md` §5, no logo on
+motion per `docs/DESIGN_SYSTEM.md` §1). One content source, one renderer, two
+conversion points; a second reel generator would drift within a week.
 
 The two lanes deliberately do **not** share days: Shorts run Tue/Fri
 (`youtube_scheduled.yml`), Reels run Mon/Thu. Same weekday would mean the same
@@ -125,29 +126,36 @@ def plan(day, mode):
 def reel_topic(day):
     """The day's frame title, from the shared rotation.
 
-    Imported lazily on purpose, and *raises* if the renderer's module cannot be
+    Imported lazily on purpose, and *raises* if the rotation's module cannot be
     loaded — `plan()` is what decides whether that matters yet.
     """
-    import generate_short_video as shorts
-    return shorts.script_for_date(day)["title"]
+    import generate_short_video as words
+    return words.script_for_date(day)["title"]
 
 
 def render(day, output_path=None):
-    """Render the reel. Returns (ok, path_or_reason, info)."""
+    """Render the reel through MotionStudio. Returns (ok, path_or_reason, info)."""
     try:
-        import generate_short_video as shorts
-    except Exception as exc:  # moviepy/Pillow missing on this machine
+        import shorts_reel  # the MotionStudio bridge — imports PIL + numpy
+    except Exception as exc:  # Pillow/numpy missing on this machine
         return False, "the renderer could not be imported (%s: %s) — on a runner, " \
                       "install requirements-youtube.txt" % (type(exc).__name__, exc), {}
+    problems = shorts_reel.ms.check_environment()
+    if problems:
+        return False, "the renderer cannot run here: %s" % "; ".join(problems), {}
 
-    script = shorts.script_for_date(day)
+    script = shorts_reel.topic_for(day)
     if not script.get("slides"):
         return False, "the rotation returned no slides for %s" % day.isoformat(), {}
-    planned_seconds = sum(int(slide.get("duration", 3)) for slide in script["slides"])
+    try:
+        planned_seconds = shorts_reel.planned_seconds(script)
+    except Exception as exc:
+        return False, "the rotation's frame for '%s' does not fit the Shorts grammar (%s: %s)" \
+                      % (script.get("title"), type(exc).__name__, exc), {}
     if not (REEL_MIN_SECONDS <= planned_seconds <= REEL_MAX_SECONDS):
         # Catch it here, in the file that owns the lane, where the message can say
         # what to do — not in Meta's silence after a 2-minute render.
-        return False, ("the rotation's frame for '%s' is %ds; Reels need %d-%ds, so "
+        return False, ("the rotation's frame for '%s' is %.1fs; Reels need %d-%ds, so "
                        "trim slides in scripts/generate_short_video.py"
                        % (script["title"], planned_seconds, REEL_MIN_SECONDS,
                           REEL_MAX_SECONDS)), {}
@@ -155,7 +163,7 @@ def render(day, output_path=None):
     path = Path(output_path) if output_path else (
         OUTPUT_DIR / ("docoga_reel_%s.mp4" % day.strftime("%Y%m%d")))
     try:
-        video_path, _ = shorts.generate_video(script=script, output_path=path)
+        video_path = shorts_reel.render_topic(script, path, tag="fb", platform="Facebook Reels")
     except Exception as exc:
         return False, "render failed (%s: %s)" % (type(exc).__name__, exc), {}
 
@@ -228,7 +236,7 @@ def main(argv=None):
         return 3
     emit({"video_path": result, "title": info["title"], "topic": info["topic"],
           "bytes": info["bytes"]})
-    print("🎬 rendered %s (%d bytes, planned %ds)"
+    print("🎬 rendered %s (%d bytes, planned %.1fs)"
           % (result, info["bytes"], info["seconds_planned"]))
     return 0
 

@@ -99,13 +99,14 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install FFmpeg and fonts
+      # MotionStudio renders the Short (tools/motionstudio.py via tools/shorts_reel.py):
+      # Inter is the only typeface and ffmpeg is the only encoder. The script ends with
+      # `motionstudio.py --check`, so a runner without both fails here, by name, before
+      # a token is minted or a frame is drawn.
+      - name: Install MotionStudio (ffmpeg + Inter) and the upload dependencies
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq ffmpeg fonts-dejavu-core
-
-      - name: Install video and upload dependencies
-        run: python -m pip install -r requirements-youtube.txt
+          bash tools/install_motionstudio_deps.sh
+          python -m pip install -r requirements-youtube.txt
 
       - name: Resolve the settings for this run
         id: settings

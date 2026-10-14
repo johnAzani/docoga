@@ -244,18 +244,32 @@ class SpecGateTests(unittest.TestCase):
         self.assertAlmostEqual(info["seconds"], 23.0)
 
     def test_the_rotation_frames_fit_the_reels_window(self):
-        """Not a mock: the shipped slide durations must be inside 3–90 s.
+        """Not a mock: every topic, solved through the MotionStudio scheduler, must land
+        inside 3–90 s (no frame is drawn — the timeline is solved from the spec).
 
-        A slide edit that adds four 4-second frames is a content change; it should
-        fail here, where the message says which knob to turn, and not silently
-        publish as a plain video post on the day the lane is switched on.
+        A copy edit that doubles the tips is a content change; it should fail here,
+        where the message says which knob to turn, and not silently publish as a
+        plain video post on the day the lane is switched on.
         """
-        import generate_short_video as shorts
-        for script in shorts.VIDEO_SCRIPTS:
-            seconds = sum(int(slide.get("duration", 3)) for slide in script["slides"])
+        try:
+            import shorts_reel
+            import generate_short_video as words
+        except ImportError as exc:  # pragma: no cover — PIL/numpy absent
+            self.skipTest("MotionStudio bridge not importable here: %s" % exc)
+        if shorts_reel.ms.find_font_template() is None:
+            self.skipTest("Inter is not installed — run tools/install_motionstudio_deps.sh")
+        for script in words.VIDEO_SCRIPTS:
+            seconds = shorts_reel.planned_seconds(script)
             with self.subTest(title=script["title"]):
                 self.assertGreaterEqual(seconds, facebook_reel_daily.REEL_MIN_SECONDS)
                 self.assertLessEqual(seconds, facebook_reel_daily.REEL_MAX_SECONDS)
+
+    def test_the_render_goes_through_motionstudio(self):
+        """The Reel is the same MotionStudio render as the Short — the retired
+        static-card `generate_video` must not be reachable from this lane."""
+        source = Path(facebook_reel_daily.__file__).read_text(encoding="utf-8")
+        self.assertIn("shorts_reel.render_topic(", source)
+        self.assertNotIn("generate_video(", source)
 
 
 class ReelProtocolTests(unittest.TestCase):
@@ -501,11 +515,12 @@ class ReelDayRuleTests(unittest.TestCase):
         self.assertIn("reel_today=yes", text)
 
     def test_a_render_without_the_renderer_names_the_missing_piece(self):
-        """On a machine with no moviepy (a laptop; a future base image), the lane must
-        say what is missing and be *non-zero*. `render()` returning a falsy value that
-        the CLI swallows is the October Telegram bug in a new costume, so the exit
-        code is asserted through main(), not just the helper."""
-        with patch.dict(sys.modules, {"generate_short_video": None}):
+        """On a machine without the MotionStudio bridge's dependencies (a laptop; a
+        future base image), the lane must say what is missing and be *non-zero*.
+        `render()` returning a falsy value that the CLI swallows is the October
+        Telegram bug in a new costume, so the exit code is asserted through main(),
+        not just the helper."""
+        with patch.dict(sys.modules, {"shorts_reel": None}):
             ok, reason, _info = facebook_reel_daily.render(date(2026, 10, 12))
             self.assertFalse(ok)
             self.assertIn("could not be imported", reason)
