@@ -1,0 +1,596 @@
+{
+  "id": "dd3",
+  "number": 3,
+  "title": "The Rent Receipt: The ₦50 Paper That Wins Cases",
+  "kicker": "DOCOGA — DEEP-DIVE · EPISODE 3",
+  "disclaimer": "GENERAL INFORMATION · NOT LEGAL ADVICE · RULES VARY BY STATE AND AGREEMENT",
+  "voice": {
+    "_locked": "LOCKED by the owner 14 Oct 2026 — must equal tools/deepdive.py LOCKED_VOICE_*; the engine refuses anything else",
+    "name": "Orus",
+    "instruction": "Narrate this in a natural Nigerian English accent, like a confident Lagos radio presenter:"
+  },
+  "audio": {
+    "_comment": "Sound plan — synthesized by tools/soundkit.py, cued from the beats (python3 tools/deepdive.py dd2 cues). Bed levels are dB(A) relative to the narrator's speech; SFX are dB below the voice peak. Run #1 (-27 raw) was inaudible on phones — these are broadcast-documentary levels.",
+    "bed": true,
+    "bpm": 72,
+    "seed": 7,
+    "bed_gap_db": -8,
+    "bed_speech_db": -16,
+    "sfx_db": -12,
+    "hit_db": -9,
+    "tick_db": -16,
+    "riser_db": -14,
+    "stinger_db": -9,
+    "tail_fade_s": 4
+  },
+  "youtube": {
+    "title": "Rent Receipt in Nigeria: The 7 Lines That Win Every Rent Dispute (Deep-Dive 3)",
+    "description": "\"Show me your receipts\" ends more rent disputes than any lawyer's speech. This Deep-Dive explains what a rent receipt is (and is not), who may issue one, the seven lines that make it bulletproof, the five quiet traps that swallow proof, the three myths that cost tenants money, how digital proof really works, what the Lagos Tenancy Law 2011 requires, and the exact steps to take if years of your rent sit unreceipted.\n\nBuild a proper rent receipt on your phone in under two minutes — figures to words, period spelled out, balance line for part payments:\nhttps://docoga.com.ng\n\nDocOga — every document a Nigerian needs. Free to start, no signup.\n\nGeneral information, not legal advice. Rules vary by state and by your agreement. The Lagos Tenancy Law 2011 (section 5) is cited for Lagos; other states have their own laws.",
+    "tags": [
+      "rent receipt Nigeria",
+      "rent receipt",
+      "tenant rights Nigeria",
+      "Lagos Tenancy Law 2011",
+      "landlord and tenant Nigeria",
+      "proof of rent payment",
+      "rent dispute Nigeria",
+      "DocOga",
+      "Deep-Dive"
+    ],
+    "category": "27"
+  },
+  "cover": {
+    "img": "naira",
+    "kicker": "In court, one question",
+    "line1": "Show me your",
+    "highlight": "receipts",
+    "label": "Seven lines",
+    "line2": "That win rent disputes",
+    "line3": "The rent receipt, explained",
+    "sub": "the man holding paper wins"
+  },
+  "sections": [
+    {
+      "n": 1,
+      "title": "The Hook"
+    },
+    {
+      "n": 2,
+      "title": "What a Receipt Is"
+    },
+    {
+      "n": 3,
+      "title": "Seven Lines of Proof"
+    },
+    {
+      "n": 4,
+      "title": "The Quiet Traps"
+    },
+    {
+      "n": 5,
+      "title": "The Paper-Trail Family"
+    },
+    {
+      "n": 6,
+      "title": "Three Myths"
+    },
+    {
+      "n": 7,
+      "title": "Digital Proof"
+    },
+    {
+      "n": 8,
+      "title": "What to Do Right Now"
+    },
+    {
+      "n": 9,
+      "title": "The Law, and DocOga"
+    }
+  ],
+  "beats": [
+    {
+      "sec": 1,
+      "trig": null,
+      "head": "SHOW ME YOUR RECEIPTS",
+      "sub": "the four words that end rent disputes — Deep-Dive 3",
+      "img": "naira"
+    },
+    {
+      "sec": 1,
+      "trig": [
+        "three",
+        "years",
+        "of",
+        "rent"
+      ],
+      "head": "THREE YEARS OF RENT",
+      "sub": "paid in cash. every year. same landlord.",
+      "img": "market"
+    },
+    {
+      "sec": 1,
+      "trig": [
+        "never",
+        "paid",
+        "me"
+      ],
+      "head": "\"YOU NEVER PAID ME A KOBO\"",
+      "sub": "and he can say it looking you in the eye",
+      "img": "dusk"
+    },
+    {
+      "sec": 1,
+      "trig": [
+        "no",
+        "receipts"
+      ],
+      "head": "NO RECEIPTS. NO RECORDS.",
+      "sub": "memory against memory",
+      "img": "letter"
+    },
+    {
+      "sec": 1,
+      "trig": [
+        "holding",
+        "the",
+        "paper"
+      ],
+      "head": "THE MAN HOLDING PAPER WINS",
+      "sub": "not the man shouting louder",
+      "img": "court"
+    },
+    {
+      "sec": 1,
+      "trig": [
+        "this",
+        "is",
+        "docoga"
+      ],
+      "head": "DOCOGA",
+      "sub": "Nigeria's document engine",
+      "img": "kiosk"
+    },
+    {
+      "sec": 2,
+      "trig": null,
+      "head": "WHAT A RECEIPT IS",
+      "sub": "and what it is not",
+      "img": "letter"
+    },
+    {
+      "sec": 2,
+      "trig": [
+        "acknowledgement",
+        "of",
+        "payment"
+      ],
+      "head": "AN ACKNOWLEDGEMENT",
+      "sub": "money moved. how much. what for.",
+      "img": "pen"
+    },
+    {
+      "sec": 2,
+      "trig": [
+        "it",
+        "is",
+        "not",
+        "a",
+        "contract"
+      ],
+      "head": "NOT A CONTRACT",
+      "sub": "your agreement does that job",
+      "img": "pen"
+    },
+    {
+      "sec": 2,
+      "trig": [
+        "who",
+        "can",
+        "issue"
+      ],
+      "head": "WHO MAY ISSUE ONE?",
+      "sub": "the named landlord — or an agent authorised in writing",
+      "img": "court"
+    },
+    {
+      "sec": 2,
+      "trig": [
+        "not",
+        "the",
+        "caretaker"
+      ],
+      "head": "NOT THE CARETAKER",
+      "sub": "not the son abroad. not a stranger.",
+      "img": "keke"
+    },
+    {
+      "sec": 3,
+      "trig": null,
+      "head": "SEVEN LINES OF PROOF",
+      "sub": "count them on your fingers",
+      "img": "pen",
+      "rows": [
+        "the date",
+        "the payer",
+        "the receiver",
+        "amount — figures and words",
+        "the purpose: rent",
+        "the period covered",
+        "signature + date"
+      ],
+      "row_trigs": [
+        [
+          "one",
+          "the",
+          "date"
+        ],
+        [
+          "two",
+          "and",
+          "three"
+        ],
+        [
+          "receiving",
+          "spelled"
+        ],
+        [
+          "figures",
+          "and",
+          "in",
+          "words"
+        ],
+        [
+          "the",
+          "word",
+          "rent"
+        ],
+        [
+          "which",
+          "month"
+        ],
+        [
+          "seven",
+          "the",
+          "signature"
+        ]
+      ]
+    },
+    {
+      "sec": 3,
+      "trig": [
+        "thirty",
+        "seconds",
+        "to",
+        "write"
+      ],
+      "head": "THIRTY SECONDS TO WRITE",
+      "sub": "years of arguments prevented",
+      "img": "market"
+    },
+    {
+      "sec": 4,
+      "trig": null,
+      "head": "THE QUIET TRAPS",
+      "sub": "how honest Nigerians lose their own proof",
+      "img": "dusk"
+    },
+    {
+      "sec": 4,
+      "trig": [
+        "wrong",
+        "name",
+        "receipt"
+      ],
+      "head": "THE WRONG-NAME RECEIPT",
+      "sub": "landlord is Mr Ade — receipt says Tunde",
+      "img": "keke"
+    },
+    {
+      "sec": 4,
+      "trig": [
+        "part",
+        "payment"
+      ],
+      "head": "PART PAYMENT, NO PAPER",
+      "sub": "the first half vanishes with the second",
+      "img": "letter"
+    },
+    {
+      "sec": 4,
+      "trig": [
+        "receipt",
+        "later"
+      ],
+      "head": "\"I WILL GIVE YOU LATER\"",
+      "sub": "later is where receipts go to die",
+      "img": "dusk"
+    },
+    {
+      "sec": 4,
+      "trig": [
+        "personal",
+        "account"
+      ],
+      "head": "THE AGENT'S ACCOUNT",
+      "sub": "\"I never received a kobo\" — and he is right",
+      "img": "court"
+    },
+    {
+      "sec": 4,
+      "trig": [
+        "renewal",
+        "trap"
+      ],
+      "head": "THE RENEWAL TRAP",
+      "sub": "\"we already have an understanding\"",
+      "img": "market"
+    },
+    {
+      "sec": 5,
+      "trig": null,
+      "head": "THE PAPER-TRAIL FAMILY",
+      "sub": "agreement. receipts. notices.",
+      "img": "letter"
+    },
+    {
+      "sec": 5,
+      "trig": [
+        "claims",
+        "arrears"
+      ],
+      "head": "CLAIM: \"HE OWES RENT\"",
+      "sub": "answer: your receipts — dated, matched",
+      "img": "court"
+    },
+    {
+      "sec": 5,
+      "trig": [
+        "never",
+        "existed"
+      ],
+      "head": "CLAIM: \"NO TENANCY\"",
+      "sub": "answer: the agreement plus the receipts",
+      "img": "letter"
+    },
+    {
+      "sec": 5,
+      "trig": [
+        "different",
+        "figure"
+      ],
+      "head": "CLAIM: \"WRONG RENT\"",
+      "sub": "answer: the year-three receipt, in words",
+      "img": "naira"
+    },
+    {
+      "sec": 5,
+      "trig": [
+        "holding",
+        "proof"
+      ],
+      "head": "THE FIGHT IS NOT ABOUT SHOUTING",
+      "sub": "it is about who is holding proof",
+      "img": "court"
+    },
+    {
+      "sec": 6,
+      "trig": null,
+      "head": "THREE MYTHS, KILLED",
+      "sub": "each one costs tenants money",
+      "img": "danfo"
+    },
+    {
+      "sec": 6,
+      "trig": [
+        "paid",
+        "in",
+        "cash"
+      ],
+      "head": "\"I PAID CASH — NO RECEIPT\"",
+      "sub": "cash is when you need one most",
+      "img": "naira"
+    },
+    {
+      "sec": 6,
+      "trig": [
+        "receipts",
+        "are",
+        "for",
+        "businesses"
+      ],
+      "head": "\"RECEIPTS ARE FOR BUSINESSES\"",
+      "sub": "disputes happen at the end, not the start",
+      "img": "market"
+    },
+    {
+      "sec": 6,
+      "trig": [
+        "bank",
+        "record",
+        "is",
+        "my",
+        "receipt"
+      ],
+      "head": "\"THE ALERT IS MY RECEIPT\"",
+      "sub": "it proves movement — not purpose",
+      "img": "phone"
+    },
+    {
+      "sec": 7,
+      "trig": null,
+      "head": "DIGITAL PROOF",
+      "sub": "where Nigerian tenants live now",
+      "img": "phone"
+    },
+    {
+      "sec": 7,
+      "trig": [
+        "bank",
+        "record",
+        "is",
+        "strong"
+      ],
+      "head": "THE BANK PROVES MOVEMENT",
+      "sub": "pair it with purpose",
+      "img": "court"
+    },
+    {
+      "sec": 7,
+      "trig": [
+        "message",
+        "that",
+        "says"
+      ],
+      "head": "THE PERFECT MESSAGE",
+      "sub": "\"rent for flat four, January to December\"",
+      "img": "phone"
+    },
+    {
+      "sec": 7,
+      "trig": [
+        "photograph",
+        "it",
+        "the",
+        "same",
+        "day"
+      ],
+      "head": "PHOTOGRAPH IT THE SAME DAY",
+      "sub": "keep the original where fire cannot reach",
+      "img": "pen"
+    },
+    {
+      "sec": 7,
+      "trig": [
+        "two",
+        "places"
+      ],
+      "head": "KEEP EVERYTHING TWICE",
+      "sub": "proof in two places survives one disaster",
+      "img": "letter"
+    },
+    {
+      "sec": 8,
+      "trig": null,
+      "head": "WHAT TO DO RIGHT NOW",
+      "sub": "even if years sit unreceipted",
+      "img": "rooftops"
+    },
+    {
+      "sec": 8,
+      "trig": [
+        "backfill",
+        "letter"
+      ],
+      "head": "THE BACKFILL LETTER",
+      "sub": "confirm past payments — in writing",
+      "img": "letter"
+    },
+    {
+      "sec": 8,
+      "trig": [
+        "refusal",
+        "is",
+        "information"
+      ],
+      "head": "REFUSAL IS INFORMATION",
+      "sub": "fix your future fast",
+      "img": "keke"
+    },
+    {
+      "sec": 8,
+      "trig": [
+        "never",
+        "move",
+        "money"
+      ],
+      "head": "NEVER AGAIN WITHOUT ONE",
+      "sub": "every payment. every part. receipted.",
+      "img": "naira"
+    },
+    {
+      "sec": 8,
+      "trig": [
+        "draft",
+        "it",
+        "yourself"
+      ],
+      "head": "DRAFT IT YOURSELF",
+      "sub": "a receipt you wrote beats no receipt",
+      "img": "pen"
+    },
+    {
+      "sec": 8,
+      "trig": [
+        "landlord",
+        "watching",
+        "this"
+      ],
+      "head": "LANDLORDS — YOU TOO",
+      "sub": "a receipt book prevents a court season",
+      "img": "court"
+    },
+    {
+      "sec": 9,
+      "trig": null,
+      "head": "THE RENT RECEIPT",
+      "sub": "not paper. your money, wearing proof.",
+      "img": "naira"
+    },
+    {
+      "sec": 9,
+      "trig": [
+        "tenancy",
+        "law",
+        "of"
+      ],
+      "head": "LAGOS TENANCY LAW 2011",
+      "sub": "a receipt for rent paid is a duty — date, names, premises, amount, period",
+      "img": "court"
+    },
+    {
+      "sec": 9,
+      "trig": [
+        "under",
+        "two",
+        "minutes"
+      ],
+      "head": "BUILT ON YOUR PHONE",
+      "sub": "figures to words. automatic. balance line.",
+      "img": "phone"
+    },
+    {
+      "sec": 9,
+      "trig": [
+        "print",
+        "it",
+        "or"
+      ],
+      "head": "PRINT IT. OR SAVE IT.",
+      "sub": "hand it over for signature",
+      "img": "pen"
+    },
+    {
+      "sec": 9,
+      "trig": [
+        "free",
+        "to",
+        "start"
+      ],
+      "head": "FREE TO START",
+      "sub": "no signup. no card.",
+      "img": "celebration"
+    },
+    {
+      "sec": 9,
+      "trig": [
+        "docoga",
+        "dot",
+        "com"
+      ],
+      "head": "DOCOGA",
+      "sub": "docoga.com.ng — link in the description",
+      "img": "celebration",
+      "endcard": true
+    }
+  ]
+}

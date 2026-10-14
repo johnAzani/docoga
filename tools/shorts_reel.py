@@ -58,6 +58,23 @@ def _clean(text):
     return " ".join(str(text or "").split())
 
 
+def split_hook(text):
+    """(setup, consequence) for a two-beat STAKES hook; (whole, None) otherwise.
+
+    The rotation writes the beat break as a newline ("PAY WITHOUT A RECEIPT.\\nPAY
+    TWICE."); a hook written as two sentences on one line splits at the first
+    full stop that ends a sentence. A single-sentence hook is left whole."""
+    raw = str(text or "")
+    if "\n" in raw.strip():
+        a, b = raw.strip().split("\n", 1)
+        return _up(a), (_up(b) or None)
+    whole = _up(raw)
+    parts = [p.strip() for p in whole.split(". ") if p.strip()]
+    if len(parts) == 2:
+        return parts[0] + ".", parts[1]
+    return whole, None
+
+
 def split_topic(topic):
     """(hook, tips[], disclaimer) from a rotation entry; raises if the shape is off."""
     slides = list(topic.get("slides") or [])
@@ -80,14 +97,26 @@ def reel_from_topic(topic, out_path, platform="YouTube Shorts"):
     out_path = str(Path(out_path).resolve())
     scenes = []
 
-    scenes.append(dict(
-        id="A", role="hook", dur=3.2, punch=0.050, trans="flash",
-        beats=[
-            ms.Beat("kicker", "kicker", SERIES_KICKER, size=30, y=470, color=ms.FAINT),
-            ms.Beat("cascade", "hook", _up(hook["text"]), size=150, y=600, color=ms.WHITE),
+    setup, consequence = split_hook(hook["text"])
+    hook_beats = [ms.Beat("kicker", "kicker", SERIES_KICKER, size=30, y=470, color=ms.FAINT)]
+    if consequence:
+        # STAKES hook (the pattern the channel's numbers reward — see
+        # generate_short_video.py): the careless act lands first in white, the
+        # consequence slams in underneath in brand yellow. Two cascades, so each
+        # line wraps on its own and neither drags the reel's type size down.
+        hook_beats += [
+            ms.Beat("cascade", "hook", setup, size=132, y=560, color=ms.WHITE),
+            ms.Beat("cascade", "hook", consequence, size=150, y=820, color=ms.YELLOW),
+            ms.Beat("support", "support", _clean(hook.get("sub")), size=56, y=1060,
+                    color=ms.MUTED),
+        ]
+    else:
+        hook_beats += [
+            ms.Beat("cascade", "hook", setup, size=150, y=600, color=ms.WHITE),
             ms.Beat("support", "support", _clean(hook.get("sub")), size=56, y=900,
                     color=ms.MUTED),
-        ]))
+        ]
+    scenes.append(dict(id="A", role="hook", dur=3.2, punch=0.050, trans="flash", beats=hook_beats))
 
     for i, tip in enumerate(tips):
         scenes.append(dict(

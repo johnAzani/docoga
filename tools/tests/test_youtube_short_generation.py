@@ -66,6 +66,28 @@ class DailyShortScheduleTests(unittest.TestCase):
                             self.assertLessEqual(box[2] - box[0], max_width)
 
 
+def parse_github_output(text):
+    """Read GITHUB_OUTPUT the way the runner does: `key=value` lines plus the
+    `key<<DELIM … DELIM` heredoc form that multi-line values (the description,
+    once it carries the parent Deep-Dive link) must use."""
+    out, lines, i = {}, text.splitlines(), 0
+    while i < len(lines):
+        line = lines[i]
+        if "<<" in line and "=" not in line.split("<<", 1)[0]:
+            key, delim = line.split("<<", 1)
+            body = []
+            i += 1
+            while i < len(lines) and lines[i] != delim:
+                body.append(lines[i])
+                i += 1
+            out[key] = "\n".join(body)
+        elif "=" in line:
+            key, value = line.split("=", 1)
+            out[key] = value
+        i += 1
+    return out
+
+
 def render_slide(slide):
     """Render a slide once and reuse it — a full frame is 1080x1920 (~6 MB)."""
     key = (slide.get("text"), slide.get("sub"), slide.get("bg"), slide.get("color"))
@@ -234,11 +256,7 @@ class DailyShortOutputTests(unittest.TestCase):
         with patch.object(daily.shorts_reel, "render_topic", return_value=self.video):
             with patch.dict(os.environ, {"GITHUB_OUTPUT": str(self.output_file)}):
                 daily.main()
-        return dict(
-            line.split("=", 1)
-            for line in self.output_file.read_text(encoding="utf-8").splitlines()
-            if "=" in line
-        )
+        return parse_github_output(self.output_file.read_text(encoding="utf-8"))
 
     def test_every_value_the_scheduled_workflow_reads_is_written(self):
         outputs = self._run_daily()

@@ -157,9 +157,13 @@ warning and YouTube picks a frame; the publish still succeeds.
 - Plates: 16:9 JPEG, ≤1600 px, no text in the image (the duotone makes text illegible). Drop
   into `episodes/assets/<name>.jpg`, refer to `<name>` in `img`. A missing plate may point at a
   stand-in in `episodes/assets/aliases.json` so the episode still renders.
-- DD3 (tenancy agreement) and DD4 (rent receipt): their beats are still in
-  `tools/make_longform_dd3.py` / `_dd4.py`; port into `episodes/dd3/`, `episodes/dd4/` the same
-  way DD2 was. The scripts need rewriting — the originals were never committed.
+- `episodes/dd3/` — **The Rent Receipt** (ported 14 Oct 2026 from the legacy `_dd4.py` beats,
+  script rewritten; 45 beats, 9 sections, `check` green). Queued after dd2. The tenancy-agreement
+  episode was not ported: that long-form already exists on the channel (08wCJ0EmTkU). When a new
+  topic is wanted, copy `episodes/dd3/` as the template and append the id to `episodes/queue.json`.
+- Every Short names its parent Deep-Dive (`parent` in `scripts/generate_short_video.py`);
+  `tools/deepdive_links.py` turns it into the watch link the moment the episode's title appears in
+  `logs/youtube_longform.json` — nothing to do by hand when a new episode goes live.
 
 Local preview without Gemini or Vosk (sandbox or laptop):
 
