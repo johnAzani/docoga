@@ -554,6 +554,10 @@ Documented in `docs/GROWTH_JOURNAL.md`. Key milestones:
   Vosk sync, nine-scene parallel render, banked on release `deepdive-<id>`, publishes unlisted.
   `GEMINI_API_KEY` added by the owner 14 Oct. Nightly tick 03:00 WAT works `episodes/queue.json`;
   quota = green pause; music + SFX synthesized by `tools/soundkit.py`. Runbook `docs/LONGFORM_AUTOMATION.md`.
+  **DD2 published 14 Oct 2026** → https://www.youtube.com/watch?v=n45ufAFv5OM (unlisted; owner: "fantastic" but no
+  audible music → bed re-voiced A3–A4 + A-weighted levels 16/8 dB(A); re-master + force-publish, delete old copy).
+  **YouTube numbers:** `tools/yt_stats.py` weekly (Mon 06:00 WAT) → `docs/YOUTUBE_PERFORMANCE.md` — read it before
+  choosing hooks/episodes. Analytics-API depth needs `yt-analytics.readonly` on the token (optional owner step).
   🔒 **VOICE LOCKED (owner, 14 Oct 2026):** Gemini Orus + "Narrate this in a natural Nigerian English accent,
   like a confident Lagos radio presenter:" — defined once in `tools/deepdive.py`, fingerprint `697e3233c630…`,
   pinned by tests + qa.py. Never change it; revert whatever breaks the check.

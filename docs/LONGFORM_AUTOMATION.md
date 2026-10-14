@@ -93,11 +93,17 @@ outright and identical on every render.
 
 | Sound | When | Level vs. the voice |
 |---|---|---|
-| Bed — A-minor pad, one chord per section, soft sub pulse at 72 BPM | whole episode, fades out over the last 4 s | −27 dB under speech, swells to −18 dB in the gaps (side-chain ducked from the narrator's own level) |
-| Riser (1.2 s) + hit | into / on every section title | −19 / −13 dB |
-| Whoosh (250 ms) | every other beat change | −16 dB |
-| Tick | each numbered row as it appears | −20 dB |
-| Stinger (A-major swell) | the end card | −14 dB |
+| Bed — A-minor pad voiced A3–A4, plucked arpeggio on every beat (72 BPM), soft bass + sub pulse underneath, a faint shimmer on top | whole episode, fades out over the last 4 s | **16 dB(A) under speech, 8 dB(A) under in the gaps** — side-chain ducked from the narrator's own level, measured A-weighted (as ears hear it) |
+| Riser (1.2 s) + hit | into / on every section title | −14 / −9 dB vs the voice peak |
+| Whoosh (250 ms) | every other beat change | −12 dB |
+| Tick | each numbered row as it appears | −16 dB |
+| Stinger (A-major swell) | the end card | −9 dB |
+
+> **Run #1 lesson (14 Oct 2026).** The first bed sat 27 dB under the voice by raw power and was
+> voiced at 55–165 Hz. Phone speakers don't reproduce much below ~200 Hz, and raw power over-counts
+> low notes — the gauge said "healthy", the owner heard nothing. Everything is now measured
+> A-weighted and QA fails a master whose bed is **either** < 11 dB(A) under speech (masking) **or**
+> > 22 dB(A) under (inaudible).
 
 - The cue sheet is derived from the **same timings the renderer uses** (`scene_timing`), so a
   whoosh lands on the frame the headline appears — millisecond precision, no drift.
@@ -105,8 +111,9 @@ outright and identical on every render.
   `dd2-cues.json` on the release.
 - The plan is written in `episodes/<id>/episode.json` → `audio` (levels, BPM, seed, `bed: false`
   to go voice-only).
-- QA refuses a master whose bed is less than 14 dB under the voice, or that clips. The mix
-  report (`dd2-mix_report.json`) records the measured separation.
+- QA refuses a master whose bed is less than 11 dB(A) under the voice (masking), more than
+  22 dB(A) under (inaudible), or that clips. The mix report (`dd2-mix_report.json`) records the
+  measured, A-weighted separation.
 - Audition the kit by ear: `python3 -c "import sys;sys.path.insert(0,'tools');import soundkit;print(soundkit.export_kit('ffmpeg','/tmp/kit'))"`.
 
 ## Produce and publish an episode (phone)
@@ -166,6 +173,27 @@ python3 tools/deepdive.py dd2 master --allow-synthetic    # silent preview, refu
 The workflow refuses synthetic timings on purpose — nothing pace-estimated reaches the channel.
 
 ---
+
+## The numbers — pulled automatically
+
+`tools/yt_stats.py` runs every **Monday 06:00 WAT** (`.github/workflows/youtube_stats.yml`) and on
+demand (Actions → *YouTube stats — weekly snapshot* → Run workflow). Read-only; never touches a
+video. It writes:
+
+- `logs/youtube_stats.json` — append-only snapshots (the record);
+- `docs/YOUTUBE_PERFORMANCE.md` — the latest numbers as a table with deltas since the previous
+  snapshot: subscribers, views per video (Shorts and Deep-Dives, from both ledgers plus the
+  channel's latest uploads), likes, comments, length, privacy — and the "best so far" lines that
+  steer the next hook and the next episode.
+
+Any session can read that file before deciding what to make next; that is the point of it.
+
+**Deeper metrics (watch time, average % viewed, impressions → click-through, traffic sources)**
+come from the YouTube *Analytics* API and need one more permission on the token:
+`https://www.googleapis.com/auth/yt-analytics.readonly`. The job detects the missing scope and
+says so in the report; everything above still lands. To add it: re-mint `YT_REFRESH_TOKEN` with
+that scope ticked alongside `youtube.upload` + `youtube.readonly` (same consent flow as
+`docs/LAUNCH_SEQUENCE.md` step 3), paste the new token into the secret. Nothing else changes.
 
 ## What is intentionally not done
 

@@ -16,10 +16,16 @@ The kit
   tick     a 30 ms blip as each numbered row appears
   stinger  a warm major swell under the end card
 
-Levels are expressed relative to the voice, measured from the voice itself (speech RMS),
-so a louder or quieter TTS read never changes the balance. The bed is side-chain ducked:
-quieter under speech, swelling in the gaps. The final loudnorm to −16 LUFS happens in
-ffmpeg, downstream of this file.
+Levels are expressed relative to the voice, measured from the voice itself, so a louder or
+quieter TTS read never changes the balance. The bed is side-chain ducked: quieter under
+speech, swelling in the gaps. The final loudnorm to −16 LUFS happens in ffmpeg, downstream.
+
+Lesson from DD2 run #1 (14 Oct 2026, owner: "I did not hear background music"): the first
+bed lived at 55–165 Hz and sat 27 dB under the voice by raw power. Phone speakers do not
+reproduce much below ~200 Hz and raw power over-counts low notes, so the gauge said
+"healthy" while the ear heard nothing. Now: the bed's body is in the 220–880 Hz band, the
+levels are broadcast-documentary (≈16 dB under speech, ≈8 dB in gaps), and every level in
+this file — targets and the QA gate — is measured **A-weighted**, i.e. as ears hear it.
 """
 
 import json
@@ -35,26 +41,48 @@ DEFAULTS = {
     "bed": True,
     "bpm": 72,
     "seed": 7,
-    "bed_gap_db": -18.0,       # bed RMS vs speech RMS, in the gaps between sentences
-    "bed_speech_db": -27.0,    # bed RMS vs speech RMS, under speech
+    "bed_gap_db": -8.0,        # bed vs speech, A-weighted, in the gaps between sentences
+    "bed_speech_db": -16.0,    # bed vs speech, A-weighted, under speech
     "duck_attack_s": 0.12,
     "duck_release_s": 0.70,
-    "sfx_db": -16.0,           # SFX peak vs voice peak
-    "hit_db": -13.0,
-    "tick_db": -20.0,
-    "riser_db": -19.0,
-    "stinger_db": -14.0,
+    "sfx_db": -12.0,           # SFX peak vs voice peak
+    "hit_db": -9.0,
+    "tick_db": -16.0,
+    "riser_db": -14.0,
+    "stinger_db": -9.0,
     "tail_fade_s": 4.0,        # bed fades to silence over the last N seconds
 }
 
-# A minor, four chords, one per section, cycling: i · VI · III · VII  (A F C G)
+# A minor, four chords, one per section, cycling: i · VI · III · VII  (A F C G).
+# Voiced where phones can play it: pad triads around A3–A4, pluck arpeggio A4–E5, a soft
+# bass root an octave down, a sub pulse underneath as support only.
 PROGRESSION = [
-    (110.00, 130.81, 164.81),   # A2 C3 E3
-    (87.31, 110.00, 130.81),    # F2 A2 C3
-    (130.81, 164.81, 196.00),   # C3 E3 G3
-    (98.00, 123.47, 146.83),    # G2 B2 D3
+    (220.00, 261.63, 329.63, 440.00),   # A3 C4 E4 A4
+    (174.61, 220.00, 261.63, 349.23),   # F3 A3 C4 F4
+    (261.63, 329.63, 392.00, 523.25),   # C4 E4 G4 C5
+    (196.00, 246.94, 293.66, 392.00),   # G3 B3 D4 G4
 ]
 SUB_HZ = 55.0
+
+
+def a_weight_gain(freqs):
+    """IEC 61672 A-weighting as linear gain per frequency — what the ear does to a spectrum."""
+    f2 = np.square(freqs.astype(np.float64)) + 1e-9
+    ra = (12194.0 ** 2 * f2 ** 2) / ((f2 + 20.6 ** 2) * np.sqrt((f2 + 107.7 ** 2) * (f2 + 737.9 ** 2)) * (f2 + 12194.0 ** 2))
+    return (ra * 10 ** (2.0 / 20)).astype(np.float32)
+
+
+def a_weighted_block_rms(x, block=4800):
+    """A-weighted RMS per 100 ms block (at SR). Returns float64 array of linear RMS values."""
+    nblk = len(x) // block
+    if nblk == 0:
+        return np.zeros(0)
+    blocks = x[:nblk * block].reshape(nblk, block).astype(np.float32)
+    win = np.hanning(block).astype(np.float32)
+    spec = np.fft.rfft(blocks * win, axis=1)
+    w = a_weight_gain(np.fft.rfftfreq(block, 1 / SR))
+    power = np.mean(np.abs(spec * w) ** 2, axis=1) / (np.mean(win ** 2) * block / 2)
+    return np.sqrt(power / block)
 
 
 def db(x):
@@ -153,12 +181,18 @@ def sfx(kind, rng):
 
 
 def bed(total_s, section_starts, bpm, seed):
-    """The pad + pulse for the whole episode. Chord changes at section starts, 2 s crossfade."""
+    """The pad + pluck arpeggio + bass + sub pulse for the whole episode.
+
+    Chord changes at section starts with a 2 s crossfade; the arpeggio walks the chord tones
+    on every beat so the bed moves instead of droning. Peak-normalised to 1.0.
+    """
     n = int(total_s * SR)
     t = np.arange(n, dtype=np.float32) / SR
-    out = np.zeros(n, dtype=np.float32)
+    pad = np.zeros(n, dtype=np.float32)
+    bass = np.zeros(n, dtype=np.float32)
     bounds = list(section_starts) + [total_s]
     xf = 2.0
+    chord_at = []                      # (start_sample, end_sample, chord) for the arpeggio
     for k in range(len(section_starts)):
         s0, s1 = bounds[k], bounds[k + 1]
         chord = PROGRESSION[k % len(PROGRESSION)]
@@ -166,31 +200,64 @@ def bed(total_s, section_starts, bpm, seed):
         b = min(n, int((s1 + xf / 2) * SR))
         if b <= a:
             continue
+        chord_at.append((int(s0 * SR), int(s1 * SR), chord))
         seg_t = t[a:b]
         seg = np.zeros(b - a, dtype=np.float32)
         for i, f in enumerate(chord):
-            w = 1.0 if i == 0 else 0.7
-            for det in (-0.35, 0.35):
-                seg += w * np.sin(2 * math.pi * (f + det) * seg_t + 0.7 * i)
-            seg += 0.18 * w * np.sin(2 * math.pi * (2 * f) * seg_t)      # a little air
-        # breathing: slow LFO so the pad never sits still
-        seg *= (0.82 + 0.18 * np.sin(2 * math.pi * 0.07 * seg_t + k)).astype(np.float32)
-        seg *= _env(b - a, int(xf * SR), int(xf * SR))
-        out[a:b] += seg
-    out /= (np.max(np.abs(out)) or 1.0)
-    # sub pulse every second beat
+            w = (1.0, 0.8, 0.8, 0.55)[i]
+            for det in (-0.7, 0.7):                                   # gentle chorus
+                seg += w * np.sin(2 * math.pi * (f + det) * seg_t + 0.9 * i)
+            seg += 0.22 * w * np.sin(2 * math.pi * (2 * f) * seg_t)   # a little air an octave up
+        seg *= (0.80 + 0.20 * np.sin(2 * math.pi * 0.06 * seg_t + k)).astype(np.float32)   # breathing
+        env = _env(b - a, int(xf * SR), int(xf * SR))
+        pad[a:b] += seg * env
+        root = chord[0] / 2.0                                          # bass an octave down
+        bass[a:b] += (np.sin(2 * math.pi * root * seg_t) + 0.3 * np.sin(2 * math.pi * 2 * root * seg_t)) * env
+    pad /= (np.max(np.abs(pad)) or 1.0)
+    bass /= (np.max(np.abs(bass)) or 1.0)
+
+    # pluck arpeggio: one chord tone per beat, an octave above the pad, 0.55 s decay
     beat = 60.0 / bpm
-    pulse = np.zeros(n, dtype=np.float32)
-    pn = int(0.42 * SR)
+    pluck = np.zeros(n, dtype=np.float32)
+    pn = int(0.55 * SR)
     pt = np.arange(pn) / SR
-    one = (np.sin(2 * math.pi * SUB_HZ * pt) * np.exp(-pt * 9)).astype(np.float32)
-    k = 0.0
-    while k < total_s:
-        i = int(k * SR)
+    decay = np.exp(-pt * 6.0).astype(np.float32)
+    order = (0, 2, 1, 3, 2, 0, 3, 1)
+    k = 0
+    tt = 0.0
+    while tt < total_s:
+        i = int(tt * SR)
+        chord = next((c for a0, b0, c in chord_at if a0 <= i < b0), PROGRESSION[0])
+        f = chord[order[k % len(order)]] * 2.0
+        tone = (np.sin(2 * math.pi * f * pt) + 0.35 * np.sin(2 * math.pi * 2 * f * pt)
+                + 0.12 * np.sin(2 * math.pi * 3 * f * pt)) * decay
+        tone[:int(0.004 * SR)] *= np.linspace(0, 1, int(0.004 * SR), dtype=np.float32)
         j = min(n, i + pn)
+        pluck[i:j] += tone[:j - i] * (0.9 if k % 2 == 0 else 0.7)
+        k += 1
+        tt += beat
+    pluck /= (np.max(np.abs(pluck)) or 1.0)
+
+    # shimmer: a very soft fifth two octaves up with slow tremolo, so the top end is alive
+    shimmer = np.zeros(n, dtype=np.float32)
+    for a0, b0, chord in chord_at:
+        a = max(0, a0 - int(SR)); b = min(n, b0 + int(SR))
+        seg_t = t[a:b]
+        shimmer[a:b] += np.sin(2 * math.pi * chord[2] * 2 * seg_t) * (0.5 + 0.5 * np.sin(2 * math.pi * 0.25 * seg_t)) \
+            * _env(b - a, int(SR), int(SR))
+    shimmer /= (np.max(np.abs(shimmer)) or 1.0)
+
+    # sub pulse every second beat — support, not body
+    pulse = np.zeros(n, dtype=np.float32)
+    sn = int(0.42 * SR)
+    st = np.arange(sn) / SR
+    one = (np.sin(2 * math.pi * SUB_HZ * st) * np.exp(-st * 9)).astype(np.float32)
+    tt = 0.0
+    while tt < total_s:
+        i = int(tt * SR); j = min(n, i + sn)
         pulse[i:j] += one[:j - i]
-        k += 2 * beat
-    out = out * 0.85 + pulse * 0.45
+        tt += 2 * beat
+    out = pad * 0.70 + pluck * 0.55 + bass * 0.22 + shimmer * 0.10 + pulse * 0.15
     return (out / (np.max(np.abs(out)) or 1.0)).astype(np.float32)
 
 
@@ -255,7 +322,12 @@ def cue_sheet(beat_spans, row_times, section_starts, total_s, cfg):
 
 
 def render_mix(ffmpeg, voice_path, cues, section_starts, total_s, cfg, out_wav, report_path=None):
-    """voice + ducked bed + SFX → out_wav (float32 WAV). Returns the mix report dict."""
+    """voice + ducked bed + SFX → out_wav (16-bit WAV). Returns the mix report dict.
+
+    Every level here is A-weighted: the bed's gain is set so that its A-weighted level sits
+    `bed_speech_db` under the narrator's A-weighted speech level while he talks and
+    `bed_gap_db` under it in the gaps; the report measures the result the same way.
+    """
     cfg = {**DEFAULTS, **(cfg or {})}
     rng = np.random.default_rng(cfg["seed"])
     voice = decode(ffmpeg, voice_path)
@@ -264,44 +336,52 @@ def render_mix(ffmpeg, voice_path, cues, section_starts, total_s, cfg, out_wav, 
         voice = np.pad(voice, (0, n - len(voice)))
     voice = voice[:n]
     mask, gate = speech_mask(voice, cfg["duck_attack_s"], cfg["duck_release_s"])
-    speech = voice[np.repeat(gate, int(0.01 * SR))[:n] > 0.5] if np.any(gate) else voice
-    v_rms = rms(speech) or 0.1
     v_peak = float(np.max(np.abs(voice))) or 0.5
 
+    # A-weighted levels per 100 ms block; a block is "speech" when the duck mask says so
+    BLOCK = 4800
+    v_blk = a_weighted_block_rms(voice, BLOCK)
+    nb = len(v_blk)
+    m_blk = mask[:nb * BLOCK].reshape(nb, BLOCK).mean(axis=1) if nb else np.zeros(0)
+    speech_blocks = m_blk > 0.5
+    v_speech_dba = to_db(float(np.sqrt(np.mean(v_blk[speech_blocks] ** 2)))) if np.any(speech_blocks) \
+        else to_db(float(np.sqrt(np.mean(v_blk ** 2))) if nb else 0.1)
+
     mix = voice.copy()
-    report = {"voice_speech_rms_db": to_db(v_rms), "voice_peak_db": to_db(v_peak),
+    report = {"weighting": "A", "voice_speech_dba": v_speech_dba, "voice_peak_db": to_db(v_peak),
               "speech_fraction": float(np.mean(gate)) if len(gate) else 0.0, "cues": len(cues)}
 
     if cfg["bed"]:
         b = bed(total_s, section_starts, cfg["bpm"], cfg["seed"])[:n]
-        b_rms = rms(b) or 1.0
-        gap_gain = v_rms * db(cfg["bed_gap_db"]) / b_rms
-        sp_gain = v_rms * db(cfg["bed_speech_db"]) / b_rms
+        b_dba = to_db(float(np.sqrt(np.mean(a_weighted_block_rms(b, BLOCK) ** 2))) or 1e-6)
+        gap_gain = db(v_speech_dba + cfg["bed_gap_db"] - b_dba)
+        sp_gain = db(v_speech_dba + cfg["bed_speech_db"] - b_dba)
         gain = gap_gain + (sp_gain - gap_gain) * mask
         tail = int(cfg["tail_fade_s"] * SR)
         if tail and tail < n:
             gain[n - tail:] *= np.linspace(1, 0, tail, dtype=np.float32)
         gain[:int(1.5 * SR)] *= np.linspace(0, 1, int(1.5 * SR), dtype=np.float32)
-        bed_track = b * gain
+        bed_track = (b * gain).astype(np.float32)
         mix += bed_track
-        under = mask > 0.5
-        report.update({
-            "bed_under_speech_db": to_db(rms(bed_track[under])) if np.any(under) else None,
-            "bed_in_gaps_db": to_db(rms(bed_track[~under])) if np.any(~under) else None,
-        })
-        report["bed_separation_db"] = (report["voice_speech_rms_db"] - report["bed_under_speech_db"]
-                                       if report.get("bed_under_speech_db") is not None else None)
+        bt_blk = a_weighted_block_rms(bed_track, BLOCK)
+        under = speech_blocks
+        bed_speech = to_db(float(np.sqrt(np.mean(bt_blk[under] ** 2)))) if np.any(under) else None
+        bed_gap = to_db(float(np.sqrt(np.mean(bt_blk[~under] ** 2)))) if np.any(~under) else None
+        report.update({"bed_under_speech_dba": bed_speech, "bed_in_gaps_dba": bed_gap,
+                       "bed_separation_db": (v_speech_dba - bed_speech) if bed_speech is not None else None,
+                       "bed_gap_separation_db": (v_speech_dba - bed_gap) if bed_gap is not None else None,
+                       "bed_gain_db_under_speech": to_db(float(sp_gain)), "bed_gain_db_in_gaps": to_db(float(gap_gain))})
 
     cache = {}
     for c in cues:
         kind = c["kind"]
         if kind not in cache:
             cache[kind] = sfx(kind, rng)
-        s = cache[kind] * (v_peak * db(c["db"]))
+        sfx_wave = cache[kind] * (v_peak * db(c["db"]))
         i = int(c["t"] * SR)
-        j = min(n, i + len(s))
+        j = min(n, i + len(sfx_wave))
         if j > i:
-            mix[i:j] += s[:j - i]
+            mix[i:j] += sfx_wave[:j - i]
 
     peak = float(np.max(np.abs(mix))) or 1.0
     if peak > 0.98:
