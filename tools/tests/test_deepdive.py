@@ -523,3 +523,26 @@ class LastMileTests(unittest.TestCase):
                     except SystemExit as exc:
                         self.assertIn(exc.code, (None, 0))
                 self.assertIn("title=", buf.getvalue())
+
+
+class StageTableTests(unittest.TestCase):
+    """Runs #3 and #4 (14 Oct 2026): a blank episode did nothing; an explicit render was skipped."""
+
+    def setUp(self):
+        self.src = WORKFLOW.read_text(encoding="utf-8")
+
+    def test_explicit_render_ignores_the_banked_master(self):
+        render_if = [l for l in self.src.splitlines() if "needs.pick.outputs.stage == 'render'" in l and l.strip().startswith("if:")][0]
+        self.assertIn("(needs.pick.outputs.stage == 'render' ||", render_if)
+        head = render_if.split("needs.pick.outputs.stage == 'render'", 1)[0]
+        self.assertNotIn("has_master", head, "has_master must only gate the `all` branch")
+        self.assertIn("stage == 'all' && needs.pick.outputs.has_master != 'true'", render_if)
+
+    def test_blank_episode_on_a_redo_stage_is_an_error_not_a_green_noop(self):
+        pick = self.src.split("  pick:", 1)[1].split("\n  voice:", 1)[0]
+        self.assertIn('[ "$IN_STAGE" != "all" ]', pick)
+        self.assertIn("Name the episode", pick)
+        self.assertIn("exit 1", pick.split("Name the episode", 1)[1][:300])
+
+    def test_nightly_tick_still_skips_banked_work(self):
+        self.assertIn("needs.pick.outputs.stage == 'all' && needs.pick.outputs.has_master != 'true'", self.src)

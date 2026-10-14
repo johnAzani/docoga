@@ -83,6 +83,12 @@ jobs:
           EVENT: ${{ github.event_name }}
         run: |
           EP="$IN_EPISODE"
+          if [ -z "$EP" ] && [ -n "$IN_STAGE" ] && [ "$IN_STAGE" != "all" ]; then
+            # run #3 (14 Oct 2026): a blank episode on `render` fell through to the queue, which
+            # said "nothing pending", and the run ended green having done nothing.
+            echo "::error title=Name the episode::stage=$IN_STAGE is a re-do of one episode — type its id (e.g. dd2) in the Episode box. The queue only drives stage=all."
+            exit 1
+          fi
           [ -n "$EP" ] || EP="$(python3 tools/deepdive_queue.py next)"
           {
             echo "episode=$EP"
@@ -219,7 +225,9 @@ jobs:
   render:
     name: Render scene ${{ matrix.scene }}
     needs: [pick, voice]
-    if: ${{ always() && !cancelled() && needs.pick.outputs.episode != '' && needs.pick.outputs.has_master != 'true' && (needs.pick.outputs.stage == 'render' || (needs.pick.outputs.stage == 'all' && needs.voice.outputs.complete == 'true')) }}
+    # An explicit `render` always renders (run #4, 14 Oct 2026: a re-master was skipped because the
+    # bank already held a master). Only `all` — and the nightly tick — skip what is banked.
+    if: ${{ always() && !cancelled() && needs.pick.outputs.episode != '' && (needs.pick.outputs.stage == 'render' || (needs.pick.outputs.stage == 'all' && needs.pick.outputs.has_master != 'true' && needs.voice.outputs.complete == 'true')) }}
     runs-on: ubuntu-latest
     env:
       EPISODE: ${{ needs.pick.outputs.episode }}
@@ -306,7 +314,7 @@ jobs:
           cp "$BUILD_DIR/mix_report.json" "/tmp/$EPISODE-mix_report.json"
           gh release upload "$RELEASE_TAG" "$BUILD_DIR/$EPISODE-episode.mp4" "$BUILD_DIR/$EPISODE-cover.jpg" \
             "/tmp/$EPISODE-words.json" "/tmp/$EPISODE-cues.json" "/tmp/$EPISODE-mix_report.json" --clobber
-          echo "::notice title=Master banked::$(gh release view "$RELEASE_TAG" --json url -q .url)"
+          echo "::notice title=Master banked (overwrites any earlier master on the release)::$(gh release view "$RELEASE_TAG" --json url -q .url)"
       - name: Contact sheet for the run summary
         run: |
           set -e
