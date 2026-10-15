@@ -730,17 +730,23 @@ def post_reel(token, page_id, path, title="", description="", draft=False,
 STORY_PHOTO_MAX_BYTES = 4 * 1024 * 1024
 
 
-def story_photo(token, page_id, path):
-    """Photo Story from a local file. Returns (ok, post_id | error)."""
+def story_photo(token, page_id, path, alt_text=""):
+    """Photo Story from a local file. Returns (ok, post_id | error).
+
+    `alt_text` becomes the photo's `alt_text_custom`: real accessibility text for
+    screen readers, and — because it is readable back from the media id — the
+    marker the lane uses to know which *slot* a Story in the tray came from."""
     if not os.path.exists(path):
         return False, "story photo not found: %s" % path
     size = os.path.getsize(path)
     if size > STORY_PHOTO_MAX_BYTES:
         return False, "story photo is %d bytes; `source` uploads are capped at 4 MB" % size
+    data = {"published": "false", "access_token": token}
+    if alt_text:
+        data["alt_text_custom"] = alt_text[:500]
     try:
         with open(path, "rb") as handle:
-            r = requests.post("%s/%s/photos" % (GRAPH, page_id),
-                              data={"published": "false", "access_token": token},
+            r = requests.post("%s/%s/photos" % (GRAPH, page_id), data=data,
                               files={"source": (os.path.basename(path), handle, "image/jpeg")},
                               timeout=TIMEOUT)
     except requests.RequestException as exc:
@@ -824,6 +830,26 @@ def stories_today(token, page_id, when=None, limit=25):
         if created.astimezone(lagos).date() == when:
             hits.append(item)
     return True, hits
+
+
+def story_alt_texts(token, stories):
+    """{media_id: alt_text_custom} for the photo Stories given (one GET each; ≤3 a day)."""
+    out = {}
+    for item in stories:
+        if str(item.get("media_type", "")).lower() not in ("photo", "image"):
+            continue
+        media_id = item.get("media_id")
+        if not media_id:
+            continue
+        try:
+            r = requests.get("%s/%s" % (GRAPH, media_id),
+                             params={"fields": "alt_text_custom", "access_token": token}, timeout=TIMEOUT)
+        except requests.RequestException:
+            continue
+        ok, body = _ok(r)
+        if ok:
+            out[str(media_id)] = body.get("alt_text_custom") or ""
+    return out
 
 
 def story_probe(token, page_id):

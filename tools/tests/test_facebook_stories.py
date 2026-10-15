@@ -209,24 +209,55 @@ class TrayGuardTests(Base):
         self.assertTrue(okk)
         self.assertEqual([h["post_id"] for h in hits], ["a"], "23:30Z is 00:30 the next day in Lagos")
 
-    def test_morning_slot_stands_down_when_a_photo_story_exists(self):
-        graph = self.tray([{"post_id": "a", "media_type": "photo", "creation_time": "2026-10-16T08:40:00+0000"}])
+    def tagged(self, items, alts):
+        """A tray whose photo Stories answer GET /{media_id} with the given alt texts."""
+        replies = {"/stories": ok({"data": items})}
+        for media_id, alt in alts.items():
+            replies["/%s" % media_id] = ok({"id": media_id, "alt_text_custom": alt})
+        return replies
+
+    def test_a_slot_already_in_the_tray_stands_down_by_its_tag(self):
+        items = [{"post_id": "a", "media_id": "m1", "media_type": "photo", "creation_time": "2026-10-16T08:40:00+0000"}]
+        graph = Graph(self.tagged(items, {"m1": "DocOga · don't wait · 2026-10-16 · morning"}))
         code, out = self.run_with(graph, lane.main, ["--slot", "morning", "--date", "2026-10-16"])
         self.assertEqual(code, 0)
-        self.assertIn("stands down", out)
+        self.assertIn("already in today's tray", out)
         self.assertEqual(graph.posts("/photo_stories"), [])
 
-    def test_afternoon_slot_posts_a_second_but_not_a_third(self):
-        one = [{"post_id": "a", "media_type": "photo", "creation_time": "2026-10-16T08:40:00+0000"}]
-        graph = Graph({"/stories": ok({"data": one}), "/photos": ok({"id": "ph2"}),
-                       "/photo_stories": ok({"success": True, "post_id": "PAGE_s2"})})
+    def test_the_other_slot_still_posts_and_carries_its_own_tag(self):
+        items = [{"post_id": "a", "media_id": "m1", "media_type": "photo", "creation_time": "2026-10-16T08:40:00+0000"}]
+        replies = self.tagged(items, {"m1": "DocOga · don't wait · 2026-10-16 · morning"})
+        replies.update({"/photos": ok({"id": "ph2"}), "/photo_stories": ok({"success": True, "post_id": "PAGE_s2"})})
+        graph = Graph(replies)
         code, out = self.run_with(graph, lane.main, ["--slot", "afternoon", "--date", "2026-10-16"])
         self.assertEqual(code, 0, out)
         self.assertEqual(len(graph.posts("/photo_stories")), 1)
-        two = one + [{"post_id": "b", "media_type": "photo", "creation_time": "2026-10-16T15:05:00+0000"}]
-        graph = Graph({"/stories": ok({"data": two})})
+        alt = graph.posts("/photos")[0]["data"]["alt_text_custom"]
+        self.assertIn("2026-10-16 · afternoon", alt)
+        self.assertTrue(alt.startswith("DocOga · "))
+
+    def test_day_one_a_hand_run_afternoon_slot_is_not_repeated_by_the_cron(self):
+        """15 Oct 2026: the afternoon slot was dispatched at 07:46; the 16:00 cron must see it."""
+        items = [{"post_id": "a", "media_id": "m1", "media_type": "photo", "creation_time": "2026-10-15T06:46:00+0000"}]
+        graph = Graph(self.tagged(items, {"m1": "DocOga · your turn · 2026-10-15 · afternoon"}))
+        code, out = self.run_with(graph, lane.main, ["--slot", "afternoon", "--date", "2026-10-15"])
+        self.assertEqual(code, 0)
+        self.assertEqual(graph.posts("/photo_stories"), [])
+        # …and the morning slot, never posted that day, is still free to post
+        replies = self.tagged(items, {"m1": "DocOga · your turn · 2026-10-15 · afternoon"})
+        replies.update({"/photos": ok({"id": "ph9"}), "/photo_stories": ok({"success": True, "post_id": "PAGE_s9"})})
+        graph = Graph(replies)
+        code, out = self.run_with(graph, lane.main, ["--slot", "morning", "--date", "2026-10-15"])
+        self.assertEqual(code, 0, out)
+        self.assertEqual(len(graph.posts("/photo_stories")), 1)
+
+    def test_three_photo_stories_is_the_sanity_cap_even_without_tags(self):
+        items = [{"post_id": p, "media_id": m, "media_type": "photo", "creation_time": "2026-10-16T08:40:00+0000"}
+                 for p, m in (("a", "m1"), ("b", "m2"), ("c", "m3"))]
+        graph = Graph(self.tagged(items, {"m1": "", "m2": "", "m3": ""}))
         code, out = self.run_with(graph, lane.main, ["--slot", "afternoon", "--date", "2026-10-16"])
         self.assertEqual(code, 0)
+        self.assertIn("stands down", out)
         self.assertEqual(graph.posts("/photo_stories"), [])
 
     def test_force_posts_regardless(self):

@@ -21,10 +21,16 @@ Slots (`--slot`), because a Story lives 24 h and the tray rewards cadence:
   video      the Reel as a Story, straight after it publishes (Mon/Thu).
 
 The guard reads the tray (`GET /{page}/stories`), never a file: a Story is live
-for a day, so "how many did we post today" is a question the Page answers.
-  morning   → skip if any photo Story exists today
-  afternoon → skip if two or more photo Stories exist today
-  video     → skip if a video Story exists today
+for a day, so "what did we post today" is a question the Page answers. Each photo
+Story is uploaded with alt text that names its slot ("DocOga · your turn · 2026-10-16
+· afternoon") — real alt text for screen readers, and readable back from the media
+id — so a slot that already went out today is recognised *as that slot*, however
+it was triggered. (Day one, 15 Oct 2026: the afternoon slot was dispatched by hand
+at 07:46 and a count-based guard would have let the 16:00 cron post the same card
+again.)
+  morning / afternoon → skip if a photo Story tagged with that slot exists today;
+                        stand down anyway at three photo Stories (sanity cap)
+  video               → skip if a video Story exists today
 `--force` posts regardless (a person asked).
 
 Exit codes: 0 posted / skipped on purpose · 2 config · 3 Meta refused.
@@ -57,7 +63,7 @@ LOG_FILE = docoga_log.log_file("social_media.log")
 LAGOS = timezone(timedelta(hours=1))
 ASSETS_DIR = Path("assets/facebook")
 SLOTS = ("morning", "afternoon", "video")
-MAX_PHOTO_STORIES = {"morning": 1, "afternoon": 2}
+MAX_PHOTO_STORIES_PER_DAY = 3     # sanity cap on top of the slot tags
 
 
 def log(message):
@@ -107,14 +113,27 @@ def render_story(day, slot):
     return path, post_type
 
 
-def count_today(token, page_id, day):
+def slot_tag(day, slot):
+    return "%s · %s" % (day.isoformat(), slot)
+
+
+def alt_text_for(day, slot, post_type):
+    """Alt text = what the frame says + the slot tag the guard reads back."""
+    name = social_card.KICKER_NAMES.get(post_type, post_type.replace("_", " "))
+    return "DocOga · %s · %s" % (name, slot_tag(day, slot))
+
+
+def tray_today(token, page_id, day):
+    """(photos, videos, slots_seen) from the tray, or (None, None, None) if unreadable."""
     ok, hits = fb_publish.stories_today(token, page_id, when=day)
     if not ok:
         log("⚠️  the Stories guard could not read the tray (%s) — continuing" % hits)
-        return None, None
-    photos = sum(1 for h in hits if str(h.get("media_type", "")).lower() in ("photo", "image"))
+        return None, None, None
+    photos = [h for h in hits if str(h.get("media_type", "")).lower() in ("photo", "image")]
     videos = sum(1 for h in hits if str(h.get("media_type", "")).lower() == "video")
-    return photos, videos
+    alts = fb_publish.story_alt_texts(token, photos)
+    slots = {slot for slot in SLOTS if any(slot_tag(day, slot) in alt for alt in alts.values())}
+    return len(photos), videos, slots
 
 
 def main(argv=None):
@@ -147,7 +166,7 @@ def main(argv=None):
             log("❌ --slot video needs an existing --video file (got %r)" % video)
             return 2
         if not args.force and not args.dry_run:
-            _, videos = count_today(token, page_id, day)
+            _, videos, _ = tray_today(token, page_id, day)
             if videos:
                 log("⏭ a video Story is already in today's tray — skipping")
                 summary("| Story %s (video) | ⏭ already in the tray |" % day.isoformat())
@@ -172,12 +191,16 @@ def main(argv=None):
                 % (day.isoformat(), args.slot, frame, "✅" if ok else "❌ " + str(detail)))
         return 0 if ok else 3
     if not args.force:
-        photos, _ = count_today(token, page_id, day)
-        if photos is not None and photos >= MAX_PHOTO_STORIES[args.slot]:
-            log("⏭ today's tray already has %d photo Story(ies) — the %s slot stands down" % (photos, args.slot))
+        photos, _, slots = tray_today(token, page_id, day)
+        if slots is not None and args.slot in slots:
+            log("⏭ the %s Story is already in today's tray — standing down" % args.slot)
+            summary("| Story %s (%s) | ⏭ already in the tray |" % (day.isoformat(), args.slot))
+            return 0
+        if photos is not None and photos >= MAX_PHOTO_STORIES_PER_DAY:
+            log("⏭ today's tray already has %d photo Stories — the %s slot stands down" % (photos, args.slot))
             summary("| Story %s (%s) | ⏭ tray already has %d |" % (day.isoformat(), args.slot, photos))
             return 0
-    ok, detail = fb_publish.story_photo(token, page_id, frame)
+    ok, detail = fb_publish.story_photo(token, page_id, frame, alt_text=alt_text_for(day, args.slot, post_type))
     if ok:
         print("✅ photo Story published: %s" % detail)
         summary("| Story %s (%s, %s) | ✅ published `%s` |" % (day.isoformat(), args.slot, post_type, detail))

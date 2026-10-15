@@ -387,9 +387,14 @@ Protocol: a photo Story is `POST /{page}/photos` with `published=false` →
 `POST /{page}/video_stories` `upload_phase=start` → bytes to rupload (same as Reels)
 → `upload_phase=finish`. Both need the token's existing `pages_manage_posts`.
 
-**The tray is the guard.** A Story lives 24 h, so "how many today?" is answered by
-`GET /{page}/stories` (Lagos date), never by a file: morning stands down at ≥1 photo
-Story, afternoon at ≥2, video at ≥1 video Story. `--force` (dispatch input) posts
+**The tray is the guard.** A Story lives 24 h, so "what went out today?" is answered
+by `GET /{page}/stories` (Lagos date), never by a file. Every photo Story is uploaded
+with alt text naming its slot (`DocOga · your turn · 2026-10-16 · afternoon`) — real
+alt text for screen readers, readable back from the media id — so a slot that is
+already in the tray stands down *as that slot*, however it was triggered (day one,
+15 Oct 2026, the afternoon slot was dispatched by hand at 07:46; a count-based guard
+would have let the 16:00 cron repeat the card). Sanity cap: three photo Stories a
+day. The video slot stands down at ≥1 video Story. `--force` (dispatch input) posts
 anyway. A Story refusal is `continue-on-error` in the daily job — the feed post is
 already live and a Story is not worth a red run (the summary and the log line still
 say what happened). Switch: repository variable **`FB_STORIES`** = `on` (default) /

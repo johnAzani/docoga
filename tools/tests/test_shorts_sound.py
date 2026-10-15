@@ -255,6 +255,8 @@ class TimingTests(unittest.TestCase):
 
     def test_the_engine_does_not_trim_the_stretched_scenes_back(self):
         """schedule() trims to reading time when over cap; with narration the cap is lifted."""
+        if not ms.find_font_template():
+            self.skipTest("Inter is not installed — run tools/install_motionstudio_deps.sh")
         reel = self.reel()
         clips = [{"scene": sc["id"], "seconds": 5.0} for sc in reel["scenes"]]
         shorts_sound.fit_scenes(reel, clips)
