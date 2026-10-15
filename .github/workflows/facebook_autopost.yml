@@ -260,65 +260,6 @@ jobs:
           set -o pipefail
           python3 scripts/post_facebook.py --reel="$VIDEO_PATH" --title="$REEL_TITLE" 2>&1 | tee /tmp/fb_reel_post.log
 
-      - name: Reels — record it in the ledger
-        # Runs for the scheduled/daily publish and for a manual `mode: reel`, and
-        # every value falls back to the render log so the two paths cannot diverge
-        # in what they record.
-        if: ${{ steps.reel_publish.outcome == 'success' || (!inputs.dry_run && inputs.mode == 'reel') }}
-        env:
-          LEDGER_LABEL: Facebook reel ledger
-          REEL_TITLE: ${{ steps.reel_plan.outputs.title }}
-          REEL_TOPIC: ${{ steps.reel_plan.outputs.topic }}
-          REEL_DATE: ${{ steps.reel_plan.outputs.run_date }}
-          VIDEO_PATH: ${{ steps.reel_render.outputs.video_path }}
-        run: |
-          set -o pipefail
-          VIDEO_ID=$(sed -n 's/^REEL_VIDEO_ID=//p' /tmp/fb_reel_post.log | tail -1)
-          REEL_URL=$(sed -n 's/^REEL_URL=//p' /tmp/fb_reel_post.log | tail -1)
-          if [ -z "$VIDEO_ID" ]; then
-            echo "::warning title=Ledger not recorded::no REEL_VIDEO_ID in /tmp/fb_reel_post.log — if a reel did go out it is now unrecorded, so a re-run could publish the same frame twice"
-            exit 0
-          fi
-          TITLE="${REEL_TITLE:-$(sed -n 's/^title=//p' /tmp/fb_reel_render.log | tail -1)}"
-          TOPIC="${REEL_TOPIC:-$TITLE}"
-          RUN_DATE="${REEL_DATE:-$(date +%F)}"
-          PATH_TO_SIZE="${VIDEO_PATH:-$(sed -n 's/^video_path=//p' /tmp/fb_reel_render.log | tail -1)}"
-          python3 tools/youtube_ledger.py --ledger logs/facebook_reels.json record \
-            --title "$TITLE" \
-            --topic "$TOPIC" \
-            --video-id "$VIDEO_ID" \
-            --url "$REEL_URL" \
-            --date "$RUN_DATE" \
-            --run-id "$GITHUB_RUN_ID" \
-            --size-bytes "$(stat -c%s "$PATH_TO_SIZE" 2>/dev/null || echo 0)"
-
-      # Bookkeeping must never turn a successful publish red, so this step keeps
-      # the job green and leaves a warning — with one honest difference from
-      # silence: the warning says a duplicate is now possible.
-      - name: Reels — commit the ledger
-        if: ${{ steps.reel_publish.outcome == 'success' || (!inputs.dry_run && inputs.mode == 'reel') }}
-        continue-on-error: true
-        env:
-          RUN_DATE: ${{ steps.reel_plan.outputs.run_date }}
-          BRANCH: ${{ github.event.repository.default_branch }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          if ! git pull --rebase --autostash origin "$BRANCH"; then
-            echo "::warning title=Reel ledger not committed::could not rebase on $BRANCH. The reel is live; this run is simply not recorded, so a re-run could publish the same frame again."
-            exit 1
-          fi
-          git add logs/facebook_reels.json
-          if git diff --staged --quiet; then
-            echo "Ledger unchanged — nothing to commit."
-            exit 0
-          fi
-          git commit -m "Auto: record Facebook reel published $RUN_DATE [skip ci]"
-          if ! git push origin "HEAD:$BRANCH"; then
-            echo "::warning title=Reel ledger not pushed::the reel is live but the ledger entry did not reach $BRANCH — a re-run could publish it again."
-            exit 1
-          fi
-
       - name: Dry run — credentials and posting rights, nothing published
         if: ${{ inputs.dry_run && inputs.mode == 'daily' }}
         run: |
@@ -365,6 +306,73 @@ jobs:
               python3 tools/fb_publish.py --text="$FB_MESSAGE" --force 2>&1 | tee /tmp/fb_manual.log
               ;;
           esac
+
+      # Both reel paths — the scheduled/daily publish above and the manual
+      # `mode: reel` in "Manual post" — write /tmp/fb_reel_post.log, so the
+      # ledger steps sit BELOW both of them. Run #9 (15 Oct 2026) had this step
+      # above the manual one: it ran first, found no log, and killed the job
+      # before the Reel was even attempted.
+      - name: Reels — record it in the ledger
+        # Every value falls back to the render log so the two paths cannot
+        # diverge in what they record.
+        if: ${{ steps.reel_publish.outcome == 'success' || (!inputs.dry_run && inputs.mode == 'reel') }}
+        env:
+          LEDGER_LABEL: Facebook reel ledger
+          REEL_TITLE: ${{ steps.reel_plan.outputs.title }}
+          REEL_TOPIC: ${{ steps.reel_plan.outputs.topic }}
+          REEL_DATE: ${{ steps.reel_plan.outputs.run_date }}
+          VIDEO_PATH: ${{ steps.reel_render.outputs.video_path }}
+        run: |
+          set -o pipefail
+          if [ ! -f /tmp/fb_reel_post.log ]; then
+            echo "::warning title=Ledger not recorded::no reel publish log — no reel step reached the publish call, so there is nothing to record"
+            exit 0
+          fi
+          VIDEO_ID=$(sed -n 's/^REEL_VIDEO_ID=//p' /tmp/fb_reel_post.log | tail -1)
+          REEL_URL=$(sed -n 's/^REEL_URL=//p' /tmp/fb_reel_post.log | tail -1)
+          if [ -z "$VIDEO_ID" ]; then
+            echo "::warning title=Ledger not recorded::no REEL_VIDEO_ID in /tmp/fb_reel_post.log — if a reel did go out it is now unrecorded, so a re-run could publish the same frame twice"
+            exit 0
+          fi
+          TITLE="${REEL_TITLE:-$(sed -n 's/^title=//p' /tmp/fb_reel_render.log | tail -1)}"
+          TOPIC="${REEL_TOPIC:-$TITLE}"
+          RUN_DATE="${REEL_DATE:-$(date +%F)}"
+          PATH_TO_SIZE="${VIDEO_PATH:-$(sed -n 's/^video_path=//p' /tmp/fb_reel_render.log | tail -1)}"
+          python3 tools/youtube_ledger.py --ledger logs/facebook_reels.json record \
+            --title "$TITLE" \
+            --topic "$TOPIC" \
+            --video-id "$VIDEO_ID" \
+            --url "$REEL_URL" \
+            --date "$RUN_DATE" \
+            --run-id "$GITHUB_RUN_ID" \
+            --size-bytes "$(stat -c%s "$PATH_TO_SIZE" 2>/dev/null || echo 0)"
+
+      # Bookkeeping must never turn a successful publish red, so this step keeps
+      # the job green and leaves a warning — with one honest difference from
+      # silence: the warning says a duplicate is now possible.
+      - name: Reels — commit the ledger
+        if: ${{ steps.reel_publish.outcome == 'success' || (!inputs.dry_run && inputs.mode == 'reel') }}
+        continue-on-error: true
+        env:
+          RUN_DATE: ${{ steps.reel_plan.outputs.run_date }}
+          BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if ! git pull --rebase --autostash origin "$BRANCH"; then
+            echo "::warning title=Reel ledger not committed::could not rebase on $BRANCH. The reel is live; this run is simply not recorded, so a re-run could publish the same frame again."
+            exit 1
+          fi
+          git add logs/facebook_reels.json
+          if git diff --staged --quiet; then
+            echo "Ledger unchanged — nothing to commit."
+            exit 0
+          fi
+          git commit -m "Auto: record Facebook reel published $RUN_DATE [skip ci]"
+          if ! git push origin "HEAD:$BRANCH"; then
+            echo "::warning title=Reel ledger not pushed::the reel is live but the ledger entry did not reach $BRANCH — a re-run could publish it again."
+            exit 1
+          fi
 
       - name: Record what this run did
         if: always()
