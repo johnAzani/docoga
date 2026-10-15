@@ -800,6 +800,18 @@ class FacebookAutopostTests(unittest.TestCase):
     def test_manual_posts_bypass_the_guard_because_a_person_asked_for_it(self):
         self.assertIn("--force", self.blob("Manual post (text / photo / video / reel)"))
 
+    def test_the_reel_ledger_is_written_after_every_step_that_can_publish_a_reel(self):
+        """Run #9 (15 Oct 2026, mode: reel): the ledger step sat above the manual
+        post step, ran first because `inputs.mode == 'reel'`, found no
+        /tmp/fb_reel_post.log and killed the job before the Reel was attempted."""
+        for writer in ("Reels — publish", "Manual post (text / photo / video / reel)"):
+            for reader in ("Reels — record it in the ledger", "Reels — commit the ledger"):
+                with self.subTest(writer=writer, reader=reader):
+                    self.assertLess(self.names.index(writer), self.names.index(reader))
+        record = self.blob("Reels — record it in the ledger")
+        self.assertIn("[ ! -f /tmp/fb_reel_post.log ]", record,
+                      "a missing publish log is 'nothing to record', never a red run")
+
     def test_the_graph_api_version_is_current_and_comes_from_one_constant(self):
         """Meta sunsets a version roughly every two years: v21.0 goes on 21 Jan
         2027, v26.0 has been current since 29 Jul 2026. So the number lives in one
