@@ -460,10 +460,10 @@ def reel_start(token, page_id, title="", description="", is_ai_generated=False):
         data["title"] = title[:255]
     if description:
         data["description"] = description[:MAX_MESSAGE_CHARS]
-    # Self-declared AI label. These frames are composed from brand templates by
-    # moviepy, with no generative model in the path, so it stays false; if a TTS or
-    # AI-voice track is ever added to the reel render, flip the default — Meta's
-    # labeling rule is about the content, not the container.
+    # Self-declared AI label. The frames are composed from brand templates (no
+    # generative model); since 15 Oct 2026 the soundtrack carries a Gemini TTS
+    # narrator, and post_reel() reads that from the render's audio report
+    # (ai_voice_in) — Meta's labeling rule is about the content, not the container.
     if is_ai_generated:
         data["is_ai_generated"] = "true"
     try:
@@ -652,9 +652,26 @@ def reel_probe(token, page_id):
     return True, "video_reels start accepted (%s); %s" % (video_id, cleanup)
 
 
+def ai_voice_in(path):
+    """True when the render's soundtrack report says a synthetic narrator speaks.
+
+    tools/shorts_sound.py writes `<video>.audio.json` beside every render; its
+    `voice` field is the TTS narrator's name or null. Meta's AI label is about the
+    content — a Gemini voice is generated content — so the Reel declares it."""
+    report = os.path.splitext(str(path))[0] + ".audio.json"
+    try:
+        with open(report, encoding="utf-8") as handle:
+            return bool(json.load(handle).get("voice"))
+    except (OSError, ValueError):
+        return False
+
+
 def post_reel(token, page_id, path, title="", description="", draft=False,
-              scheduled_publish_time=None, require_spec=True, verify=True, sleeper=None):
+              scheduled_publish_time=None, require_spec=True, verify=True, sleeper=None,
+              is_ai_generated=None):
     """All three phases, with the local gate first. Returns (ok, detail)."""
+    if is_ai_generated is None:
+        is_ai_generated = ai_voice_in(path)
     ok, reason, info = reel_spec_ok(path, strict=require_spec)
     if not ok:
         return False, "spec refused — %s" % reason
@@ -668,11 +685,12 @@ def post_reel(token, page_id, path, title="", description="", draft=False,
           % (info.get("width", 0), info.get("height", 0), info.get("seconds", 0.0),
              info.get("codec", "?"), info.get("bytes", 0)))
 
-    started, res = reel_start(token, page_id, title=title, description=description)
+    started, res = reel_start(token, page_id, title=title, description=description,
+                              is_ai_generated=is_ai_generated)
     if not started:
         return False, "start refused — %s" % res
     video_id = res["video_id"]
-    print("reel session open: video_id %s" % video_id)
+    print("reel session open: video_id %s%s" % (video_id, " (AI-voice label on)" if is_ai_generated else ""))
 
     uploaded, res = reel_upload(token, video_id, path, size=info.get("bytes"))
     if not uploaded:
@@ -701,6 +719,133 @@ def post_reel(token, page_id, path, title="", description="", draft=False,
     detail["verdict"] = verdict
     detail["permalink"] = (body or {}).get("permalink_url") or detail["permalink"]
     return True, detail
+
+
+# ───────────────────────────── Stories ─────────────────────────────
+# A Page Story is two calls, not one: the media is created *unpublished* (a
+# photo via /photos with published=false; a video via the video_stories upload
+# session, same rupload host as Reels) and then attached to the Stories tray.
+# Stories expire after 24 h; `GET /{page}/stories` lists the live ones, which is
+# the once-a-day guard (nothing to read back after a day, by design).
+STORY_PHOTO_MAX_BYTES = 4 * 1024 * 1024
+
+
+def story_photo(token, page_id, path):
+    """Photo Story from a local file. Returns (ok, post_id | error)."""
+    if not os.path.exists(path):
+        return False, "story photo not found: %s" % path
+    size = os.path.getsize(path)
+    if size > STORY_PHOTO_MAX_BYTES:
+        return False, "story photo is %d bytes; `source` uploads are capped at 4 MB" % size
+    try:
+        with open(path, "rb") as handle:
+            r = requests.post("%s/%s/photos" % (GRAPH, page_id),
+                              data={"published": "false", "access_token": token},
+                              files={"source": (os.path.basename(path), handle, "image/jpeg")},
+                              timeout=TIMEOUT)
+    except requests.RequestException as exc:
+        return False, "%s: %s" % (type(exc).__name__, exc)
+    ok, body = _ok(r)
+    if not ok:
+        return False, "unpublished photo refused — %s" % body
+    photo_id = body.get("id")
+    if not photo_id:
+        return False, "unpublished photo returned no id: %s" % json.dumps(body)[:200]
+    try:
+        r = requests.post("%s/%s/photo_stories" % (GRAPH, page_id),
+                          data={"photo_id": photo_id, "access_token": token}, timeout=TIMEOUT)
+    except requests.RequestException as exc:
+        return False, "%s: %s" % (type(exc).__name__, exc)
+    ok, body = _ok(r)
+    if not ok:
+        return False, "photo_stories refused (photo %s) — %s" % (photo_id, body)
+    if body.get("success") is False:
+        return False, "photo_stories reported success=false: %s" % json.dumps(body)[:200]
+    return True, str(body.get("post_id") or photo_id)
+
+
+def story_video(token, page_id, path, require_spec=True):
+    """Video Story (3–60 s, 9:16) from a local file. Returns (ok, detail | error)."""
+    ok, reason, info = reel_spec_ok(path, strict=require_spec)
+    if not ok:
+        return False, "spec refused — %s" % reason
+    seconds = float(info.get("seconds") or 0)
+    if seconds and not (3.0 <= seconds <= 60.0):
+        return False, "video stories must be 3–60 s; this one is %.1f s" % seconds
+    data = {"upload_phase": _phase("start"), "access_token": token}
+    try:
+        r = requests.post("%s/%s/video_stories" % (GRAPH, page_id), data=data, timeout=TIMEOUT)
+    except requests.RequestException as exc:
+        return False, "%s: %s" % (type(exc).__name__, exc)
+    ok, body = _ok(r)
+    if not ok:
+        return False, "start refused — %s" % body
+    video_id = body.get("video_id")
+    if not video_id:
+        return False, "start phase returned no video_id: %s" % json.dumps(body)[:200]
+    video_id = str(video_id)
+    uploaded, res = reel_upload(token, video_id, path, size=info.get("bytes"))
+    if not uploaded:
+        return False, "upload refused (video_id %s) — %s" % (video_id, res)
+    data = {"upload_phase": _phase("finish"), "video_id": video_id, "access_token": token}
+    try:
+        r = requests.post("%s/%s/video_stories" % (GRAPH, page_id), data=data, timeout=TIMEOUT)
+    except requests.RequestException as exc:
+        return False, "%s: %s" % (type(exc).__name__, exc)
+    ok, body = _ok(r)
+    if not ok:
+        return False, "finish refused (video_id %s) — %s" % (video_id, body)
+    if body.get("success") is False:
+        return False, "video_stories finish reported success=false: %s" % json.dumps(body)[:200]
+    return True, {"video_id": video_id, "post_id": str(body.get("post_id") or "")}
+
+
+def stories_today(token, page_id, when=None, limit=25):
+    """(ok, [stories created on `when` in Africa/Lagos]) — the once-a-day guard."""
+    from datetime import datetime, timedelta, timezone
+    lagos = timezone(timedelta(hours=1))
+    when = when or datetime.now(lagos).date()
+    try:
+        r = requests.get("%s/%s/stories" % (GRAPH, page_id),
+                         params={"fields": "post_id,status,creation_time,media_type,media_id",
+                                 "limit": limit, "access_token": token}, timeout=TIMEOUT)
+    except requests.RequestException as exc:
+        return False, "%s: %s" % (type(exc).__name__, exc)
+    ok, body = _ok(r)
+    if not ok:
+        return False, body
+    hits = []
+    for item in body.get("data") or []:
+        stamp = item.get("creation_time") or ""
+        try:
+            created = datetime.fromisoformat(stamp.replace("Z", "+00:00").replace("+0000", "+00:00"))
+        except ValueError:
+            continue
+        if created.astimezone(lagos).date() == when:
+            hits.append(item)
+    return True, hits
+
+
+def story_probe(token, page_id):
+    """Can this token open a video_stories session? Opens one, publishes nothing.
+
+    Same shape as reel_probe: an abandoned start-phase session expires on Meta's
+    side. Returns (ok, detail)."""
+    try:
+        r = requests.post("%s/%s/video_stories" % (GRAPH, page_id),
+                          data={"upload_phase": _phase("start"), "access_token": token}, timeout=TIMEOUT)
+    except requests.RequestException as exc:
+        return False, "%s: %s" % (type(exc).__name__, exc)
+    ok, body = _ok(r)
+    if not ok:
+        return False, body
+    video_id = body.get("video_id")
+    try:
+        requests.delete("%s/%s" % (GRAPH, video_id), params={"access_token": token}, timeout=TIMEOUT)
+        cleanup = "abandoned session %s deleted" % video_id
+    except requests.RequestException as exc:
+        cleanup = "abandoned session %s left to expire (%s)" % (video_id, exc.__class__.__name__)
+    return True, "video_stories start accepted (%s); %s" % (video_id, cleanup)
 
 
 def write_permission_probe(token, page_id):

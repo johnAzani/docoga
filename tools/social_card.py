@@ -206,10 +206,30 @@ def card_for_post(message, day_iso, post_type, lane, out_dir=None):
     return str(out)
 
 
-def render(text, out_path, kicker="", quality=88, max_kb=900, footer=FOOTER):
-    """Draw `text` on a 1080×1350 brand card and write a JPEG at `out_path`."""
+STORY_W, STORY_H = 1080, 1920        # 9:16 — Stories and Reels covers (docs/BRAND_STYLE.md §3)
+STORY_SAFE = (250, 250)              # Facebook draws its own UI over the top and bottom bands
+
+
+def story_for_post(message, day_iso, post_type, lane, out_dir=None):
+    """The same copy as a 9:16 Story frame, type kept out of the platform's chrome bands."""
+    out_dir = Path(out_dir) if out_dir else LANE_CARD_DIRS[lane]
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out = out_dir / ("%s_story_%s.jpg" % (lane, day_iso))
+    kicker = ("DocOga · %s" % KICKER_NAMES.get(post_type, post_type.replace("_", " "))) \
+        if post_type else "DocOga"
+    render(message, out, kicker=kicker, size=(STORY_W, STORY_H), safe=STORY_SAFE)
+    return str(out)
+
+
+def render(text, out_path, kicker="", quality=88, max_kb=900, footer=FOOTER, size=None, safe=(0, 0)):
+    """Draw `text` on a brand card (1080×1350 by default) and write a JPEG at `out_path`.
+
+    `size` = (w, h) for another frame; `safe` = (top, bottom) pixels the platform
+    covers with its own chrome (Stories), kept clear of type."""
     out = Path(out_path)
     out.parent.mkdir(parents=True, exist_ok=True)
+    CARD_W, CARD_H = size or (globals()["CARD_W"], globals()["CARD_H"])
+    safe_top, safe_bottom = safe
     image = Image.new("RGB", (CARD_W, CARD_H), INK_BG)
     draw = ImageDraw.Draw(image)
 
@@ -218,31 +238,34 @@ def render(text, out_path, kicker="", quality=88, max_kb=900, footer=FOOTER):
         raise ValueError("nothing left to draw after stripping undrawable characters")
 
     max_width = CARD_W - 2 * MARGIN
-    top = 150
-
-    if kicker:
-        kfont, _ = load_font("SemiBold", 26)
-        draw.text((MARGIN, top - 46), kicker.upper()[:40], font=kfont, fill=BLUE)
-
-    # The rule line is the brand's separator; it sits above the headline, not under it.
-    draw.line([(MARGIN, top - 8), (MARGIN + 96, top - 8)], fill=ACCENT, width=4)
+    top = 150 + safe_top
 
     # First line reads as the headline, the rest as body: a card is a poster, not a memo.
     parts = [block for block in body.split("\n\n") if block.strip()] or [body]
     headline, rest = parts[0], "\n\n".join(parts[1:]) if len(parts) > 1 else ""
 
-    hfont, hsize = fit_size(draw, headline, "Black", max_width, 74 if len(headline) < 90 else 58)
+    tall = CARD_H >= 1700            # a Story frame carries bigger type: it is held closer, alone
+    hfont, hsize = fit_size(draw, headline, "Black", max_width,
+                            (92 if tall else 74) if len(headline) < 90 else (70 if tall else 58))
     bfont, bsize = (None, 0)
     if rest:
-        bfont, bsize = fit_size(draw, rest, "Regular", max_width, 42 if len(rest) < 340 else 34)
+        bfont, bsize = fit_size(draw, rest, "Regular", max_width,
+                                (50 if tall else 42) if len(rest) < 340 else (40 if tall else 34))
     # An image that fills a phone screen and puts six lines of text in its upper third reads
     # as a mistake, and on a feed nobody scrolls to the bottom to check. Measure the block
     # first, then start it where it will look placed rather than dropped.
     headline_lines = len(wrap(draw, headline, hfont, max_width))
     body_lines = len(wrap(draw, rest, bfont, max_width)) if rest else 0
     block = headline_lines * int(hsize * 1.18) + (26 + body_lines * int(bsize * 1.32) if rest else 0)
-    ceiling, floor_top = CARD_H - 200, 150
-    top = max(floor_top, min(ceiling - block, (CARD_H - 116 - block - floor_top) // 2))
+    ceiling, floor_top = CARD_H - 200 - safe_bottom, 150 + safe_top
+    top = max(floor_top, min(ceiling - block, floor_top + (ceiling - floor_top - block) // 2))
+
+    # Kicker and rule travel with the headline — the rule is the brand's separator and
+    # sits above the headline, not under it.
+    if kicker:
+        kfont, _ = load_font("SemiBold", 30 if tall else 26)
+        draw.text((MARGIN, top - (52 if tall else 46)), kicker.upper()[:40], font=kfont, fill=BLUE)
+    draw.line([(MARGIN, top - 8), (MARGIN + 96, top - 8)], fill=ACCENT, width=4)
     y = top
     for line in wrap(draw, headline, hfont, max_width):
         draw.text((MARGIN, y), line, font=hfont, fill=WHITE)
@@ -251,7 +274,7 @@ def render(text, out_path, kicker="", quality=88, max_kb=900, footer=FOOTER):
     if rest:
         y += 26
         for line in wrap(draw, rest, bfont, max_width):
-            if y > CARD_H - 200:
+            if y > CARD_H - 200 - safe_bottom:
                 draw.text((MARGIN, y), "…", font=bfont, fill=MUTED)
                 break
             draw.text((MARGIN, y), line, font=bfont, fill=MUTED if line else WHITE)
@@ -260,8 +283,9 @@ def render(text, out_path, kicker="", quality=88, max_kb=900, footer=FOOTER):
     if footer:
         ffont, _ = load_font("SemiBold", 24)
         width = draw.textlength(footer, font=ffont)
-        draw.text(((CARD_W - width) / 2, CARD_H - 116), footer, font=ffont, fill=ACCENT)
-        draw.line([(MARGIN, CARD_H - 150), (CARD_W - MARGIN, CARD_H - 150)], fill=INK_PANEL, width=2)
+        draw.text(((CARD_W - width) / 2, CARD_H - 116 - safe_bottom), footer, font=ffont, fill=ACCENT)
+        draw.line([(MARGIN, CARD_H - 150 - safe_bottom), (CARD_W - MARGIN, CARD_H - 150 - safe_bottom)],
+                  fill=INK_PANEL, width=2)
 
     data = _encode(image, quality)
     while len(data) > max_kb * 1024 and quality > 45:
