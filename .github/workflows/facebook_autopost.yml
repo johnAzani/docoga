@@ -105,6 +105,8 @@ env:
   # owner should be able to switch the lane on the morning they read a green
   # probe line, in Settings → Actions → Variables.
   REELS_MODE: ${{ vars.FB_REELS || 'probe' }}
+  # Stories: `on` (default) / `off`. The tray is the guard, not a file.
+  STORIES_MODE: ${{ vars.FB_STORIES || 'on' }}
   TZ: Africa/Lagos
 
 jobs:
@@ -175,6 +177,32 @@ jobs:
           [ "$IN_FORCE" = "true" ] && FORCE="--force"
           python3 scripts/post_facebook.py $FORCE 2>&1 | tee /tmp/fb_post.log
 
+      # ── Stories ────────────────────────────────────────────────────────────
+      # Owner, 15 Oct 2026: "you are to post stories as well." The day's copy on
+      # the 9:16 brand frame goes to the tray with the post (morning slot); the
+      # afternoon slot is facebook_story_afternoon.yml; the Reel is re-posted as a
+      # video Story below, right after it publishes. Guarded by the tray itself
+      # (GET /{page}/stories) and switched by the repository variable FB_STORIES.
+      - name: Story — the day's card in the tray (morning slot)
+        if: ${{ !inputs.dry_run && (github.event_name == 'schedule' || inputs.mode == 'daily') }}
+        continue-on-error: true   # the feed post is live; a Story refusal is a warning, not a red run
+        env:
+          IN_FORCE: ${{ inputs.force }}
+        run: |
+          set -o pipefail
+          FORCE=""
+          [ "$IN_FORCE" = "true" ] && FORCE="--force"
+          python3 scripts/facebook_story_daily.py --slot morning $FORCE 2>&1 | tee /tmp/fb_story.log
+
+      - name: Keep today's Story frame for review
+        if: ${{ github.event_name == 'schedule' || inputs.mode == 'daily' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: facebook-story
+          path: assets/facebook/facebook_story_*.jpg
+          if-no-files-found: ignore
+          retention-days: 14
+
       # ── Reels lane ─────────────────────────────────────────────────────────
       # `POST /{page}/video_reels` upload_phase=start → raw bytes to
       # rupload.facebook.com (Authorization: OAuth header, offset/file_size
@@ -243,9 +271,24 @@ jobs:
             echo "skip=no" >> "$GITHUB_OUTPUT"
           fi
 
+      # The narrator's clips are cached by text hash (same key as the YouTube lane —
+      # the two lanes share the rotation, so they share the cache).
+      - name: Reels — restore the narrator's cached clips
+        if: ${{ (steps.reel_plan.outputs.reel_today == 'yes' || inputs.mode == 'reel') && !inputs.dry_run }}
+        uses: actions/cache@v4
+        with:
+          path: assets/shorts_voice
+          key: shorts-voice-v1-${{ hashFiles('scripts/generate_short_video.py', 'tools/shorts_sound.py') }}
+          restore-keys: shorts-voice-v1-
+
       - name: Reels — render
         id: reel_render
         if: ${{ steps.reel_guard.outputs.skip == 'no' }}
+        # GEMINI_API_KEY: the locked narrator (Orus) + bed + SFX via tools/shorts_sound.py.
+        # No key / empty bucket → music + SFX only, never a silent Reel (owner, 15 Oct 2026).
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_TTS_MODEL: ${{ vars.GEMINI_TTS_MODEL }}
         run: |
           set -o pipefail
           python3 scripts/facebook_reel_daily.py --render --mode on 2>&1 | tee /tmp/fb_reel_render.log
@@ -260,11 +303,23 @@ jobs:
           set -o pipefail
           python3 scripts/post_facebook.py --reel="$VIDEO_PATH" --title="$REEL_TITLE" 2>&1 | tee /tmp/fb_reel_post.log
 
+      - name: Story — the Reel in the tray too
+        if: ${{ steps.reel_publish.outcome == 'success' }}
+        continue-on-error: true
+        env:
+          VIDEO_PATH: ${{ steps.reel_render.outputs.video_path }}
+        run: |
+          set -o pipefail
+          python3 scripts/facebook_story_daily.py --slot video --video="$VIDEO_PATH" 2>&1 | tee /tmp/fb_story_video.log
+
       - name: Dry run — credentials and posting rights, nothing published
         if: ${{ inputs.dry_run && inputs.mode == 'daily' }}
         run: |
           set -o pipefail
           python3 scripts/post_facebook.py --dry-run 2>&1 | tee /tmp/fb_dryrun.log
+          # Stories: render the morning frame (kept as the facebook-story artifact)
+          # and open-then-abandon a video_stories session — proves the grant.
+          python3 scripts/facebook_story_daily.py --slot morning --dry-run 2>&1 | tee /tmp/fb_story.log
 
       # Manual modes. $FB_MESSAGE / $FB_MEDIA come from `env:`, never from an
       # interpolation inside the command, and every value is passed as
@@ -276,6 +331,8 @@ jobs:
           FB_MODE: ${{ inputs.mode }}
           FB_MESSAGE: ${{ inputs.message }}
           FB_MEDIA: ${{ inputs.media_url }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_TTS_MODEL: ${{ vars.GEMINI_TTS_MODEL }}
         run: |
           set -o pipefail
           case "$FB_MODE" in
@@ -407,7 +464,8 @@ jobs:
             for pair in "preflight:/tmp/fb_preflight.log" "generator:/tmp/fb_generate.log" \
                         "post:/tmp/fb_post.log" "dry run:/tmp/fb_dryrun.log" "manual:/tmp/fb_manual.log" \
                         "reel plan:/tmp/fb_reel_plan.log" "reel probe:/tmp/fb_reel_probe.log" \
-                        "reel render:/tmp/fb_reel_render.log" "reel publish:/tmp/fb_reel_post.log"; do
+                        "reel render:/tmp/fb_reel_render.log" "reel publish:/tmp/fb_reel_post.log" \
+                        "story:/tmp/fb_story.log" "story video:/tmp/fb_story_video.log"; do
               label=${pair%%:*}; file=${pair#*:}
               if [ -f "$file" ]; then
                 # Sanitised: the log can contain quotes and backticks from an API

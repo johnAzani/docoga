@@ -223,9 +223,7 @@ fails if a literal `vNN.0` reappears in a URL in `tools/*.py`.
   that is already public, and the render is deliberately not uploaded to
   `/{page}/videos` as well — a plain Page video post on a Page this size reaches
   almost nobody, which is §9's whole argument for the Reels surface.
-* **2–3 Stories/day.** Stories need `photo_stories`/`video_stories` on an
-  unpublished media id and expire in 24 h — a separate cadence, a separate
-  failure surface. Not silently folded into one post.
+* ~~2–3 Stories/day~~ — **built 15 Oct 2026**, see §9b.
 * **Comment replies.** Phase ⓷ in `docs/GROWTH_ENGINE.md`, still unbuilt. It needs
   a webhook or a poller plus `pages_manage_engagement`; a reply that misfires on
   a real customer is a support incident, so it gets its own design doc first.
@@ -338,6 +336,66 @@ decision step deliberately does **not** import the renderer, so a machine that
 cannot render can still answer "is today a reel day?" — with a warning naming the
 topic it could not read, instead of a traceback.
 
+### The soundtrack — voice, bed, effects (since 15 Oct 2026)
+
+The first Reel (run #10) went out **silent**: MotionStudio encodes an empty
+`anullsrc` track, and nobody had put sound back since the hand-made
+`tools/make_reels.py` days. Owner: the old Reels "have the voice-over, the sound
+effects, the background sounds". `tools/shorts_sound.py` now scores every render
+the bridge makes — the YouTube Short, the Facebook Reel and the Telegram video are
+one render, so they got it at once:
+
+* **Voice** — the Deep-Dive narrator: Gemini TTS, **Orus**, the locked instruction.
+  `shorts_sound.py` never restates the voice; it imports `deepdive.locked_voice()`
+  and calls `deepdive.gemini_tts()`, so the fingerprint tests keep guarding one
+  definition. One clip per scene (hook, four tips, FREE), six requests per Short.
+* **Voice-first timing** — each scene stretches to its read
+  (`fit_scenes`: lead 0.30 s + clip + tail 0.45 s) *before* MotionStudio renders, so
+  the words and the type land together. Hard cap 45 s (Shorts allow 60, Reels 90).
+* **Bed + SFX** — `tools/soundkit.py`: the synthesized navy-mood bed ducked under
+  speech (~15 dB(A) under, ~7 in gaps — the DD2 balance the owner approved), a hit on
+  the hook, a whoosh into every tip, a tick as the check pops, a riser into FREE and
+  a stinger under it. Loudness-normalised to −16 LUFS for phones.
+* **Free plan, always** — a 429 is waited out if the API's retry time fits the
+  budget (`SHORTS_TTS_WAIT_MIN`, default 8); otherwise, or with no key, the clip
+  ships **music + SFX only** and says so. The voice is all-or-nothing per clip.
+  Clips are cached by text hash (`assets/shorts_voice/`, `actions/cache` keyed on the
+  rotation), so six topics cost quota once.
+* **Never silent** — `assert_not_silent` refuses a finished file under −45 dBFS. A
+  silent Short/Reel is a red run, not a quiet post.
+* **The report** — `<video>.audio.json` beside the mp4 (lines spoken, separation,
+  cue sheet, dropped reason); the summary line reads
+  `voice Orus · 6 lines · bed 14 dB(A) under speech · 11 cues`.
+
+Secrets/vars the render steps carry: `GEMINI_API_KEY` (already set for the
+Deep-Dive lane), `GEMINI_TTS_MODEL` (optional). `SHORTS_SOUND=off` renders the silent
+picture only (tests, a laptop without ffmpeg audio).
+
+## 9b. Stories — two a day, three on Reel days (since 15 Oct 2026)
+
+Owner: "Hope you know you are to post stories as well." `scripts/facebook_story_daily.py`
++ `fb_publish.story_photo / story_video / stories_today / story_probe`.
+
+| slot | when | what | where |
+|---|---|---|---|
+| morning | 09:30 WAT, right after the feed post | the post's copy on the 9:16 brand frame (`social_card.story_for_post`, type kept out of the 250 px bands Facebook covers with its own chrome) | `facebook_autopost.yml` |
+| afternoon | 16:00 WAT | the day's *other* rotation type (`WEEKLY_SCHEDULE` lists two per weekday) — a different card, not a repeat | `facebook_story_afternoon.yml` |
+| video | Mon/Thu, right after the Reel publishes | the Reel itself (≤ 60 s) as a video Story | `facebook_autopost.yml` |
+
+Protocol: a photo Story is `POST /{page}/photos` with `published=false` →
+`POST /{page}/photo_stories` with `photo_id`; a video Story is
+`POST /{page}/video_stories` `upload_phase=start` → bytes to rupload (same as Reels)
+→ `upload_phase=finish`. Both need the token's existing `pages_manage_posts`.
+
+**The tray is the guard.** A Story lives 24 h, so "how many today?" is answered by
+`GET /{page}/stories` (Lagos date), never by a file: morning stands down at ≥1 photo
+Story, afternoon at ≥2, video at ≥1 video Story. `--force` (dispatch input) posts
+anyway. A Story refusal is `continue-on-error` in the daily job — the feed post is
+already live and a Story is not worth a red run (the summary and the log line still
+say what happened). Switch: repository variable **`FB_STORIES`** = `on` (default) /
+`off`. Dry run renders the frame (artifact `facebook-story`) and opens-then-abandons a
+`video_stories` session to prove the grant.
+
 ## 10. Changing it
 
 | to change | edit |
@@ -347,6 +405,7 @@ topic it could not read, instead of a traceback.
 | the card's look | `tools/social_card.py` (palette, type, kicker names in `KICKER_NAMES`) — it is shared with Instagram and Telegram, so a change there changes all three; preview with `python3 scripts/generate_facebook_content.py --print` and open `assets/facebook/facebook_card_<date>.jpg` |
 | photo frequency | every day is a card; there is no odds knob any more |
 | whether Reels publish at all | repository **variable** `FB_REELS` = `probe` (default) / `on` / `off` |
+| whether Stories publish | repository **variable** `FB_STORIES` = `on` (default) / `off`; the afternoon time is the cron in `facebook_story_afternoon.yml` |
 | which days get a Reel | `REEL_WEEKDAYS` in `scripts/facebook_reel_daily.py` (keep it off YouTube's Tue/Fri — the collision rule is in that file's header) |
 | the reel's words | `VIDEO_SCRIPTS` in `scripts/generate_short_video.py` — both the 3–90 s window and the 30-day window apply |
 | the reel's look | `tools/shorts_reel.py` (spec) → `tools/motionstudio.py` (engine) — the locked brand style; `tools/qa.py` §15 refuses any other renderer |

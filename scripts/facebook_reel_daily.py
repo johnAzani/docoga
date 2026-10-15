@@ -171,8 +171,10 @@ def render(day, output_path=None):
     if not video.is_file() or video.stat().st_size < 10_000:
         return False, ("render produced no usable MP4 (%s, %d bytes)"
                        % (video, video.stat().st_size if video.is_file() else -1)), {}
+    import shorts_sound
     return True, str(video), {"seconds_planned": planned_seconds, "bytes": video.stat().st_size,
-                              "title": script["title"], "topic": script["title"]}
+                              "title": script["title"], "topic": script["title"],
+                              "soundtrack": shorts_sound.summary_line(video)}
 
 
 def emit(outputs):
@@ -236,8 +238,8 @@ def main(argv=None):
         return 3
     emit({"video_path": result, "title": info["title"], "topic": info["topic"],
           "bytes": info["bytes"]})
-    print("🎬 rendered %s (%d bytes, planned %.1fs)"
-          % (result, info["bytes"], info["seconds_planned"]))
+    print("🎬 rendered %s (%d bytes, planned %.1fs) · sound: %s"
+          % (result, info["bytes"], info["seconds_planned"], info.get("soundtrack", "?")))
     return 0
 
 

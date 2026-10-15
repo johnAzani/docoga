@@ -1,0 +1,109 @@
+# Facebook Stories — the afternoon slot
+# =====================================
+# Owner, 15 Oct 2026: "you are to post stories as well." A Story lives 24 hours
+# and the tray rewards cadence, so the Page gets two photo Stories a day (three on
+# Reel days, when the Reel is re-posted as a video Story by facebook_autopost.yml):
+#
+#   09:30 WAT  morning slot   — in facebook_autopost.yml, with the feed post
+#   16:00 WAT  afternoon slot — THIS workflow: the day's *other* rotation type on
+#                               the 9:16 brand frame, so the tray shows two
+#                               different cards, not the same one twice.
+#
+# Its own workflow on purpose: the daily lane's job also decides, renders and
+# publishes Reels, and an afternoon cron through that job would re-run every
+# guard for nothing. This one is preflight → frame → Story, ~40 seconds.
+#
+# The guard is the tray itself (GET /{page}/stories): the afternoon slot stands
+# down when two photo Stories already exist today. Switch: repository variable
+# FB_STORIES = on (default) / off.
+name: Facebook Stories (afternoon)
+
+on:
+  schedule:
+    - cron: '0 15 * * *'   # 16:00 WAT — the commute scroll
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Render the frame and probe the grant; publish nothing'
+        type: boolean
+        default: false
+      force:
+        description: 'Post even if the tray already has two Stories today'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: facebook-autopost       # shares the daily lane's lock: never two publishers at once
+  cancel-in-progress: false
+
+env:
+  FB_PAGE_ACCESS_TOKEN: ${{ secrets.FB_PAGE_ACCESS_TOKEN }}
+  FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
+  META_APP_ID: ${{ secrets.META_APP_ID }}
+  META_APP_SECRET: ${{ secrets.META_APP_SECRET }}
+  META_GRAPH_VERSION: ${{ vars.META_GRAPH_VERSION || 'v26.0' }}
+  STORIES_MODE: ${{ vars.FB_STORIES || 'on' }}
+  TZ: Africa/Lagos
+
+jobs:
+  story:
+    name: Preflight → frame → Story
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Preflight — can this token reach the Page?
+        run: |
+          set -o pipefail
+          python3 tools/fb_preflight.py 2>&1 | tee /tmp/fb_preflight.log
+
+      - name: Install dependencies
+        run: |
+          python3 -m pip install --quiet requests Pillow
+          sudo apt-get update -qq >/dev/null 2>&1 || true
+          sudo apt-get install -y -qq fonts-inter >/dev/null 2>&1 || echo "::warning title=Inter not installed::fonts-inter unavailable — the frame falls back to DejaVu for this run"
+
+      - name: Story — afternoon slot
+        env:
+          IN_FORCE: ${{ inputs.force }}
+          IN_DRY: ${{ inputs.dry_run }}
+        run: |
+          set -o pipefail
+          FLAGS=""
+          [ "$IN_FORCE" = "true" ] && FLAGS="$FLAGS --force"
+          [ "$IN_DRY" = "true" ] && FLAGS="$FLAGS --dry-run"
+          python3 scripts/facebook_story_daily.py --slot afternoon $FLAGS 2>&1 | tee /tmp/fb_story.log
+
+      - name: Keep the frame for review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: facebook-story-afternoon
+          path: assets/facebook/facebook_story_*.jpg
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Record what this run did
+        if: always()
+        run: |
+          {
+            echo "### Facebook Story (afternoon) — $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "- Stories: \`${STORIES_MODE}\`"
+            for pair in "preflight:/tmp/fb_preflight.log" "story:/tmp/fb_story.log"; do
+              label=${pair%%:*}; file=${pair#*:}
+              if [ -f "$file" ]; then
+                last=$(grep -v '^\s*$' "$file" | tail -n 1 | tr -d '`' | cut -c1-300)
+                echo "- ${label}, last line: \`${last}\`"
+              fi
+            done
+          } >> "$GITHUB_STEP_SUMMARY"

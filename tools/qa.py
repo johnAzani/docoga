@@ -550,6 +550,20 @@ if bridge:
     check("the bridge uses only asset-free grammar (no icon grid, no cycler, no strike)",
           '"icons"' not in bridge and '"cycler"' not in bridge and "strike=" not in bridge,
           "social/assets/icon-*.png are not in the repo; a strike is for an external price")
+    # Owner, 15 Oct 2026, first Reel live: the old Reels "have the voice-over, the sound
+    # effects, the background sounds". The engine encodes anullsrc; the bridge must score it.
+    sound_path = os.path.join(ROOT, "tools", "shorts_sound.py")
+    sound = open(sound_path, encoding="utf-8").read() if os.path.exists(sound_path) else ""
+    check("every Short/Reel leaves the bridge with a soundtrack (voice + bed + SFX), never silent",
+          "shorts_sound.narrate(" in bridge and "shorts_sound.fit_scenes(" in bridge
+          and "shorts_sound.score(" in bridge and "def assert_not_silent" in sound,
+          "the owner rejected the silent Reel — tools/shorts_sound.py is the fix")
+    check("the Shorts narrator is the LOCKED Deep-Dive voice, imported — never restated",
+          bool(sound) and "locked_voice()" in sound and "Narrate this" not in sound
+          and "voiceName" not in sound and "generativelanguage" not in sound,
+          "one definition of the voice, in tools/deepdive.py, behind its fingerprint")
+    check("the soundtrack degrades to music + SFX on no key / no quota, never fails the day",
+          "music and effects only" in sound and "no GEMINI_API_KEY" in sound)
 for lane in ("youtube_short_daily.py", "facebook_reel_daily.py", "post_telegram_video.py"):
     lp = os.path.join(ROOT, "scripts", lane)
     if not os.path.exists(lp):
