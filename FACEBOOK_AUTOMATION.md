@@ -356,11 +356,12 @@ one render, so they got it at once:
   speech (~15 dB(A) under, ~7 in gaps — the DD2 balance the owner approved), a hit on
   the hook, a whoosh into every tip, a tick as the check pops, a riser into FREE and
   a stinger under it. Loudness-normalised to −16 LUFS for phones.
-* **Free plan, always** — a 429 is waited out if the API's retry time fits the
-  budget (`SHORTS_TTS_WAIT_MIN`, default 8); otherwise, or with no key, the clip
-  ships **music + SFX only** and says so. The voice is all-or-nothing per clip.
-  Clips are cached by text hash (`assets/shorts_voice/`, `actions/cache` keyed on the
-  rotation), so six topics cost quota once.
+* **Free plan, always — and knowledgeable about it** (owner, 15 Oct 2026, after
+  the first Short shipped voiceless: "automatically know when the voice over resets
+  and automatically continue at that time … I want it to be knowledgeable"). See
+  "The narrator's bucket" below. The voice is all-or-nothing per clip. Clips are
+  cached by text hash (`assets/shorts_voice/`, one `actions/cache` prefix shared by
+  every lane), so six topics cost quota once — and the warm-up pays it at the reset.
 * **Never silent** — `assert_not_silent` refuses a finished file under −45 dBFS. A
   silent Short/Reel is a red run, not a quiet post.
 * **The report** — `<video>.audio.json` beside the mp4 (lines spoken, separation,
@@ -368,8 +369,49 @@ one render, so they got it at once:
   `voice Orus · 6 lines · bed 14 dB(A) under speech · 11 cues`.
 
 Secrets/vars the render steps carry: `GEMINI_API_KEY` (already set for the
-Deep-Dive lane), `GEMINI_TTS_MODEL` (optional). `SHORTS_SOUND=off` renders the silent
-picture only (tests, a laptop without ffmpeg audio).
+Deep-Dive lane), `GEMINI_TTS_MODEL` (optional), `SHORTS_VOICE` (`required` by
+default; `optional` ships music + SFX on purpose). `SHORTS_SOUND=off` renders the
+silent picture only (tests, a laptop without ffmpeg audio).
+
+### The narrator's bucket — known, not guessed (since 15 Oct 2026)
+
+`tools/gemini_quota.py`, used by every lane through `deepdive.gemini_tts()`:
+
+* **The refusal is read whole.** A Gemini 429 carries a `QuotaFailure`: `quotaId`
+  says **PerMinute** or **PerDay**, `quotaValue` is the limit, `quotaDimensions.model`
+  the model. A per-minute refusal is waited out (the API's `retryDelay`). A per-day
+  refusal is an **appointment**: the free daily buckets refill at midnight Pacific,
+  which the code computes from `America/Los_Angeles` itself — 08:00 WAT in summer,
+  09:00 WAT after the US clocks change — never a hard-coded hour. (The API says
+  "retry in 23 s" even when the *day* is spent; that is exactly the trap the first
+  voiceless Short fell into.)
+* **The ledger.** `assets/shorts_voice/quota.json` counts every narrator request per
+  Pacific day and per lane (Deep-Dive, warm-up, Reel, Short), remembers the limit the
+  API named and the last daily refusal with its resume time. It rides in the same
+  cache entry as the clips (`shorts-voice-v2-<run id>`, restored by prefix, saved by
+  every run), so the Shorts, Reels, Deep-Dive and resumer workflows share one memory.
+  Google publishes no "remaining quota" endpoint; this is as knowledgeable as the
+  platform allows. Before the first request a lane prints
+  `narrator bucket: 4 of 10 used this Pacific day · resets 08:00 WAT, Fri 16 Oct (in 13 h 02 min)`.
+* **No voice → no publish.** `SHORTS_VOICE=required` (default on both scheduled
+  lanes): when the narrator cannot speak, the render raises `VoiceUnavailable` with
+  the resume time, the script exits **6**, the workflow marks the run *paused*
+  (green, summary row `⏸️ Paused — no voice … Resumes 08:00 WAT`), and nothing
+  reaches the publish step. If the refill is within `VOICE_RESUME_WINDOW_MIN`
+  (default 20 — the lane jobs time out at 30) the run simply **sleeps until that minute and continues**.
+* **The resumer** — `.github/workflows/narrator_resume.yml`, cron `12 7` and `12 8`
+  UTC (one per season; `gemini_quota.py just-reset --window 45` lets exactly one
+  proceed): (1) **warms** today's six lines into the cache while the bucket is full
+  (`shorts_sound.py warm`), so the 09:30 Reel and the 18:00 Short need no fresh
+  quota; (2) asks `gemini_quota.py owed` — a Short/Reel whose slot passed with no
+  publish since — and **dispatches that lane for the owed date**
+  (`for_date` input → `RUN_FOR_DATE` / `--date`). The duplicate guards keep it to
+  one publish per slot.
+* **Deep-Dive** spends the night bucket (03:00 WAT) and names the refill time in its
+  pause notice; its requests count in the same ledger.
+* A person pressing `mode=reel` when the bucket is empty gets a named error with the
+  resume time, not a voiceless Reel; `SHORTS_VOICE=optional` is the explicit way to
+  ship music-only.
 
 ## 9b. Stories — two a day, three on Reel days (since 15 Oct 2026)
 

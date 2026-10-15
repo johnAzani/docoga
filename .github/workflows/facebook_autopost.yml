@@ -72,6 +72,11 @@ on:
         required: false
         default: false
         type: boolean
+      for_date:
+        description: 'mode=reel only — render the rotation topic of this date (YYYY-MM-DD) instead of today; the narrator-resume workflow uses it to finish a Reel that was owed'
+        required: false
+        default: ''
+        type: string
 
 permissions:
   # `write`, not `read`, for one reason: `video_reels` cannot be read, updated or
@@ -275,27 +280,38 @@ jobs:
       # the two lanes share the rotation, so they share the cache).
       - name: Reels — restore the narrator's cached clips
         if: ${{ (steps.reel_plan.outputs.reel_today == 'yes' || inputs.mode == 'reel') && !inputs.dry_run }}
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: assets/shorts_voice
-          key: shorts-voice-v1-${{ hashFiles('scripts/generate_short_video.py', 'tools/shorts_sound.py') }}
-          restore-keys: shorts-voice-v1-
+          key: shorts-voice-v2-${{ github.run_id }}
+          restore-keys: shorts-voice-v2-
 
       - name: Reels — render
         id: reel_render
         if: ${{ steps.reel_guard.outputs.skip == 'no' }}
         # GEMINI_API_KEY: the locked narrator (Orus) + bed + SFX via tools/shorts_sound.py.
-        # No key / empty bucket → music + SFX only, never a silent Reel (owner, 15 Oct 2026).
+        # SHORTS_VOICE=required (default): no voice → no Reel; exit 6 is a pause that
+        # names when the bucket refills, and narrator_resume.yml publishes it then.
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_TTS_MODEL: ${{ vars.GEMINI_TTS_MODEL }}
+          SHORTS_VOICE: ${{ vars.SHORTS_VOICE || 'required' }}
+          NARRATOR_LANE: reel
         run: |
+          set +e
           set -o pipefail
           python3 scripts/facebook_reel_daily.py --render --mode on 2>&1 | tee /tmp/fb_reel_render.log
+          code=$?
+          set -e
+          if [ "$code" -eq 6 ]; then
+            echo "paused=yes" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          exit "$code"
 
       - name: Reels — publish
         id: reel_publish
-        if: ${{ steps.reel_render.outcome == 'success' }}
+        if: ${{ steps.reel_render.outcome == 'success' && steps.reel_render.outputs.paused != 'yes' }}
         env:
           REEL_TITLE: ${{ steps.reel_plan.outputs.title }}
           VIDEO_PATH: ${{ steps.reel_render.outputs.video_path }}
@@ -333,6 +349,9 @@ jobs:
           FB_MEDIA: ${{ inputs.media_url }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_TTS_MODEL: ${{ vars.GEMINI_TTS_MODEL }}
+          SHORTS_VOICE: ${{ vars.SHORTS_VOICE || 'required' }}
+          NARRATOR_LANE: reel-manual
+          FOR_DATE: ${{ inputs.for_date }}
         run: |
           set -o pipefail
           case "$FB_MODE" in
@@ -348,7 +367,16 @@ jobs:
               # A person asked for today's reel now: the weekday rule and the
               # 30-day frame window are bypassed with --force, because --force is
               # what a human request means. The ledger entry is still written.
-              python3 scripts/facebook_reel_daily.py --render --mode on 2>&1 | tee /tmp/fb_reel_render.log
+              set +e
+              python3 scripts/facebook_reel_daily.py --render --mode on ${FOR_DATE:+--date "$FOR_DATE"} 2>&1 | tee /tmp/fb_reel_render.log
+              code=$?
+              set -e
+              if [ "$code" -eq 6 ]; then
+                # A person asked, but the narrator cannot speak yet: say when, publish nothing.
+                WHEN=$(sed -n 's/^voice_resumes_at=//p' /tmp/fb_reel_render.log | tail -1)
+                echo "::error title=Reel not published — the narrator's free bucket is empty::it refills at ${WHEN:-the next Pacific midnight}. Re-run then (the resumer does this by itself for the scheduled Reel), or set the repository variable SHORTS_VOICE=optional to ship music-only on purpose."
+                exit 6
+              fi
               VIDEO_PATH=$(sed -n 's/^video_path=//p' /tmp/fb_reel_render.log | tail -1)
               if [ -z "$VIDEO_PATH" ]; then
                 echo "::error title=no render::the renderer printed no video_path — the render above is the failing step"
@@ -363,6 +391,15 @@ jobs:
               python3 tools/fb_publish.py --text="$FB_MESSAGE" --force 2>&1 | tee /tmp/fb_manual.log
               ;;
           esac
+
+      # Below both render paths (scheduled and manual), so whatever either one
+      # synthesised — and what the ledger learnt — is there for the next run.
+      - name: Reels — save the narrator's cached clips and the quota ledger
+        if: ${{ always() && (steps.reel_plan.outputs.reel_today == 'yes' || inputs.mode == 'reel') && !inputs.dry_run }}
+        uses: actions/cache/save@v4
+        with:
+          path: assets/shorts_voice
+          key: shorts-voice-v2-${{ github.run_id }}
 
       # Both reel paths — the scheduled/daily publish above and the manual
       # `mode: reel` in "Manual post" — write /tmp/fb_reel_post.log, so the
@@ -439,6 +476,11 @@ jobs:
           REEL_MODE: ${{ steps.reel_plan.outputs.mode }}
           REEL_TITLE: ${{ steps.reel_plan.outputs.title }}
           REEL_SKIP: ${{ steps.reel_guard.outputs.skip }}
+          REEL_PAUSED: ${{ steps.reel_render.outputs.paused }}
+          REEL_VOICE_REASON: ${{ steps.reel_render.outputs.voice_reason }}
+          REEL_RESUMES_AT: ${{ steps.reel_render.outputs.voice_resumes_at }}
+          REEL_SOUNDTRACK: ${{ steps.reel_render.outputs.soundtrack }}
+          REEL_NARRATOR: ${{ steps.reel_render.outputs.narrator }}
         run: |
           {
             echo ""
@@ -452,6 +494,11 @@ jobs:
               yes)
                 if [ -n "$REEL_URL" ]; then
                   echo "- Reels: \`${REEL_MODE}\` · ✅ published — $REEL_URL"
+                  [ -n "$REEL_SOUNDTRACK" ] && echo "- Reel soundtrack: $REEL_SOUNDTRACK"
+                  [ -n "$REEL_NARRATOR" ] && echo "- $REEL_NARRATOR"
+                elif [ "$REEL_PAUSED" = "yes" ]; then
+                  echo "- Reels: \`${REEL_MODE}\` · ⏸ paused — no voice, no Reel. $REEL_VOICE_REASON"
+                  echo "- Resumes: ${REEL_RESUMES_AT:-at the next Pacific midnight} — the narrator-resume workflow publishes it then; nothing to press"
                 elif [ "$REEL_SKIP" = "yes" ]; then
                   echo "- Reels: \`${REEL_MODE}\` · ⏭ frame \"$REEL_TITLE\" is inside the 30-day window — nothing rendered"
                 else

@@ -25,12 +25,24 @@ instead of a 3.4-second scene cutting a 4-second sentence in half. The reel's
 cap is raised to fit (Shorts allow 60 s, Reels 90 s; `HARD_CAP_S` holds it well
 under both).
 
-Free plan, always. One Short is six requests. On a 429 the module waits if the
-API's own retry time fits the budget; otherwise — or with no key at all — it
-**drops the voice and ships music + SFX**. A silent clip is the one outcome
-that is never allowed (`assert_not_silent`), and the day's post is never lost
-to the soundtrack. Clips are cached by text hash (`assets/shorts_voice/`, and
-`actions/cache` on CI), so a rotation of six topics costs quota once.
+Free plan, always — and knowledgeable about it (owner, 15 Oct 2026: "I want to
+automatically know when the voice over resets and automatically continue at that
+time"). One Short is six requests. `tools/gemini_quota.py` reads every refusal
+for *which* bucket tripped: a per-minute refusal is waited out; a per-day
+refusal is an appointment at the Pacific midnight. The policy is then:
+
+  SHORTS_VOICE=required (default)  no voice → no publish. If the bucket refills
+                                   within VOICE_RESUME_WINDOW_MIN the run sleeps
+                                   until then and continues; otherwise it raises
+                                   VoiceUnavailable naming the resume time, and
+                                   the resumer workflow (narrator_resume.yml)
+                                   finishes the job minutes after the reset.
+  SHORTS_VOICE=optional            the old behaviour: ship music + SFX, say why.
+
+A silent clip is the one outcome that is never allowed (`assert_not_silent`).
+Clips are cached by text hash (`assets/shorts_voice/`, carried between runs and
+lanes by `actions/cache`), and `warm` synthesises the day's lines right after
+the reset — so the evening publish needs no fresh quota at all.
 
 The output is a JSON report beside the mp4 (`<name>.audio.json`): which lines
 were spoken, by whom, the A-weighted separation the mix achieved, and whether
@@ -53,6 +65,7 @@ if str(ROOT / "tools") not in sys.path:
     sys.path.insert(0, str(ROOT / "tools"))
 
 import soundkit  # noqa: E402
+import gemini_quota  # noqa: E402
 
 SR = soundkit.SR
 VOICE_CACHE_DIR = ROOT / "assets" / "shorts_voice"
@@ -61,6 +74,38 @@ VOICE_LEAD_S = 0.30        # the clip starts after the scene's transition has la
 VOICE_TAIL_S = 0.45        # room after the last word before the next scene cuts
 SILENCE_FLOOR_DBFS = -45.0  # a finished soundtrack quieter than this (RMS, dBFS) is "silent"
 DEFAULT_WAIT_BUDGET_MIN = 8
+VOICE_RESUME_WINDOW_MIN = 20    # a reset this close is waited for in-run (the lane jobs have 30-minute
+                                # timeouts); further away → narrator_resume.yml finishes it after the reset
+
+
+class VoiceUnavailable(RuntimeError):
+    """The narrator cannot speak now and the policy says no voice → no publish."""
+
+    def __init__(self, reason, resumes_at=None):
+        super().__init__(reason)
+        self.reason = reason
+        self.resumes_at = resumes_at
+
+
+def voice_policy():
+    """SHORTS_VOICE: required (default) | optional."""
+    v = os.environ.get("SHORTS_VOICE", "required").strip().lower()
+    return "optional" if v in ("optional", "off", "no", "0", "false", "music") else "required"
+
+
+def resume_window_min():
+    try:
+        return float(os.environ.get("VOICE_RESUME_WINDOW_MIN", VOICE_RESUME_WINDOW_MIN))
+    except ValueError:
+        return float(VOICE_RESUME_WINDOW_MIN)
+
+
+def _sleep_until(when, log=print, sleep=time.sleep):
+    secs = (when - gemini_quota.now_utc()).total_seconds()
+    if secs > 0:
+        log("  ⏳ the bucket refills at %s — waiting %s in this run, then continuing"
+            % (gemini_quota.lagos(when), gemini_quota.human_wait(secs)))
+        sleep(secs + 30)
 
 # The Short's sound sits a touch closer than the Deep-Dive's: a 25-second clip on a phone
 # in a bus has no quiet passages for the bed to "swell" into, so the bed is a little higher
@@ -143,7 +188,7 @@ def _duration(ffmpeg, path):
     return len(soundkit.decode(ffmpeg, path)) / SR
 
 
-def narrate(lines, log=print, wait_budget_min=None, tts=None):
+def narrate(lines, log=print, wait_budget_min=None, tts=None, sleep=None):
     """Synthesize every line with the locked narrator. Returns (clips, dropped_reason).
 
     clips: [{**line, path, seconds}] in order, or [] when the voice is dropped.
@@ -156,10 +201,26 @@ def narrate(lines, log=print, wait_budget_min=None, tts=None):
         return [], "no GEMINI_API_KEY — music and effects only"
     voice, instruction = dd.locked_voice()
     tts = tts or dd.gemini_tts
+    sleep = sleep or time.sleep
     budget = float(os.environ.get("SHORTS_TTS_WAIT_MIN", wait_budget_min or DEFAULT_WAIT_BUDGET_MIN))
     budget_end = time.time() + 60 * budget
+    window_s = 60 * resume_window_min()
     VOICE_CACHE_DIR.mkdir(parents=True, exist_ok=True)
     clips = []
+    uncached = [l for l in lines if not _cache_path(voice, instruction, l["text"]).is_file()]
+    # Known before the first request: is the daily bucket already empty, and does it
+    # refill soon enough to wait for? (The ledger remembers the last refusal.)
+    st = gemini_quota.state()
+    if uncached and st["exhausted"]:
+        secs = (st["resumes_at"] - gemini_quota.now_utc()).total_seconds()
+        if secs <= window_s and voice_policy() == "required":
+            _sleep_until(st["resumes_at"], log, sleep)
+        else:
+            return [], ("the narrator's daily bucket is empty (%d of %d used) — it refills at %s, in %s"
+                        % (st["used"], st["limit_hint"], gemini_quota.lagos(st["resumes_at"]),
+                           gemini_quota.human_wait(secs)))
+    elif uncached:
+        log("  " + gemini_quota.status_line())
     for line in lines:
         p = _cache_path(voice, instruction, line["text"])
         if p.is_file() and p.stat().st_size > 1000:
@@ -174,11 +235,20 @@ def narrate(lines, log=print, wait_budget_min=None, tts=None):
             if status == "wait":
                 if time.time() + wait <= budget_end:
                     log("  quota holds — API says retry in %.0fs; waiting (budget %.0f min)" % (wait, budget))
-                    time.sleep(wait + 2)
+                    sleep(wait + 2)
                     continue
-                return [], ("Gemini quota exhausted (retry in %.0fs exceeds the %.0f-minute budget) — "
-                            "music and effects only this run; the voice returns when the bucket refills" % (wait, budget))
-            time.sleep(2)
+                # Beyond the minute-budget: this is the daily bucket. The ledger now knows
+                # exactly when it refills; wait for it if that is near, else name the time.
+                st = gemini_quota.state()
+                resumes = st["resumes_at"] or gemini_quota.next_reset()
+                secs = (resumes - gemini_quota.now_utc()).total_seconds()
+                if secs <= window_s and voice_policy() == "required":
+                    _sleep_until(resumes, log, sleep)
+                    continue
+                return [], ("the narrator's daily bucket ran out on scene %s (%d of %d used) — it refills at %s, "
+                            "in %s" % (line["scene"], st["used"], st["limit_hint"], gemini_quota.lagos(resumes),
+                                       gemini_quota.human_wait(secs)))
+            sleep(2)
         if status != "ok" or not p.is_file():
             return [], "Gemini TTS failed on scene %s — music and effects only this run" % line["scene"]
         secs = _duration(ffmpeg, p)
@@ -378,3 +448,67 @@ def summary_line(video_path):
             r["voice"], len(r.get("lines") or []),
             ("%.0f dB(A) under speech" % sep) if sep is not None else "n/a", len(r.get("cue_sheet") or []))
     return "music + SFX, no voice (%s)" % (r.get("voice_dropped_reason") or "dropped")
+
+
+def resumes_at():
+    """When the narrator can speak again (None when nothing says it cannot)."""
+    return gemini_quota.state()["resumes_at"]
+
+
+def require_voice(clips, dropped, log=print):
+    """Apply the policy after narrate(): raise VoiceUnavailable when required and absent."""
+    if clips or voice_policy() != "required":
+        return
+    when = resumes_at()
+    gh = os.environ.get("GITHUB_OUTPUT")
+    if gh:
+        with open(gh, "a", encoding="utf-8") as fh:
+            fh.write("voice=unavailable\n")
+            fh.write("voice_reason=%s\n" % dropped.replace("\n", " "))
+            fh.write("voice_resumes_at=%s\n" % (gemini_quota.lagos(when) if when else ""))
+    log("  ⛔ voice required (SHORTS_VOICE=required) and unavailable: " + dropped)
+    raise VoiceUnavailable(dropped, when)
+
+
+def warm(day=None, log=print, tts=None):
+    """Synthesize and cache the day's lines without rendering. Returns (clips, dropped)."""
+    import shorts_reel
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    day = day or datetime.now(ZoneInfo("Africa/Lagos")).date()
+    topic = shorts_reel.topic_for(day)
+    reel = shorts_reel.reel_from_topic(topic, "/tmp/_warm.mp4")
+    lines = narration_for(reel, topic)
+    log("warming the narrator's cache for %s — %s (%d lines)" % (day.isoformat(), topic["title"], len(lines)))
+    clips, dropped = narrate(lines, log=log, tts=tts)
+    if clips:
+        log("  ✅ %d lines ready (%d freshly synthesised) · %s"
+            % (len(clips), sum(1 for c in clips if not c.get("cached")), gemini_quota.status_line()))
+    else:
+        log("  ⚠️  " + dropped)
+    return clips, dropped
+
+
+def main(argv=None):
+    import argparse
+    from datetime import date
+    ap = argparse.ArgumentParser(description="Shorts/Reels soundtrack utilities")
+    sub = ap.add_subparsers(dest="cmd", required=True)
+    w = sub.add_parser("warm", help="synthesise and cache today's narration (no render)")
+    w.add_argument("--date")
+    sub.add_parser("status", help="the narrator's bucket, as the ledger knows it")
+    args = ap.parse_args(argv)
+    if args.cmd == "status":
+        print(gemini_quota.status_line())
+        return 0
+    clips, dropped = warm(date.fromisoformat(args.date) if args.date else None)
+    summary = os.environ.get("GITHUB_STEP_SUMMARY")
+    if summary:
+        with open(summary, "a", encoding="utf-8") as fh:
+            fh.write("- narrator warm-up: %s\n- %s\n" % (
+                ("✅ %d lines cached" % len(clips)) if clips else "⚠️ " + dropped, gemini_quota.status_line()))
+    return 0 if clips else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

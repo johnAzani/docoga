@@ -38,6 +38,11 @@ on:
         required: false
         default: false
         type: boolean
+      for_date:
+        description: 'Render the rotation topic of this date (YYYY-MM-DD) instead of today — used by the narrator-resume workflow to finish a Short that was owed'
+        required: false
+        default: ''
+        type: string
 
 permissions:
   contents: write   # the publish ledger is committed back after a successful upload
@@ -164,28 +169,52 @@ jobs:
             python3 tools/yt_publish.py --probe
           } 2>&1 | tee /tmp/yt_preflight.log
 
-      # The narrator's clips are cached by text hash: six topics in rotation cost
-      # Gemini's free bucket once, then every later render is quota-free.
+      # The narrator's clips are cached by text hash, and the quota ledger
+      # (assets/shorts_voice/quota.json — what every lane spent today, when the
+      # bucket refills) travels in the same cache entry. Every run restores the
+      # newest entry and saves its own, so the knowledge is shared across the
+      # Shorts, Reels, Deep-Dive and resumer workflows.
       - name: Restore the narrator's cached clips
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: assets/shorts_voice
-          key: shorts-voice-v1-${{ hashFiles('scripts/generate_short_video.py', 'tools/shorts_sound.py') }}
-          restore-keys: shorts-voice-v1-
+          key: shorts-voice-v2-${{ github.run_id }}
+          restore-keys: shorts-voice-v2-
 
       - name: Generate today's Short
         id: short
         # GEMINI_API_KEY: the locked Deep-Dive narrator (Orus) reads each scene;
-        # tools/shorts_sound.py adds the bed and the effects. Without the key, or
-        # when the free bucket is empty, the Short ships with music + SFX — never
-        # silent, never a lost day.
+        # tools/shorts_sound.py adds the bed and the effects. SHORTS_VOICE=required
+        # (the default): no voice → no Short. The script knows *when* the narrator's
+        # free bucket refills (tools/gemini_quota.py) and exits 6 — a pause, not a
+        # failure; narrator_resume.yml finishes the job minutes after the reset.
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_TTS_MODEL: ${{ vars.GEMINI_TTS_MODEL }}
-        run: python3 scripts/youtube_short_daily.py
+          SHORTS_VOICE: ${{ vars.SHORTS_VOICE || 'required' }}
+          NARRATOR_LANE: shorts
+          RUN_FOR_DATE: ${{ inputs.for_date }}
+        run: |
+          set +e
+          python3 scripts/youtube_short_daily.py
+          code=$?
+          set -e
+          if [ "$code" -eq 6 ]; then
+            echo "paused=yes" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          exit "$code"
+
+      - name: Save the narrator's cached clips and the quota ledger
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: assets/shorts_voice
+          key: shorts-voice-v2-${{ github.run_id }}
 
       - name: Duplicate guard (publish ledger)
         id: guard
+        if: steps.short.outputs.paused != 'yes'
         env:
           VIDEO_TITLE: ${{ steps.short.outputs.title }}
           RUN_DATE: ${{ steps.settings.outputs.run_date }}
@@ -211,7 +240,7 @@ jobs:
 
       - name: Upload to YouTube
         id: upload
-        if: steps.guard.outputs.skip != 'yes'
+        if: steps.guard.outputs.skip != 'yes' && steps.short.outputs.paused != 'yes'
         env:
           YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
           YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
@@ -294,7 +323,7 @@ jobs:
       # Never let bookkeeping turn a successful publish red: continue-on-error
       # keeps the job green and leaves a visible warning instead.
       - name: Commit the publish ledger
-        if: steps.guard.outputs.skip != 'yes'
+        if: steps.guard.outputs.skip != 'yes' && steps.short.outputs.paused != 'yes'
         continue-on-error: true
         env:
           RUN_DATE: ${{ steps.settings.outputs.run_date }}
@@ -334,6 +363,11 @@ jobs:
           SKIP: ${{ steps.guard.outputs.skip }}
           PARENT_URL: ${{ steps.short.outputs.parent_url }}
           PINNED_COMMENT: ${{ steps.short.outputs.pinned_comment }}
+          PAUSED: ${{ steps.short.outputs.paused }}
+          VOICE_REASON: ${{ steps.short.outputs.voice_reason }}
+          VOICE_RESUMES_AT: ${{ steps.short.outputs.voice_resumes_at }}
+          SOUNDTRACK: ${{ steps.short.outputs.soundtrack }}
+          NARRATOR: ${{ steps.short.outputs.narrator }}
         run: |
           RUN_DATE="${RUN_DATE:-$(date +%F)}"
           {
@@ -344,7 +378,10 @@ jobs:
             echo "| Topic | ${TOPIC:-not rendered} |"
             echo "| Title | ${TITLE:-—} |"
             echo "| Privacy | ${PRIVACY:-—} |"
-            if [ "$SKIP" = "yes" ]; then
+            if [ "$PAUSED" = "yes" ]; then
+              echo "| Result | ⏸️ Paused — no voice, no Short. $VOICE_REASON |"
+              echo "| Resumes | ${VOICE_RESUMES_AT:-at the next Pacific midnight} — the narrator-resume workflow publishes it then; nothing to press |"
+            elif [ "$SKIP" = "yes" ]; then
               echo "| Result | ⏭️ Skipped — this title is already in the publish ledger |"
             elif [ -n "$VIDEO_ID" ]; then
               # "Published" is reserved for what the read-back confirmed. A run that prints a tick
@@ -361,6 +398,8 @@ jobs:
             else
               echo "| Result | ❌ Failed — see the failing step above |"
             fi
+            [ -n "$SOUNDTRACK" ] && echo "| Soundtrack | $SOUNDTRACK |"
+            [ -n "$NARRATOR" ] && echo "| Narrator | $NARRATOR |"
             echo "| Ledger | \`logs/youtube_published.json\` |"
             echo "| Diagnosis | dispatch this workflow with \`probe_only=true\` to re-check credentials without uploading |"
             if [ -n "$PARENT_URL" ]; then

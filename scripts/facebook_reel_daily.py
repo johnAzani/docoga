@@ -165,6 +165,13 @@ def render(day, output_path=None):
     try:
         video_path = shorts_reel.render_topic(script, path, tag="fb", platform="Facebook Reels")
     except Exception as exc:
+        import shorts_sound
+        if isinstance(exc, shorts_sound.VoiceUnavailable):
+            # Not an error: the narrator's bucket is empty and the policy says no voice →
+            # no Reel. The reason names the refill time; narrator_resume.yml finishes it.
+            import gemini_quota
+            return False, exc.reason, {"paused": True, "title": script["title"], "topic": script["title"],
+                                       "resumes_at": gemini_quota.lagos(exc.resumes_at) if exc.resumes_at else ""}
         return False, "render failed (%s: %s)" % (type(exc).__name__, exc), {}
 
     video = Path(video_path)
@@ -233,11 +240,20 @@ def main(argv=None):
         return 0
 
     ok, result, info = render(day, args.output or decided.get("output_path"))
+    if not ok and info.get("paused"):
+        emit({"paused": "yes", "voice_reason": result, "voice_resumes_at": info.get("resumes_at", ""),
+              "title": info.get("title", ""), "topic": info.get("topic", "")})
+        print("⏸ no voice, no Reel: %s" % result)
+        print("::warning title=Reel paused — narrator unavailable::%s. The resumer (narrator_resume.yml) "
+              "publishes it once the bucket refills." % result)
+        return 6
     if not ok:
         print("❌ %s" % result)
         return 3
+    import gemini_quota
     emit({"video_path": result, "title": info["title"], "topic": info["topic"],
-          "bytes": info["bytes"]})
+          "bytes": info["bytes"], "soundtrack": info.get("soundtrack", ""),
+          "narrator": gemini_quota.status_line()})
     print("🎬 rendered %s (%d bytes, planned %.1fs) · sound: %s"
           % (result, info["bytes"], info["seconds_planned"], info.get("soundtrack", "?")))
     return 0

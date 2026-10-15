@@ -562,8 +562,25 @@ if bridge:
           bool(sound) and "locked_voice()" in sound and "Narrate this" not in sound
           and "voiceName" not in sound and "generativelanguage" not in sound,
           "one definition of the voice, in tools/deepdive.py, behind its fingerprint")
-    check("the soundtrack degrades to music + SFX on no key / no quota, never fails the day",
-          "music and effects only" in sound and "no GEMINI_API_KEY" in sound)
+    check("the soundtrack can still degrade to music + SFX when a person asks (SHORTS_VOICE=optional)",
+          "music and effects only" in sound and "no GEMINI_API_KEY" in sound and "def voice_policy" in sound)
+    # Owner, 15 Oct 2026, after a voiceless Short: "automatically know when the voice over
+    # resets and automatically continue at that time … I want it to be knowledgeable."
+    quota_path = os.path.join(ROOT, "tools", "gemini_quota.py")
+    quota = open(quota_path, encoding="utf-8").read() if os.path.exists(quota_path) else ""
+    check("the narrator's bucket is KNOWN: refusals are read whole, the reset is computed from the Pacific zone",
+          "def parse_refusal" in quota and "America/Los_Angeles" in quota and "def next_reset" in quota
+          and "gemini_quota.parse_refusal" in open(os.path.join(ROOT, "tools", "deepdive.py"), encoding="utf-8").read(),
+          "a per-day 429 is an appointment at the Pacific midnight, not a retryDelay")
+    check("no voice → no publish by default; the pause names the resume time (VoiceUnavailable)",
+          "class VoiceUnavailable" in sound and 'os.environ.get("SHORTS_VOICE", "required")' in sound
+          and "shorts_sound.require_voice(" in bridge)
+    resume_path = os.path.join(ROOT, ".github", "workflows", "narrator_resume.yml")
+    resume = open(resume_path, encoding="utf-8").read() if os.path.exists(resume_path) else ""
+    check("a resumer runs minutes after the reset: warms the day's lines, dispatches what is owed",
+          "just-reset" in resume and "shorts_sound.py warm" in resume and "gemini_quota.py owed" in resume
+          and "12 7 * * *" in resume and "12 8 * * *" in resume,
+          ".github/workflows/narrator_resume.yml")
 for lane in ("youtube_short_daily.py", "facebook_reel_daily.py", "post_telegram_video.py"):
     lp = os.path.join(ROOT, "scripts", lane)
     if not os.path.exists(lp):

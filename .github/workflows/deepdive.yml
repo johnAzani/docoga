@@ -160,11 +160,21 @@ jobs:
           else
             echo "no banked voice yet for $RELEASE_TAG"
           fi
+      # The narrator's quota ledger (shared with the Shorts/Reels lanes via the
+      # same cache prefix): this job's requests count towards the day's bucket,
+      # and the morning warm-up knows what the night spent.
+      - name: Restore the narrator's quota ledger
+        uses: actions/cache/restore@v4
+        with:
+          path: assets/shorts_voice
+          key: shorts-voice-v2-${{ github.run_id }}
+          restore-keys: shorts-voice-v2-
       - name: Gemini TTS (free tier · resumable · waits for a quota slot up to 35 min)
         id: tts
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_TTS_MODEL: ${{ vars.GEMINI_TTS_MODEL }}
+          NARRATOR_LANE: deepdive
         run: |
           set +e
           python3 tools/deepdive.py "$EPISODE" tts --wait-budget-min 35 --max-requests 12 2>&1 | tee /tmp/tts.log
@@ -173,21 +183,30 @@ jobs:
           BANKED="$(ls "$BUILD_DIR"/voice/c*.ok 2>/dev/null | wc -l | tr -d ' ')"
           echo "code=$code" >> "$GITHUB_OUTPUT"
           echo "banked=$BANKED" >> "$GITHUB_OUTPUT"
+          RESETS=$(python3 tools/gemini_quota.py resets-at 2>/dev/null || echo "the next Pacific midnight")
           if [ "$code" -eq 0 ]; then
             echo "complete=true" >> "$GITHUB_OUTPUT"
           elif [ "$code" -eq 5 ]; then
             # An empty free-tier bucket is a pause, not a failure. The job stays green.
             echo "complete=false" >> "$GITHUB_OUTPUT"
-            echo "::notice title=Voice paused — free quota::$BANKED/9 chunks banked. The nightly tick (03:00 WAT) continues from here; nothing to press."
+            echo "::notice title=Voice paused — free quota::$BANKED/9 chunks banked. The bucket refills at $RESETS (Lagos); the nightly tick (03:00 WAT) continues from here; nothing to press."
             {
               echo "## Deep-Dive $EPISODE — voice paused on the free quota"
               echo
-              echo "**$BANKED of 9** chunks are banked on release \`$RELEASE_TAG\`. Gemini's free tier refills daily; the 03:00 WAT tick resumes automatically. Nothing to do."
+              echo "**$BANKED of 9** chunks are banked on release \`$RELEASE_TAG\`. Gemini's free tier refills at **$RESETS** (Lagos time); the 03:00 WAT tick resumes automatically. Nothing to do."
+              echo
+              echo "- $(python3 tools/gemini_quota.py status 2>/dev/null)"
             } >> "$GITHUB_STEP_SUMMARY"
           else
             echo "complete=false" >> "$GITHUB_OUTPUT"
             echo "::error title=TTS failed::not a quota pause — see the log above"
           fi
+      - name: Save the narrator's quota ledger
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: assets/shorts_voice
+          key: shorts-voice-v2-${{ github.run_id }}
       - name: Word-sync (Vosk)
         if: steps.tts.outputs.complete == 'true'
         run: python3 tools/deepdive.py "$EPISODE" align
