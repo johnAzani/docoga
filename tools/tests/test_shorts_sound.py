@@ -158,8 +158,20 @@ class NarrateTests(unittest.TestCase):
         self.cache = patch.object(shorts_sound, "VOICE_CACHE_DIR", Path(self.tmp.name))
         self.cache.start()
         self.addCleanup(self.cache.stop)
+        self.ledger = patch.object(shorts_sound.gemini_quota, "LEDGER", Path(self.tmp.name) / "quota.json")
+        self.ledger.start()
+        self.addCleanup(self.ledger.stop)
         self.reel = shorts_reel.reel_from_topic(TOPIC, "/tmp/_t.mp4")
         self.lines = shorts_sound.narration_for(self.reel, TOPIC)
+
+    def exhausted_ledger(self, minutes_ahead):
+        """Write a ledger that says: daily bucket empty, refills in N minutes."""
+        q = shorts_sound.gemini_quota
+        now = q.now_utc()
+        from datetime import timedelta
+        q.save({"pacific_day": q.pacific_day(now), "requests": {"m": {"ok": 10, "exhausted": 1, "fail": 0, "by_lane": {}}},
+                "limit": {"m": 10}, "updated": now.isoformat(),
+                "exhausted": {"m": {"at": now.isoformat(), "resumes_at": (now + timedelta(minutes=minutes_ahead)).isoformat()}}})
 
     def test_no_key_means_music_only_with_a_reason(self):
         with patch.dict(os.environ, {"GEMINI_API_KEY": ""}), \
@@ -189,12 +201,76 @@ class NarrateTests(unittest.TestCase):
             if state["n"] == 2:
                 return "wait", 3600.0
             return real(text, voice, instruction, out)
-        with patch.dict(os.environ, {"GEMINI_API_KEY": "k", "SHORTS_TTS_WAIT_MIN": "1"}):
+        with patch.dict(os.environ, {"GEMINI_API_KEY": "k", "SHORTS_TTS_WAIT_MIN": "1", "SHORTS_VOICE": "optional"}):
             clips, dropped = quiet(shorts_sound.narrate, self.lines, tts=tts)
         self.assertEqual(clips, [])
-        self.assertIn("quota exhausted", dropped)
-        self.assertIn("music and effects only", dropped)
+        self.assertIn("daily bucket ran out", dropped)
+        self.assertIn("refills at", dropped)
+        self.assertIn("WAT", dropped, "the reason names the reset in the owner's clock")
         self.assertEqual(len(list(Path(self.tmp.name).glob("*.mp3"))), 1, "scene A stays banked")
+
+    def test_a_bucket_known_to_be_empty_is_not_even_asked(self):
+        """The ledger remembers the last daily refusal: no request goes out, the reason names the time."""
+        self.exhausted_ledger(minutes_ahead=600)
+        calls = []
+        with patch.dict(os.environ, {"GEMINI_API_KEY": "k"}):
+            clips, dropped = quiet(shorts_sound.narrate, self.lines, tts=fake_tts_factory(log=calls))
+        self.assertEqual(clips, [])
+        self.assertEqual(calls, [])
+        self.assertIn("daily bucket is empty", dropped)
+        self.assertIn("10 of 10 used", dropped)
+        self.assertIn("refills at", dropped)
+
+    def test_required_policy_waits_in_run_when_the_reset_is_near_then_continues(self):
+        self.exhausted_ledger(minutes_ahead=15)
+        slept = []
+        with patch.dict(os.environ, {"GEMINI_API_KEY": "k", "SHORTS_VOICE": "required"}):
+            clips, dropped = quiet(shorts_sound.narrate, self.lines, tts=fake_tts_factory(), sleep=slept.append)
+        self.assertEqual(dropped, "")
+        self.assertEqual(len(clips), len(self.lines))
+        self.assertTrue(slept and 14 * 60 < slept[0] < 17 * 60, "slept until the reset (+ a margin): %r" % slept)
+
+    def test_the_in_run_wait_fits_the_lane_jobs_timeout(self):
+        self.assertLessEqual(shorts_sound.VOICE_RESUME_WINDOW_MIN, 20, "youtube/facebook jobs time out at 30 min")
+
+    def test_a_far_reset_is_not_waited_for_in_run(self):
+        self.exhausted_ledger(minutes_ahead=14 * 60)
+        slept = []
+        with patch.dict(os.environ, {"GEMINI_API_KEY": "k", "SHORTS_VOICE": "required"}):
+            clips, dropped = quiet(shorts_sound.narrate, self.lines, tts=fake_tts_factory(), sleep=slept.append)
+        self.assertEqual(clips, [])
+        self.assertEqual(slept, [])
+        self.assertRegex(dropped, r"in 1[34] h")
+
+    def test_required_policy_raises_with_the_resume_time(self):
+        self.exhausted_ledger(minutes_ahead=14 * 60)
+        with patch.dict(os.environ, {"GEMINI_API_KEY": "k", "SHORTS_VOICE": "required"}):
+            clips, dropped = quiet(shorts_sound.narrate, self.lines, tts=fake_tts_factory())
+            with self.assertRaises(shorts_sound.VoiceUnavailable) as ctx:
+                quiet(shorts_sound.require_voice, clips, dropped)
+        self.assertIsNotNone(ctx.exception.resumes_at)
+        self.assertIn("refills at", ctx.exception.reason)
+
+    def test_optional_policy_lets_music_only_through(self):
+        self.exhausted_ledger(minutes_ahead=14 * 60)
+        with patch.dict(os.environ, {"GEMINI_API_KEY": "k", "SHORTS_VOICE": "optional"}):
+            clips, dropped = quiet(shorts_sound.narrate, self.lines, tts=fake_tts_factory())
+            quiet(shorts_sound.require_voice, clips, dropped)   # no raise
+        self.assertEqual(clips, [])
+
+    def test_the_default_policy_is_required(self):
+        with patch.dict(os.environ, {"SHORTS_VOICE": ""}):
+            os.environ.pop("SHORTS_VOICE")
+            self.assertEqual(shorts_sound.voice_policy(), "required")
+
+    def test_warm_caches_the_days_lines_without_rendering(self):
+        from datetime import date
+        calls = []
+        with patch.dict(os.environ, {"GEMINI_API_KEY": "k"}):
+            clips, dropped = quiet(shorts_sound.warm, date(2026, 10, 16), tts=fake_tts_factory(log=calls))
+        self.assertEqual(dropped, "")
+        self.assertEqual(len(calls), len(clips))
+        self.assertGreater(len(list(Path(self.tmp.name).glob("*.mp3"))), 0)
 
     def test_a_short_wait_is_waited_out(self):
         state = {"n": 0}
@@ -372,8 +448,11 @@ class WorkflowTests(unittest.TestCase):
         env = steps["Generate today's Short"].get("env") or {}
         self.assertEqual(env.get("GEMINI_API_KEY"), "${{ secrets.GEMINI_API_KEY }}")
         cache = steps["Restore the narrator's cached clips"]
-        self.assertTrue(cache["uses"].startswith("actions/cache@"))
+        self.assertTrue(cache["uses"].startswith("actions/cache/restore@"))
         self.assertEqual(cache["with"]["path"], "assets/shorts_voice")
+        save = steps["Save the narrator's cached clips and the quota ledger"]
+        self.assertTrue(save["uses"].startswith("actions/cache/save@"))
+        self.assertEqual(save["if"], "always()", "what was synthesised is kept even when the run pauses")
 
     def test_facebook_render_steps_have_the_key_and_a_cache(self):
         steps = self.steps("facebook_autopost.yml")
@@ -382,13 +461,49 @@ class WorkflowTests(unittest.TestCase):
                 env = steps[name].get("env") or {}
                 self.assertEqual(env.get("GEMINI_API_KEY"), "${{ secrets.GEMINI_API_KEY }}")
         cache = steps["Reels — restore the narrator's cached clips"]
-        self.assertTrue(cache["uses"].startswith("actions/cache@"))
+        self.assertTrue(cache["uses"].startswith("actions/cache/restore@"))
         self.assertEqual(cache["with"]["path"], "assets/shorts_voice")
+        names = list(steps)
+        self.assertGreater(names.index("Reels — save the narrator's cached clips and the quota ledger"),
+                           names.index("Manual post (text / photo / video / reel)"),
+                           "the save sits below both render paths")
 
-    def test_the_two_lanes_share_one_cache_key(self):
-        yt = self.steps("youtube_scheduled.yml")["Restore the narrator's cached clips"]["with"]["key"]
-        fb = self.steps("facebook_autopost.yml")["Reels — restore the narrator's cached clips"]["with"]["key"]
-        self.assertEqual(yt, fb)
+    def test_every_lane_shares_one_cache_prefix(self):
+        """Shorts, Reels, Deep-Dive and the resumer restore the newest entry under one prefix
+        and save their own — that is how the clips and the quota ledger travel between lanes."""
+        yt = self.steps("youtube_scheduled.yml")["Restore the narrator's cached clips"]["with"]
+        fb = self.steps("facebook_autopost.yml")["Reels — restore the narrator's cached clips"]["with"]
+        dd = self.steps("deepdive.yml")["Restore the narrator's quota ledger"]["with"]
+        rs = self.steps("narrator_resume.yml")["Restore the narrator's cached clips and the quota ledger"]["with"]
+        for w in (yt, fb, dd, rs):
+            self.assertEqual(w["restore-keys"], "shorts-voice-v2-")
+            self.assertEqual(w["key"], "shorts-voice-v2-${{ github.run_id }}", "a fresh key per run → always saved")
+
+    def test_voice_is_required_on_both_scheduled_lanes(self):
+        yt = self.steps("youtube_scheduled.yml")["Generate today's Short"]
+        fb = self.steps("facebook_autopost.yml")["Reels — render"]
+        for step in (yt, fb):
+            self.assertEqual(step["env"]["SHORTS_VOICE"], "${{ vars.SHORTS_VOICE || 'required' }}")
+            self.assertIn('-eq 6', step["run"], "exit 6 = paused, handled by name")
+            self.assertIn("paused=yes", step["run"])
+
+    def test_a_paused_short_never_reaches_the_upload(self):
+        steps = self.steps("youtube_scheduled.yml")
+        for name in ("Duplicate guard (publish ledger)", "Upload to YouTube", "Commit the publish ledger"):
+            self.assertIn("steps.short.outputs.paused != 'yes'", steps[name]["if"], name)
+        summary = steps["Write the run summary"]["run"]
+        self.assertIn("Paused — no voice, no Short", summary)
+        self.assertIn("| Soundtrack |", summary)
+        self.assertIn("| Narrator |", summary)
+
+    def test_a_paused_reel_never_reaches_the_publish(self):
+        steps = self.steps("facebook_autopost.yml")
+        self.assertIn("steps.reel_render.outputs.paused != 'yes'", steps["Reels — publish"]["if"])
+        record = steps["Record what this run did"]["run"]
+        self.assertIn("paused — no voice, no Reel", record)
+        manual = steps["Manual post (text / photo / video / reel)"]["run"]
+        self.assertIn("-eq 6", manual)
+        self.assertIn("SHORTS_VOICE=optional", manual, "the manual path tells a person how to ship music-only on purpose")
 
 
 if __name__ == "__main__":

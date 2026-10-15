@@ -1,0 +1,155 @@
+name: Narrator — warm up and resume at the quota reset
+
+# Owner, 15 Oct 2026: "I want to automatically know when the voice over resets
+# and automatically continue at that time instead of a retry cron three hours
+# after. I want it to be knowledgeable."
+#
+# Gemini's free daily buckets refill at midnight Pacific time. This workflow runs
+# a few minutes after that moment and does two things:
+#
+#   1. WARM UP — synthesise and cache today's Shorts/Reels narration (six lines,
+#      the locked narrator) while the bucket is full, so the evening Short and
+#      the morning Reel need no fresh quota at all.
+#   2. RESUME — if a scheduled Short or Reel is owed (its slot passed and nothing
+#      has been published since — usually because the narrator's bucket was
+#      empty and the lane paused rather than ship voiceless), dispatch that lane
+#      now, for the day it was owed.
+#
+# Two cron lines because "midnight Pacific" is 07:00 UTC in summer and 08:00 UTC
+# in winter. `tools/gemini_quota.py just-reset` computes the real reset from the
+# America/Los_Angeles zone and lets exactly one of the two runs proceed; the other
+# stands down in seconds. No hour is hard-coded in the code.
+
+on:
+  schedule:
+    - cron: '12 7 * * *'    # 00:12 Pacific daylight time (= 08:12 WAT)
+    - cron: '12 8 * * *'    # 00:12 Pacific standard time (= 09:12 WAT)
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Run even if a Pacific midnight did not just pass (warm the cache now; resume anything owed)'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  actions: write      # dispatches the Shorts / Reels workflows when one is owed
+
+concurrency:
+  group: narrator-resume
+  cancel-in-progress: false
+
+jobs:
+  resume:
+    name: Reset check → warm the narrator → resume what is owed
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Did a Pacific midnight just pass?
+        id: reset
+        env:
+          IN_FORCE: ${{ inputs.force }}
+        run: |
+          set +e
+          python3 tools/gemini_quota.py just-reset --window 45
+          code=$?
+          set -e
+          if [ "$code" -eq 0 ] || [ "$IN_FORCE" = "true" ]; then
+            echo "go=yes" >> "$GITHUB_OUTPUT"
+          else
+            echo "go=no" >> "$GITHUB_OUTPUT"
+            echo "not the reset minute for this season's clocks — the other cron line is. Standing down."
+          fi
+
+      - name: Install MotionStudio deps (ffmpeg + Inter) and the renderer's libraries
+        if: steps.reset.outputs.go == 'yes'
+        run: |
+          bash tools/install_motionstudio_deps.sh
+          python3 -m pip install --quiet -r requirements-youtube.txt
+
+      - name: Restore the narrator's cached clips and the quota ledger
+        if: steps.reset.outputs.go == 'yes'
+        uses: actions/cache/restore@v4
+        with:
+          path: assets/shorts_voice
+          key: shorts-voice-v2-${{ github.run_id }}
+          restore-keys: shorts-voice-v2-
+
+      - name: Warm up — today's narration into the cache (no render, no publish)
+        id: warm
+        if: steps.reset.outputs.go == 'yes'
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_TTS_MODEL: ${{ vars.GEMINI_TTS_MODEL }}
+          NARRATOR_LANE: warm-up
+          SHORTS_VOICE: optional     # a warm-up that cannot speak is a line in the summary, not a red run
+        run: |
+          set +e
+          python3 tools/shorts_sound.py warm 2>&1 | tee /tmp/warm.log
+          code=${PIPESTATUS[0]}
+          set -e
+          echo "ok=$([ "$code" -eq 0 ] && echo yes || echo no)" >> "$GITHUB_OUTPUT"
+          [ "$code" -eq 0 ] || echo "::warning title=Warm-up could not speak::$(tail -1 /tmp/warm.log)"
+
+      # Saved here, before anything is dispatched, so the lanes that start next
+      # restore a cache that already holds today's lines.
+      - name: Save the narrator's cached clips and the quota ledger
+        if: steps.reset.outputs.go == 'yes'
+        uses: actions/cache/save@v4
+        with:
+          path: assets/shorts_voice
+          key: shorts-voice-v2-${{ github.run_id }}
+
+      - name: What is owed? (a slot passed, nothing published since)
+        id: owed
+        if: steps.reset.outputs.go == 'yes'
+        run: python3 tools/gemini_quota.py owed | tee /tmp/owed.log
+
+      - name: Resume the Short that is owed
+        if: steps.reset.outputs.go == 'yes' && steps.owed.outputs.owed_shorts == 'yes'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          FOR_DATE=$(sed -n 's/^shorts //p' /tmp/owed.log | tail -1)
+          gh workflow run youtube_scheduled.yml --ref "$BRANCH" -f for_date="$FOR_DATE"
+          echo "dispatched youtube_scheduled.yml for the Short of $FOR_DATE"
+
+      - name: Resume the Reel that is owed
+        if: steps.reset.outputs.go == 'yes' && steps.owed.outputs.owed_reel == 'yes'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          FOR_DATE=$(sed -n 's/^reel //p' /tmp/owed.log | tail -1)
+          gh workflow run facebook_autopost.yml --ref "$BRANCH" -f mode=reel -f for_date="$FOR_DATE"
+          echo "dispatched facebook_autopost.yml (mode=reel) for the Reel of $FOR_DATE"
+
+      - name: Run summary
+        if: always()
+        env:
+          GO: ${{ steps.reset.outputs.go }}
+          WARM_OK: ${{ steps.warm.outputs.ok }}
+          OWED_SHORTS: ${{ steps.owed.outputs.owed_shorts }}
+          OWED_REEL: ${{ steps.owed.outputs.owed_reel }}
+        run: |
+          {
+            echo "## Narrator — $(date -u +%FT%TZ)"
+            echo
+            if [ "$GO" != "yes" ]; then
+              echo "- ⏭ not the reset minute for this season's clocks — stood down (the other cron line runs it)"
+            else
+              echo "- $(python3 tools/gemini_quota.py status 2>/dev/null || echo 'narrator bucket: unknown')"
+              echo "- warm-up: $([ "$WARM_OK" = "yes" ] && echo '✅ today'"'"'s lines are cached' || echo '⚠️ could not speak — see the warning')"
+              echo "- owed Short: ${OWED_SHORTS:-no} · owed Reel: ${OWED_REEL:-no}$([ "$OWED_SHORTS" = "yes" ] || [ "$OWED_REEL" = "yes" ] && echo ' — dispatched; see the lane'"'"'s own run')"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

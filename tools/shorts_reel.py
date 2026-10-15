@@ -191,8 +191,10 @@ def render_topic(topic, out_path, tag="short", platform="YouTube Shorts", sound=
     Sound (tools/shorts_sound.py) is voice-first: the locked narrator reads each
     scene, the scene stretches to the read, MotionStudio renders those timings,
     and the mix (voice + ducked bed + SFX) replaces the engine's empty track.
-    Without a key or quota the clip still ships with music and effects — never
-    silent (owner, 15 Oct 2026).
+    No voice → no publish under the default policy (SHORTS_VOICE=required):
+    VoiceUnavailable names when the narrator's bucket refills, and the lane
+    resumes then. SHORTS_VOICE=optional ships music + SFX instead. Silent is
+    never an outcome (owner, 15 Oct 2026).
     """
     problems = ms.check_environment()
     if problems:
@@ -206,6 +208,7 @@ def render_topic(topic, out_path, tag="short", platform="YouTube Shorts", sound=
         import shorts_sound
         print("── 0. NARRATION (%s) ──" % shorts_sound._deepdive().LOCKED_VOICE_NAME)
         clips, dropped = shorts_sound.narrate(shorts_sound.narration_for(reel, topic))
+        shorts_sound.require_voice(clips, dropped)   # raises VoiceUnavailable under the default policy
         if clips:
             total = shorts_sound.fit_scenes(reel, clips)
             print("  scenes stretched to the read: %.1fs" % total)

@@ -55,6 +55,7 @@ from PIL import Image, ImageDraw, ImageEnhance, ImageFont, ImageOps
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 import motionstudio as ms  # noqa: E402  — palette, Inter, ffmpeg
+import gemini_quota  # noqa: E402  — the narrator's bucket: which quota, how much, when it refills
 
 W, H, FPS = 1920, 1080, 30
 NAVY, PANEL, WHITE, MUTED, FAINT = ms.NAVY, ms.PANEL, ms.WHITE, ms.MUTED, ms.FAINT
@@ -326,17 +327,31 @@ def gemini_tts(text, voice, instruction, out_mp3, models=None):
             with urllib.request.urlopen(req, timeout=240) as r:
                 resp = json.loads(r.read())
         except urllib.error.HTTPError as e:
-            last = e.read().decode("utf-8", "replace")[:600]
+            full = e.read().decode("utf-8", "replace")
+            last = full[:600]
             if e.code == 429:
-                return "wait", parse_retry_seconds(last) or 3600.0
+                # Read the whole refusal: which bucket (per-minute or per-day), its limit,
+                # and therefore *when* the next request can succeed. A per-day refusal
+                # is an appointment at the Pacific midnight, not a number of seconds.
+                refusal = gemini_quota.parse_refusal(full)
+                gemini_quota.note_request(model, "exhausted", refusal)
+                wait = gemini_quota.wait_seconds(refusal)
+                if refusal["scope"] == "day":
+                    print("  quota: the free DAILY bucket for %s is empty%s — it refills at %s"
+                          % (model, (" (limit %d/day)" % refusal["limit"]) if refusal.get("limit") else "",
+                             gemini_quota.lagos(gemini_quota.next_reset())))
+                return "wait", wait
             if e.code == 404:
                 print("  model %s not available here — trying the next" % model)
                 continue
             print("  HTTP %d from %s: %s" % (e.code, model, last[:200]))
+            gemini_quota.note_request(model, "fail")
             return "fail", 0
         except Exception as exc:  # network
             print("  %s: %s" % (type(exc).__name__, exc))
+            gemini_quota.note_request(model, "fail")
             return "fail", 0
+        gemini_quota.note_request(model, "ok")
         try:
             inline = resp["candidates"][0]["content"]["parts"][0]["inlineData"]
             pcm = base64.b64decode(inline["data"])
@@ -519,8 +534,11 @@ def stage_tts(ep, args):
                     time.sleep(wait + 2)
                     continue
                 voice_manifest(ep)
-                print("  quota exhausted and the wait (%.0fs) exceeds the budget. %d of %d chunks are banked; "
-                      "re-run when the daily bucket refills." % (wait, len(list(ep.voice_dir.glob("c*.ok"))), ep.n))
+                print("  quota exhausted and the wait (%s) exceeds the budget. %d of %d chunks are banked; "
+                      "the nightly run continues after the bucket refills at %s."
+                      % (gemini_quota.human_wait(wait), len(list(ep.voice_dir.glob("c*.ok"))), ep.n,
+                         gemini_quota.lagos(gemini_quota.next_reset())))
+                print("  " + gemini_quota.status_line())
                 sys.exit(5)
             time.sleep(3)
         else:

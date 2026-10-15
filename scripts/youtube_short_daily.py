@@ -42,12 +42,44 @@ def describe(script, link=None):
     )
 
 
+def write_outputs(outputs):
+    github_output = os.environ.get("GITHUB_OUTPUT")
+    if github_output:
+        with open(github_output, "a", encoding="utf-8") as output:
+            for key, value in outputs.items():
+                if "\n" in str(value):
+                    output.write(f"{key}<<DOCOGA_EOF\n{value}\nDOCOGA_EOF\n")
+                else:
+                    output.write(f"{key}={value}\n")
+    else:
+        for key, value in outputs.items():
+            print(f"{key}={value}")
+
+
 def main():
     run_date = datetime.now(ZoneInfo("Africa/Lagos")).date()
+    # RUN_FOR_DATE: the resumer finishing a Short that was owed (the narrator's bucket
+    # was empty at 18:00) renders *that* day's rotation topic, published today.
+    for_date = os.environ.get("RUN_FOR_DATE", "").strip()
+    if for_date:
+        run_date = datetime.fromisoformat(for_date).date()
+        print(f"rendering the rotation topic for {run_date} (RUN_FOR_DATE)")
     script = shorts_reel.topic_for(run_date)
     output_path = shorts_reel.default_output_path(run_date, prefix="docoga_short")
-    video = Path(shorts_reel.render_topic(script, output_path, tag="yt",
-                                          platform="YouTube Shorts"))
+    try:
+        video = Path(shorts_reel.render_topic(script, output_path, tag="yt",
+                                              platform="YouTube Shorts"))
+    except shorts_sound.VoiceUnavailable as exc:
+        # Not an error: no voice → no Short (SHORTS_VOICE=required). The reason names
+        # when the narrator's bucket refills; narrator_resume.yml publishes it then.
+        import gemini_quota
+        when = gemini_quota.lagos(exc.resumes_at) if exc.resumes_at else "the next reset"
+        write_outputs({"paused": "yes", "voice_reason": exc.reason, "voice_resumes_at": when,
+                       "topic": script["title"], "title": f"{script['title']} #Shorts"})
+        print(f"⏸ no voice, no Short: {exc.reason}")
+        print(f"::warning title=Short paused — narrator unavailable::{exc.reason}. "
+              "The resumer (narrator_resume.yml) publishes it once the bucket refills.")
+        return 6
 
     if video.suffix.lower() != ".mp4" or not video.is_file() or video.stat().st_size < 10_000:
         raise RuntimeError(f"Video generation did not produce a usable MP4: {video}")
@@ -73,22 +105,20 @@ def main():
         # from the YouTube app in one paste.
         "pinned_comment": deepdive_links.pinned_comment(link),
         "parent_url": link[1] if link else "",
+        "narrator": gemini_quota_status(),
     }
-
-    github_output = os.environ.get("GITHUB_OUTPUT")
-    if github_output:
-        with open(github_output, "a", encoding="utf-8") as output:
-            for key, value in outputs.items():
-                if "\n" in str(value):
-                    output.write(f"{key}<<DOCOGA_EOF\n{value}\nDOCOGA_EOF\n")
-                else:
-                    output.write(f"{key}={value}\n")
-    else:
-        for key, value in outputs.items():
-            print(f"{key}={value}")
-
+    write_outputs(outputs)
     print(f"Prepared {outputs['title']} ({video.stat().st_size} bytes)")
+    return 0
+
+
+def gemini_quota_status():
+    try:
+        import gemini_quota
+        return gemini_quota.status_line()
+    except Exception as exc:  # the summary must never fail the publish
+        return "narrator bucket: unknown (%s)" % exc
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
