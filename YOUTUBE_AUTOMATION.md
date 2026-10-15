@@ -341,3 +341,12 @@ log, the `::error` annotation, the run summary and the issue body alike.
   policy decision for the owner, not a bug fix to slip into an infrastructure commit;
 * no `--license`, `--publishAt`, localizations, or scheduling: one Short, twice a
   week, public, now.
+
+## The soundtrack (voice, bed, effects)
+
+Since 15 Oct 2026 every Short is scored by `tools/shorts_sound.py` — the locked Deep-Dive
+narrator (Orus) reads each scene, scenes stretch to the read, `tools/soundkit.py` adds the
+ducked bed and the effects, and a silent file is refused. The full description lives in
+`FACEBOOK_AUTOMATION.md` §9 "The soundtrack" (one render serves both lanes). The render step
+carries `GEMINI_API_KEY`; without it, or with an empty free bucket, the Short ships with
+music + SFX and the summary says `music + SFX, no voice (...)`.

@@ -23,6 +23,7 @@ for _p in (SCRIPTS_DIR, TOOLS_DIR):
 
 import shorts_reel  # noqa: E402  — MotionStudio bridge (the only renderer this lane knows)
 import deepdive_links  # noqa: E402  — which Deep-Dive this Short trails, and its watch link
+import shorts_sound  # noqa: E402  — the soundtrack report, for the run summary
 
 
 def describe(script, link=None):
@@ -60,6 +61,7 @@ def main():
 
     outputs = {
         "video_path": str(video),
+        "soundtrack": shorts_sound.summary_line(video),
         "title": f"{script['title']} #Shorts",
         # The rotation topic without the #Shorts suffix — this is what the
         # publish ledger records, so the ledger reads as plain English.

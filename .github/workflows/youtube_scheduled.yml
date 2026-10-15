@@ -164,8 +164,24 @@ jobs:
             python3 tools/yt_publish.py --probe
           } 2>&1 | tee /tmp/yt_preflight.log
 
+      # The narrator's clips are cached by text hash: six topics in rotation cost
+      # Gemini's free bucket once, then every later render is quota-free.
+      - name: Restore the narrator's cached clips
+        uses: actions/cache@v4
+        with:
+          path: assets/shorts_voice
+          key: shorts-voice-v1-${{ hashFiles('scripts/generate_short_video.py', 'tools/shorts_sound.py') }}
+          restore-keys: shorts-voice-v1-
+
       - name: Generate today's Short
         id: short
+        # GEMINI_API_KEY: the locked Deep-Dive narrator (Orus) reads each scene;
+        # tools/shorts_sound.py adds the bed and the effects. Without the key, or
+        # when the free bucket is empty, the Short ships with music + SFX — never
+        # silent, never a lost day.
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_TTS_MODEL: ${{ vars.GEMINI_TTS_MODEL }}
         run: python3 scripts/youtube_short_daily.py
 
       - name: Duplicate guard (publish ledger)

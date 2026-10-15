@@ -8,6 +8,8 @@ assets/telegram/
 # Rendered Shorts are build output, not source: 1–6 MB per render and
 # regenerated from the same date-seeded templates on every run.
 assets/videos/
+# The narrator's cached clips (actions/cache carries them between CI runs).
+assets/shorts_voice/
 
 # Python bytecode
 __pycache__/

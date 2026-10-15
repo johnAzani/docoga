@@ -338,6 +338,41 @@ decision step deliberately does **not** import the renderer, so a machine that
 cannot render can still answer "is today a reel day?" — with a warning naming the
 topic it could not read, instead of a traceback.
 
+### The soundtrack — voice, bed, effects (since 15 Oct 2026)
+
+The first Reel (run #10) went out **silent**: MotionStudio encodes an empty
+`anullsrc` track, and nobody had put sound back since the hand-made
+`tools/make_reels.py` days. Owner: the old Reels "have the voice-over, the sound
+effects, the background sounds". `tools/shorts_sound.py` now scores every render
+the bridge makes — the YouTube Short, the Facebook Reel and the Telegram video are
+one render, so they got it at once:
+
+* **Voice** — the Deep-Dive narrator: Gemini TTS, **Orus**, the locked instruction.
+  `shorts_sound.py` never restates the voice; it imports `deepdive.locked_voice()`
+  and calls `deepdive.gemini_tts()`, so the fingerprint tests keep guarding one
+  definition. One clip per scene (hook, four tips, FREE), six requests per Short.
+* **Voice-first timing** — each scene stretches to its read
+  (`fit_scenes`: lead 0.30 s + clip + tail 0.45 s) *before* MotionStudio renders, so
+  the words and the type land together. Hard cap 45 s (Shorts allow 60, Reels 90).
+* **Bed + SFX** — `tools/soundkit.py`: the synthesized navy-mood bed ducked under
+  speech (~15 dB(A) under, ~7 in gaps — the DD2 balance the owner approved), a hit on
+  the hook, a whoosh into every tip, a tick as the check pops, a riser into FREE and
+  a stinger under it. Loudness-normalised to −16 LUFS for phones.
+* **Free plan, always** — a 429 is waited out if the API's retry time fits the
+  budget (`SHORTS_TTS_WAIT_MIN`, default 8); otherwise, or with no key, the clip
+  ships **music + SFX only** and says so. The voice is all-or-nothing per clip.
+  Clips are cached by text hash (`assets/shorts_voice/`, `actions/cache` keyed on the
+  rotation), so six topics cost quota once.
+* **Never silent** — `assert_not_silent` refuses a finished file under −45 dBFS. A
+  silent Short/Reel is a red run, not a quiet post.
+* **The report** — `<video>.audio.json` beside the mp4 (lines spoken, separation,
+  cue sheet, dropped reason); the summary line reads
+  `voice Orus · 6 lines · bed 14 dB(A) under speech · 11 cues`.
+
+Secrets/vars the render steps carry: `GEMINI_API_KEY` (already set for the
+Deep-Dive lane), `GEMINI_TTS_MODEL` (optional). `SHORTS_SOUND=off` renders the silent
+picture only (tests, a laptop without ffmpeg audio).
+
 ## 10. Changing it
 
 | to change | edit |

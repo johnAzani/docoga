@@ -180,20 +180,46 @@ def default_output_path(day, prefix="docoga_short"):
     return DEFAULT_OUTPUT_DIR / ("%s_%s.mp4" % (prefix, day.strftime("%Y%m%d")))
 
 
-def render_topic(topic, out_path, tag="short", platform="YouTube Shorts"):
-    """Render through MotionStudio. Returns the Path; raises if QA refuses or encode fails."""
+def sound_enabled():
+    """SHORTS_SOUND=off renders the silent picture only (tests, a laptop without ffmpeg audio)."""
+    return os.environ.get("SHORTS_SOUND", "on").strip().lower() not in ("off", "0", "no", "false")
+
+
+def render_topic(topic, out_path, tag="short", platform="YouTube Shorts", sound=None):
+    """Render through MotionStudio, then score it. Returns the Path; raises if QA refuses.
+
+    Sound (tools/shorts_sound.py) is voice-first: the locked narrator reads each
+    scene, the scene stretches to the read, MotionStudio renders those timings,
+    and the mix (voice + ducked bed + SFX) replaces the engine's empty track.
+    Without a key or quota the clip still ships with music and effects — never
+    silent (owner, 15 Oct 2026).
+    """
     problems = ms.check_environment()
     if problems:
         raise RuntimeError("MotionStudio cannot render here: " + "; ".join(problems))
+    sound = sound_enabled() if sound is None else sound
     out_path = Path(out_path).resolve()
     out_path.parent.mkdir(parents=True, exist_ok=True)
     reel = reel_from_topic(topic, out_path, platform=platform)
+    clips, dropped = [], ""
+    if sound:
+        import shorts_sound
+        print("── 0. NARRATION (%s) ──" % shorts_sound._deepdive().LOCKED_VOICE_NAME)
+        clips, dropped = shorts_sound.narrate(shorts_sound.narration_for(reel, topic))
+        if clips:
+            total = shorts_sound.fit_scenes(reel, clips)
+            print("  scenes stretched to the read: %.1fs" % total)
+        else:
+            print("  ⚠️  " + dropped)
     ok = ms.build(reel, tag)
     if not ok:
         raise RuntimeError("MotionStudio refused to encode '%s' — the video QA engine found "
                            "violations it could not auto-fix (see the log above)" % topic["title"])
     if not out_path.is_file() or out_path.stat().st_size < 10_000:
         raise RuntimeError("MotionStudio reported success but %s is missing or tiny" % out_path)
+    if sound:
+        print("── 7. SOUNDTRACK ──")
+        shorts_sound.score(reel, clips, out_path, dropped_reason=dropped)
     return out_path
 
 
