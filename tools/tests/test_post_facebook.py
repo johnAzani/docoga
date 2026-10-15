@@ -43,6 +43,8 @@ os.environ.setdefault("DOCOGA_LOG_DIR", tempfile.mkdtemp(prefix="docoga-social-l
 import fb_publish  # noqa: E402
 import generate_facebook_content  # noqa: E402
 import post_facebook  # noqa: E402
+import social_card  # noqa: E402
+from PIL import Image  # noqa: E402
 
 TOKEN = "EAAB" + "x" * 60          # shaped like a real token; never printed
 PAGE = "102466208923830"
@@ -111,6 +113,15 @@ class Base(unittest.TestCase):
         self.env.start()
         self.addCleanup(self.env.stop)
 
+    def card(self, text):
+        """A real brand card in a temp dir — the only kind of photo the lane may post."""
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        out = Path(tmp.name) / "card.jpg"
+        with redirect_stdout(io.StringIO()):
+            social_card.render(text, out, kicker="test")
+        return out
+
     def run_poster(self, graph, argv=()):
         with patch.object(fb_publish.requests, "get", graph.get), \
              patch.object(fb_publish.requests, "post", graph.post), \
@@ -136,9 +147,7 @@ class PostingTests(Base):
         """The silent one: `message` on /photos is accepted and ignored, so the
         photo went out with no words and the run was green."""
         graph = Graph({"/photos": ok({"id": "p1", "post_id": "PAGE_p1"})})
-        photo = ROOT / "brand" / "favicon-512.png"
-        if not photo.exists():
-            self.skipTest("brand asset missing")
+        photo = self.card("Nine tools, one page")
         code, log = self.run_poster(graph, ["--date", "2026-10-12", "--text", "Nine tools, one page",
                                             "--photo-file", str(photo)])
         self.assertEqual(code, 0, log)
@@ -151,9 +160,7 @@ class PostingTests(Base):
 
     def test_a_refused_photo_still_posts_the_words(self):
         graph = Graph({"/photos": api_error(353, "Unexpected image data"), "/feed": ok({"id": "PAGE_2"})})
-        photo = ROOT / "brand" / "favicon-512.png"
-        if not photo.exists():
-            self.skipTest("brand asset missing")
+        photo = self.card("Notice to quit in minutes")
         code, log = self.run_poster(graph, ["--date", "2026-10-12", "--text", "Notice to quit in minutes",
                                             "--photo-file", str(photo)])
         self.assertEqual(code, 0, log)
@@ -162,10 +169,19 @@ class PostingTests(Base):
         self.assertTrue(any("/feed" in u for u in graph.urls("POST")), "the text fallback must fire")
         self.assertIn("353", log, "Meta's own error code belongs in the log, not only the run body")
 
+    def test_a_brand_folder_photo_is_refused_before_it_reaches_the_page(self):
+        graph = Graph({"/photos": ok({"id": "p1", "post_id": "PAGE_p1"}), "/feed": ok({"id": "PAGE_3"})})
+        code, log = self.run_poster(graph, ["--date", "2026-10-12", "--text", "Rent receipt, no lawyer fees",
+                                            "--photo-file", "brand/comparison.png"])
+        self.assertEqual(code, 0, log)
+        self.assertFalse(any("/photos" in u for u in graph.urls("POST")), "brand/ must never be uploaded")
+        self.assertTrue(any("/feed" in u for u in graph.urls("POST")), "the words still go out")
+        self.assertIn("not post art", log)
+
     def test_a_missing_photo_file_is_not_a_failed_day(self):
         graph = Graph({"/feed": ok({"id": "PAGE_3"})})
         code, log = self.run_poster(graph, ["--date", "2026-10-12", "--text", "Today's copy",
-                                            "--photo-file", "brand/does-not-exist.png"])
+                                            "--photo-file", "assets/facebook/does-not-exist.jpg"])
         self.assertEqual(code, 0, log)
         self.assertIn("not found", log)
 
@@ -323,17 +339,41 @@ class ContentTests(unittest.TestCase):
         self.assertIn("#DocOga", content["message"])
         self.assertNotIn("\\#", content["message"], "hashtags need no escaping outside MarkdownV2")
 
-    def test_the_white_logo_is_never_offered_to_facebook(self):
-        """brand/official-logo-white.png is Telegram's hero image because Telegram
-        is dark; on a white Facebook feed it is a blank card."""
-        self.assertNotIn("brand/official-logo-white.png", generate_facebook_content.FB_PHOTO_IMAGES)
+    def test_the_photo_is_the_rendered_brand_card_never_a_brand_file(self):
+        """Owner, 15 Oct 2026, looking at brand/comparison.png on the Page: "this is
+        not my brand style". The photo is now the day's copy on the navy card."""
+        with tempfile.TemporaryDirectory() as tmp, \
+             patch.object(generate_facebook_content, "ASSETS_DIR", Path(tmp)), \
+             redirect_stdout(io.StringIO()):
+            content = generate_facebook_content.generate(date(2026, 10, 15), write=True)
+            self.assertTrue(content["send_photo"])
+            self.assertTrue(content["photo_path"].endswith("facebook_card_2026-10-15.jpg"))
+            self.assertFalse(social_card.is_banned_photo(content["photo_path"]))
+            path = Path(content["photo_path"])
+            self.assertTrue(path.exists())
+            size = path.stat().st_size
+            self.assertGreaterEqual(size, generate_facebook_content.MIN_PHOTO_BYTES)
+            self.assertLessEqual(size, generate_facebook_content.MAX_PHOTO_BYTES)
+            with Image.open(path) as im:
+                self.assertEqual(im.size, (social_card.CARD_W, social_card.CARD_H))
+                self.assertEqual(im.format, "JPEG")
+                # navy ground at the corner — the brand card, not a white logo sheet
+                r, g, b = im.convert("RGB").getpixel((10, 10))
+                self.assertLess(r + g + b, 120, "the card ground must be the deep navy")
 
-    def test_every_offered_image_exists_and_fits_the_upload_cap(self):
-        for rel in generate_facebook_content.FB_PHOTO_IMAGES:
-            path = ROOT / rel
-            self.assertTrue(path.exists(), "%s is listed but missing — add it or drop the entry" % rel)
-            self.assertLessEqual(path.stat().st_size, generate_facebook_content.MAX_PHOTO_BYTES,
-                                 "%s would be rejected by the API after the guard ran" % rel)
+    def test_the_generator_no_longer_knows_the_brand_folder(self):
+        source = (ROOT / "scripts" / "generate_facebook_content.py").read_text(encoding="utf-8")
+        self.assertNotIn("FB_PHOTO_IMAGES", source)
+        self.assertNotIn("brand/official", source)
+        self.assertNotIn("brand/comparison", source)
+        tg_source = (ROOT / "scripts" / "generate_telegram_content.py").read_text(encoding="utf-8")
+        self.assertNotIn("PHOTO_POST_IMAGES", tg_source)
+        self.assertNotIn("brand/comparison", tg_source)
+
+    def test_a_brand_file_handed_in_by_hand_is_refused_and_the_words_still_post(self):
+        for rel in ("brand/comparison.png", "brand/official-4.png", str(ROOT / "brand" / "logo-primary.png")):
+            self.assertTrue(social_card.is_banned_photo(rel), rel)
+        self.assertFalse(social_card.is_banned_photo("assets/facebook/facebook_card_2026-10-15.jpg"))
 
     def test_the_link_is_in_the_copy(self):
         for day in range(12, 19):

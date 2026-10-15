@@ -446,8 +446,12 @@ gen = open(soc["generator"], encoding="utf-8").read() if os.path.exists(soc["gen
 if gen:
     check("the Facebook copy is converted, not duplicated", "from telegram_mdv2 import to_plain" in gen,
           "two template sets drift; one source, one conversion")
-    check("Telegram's white-on-transparent hero is not offered to Facebook",
-          "official-logo-white" not in gen.split("FB_PHOTO_IMAGES")[1].split("]")[0])
+    check("the Facebook photo is the brand card, never a brand/ file",
+          "social_card" in gen and "brand/official" not in gen and "FB_PHOTO_IMAGES" not in gen,
+          "owner, 15 Oct 2026: a brand/ comparison sheet reached the Page — 'this is not my brand style'")
+    tg_gen = open("scripts/generate_telegram_content.py", encoding="utf-8").read()
+    check("the Telegram photo is the brand card, never a brand/ file",
+          "social_card" in tg_gen and "PHOTO_POST_IMAGES" not in tg_gen and "brand/official" not in tg_gen)
 post = open(soc["poster"], encoding="utf-8").read() if os.path.exists(soc["poster"]) else ""
 if post:
     check("a run that posted nothing fails loudly", "return 3" in post and "return 0" in post)

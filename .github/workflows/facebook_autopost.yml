@@ -137,13 +137,31 @@ jobs:
         # Pillow, not only requests: the Reels *plan* step reads the rotation, and
         # the rotation lives in the module that renders, which imports PIL at
         # module level. A "decide only" step that cannot import is a skipped lane.
-        run: python3 -m pip install --quiet requests Pillow
+        # fonts-inter: the daily photo is the brand card (tools/social_card.py),
+        # and the brand's only typeface is Inter (docs/BRAND_STYLE.md §2). Without
+        # it the card renders in DejaVu — legible, but not ours.
+        run: |
+          python3 -m pip install --quiet requests Pillow
+          sudo apt-get update -qq >/dev/null 2>&1 || true
+          sudo apt-get install -y -qq fonts-inter >/dev/null 2>&1 || echo "::warning title=Inter not installed::fonts-inter unavailable — the card falls back to DejaVu for this run"
 
       - name: Generate today's copy
         if: ${{ github.event_name == 'schedule' || inputs.mode == 'daily' }}
         run: |
           set -o pipefail
           python3 scripts/generate_facebook_content.py 2>&1 | tee /tmp/fb_generate.log
+
+      # The card is what the Page shows, so every run keeps it where the owner can
+      # open it from his phone (Summary → Artifacts) — dry runs included, which is
+      # how a design change gets looked at before it is published.
+      - name: Keep today's card for review
+        if: ${{ github.event_name == 'schedule' || inputs.mode == 'daily' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: facebook-card
+          path: assets/facebook/facebook_card_*.jpg
+          if-no-files-found: warn
+          retention-days: 14
 
       - name: Daily post
         if: ${{ !inputs.dry_run && (github.event_name == 'schedule' || inputs.mode == 'daily') }}

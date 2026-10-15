@@ -80,7 +80,11 @@ jobs:
 
       - name: Install dependencies
         if: ${{ !inputs.dry_run }}
-        run: pip install requests
+        run: |
+          pip install requests Pillow
+          # The photo post is the brand card (tools/social_card.py) set in Inter.
+          sudo apt-get update -qq >/dev/null 2>&1 || true
+          sudo apt-get install -y -qq fonts-inter >/dev/null 2>&1 || echo "::warning title=Inter not installed::fonts-inter unavailable — the card falls back to DejaVu for this run"
 
       - name: Dry run — stopping before anything is generated or posted
         if: ${{ inputs.dry_run }}

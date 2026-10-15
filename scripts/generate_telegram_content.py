@@ -28,17 +28,12 @@ LOG_FILE = docoga_log.log_file("social_media.log")
 LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
 BRAND_DIR = Path("brand")
 
-# Brand images suitable for Telegram photo posts
-PHOTO_POST_IMAGES = [
-    "brand/official-logo-white.png",
-    "brand/logo-primary.png",
-    "brand/logo-stamp.png",
-    "brand/official-3.png",
-    "brand/official-4.png",
-    "brand/official-5.png",
-    "brand/comparison.png",
-    "brand/comparison-2.png",
-]
+# Photo posts carry the day's copy rendered as the brand card (tools/social_card.py
+# — navy ground, Inter, DOCOGA kicker, docoga.com.ng footer), never a file from
+# brand/: those are logo explorations, and one reached a public feed on
+# 15 Oct 2026 ("this is not my brand style").
+import social_card  # noqa: E402
+from telegram_mdv2 import to_plain  # noqa: E402
 
 # ===== CONTENT TEMPLATES =====
 
@@ -130,13 +125,13 @@ def log(message):
         f.write(log_msg)
 
 
-def get_available_images():
-    """Return list of brand images that actually exist"""
-    available = []
-    for img_path in PHOTO_POST_IMAGES:
-        if os.path.exists(img_path):
-            available.append(img_path)
-    return available
+def render_card(message, day_iso, post_type):
+    """The day's copy as the brand card (repo-relative path), or None if it cannot render."""
+    try:
+        return social_card.card_for_post(to_plain(message), day_iso, post_type, "telegram")
+    except Exception as exc:
+        log(f"⚠️ card render failed ({type(exc).__name__}: {exc}) — text post instead")
+        return None
 
 
 def should_send_photo():
@@ -180,12 +175,10 @@ def generate_daily_content():
     send_photo = should_send_photo()
     photo_path = None
     if send_photo:
-        available = get_available_images()
-        if available:
-            photo_path = random.choice(available)
-            log(f"📸 Photo post selected: {photo_path}")
+        photo_path = render_card(message, today.strftime("%Y-%m-%d"), post_type)
+        if photo_path:
+            log(f"📸 Photo post: brand card rendered at {photo_path}")
         else:
-            log("⚠️ No brand images available, falling back to text post")
             send_photo = False
 
     # Create content object
