@@ -47,6 +47,7 @@ for path in (ROOT / "tools", ROOT / "scripts"):
 
 import fb_publish  # noqa: E402  the Graph API layer
 import generate_facebook_content  # noqa: E402  the copy
+import social_card  # noqa: E402  the card renderer, and the brand/ ban
 
 ASSETS_DIR = Path("assets/facebook")
 # Rooted at the repo and overridable in one place: see tools/docoga_log.py. A log the
@@ -205,6 +206,13 @@ def main(argv=None):
     # An explicit --photo-file wins (that is the manual override); otherwise the
     # generator's decision is honoured, including its "no photo" answer.
     photo_rel = args.photo_file or (content.get("photo_path") if content.get("send_photo") else None)
+
+    if photo_rel and social_card.is_banned_photo(photo_rel):
+        # brand/ holds logo explorations, not post art (owner, 15 Oct 2026). The
+        # generator no longer offers them; this refuses one handed in by hand.
+        log("❌ refusing %s — files under brand/ are not post art; the daily card comes from "
+            "tools/social_card.py. Posting the text instead." % photo_rel)
+        photo_rel = None
 
     if photo_rel:
         photo_abs = photo_rel if os.path.isabs(photo_rel) else str(ROOT / photo_rel)

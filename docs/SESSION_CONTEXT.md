@@ -499,8 +499,9 @@ Documented in `docs/GROWTH_JOURNAL.md`. Key milestones:
 ### Facebook Page:
 - **Page ID:** `102466208923830`
 - **Page Name:** `DocOga`
-- **App ID:** `4401202890209558`
-- **Status:** ✅ Active, posts already live
+- **App ID:** `931364932955308` ("DocOga Publisher", Business app; the old Consumer app `4401202890209558` is abandoned — it could not hold `pages_*` permissions)
+- **Status:** ✅ Lane live since 15 Oct 2026 (daily 09:30 WAT, `.github/workflows/facebook_autopost.yml`); Page token verified "Expires: Never"
+- **Post art:** the brand card from `tools/social_card.py` — never files from `brand/` (owner, 15 Oct 2026: "not my brand style")
 - **Instagram:** Not linked (owner declined to link)
 
 ### YouTube:

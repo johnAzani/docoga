@@ -14,10 +14,11 @@ channels say different things on the same Tuesday. It does three jobs:
      would be published as written. `telegram_mdv2.to_plain()` is the shared
      stripper the Telegram poster also uses for its plain-text fallback, so
      there is exactly one definition of "this message without markup".
-  2. **Pick an image Facebook can actually show.** `brand/official-logo-white.png`
-     is in the Telegram set because Telegram is dark; on a white Facebook feed it
-     is a blank card. So the list is separate and deliberate, and every candidate
-     is checked for size before it is offered.
+  2. **Render the photo.** The day's copy is drawn on the brand card by
+     `tools/social_card.py` (navy ground, Inter, DOCOGA kicker, docoga.com.ng
+     footer) — the same card the Instagram lane ships. Nothing from `brand/` is
+     ever the photo: those are logo-exploration sheets, and the one that reached
+     the Page on 15 Oct 2026 was rejected by the owner ("not my brand style").
   3. **Be deterministic for the day.** Telegram picks with an unseeded
      `random.choice`, which is fine when a run happens once and never repeats.
      A Facebook run can be re-dispatched, retried after a red build, or run
@@ -56,27 +57,18 @@ LOG_FILE = docoga_log.log_file("social_media.log")
 
 LAGOS = timezone(timedelta(hours=1))
 
-# Facebook renders photo posts on a light surface and crops to a 1:1 tile in the
-# feed. `official-logo-white.png` (Telegram's hero image) is deliberately absent.
-FB_PHOTO_IMAGES = [
-    "brand/official-logo-transparent.png",
-    "brand/logo-primary.png",
-    "brand/logo-stamp.png",
-    "brand/official-3.png",
-    "brand/official-4.png",
-    "brand/official-5.png",
-    "brand/comparison.png",
-    "brand/comparison-2.png",
-]
+# The photo is the day's copy rendered as the brand card (tools/social_card.py:
+# navy ground, Inter, DOCOGA kicker, docoga.com.ng footer) — the same card the
+# Instagram lane ships. Until 15 Oct 2026 this lane drew from `brand/*.png`, the
+# logo-exploration sheets, and the owner saw one on the Page: "this is not my
+# brand style". social_card.BANNED_PHOTO_PREFIXES keeps brand/ out for good,
+# and post_facebook.py refuses such a path even if one is handed to it.
+import social_card  # noqa: E402  (the one card renderer for every static social post)
 
-# tools/fb_publish.py refuses a `source` upload above 4 MB; rejecting it here is
-# a log line instead of an API error, and the post still goes out as text.
+# tools/fb_publish.py refuses a `source` upload above 4 MB; the card renderer
+# walks JPEG quality down to stay under 900 KB, so this is belt and braces.
 MAX_PHOTO_BYTES = 4 * 1024 * 1024
 MIN_PHOTO_BYTES = 8 * 1024
-
-# Photo posts carry the feed on Facebook far better than bare text, so the
-# default leans that way — but the poster always has a text fallback.
-PHOTO_ODDS = 6 / 7
 
 
 def log(message):
@@ -88,22 +80,6 @@ def log(message):
             handle.write(line + "\n")
     except OSError:
         pass  # logging must never be the reason a day's post fails
-
-
-def available_photos():
-    out = []
-    for rel in FB_PHOTO_IMAGES:
-        path = ROOT / rel
-        try:
-            size = path.stat().st_size
-        except OSError:
-            continue
-        if MIN_PHOTO_BYTES <= size <= MAX_PHOTO_BYTES:
-            out.append(rel)
-        else:
-            log("⚠️  skipping %s (%d bytes — outside the %d KB…%d MB window)"
-                % (rel, size, MIN_PHOTO_BYTES // 1024, MAX_PHOTO_BYTES // (1024 * 1024)))
-    return out
 
 
 def build_message(post_type, rng):
@@ -122,6 +98,21 @@ def build_message(post_type, rng):
     return "%s\n\n%s" % (plain, hashtags)
 
 
+def render_card(message, day, post_type):
+    """The day's copy as the brand card; None (text post) only if the render fails."""
+    try:
+        rel = social_card.card_for_post(message, day.isoformat(), post_type, "facebook",
+                                        out_dir=ASSETS_DIR)
+    except Exception as exc:  # a missing font or a Pillow regression must not lose the day
+        log("⚠️  card render failed (%s: %s) — posting text only" % (type(exc).__name__, exc))
+        return None
+    size = os.path.getsize(rel)
+    if not (MIN_PHOTO_BYTES <= size <= MAX_PHOTO_BYTES):
+        log("⚠️  card is %d bytes — outside the upload window, posting text only" % size)
+        return None
+    return rel
+
+
 def generate(day=None, write=True):
     """Return today's Facebook post, and (by default) write it to assets/."""
     day = day or datetime.now(LAGOS).date()
@@ -130,9 +121,7 @@ def generate(day=None, write=True):
     post_type = rng.choice(tg.WEEKLY_SCHEDULE.get(day.weekday(), ["promo"]))
     message = build_message(post_type, rng)
 
-    photos = available_photos()
-    want_photo = bool(photos) and rng.random() < PHOTO_ODDS
-    photo = rng.choice(photos) if want_photo else None
+    photo = render_card(message, day, post_type) if write else None
 
     content = {
         "date": day.isoformat(),

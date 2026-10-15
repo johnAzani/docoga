@@ -139,17 +139,27 @@ Four conversions that matter, each with a test:
   for Telegram. Facebook publishes what it is given, so an unstripped backslash
   is *on the Page*. `tools/telegram_mdv2.to_plain()` is the single stripper.
 * **Hashtags stay raw** (`#` needs no escape outside MarkdownV2).
-* **`brand/official-logo-white.png` is never chosen.** It is Telegram's hero image
-  because Telegram is dark; on a white feed it is a blank card. The Facebook list
-  is separate on purpose (`FB_PHOTO_IMAGES`).
+* **The photo is the brand card, never a `brand/` file.** The day's copy is
+  rendered by `tools/social_card.py` (1080×1350, navy ground, Inter, `DOCOGA ·
+  <post type>` kicker, `docoga.com.ng` footer) to
+  `assets/facebook/facebook_card_<date>.jpg` — the same card the Instagram lane
+  ships. The first live post (15 Oct 2026) went out with `brand/comparison.png`, a
+  logo-exploration sheet, and the owner's verdict was "this is not my brand
+  style". `social_card.BANNED_PHOTO_PREFIXES` now bans `brand/` and
+  `post_facebook.py` refuses such a path even when passed by hand (the words still
+  post as text). Every daily run — dry runs too — uploads the card as the
+  `facebook-card` artifact (Summary → Artifacts), so a design change can be looked
+  at on a phone before it is published.
 * **No `link` field is ever sent.** With a link attachment present, Facebook
   renders the link card and **drops the message text** — the URL lives in the
   copy instead. This is the one Graph-API quirk that makes a "successful" API
   call produce an empty-looking post.
 
-Photos are uploaded as `source` multipart bytes, not fetched by URL: `brand/` is
+Photos are uploaded as `source` multipart bytes, not fetched by URL: `assets/` is
 not deployed (only `site/` is), so a URL-based photo post would depend on a second
-system being up. And ~6 days in 7 get a photo, chosen deterministically.
+system being up. Every day gets the card; the lane only drops to a text post if
+the render itself fails (missing Pillow, a font regression) — the day is never lost
+to the picture.
 
 ## 5. The four rules the failure handling obeys
 
@@ -334,8 +344,8 @@ topic it could not read, instead of a traceback.
 |---|---|
 | the time | `cron` in the workflow (keep the minute off Telegram's `0 8 * * *`) |
 | the copy | `TEMPLATES` / `HASHTAGS` in `scripts/generate_telegram_content.py` — **both channels read it**, then run `python3 scripts/generate_facebook_content.py --print` |
-| which images | `FB_PHOTO_IMAGES` in the generator (must exist and fit the 4 MB cap — a test enforces both) |
-| photo frequency | `PHOTO_ODDS` |
+| the card's look | `tools/social_card.py` (palette, type, kicker names in `KICKER_NAMES`) — it is shared with Instagram and Telegram, so a change there changes all three; preview with `python3 scripts/generate_facebook_content.py --print` and open `assets/facebook/facebook_card_<date>.jpg` |
+| photo frequency | every day is a card; there is no odds knob any more |
 | whether Reels publish at all | repository **variable** `FB_REELS` = `probe` (default) / `on` / `off` |
 | which days get a Reel | `REEL_WEEKDAYS` in `scripts/facebook_reel_daily.py` (keep it off YouTube's Tue/Fri — the collision rule is in that file's header) |
 | the reel's words | `VIDEO_SCRIPTS` in `scripts/generate_short_video.py` — both the 3–90 s window and the 30-day window apply |

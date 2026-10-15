@@ -63,14 +63,18 @@ MUTED = (143, 168, 201)
 ACCENT = (255, 201, 60)
 BLUE = (74, 140, 255)
 
+_USER_FONTS = os.path.expanduser("~/.local/share/fonts/inter")
 FONT_CANDIDATES = {
     "Black": ["/usr/share/fonts/opentype/inter/Inter-Black.otf",
+              _USER_FONTS + "/Inter-Black.otf", _USER_FONTS + "/Inter-Black.ttf",
               "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
               "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"],
     "SemiBold": ["/usr/share/fonts/opentype/inter/Inter-SemiBold.otf",
+                 _USER_FONTS + "/Inter-SemiBold.otf", _USER_FONTS + "/Inter-SemiBold.ttf",
                  "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
                  "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"],
     "Regular": ["/usr/share/fonts/opentype/inter/Inter-Regular.otf",
+                _USER_FONTS + "/Inter-Regular.otf", _USER_FONTS + "/Inter-Regular.ttf",
                 "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
                 "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"],
 }
@@ -163,6 +167,43 @@ def fit_size(draw, text, weight, max_width, start, floor=34, step=2):
         size -= step
     font, _ = load_font(weight, floor)
     return font, floor
+
+
+# Where the daily lanes' cards go. Under assets/ (gitignored) because the Facebook and
+# Telegram lanes upload bytes, not URLs — only the Instagram lane needs site/social/.
+LANE_CARD_DIRS = {"facebook": Path("assets/facebook"), "telegram": Path("assets/telegram")}
+
+# Post art the lanes may NOT ship. The files under brand/ are logo explorations and
+# comparison sheets from the identity work — the owner saw one on the Page on
+# 15 Oct 2026 ("this is not my brand style"). Every social photo is a rendered card.
+BANNED_PHOTO_PREFIXES = ("brand/",)
+
+
+# What the kicker says for each rotation post type (the raw key is a variable name).
+KICKER_NAMES = {"promo": "free documents", "educational": "know your rights", "pidgin": "oya, make we talk",
+                "testimonial_style": "from our users", "state_spotlight": "state spotlight",
+                "urgent": "don't wait", "engagement": "your turn", "tip": "tenant tip",
+                "guide": "guide", "manual": ""}
+
+
+def is_banned_photo(path):
+    rel = str(path or "").replace("\\", "/").lstrip("./")
+    return any(rel.startswith(prefix) or ("/" + prefix) in rel for prefix in BANNED_PHOTO_PREFIXES)
+
+
+def card_for_post(message, day_iso, post_type, lane, out_dir=None):
+    """Render a lane's daily copy as the brand card; returns the repo-relative path.
+
+    `message` may be MarkdownV2 (Telegram) or plain (Facebook) — the stripper in
+    plain_for_card() handles both. The kicker names the lane's post type so a
+    "tip" card and a "promo" card read differently at a glance."""
+    out_dir = Path(out_dir) if out_dir else LANE_CARD_DIRS[lane]
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out = out_dir / ("%s_card_%s.jpg" % (lane, day_iso))
+    kicker = ("DocOga · %s" % KICKER_NAMES.get(post_type, post_type.replace("_", " "))) \
+        if post_type else "DocOga"
+    render(message, out, kicker=kicker)
+    return str(out)
 
 
 def render(text, out_path, kicker="", quality=88, max_kb=900, footer=FOOTER):
