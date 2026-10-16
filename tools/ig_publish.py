@@ -432,9 +432,30 @@ def wait_for_processing(token, container_id, timeout=900, delay=10, sleeper=time
         delay = min(delay * 1.5, 60)
 
 
-def publish_container(token, user_id, container_id):
-    return call("POST", "/%s/media_publish" % user_id, token, None,
-                {"creation_id": container_id})["id"]
+NOT_READY = ("2207027", "media id is not available", "not ready for publishing")
+
+
+def not_ready(exc):
+    """Error 9007 / subcode 2207027: the container exists but the media behind it is still
+    being fetched. Instagram's own text is "please wait for a moment" — a timing answer,
+    not a verdict, and the first real post (run #48, 16 Oct 2026) died on it."""
+    hay = exc.body.lower()
+    return any(needle in hay for needle in NOT_READY)
+
+
+def publish_container(token, user_id, container_id, attempts=8, delay=10, sleeper=None):
+    sleeper = sleeper or time.sleep  # resolved per call so tests (and callers) can stub time.sleep
+    for attempt in range(1, attempts + 1):
+        try:
+            return call("POST", "/%s/media_publish" % user_id, token, None,
+                        {"creation_id": container_id})["id"]
+        except ApiError as exc:
+            if attempt == attempts or not not_ready(exc):
+                raise
+            print("  publish: media not ready yet (attempt %d/%d) — waiting %ds"
+                  % (attempt, attempts, delay))
+            sleeper(delay)
+            delay = min(delay * 1.5, 60)
 
 
 def permalink_for(token, media_id, username=None):
@@ -509,9 +530,11 @@ def send(token, user_id, container_data, caption, kind):
         return 6
     print("%s container %s created" % (kind, container_id))
 
-    if kind != "photo":
-        state = wait_for_processing(token, container_id)
-        if state not in ("FINISHED", "OK", "UNKNOWN"):
+    # Photos too: a JPEG container is usually FINISHED on the first read, but Instagram fetches
+    # the URL asynchronously and publishing before that fetch completes is the "Media ID is not
+    # available" failure. One cheap status read is the difference.
+    state = wait_for_processing(token, container_id, timeout=300 if kind == "photo" else 900)
+    if state not in ("FINISHED", "OK", "UNKNOWN"):
             print("::error title=container did not finish::status=%s. Containers die after 24 "
                   "hours, so do not re-run this blindly expecting a different answer." % state)
             machine("failed", "state")

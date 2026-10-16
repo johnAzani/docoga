@@ -90,6 +90,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30  # > the 15-minute media-liveness wait, or the deadline is fiction
     env:
+      SOCIAL_TOKEN_KEY: ${{ secrets.SOCIAL_TOKEN_KEY }}  # tools/token_vault.py reads this; unset = 60-day token, never renewed
       META_GRAPH_VERSION: ${{ vars.META_GRAPH_VERSION || 'v26.0' }}
       IG_API_PATH: ${{ vars.IG_API_PATH || 'instagram-login' }}
     steps:
