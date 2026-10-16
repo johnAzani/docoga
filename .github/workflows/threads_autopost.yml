@@ -76,9 +76,12 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python3 -m pip install --quiet cryptography
+          python3 -m pip install --quiet cryptography pillow
           # No `requests`: tools/threads_publish.py is stdlib-only, and the fewer packages a
           # 08:45 UTC job installs, the fewer ways it can fail for reasons that are not ours.
+          # `pillow` is not for this lane's own sake: scripts/generate_threads_content.py reuses
+          # the Telegram copy generator, which imports tools/social_card.py at module level.
+          # Run #4 (16 Oct 2026, the first real post) died on `No module named 'PIL'` there.
 
       # The token is read from a 0600 file, not the environment, wherever the vault has it:
       # `/proc/<pid>/environ` is world-readable to anything on the runner, and a step that
