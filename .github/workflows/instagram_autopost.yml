@@ -88,17 +88,17 @@ permissions:
 
 jobs:
   publish:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30  # > the 15-minute media-liveness wait, or the deadline is fiction
     env:
       SOCIAL_TOKEN_KEY: ${{ secrets.SOCIAL_TOKEN_KEY }}  # tools/token_vault.py reads this; unset = 60-day token, never renewed
       META_GRAPH_VERSION: ${{ vars.META_GRAPH_VERSION || 'v26.0' }}
       IG_API_PATH: ${{ vars.IG_API_PATH || 'instagram-login' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
 

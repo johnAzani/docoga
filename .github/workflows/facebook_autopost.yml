@@ -117,7 +117,7 @@ env:
 jobs:
   publish:
     name: Preflight → generate → post
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # 30, not 15: a moviepy render of six 1080×1920 slides plus a ~30 MB upload
     # and Meta's processing poll is minutes of work. A job killed by a timeout
     # after publishing is the worst possible outcome — it is red *and* live.
@@ -125,10 +125,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
 
@@ -163,7 +163,7 @@ jobs:
       # how a design change gets looked at before it is published.
       - name: Keep today's card for review
         if: ${{ github.event_name == 'schedule' || inputs.mode == 'daily' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: facebook-card
           path: assets/facebook/facebook_card_*.jpg
@@ -201,7 +201,7 @@ jobs:
 
       - name: Keep today's Story frame for review
         if: ${{ github.event_name == 'schedule' || inputs.mode == 'daily' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: facebook-story
           path: assets/facebook/facebook_story_*.jpg
@@ -280,7 +280,7 @@ jobs:
       # the two lanes share the rotation, so they share the cache).
       - name: Reels — restore the narrator's cached clips
         if: ${{ (steps.reel_plan.outputs.reel_today == 'yes' || inputs.mode == 'reel') && !inputs.dry_run }}
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: assets/shorts_voice
           key: shorts-voice-v2-${{ github.run_id }}
@@ -396,7 +396,7 @@ jobs:
       # synthesised — and what the ledger learnt — is there for the next run.
       - name: Reels — save the narrator's cached clips and the quota ledger
         if: ${{ always() && (steps.reel_plan.outputs.reel_today == 'yes' || inputs.mode == 'reel') && !inputs.dry_run }}
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: assets/shorts_voice
           key: shorts-voice-v2-${{ github.run_id }}

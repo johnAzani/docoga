@@ -63,7 +63,7 @@ env:
 jobs:
   pick:
     name: Which episode, how far
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
       episode: ${{ steps.pick.outputs.episode }}
@@ -73,7 +73,7 @@ jobs:
       has_master: ${{ steps.bank.outputs.has_master }}
       banked: ${{ steps.bank.outputs.banked }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - id: pick
         env:
           IN_EPISODE: ${{ inputs.episode }}
@@ -124,7 +124,7 @@ jobs:
     name: Voice (Gemini TTS) + word-sync
     needs: [pick]
     if: ${{ needs.pick.outputs.episode != '' && (needs.pick.outputs.stage == 'voice' || (needs.pick.outputs.stage == 'all' && needs.pick.outputs.has_master != 'true')) }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       EPISODE: ${{ needs.pick.outputs.episode }}
       RELEASE_TAG: deepdive-${{ needs.pick.outputs.episode }}
@@ -133,8 +133,8 @@ jobs:
     outputs:
       complete: ${{ steps.tts.outputs.complete }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.11'
       - name: Install MotionStudio deps (ffmpeg + Inter) and the ASR engine
@@ -164,7 +164,7 @@ jobs:
       # same cache prefix): this job's requests count towards the day's bucket,
       # and the morning warm-up knows what the night spent.
       - name: Restore the narrator's quota ledger
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: assets/shorts_voice
           key: shorts-voice-v2-${{ github.run_id }}
@@ -203,7 +203,7 @@ jobs:
           fi
       - name: Save the narrator's quota ledger
         if: always()
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: assets/shorts_voice
           key: shorts-voice-v2-${{ github.run_id }}
@@ -228,7 +228,7 @@ jobs:
           echo "banked $EPISODE-voice.tar.gz ($(stat -c%s /tmp/$EPISODE-voice.tar.gz) bytes)"
       - name: Hand the timings to the render jobs
         if: steps.tts.outputs.complete == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ needs.pick.outputs.episode }}-words
           path: |
@@ -247,7 +247,7 @@ jobs:
     # An explicit `render` always renders (run #4, 14 Oct 2026: a re-master was skipped because the
     # bank already held a master). Only `all` — and the nightly tick — skip what is banked.
     if: ${{ always() && !cancelled() && needs.pick.outputs.episode != '' && (needs.pick.outputs.stage == 'render' || (needs.pick.outputs.stage == 'all' && needs.pick.outputs.has_master != 'true' && needs.voice.outputs.complete == 'true')) }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       EPISODE: ${{ needs.pick.outputs.episode }}
       RELEASE_TAG: deepdive-${{ needs.pick.outputs.episode }}
@@ -258,8 +258,8 @@ jobs:
       matrix:
         scene: [1, 2, 3, 4, 5, 6, 7, 8, 9]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.11'
       - name: Install MotionStudio deps (ffmpeg + Inter)
@@ -282,7 +282,7 @@ jobs:
         env:
           SCENE: ${{ matrix.scene }}
         run: python3 tools/deepdive.py "$EPISODE" render "$SCENE"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: ${{ needs.pick.outputs.episode }}-scene-${{ matrix.scene }}
           path: ${{ env.BUILD_DIR }}/scenes/s${{ matrix.scene }}.mp4
@@ -292,15 +292,15 @@ jobs:
     name: Master + cover + QA
     needs: [pick, render]
     if: ${{ always() && !cancelled() && needs.render.result == 'success' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       EPISODE: ${{ needs.pick.outputs.episode }}
       RELEASE_TAG: deepdive-${{ needs.pick.outputs.episode }}
       BUILD_DIR: build/deepdive/${{ needs.pick.outputs.episode }}
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.11'
       - name: Install MotionStudio deps (ffmpeg + Inter)
@@ -313,7 +313,7 @@ jobs:
           gh release download "$RELEASE_TAG" --pattern "$EPISODE-voice.tar.gz" -D /tmp
           tar -xzf "/tmp/$EPISODE-voice.tar.gz" -C "$BUILD_DIR"
       - name: Collect the nine scenes
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           pattern: ${{ needs.pick.outputs.episode }}-scene-*
           path: ${{ env.BUILD_DIR }}/scenes
@@ -357,7 +357,7 @@ jobs:
             echo
             echo "Six frames across the episode (download the master from the release to watch it):"
           } >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: ${{ needs.pick.outputs.episode }}-contact-sheet
           path: /tmp/sheet/contact.jpg
@@ -367,15 +367,15 @@ jobs:
     name: Publish to YouTube
     needs: [pick, voice, master]
     if: ${{ always() && !cancelled() && needs.pick.outputs.episode != '' && (needs.pick.outputs.stage == 'publish' || (needs.pick.outputs.stage == 'all' && (needs.master.result == 'success' || needs.pick.outputs.has_master == 'true'))) }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       EPISODE: ${{ needs.pick.outputs.episode }}
       RELEASE_TAG: deepdive-${{ needs.pick.outputs.episode }}
       BUILD_DIR: build/deepdive/${{ needs.pick.outputs.episode }}
     timeout-minutes: 40
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.11'
       # Run #1 (14 Oct 2026) failed here: the engine's `meta` stage was gated on Inter + ffmpeg
@@ -536,7 +536,7 @@ jobs:
     name: Voice report
     needs: [pick, voice]
     if: ${{ always() && needs.voice.result == 'failure' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       EPISODE: ${{ needs.pick.outputs.episode }}
       RELEASE_TAG: deepdive-${{ needs.pick.outputs.episode }}
