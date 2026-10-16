@@ -34,6 +34,9 @@ BRAND_DIR = Path("brand")
 # 15 Oct 2026 ("this is not my brand style").
 import social_card  # noqa: E402
 from telegram_mdv2 import to_plain  # noqa: E402
+# The brain (tools/brain.py) may have decided today's post the night before; when it
+# has, the rotation below is the fallback, not the voice.
+import brain_drafts  # noqa: E402
 
 # ===== CONTENT TEMPLATES =====
 
@@ -125,10 +128,10 @@ def log(message):
         f.write(log_msg)
 
 
-def render_card(message, day_iso, post_type):
+def render_card(message, day_iso, post_type, visual=None):
     """The day's copy as the brand card (repo-relative path), or None if it cannot render."""
     try:
-        return social_card.card_for_post(to_plain(message), day_iso, post_type, "telegram")
+        return social_card.card_for_post(to_plain(message), day_iso, post_type, "telegram", visual=visual)
     except Exception as exc:
         log(f"⚠️ card render failed ({type(exc).__name__}: {exc}) — text post instead")
         return None
@@ -146,13 +149,23 @@ def generate_daily_content():
     today = datetime.now()
     day_of_week = today.weekday()  # 0=Monday, 6=Sunday
 
-    # Pick a post type from today's options
-    options = WEEKLY_SCHEDULE.get(day_of_week, ["promo"])
-    post_type = random.choice(options)
+    pack = brain_drafts.draft_for(today)
+    visual = None
+    if pack:
+        # The brain's words are plain text; escape them once for MarkdownV2 like the hashtags.
+        post_type = brain_drafts.post_type(pack)
+        template = escape(brain_drafts.post_text(pack))
+        hashtag = brain_drafts.hashtags(pack, "telegram")
+        visual = brain_drafts.visual(pack)
+        log("🧠 brain pack for %s: %s (%s)" % (pack["date"], pack.get("theme"), post_type))
+    else:
+        # Pick a post type from today's options
+        options = WEEKLY_SCHEDULE.get(day_of_week, ["promo"])
+        post_type = random.choice(options)
 
-    # Select a random template from the chosen type
-    template = random.choice(TEMPLATES[post_type])
-    hashtag = HASHTAGS.get(post_type, "#DocOga #NigerianProperty")
+        # Select a random template from the chosen type
+        template = random.choice(TEMPLATES[post_type])
+        hashtag = HASHTAGS.get(post_type, "#DocOga #NigerianProperty")
 
     # Build the full message. The templates carry their own MarkdownV2 escapes
     # (that is deliberate — they were written for it), but the hashtag block is
@@ -171,11 +184,11 @@ def generate_daily_content():
         for problem in problems:
             log(f"   • {problem}")
 
-    # Decide on photo vs text post
-    send_photo = should_send_photo()
+    # Decide on photo vs text post (a brain day always carries its card)
+    send_photo = True if pack else should_send_photo()
     photo_path = None
     if send_photo:
-        photo_path = render_card(message, today.strftime("%Y-%m-%d"), post_type)
+        photo_path = render_card(message, today.strftime("%Y-%m-%d"), post_type, visual)
         if photo_path:
             log(f"📸 Photo post: brand card rendered at {photo_path}")
         else:
@@ -193,6 +206,7 @@ def generate_daily_content():
         "send_photo": send_photo,
         "photo_path": photo_path,
         "generated_at": today.isoformat(),
+        "brain": pack.get("theme") if pack else None,
     }
 
     # Save to files

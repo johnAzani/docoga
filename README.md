@@ -35,6 +35,13 @@ no server, 0 Naira/month to run.
   correction): **`INSTAGRAM_THREADS_AUTOMATION.md`**.
   Run the heartbeat by hand any time:
   `python3 tools/automation_heartbeat.py --repo <owner>/<repo> --token "$(gh auth token)" --verbose`
+- `brain/` — **the standing editor** (16 Oct 2026). `brain.yml` runs nightly, reads the
+  business memory + editorial policy + the section-cited law shelf, asks Gemini (free
+  tier, 2–3 requests) for the next days' posts, Short topics and visual briefs, and
+  publishes a pack only after citation, verification, brand, repetition and shape gates.
+  Lanes read `brain/drafts/`; with no pack they post the hand-written rotation. Sundays
+  it drafts the next Deep-Dive episode. Handbook: **`docs/BRAIN.md`**. Kill switch:
+  variable `DOCOGA_BRAIN=off`.
 - `mobile/` — the Android app: a Capacitor shell around `/admin`, built to a
   sideloadable APK by CI (`ADMIN_DASHBOARD.md` §7, `mobile/README.md`)
 

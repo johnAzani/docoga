@@ -51,6 +51,7 @@ for p in (ROOT / "tools", ROOT / "scripts"):
 
 from telegram_mdv2 import to_plain          # noqa: E402  the one markup stripper
 import generate_telegram_content as tg       # noqa: E402  the copy lives there
+import brain_drafts  # noqa: E402  the brain's pack for the day, when there is one
 
 import docoga_log  # noqa: E402  "where do the scratch files live", answered once
 
@@ -197,7 +198,13 @@ def fit(body, hashtags):
 
 
 def build(day, rng):
-    """Today's Threads post: one template, de-escaped, fitted, with its post type."""
+    """Today's Threads post: the brain's short copy when there is a pack, else one
+    template, de-escaped — either way fitted to Meta's limits, with its post type."""
+    pack = brain_drafts.draft_for(day)
+    if pack:
+        post_type = brain_drafts.post_type(pack)
+        text, notes = fit(brain_drafts.threads_text(pack), brain_drafts.hashtags(pack, "threads"))
+        return post_type, text, ["brain: %s" % pack.get("theme")] + list(notes)
     post_type = rng.choice(tg.WEEKLY_SCHEDULE.get(day.weekday(), ["promo"]))
     template = rng.choice(tg.TEMPLATES[post_type])
     plain = to_plain(template).strip()

@@ -81,7 +81,7 @@ jobs:
       - name: Install dependencies
         if: ${{ !inputs.dry_run }}
         run: |
-          pip install requests Pillow
+          pip install requests Pillow numpy
           # The photo post is the brand card (tools/social_card.py) set in Inter.
           bash tools/install_brand_fonts.sh   # Inter, or a named warning — never a silent DejaVu
 

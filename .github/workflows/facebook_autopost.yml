@@ -154,7 +154,7 @@ jobs:
         # and the brand's only typeface is Inter (docs/BRAND_STYLE.md §2). Without
         # it the card renders in DejaVu — legible, but not ours.
         run: |
-          python3 -m pip install --quiet requests Pillow cryptography
+          python3 -m pip install --quiet requests Pillow cryptography numpy
           # cryptography: tools/token_vault.py, which opens the Instagram-Login token for the
           # Reels second door below (the tool refuses to run without it).
           bash tools/install_brand_fonts.sh   # Inter, or a named warning — never a silent DejaVu

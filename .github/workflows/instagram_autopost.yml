@@ -109,7 +109,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python3 -m pip install --quiet pillow cryptography
+          python3 -m pip install --quiet pillow cryptography numpy
           # pillow draws the card; cryptography is tools/token_vault.py's only requirement, and
           # that tool refuses to run without it rather than storing a token in plaintext.
           # Inter is the brand face; without this line the card is DejaVu (it was, until 16 Oct 2026).
@@ -219,13 +219,13 @@ jobs:
           KICKER="$(python3 -c 'import json;print(json.load(open("assets/threads/threads_content_latest.json")).get("post_type",""))')"
           python3 tools/social_card.py \
             --from-json assets/threads/threads_content_latest.json \
-            --kicker "$KICKER" \
+            --kicker "$KICKER" --brief "$DAY" \
             --out "$OUT" 2>&1 | tee /tmp/ig_render.log
           # The same copy as a 9:16 Story frame (owner, 16 Oct 2026: "what about Instagram
           # stories"). One commit carries both files so one deploy publishes both URLs.
           python3 tools/social_card.py \
             --from-json assets/threads/threads_content_latest.json \
-            --kicker "$KICKER" --story \
+            --kicker "$KICKER" --story --brief "$DAY" \
             --out "$STORY_OUT" 2>&1 | tee /tmp/ig_story_render.log
           tee -a "$GITHUB_STEP_SUMMARY" < /tmp/ig_render.log > /dev/null
           CARD_URL=$(sed -n 's/^CARD_URL=//p' /tmp/ig_render.log | tail -1)

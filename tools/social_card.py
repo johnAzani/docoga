@@ -191,18 +191,31 @@ def is_banned_photo(path):
     return any(rel.startswith(prefix) or ("/" + prefix) in rel for prefix in BANNED_PHOTO_PREFIXES)
 
 
-def card_for_post(message, day_iso, post_type, lane, out_dir=None):
+def _brief(visual, post_type, size):
+    """(kicker, background, layout, big) from the brain's visual brief, or the lane's defaults."""
+    visual = dict(visual or {})
+    kicker = (("DocOga · %s" % visual["kicker"]) if visual.get("kicker") else
+              (("DocOga · %s" % KICKER_NAMES.get(post_type, post_type.replace("_", " "))) if post_type else "DocOga"))
+    background = None
+    if visual.get("plate"):
+        import brain_visual  # a network fetch, only when a brief asks for a plate
+        background = brain_visual.background_for(visual["plate"], size)
+    layout = visual.get("layout") if visual.get("layout") in ("poster", "stat", "checklist") else "poster"
+    return kicker, background, layout, (visual.get("big") or "").strip()
+
+
+def card_for_post(message, day_iso, post_type, lane, out_dir=None, visual=None):
     """Render a lane's daily copy as the brand card; returns the repo-relative path.
 
     `message` may be MarkdownV2 (Telegram) or plain (Facebook) — the stripper in
     plain_for_card() handles both. The kicker names the lane's post type so a
-    "tip" card and a "promo" card read differently at a glance."""
+    "tip" card and a "promo" card read differently at a glance. `visual` is the
+    brain's brief (tools/brain.py): kicker, layout, big figure, plate query."""
     out_dir = Path(out_dir) if out_dir else LANE_CARD_DIRS[lane]
     out_dir.mkdir(parents=True, exist_ok=True)
     out = out_dir / ("%s_card_%s.jpg" % (lane, day_iso))
-    kicker = ("DocOga · %s" % KICKER_NAMES.get(post_type, post_type.replace("_", " "))) \
-        if post_type else "DocOga"
-    render(message, out, kicker=kicker)
+    kicker, background, layout, big = _brief(visual, post_type, (CARD_W, CARD_H))
+    render(message, out, kicker=kicker, background=background, layout=layout, big=big)
     return str(out)
 
 
@@ -210,27 +223,56 @@ STORY_W, STORY_H = 1080, 1920        # 9:16 — Stories and Reels covers (docs/B
 STORY_SAFE = (250, 250)              # Facebook draws its own UI over the top and bottom bands
 
 
-def story_for_post(message, day_iso, post_type, lane, out_dir=None):
+def story_for_post(message, day_iso, post_type, lane, out_dir=None, visual=None):
     """The same copy as a 9:16 Story frame, type kept out of the platform's chrome bands."""
     out_dir = Path(out_dir) if out_dir else LANE_CARD_DIRS[lane]
     out_dir.mkdir(parents=True, exist_ok=True)
     out = out_dir / ("%s_story_%s.jpg" % (lane, day_iso))
-    kicker = ("DocOga · %s" % KICKER_NAMES.get(post_type, post_type.replace("_", " "))) \
-        if post_type else "DocOga"
-    render(message, out, kicker=kicker, size=(STORY_W, STORY_H), safe=STORY_SAFE)
+    kicker, background, layout, big = _brief(visual, post_type, (STORY_W, STORY_H))
+    render(message, out, kicker=kicker, size=(STORY_W, STORY_H), safe=STORY_SAFE,
+           background=background, layout=layout, big=big)
     return str(out)
 
 
-def render(text, out_path, kicker="", quality=88, max_kb=900, footer=FOOTER, size=None, safe=(0, 0)):
+def _fit_line(draw, text, weight, max_width, start, floor=60, step=4):
+    """The largest size at which `text` fits on ONE line (the stat figure never wraps)."""
+    size = start
+    while size > floor:
+        font, _ = load_font(weight, size)
+        if draw.textlength(text, font=font) <= max_width:
+            return font, size
+        size -= step
+    return load_font(weight, floor)[0], floor
+
+
+def _numbered(rest):
+    """Checklist layout: every body line carries its number, unless the writer already did."""
+    out, n = [], 0
+    for line in rest.split("\n"):
+        if line.strip() and not line.strip().startswith(("http", "General information")):
+            n += 1
+            if not re.match(r"^\s*(\d+[.)]|[-•✓✔])\s", line):
+                line = "%d. %s" % (n, line.strip())
+        out.append(line)
+    return "\n".join(out)
+
+
+def render(text, out_path, kicker="", quality=88, max_kb=900, footer=FOOTER, size=None, safe=(0, 0),
+           background=None, layout="poster", big=""):
     """Draw `text` on a brand card (1080×1350 by default) and write a JPEG at `out_path`.
 
     `size` = (w, h) for another frame; `safe` = (top, bottom) pixels the platform
-    covers with its own chrome (Stories), kept clear of type."""
+    covers with its own chrome (Stories), kept clear of type. `background` is a
+    treated plate (tools/brain_visual.py) the navy sits on; `layout` is poster /
+    stat (a `big` figure above the headline) / checklist (numbered body lines)."""
     out = Path(out_path)
     out.parent.mkdir(parents=True, exist_ok=True)
     CARD_W, CARD_H = size or (globals()["CARD_W"], globals()["CARD_H"])
     safe_top, safe_bottom = safe
-    image = Image.new("RGB", (CARD_W, CARD_H), INK_BG)
+    if background is not None:
+        image = background.convert("RGB").resize((CARD_W, CARD_H))
+    else:
+        image = Image.new("RGB", (CARD_W, CARD_H), INK_BG)
     draw = ImageDraw.Draw(image)
 
     body = plain_for_card(_drop_hashtags(plain_for_card(text)))
@@ -243,6 +285,14 @@ def render(text, out_path, kicker="", quality=88, max_kb=900, footer=FOOTER, siz
     # First line reads as the headline, the rest as body: a card is a poster, not a memo.
     parts = [block for block in body.split("\n\n") if block.strip()] or [body]
     headline, rest = parts[0], "\n\n".join(parts[1:]) if len(parts) > 1 else ""
+    if layout == "checklist" and rest:
+        rest = _numbered(rest)
+    # A standalone link line duplicates the footer on a card: the caption keeps it, the card does not.
+    if footer and rest:
+        rest = "\n".join(ln for ln in rest.split("\n") if not re.fullmatch(r"\s*https?://\S+\s*", ln))
+        rest = re.sub(r"\n{3,}", "\n\n", rest).strip()
+    big = " ".join(plain_for_card(big).split()) if layout == "stat" else ""
+    bfont_big, bsize_big = _fit_line(draw, big, "Black", max_width, 190, floor=72) if big else (None, 0)
 
     tall = CARD_H >= 1700            # a Story frame carries bigger type: it is held closer, alone
     hfont, hsize = fit_size(draw, headline, "Black", max_width,
@@ -256,7 +306,8 @@ def render(text, out_path, kicker="", quality=88, max_kb=900, footer=FOOTER, siz
     # first, then start it where it will look placed rather than dropped.
     headline_lines = len(wrap(draw, headline, hfont, max_width))
     body_lines = len(wrap(draw, rest, bfont, max_width)) if rest else 0
-    block = headline_lines * int(hsize * 1.18) + (26 + body_lines * int(bsize * 1.32) if rest else 0)
+    big_block = (int(bsize_big * 1.08) + 18) if big else 0
+    block = big_block + headline_lines * int(hsize * 1.18) + (26 + body_lines * int(bsize * 1.32) if rest else 0)
     ceiling, floor_top = CARD_H - 200 - safe_bottom, 150 + safe_top
     top = max(floor_top, min(ceiling - block, floor_top + (ceiling - floor_top - block) // 2))
 
@@ -267,6 +318,13 @@ def render(text, out_path, kicker="", quality=88, max_kb=900, footer=FOOTER, siz
         draw.text((MARGIN, top - (52 if tall else 46)), kicker.upper()[:40], font=kfont, fill=BLUE)
     draw.line([(MARGIN, top - 8), (MARGIN + 96, top - 8)], fill=ACCENT, width=4)
     y = top
+    if big:
+        # The stat layout: one figure in the accent, the yellow underline sweep under it (§5).
+        draw.text((MARGIN, y), big, font=bfont_big, fill=WHITE)
+        width = draw.textlength(big, font=bfont_big)
+        draw.line([(MARGIN, y + int(bsize_big * 1.0)), (MARGIN + width, y + int(bsize_big * 1.0))],
+                  fill=ACCENT, width=10)
+        y += big_block
     for line in wrap(draw, headline, hfont, max_width):
         draw.text((MARGIN, y), line, font=hfont, fill=WHITE)
         y += int(hsize * 1.18)
@@ -295,7 +353,8 @@ def render(text, out_path, kicker="", quality=88, max_kb=900, footer=FOOTER, siz
     return {"path": str(out), "bytes": len(data), "quality": quality,
             "width": CARD_W, "height": CARD_H, "ratio": CARD_W / CARD_H,
             "font": load_font("Black", 60)[1], "headline_lines": len(wrap(draw, headline, hfont, max_width)),
-            "stripped": plain_for_card(text) != (text or "").strip()}
+            "stripped": plain_for_card(text) != (text or "").strip(),
+            "layout": layout, "plate": background is not None}
 
 
 def _encode(image, quality):
@@ -357,6 +416,8 @@ def main(argv=None):
     parser.add_argument("--no-footer", action="store_true")
     parser.add_argument("--story", action="store_true",
                         help="draw a 9:16 Story frame (1080x1920) with the platform's chrome bands kept clear")
+    parser.add_argument("--brief", metavar="YYYY-MM-DD",
+                        help="apply the brain's visual brief for this date when brain/drafts has one")
     parser.add_argument("--print", dest="show", action="store_true")
     args = parser.parse_args(argv if argv is not None else sys.argv[1:])
 
@@ -376,8 +437,18 @@ def main(argv=None):
         args.kicker = args.kicker or (blob.get("post_type") or "")
 
     frame = {"size": (STORY_W, STORY_H), "safe": STORY_SAFE} if args.story else {}
+    brief = {}
+    if args.brief:
+        import brain_drafts
+        pack = brain_drafts.draft_for(args.brief)
+        if pack:
+            size = frame.get("size", (CARD_W, CARD_H))
+            kicker, background, layout, big = _brief(brain_drafts.visual(pack), brain_drafts.post_type(pack), size)
+            brief = {"background": background, "layout": layout, "big": big}
+            args.kicker = kicker
+            print("CARD_BRIEF=%s layout=%s plate=%s" % (pack.get("theme"), layout, "yes" if background is not None else "no"))
     result = render(text, args.out, kicker=args.kicker, quality=args.quality,
-                    max_kb=args.max_kb, footer="" if args.no_footer else FOOTER, **frame)
+                    max_kb=args.max_kb, footer="" if args.no_footer else FOOTER, **frame, **brief)
 
     absolute = Path(result["path"]).resolve()
     relative = absolute.relative_to(ROOT) if str(absolute).startswith(str(ROOT)) else absolute

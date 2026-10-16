@@ -1,0 +1,231 @@
+name: DocOga Brain — the standing editor
+
+# Owner, 16 Oct 2026: "I don't want a bank. I want a brain that can think like you,
+# understands content creation and my business, so that it works autonomously —
+# everything automated. It only handles the social media."
+#
+# What this lane does every night at 01:30 in Lagos, before any posting lane wakes:
+#   1. `feedback` (Mondays) — reads the YouTube stats ledger and its own said-ledger
+#      and writes brain/feedback.md: what worked, what is overused, which state is due.
+#   2. `plan --days 3` — for each of the next three days without an approved pack,
+#      asks Gemini (free tier, a model chain with per-model daily buckets) for the
+#      day's content and runs the gates: citation (fact ids on the law shelf),
+#      verification (a second model call must agree), brand lint, repetition, shape.
+#      Approved packs land in brain/drafts/YYYY-MM-DD.json; the Telegram, Facebook,
+#      Threads/Instagram and Short/Reel lanes read them at post time and fall back
+#      to the hand-written rotation when there is none.
+#   3. `deepdive` (Sundays, or on demand) — drafts the next Deep-Dive episode into
+#      episodes/ddN/ (nine sections, beats, cover, YouTube meta), checked by the
+#      engine's own trigger check, and queues it. The nightly Deep-Dive lane then
+#      narrates, renders and uploads it as it does today.
+#   4. Commits drafts, the said-ledger, feedback and any new episode to main.
+#
+# Quota: two to three requests a night. When every model is spent the brain exits 6
+# and the lanes post from the rotation — a pause, not a failure, so no issue is
+# opened for it; a real error does open one, labelled brain-automation.
+
+on:
+  schedule:
+    - cron: '30 0 * * *'          # 01:30 WAT — before Deep-Dive (02:00 UTC) and the posting lanes
+  workflow_dispatch:
+    inputs:
+      days:
+        description: 'How many days ahead to plan (default 3)'
+        required: false
+        default: '3'
+        type: string
+      deepdive:
+        description: 'Also draft the next Deep-Dive episode now'
+        required: false
+        default: false
+        type: boolean
+      dry_run:
+        description: 'Generate and gate, but write nothing and commit nothing'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write        # brain/drafts, logs/brain_said.json, brain/feedback.md, episodes/ddN
+  issues: write          # a real failure opens a labelled issue
+
+concurrency:
+  group: docoga-brain
+  cancel-in-progress: false
+
+jobs:
+  think:
+    name: Plan the next days
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      TZ: Africa/Lagos
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      BRAIN_DAYS: ${{ inputs.days }}
+      BRAIN_DEEPDIVE: ${{ inputs.deepdive }}
+      BRAIN_DRY_RUN: ${{ inputs.dry_run }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          ref: main
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: python3 -m pip install --quiet 'Pillow>=10,<13' 'numpy>=1.24,<3'
+
+      - name: Key present?
+        run: |
+          if [ -z "$GEMINI_API_KEY" ]; then
+            echo "::error title=GEMINI_API_KEY missing::the brain cannot think without the Gemini key the narrator already uses"
+            exit 1
+          fi
+          echo "key: present"
+
+      - name: Feedback (Mondays) — what the numbers said
+        if: ${{ env.BRAIN_DRY_RUN != 'true' }}
+        run: |
+          if [ "$(date +%u)" = "1" ] || [ ! -f brain/feedback.md ]; then
+            python3 tools/brain.py feedback | tee /tmp/brain_feedback.log
+          else
+            echo "not Monday — keeping last week's feedback"
+          fi
+
+      - name: Plan the next days
+        id: plan
+        run: |
+          set -o pipefail
+          DAYS="${BRAIN_DAYS:-3}"
+          ARGS=(plan --days "$DAYS")
+          if [ "$BRAIN_DRY_RUN" = "true" ]; then ARGS+=(--dry-run); fi
+          set +e
+          python3 tools/brain.py "${ARGS[@]}" 2>&1 | tee /tmp/brain_plan.log
+          CODE=${PIPESTATUS[0]}
+          set -e
+          echo "code=$CODE" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Brain — plan"
+            echo
+            case "$CODE" in
+              0) echo "- ✅ the next days have approved packs" ;;
+              3) echo "- ⚠️ nothing approved tonight — the gates refused every draft; the lanes post from the rotation" ;;
+              6) echo "- ⏸ Gemini free tier spent for today on every model — resumes after the next Pacific midnight; the lanes post from the rotation" ;;
+              *) echo "- ❌ the brain failed (exit $CODE)" ;;
+            esac
+            echo
+            echo '```'
+            tail -n 30 /tmp/brain_plan.log
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$CODE" != "0" ] && [ "$CODE" != "3" ] && [ "$CODE" != "6" ]; then exit "$CODE"; fi
+
+      - name: Draft the next Deep-Dive (Sundays, or on demand)
+        id: deepdive
+        if: ${{ env.BRAIN_DRY_RUN != 'true' && steps.plan.outputs.code != '6' }}
+        run: |
+          set -o pipefail
+          if [ "$(date +%u)" != "7" ] && [ "$BRAIN_DEEPDIVE" != "true" ]; then
+            echo "not Sunday and not asked — no episode tonight"
+            echo "code=skip" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Only when the queue has nothing unpublished: one episode a week is the cadence.
+          if python3 tools/deepdive_queue.py next >/tmp/dd_next 2>/dev/null && [ -s /tmp/dd_next ]; then
+            echo "queue still holds $(cat /tmp/dd_next) — not drafting another"
+            echo "code=skip" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          set +e
+          python3 tools/brain.py deepdive 2>&1 | tee /tmp/brain_deepdive.log
+          CODE=${PIPESTATUS[0]}
+          set -e
+          echo "code=$CODE" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Brain — Deep-Dive draft"
+            echo
+            case "$CODE" in
+              0) echo "- ✅ a new episode is written and queued; the Deep-Dive lane will narrate it tonight" ;;
+              3) echo "- ⚠️ no episode approved — the gates or the engine refused every draft" ;;
+              6) echo "- ⏸ Gemini quota spent — next Sunday" ;;
+              *) echo "- ❌ the writer failed (exit $CODE)" ;;
+            esac
+            echo
+            echo '```'
+            tail -n 20 /tmp/brain_deepdive.log
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$CODE" = "0" ]; then
+            NEW=$(python3 -c 'import json;print(json.load(open("episodes/queue.json"))["queue"][-1])')
+            python3 -m pip install --quiet requests >/dev/null
+            python3 tools/deepdive.py "$NEW" check | tee -a /tmp/brain_deepdive.log
+          fi
+          if [ "$CODE" != "0" ] && [ "$CODE" != "3" ] && [ "$CODE" != "6" ]; then exit "$CODE"; fi
+
+      - name: Prune old drafts
+        if: ${{ env.BRAIN_DRY_RUN != 'true' }}
+        run: python3 tools/brain.py prune
+
+      - name: Commit what the brain decided
+        if: ${{ env.BRAIN_DRY_RUN != 'true' }}
+        env:
+          BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          git add -A brain/drafts brain/feedback.md logs/brain_said.json episodes 2>/dev/null || true
+          if git diff --staged --quiet; then
+            echo "nothing new to commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -m "Brain: plan $(date +%F) [skip ci]"
+          if ! git pull --rebase --autostash origin "$BRANCH"; then
+            echo "::warning title=Brain not committed::could not rebase on $BRANCH — tonight's packs are lost; the lanes post from the rotation"
+            exit 1
+          fi
+          if ! git push origin "HEAD:$BRANCH"; then
+            echo "::warning title=Brain not pushed::the packs did not reach $BRANCH — the lanes post from the rotation"
+            exit 1
+          fi
+          echo "✅ pushed to $BRANCH"
+          python3 tools/brain.py status >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Open a visible issue if the run failed
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          RUN_DATE="$(date +%F)"
+          PLAN_TAIL=$(tail -n 30 /tmp/brain_plan.log 2>/dev/null || echo "(the planner never ran)")
+          DD_TAIL=$(tail -n 20 /tmp/brain_deepdive.log 2>/dev/null || echo "(no Deep-Dive draft attempted)")
+          gh label create brain-automation --color 7B61FF --description "The standing editor (tools/brain.py)" >/dev/null 2>&1 || true
+          cat > /tmp/issue_body.md <<BODY
+          The brain's nightly run for **$RUN_DATE** failed. **The posting lanes are unaffected** — they fall back to the hand-written rotation until the brain is back.
+
+          - Run: $RUN_URL
+
+          ### Planner
+          \`\`\`
+          $PLAN_TAIL
+          \`\`\`
+
+          ### Deep-Dive writer
+          \`\`\`
+          $DD_TAIL
+          \`\`\`
+
+          ### Reading it
+          - \`GEMINI_API_KEY is not set\` — the repo secret is missing; the narrator uses the same key.
+          - \`HTTP 400 … not found\` for every model — the model names in \`tools/gemini_text.py\` (or the \`BRAIN_MODELS\` variable) are stale; pick current free-tier Flash models.
+          - A quota exhaustion is **not** an error (exit 6) and does not open this issue.
+          BODY
+          EXISTING=$(gh issue list --label brain-automation --state open --search "Brain nightly run failed" --json number --jq '.[0].number' 2>/dev/null || true)
+          if [ -n "$EXISTING" ]; then
+            gh issue comment "$EXISTING" --body-file /tmp/issue_body.md
+          else
+            gh issue create --title "Brain nightly run failed ($RUN_DATE)" --label brain-automation --body-file /tmp/issue_body.md
+          fi

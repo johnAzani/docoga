@@ -32,3 +32,6 @@ assets/threads/
 
 # Deep-Dive build tree (voice chunks, scene segments, masters) — banked on GitHub Releases, never in git
 build/
+
+# Photographs the brain fetched for card plates (Openverse CC0/PDM originals) — cache, not source.
+assets/plates/
