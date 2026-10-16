@@ -19,6 +19,10 @@ next Deep-Dive episode and queues it for the long-form lane. Nobody is pinged.
 ## Files
 | Path | What |
 |---|---|
+| `brain/strategy.md` | **The plan** (17 Oct 2026): the one goal (Oga Pass sales), the funnel each post is built for, what every platform ranks on in 2026 and our move, the Nigeria posting windows, the content mix, the calendar, the 90-day goals and the orders the scorecard may issue. |
+| `brain/audience.md` | **Five named readers** (Ngozi, Tunde, Mr Okafor, Amaka, Dayo): pains, hours online, who they send posts to, when they buy. Every pack names its `reader`. |
+| `brain/goals.json` | The weekly rates and ratio floors the scorecard grades (edit numbers here, reasons in strategy.md). |
+| `logs/scorecard.json` | One snapshot a week from `tools/brain_scorecard.py`: followers, views, sends, replies, hours, sales, grades, orders. |
 | `brain/business.md` | **Owner-editable memory**: products, prices, audience, voice, words never used, the Nigerian calendar. |
 | `brain/editorial.md` | **Owner-editable policy**: how a day is decided, weekday rhythm, hook archetypes, shape rules, visual brief, Short and Deep-Dive specs. |
 | `brain/feedback.md` | Written every Monday by `brain.py feedback` from `logs/youtube_stats.json` and the said-ledger. |
@@ -30,6 +34,34 @@ next Deep-Dive episode and queues it for the long-form lane. Nobody is pinged.
 | `tools/law_index.py` | `tools/state_law_data.py` flattened into citable facts with ids (`lagos:receipts:7`). |
 | `tools/gemini_text.py` | The one door to Gemini text: model chain, 429 handling, JSON. |
 | `.github/workflows/brain.yml` | The nightly lane. |
+
+## The plan, the scorecard and the orders (17 Oct 2026)
+The brain is held to `brain/strategy.md`. Every Monday 06:40 WAT `brain_scorecard.yml`
+reads what the repo can read — Facebook Page insights (the Page token carries
+`read_insights`), Instagram and Threads insights (the vault tokens), the Telegram
+member count, the YouTube snapshot, and, when the owner adds the dashboard passphrase
+as the repo secret **`DOCOGA_ADMIN_PASSPHRASE`**, passes sold and ₦ revenue from the
+owner dashboard (`/admin/login` → `/admin/data` → `/admin/logout`, one session a
+week). It grades each number against `brain/goals.json` (growth per week, ratio
+floors), escalates anything behind two weeks running, and writes **orders** —
+deterministic sentences from the rules in strategy.md ("sends under 1.5%: STAKES
+hooks and a named-person send line in every post"). `brain.py feedback` folds the
+scorecard into `brain/feedback.md`; the nightly prompt carries the strategy, the
+audience and the orders under "obey the orders".
+
+Two shape rules came with the plan, enforced by the lint: every pack has a
+`post.cta` — a send/forward/reply line naming a receiver or asking a five-word
+question (sends are what 2026 feeds rank on; forwards are all Telegram has) — and
+every Threads post ends with a question (replies are what Threads ranks on). The
+2026 metric names are used throughout (`page_total_media_view_unique`,
+`post_media_view`, `views`/`reach`/`saved`/`shares`); `impressions` and `page_fans`
+are gone from the API.
+
+Posting slots moved to the windows the Nigeria data names: Threads 13:10 WAT
+(lunch), Instagram 19:10, Facebook evening Story 19:40; Telegram 09:00 and the
+Facebook post 09:30 stay. The scorecard records the hour each post went out, its
+engagement by hour, and Instagram's `online_followers` curve, so the slots are
+corrected from evidence.
 
 ## The gates (why a legal-documents brand can let a model write)
 1. **Citation** — every legal claim names a fact id on the shelf for the state
@@ -96,6 +128,8 @@ python3 tools/brain.py plan --dry-run --date 2026-10-20
 python3 tools/brain.py feedback
 python3 tools/brain.py deepdive --dry-run
 python3 tools/law_index.py lagos              # the shelf the brain sees
+python3 tools/brain_scorecard.py pull --dry-run  # the Monday numbers, graded, nothing written
+python3 tools/brain_scorecard.py summary      # the latest scorecard block
 ```
 Edit `brain/business.md` or `brain/editorial.md` to change what the brain knows
 or how it decides; nothing in the code needs to change for that.

@@ -66,3 +66,16 @@ short, true and specific.*
 - November–December: "landlord wants me out before Christmas", end-of-year
   notices, advance rent demands for next year.
 - Rainy season (April–October): repairs, leaking roofs, who fixes what.
+- Peak rental seasons: January–March and August–October (corporate moves, school
+  calendar, Abuja's August influx). Payday window: 25th to month-end.
+
+## Things that are true in October 2026 and change what we may say
+- Rents in Lagos rose 25–40% in the first half of 2026 and renters spend 50–70%
+  of income on rent (press/NIESV figures — say "reported", not a statute). The
+  standing national mood is rent-increase anger; "what a landlord may and may not
+  demand" is the most forwarded genre.
+- **The Lagos Tenancy Bill (2026) is a proposal, not law** — "3 months' rent cap",
+  "5% agency fee" are clauses of a bill. A post may say "the law today says X
+  (section); a bill before the House proposes Y"; it may never state a bill as law.
+- The only tenancy statute we cite for Lagos is the Tenancy Law 2011 as it stands
+  on the shelf; for every other state, the shelf is the whole truth we tell.

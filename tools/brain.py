@@ -66,6 +66,8 @@ BRAIN = ROOT / "brain"
 BUSINESS = BRAIN / "business.md"
 EDITORIAL = BRAIN / "editorial.md"
 FEEDBACK = BRAIN / "feedback.md"
+STRATEGY = BRAIN / "strategy.md"
+AUDIENCE = BRAIN / "audience.md"
 SAID = Path(os.environ.get("DOCOGA_BRAIN_SAID") or (ROOT / "logs" / "brain_said.json"))
 EPISODES = ROOT / "episodes"
 STATS = ROOT / "logs" / "youtube_stats.json"
@@ -90,12 +92,18 @@ PLATE_BANNED = ("face", "person", "people", "man", "woman", "child", "children",
 EMOJI = re.compile("[\U0001F300-\U0001FAFF\U00002600-\U000027BF\U0001F000-\U0001F2FF\u2B50\u2705\u274C]")
 NAIRA = re.compile(r"₦\s?([0-9][0-9,\.]*)")
 MAX_ATTEMPTS = 2
+CTA_MAX = 110
+CTA_VERBS = ("send", "forward", "share", "tag", "tell", "reply", "comment", "save", "drop", "ask", "show", "answer")
+PERSONAS = ("ngozi", "tunde", "okafor", "amaka", "dayo")
 
-SYSTEM = """You are the editor of DocOga, Nigeria's document engine. You write one day's social
-content for Nigerian tenants, landlords and small businesses, in direct Nigerian English (or
-pidgin when the day calls for it). You cite only the law facts you are given, by their fact id,
-and you never invent a statute, a section, a price or a story about a named person. You answer
-with one JSON object and nothing else."""
+SYSTEM = """You are the editor and growth lead of DocOga, Nigeria's document engine. You write one
+day's social content for Nigerian tenants, landlords and small businesses, in direct Nigerian
+English (or pidgin when the day calls for it). You are held to a plan: sales of the ₦2,000 Oga
+Pass, and the channel signals that lead them — sends, forwards, replies, watch time. You write
+each post to one named reader, you build in the line that makes them send it to one person, and
+you end Threads posts with a question they can answer in five words. You cite only the law facts
+you are given, by their fact id, and you never invent a statute, a section, a price or a story
+about a named person. You answer with one JSON object and nothing else."""
 
 
 # ───────────────────────────── small helpers ─────────────────────────────
@@ -133,6 +141,14 @@ def state_for(day):
 def calendar_notes(day):
     notes = []
     m, d = day.month, day.day
+    if d >= 25 or d <= 2:
+        notes.append("Payday window (25th to month-end): the pass is bought when there is money — promo and "
+                     "'make it today' lines land now.")
+    if m in (1, 2, 3, 8, 9, 10):
+        notes.append("Peak rental season (Jan–Mar, Aug–Oct): renewals, new agreements, advance-rent demands, "
+                     "'renewal is not a new tenancy'.")
+    if m == 8:
+        notes.append("August: Abuja's yearly influx pushes renewals 10–25% up; agents demand full years upfront.")
     if m == 1:
         notes.append("January: rent-renewal season; new agreements; school-fees pressure.")
     if m in (11, 12):
@@ -163,7 +179,8 @@ def day_context(day, said=None):
     return dict(day=day, weekday=day.strftime("%A"), lead=weekday_lead(day), state=slug,
                 state_name=facts[0]["state"] if facts else slug, facts=facts,
                 short_day=day.weekday() in SHORT_DAYS, calendar=calendar_notes(day),
-                recent=recent, feedback=read(FEEDBACK).strip())
+                recent=recent, feedback=read(FEEDBACK).strip(),
+                strategy=read(STRATEGY).strip(), audience=read(AUDIENCE).strip())
 
 
 def prompt_for(ctx, problems=None):
@@ -178,6 +195,12 @@ def prompt_for(ctx, problems=None):
     return f"""BUSINESS MEMORY
 {read(BUSINESS).strip()}
 
+STRATEGY — THE PLAN YOU ARE HELD TO
+{ctx.get('strategy') or '(no strategy file)'}
+
+AUDIENCE — WRITE TO ONE OF THESE FIVE BY NAME
+{ctx.get('audience') or '(no audience file)'}
+
 EDITORIAL POLICY
 {read(EDITORIAL).strip()}
 
@@ -187,7 +210,7 @@ TODAY
 - {short_rule}
 - Calendar: {' '.join(ctx['calendar']) or 'nothing special.'}
 
-WHAT THE NUMBERS SAID (most recent feedback)
+WHAT THE NUMBERS SAID — SCORECARD, GOALS AND THIS WEEK'S ORDERS (obey the orders)
 {ctx['feedback'] or 'No feedback yet — use the editorial rhythm.'}
 
 SAID IN THE LAST 60 DAYS (do not repeat a theme from the last 21 days; do not reuse a headline)
@@ -203,16 +226,19 @@ OUTPUT — one JSON object with exactly these keys:
   "hook_type": one of {list(HOOKS)},
   "state": "{ctx['state']}" or null if the post makes no legal claim,
   "claims": [{{"text": "the legal sentence as it appears in the post", "fact_id": "an id from the shelf"}}],
+  "reader": one of {list(PERSONAS)} — the person from AUDIENCE this day is written to,
   "post": {{"headline": "<= {HEADLINE_MAX} characters, sentence case", "lines": ["2 to 5 lines, each <= {LINE_MAX} characters"],
+           "cta": "<= {CTA_MAX} characters: the send/forward/reply line naming a receiver or a five-word answer, e.g. 'Send this to the friend whose rent is due in January.' or 'Which state are you renting in? Tell us below.'",
            "hashtags": ["#DocOga", "3 to 5 total"]}},
-  "threads": {{"text": "<= 380 characters, self-contained, no link, no hashtags", "hashtags": ["#DocOga", "at most 2"]}},
+  "threads": {{"text": "<= 360 characters, self-contained, no link, no hashtags, ENDS WITH A QUESTION answerable in five words", "hashtags": ["#DocOga", "at most 2"]}},
   "visual": {{"kicker": "2-4 words", "layout": one of {list(LAYOUTS)}, "big": "number or 1-3 words for the stat layout, else empty",
              "plate": "2-4 plain words for a background photograph with no faces and no signs"}},
   "short": null or {{"title": "one or two short sentences", "hook_sub": "<= 9 words",
                      "tips": [{{"text": "<= 5 words", "sub": "<= 9 words"}}, "... exactly four"]}},
   "why": "one sentence: why today says this"
 }}
-Rules: do not put the link or the disclaimer in `lines` or `threads.text` — the renderer adds them.
+Rules: do not put the link or the disclaimer in `lines`, `cta` or `threads.text` — the renderer adds them.
+The `cta` is not a slogan: it names who to send it to, or asks one answerable question. Follow the ORDERS block.
 Every legal statement in the post must appear in `claims` with its fact id. Name the state in the post
 whenever a claim is made. No markdown, no asterisks, no emoji in the headline, kicker or Short.{retry}"""
 
@@ -285,6 +311,16 @@ def lint(pack, ctx, said):
     full = drafts.post_text({**pack, "post": {"headline": headline, "lines": lines}}) if headline else ""
     if full and len(full) > POST_MAX:
         p.append("the post is %d characters with link and disclaimer; max %d" % (len(full), POST_MAX))
+    cta = str(post.get("cta") or "").strip()
+    if not cta:
+        p.append("post.cta is missing — the send/forward/reply line is how a post travels")
+    else:
+        if len(cta) > CTA_MAX:
+            p.append("post.cta is %d characters; max %d" % (len(cta), CTA_MAX))
+        if not any(v in cta.lower() for v in CTA_VERBS):
+            p.append("post.cta must ask the reader to send, forward, share, tag, reply or answer — not a slogan")
+        if "docoga.com.ng" in cta.lower():
+            p.append("post.cta must not carry the link; the renderer adds it")
     if not (3 <= len(tags) <= 5):
         p.append("post.hashtags must be 3 to 5 tags")
     if tags and "#DocOga" not in tags:
@@ -298,6 +334,8 @@ def lint(pack, ctx, said):
         tfull = drafts.threads_text({**pack, "threads": {"text": ttext}})
         if len(tfull) > THREADS_MAX:
             p.append("threads text is %d characters with link and disclaimer; max %d" % (len(tfull), THREADS_MAX))
+        if "?" not in ttext[-160:]:
+            p.append("threads.text must end with a question the reader can answer in five words (replies are what Threads ranks on)")
         if "http" in ttext or "#" in ttext:
             p.append("threads.text must not carry the link or hashtags — the renderer adds them")
     if len([t for t in (threads.get("hashtags") or [])]) > 2:
@@ -485,7 +523,8 @@ def remember(said, approved):
     said.append({"date": approved["date"], "theme": approved["theme"], "headline": approved["post"]["headline"],
                  "post_type": approved["post_type"], "hook_type": approved["hook_type"],
                  "state": approved.get("state"), "fact_ids": [c.get("fact_id") for c in approved["claims"]],
-                 "plate": approved["visual"].get("plate", ""), "short": bool(approved.get("short"))})
+                 "plate": approved["visual"].get("plate", ""), "short": bool(approved.get("short")),
+                 "reader": approved.get("reader") or ""})
     floor = (date.fromisoformat(approved["date"]) - timedelta(days=180)).isoformat()
     said[:] = [e for e in said if str(e.get("date", "")) >= floor]
     save_said(said)
@@ -541,7 +580,7 @@ def plan(days=3, start=None, http=None, sleep=None, log=print, dry_run=False):
 
 
 # ───────────────────────────── feedback ─────────────────────────────
-def feedback_text(stats=None, said=None, today=None):
+def feedback_text(stats=None, said=None, today=None, scorecard=None):
     """What the numbers said, as a short markdown note the next plan reads."""
     today = today or today_lagos()
     said = load_said() if said is None else said
@@ -551,6 +590,11 @@ def feedback_text(stats=None, said=None, today=None):
         except (OSError, ValueError):
             stats = []
     lines = ["# What the numbers said — written %s by tools/brain.py feedback" % today.isoformat(), ""]
+    try:
+        import brain_scorecard
+        lines += brain_scorecard.feedback_section(scorecard).rstrip().split("\n") + [""]
+    except Exception as e:  # the scorecard is an input, never a reason to have no feedback
+        lines += ["## Scorecard", "unavailable (%s)" % e, ""]
     snap = stats[-1] if isinstance(stats, list) and stats else (stats if isinstance(stats, dict) else {})
     videos = snap.get("videos") or []
     if videos:

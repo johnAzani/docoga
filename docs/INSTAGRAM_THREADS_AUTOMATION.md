@@ -371,10 +371,11 @@ Nothing else: no bucket, no domain, no card, no new secret.
 |---|---|---|
 | Telegram | 08:00 daily | 09:00 |
 | Facebook | 08:30 daily | 09:30 |
-| **Threads** | **08:45 daily** | **09:45** |
-| **Instagram** | **09:00 daily** | **10:00** |
+| **Threads** | **12:10 daily** | **13:10** (lunch — reply velocity) |
 | YouTube Shorts | 17:00 Tue & Fri | 18:00 |
 | Heartbeat | 18:00 daily | 19:00 |
+| **Instagram** | **18:10 daily** | **19:10** (the 7–9 pm peak) |
+| Facebook evening Story | 18:40 daily | 19:40 |
 
-Fifteen minutes apart on purpose: if two lanes fail in the same minute, a shared cause (a dead
-runner, a Meta outage) is guessable; if they fail at 08:45 and 09:00, they are two facts.
+Slots moved on 17 Oct 2026 to the windows the 2026 Nigeria data names (`brain/strategy.md`);
+no two lanes share a minute, so a shared cause (a dead runner, a Meta outage) stays guessable.

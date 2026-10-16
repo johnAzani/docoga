@@ -1,0 +1,130 @@
+# Brain scorecard — the numbers the editor is held to, every Monday.
+#
+# Owner, 17 Oct 2026: "I want to see all the social media growing all round, my bank
+# account getting fat … it has a plan, it cannot afford to fail, it knows its target
+# audience, the best time to post, makes sure goals are achieved."
+#
+# This lane is the "makes sure" part. It reads every channel the repo can read —
+# Facebook Page insights (the Page token already carries read_insights), Instagram and
+# Threads insights (the same vault tokens the posting lanes use), the Telegram member
+# count, the YouTube snapshot youtube_stats.yml pulled an hour earlier, and — when the
+# owner adds the dashboard passphrase as DOCOGA_ADMIN_PASSPHRASE — passes sold and ₦
+# revenue from the owner dashboard. It grades each against brain/goals.json, writes the
+# week's orders, and `tools/brain.py feedback` folds the whole thing into
+# brain/feedback.md, which tonight's plan reads and must obey.
+#
+# Nothing here posts. A channel that cannot be read is a line in the summary ("not
+# measured, and why"), never a red run. Reads only; ₦0.
+name: Brain scorecard
+
+on:
+  schedule:
+    - cron: '40 5 * * 1'          # Mondays 06:40 WAT — after youtube_stats (06:00 WAT), before the lanes
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Pull and grade, but write nothing and commit nothing'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write        # logs/scorecard.json, brain/feedback.md
+
+concurrency:
+  group: docoga-brain
+  cancel-in-progress: false
+
+jobs:
+  measure:
+    name: Pull the numbers and grade the goals
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      TZ: Africa/Lagos
+      SCORECARD_DRY_RUN: ${{ inputs.dry_run }}
+      SOCIAL_TOKEN_KEY: ${{ secrets.SOCIAL_TOKEN_KEY }}
+      IG_API_PATH: ${{ vars.IG_API_PATH || 'instagram-login' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          ref: main
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install the vault's one dependency
+        run: python3 -m pip install --quiet cryptography
+
+      - name: Open the Instagram and Threads vault boxes (read-only use)
+        env:
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
+        run: |
+          set -u
+          umask 077
+          if [ -f logs/ig_access_token.box ] && python3 tools/token_vault.py open --name IG_ACCESS_TOKEN --out /tmp/ig_token; then
+            echo "IG_TOKEN_FILE=/tmp/ig_token" >> "$GITHUB_ENV"
+          elif [ -n "${IG_ACCESS_TOKEN:-}" ]; then
+            printf '%s' "$IG_ACCESS_TOKEN" > /tmp/ig_token && chmod 600 /tmp/ig_token
+            echo "IG_TOKEN_FILE=/tmp/ig_token" >> "$GITHUB_ENV"
+          fi
+          if [ -f logs/threads_token.box ] && python3 tools/token_vault.py open --name THREADS_ACCESS_TOKEN --out /tmp/threads_token; then
+            echo "THREADS_TOKEN_FILE=/tmp/threads_token" >> "$GITHUB_ENV"
+          elif [ -n "${THREADS_ACCESS_TOKEN:-}" ]; then
+            printf '%s' "$THREADS_ACCESS_TOKEN" > /tmp/threads_token && chmod 600 /tmp/threads_token
+            echo "THREADS_TOKEN_FILE=/tmp/threads_token" >> "$GITHUB_ENV"
+          fi
+          echo "vault step done (tokens, if any, are in 0600 files; never printed)"
+
+      - name: Pull, grade, write the orders
+        id: pull
+        env:
+          FB_PAGE_ACCESS_TOKEN: ${{ secrets.FB_PAGE_ACCESS_TOKEN }}
+          FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          DOCOGA_ADMIN_PASSPHRASE: ${{ secrets.DOCOGA_ADMIN_PASSPHRASE }}
+        run: |
+          set +e
+          if [ "$SCORECARD_DRY_RUN" = "true" ]; then
+            python3 tools/brain_scorecard.py pull --dry-run
+          else
+            python3 tools/brain_scorecard.py pull
+          fi
+          CODE=$?
+          echo "code=$CODE" >> "$GITHUB_OUTPUT"
+          if [ "$CODE" = "2" ]; then
+            echo "::warning title=Scorecard measured nothing::no channel could be read this week — check the token lines in the summary"
+          fi
+          exit 0
+
+      - name: Fold the numbers into the brain's feedback
+        if: ${{ env.SCORECARD_DRY_RUN != 'true' }}
+        run: python3 tools/brain.py feedback > /dev/null && echo "brain/feedback.md rewritten"
+
+      - name: Commit the scorecard and the feedback
+        if: ${{ env.SCORECARD_DRY_RUN != 'true' }}
+        env:
+          BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          git add -A logs/scorecard.json brain/feedback.md 2>/dev/null || true
+          if git diff --staged --quiet; then
+            echo "nothing new to commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -m "Brain scorecard: week $(date +%G-W%V) [skip ci]"
+          if ! git pull --rebase --autostash origin "$BRANCH"; then
+            echo "::warning title=Scorecard not committed::could not rebase on $BRANCH — this week's grades live only in the run summary"
+            exit 0
+          fi
+          if ! git push origin "HEAD:$BRANCH"; then
+            echo "::warning title=Scorecard not pushed::the grades did not reach $BRANCH"
+            exit 0
+          fi
+          echo "✅ pushed to $BRANCH"

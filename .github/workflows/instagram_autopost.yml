@@ -43,7 +43,7 @@ name: DocOga Instagram Auto-Post
 
 on:
   schedule:
-    - cron: '0 9 * * *'  # 09:00 UTC = 10:00 Lagos, after Threads so a shared failure is still two visible runs
+    - cron: '10 18 * * *'  # 18:10 UTC = 19:10 Lagos — the 7–9 pm peak for Nigeria's visual platform (brain/strategy.md); :10 so a late scheduler still lands in the window
   workflow_dispatch:
     inputs:
       dry_run:
