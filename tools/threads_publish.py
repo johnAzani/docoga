@@ -42,7 +42,7 @@ the single most common mistake in Threads integrations):
     POST /{user-id}/threads          {text, link_attachment, reply_control} → {id}  container
     POST /{user-id}/threads_publish  {creation_id}                        → {id}    the post
     GET  /{media-id}?fields=permalink,text                                 read-back
-    GET  /{user-id}/refresh_access_token?grant_type=th_refresh_token        the 60-day clock
+    GET  /refresh_access_token?grant_type=th_refresh_token                 the 60-day clock
 
 Stdlib only: no `requests`, no install step, nothing to go wrong on a runner at 08:45
 UTC while nobody is awake.
@@ -184,8 +184,12 @@ def api(method, path, token, params=None):
 
 def whoami(token, user_id=None):
     """'Who does this token actually authorise?' — asked before anything else, always."""
+    # Only documented Threads user fields. 16 Oct 2026: the Instagram lane's first real probe
+    # died on one made-up field (`(#100) Tried accessing nonexisting field`), and this list
+    # carried two (`is_eligible_for_apis`, `threads_profile`). A valid token must not be
+    # reported as a credentials failure because of the question we asked.
     who = api("GET", "/me" if not user_id else "/%s" % user_id, token,
-              {"fields": "id,username,name,is_eligible_for_apis,threads_profile"})
+              {"fields": "id,username,name"})
     return who
 
 
@@ -270,8 +274,9 @@ def read_back(token, post_id):
 
 def refresh_token(token, user_id):
     """The 60-day clock, wound forward. `grant_type` is a literal, not a secret."""
-    data = api("GET", "/%s/refresh_access_token" % user_id, token,
-               {"grant_type": "th_refresh_token"})
+    # `GET /refresh_access_token` at the host root — not under the user id. Same shape as
+    # Instagram's `/refresh_access_token`, which the Instagram lane also had wrong on day one.
+    data = api("GET", "/refresh_access_token", token, {"grant_type": "th_refresh_token"})
     if not data.get("access_token"):
         raise ApiError(200, json.dumps(data))
     return data

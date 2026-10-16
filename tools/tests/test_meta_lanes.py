@@ -355,7 +355,7 @@ class ThreadsPublisher(unittest.TestCase):
         the seal parse a sentence as JSON. So the failure is reported on stderr only.
         """
         _env, token_path = threads_env(self.tmp)
-        routes = self._routes(extra={"GET /42/refresh_access_token": (400, json.dumps(
+        routes = self._routes(extra={"GET /refresh_access_token": (400, json.dumps(
             {"error": {"message": "Cannot refresh a token that is less than 24 hours old",
                        "code": 100, "type": "OAuthException"}}))})
         code, out, _fake = self._publish(routes, argv=["--refresh", "--token-file", token_path])
@@ -366,8 +366,30 @@ class ThreadsPublisher(unittest.TestCase):
                                        "the tail of stderr — an empty warning is a worse lie than "
                                        "a red one")
 
+    def test_whoami_asks_only_for_documented_fields_and_refresh_is_at_the_root(self):
+        """Day-one Threads: `/me` must not carry invented fields (Instagram's first probe died on
+        one), and the refresh lives at `/refresh_access_token`, not under the user id."""
+        routes = self._routes(extra={"GET /refresh_access_token": ok(
+            {"access_token": "NEWtok", "expires_in": 5184000})})
+        fake = FakeHttp(routes)
+        env, token_path = threads_env(self.tmp)
+        with mock.patch.object(tp, "_request", fake):
+            code, out = run_publisher(tp, ["--probe", "--token-file", token_path], env)
+        self.assertEqual(code, 0, out)
+        me = [q for m, url, q in fake.calls if url.endswith("/me")]
+        self.assertTrue(me, fake.calls)
+        for bogus in ("is_eligible_for_apis", "threads_profile", "profile_type"):
+            self.assertNotIn(bogus, me[0])
+        fake = FakeHttp(routes)
+        with mock.patch.object(tp, "_request", fake):
+            code, out = run_publisher(tp, ["--refresh", "--token-file", token_path], env)
+        self.assertEqual(code, 0, out)
+        hits = [url for m, url, q in fake.calls if "refresh_access_token" in url]
+        self.assertEqual(len(hits), 1, fake.calls)
+        self.assertTrue(hits[0].endswith("/v1.0/refresh_access_token"), hits[0])
+
     def test_refresh_hands_json_to_the_caller_and_nothing_else(self):
-        routes = self._routes(extra={"GET /42/refresh_access_token": ok(
+        routes = self._routes(extra={"GET /refresh_access_token": ok(
             {"access_token": "NEWtok", "expires_in": 5184000})})
         fake = FakeHttp(routes)
         env, token_path = threads_env(self.tmp)
