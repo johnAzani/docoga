@@ -440,6 +440,19 @@ on:
    - Send a message to your bot in Telegram
    - If it doesn't respond, your token is invalid
 
+### `getMe failed: Not Found` (the 15–16 Oct 2026 failure)
+
+Telegram's **404 Not Found** means the *shape* of the token is wrong — it is not a revoked
+bot (that is **401 Unauthorized**). It happens when the secret is pasted from a phone with
+its `bot` prefix, as the whole `https://api.telegram.org/bot…` URL, in quotes, truncated, or
+with the chat id in the wrong field. Since 16 Oct 2026 every Telegram script reads the token
+through `tools/telegram_token.py`, which finds the token *inside* an untidy paste (prefix,
+URL, quotes, whitespace) and carries on with a warning; when nothing token-shaped is in the
+secret at all, the preflight stops offline with a redacted description of what is there
+("all digits — looks like a chat id", "only 8 characters after the colon — truncated paste")
+and exit code 3. The fix is always the same one paste: @BotFather → `/mybots` → the bot →
+**API Token** → set `TELEGRAM_BOT_TOKEN` to exactly `<digits>:<35 characters>`.
+
 ### Bot Not Posting to Channel
 1. **Check Bot Permissions:**
    - Bot must be an **admin** in the channel

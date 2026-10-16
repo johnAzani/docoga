@@ -33,6 +33,7 @@ Usage:
 import json
 
 import telegram_preview  # the same reader the poster guards with
+import telegram_token  # one reader for the bot token — tolerant of phone pastes
 import os
 import sys
 import urllib.error
@@ -158,11 +159,12 @@ def main(argv=None):
             print("%s channel preview: %s" % ("✅" if state == "readable" else "⚠️", detail))
         return 0 if state == "readable" else 1
 
-    token = os.getenv("TELEGRAM_BOT_TOKEN")
+    raw_token = os.getenv("TELEGRAM_BOT_TOKEN")
+    token, token_note = telegram_token.from_env()
     chat_id = os.getenv("TELEGRAM_CHAT_ID")
 
     missing = []
-    if not token:
+    if not raw_token:
         missing.append("TELEGRAM_BOT_TOKEN")
     if not chat_id:
         missing.append("TELEGRAM_CHAT_ID")
@@ -175,14 +177,31 @@ def main(argv=None):
         )
         return 2
 
-    # 2. token
+    # 2. token — shape first (offline, exact, redacted), then Telegram's verdict.
+    if token is None:
+        annotate(
+            "error",
+            "Telegram bot token is not a token",
+            "TELEGRAM_BOT_TOKEN does not contain anything shaped like a bot token "
+            f"({token_note}). A bot token is <digits>:<35 characters>, e.g. 123456789:AAH… — "
+            "open @BotFather → /mybots → the bot → API Token and paste exactly that. "
+            "Nothing was generated and nothing was posted; the channel itself is fine.",
+        )
+        return 3
+    if token_note:
+        annotate(
+            "warning",
+            "Telegram bot token was pasted untidily",
+            f"TELEGRAM_BOT_TOKEN {token_note}; the token inside it is being used, so this run "
+            "continues. Re-paste the bare token when convenient.",
+        )
     ok, bot = call("getMe", token)
     if not ok:
         annotate(
             "error",
             "Telegram bot token rejected",
-            f"getMe failed: {bot}. The token in TELEGRAM_BOT_TOKEN is revoked or "
-            "wrong — reissue it with @BotFather (the channel itself is fine).",
+            f"getMe failed: {bot}. {telegram_token.explain_rejection(str(bot))} "
+            "(The channel itself is fine.)",
         )
         return 3
     if not quiet:

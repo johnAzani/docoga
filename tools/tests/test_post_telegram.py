@@ -192,6 +192,9 @@ def _temp_png():
     return _Temp()
 
 
+WELL_FORMED = "123456789:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw"  # the shape, not a real bot
+
+
 class PreflightTests(unittest.TestCase):
     """The preflight must name a missing secret without touching the network."""
 
@@ -212,7 +215,7 @@ class PreflightTests(unittest.TestCase):
 
         with patch.dict(
             telegram_preflight.os.environ,
-            {"TELEGRAM_BOT_TOKEN": "bad", "TELEGRAM_CHAT_ID": "@channel"},
+            {"TELEGRAM_BOT_TOKEN": WELL_FORMED, "TELEGRAM_CHAT_ID": "@channel"},
             clear=True,
         ), patch.object(telegram_preflight, "call", return_value=(False, "Unauthorized")):
             out = StringIO()
@@ -220,6 +223,70 @@ class PreflightTests(unittest.TestCase):
                 code = telegram_preflight.main([])
         self.assertEqual(code, 3)
         self.assertIn("Unauthorized", out.getvalue())
+        self.assertIn("revoked", out.getvalue())
+
+    def test_a_404_is_called_a_paste_problem(self):
+        """15–16 Oct 2026: `getMe failed: Not Found` was reported as "revoked or wrong" — the
+        owner would have regenerated a perfectly good bot token. 404 means the shape."""
+        sys.path.insert(0, str(ROOT / "tools"))
+        import telegram_preflight
+
+        with patch.dict(
+            telegram_preflight.os.environ,
+            {"TELEGRAM_BOT_TOKEN": WELL_FORMED, "TELEGRAM_CHAT_ID": "@channel"},
+            clear=True,
+        ), patch.object(telegram_preflight, "call", return_value=(False, "Not Found")):
+            out = StringIO()
+            with redirect_stdout(out):
+                code = telegram_preflight.main([])
+        self.assertEqual(code, 3)
+        self.assertIn("paste problem", out.getvalue())
+        self.assertNotIn("revoked or", out.getvalue())
+
+    def test_a_malformed_token_is_refused_offline_with_its_shape(self):
+        """Nothing shaped like a token inside the secret → exit 3 before any network call,
+        with a redacted description of what is there instead."""
+        sys.path.insert(0, str(ROOT / "tools"))
+        import telegram_preflight
+
+        with patch.dict(
+            telegram_preflight.os.environ,
+            {"TELEGRAM_BOT_TOKEN": "-1001234567890", "TELEGRAM_CHAT_ID": "@channel"},
+            clear=True,
+        ), patch.object(telegram_preflight, "call", side_effect=AssertionError("network")) :
+            out = StringIO()
+            with redirect_stdout(out):
+                code = telegram_preflight.main([])
+        self.assertEqual(code, 3)
+        self.assertIn("chat id", out.getvalue())
+        self.assertNotIn("1001234567890", out.getvalue())
+
+    def test_a_token_pasted_with_its_bot_prefix_is_used_and_remarked_on(self):
+        sys.path.insert(0, str(ROOT / "tools"))
+        import telegram_preflight
+
+        seen = []
+        responses = {
+            "getMe": (True, {"id": 42, "username": "docoga_bot"}),
+            "getChat": (True, {"id": -100, "type": "channel", "title": "DocOga Daily"}),
+            "getChatMember": (True, {"status": "administrator", "can_post_messages": True}),
+        }
+
+        def fake_call(method, token, **kw):
+            seen.append(token)
+            return responses[method]
+
+        with patch.dict(
+            telegram_preflight.os.environ,
+            {"TELEGRAM_BOT_TOKEN": "bot" + WELL_FORMED + "\n", "TELEGRAM_CHAT_ID": "@channel"},
+            clear=True,
+        ), patch.object(telegram_preflight, "call", side_effect=fake_call):
+            out = StringIO()
+            with redirect_stdout(out):
+                code = telegram_preflight.main([])
+        self.assertEqual(code, 0, out.getvalue())
+        self.assertTrue(seen and all(t == WELL_FORMED for t in seen), seen)
+        self.assertIn("pasted untidily", out.getvalue())
 
     def test_demoted_bot_exits_five(self):
         sys.path.insert(0, str(ROOT / "tools"))
@@ -232,7 +299,7 @@ class PreflightTests(unittest.TestCase):
         }
         with patch.dict(
             telegram_preflight.os.environ,
-            {"TELEGRAM_BOT_TOKEN": "t", "TELEGRAM_CHAT_ID": "@channel"},
+            {"TELEGRAM_BOT_TOKEN": WELL_FORMED, "TELEGRAM_CHAT_ID": "@channel"},
             clear=True,
         ), patch.object(telegram_preflight, "call", side_effect=lambda m, *a, **k: responses[m]):
             out = StringIO()
