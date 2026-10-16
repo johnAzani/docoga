@@ -627,6 +627,37 @@ class EveryWorkflowTests(unittest.TestCase):
         for path in sorted(WORKFLOWS.glob("*.yml")):
             yield path, yaml.safe_load(path.read_text(encoding="utf-8"))
 
+    def test_no_workflow_has_a_duplicate_mapping_key(self):
+        """PyYAML silently keeps the last duplicate; GitHub rejects the whole file.
+
+        16 Oct 2026: `instagram_autopost.yml` had two `env:` blocks on one step. Locally it
+        parsed, every test passed, and on GitHub the workflow showed as a bare file path
+        with no "Run workflow" button — a lane that could never be started, for days,
+        while the owner set up tokens for it. This loader refuses what GitHub refuses.
+        """
+        class Dup(Exception):
+            pass
+
+        class Strict(yaml.SafeLoader):
+            pass
+
+        def construct(loader, node, deep=False):
+            seen = set()
+            for key_node, _ in node.value:
+                key = loader.construct_object(key_node, deep=deep)
+                if key in seen:
+                    raise Dup("duplicate key %r at line %d" % (key, key_node.start_mark.line + 1))
+                seen.add(key)
+            return yaml.SafeLoader.construct_mapping(loader, node, deep)
+
+        Strict.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, construct)
+        for path in sorted(WORKFLOWS.glob("*.yml")):
+            with self.subTest(workflow=path.name):
+                try:
+                    yaml.load(path.read_text(encoding="utf-8"), Loader=Strict)
+                except Dup as exc:
+                    self.fail("%s: %s — GitHub will refuse this file and hide the Run button" % (path.name, exc))
+
     def test_every_run_block_is_valid_bash(self):
         """`bash -n` on each script: YAML cannot tell you a quote is unbalanced."""
         import subprocess
