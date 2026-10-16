@@ -1,0 +1,9 @@
+{
+  "v": 1,
+  "alg": "A256GCM",
+  "name": "THREADS_TOKEN",
+  "nonce": "+rf9DScBSLXtUugt",
+  "ciphertext": "ZCfu4gsZvQY45jmX8GwaxOD+vUL2YHSMvx0Ss9dHe7RMBVn+Y/XOOk5DPv9sBQ4D5AbribFQBVrsAzKrm7OCT28I+O42gyeEalLeI6tB85XYtpEzLUiQbzLPn5z1uny0c7iJL1MporgNPgHYaUvVj6o+K51drcNDMczR0ry+DRBDO78QTdHOzuJ/G4uEGVzQUjB6MdxjF3kP3L+r9G+8e4nesjZTGo8d1RV2pQqV6VNvtATfqmKnrku9t6mAGKLBcuxtJ5w9KuT9",
+  "minted_at": "2026-10-16T09:21:46+00:00",
+  "expires_at": "2026-12-15T09:07:44+00:00"
+}
