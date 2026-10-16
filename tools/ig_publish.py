@@ -883,9 +883,26 @@ def send(token, user_id, container_data, caption, kind, username="", upload=None
     try:
         container_id = create_container(token, user_id, container_data)
     except ApiError as exc:
-        print("::error title=container rejected (%s)::%s" % (exc.cause, exc.blurb))
-        machine("failed", exc.cause)
-        return 6
+        if container_data.get("trial_params"):
+            # A Trial Reel is reach, not the Reel. Accounts or tokens Meta has not opened the
+            # feature to answer with an error on the container; the Reel then goes out as an
+            # ordinary Reel and the log says so (IG_TRIAL=refused).
+            print("::warning title=Trial Reel refused::%s — publishing as an ordinary Reel" % exc.blurb[:160])
+            print("IG_TRIAL=refused")
+            plain = {k: v for k, v in container_data.items() if k != "trial_params"}
+            try:
+                container_id = create_container(token, user_id, plain)
+            except ApiError as exc2:
+                print("::error title=container rejected (%s)::%s" % (exc2.cause, exc2.blurb))
+                machine("failed", exc2.cause)
+                return 6
+        else:
+            print("::error title=container rejected (%s)::%s" % (exc.cause, exc.blurb))
+            machine("failed", exc.cause)
+            return 6
+    else:
+        if container_data.get("trial_params"):
+            print("IG_TRIAL=on")
     print("%s container %s created" % (kind, container_id))
 
     if upload is not None:
@@ -949,6 +966,9 @@ def main(argv=None):
     parser.add_argument("--thumb-offset-ms", type=int, default=1500,
                         help="with --video-file and no --cover-url: the frame (ms) Instagram uses "
                              "as the Reel cover; 1500 lands on the navy title card")
+    parser.add_argument("--trial", action="store_true",
+                        help="publish the Reel as a Trial Reel: shown to non-followers first and graduated to "
+                             "followers automatically when it performs (trial_params.graduation_strategy=SS_PERFORMANCE)")
     parser.add_argument("--no-share-to-feed", action="store_true",
                         help="Reels only: keep it off the profile grid")
     parser.add_argument("--reel", help="alias of --video-file")
@@ -1061,6 +1081,8 @@ def main(argv=None):
             kind = "reel"
             media = {"media_type": "REELS", "upload_type": "resumable", "caption": args.caption,
                      "share_to_feed": "false" if args.no_share_to_feed else "true"}
+            if args.trial:
+                media["trial_params"] = json.dumps({"graduation_strategy": "SS_PERFORMANCE"})
             if args.cover_url:
                 media["cover_url"] = args.cover_url
             else:
@@ -1082,6 +1104,8 @@ def main(argv=None):
         kind = "reel"
         media = {"media_type": "REELS", "video_url": args.video_url, "caption": args.caption,
                  "share_to_feed": "true"}
+        if args.trial:
+            media["trial_params"] = json.dumps({"graduation_strategy": "SS_PERFORMANCE"})
         if args.cover_url:
             media["cover_url"] = args.cover_url
     elif args.photo:

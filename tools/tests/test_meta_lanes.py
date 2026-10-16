@@ -169,7 +169,7 @@ class ThreadsCopy(unittest.TestCase):
                 mock.patch.object(gc.tg, "HASHTAGS", {"promo": "#DocOga #Nigeria #Lagos"}), \
                 mock.patch.object(gc.tg, "WEEKLY_SCHEDULE",
                                   {day: ["promo"] for day in range(7)}):
-            _type, text, notes = gc.build(datetime.date(2026, 10, 13),
+            _type, text, notes, _extras = gc.build(datetime.date(2026, 10, 13),
                                            __import__("random").Random("x"))
         self.assertLessEqual(gc.threads_cost(text), gc.MAX_COST)
         self.assertTrue(any("hashtag" in note for note in notes),
@@ -323,6 +323,68 @@ class ThreadsPublisher(unittest.TestCase):
                                         ["--text", "x" * 600, "--token-file", token_path])
         self.assertEqual(code, 5)
         self.assertIn("THREADS_CAUSE=copy", out)
+
+    def _content(self, **over):
+        blob = {"text": self.TEXT, "topic_tag": "Tenant Rights Nigeria", "poll": None}
+        blob.update(over)
+        path = os.path.join(self.tmp, "threads_content_latest.json")
+        with open(path, "w", encoding="utf-8") as fh:
+            json.dump(blob, fh)
+        return path
+
+    def test_topic_tag_poll_and_story_cross_share_ride_on_the_container(self):
+        """17 Oct 2026 reach levers: one topic tag, a poll on engagement days, the same post as an
+        Instagram Story — all in the container call, all ₦0."""
+        seen = {}
+
+        def container(method, url, query):
+            seen["query"] = urllib.parse.parse_qs(query)
+            return ok({"id": "181"})
+        routes = self._routes(extra={"POST /42/threads": container,
+                                     "POST /42/threads_publish": ok({"id": "181", "crossreshare_to_ig_status": "SUCCESS"})})
+        path = self._content(poll={"option_a": "Six months", "option_b": "Three months"})
+        env, token_path = threads_env(self.tmp)
+        code, out, _ = self._publish(routes, argv=["--from-json", path, "--token-file", token_path],
+                                     env_extra={"THREADS_SHARE_TO_IG": "on"})
+        self.assertEqual(code, 0, out)
+        q = seen["query"]
+        self.assertEqual(q["topic_tag"], ["Tenant Rights Nigeria"])
+        self.assertEqual(json.loads(q["poll_attachment"][0]), {"option_a": "Six months", "option_b": "Three months"})
+        self.assertEqual(q["crossreshare_to_ig"], ["true"])
+        self.assertIn("THREADS_SHARE_TO_IG=success", out)
+
+    def test_a_token_without_the_story_scope_still_posts_and_names_the_scope(self):
+        calls = []
+
+        def container(method, url, query):
+            calls.append(urllib.parse.parse_qs(query))
+            if "crossreshare_to_ig" in query:
+                return 400, json.dumps({"error": {"message": "(#200) Requires threads_share_to_instagram permission", "code": 200}})
+            return ok({"id": "181"})
+        routes = self._routes(extra={"POST /42/threads": container})
+        path = self._content()
+        env, token_path = threads_env(self.tmp)
+        code, out, _ = self._publish(routes, argv=["--from-json", path, "--token-file", token_path])
+        self.assertEqual(code, 0, out)
+        self.assertEqual(len(calls), 2, "one refused attempt, then the plain one")
+        self.assertNotIn("crossreshare_to_ig", calls[1])
+        self.assertEqual(calls[1]["topic_tag"], ["Tenant Rights Nigeria"], "the topic tag survives the retry")
+        self.assertIn("THREADS_EXTRAS_DROPPED=share_to_ig", out)
+        self.assertIn("threads_share_to_instagram", out)
+
+    def test_share_to_ig_can_be_switched_off(self):
+        seen = {}
+
+        def container(method, url, query):
+            seen["q"] = query
+            return ok({"id": "181"})
+        routes = self._routes(extra={"POST /42/threads": container})
+        path = self._content()
+        env, token_path = threads_env(self.tmp)
+        code, out, _ = self._publish(routes, argv=["--from-json", path, "--token-file", token_path],
+                                     env_extra={"THREADS_SHARE_TO_IG": "off"})
+        self.assertEqual(code, 0, out)
+        self.assertNotIn("crossreshare_to_ig", seen["q"])
 
     def test_quota_spent_refuses_without_creating_a_container(self):
         routes = self._routes(extra={"GET /42/threads_publishing_limit": ok(
@@ -1161,6 +1223,31 @@ class InstagramReels(unittest.TestCase):
         self.assertIn("creation_id=CONT", publish[0][2])
         self.assertNotIn("102466208923830/media", "".join(c[1] for c in fake.posts),
                          "the Page id must never be used as the Instagram user id")
+
+    def test_a_trial_reel_carries_trial_params_and_falls_back_to_a_plain_reel_when_refused(self):
+        """17 Oct 2026: Trial Reels go to non-followers first and graduate on performance — growth
+        the account does not have to pay for. An account Meta has not opened it to still posts."""
+        code, out, fake = self.run_ig(self.routes(), ["--video-file", self.video, "--caption", self.CAPTION, "--trial"])
+        self.assertEqual(code, 0, out)
+        container = [c for c in fake.posts if c[1].endswith("/1784/media")]
+        query = urllib.parse.parse_qs(container[0][2])
+        self.assertEqual(json.loads(query["trial_params"][0]), {"graduation_strategy": "SS_PERFORMANCE"})
+        self.assertIn("IG_TRIAL=on", out)
+
+        calls = []
+
+        def picky(method, url, query):
+            calls.append(query)
+            if "trial_params" in query:
+                return 400, json.dumps({"error": {"message": "(#100) Invalid parameter trial_params", "code": 100}})
+            return 200, json.dumps({"id": "CONT", "uri": ig.RUPLOAD_IG + "/CONT"})
+        code, out, fake = self.run_ig(self.routes({"POST /1784/media": picky}),
+                                      ["--video-file", self.video, "--caption", self.CAPTION, "--trial"])
+        self.assertEqual(code, 0, out)
+        self.assertEqual(len(calls), 2)
+        self.assertNotIn("trial_params", calls[1])
+        self.assertIn("IG_TRIAL=refused", out)
+        self.assertIn("IG_RESULT=sent", out)
 
     def test_the_instagram_id_is_resolved_from_the_page_not_from_me(self):
         """A Page token's `/me` is the Page. The old facebook-login branch would have used the

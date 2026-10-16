@@ -219,6 +219,7 @@ jobs:
         env:
           THREADS_USER_ID: ${{ secrets.THREADS_USER_ID }}
           THREADS_FORCE: ${{ inputs.force }}
+          THREADS_SHARE_TO_IG: ${{ vars.THREADS_SHARE_TO_IG || 'on' }}   # the same post as an Instagram Story (scope threads_share_to_instagram)
         run: |
           set -o pipefail
           ARGS=(--from-json assets/threads/threads_content_latest.json --token-file /tmp/threads_token)

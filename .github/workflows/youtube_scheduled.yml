@@ -322,6 +322,30 @@ jobs:
 
       # Never let bookkeeping turn a successful publish red: continue-on-error
       # keeps the job green and leaves a visible warning instead.
+      # TikTok: 47.8M Nigerian adults, +43 % in a year (research, 17 Oct 2026). The same Short
+      # goes to the owner's TikTok *inbox* as a draft — the only route an unaudited app has
+      # that is not forced-private — and the owner posts it from the app with the caption
+      # printed in the summary. Dormant (a notice, not a red run) until the three TikTok
+      # secrets exist; never allowed to fail the YouTube publish it rides on.
+      - name: Send the Short to the TikTok inbox
+        id: tiktok
+        if: always() && steps.upload.outputs.video_id != '' && steps.short.outputs.paused != 'yes'
+        continue-on-error: true
+        env:
+          TIKTOK_CLIENT_KEY: ${{ secrets.TIKTOK_CLIENT_KEY }}
+          TIKTOK_CLIENT_SECRET: ${{ secrets.TIKTOK_CLIENT_SECRET }}
+          TIKTOK_REFRESH_TOKEN: ${{ secrets.TIKTOK_REFRESH_TOKEN }}
+          SOCIAL_TOKEN_KEY: ${{ secrets.SOCIAL_TOKEN_KEY }}
+          VIDEO_PATH: ${{ steps.short.outputs.video_path }}
+          VIDEO_TITLE: ${{ steps.short.outputs.title }}
+        run: |
+          set -o pipefail
+          python3 -m pip install --quiet cryptography >/dev/null 2>&1 || true
+          python3 tools/tiktok_draft.py send --video "$VIDEO_PATH" --caption "$VIDEO_TITLE #DocOga #Nigeria" 2>&1 | tee /tmp/tiktok.log
+          RESULT=$(sed -n 's/^TIKTOK_RESULT=//p' /tmp/tiktok.log | tail -1)
+          echo "result=${RESULT:-unknown}" >> "$GITHUB_OUTPUT"
+          echo "publish_id=$(sed -n 's/^TIKTOK_PUBLISH_ID=//p' /tmp/tiktok.log | tail -1)" >> "$GITHUB_OUTPUT"
+
       - name: Commit the publish ledger
         if: steps.guard.outputs.skip != 'yes' && steps.short.outputs.paused != 'yes'
         continue-on-error: true
@@ -336,6 +360,7 @@ jobs:
             exit 1
           fi
           git add logs/youtube_published.json
+          git add -f logs/tiktok_drafts.json logs/tiktok_refresh_token.box 2>/dev/null || true
           if git diff --staged --quiet; then
             echo "Ledger unchanged — nothing to commit."
             exit 0
@@ -368,6 +393,8 @@ jobs:
           VOICE_RESUMES_AT: ${{ steps.short.outputs.voice_resumes_at }}
           SOUNDTRACK: ${{ steps.short.outputs.soundtrack }}
           NARRATOR: ${{ steps.short.outputs.narrator }}
+          TIKTOK_RESULT: ${{ steps.tiktok.outputs.result }}
+          TIKTOK_PUBLISH_ID: ${{ steps.tiktok.outputs.publish_id }}
         run: |
           RUN_DATE="${RUN_DATE:-$(date +%F)}"
           {
@@ -398,6 +425,13 @@ jobs:
             else
               echo "| Result | ❌ Failed — see the failing step above |"
             fi
+            case "$TIKTOK_RESULT" in
+              inbox)     echo "| TikTok | 📥 In your TikTok inbox (draft \`$TIKTOK_PUBLISH_ID\`) — open TikTok → notification → paste the title as the caption → Post |" ;;
+              dormant)   echo "| TikTok | 💤 Not connected — three secrets (docs/TIKTOK_AUTOMATION.md) and every Short also lands in your TikTok inbox |" ;;
+              duplicate|skipped) echo "| TikTok | ⏭️ $TIKTOK_RESULT — see the TikTok step |" ;;
+              "") : ;;
+              *)         echo "| TikTok | ⚠️ $TIKTOK_RESULT — see the TikTok step; the YouTube publish is unaffected |" ;;
+            esac
             [ -n "$SOUNDTRACK" ] && echo "| Soundtrack | $SOUNDTRACK |"
             [ -n "$NARRATOR" ] && echo "| Narrator | $NARRATOR |"
             echo "| Ledger | \`logs/youtube_published.json\` |"

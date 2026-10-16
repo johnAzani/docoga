@@ -1,0 +1,198 @@
+name: DocOga LinkedIn Auto-Post
+
+# One post to the owner's LinkedIn profile on Monday, Wednesday and Friday at 08:30 Lagos —
+# the reader at a desk, coffee in hand, before the first meeting.
+#
+# Why this lane exists (research, 17 Oct 2026): LinkedIn reaches 14.0M Nigerians and its
+# biggest group is 25–34 (7.7M) — HR officers who need payslips, freelancers who need
+# invoices, landlords who need a tenancy agreement that holds. No other channel the repo
+# posts to reaches that reader at work, in the morning, in a reading mood. And it is ₦0:
+# "Share on LinkedIn" is self-serve in the Developer Portal, no review, `w_member_social`.
+#
+# The two facts that shape it:
+#   * the token lives 60 days and self-serve apps get NO refresh token — so the lane keeps
+#     the date it first saw each token in `logs/linkedin_posts.json`, warns from day 50, and
+#     on a 401 says exactly what to tap. A dead token is the one tap the owner cannot be
+#     spared, so it is the one thing this lane goes red for;
+#   * no secret = dormant, not red. The lane waits for `LINKEDIN_ACCESS_TOKEN` with a
+#     notice, and wakes up the morning after it is set.
+#
+# Copy is the brain's pack for the day (tools/brain_drafts.py) in LinkedIn's little-text
+# format, hashtags dropped (LinkedIn 2026 ranks dwell time and comments, not tags), with the
+# same deep link the other lanes carry. Duplicate text is refused by the ledger.
+
+on:
+  schedule:
+    - cron: '30 7 * * 1,3,5'  # 07:30 UTC = 08:30 Lagos, Mon/Wed/Fri — LinkedIn's weekday-morning peak (brain/strategy.md)
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Build the post and print it — publish nothing'
+        required: false
+        default: false
+        type: boolean
+      probe_only:
+        description: 'Ask LinkedIn who the token is and how old it is, then stop'
+        required: false
+        default: false
+        type: boolean
+      force:
+        description: 'Post even if this exact text is already in the ledger'
+        required: false
+        default: false
+        type: boolean
+      text:
+        description: 'Post this exact text instead of today generated copy (still duplicate-checked)'
+        required: false
+        type: string
+
+permissions:
+  contents: write  # logs/linkedin_posts.json — the duplicate guard and the token clock
+  issues: write    # a dead token opens one visible issue, one per cause
+
+concurrency:
+  group: docoga-linkedin
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      TZ: Africa/Lagos
+      LI_DRY_RUN: ${{ inputs.dry_run }}
+      LI_PROBE_ONLY: ${{ inputs.probe_only }}
+      LI_FORCE: ${{ inputs.force }}
+      LI_TEXT: ${{ inputs.text }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: python3 -m pip install --quiet Pillow
+
+      - name: Post to LinkedIn
+        id: post
+        env:
+          LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
+        run: |
+          set -o pipefail
+          ARGS=""
+          if [ "$LI_PROBE_ONLY" = "true" ]; then ARGS="$ARGS --probe"; fi
+          if [ "$LI_DRY_RUN" = "true" ]; then ARGS="$ARGS --dry-run"; fi
+          if [ "$LI_FORCE" = "true" ]; then ARGS="$ARGS --force"; fi
+          if [ -n "$LI_TEXT" ]; then
+            printf '%s' "$LI_TEXT" > /tmp/li_text.txt
+            python3 tools/linkedin_publish.py $ARGS --text "$(cat /tmp/li_text.txt)" 2>&1 | tee /tmp/linkedin_post.log
+          else
+            python3 tools/linkedin_publish.py $ARGS 2>&1 | tee /tmp/linkedin_post.log
+          fi
+          CODE=${PIPESTATUS[0]}
+          echo "code=$CODE" >> "$GITHUB_OUTPUT"
+          RESULT=$(sed -n 's/^LINKEDIN_RESULT=//p' /tmp/linkedin_post.log | tail -1)
+          echo "result=${RESULT:-unknown}" >> "$GITHUB_OUTPUT"
+          exit "$CODE"
+
+      - name: Commit the ledger
+        if: ${{ always() && steps.post.outputs.result == 'sent' }}
+        continue-on-error: true
+        env:
+          BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          if [ -z "$(git status --porcelain -- logs/linkedin_posts.json)" ]; then
+            echo "Ledger unchanged — nothing to commit."; exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if ! git pull --rebase --autostash origin "$BRANCH"; then
+            echo "::warning title=LinkedIn ledger not committed::the post is live but this run is not recorded, so a re-run could publish the same text again."
+            exit 1
+          fi
+          git add logs/linkedin_posts.json
+          git diff --staged --quiet || git commit -q -m "Auto: record LinkedIn post $(date -u +%F) [skip ci]"
+          git push origin "HEAD:$BRANCH" || echo "::warning title=LinkedIn ledger not pushed::the post is live, the entry did not reach $BRANCH."
+
+      - name: Write the run summary
+        if: always()
+        env:
+          RESULT: ${{ steps.post.outputs.result }}
+        run: |
+          {
+            echo "## LinkedIn — $(date +%F)"
+            echo
+            case "$RESULT" in
+              sent)      echo "✅ Posted: $(sed -n 's/^LINKEDIN_URL=//p' /tmp/linkedin_post.log | tail -1)" ;;
+              duplicate) echo "⏭️ Refused a duplicate — this text is already on the profile." ;;
+              dormant)   echo "💤 Dormant — set the \`LINKEDIN_ACCESS_TOKEN\` secret (docs/LINKEDIN_AUTOMATION.md) and this lane posts Mon/Wed/Fri." ;;
+              dry-run)   echo "🧪 Dry run — nothing published." ;;
+              probed)    echo "🔎 Probe — token is alive; see the log for its age." ;;
+              *)         echo "❌ Failed (${RESULT:-no result}) — cause: $(sed -n 's/^LINKEDIN_CAUSE=//p' /tmp/linkedin_post.log | tail -1)" ;;
+            esac
+            AGE=$(sed -n 's/^LINKEDIN_TOKEN_AGE=//p' /tmp/linkedin_post.log | tail -1)
+            if [ -n "$AGE" ]; then echo; echo "Token age: ${AGE} of 60 days."; fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # Same shape as the other lanes: one issue per *cause*, later failures comment on it,
+      # the create line stays on one line because tools/automation_heartbeat.py reads it.
+      - name: Open a visible issue if the run failed
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          RUN_DATE="$(date +%F)"
+          POST_TAIL=$(tail -n 25 /tmp/linkedin_post.log 2>/dev/null || echo "(the publisher never ran)")
+
+          gh label create linkedin-automation --color 0A66C2 \
+            --description "Unattended LinkedIn profile lane" >/dev/null 2>&1 || true
+
+          cat > /tmp/issue_body.md <<BODY
+          The LinkedIn post for **$RUN_DATE** failed. **Nothing was published.**
+
+          - Run: $RUN_URL
+
+          ### What the publisher said
+
+          \`\`\`
+          $POST_TAIL
+          \`\`\`
+
+          ### Reading it
+
+          - \`token dead\` / \`401\` / \`expired\` / \`revoked\` — LinkedIn tokens live 60 days and
+            self-serve apps get no refresh token. On the phone: linkedin.com/developers → My apps →
+            DocOga → **Auth** → *OAuth 2.0 tools* → generate a token with \`w_member_social\` →
+            paste it into the \`LINKEDIN_ACCESS_TOKEN\` secret. Five taps, once every two months.
+          - \`not enough permissions\` — the app lost the *Share on LinkedIn* product; add it
+            back under **Products** and mint the token again.
+          - \`copy rejected\` / \`422\` — the words, not the token: see docs/LINKEDIN_AUTOMATION.md.
+          - \`transport\` — the runner could not reach api.linkedin.com; it will try again on the next slot.
+          BODY
+
+          TAIL=$(cat /tmp/linkedin_post.log 2>/dev/null || true)
+          case "$TAIL" in
+            *"not set"*|*"not configured"*) CAUSE=setup ;;
+            *"token dead"*|*Unauthorized*|*expired*|*revoked*|*"LINKEDIN_CAUSE=credentials"*) CAUSE=credentials ;;
+            *permission*|*"not approved"*) CAUSE=permission ;;
+            *"copy rejected"*|*"LINKEDIN_CAUSE=copy"*) CAUSE=copy ;;
+            *"LINKEDIN_CAUSE=quota"*|*rate*limit*) CAUSE=quota ;;
+            *transport*) CAUSE=transport ;;
+            *) CAUSE=run ;;
+          esac
+
+          EXISTING=$(CAUSE_TAG="[$CAUSE]" LEGACY_PREFIX="LinkedIn post failed — " \
+            gh issue list --label linkedin-automation --state open --limit 100 --json number,title \
+            --jq "[.[] | select((.title | contains(\$ENV.CAUSE_TAG)) or ((.title | contains(\$ENV.LEGACY_PREFIX)) and (.title | contains(\"[\") | not))) | .number] | max // empty")
+          if [ -n "$EXISTING" ]; then
+            gh issue comment "$EXISTING" --body-file /tmp/issue_body.md || true
+            echo "Same cause as issue #$EXISTING — commented instead of filing a second one"
+          else
+            gh issue create --title "LinkedIn post failed — $RUN_DATE [$CAUSE]" --label linkedin-automation --body-file /tmp/issue_body.md 2>/tmp/issue.err \
+              || echo "::warning title=Issue not created::$(tr '\n' ' ' < /tmp/issue.err | cut -c1-300) — the run log still carries the cause"
+          fi

@@ -204,7 +204,7 @@ def build(day, rng):
     if pack:
         post_type = brain_drafts.post_type(pack)
         text, notes = fit(brain_drafts.threads_text(pack), brain_drafts.hashtags(pack, "threads"))
-        return post_type, text, ["brain: %s" % pack.get("theme")] + list(notes)
+        return post_type, text, ["brain: %s" % pack.get("theme")] + list(notes), extras_for(pack)
     post_type = rng.choice(tg.WEEKLY_SCHEDULE.get(day.weekday(), ["promo"]))
     template = rng.choice(tg.TEMPLATES[post_type])
     plain = to_plain(template).strip()
@@ -212,7 +212,13 @@ def build(day, rng):
         raise ValueError("template for %r de-escaped to nothing" % post_type)
     hashtags = tg.HASHTAGS.get(post_type, "#DocOga")
     text, notes = fit(plain, hashtags)
-    return post_type, text, notes
+    return post_type, text, notes, extras_for(None)
+
+
+def extras_for(pack):
+    """What travels with the text: the one topic tag Threads lets a post carry, and the poll
+    when the brain wrote one (engagement days). Both are ₦0 reach levers (brain/strategy.md)."""
+    return {"topic_tag": brain_drafts.threads_topic(pack or {}), "poll": brain_drafts.threads_poll(pack or {})}
 
 
 def generate(day=None, write=True):
@@ -220,7 +226,7 @@ def generate(day=None, write=True):
     day = day or datetime.now(LAGOS).date()
     rng = random.Random("docoga-threads-%s" % day.isoformat())
 
-    post_type, text, notes = build(day, rng)
+    post_type, text, notes, extras = build(day, rng)
 
     content = {
         "date": day.isoformat(),
@@ -231,6 +237,8 @@ def generate(day=None, write=True):
         "cost": threads_cost(text),
         "links": link_count(text),
         "trimmed": notes,
+        "topic_tag": extras["topic_tag"],
+        "poll": extras["poll"],
         "generated_at": datetime.now(LAGOS).isoformat(),
         "source": "threads",
     }

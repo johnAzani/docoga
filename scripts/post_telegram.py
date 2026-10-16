@@ -308,6 +308,37 @@ def send_photo_message(photo_path, caption=None, parse_mode="MarkdownV2"):
         return False
 
 
+def send_quiz(quiz):
+    """One native quiz under the day's post (Bot API sendPoll, type=quiz). The explanation —
+    the section — shows when a reader answers wrong or taps the lamp. Plain text, no parse mode.
+    Never fatal: the post is already out; a quiz that fails is a log line."""
+    if not quiz:
+        return None
+    url = f"{TELEGRAM_API}/bot{TELEGRAM_BOT_TOKEN}/sendPoll"
+    payload = {"chat_id": TELEGRAM_CHAT_ID, "question": _clamp(quiz["question"], 300, "quiz question"),
+               "options": json.dumps([_clamp(o, 100, "quiz option") for o in quiz["options"]]),
+               "type": "quiz", "is_anonymous": True,
+               "correct_option_ids": json.dumps([int(quiz["correct"])]),
+               "explanation": _clamp(quiz["explanation"], 200, "quiz explanation")}
+    try:
+        r = requests.post(url, data=payload, timeout=30)
+        if r.status_code == 400 and "correct_option" in (r.text or ""):
+            # Bot API before April 2026 knew only the singular parameter.
+            payload.pop("correct_option_ids", None)
+            payload["correct_option_id"] = int(quiz["correct"])
+            r = requests.post(url, data=payload, timeout=30)
+        if r.status_code == 200 and r.json().get("ok"):
+            mid = r.json().get("result", {}).get("message_id")
+            log("   \U0001f9e0 quiz posted (%d options, answer %d) %s" % (len(quiz["options"]), quiz["correct"], channel_link(mid) or ""))
+            print("TELEGRAM_QUIZ=sent")
+            return mid
+        log("   \u26a0\ufe0f quiz not posted: %s" % _describe(r))
+    except Exception as exc:  # noqa: BLE001 — the post is out; the quiz is a bonus
+        log("   \u26a0\ufe0f quiz not posted: %s" % exc)
+    print("TELEGRAM_QUIZ=failed")
+    return None
+
+
 def load_content():
     """Load generated content from file"""
     content_file = ASSETS_DIR / "telegram_content_latest.json"
@@ -416,6 +447,8 @@ def post_to_telegram():
             sent += 1
             log("   \u2705 Posted %s message" % post_type)
             message_id = ok if isinstance(ok, int) else None
+            if post.get("quiz"):
+                send_quiz(post["quiz"])
             # Re-read before writing: a second lane sharing this file (or a re-run that
             # got as far as recording) must not have its entries dropped by a stale list.
             entries = ledger.load(str(LEDGER_FILE))

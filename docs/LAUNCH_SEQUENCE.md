@@ -275,6 +275,20 @@ committed, and the lane waits for the deployed URL to answer before creating the
 for the same reason — no public video host yet — and that refusal is one line in the log with
 `IG_CAUSE=media`, not a timeout.
 
+## Step 6 — the reach layer (17 Oct 2026): four optional taps, each one switches on a lane
+
+Everything below is already live and **dormant until its secret exists**; nothing goes red
+while you decide.
+
+| tap | where | what wakes up |
+|---|---|---|
+| Re-mint the Threads token with `threads_share_to_instagram` ticked | Meta app → Threads use case → User Token Generator → update `THREADS_ACCESS_TOKEN` | every Threads post also lands on Instagram (`THREADS_SHARE_TO_IG=SUCCESS` in the summary) |
+| Secret `LINKEDIN_ACCESS_TOKEN` | `docs/LINKEDIN_AUTOMATION.md`, five taps | Mon/Wed/Fri 08:30 post to your LinkedIn profile; re-mint every ~58 days when the lane warns |
+| Secrets `TIKTOK_CLIENT_KEY`, `TIKTOK_CLIENT_SECRET`, `TIKTOK_REFRESH_TOKEN` | `docs/TIKTOK_AUTOMATION.md`, once | every Short also lands in your TikTok inbox; you paste the caption and tap Post |
+| (nothing) | — | Threads topic tags + polls, Instagram Trial Reels, the Tuesday Telegram quiz and the newsdesk run on the tokens you already have |
+
+Opt-outs are variables: `THREADS_SHARE_TO_IG=off`, `IG_TRIAL_REELS=off`.
+
 ---
 
 ## What this page is not
