@@ -928,14 +928,16 @@ class InstagramPublisher(unittest.TestCase):
         with mock.patch.dict(os.environ, {"IG_API_PATH": "instagram-login"}):
             self.assertEqual(ig.base_url(), ig.GRAPH_INSTAGRAM)
 
-    def test_a_local_file_on_the_instagram_login_path_is_a_setup_refusal(self):
-        """`--reel x.mp4` with an Instagram-Login token cannot work: Meta's resumable upload is
-        documented for the Facebook-Login host only. Say which token to use, write nothing."""
+    def test_a_local_file_on_the_instagram_login_path_is_attempted_not_prejudged(self):
+        """`--reel x.mp4` with an Instagram-Login token: Meta documents resumable upload for the
+        Facebook-Login host, but 2026 field reports show it working on graph.instagram.com, and
+        on 16 Oct 2026 the Page door was shut by a profile restriction. So the tool no longer
+        refuses up front; the first gate it meets is the media check, and a missing file is a
+        media refusal — nothing is written before that."""
         code, out, fake = self._publish(self._base_routes(),
                                        ["--reel", "social/x.mp4", "--caption", self.CAPTION])
-        self.assertEqual(code, 2, out)
-        self.assertIn("Facebook-Login", out)
-        self.assertIn("IG_CAUSE=setup", out)
+        self.assertEqual(code, 5, out)
+        self.assertIn("IG_CAUSE=media", out)
         self.assertFalse(fake.wrote_anything())
 
     def test_no_credential_is_setup(self):
@@ -1075,12 +1077,60 @@ class InstagramReels(unittest.TestCase):
         self.assertIn("IG_REELS_READY=no", out)
         self.assertIn("instagram_content_publish", out)
 
-    def test_probe_on_the_instagram_login_path_is_a_setup_refusal(self):
-        code, out, fake = self.run_ig(self.routes(), ["--probe-reels"],
+    # ── the second door: the Instagram-Login token, no Page link ───────────────
+
+    def ig_login_routes(self, container=(200, '{"id": "PROBE1", "uri": '
+                                              '"https://rupload.facebook.com/ig-api-upload/v26.0/PROBE1"}')):
+        return {
+            "GET /me": (200, json.dumps({"user_id": "1784", "username": "docoga.ng",
+                                         "account_type": "BUSINESS", "media_count": 4})),
+            "POST /1784/media": container,
+        }
+
+    def test_probe_on_the_instagram_login_path_asks_meta_for_a_resumable_session(self):
+        """16 Oct 2026: Facebook refused to link the Page ("temporarily restricted … to protect
+        your profile"), so the Page-token door was shut. The Instagram-Login token the daily
+        cards use is the second door — if graph.instagram.com opens a resumable REELS container
+        for it. The probe creates exactly one, publishes nothing, and says which door it is."""
+        code, out, fake = self.run_ig(self.ig_login_routes(), ["--probe-reels"],
                                       {"IG_API_PATH": "instagram-login"})
-        self.assertEqual(code, 2, out)
+        self.assertEqual(code, 0, out)
+        self.assertIn("IG_REELS_READY=yes", out)
+        self.assertIn("IG_REELS_PATH=instagram-login", out)
+        self.assertIn("IG_USER_ID=1784", out)
+        self.assertIn("no Page link needed", out)
+        methods = [(m, u.split("?")[0]) for m, u, _ in fake.calls]
+        self.assertEqual(len([m for m in methods if m[0] == "POST"]), 1, "one container, no publish")
+        self.assertTrue(all("graph.instagram.com" in u for _, u in methods), methods)
+        self.assertIn("upload_type=resumable", fake.calls[-1][2])
+        self.assertNotIn("media_publish", out)
+
+    def test_probe_on_the_instagram_login_path_reports_metas_refusal_as_not_ready(self):
+        refusal = (400, json.dumps({"error": {"message": "(#100) upload_type is not supported "
+                                                          "for this login type", "code": 100}}))
+        code, out, _ = self.run_ig(self.ig_login_routes(container=refusal), ["--probe-reels"],
+                                   {"IG_API_PATH": "instagram-login"})
+        self.assertEqual(code, 0, out)
         self.assertIn("IG_REELS_READY=no", out)
-        self.assertEqual(fake.calls, [], "nothing is asked on the wrong path")
+        self.assertIn("IG_REELS_MISSING=resumable-on-instagram-login", out)
+        self.assertIn("IG_REELS_PATH=instagram-login", out)
+        self.assertIn("not supported for this login type", out)
+
+    def test_probe_on_the_instagram_login_path_needs_a_professional_account(self):
+        routes = self.ig_login_routes()
+        routes["GET /me"] = (200, json.dumps({"user_id": "1784", "username": "docoga.ng",
+                                              "account_type": "PERSONAL"}))
+        code, out, fake = self.run_ig(routes, ["--probe-reels"], {"IG_API_PATH": "instagram-login"})
+        self.assertEqual(code, 0, out)
+        self.assertIn("IG_REELS_READY=no", out)
+        self.assertIn("professional-account", out)
+        self.assertFalse(any(m == "POST" for m, _, _ in fake.calls), "no container for a personal account")
+
+    def test_facebook_login_probe_names_its_door_too(self):
+        code, out, _ = self.run_ig(self.routes(), ["--probe-reels"],
+                                   {"META_APP_ID": "931", "META_APP_SECRET": "s3"})
+        self.assertEqual(code, 0, out)
+        self.assertIn("IG_REELS_PATH=facebook-login", out)
 
     # ── the upload ─────────────────────────────────────────────────────────────
 

@@ -154,7 +154,9 @@ jobs:
         # and the brand's only typeface is Inter (docs/BRAND_STYLE.md §2). Without
         # it the card renders in DejaVu — legible, but not ours.
         run: |
-          python3 -m pip install --quiet requests Pillow
+          python3 -m pip install --quiet requests Pillow cryptography
+          # cryptography: tools/token_vault.py, which opens the Instagram-Login token for the
+          # Reels second door below (the tool refuses to run without it).
           bash tools/install_brand_fonts.sh   # Inter, or a named warning — never a silent DejaVu
 
       # ── Instagram Reels readiness (reads only, every run) ───────────────────
@@ -179,6 +181,7 @@ jobs:
           IG_ID=$(sed -n 's/^IG_USER_ID=//p' /tmp/ig_reels_probe.log | tail -1)
           IG_NAME=$(sed -n 's/^IG_USERNAME=//p' /tmp/ig_reels_probe.log | tail -1)
           echo "ready=${READY:-no}" >> "$GITHUB_OUTPUT"
+          echo "missing=${MISSING}" >> "$GITHUB_OUTPUT"
           echo "ig_user_id=${IG_ID}" >> "$GITHUB_OUTPUT"
           echo "ig_username=${IG_NAME}" >> "$GITHUB_OUTPUT"
           {
@@ -190,8 +193,86 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
           if [ "${READY:-no}" != "yes" ]; then
-            echo "::warning title=Instagram Reels not ready yet::missing: ${MISSING:-see the probe log}. The Facebook post and Reel are unaffected; the Instagram Reel is skipped until the Page token is regenerated with instagram_basic + instagram_content_publish (docs/INSTAGRAM_THREADS_AUTOMATION.md → Reels)."
+            echo "::notice title=Page-token door not open::missing: ${MISSING:-see the probe log}. Trying the second door (the Instagram-Login token) next; the Facebook post and Reel are unaffected either way."
           fi
+
+      # ── Second door: the Instagram-Login token, no Page link ────────────────
+      # 16 Oct 2026: the Page token had both Instagram scopes, and Facebook refused to link
+      # @docoga.ng to the Page ("temporarily restricted … to protect your profile"). The
+      # token the Instagram lane posts cards with needs no Page at all. Meta documents
+      # resumable upload for Facebook Login only; field reports in 2026 show the same call
+      # working on graph.instagram.com. So ask Meta, every day the first door is shut: one
+      # resumable REELS container, never published (invisible, expires in 24 h). The token
+      # comes from the same vault the Instagram lane keeps rolling (tools/token_vault.py),
+      # with the IG_ACCESS_TOKEN secret as bootstrap, and reaches the probe as a 0600 file.
+      - name: Instagram Reels — second door, the Instagram-Login token (one unpublished container)
+        id: ig_reels_probe2
+        if: ${{ env.IG_REELS_MODE != 'off' && steps.ig_reels_probe.outputs.ready != 'yes' && (github.event_name == 'schedule' || inputs.mode == 'daily' || inputs.mode == 'reel') }}
+        continue-on-error: true
+        env:
+          IG_ACCESS_TOKEN_SECRET: ${{ secrets.IG_ACCESS_TOKEN }}
+          SOCIAL_TOKEN_KEY: ${{ secrets.SOCIAL_TOKEN_KEY }}
+          P1_MISSING: ${{ steps.ig_reels_probe.outputs.missing }}
+        run: |
+          set -o pipefail
+          umask 077
+          if [ -f logs/ig_access_token.box ] && python3 tools/token_vault.py open --name IG_ACCESS_TOKEN --out /tmp/ig_login_token; then
+            echo "credential: vault (the Instagram lane's rolling token)"
+          elif [ -n "${IG_ACCESS_TOKEN_SECRET:-}" ]; then
+            printf '%s' "$IG_ACCESS_TOKEN_SECRET" > /tmp/ig_login_token
+            chmod 600 /tmp/ig_login_token
+            echo "credential: the IG_ACCESS_TOKEN secret"
+          else
+            echo "ready=no" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Second door not available::no Instagram-Login token here (no logs/ig_access_token.box and no IG_ACCESS_TOKEN secret). The Instagram lane's setup provides it — docs/INSTAGRAM_THREADS_AUTOMATION.md"
+            exit 0
+          fi
+          set +e
+          IG_API_PATH=instagram-login IG_ACCESS_TOKEN="$(cat /tmp/ig_login_token)" \
+            python3 tools/ig_publish.py --probe-reels 2>&1 | tee /tmp/ig_reels_probe2.log
+          set -e
+          READY=$(sed -n 's/^IG_REELS_READY=//p' /tmp/ig_reels_probe2.log | tail -1)
+          MISSING=$(sed -n 's/^IG_REELS_MISSING=//p' /tmp/ig_reels_probe2.log | tail -1)
+          IG_ID=$(sed -n 's/^IG_USER_ID=//p' /tmp/ig_reels_probe2.log | tail -1)
+          IG_NAME=$(sed -n 's/^IG_USERNAME=//p' /tmp/ig_reels_probe2.log | tail -1)
+          echo "ready=${READY:-no}" >> "$GITHUB_OUTPUT"
+          echo "ig_user_id=${IG_ID}" >> "$GITHUB_OUTPUT"
+          echo "ig_username=${IG_NAME}" >> "$GITHUB_OUTPUT"
+          {
+            echo "- Second door — the Instagram-Login token can open a resumable Reel session: **${READY:-no}**${IG_NAME:+ (@${IG_NAME})}${MISSING:+ — missing: \`${MISSING}\`}"
+            echo '```'
+            grep -v '^IG_' /tmp/ig_reels_probe2.log | tail -n 6
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "${READY:-no}" != "yes" ]; then
+            echo "::warning title=Instagram Reels not ready yet::neither door is open — first: ${P1_MISSING:-see above}; second: ${MISSING:-see the probe log}. The Facebook post and Reel are unaffected; the Instagram Reel is skipped. The Page-link door opens the day Facebook lets the Page connect to @docoga.ng (Page → Settings → Linked accounts → Instagram)."
+          fi
+
+      # One answer for the upload steps below: which door, which account.
+      - name: Instagram Reels — which door
+        id: ig_door
+        if: ${{ env.IG_REELS_MODE != 'off' && (github.event_name == 'schedule' || inputs.mode == 'daily' || inputs.mode == 'reel') }}
+        env:
+          P1_READY: ${{ steps.ig_reels_probe.outputs.ready }}
+          P1_ID: ${{ steps.ig_reels_probe.outputs.ig_user_id }}
+          P1_NAME: ${{ steps.ig_reels_probe.outputs.ig_username }}
+          P2_READY: ${{ steps.ig_reels_probe2.outputs.ready }}
+          P2_ID: ${{ steps.ig_reels_probe2.outputs.ig_user_id }}
+          P2_NAME: ${{ steps.ig_reels_probe2.outputs.ig_username }}
+        run: |
+          if [ "${P1_READY:-no}" = "yes" ]; then
+            DOOR=facebook-login; ID="$P1_ID"; NAME="$P1_NAME"
+          elif [ "${P2_READY:-no}" = "yes" ]; then
+            DOOR=instagram-login; ID="$P2_ID"; NAME="$P2_NAME"
+          else
+            DOOR=none; ID=""; NAME=""
+          fi
+          echo "ready=$( [ "$DOOR" != none ] && echo yes || echo no )" >> "$GITHUB_OUTPUT"
+          echo "path=$DOOR" >> "$GITHUB_OUTPUT"
+          echo "ig_user_id=$ID" >> "$GITHUB_OUTPUT"
+          echo "ig_username=$NAME" >> "$GITHUB_OUTPUT"
+          echo "- Instagram Reels door: **$DOOR**${NAME:+ → @$NAME}" >> "$GITHUB_STEP_SUMMARY"
+          echo "IG_REELS_DOOR=$DOOR"
 
       - name: Generate today's copy
         if: ${{ github.event_name == 'schedule' || inputs.mode == 'daily' }}
@@ -523,10 +604,11 @@ jobs:
       # frame at 1.5 s — the navy title card — so no second render or hosted image.
       - name: Instagram Reel — the same render, by resumable upload
         id: ig_reel
-        if: ${{ steps.ig_reels_probe.outputs.ready == 'yes' && (steps.reel_publish.outcome == 'success' || (!inputs.dry_run && inputs.mode == 'reel')) }}
+        if: ${{ steps.ig_door.outputs.ready == 'yes' && (steps.reel_publish.outcome == 'success' || (!inputs.dry_run && inputs.mode == 'reel')) }}
         env:
-          IG_USER_ID: ${{ steps.ig_reels_probe.outputs.ig_user_id }}
-          IG_USERNAME: ${{ steps.ig_reels_probe.outputs.ig_username }}
+          IG_DOOR: ${{ steps.ig_door.outputs.path }}
+          IG_USER_ID: ${{ steps.ig_door.outputs.ig_user_id }}
+          IG_USERNAME: ${{ steps.ig_door.outputs.ig_username }}
           VIDEO_PATH: ${{ steps.reel_render.outputs.video_path }}
           REEL_TITLE: ${{ steps.reel_plan.outputs.title }}
           REEL_DATE: ${{ steps.reel_plan.outputs.run_date }}
@@ -580,8 +662,10 @@ jobs:
             echo "::notice title=Instagram Reel already out::\"$TITLE\" is inside the 30-day window on Instagram — nothing uploaded"
             exit 0
           fi
+          # The door the probes opened: the Page token, or the Instagram lane's own token.
+          if [ "$IG_DOOR" = "instagram-login" ]; then IG_TOKEN="$(cat /tmp/ig_login_token)"; else IG_TOKEN="$FB_PAGE_ACCESS_TOKEN"; fi
           set +e
-          IG_API_PATH=facebook-login IG_ACCESS_TOKEN="$FB_PAGE_ACCESS_TOKEN" IG_USER_ID="$IG_USER_ID" \
+          IG_API_PATH="$IG_DOOR" IG_ACCESS_TOKEN="$IG_TOKEN" IG_USER_ID="$IG_USER_ID" \
             python3 tools/ig_publish.py --video-file "$FILE" --caption "$CAPTION" --thumb-offset-ms 1500 $FORCE \
             2>&1 | tee /tmp/ig_reel_post.log
           STATUS=${PIPESTATUS[0]}
@@ -626,8 +710,9 @@ jobs:
         if: ${{ steps.ig_reel.outcome == 'success' && env.STORIES_MODE != 'off' }}
         continue-on-error: true
         env:
-          IG_USER_ID: ${{ steps.ig_reels_probe.outputs.ig_user_id }}
-          IG_USERNAME: ${{ steps.ig_reels_probe.outputs.ig_username }}
+          IG_DOOR: ${{ steps.ig_door.outputs.path }}
+          IG_USER_ID: ${{ steps.ig_door.outputs.ig_user_id }}
+          IG_USERNAME: ${{ steps.ig_door.outputs.ig_username }}
           VIDEO_PATH: ${{ steps.reel_render.outputs.video_path }}
           REEL_TITLE: ${{ steps.reel_plan.outputs.title }}
           REEL_DATE: ${{ steps.reel_plan.outputs.run_date }}
@@ -642,8 +727,9 @@ jobs:
           fi
           TITLE="${REEL_TITLE:-$(sed -n 's/^title=//p' /tmp/fb_reel_render.log | tail -1)}"
           RUN_DATE="${REEL_DATE:-$(date +%F)}"
+          if [ "$IG_DOOR" = "instagram-login" ]; then IG_TOKEN="$(cat /tmp/ig_login_token)"; else IG_TOKEN="$FB_PAGE_ACCESS_TOKEN"; fi
           set +e
-          IG_API_PATH=facebook-login IG_ACCESS_TOKEN="$FB_PAGE_ACCESS_TOKEN" IG_USER_ID="$IG_USER_ID" \
+          IG_API_PATH="$IG_DOOR" IG_ACCESS_TOKEN="$IG_TOKEN" IG_USER_ID="$IG_USER_ID" \
             python3 tools/ig_publish.py --video-file "$FILE" --video-story 2>&1 | tee /tmp/ig_reel_story.log
           STATUS=${PIPESTATUS[0]}
           set -e
@@ -687,7 +773,8 @@ jobs:
           REEL_RESUMES_AT: ${{ steps.reel_render.outputs.voice_resumes_at }}
           REEL_SOUNDTRACK: ${{ steps.reel_render.outputs.soundtrack }}
           REEL_NARRATOR: ${{ steps.reel_render.outputs.narrator }}
-          IG_READY: ${{ steps.ig_reels_probe.outputs.ready }}
+          IG_READY: ${{ steps.ig_door.outputs.ready }}
+          IG_DOOR: ${{ steps.ig_door.outputs.path }}
         run: |
           {
             echo ""
@@ -718,16 +805,19 @@ jobs:
             IG_REEL_RESULT=$(sed -n 's/^IG_RESULT=//p' /tmp/ig_reel_post.log 2>/dev/null | tail -1)
             IG_REEL_LINK=$(sed -n 's/^IG_PERMALINK=//p' /tmp/ig_reel_post.log 2>/dev/null | tail -1)
             if [ -n "$IG_REEL_RESULT" ]; then
-              echo "- Instagram Reel: \`${IG_REEL_RESULT}\`${IG_REEL_LINK:+ — $IG_REEL_LINK}"
+              echo "- Instagram Reel: \`${IG_REEL_RESULT}\`${IG_REEL_LINK:+ — $IG_REEL_LINK} (door: ${IG_DOOR:-?})"
             elif [ "${IG_READY:-}" = "no" ]; then
-              echo "- Instagram Reel: ⏸ not ready — the Page token needs instagram_basic + instagram_content_publish (see the readiness block above)"
+              echo "- Instagram Reel: ⏸ not ready — neither door open yet (see the readiness block above)"
+            elif [ "${IG_READY:-}" = "yes" ]; then
+              echo "- Instagram Reel: door open (${IG_DOOR}) — nothing to upload this run"
             fi
             for pair in "preflight:/tmp/fb_preflight.log" "generator:/tmp/fb_generate.log" \
                         "post:/tmp/fb_post.log" "dry run:/tmp/fb_dryrun.log" "manual:/tmp/fb_manual.log" \
                         "reel plan:/tmp/fb_reel_plan.log" "reel probe:/tmp/fb_reel_probe.log" \
                         "reel render:/tmp/fb_reel_render.log" "reel publish:/tmp/fb_reel_post.log" \
                         "story:/tmp/fb_story.log" "story video:/tmp/fb_story_video.log" \
-                        "instagram reels probe:/tmp/ig_reels_probe.log" "instagram reel:/tmp/ig_reel_post.log" \
+                        "instagram reels probe:/tmp/ig_reels_probe.log" "instagram reels probe 2:/tmp/ig_reels_probe2.log" \
+                        "instagram reel:/tmp/ig_reel_post.log" \
                         "instagram video story:/tmp/ig_reel_story.log"; do
               label=${pair%%:*}; file=${pair#*:}
               if [ -f "$file" ]; then

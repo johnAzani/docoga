@@ -277,7 +277,7 @@ Reel is published by `facebook_autopost.yml`, not by the Instagram lane whose to
 
 ### How it runs
 
-* **Every daily Facebook run** (09:30 Lagos) starts with `tools/ig_publish.py --probe-reels` —
+* **Every daily Facebook run** (09:30 Lagos) starts with `tools/ig_publish.py --probe-reels` (both doors; see "Two doors") —
   three reads, nothing created: is @docoga.ng linked to the Page
   (`GET /{page}?fields=instagram_business_account,connected_instagram_account` — either field
   is a link; a Page linked the Accounts-Center way often fills only the second), which scopes the Page token carries
@@ -299,6 +299,28 @@ Reel is published by `facebook_autopost.yml`, not by the Instagram lane whose to
 * **Switch:** repository variable `IG_REELS` — `on` (default) or `off`.
 * **Manual:** Actions → DocOga Facebook Auto-Post → Run workflow → `mode: reel` publishes the
   rotation's Reel to both surfaces now (the narrator-resume workflow uses the same path).
+
+### Two doors (since 16 Oct 2026, evening)
+
+The Page-token door needs the Page↔Instagram link, and on 16 Oct 2026 Facebook refused to
+make it: *"You're temporarily restricted from taking this action to protect your profile."*
+That message is Facebook's **profile-level rate limit** on sensitive account actions — not a
+policy strike, not a problem with the Page or with @docoga.ng. It fires after a burst of
+account-security actions (that afternoon: three OAuth consents across three apps, two tokens
+minted, an app product added, a Page switch, all from a phone on 4G), and Meta's own help text
+says it cannot be lifted early; it clears on its own, typically in 24–72 hours, and **retrying
+extends it**. Owners report the same message on exactly this screen going back to 2023, and
+two things reported to make the link succeed afterwards: two-factor authentication turned on
+for the personal profile, and both accounts present in the same Accounts Center.
+
+So the lane now has a **second door**: the Instagram-Login token the daily cards use needs no
+Page at all. Meta documents resumable upload for the Facebook-Login host only; 2026 field
+reports show the identical `upload_type=resumable` call working on `graph.instagram.com`.
+Rather than argue, the lane asks every morning the first door is shut: `--probe-reels` on
+`IG_API_PATH=instagram-login` creates **one** resumable REELS container (never published,
+invisible, expires in 24 h) and reads whether Meta returned an upload `uri`. A "which door"
+step then picks `facebook-login`, `instagram-login`, or `none`, and the Reel/Story upload
+steps use that door's token. The run summary names the door.
 
 ### The one-time step, if the probe says "no"
 
