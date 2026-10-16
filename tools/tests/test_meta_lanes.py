@@ -249,6 +249,21 @@ class ThreadsPublisher(unittest.TestCase):
         self.assertIn("threads.net/@docogadaily/post/181", out)
         self.assertEqual(len(fake.posts), 2, "container then publish, nothing else: %s" % out)
 
+    def test_a_finished_container_is_published_and_an_error_one_is_not(self):
+        """Run #6, 16 Oct 2026: Threads said `FINISHED` — its documented ready state — and the
+        publisher, which knew only `OK`, refused it as "did not finish"."""
+        for state, expect_code, expect_posts in (("FINISHED", 0, 2), ("IN_PROGRESS", 6, 1),
+                                                 ("ERROR", 6, 1), ("EXPIRED", 6, 1)):
+            with self.subTest(state=state):
+                routes = self._routes(extra={"GET /181": ok({
+                    "status": state, "permalink": "https://www.threads.net/@docogadaily/post/181",
+                    "text": self.TEXT})})
+                with mock.patch.object(tp.time, "sleep"):
+                    code, out, fake = self._publish(routes)
+                self.assertEqual(code, expect_code, out)
+                self.assertEqual(len(fake.posts), expect_posts,
+                                 "container, then publish only when ready: %s" % out)
+
     def test_a_read_back_mismatch_is_not_a_success(self):
         routes = self._routes(extra={"GET /181": ok({"status": "OK", "permalink": "https://x/1",
                                                      "text": "something else landed"})})
