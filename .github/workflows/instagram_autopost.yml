@@ -88,6 +88,8 @@ on:
 
 permissions:
   contents: write  # the render under site/social/ and the ledger are committed back
+  issues: write    # a failed run opens (or comments on) a visible issue — without this grant
+                   # every failure since launch ended in "Issue not created: bookkeeping failed"
 
 jobs:
   publish:
@@ -110,6 +112,8 @@ jobs:
           python3 -m pip install --quiet pillow cryptography
           # pillow draws the card; cryptography is tools/token_vault.py's only requirement, and
           # that tool refuses to run without it rather than storing a token in plaintext.
+          # Inter is the brand face; without this line the card is DejaVu (it was, until 16 Oct 2026).
+          bash tools/install_brand_fonts.sh
 
       - name: Load the credential (vault first, secret as bootstrap)
         env:
@@ -242,8 +246,11 @@ jobs:
               || echo "::warning title=Card not pushed::the JPEG exists only in this run, so the URL Instagram will be given is not published yet. If the push failed, the media-liveness wait below will fail with cause=media — which is the honest outcome, not a mystery."
           fi
 
+      # Skipped on a story-only dispatch: a Story has no caption to be a duplicate of, and the
+      # ledger key is the caption — so on that path the step could only ever say "today's card
+      # is already recorded", which is true, expected, and not a warning.
       - name: Ledger — has today already been posted?
-        if: ${{ !inputs.probe_only && !inputs.dry_run }}
+        if: ${{ !inputs.probe_only && !inputs.dry_run && inputs.content_type != 'story' }}
         env:
           LEDGER_LABEL: Instagram publish ledger
           IG_FORCE: ${{ inputs.force }}
@@ -265,8 +272,13 @@ jobs:
               echo "- ledger: today's caption is already recorded, so **nothing was sent**" >> "$GITHUB_STEP_SUMMARY"
               exit 0
             fi
-            echo "::warning title=Ledger said no (exit $code)::continuing — the account itself is the authority"
-            echo "IG_LEDGER=unreadable"
+            if [ "$code" = "3" ]; then
+              echo "::notice title=Ledger overridden::today's caption is already recorded and force=true — continuing; the account's own duplicate guard is the last word"
+              echo "IG_LEDGER=forced"
+            else
+              echo "::warning title=Ledger unreadable (exit $code)::continuing — the account itself is the authority"
+              echo "IG_LEDGER=unreadable"
+            fi
           fi
 
       - name: Publish to Instagram
@@ -539,5 +551,6 @@ jobs:
             gh issue comment "$EXISTING" --body-file /tmp/issue_body.md || true
             echo "Same cause as issue #$EXISTING — commented instead of filing a second one"
           else
-            gh issue create --title "Instagram post failed — $RUN_DATE [$CAUSE]" --label instagram-automation --body-file /tmp/issue_body.md || echo "::warning title=Issue not created::bookkeeping failed; the run log still carries the cause"
+            gh issue create --title "Instagram post failed — $RUN_DATE [$CAUSE]" --label instagram-automation --body-file /tmp/issue_body.md 2>/tmp/issue.err \
+              || echo "::warning title=Issue not created::$(tr '\n' ' ' < /tmp/issue.err | cut -c1-300) — the run log still carries the cause"
           fi

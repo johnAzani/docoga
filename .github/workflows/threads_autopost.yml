@@ -59,6 +59,7 @@ on:
 
 permissions:
   contents: write  # the ledger and the sealed token box are committed back to the default branch
+  issues: write    # a failed run opens (or comments on) a visible issue; missing until 16 Oct 2026
 
 jobs:
   publish:
@@ -390,5 +391,6 @@ jobs:
             gh issue comment "$EXISTING" --body-file /tmp/issue_body.md || true
             echo "Same cause as issue #$EXISTING — commented instead of filing a second one"
           else
-            gh issue create --title "Threads post failed — $RUN_DATE [$CAUSE]" --label threads-automation --body-file /tmp/issue_body.md || echo "::warning title=Issue not created::bookkeeping failed; the run log still carries the cause"
+            gh issue create --title "Threads post failed — $RUN_DATE [$CAUSE]" --label threads-automation --body-file /tmp/issue_body.md 2>/tmp/issue.err \
+              || echo "::warning title=Issue not created::$(tr '\n' ' ' < /tmp/issue.err | cut -c1-300) — the run log still carries the cause"
           fi
