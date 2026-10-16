@@ -286,16 +286,27 @@ def page_node():
     return (os.environ.get("FB_PAGE_ID") or "").strip() or "me"
 
 
+LINK_FIELDS = ("instagram_business_account", "connected_instagram_account")
+
+
 def linked_instagram(token):
     """(the Instagram professional account linked to the Page, the Page) — Facebook-Login path.
 
-    `instagram_business_account` is the field Meta documents for this; reading it needs
-    `instagram_basic` on the token, so an empty answer means *either* no link *or* no scope —
-    `reels_readiness` tells those apart with `debug_token`.
+    Two Page fields can carry the link, and a Page linked the modern way (Accounts Center /
+    the Facebook-Login dialog's "which Instagram account" screen) often shows the account in
+    **only** `connected_instagram_account` while `instagram_business_account` stays empty —
+    which is exactly how the 16 Oct 2026 probe said `page-link` for a Page whose token had just
+    been minted *with* @docoga.ng selected. Both are read; the first one filled wins. Reading
+    either needs `instagram_basic`, so an empty answer still means *either* no link *or* no
+    scope — `reels_readiness` tells those apart with `debug_token`.
     """
-    page = call("GET", "/%s" % page_node(), token,
-                {"fields": "id,name,instagram_business_account{id,username,media_count}"})
-    return page.get("instagram_business_account") or {}, page
+    fields = "id,name," + ",".join("%s{id,username,media_count}" % f for f in LINK_FIELDS)
+    page = call("GET", "/%s" % page_node(), token, {"fields": fields})
+    for field in LINK_FIELDS:
+        linked = page.get(field) or {}
+        if linked.get("id"):
+            return linked, page
+    return {}, page
 
 
 def token_scopes(token, app_id, app_secret):
@@ -385,8 +396,10 @@ def print_readiness(report):
     else:
         fixes = []
         if any(m in ("page-link", "page-link-or-instagram_basic") for m in report["missing"]):
-            fixes.append("link the Instagram account to the Page (Instagram app → Settings → "
-                         "Sharing to other apps → Facebook → choose the DocOga Page)")
+            fixes.append("link the Instagram account to the Page — on the Page: "
+                         "facebook.com → DocOga Page → Settings → Linked accounts → Instagram → "
+                         "Connect account; or Instagram app → Settings → Business tools and "
+                         "controls → Connect a Facebook Page → DocOga")
         if any(m in REEL_SCOPES or m == "page-link-or-instagram_basic" for m in report["missing"]):
             fixes.append("regenerate FB_PAGE_ACCESS_TOKEN in Graph API Explorer with "
                          "instagram_basic and instagram_content_publish ticked, Extend → Never, "
