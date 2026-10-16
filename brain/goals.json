@@ -1,0 +1,58 @@
+{
+  "written": "2026-10-17",
+  "horizon_start": "2026-10-20",
+  "horizon_weeks": 13,
+  "note": "Weekly rates the scorecard holds every channel to. Baselines are taken from the first scorecard that sees a number; a null baseline means 'not measured yet'. Edit the rates here, the reasoning in strategy.md.",
+  "weekly": {
+    "sales.passes": {
+      "kind": "absolute_step",
+      "step": 1.0,
+      "floor": 2,
+      "label": "Oga Pass sales per week (+1 each week, from 2)"
+    },
+    "telegram.members": {
+      "kind": "growth",
+      "rate": 0.09,
+      "label": "Telegram members (+9%/week)"
+    },
+    "facebook.followers": {
+      "kind": "growth",
+      "rate": 0.055,
+      "label": "Facebook followers (+5.5%/week)"
+    },
+    "instagram.followers": {
+      "kind": "growth",
+      "rate": 0.055,
+      "label": "Instagram followers (+5.5%/week)"
+    },
+    "threads.followers": {
+      "kind": "growth",
+      "rate": 0.07,
+      "label": "Threads followers (+7%/week)"
+    },
+    "youtube.subscribers": {
+      "kind": "absolute_step",
+      "step": 13.0,
+      "floor": 0,
+      "label": "YouTube subscribers (+13/week)"
+    }
+  },
+  "ratios": {
+    "facebook.share_rate": {
+      "min": 0.015,
+      "label": "Facebook shares per view (>= 1.5%)"
+    },
+    "instagram.send_rate": {
+      "min": 0.015,
+      "label": "Instagram shares+saves per reach (>= 1.5%)"
+    },
+    "threads.replies_per_post": {
+      "min": 3.0,
+      "label": "Threads replies per post (>= 3)"
+    },
+    "facebook.comments_per_post": {
+      "min": 2.0,
+      "label": "Facebook comments per post (>= 2)"
+    }
+  }
+}

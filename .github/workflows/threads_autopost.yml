@@ -34,7 +34,7 @@ name: DocOga Threads Auto-Post
 
 on:
   schedule:
-    - cron: '45 8 * * *'  # 08:45 UTC = 09:45 Lagos; 15 min after Facebook so the lanes do not share a minute
+    - cron: '10 12 * * *'  # 12:10 UTC = 13:10 Lagos — lunch idle time, when replies arrive in the first 90 minutes (brain/strategy.md)
   workflow_dispatch:
     inputs:
       dry_run:

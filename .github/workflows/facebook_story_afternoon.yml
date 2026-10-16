@@ -5,7 +5,7 @@
 # Reel days, when the Reel is re-posted as a video Story by facebook_autopost.yml):
 #
 #   09:30 WAT  morning slot   — in facebook_autopost.yml, with the feed post
-#   16:00 WAT  afternoon slot — THIS workflow: the day's *other* rotation type on
+#   19:40 WAT  evening slot   — THIS workflow: the day's *other* rotation type on
 #                               the 9:16 brand frame, so the tray shows two
 #                               different cards, not the same one twice.
 #
@@ -20,7 +20,7 @@ name: Facebook Stories (afternoon)
 
 on:
   schedule:
-    - cron: '0 15 * * *'   # 16:00 WAT — the commute scroll
+    - cron: '40 18 * * *'   # 19:40 WAT — the 7–9 pm peak; Stories sit at the top of the evening app (brain/strategy.md)
   workflow_dispatch:
     inputs:
       dry_run:

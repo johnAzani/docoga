@@ -415,7 +415,7 @@ class WorkflowTests(unittest.TestCase):
     def test_the_afternoon_workflow_is_its_own_small_lane(self):
         doc, steps = self.steps("facebook_story_afternoon.yml")
         on = doc.get("on") or doc.get(True)
-        self.assertEqual(on["schedule"][0]["cron"], "0 15 * * *", "16:00 WAT")
+        self.assertEqual(on["schedule"][0]["cron"], "40 18 * * *", "19:40 WAT — the evening peak (brain/strategy.md)")
         self.assertEqual(doc["concurrency"]["group"], "facebook-autopost", "one publisher at a time")
         self.assertEqual(doc["permissions"], {"contents": "read"})
         run = [s for s in steps if s["name"] == "Story — afternoon slot"][0]["run"]

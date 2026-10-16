@@ -80,6 +80,9 @@ def post_text(pack):
     body = "\n".join(line.strip() for line in post.get("lines") or [] if line.strip())
     if body:
         parts.append(body)
+    cta = str(post.get("cta") or "").strip()
+    if cta:
+        parts.append(cta)   # the send/forward/reply line — the signal every 2026 feed ranks on
     if has_claims(pack):
         parts.append(DISCLAIMER)
     parts.append(LINK)
@@ -105,6 +108,10 @@ def threads_text(pack):
     if LINK not in text:
         text = text.rstrip() + "\n" + LINK
     return text
+
+
+def cta(pack):
+    return str(((pack.get("post") or {}).get("cta") or "")).strip()
 
 
 def post_type(pack):

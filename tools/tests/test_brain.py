@@ -49,9 +49,12 @@ def good_pack(day=MONDAY, **over):
                  "lines": ["In Lagos a yearly tenant is entitled to six months' notice to quit.",
                            "That is s.13(1)(e) of the Tenancy Law 2011 — count the months on your notice.",
                            "A dated, written notice is the paper that decides it. Make yours in two minutes."],
+                 "cta": "Send this to the friend whose rent is due in January.",
                  "hashtags": ["#DocOga", "#TenantRights", "#Lagos", "#NoticeToQuit"]},
+        "reader": "ngozi",
         "threads": {"text": "Yearly tenant in Lagos? The law gives you six months' notice, not three. "
-                            "s.13(1)(e), Tenancy Law 2011. Count the months on the paper before you pack.",
+                            "s.13(1)(e), Tenancy Law 2011. Count the months on the paper before you pack. "
+                            "How many months did your last notice give you?",
                     "hashtags": ["#DocOga", "#Lagos"]},
         "visual": {"kicker": "know your rights", "layout": "stat", "big": "6 MONTHS", "plate": "lagos rooftops dusk"},
         "short": {"title": "Three months' notice? Check the law.", "hook_sub": "yearly tenants in Lagos get six",
@@ -185,6 +188,28 @@ class GeminiTextTests(Sandbox):
 class GateTests(Sandbox):
     def test_a_good_pack_passes_every_deterministic_gate(self):
         self.assertEqual(brain.lint(good_pack(), self.ctx(), []), [])
+
+    def test_a_post_without_a_send_line_or_with_a_slogan_is_refused(self):
+        """17 Oct 2026: sends/forwards/replies are what every 2026 feed ranks on — the line is not optional."""
+        post = dict(good_pack()["post"])
+        post.pop("cta")
+        self.assertTrue(any("post.cta is missing" in p for p in brain.lint(good_pack(post=post), self.ctx(), [])))
+        post["cta"] = "DocOga, Nigeria's document engine."
+        self.assertTrue(any("not a slogan" in p for p in brain.lint(good_pack(post=post), self.ctx(), [])))
+        post["cta"] = "Forward this to your landlord group: https://docoga.com.ng"
+        self.assertTrue(any("must not carry the link" in p for p in brain.lint(good_pack(post=post), self.ctx(), [])))
+        post["cta"] = "Tag the friend who paid cash with no receipt."
+        self.assertEqual(brain.lint(good_pack(post=post), self.ctx(), []), [])
+        self.assertIn("Tag the friend who paid cash with no receipt.", brain_drafts.post_text(good_pack(post=post)),
+                      "the send line is in the copy the lanes post and the card renders")
+
+    def test_a_threads_post_that_does_not_end_with_a_question_is_refused(self):
+        pack = good_pack(threads={"text": "Yearly tenant in Lagos? Six months' notice, not three. Count the months.",
+                                  "hashtags": ["#DocOga"]})
+        self.assertEqual(brain.lint(pack, self.ctx(), []), [], "a question anywhere in the closing stretch counts")
+        pack = good_pack(threads={"text": "Yearly tenants in Lagos get six months' notice, not three. Count the months before you pack.",
+                                  "hashtags": ["#DocOga"]})
+        self.assertTrue(any("end with a question" in p for p in brain.lint(pack, self.ctx(), [])))
 
     def test_a_claim_with_an_unknown_fact_id_is_refused(self):
         pack = good_pack(claims=[{"text": "x", "fact_id": "lagos:made_up:9"}])

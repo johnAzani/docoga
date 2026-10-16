@@ -699,11 +699,12 @@ class DiscoveryTests(unittest.TestCase):
         self.assertTrue(by_file["instagram_autopost.yml"]["scheduled"],
                         "the media bridge exists; a lane that went back to dispatch-only "
                         "should be loud about it, not quietly off the monitor")
-        self.assertEqual(by_file["instagram_autopost.yml"]["crons"], ["0 9 * * *"])
+        self.assertEqual(by_file["instagram_autopost.yml"]["crons"], ["10 18 * * *"],
+                         "Instagram posts in the 7–9 pm WAT window the 2026 Nigeria data names (brain/strategy.md)")
         self.assertIn("threads_autopost.yml", by_file)
-        self.assertEqual(by_file["threads_autopost.yml"]["crons"], ["45 8 * * *"],
-                         "Threads sits 15 minutes after Facebook so two lanes never share a "
-                         "minute and one broken runner cannot look like two broken lanes")
+        self.assertEqual(by_file["threads_autopost.yml"]["crons"], ["10 12 * * *"],
+                         "Threads posts at lunch (13:10 WAT) for reply velocity; no two lanes "
+                         "share a minute, so one broken runner cannot look like two broken lanes")
         # A lane the monitor cannot classify is a lane nobody is watching.
         for name in ("threads_autopost.yml", "instagram_autopost.yml"):
             with self.subTest(lane=name):
