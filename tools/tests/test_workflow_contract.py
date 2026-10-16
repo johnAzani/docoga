@@ -627,6 +627,34 @@ class EveryWorkflowTests(unittest.TestCase):
         for path in sorted(WORKFLOWS.glob("*.yml")):
             yield path, yaml.safe_load(path.read_text(encoding="utf-8"))
 
+    def test_a_step_excluded_for_an_inputs_default_is_also_excluded_on_schedule(self):
+        """`inputs.mode != 'daily'` reads as "manual modes only" — but on a *scheduled* run every
+        input is empty, '' != 'daily' is true, and the manual step runs with no message. That is
+        how the Facebook lane posted correctly on 15 and 16 Oct 2026 and still went red twice.
+        Rule: a step gated on `inputs.X != <the default of X>` must also be gated on
+        `github.event_name`, because a schedule behaves as the defaults."""
+        import re
+        pattern = re.compile(r"inputs\.([a-z_]+)\s*!=\s*'([^']*)'")
+        for path, doc in self._workflows():
+            on = doc.get(True) or doc.get("on") or {}
+            if not isinstance(on, dict) or "schedule" not in on:
+                continue
+            dispatch = on.get("workflow_dispatch") or {}
+            inputs = (dispatch.get("inputs") or {}) if isinstance(dispatch, dict) else {}
+            for job_name, job in (doc.get("jobs") or {}).items():
+                for step in job.get("steps") or []:
+                    cond = str(step.get("if") or "")
+                    for name, value in pattern.findall(cond):
+                        default = (inputs.get(name) or {}).get("default")
+                        if str(default) != value:
+                            continue
+                        with self.subTest(workflow=path.name, step=step.get("name")):
+                            self.assertIn("github.event_name", cond,
+                                          "%s step %r is gated on inputs.%s != %r (its default) — "
+                                          "on a scheduled run that input is empty and the step runs; "
+                                          "add `github.event_name == 'workflow_dispatch'`"
+                                          % (path.name, step.get("name"), name, value))
+
     def test_a_job_that_files_issues_holds_the_issues_grant(self):
         """`gh issue create` with a GITHUB_TOKEN that has no `issues: write` is a 403, and the
         step's `|| echo` turned that into "Issue not created: bookkeeping failed" — which is how

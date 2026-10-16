@@ -15,11 +15,12 @@ from pathlib import Path
 ASSETS_DIR = Path("assets/videos")
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
 import docoga_log  # noqa: E402  one answer for "where do the scratch files live"
+import telegram_token  # noqa: E402  tolerant of phone pastes; see tools/telegram_token.py
 
 LOG_FILE = docoga_log.log_file("social_media.log")
 LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
 
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+TELEGRAM_BOT_TOKEN = telegram_token.from_env()[0]
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
 

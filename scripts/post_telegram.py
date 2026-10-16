@@ -29,6 +29,7 @@ from pathlib import Path
 # Shared escaper/stripper. tools/ is a sibling of scripts/.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
 from telegram_mdv2 import to_plain  # noqa: E402
+import telegram_token  # noqa: E402
 import docoga_log  # noqa: E402  where the scratch files live
 import telegram_preview  # noqa: E402  reads the channel's own public preview page
 import youtube_ledger as ledger  # noqa: E402  — the same bookkeeping the Shorts and
@@ -63,7 +64,10 @@ FORCE = os.getenv("TELEGRAM_FORCE", "").lower() in ("1", "true", "yes")
 WAT = timedelta(hours=1)
 
 # Load environment variables
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+# Read through tools/telegram_token.py: a paste that still *contains* the token works
+# (bot prefix, full URL, quotes, whitespace); one that does not is None, and the preflight
+# has already said why. The 15–16 Oct 2026 404s were exactly this.
+TELEGRAM_BOT_TOKEN = telegram_token.from_env()[0]
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
 TELEGRAM_API = "https://api.telegram.org"

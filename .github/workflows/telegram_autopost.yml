@@ -192,6 +192,9 @@ jobs:
             retries as plain text, and this line says whether that retry worked.
           - \`getMe failed: … Unauthorized\` — the bot token is revoked. Reissue it with
             @BotFather and update \`TELEGRAM_BOT_TOKEN\`.
+          - \`getMe failed: … Not Found\` or \`is not a token\` — a paste problem, not a
+            revoked bot: the secret does not have the shape \`<digits>:<35 characters>\`.
+            @BotFather → /mybots → the bot → API Token, and paste exactly that.
           - \`chat not found\` / \`bot is not a member\` — the channel ID moved or the bot
             was removed. Re-check \`TELEGRAM_CHAT_ID\` and the channel's admin list.
           - \`not enough rights\` / \`can_post_messages\` — re-grant the bot "Post messages"

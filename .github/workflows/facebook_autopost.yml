@@ -382,8 +382,11 @@ jobs:
       # interpolation inside the command, and every value is passed as
       # `--flag=value` so a copy that begins with a dash cannot be read as an
       # option by argparse.
+      # `inputs.mode` is EMPTY on a scheduled run, and '' != 'daily' is true — which is how
+      # the 15 and 16 Oct 2026 schedules posted fine and then went red here with
+      # "no message". Manual means dispatched; say so.
       - name: Manual post (text / photo / video / reel)
-        if: ${{ !inputs.dry_run && inputs.mode != 'daily' }}
+        if: ${{ github.event_name == 'workflow_dispatch' && !inputs.dry_run && inputs.mode != 'daily' }}
         env:
           FB_MODE: ${{ inputs.mode }}
           FB_MESSAGE: ${{ inputs.message }}
