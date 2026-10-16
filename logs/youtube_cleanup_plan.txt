@@ -7,3 +7,5 @@
 # Owner, 16 Oct 2026: "delete n45ufAFv5OM, unlist 2ruPSaR8-M0 and oBsWKR4AUNA"
 delete n45ufAFv5OM
 unlist 2ruPSaR8-M0 oBsWKR4AUNA
+
+# 16 Oct 2026 15:05 WAT: YT_REFRESH_TOKEN re-minted with youtube.force-ssl — run the lines above.
