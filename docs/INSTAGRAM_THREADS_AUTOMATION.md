@@ -35,7 +35,7 @@ The second half was wrong, and it was the half that kept the lane switched off f
 | "Publishing via the Instagram API requires App Review + Business Verification" | Those gates are for **Advanced Access** — an app publishing on accounts it does **not** own or manage. **Standard Access** is granted automatically and covers accounts owned by someone with a role on the app (admin / developer / tester). | DocOga publishes to DocOga's own profile from an app DocOga owns. That is the Standard Access case: **no review, no verification, no queue.** |
 | "You need `instagram_content_publish`" | The scope names changed on **27 Jan 2025**. On the Instagram-Login path it is `instagram_business_basic` + `instagram_business_content_publish` (host `graph.instagram.com`, no Facebook Page needed). `instagram_content_publish` is the *Facebook-Login* name (host `graph.facebook.com`, Page required). | A 2023 tutorial asks for a deprecated scope and the app never gets the permission it actually calls with. |
 | "Reels work for Business and Creator accounts" | Content publishing works for both; **Reels are reported to be Business-only**, and the aspect/duration rules are stricter (9:16, 5–90 s). | If the profile is Creator, a Reel container can be created and still not publish. Photo/carousel is unaffected. |
-| "Meta's Basic Display API can post for personal accounts" | Basic Display is **dead** (sunset completed 2024–2025) and was read-only anyway. A **personal** Instagram account has **no publishing API at all** — switch it to Business or Creator in the app first. | The preflight checks `profile_type` and refuses early with that sentence, so you find out in 3 seconds instead of at 09:00 UTC with a red run and no explanation. |
+| "Meta's Basic Display API can post for personal accounts" | Basic Display is **dead** (sunset completed 2024–2025) and was read-only anyway. A **personal** Instagram account has **no publishing API at all** — switch it to Business or Creator in the app first. | The preflight checks `account_type` and refuses early with that sentence, so you find out in 3 seconds instead of at 09:00 UTC with a red run and no explanation. |
 
 Also worth naming, because it is a real limit and not a scare: **a 60-day token**. Both lanes
 run on user tokens that Meta expires after 60 days unless they are refreshed, and — this is the
@@ -189,7 +189,7 @@ it should be ~59–60.** If it is missing entirely, the vault is not being writt
 |---|---|---|
 | `THREADS_RESULT=refused THREADS_CAUSE=setup` (exit 2) | no credential in this repo | T2/T3. Not an outage; nothing was attempted. |
 | `invalid oauth access token` / `code 190` | the 60-day token expired or was revoked | re-consent once, then set `SOCIAL_TOKEN_KEY` so it never happens again |
-| `(#200) … permission` / `not approved` | the app is missing the scope, or the account is not professional | App settings → the scope must be listed; for Instagram check `profile_type` in the probe line |
+| `(#200) … permission` / `not approved` | the app is missing the scope, or the account is not professional | App settings → the scope must be listed; for Instagram check the `profile …` value in the probe line (`account_type`) |
 | `THREADS_PUBLISHING_LIMIT_EXCEEDED` / `code 32` | 250 posts in 24 h — one post a day cannot do this alone | find the other publisher using this token; `GET /{user}/threads_publishing_limit` shows usage |
 | `LINK_LIMIT_EXCEEDED` / `too long` | the copy, not the platform: >5 links or >500 bytes | `generate_threads_content.py` should have caught it — that is a bug report, open one |
 | `transport failure` | the runner could not reach `graph.threads.net` | check `.github/workflows/net-probe.yml`; the next scheduled run is unaffected |
@@ -199,7 +199,7 @@ it should be ~59–60.** If it is missing entirely, the vault is not being writt
 | Instagram `Unsupported URL request` / `IG_CAUSE=media` | the JPEG was not public when Meta looked | three causes, in order of likelihood: site deploy still running (the lane waits 15 min), the render `git push` failed, or the URL was built with a `/site/` prefix (it must be `https://docoga.com.ng/social/…`) |
 | Instagram `not-jpeg` / `no-SOF` | the file is not a JPEG | `social_card.py` writes JPEG; a manual `--image-url` pointing at a PNG is the usual culprit |
 | Instagram `1080x2400 is 0.450:1` | outside 4:5…1.91:1 | re-render; the API's own answer to this is unreadable, which is why we check locally first |
-| Instagram `profile_type` is `PERSONAL` | no API for personal accounts | switch to Business in the app; there is no code path around it |
+| Instagram `account_type` is `PERSONAL` | no API for personal accounts | switch to Business in the app; there is no code path around it |
 
 ---
 

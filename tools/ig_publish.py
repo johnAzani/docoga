@@ -220,10 +220,21 @@ def get_config():
     return token, user_id, app_id, app_secret
 
 
+PROFESSIONAL = ("business", "media_creator", "creator")
+
+
 def whoami(token):
-    fields = ("user_id,username,profile_type,media_count" if api_path() != "facebook-login"
-              else "id,username,profile_type")
+    # The field is `account_type` (BUSINESS / MEDIA_CREATOR / PERSONAL). 16 Oct 2026: the
+    # first real probe asked for a field that does not exist and the API answered
+    # `(#100) Tried accessing nonexisting field` — a valid token reported as a credentials
+    # failure. The Facebook-Login IG User node has no account-type field at all.
+    fields = ("user_id,username,account_type,media_count" if api_path() != "facebook-login"
+              else "id,username")
     return call("GET", "/me", token, {"fields": fields})
+
+
+def account_type(who):
+    return str(who.get("account_type") or "").lower()
 
 
 def check_quota(token, user_id):
@@ -443,8 +454,11 @@ def refresh_token(token, app_id, app_secret):
     """60-day long-lived token, wound forward. Prints only a fingerprint: the *value* is
     handed back for the caller to seal (tools/token_vault.py), never echoed to a log."""
     if api_path() != "facebook-login":
+        # `/refresh_access_token` winds a long-lived token forward with nothing but the token.
+        # `/access_token` is the short→long *exchange* and demands `client_secret` — the first
+        # real run's warning was exactly that message because the old code called the wrong one.
         params = {"grant_type": "ig_refresh_token", "access_token": token}
-        url = GRAPH_INSTAGRAM + "/access_token"
+        url = GRAPH_INSTAGRAM + "/refresh_access_token"
     else:
         if not (app_id and app_secret):
             print("::warning title=token not refreshed::META_APP_ID/META_APP_SECRET are needed "
@@ -459,10 +473,10 @@ def refresh_token(token, app_id, app_secret):
     except json.JSONDecodeError:
         parsed = {}
     if status >= 400 or parsed.get("error"):
-        raise ApiError(status, body, "/access_token")
+        raise ApiError(status, body, url)
     new = parsed.get("access_token")
     if not new:
-        raise ApiError(status, "no access_token in the refresh response", "/access_token")
+        raise ApiError(status, "no access_token in the refresh response", url)
     print("token refreshed (fingerprint %s)" % fingerprint(new))
     return parsed
 
@@ -576,16 +590,15 @@ def main(argv=None):
     username = who.get("username") or "?"
     user_id = user_id or str(who.get("id") or who.get("user_id") or "")
     print("token authorises @%s (id %s, path %s, profile %s)"
-          % (username, user_id, api_path(), who.get("profile_type") or "?"))
+          % (username, user_id, api_path(), who.get("account_type") or "?"))
     if not user_id:
         print("::error title=IG_USER_ID unknown::no id from /me and IG_USER_ID is empty")
         machine("refused", "setup")
         return 2
-    if api_path() != "facebook-login" and (who.get("profile_type") or "").lower() not in (
-            "business", "creator"):
-        print("::error title=not a professional account::profile_type=%r — the Instagram API "
+    if api_path() != "facebook-login" and account_type(who) not in PROFESSIONAL:
+        print("::error title=not a professional account::account_type=%r — the Instagram API "
               "publishes for Business or Creator accounts only; a personal account has no API "
-              "path at all" % who.get("profile_type"))
+              "path at all" % who.get("account_type"))
         machine("refused", "account")
         return 3
 
@@ -594,8 +607,8 @@ def main(argv=None):
         print("probe: @%s — %d media on the account, %s" % (
             username, who.get("media_count", "?"),
             "quota %s/%s used" % (limit["usage"], limit["total"]) if limit else "quota unreadable"))
-        if (who.get("profile_type") or "").lower() not in ("business", "creator"):
-            print("::warning title=profile_type is not business/creator::publishing will be "
+        if api_path() != "facebook-login" and account_type(who) not in PROFESSIONAL:
+            print("::warning title=account_type is not business/creator::publishing will be "
                   "refused until the account is switched in the Instagram app")
         machine("probed")
         return 0
