@@ -220,7 +220,7 @@ jobs:
             echo "Render already committed on this branch — nothing to push."
           else
             git commit -q -m "Auto: Instagram card ${DAY}"
-            # `${{ … }}` stays out of the command line: this is the one step that pushes, and a
+            # No workflow expression is interpolated into this command line: this is the one step that pushes, and a
             # push destination built from an interpolated expression is where a trust mistake
             # becomes a write to the wrong ref.
             git push origin "HEAD:${BRANCH}" \
