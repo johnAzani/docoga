@@ -737,6 +737,22 @@ class EveryWorkflowTests(unittest.TestCase):
                 self.assertIn("SOCIAL_TOKEN_KEY: ${{ secrets.SOCIAL_TOKEN_KEY }}", text,
                               "%s runs token_vault.py but never maps the key from secrets" % path.name)
 
+    def test_every_lane_that_generates_copy_installs_pillow(self):
+        """scripts/generate_telegram_content.py imports tools/social_card.py, which imports
+        PIL at module level — so every lane that runs it (or the Threads generator that
+        imports it) needs pillow installed, whether or not it draws anything. Threads run #4,
+        16 Oct 2026: `ModuleNotFoundError: No module named 'PIL'` on the first real post."""
+        needs = ("generate_telegram_content.py", "generate_threads_content.py", "social_card.py")
+        for path, doc in self._workflows():
+            scripts = " ".join(str(step.get("run") or "")
+                               for job in (doc.get("jobs") or {}).values()
+                               for step in job.get("steps") or [])
+            if not any(name in scripts for name in needs):
+                continue
+            with self.subTest(workflow=path.name):
+                self.assertRegex(scripts.lower(), r"pip install[^\n]*pillow",
+                                 "%s runs a copy generator but never installs pillow" % path.name)
+
     def test_every_run_block_is_valid_bash(self):
         """`bash -n` on each script: YAML cannot tell you a quote is unbalanced."""
         import subprocess
