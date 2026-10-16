@@ -658,6 +658,67 @@ class EveryWorkflowTests(unittest.TestCase):
                 except Dup as exc:
                     self.fail("%s: %s — GitHub will refuse this file and hide the Run button" % (path.name, exc))
 
+    def test_every_expression_in_every_workflow_is_one_github_can_evaluate(self):
+        """`${{ … }}` inside ANY string value is evaluated by GitHub — comments included.
+
+        16 Oct 2026, second cause of the invisible Instagram lane: a bash comment inside a
+        `run:` block read "`${{ … }}` stays out of the command line". YAML saw a string,
+        `bash -n` saw a comment, GitHub saw an expression with an unexpected symbol and
+        refused the whole file. This walks every string in every workflow and checks each
+        expression is built only from GitHub's named values, functions, literals and
+        operators. (YAML `#` comments are stripped before GitHub parses, so they are not
+        walked here — and `yaml.safe_load` drops them for us.)
+        """
+        import re
+        named = {"github", "env", "vars", "job", "jobs", "steps", "runner", "secrets",
+                 "strategy", "matrix", "needs", "inputs", "true", "false", "null", "infinity", "nan"}
+        functions = {"contains", "startswith", "endswith", "format", "join", "tojson",
+                     "fromjson", "hashfiles", "success", "always", "cancelled", "failure"}
+        token = re.compile(r"""\s+|'(?:[^']|'')*'|-?\d+(?:\.\d+)?(?:e-?\d+)?|[A-Za-z_][\w-]*|&&|\|\||==|!=|<=|>=|\*|\.|\[|\]|\(|\)|,|!|<|>""")
+
+        def check(expr):
+            pos = 0
+            prev = ""
+            while pos < len(expr):
+                m = token.match(expr, pos)
+                if not m:
+                    return "unexpected symbol %r" % expr[pos]
+                t = m.group(0)
+                pos = m.end()
+                if t.strip() == "":
+                    continue
+                if re.match(r"[A-Za-z_]", t):
+                    low = t.lower()
+                    if prev == ".":
+                        pass  # property name — anything goes
+                    elif low in functions:
+                        pass
+                    elif low not in named:
+                        return "unknown named value %r" % t
+                prev = t
+            return None
+
+        def strings(node):
+            if isinstance(node, str):
+                yield node
+            elif isinstance(node, dict):
+                for value in node.values():
+                    yield from strings(value)
+            elif isinstance(node, list):
+                for value in node:
+                    yield from strings(value)
+
+        for path, doc in self._workflows():
+            for text in strings(doc):
+                for m in re.finditer(r"\$\{\{(.*?)\}\}", text, re.S):
+                    with self.subTest(workflow=path.name, expression=m.group(0)[:80]):
+                        problem = check(m.group(1))
+                        self.assertIsNone(
+                            problem,
+                            "%s: %s in %s — GitHub refuses the whole file and hides the Run button"
+                            % (path.name, problem, m.group(0)[:80]),
+                        )
+
     def test_every_run_block_is_valid_bash(self):
         """`bash -n` on each script: YAML cannot tell you a quote is unbalanced."""
         import subprocess
