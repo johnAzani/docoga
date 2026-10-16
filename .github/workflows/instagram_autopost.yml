@@ -60,6 +60,7 @@ on:
         type: choice
         options:
           - card
+          - story
           - reel
           - photo
           - carousel
@@ -207,20 +208,30 @@ jobs:
           set -o pipefail
           DAY=$(date -u +%F)
           OUT="site/social/${DAY}-instagram.jpg"
+          STORY_OUT="site/social/${DAY}-instagram-story.jpg"
+          KICKER="$(python3 -c 'import json;print(json.load(open("assets/threads/threads_content_latest.json")).get("post_type",""))')"
           python3 tools/social_card.py \
             --from-json assets/threads/threads_content_latest.json \
-            --kicker "$(python3 -c 'import json;print(json.load(open("assets/threads/threads_content_latest.json")).get("post_type",""))')" \
+            --kicker "$KICKER" \
             --out "$OUT" 2>&1 | tee /tmp/ig_render.log
+          # The same copy as a 9:16 Story frame (owner, 16 Oct 2026: "what about Instagram
+          # stories"). One commit carries both files so one deploy publishes both URLs.
+          python3 tools/social_card.py \
+            --from-json assets/threads/threads_content_latest.json \
+            --kicker "$KICKER" --story \
+            --out "$STORY_OUT" 2>&1 | tee /tmp/ig_story_render.log
           tee -a "$GITHUB_STEP_SUMMARY" < /tmp/ig_render.log > /dev/null
           CARD_URL=$(sed -n 's/^CARD_URL=//p' /tmp/ig_render.log | tail -1)
+          STORY_URL=$(sed -n 's/^CARD_URL=//p' /tmp/ig_story_render.log | tail -1)
           echo "IG_MEDIA_URL=${CARD_URL}" >> "$GITHUB_ENV"
+          echo "IG_STORY_URL=${STORY_URL}" >> "$GITHUB_ENV"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -f "$OUT"
+          git add -f "$OUT" "$STORY_OUT"
           if git diff --staged --quiet; then
             echo "Render already committed on this branch — nothing to push."
           else
-            git commit -q -m "Auto: Instagram card ${DAY}"
+            git commit -q -m "Auto: Instagram card + story ${DAY}"
             # No workflow expression is interpolated into this command line: this is the one step that pushes, and a
             # push destination built from an interpolated expression is where a trust mistake
             # becomes a write to the wrong ref.
@@ -267,6 +278,11 @@ jobs:
           # the command line is the injection hole the Facebook lane closed on 12 Oct: a caption
           # or URL containing `$(…)` becomes shell code running with this job's secrets in scope.
           case "${IG_CONTENT_TYPE:-card}" in
+            story)
+              echo "Story-only dispatch: the feed post is skipped; the Story step below publishes."
+              echo "IG_RESULT=skipped" > /tmp/ig_post.log
+              exit 0
+              ;;
             reel)
               echo "::error title=Reels need a public video URL::this lane has no free public host for a rendered video, so it refuses instead of creating a container that will fail to fetch. docs/INSTAGRAM_THREADS_AUTOMATION.md has the two real options."
               exit 5
@@ -313,6 +329,34 @@ jobs:
             *) exit "${PIPE_STATUS:-6}" ;;
           esac
 
+      # The Story rides the same run: same frame copy at 9:16, 24 hours in the tray, no caption.
+      # It is deliberately after the feed post so a failing Story cannot cost the feed post —
+      # and it is `continue-on-error`: a Story is a window, the feed post is the record.
+      - name: Publish the Story
+        id: story
+        if: ${{ !inputs.probe_only && !inputs.dry_run && inputs.content_type != 'reel' && inputs.content_type != 'carousel' && inputs.content_type != 'photo' }}
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          [ -n "${IG_STORY_URL:-}" ] || { echo "::warning title=no Story URL::the render step did not produce a Story frame"; exit 0; }
+          set +e
+          IG_ACCESS_TOKEN="$(cat /tmp/ig_token)" IG_USER_ID="${IG_USER_ID:-}" \
+            python3 tools/ig_publish.py --story-url "$IG_STORY_URL" --wait-url --wait-url-deadline 600 2>&1 | tee /tmp/ig_story.log
+          STORY_STATUS=${PIPESTATUS[0]}
+          set -e
+          RESULT=$(sed -n 's/^IG_RESULT=//p' /tmp/ig_story.log | tail -1)
+          CAUSE=$(sed -n 's/^IG_CAUSE=//p' /tmp/ig_story.log | tail -1)
+          {
+            echo "### Instagram Story"
+            echo
+            echo "- result: \`${RESULT:-?}${CAUSE:+ · cause \`${CAUSE}\`}\`"
+            echo "- frame: ${IG_STORY_URL} (9:16, 24 hours in the tray)"
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$RESULT" != "sent" ]; then
+            echo "::warning title=Instagram Story not posted::result=${RESULT:-?} cause=${CAUSE:-?} — the feed post is unaffected; see the log above"
+            exit "${STORY_STATUS:-6}"
+          fi
+
       - name: Wind the 60-day token clock
         if: always()
         continue-on-error: true
@@ -324,9 +368,12 @@ jobs:
             echo "::warning title=Instagram token not refreshed::$(tail -c 200 /tmp/ig_refresh.err 2>/dev/null | tr '\n' ' ') — repeated for weeks, this ends in an expired token and a credentials issue."
             exit 0
           fi
-          if ! python3 tools/token_vault.py seal --name IG_ACCESS_TOKEN --json /tmp/ig_refresh.json; then
+          if ! python3 tools/token_vault.py seal --name IG_ACCESS_TOKEN --json /tmp/ig_refresh.json 2>/tmp/ig_seal.err; then
             rm -f /tmp/ig_refresh.json
-            echo "::warning title=Instagram token not sealed::SOCIAL_TOKEN_KEY is not set, so the refreshed value dies with this run. One tap fixes it permanently: gh secret set SOCIAL_TOKEN_KEY. Until then this lane has 60 days, not forever."
+            # Quote the tool's own reason. The old text blamed SOCIAL_TOKEN_KEY for every failure,
+            # and on 16 Oct 2026 the owner set that secret twice while the real cause was a stray
+            # stdout line in the refresh response.
+            echo "::warning title=Instagram token not sealed::$(tail -c 300 /tmp/ig_seal.err 2>/dev/null | tr '\n' ' ') — the refreshed value dies with this run; until sealing works this lane has 60 days, not forever."
             exit 0
           fi
           rm -f /tmp/ig_refresh.json
@@ -347,16 +394,25 @@ jobs:
         continue-on-error: true
         run: |
           set -o pipefail
-          if ! grep -q '^IG_RESULT=sent$' /tmp/ig_post.log 2>/dev/null; then
-            echo "Nothing was published, so nothing is recorded."
-            exit 0
-          fi
-          MEDIA_ID=$(sed -n 's/^IG_MEDIA_ID=//p' /tmp/ig_post.log | tail -1)
-          PERMALINK=$(sed -n 's/^IG_PERMALINK=//p' /tmp/ig_post.log | tail -1)
           TITLE=$(python3 -c 'import json;print(json.load(open("assets/threads/threads_content_latest.json"))["text"][:80])')
-          python3 tools/youtube_ledger.py --ledger logs/instagram_sent.json record \
-            --title "$TITLE" --video-id "${MEDIA_ID:-unknown}" --url "$PERMALINK" \
-            --date "$(date -u +%F)" --run-id "${{ github.run_id }}" --topic instagram-card
+          RECORDED=0
+          if grep -q '^IG_RESULT=sent$' /tmp/ig_post.log 2>/dev/null; then
+            MEDIA_ID=$(sed -n 's/^IG_MEDIA_ID=//p' /tmp/ig_post.log | tail -1)
+            PERMALINK=$(sed -n 's/^IG_PERMALINK=//p' /tmp/ig_post.log | tail -1)
+            python3 tools/youtube_ledger.py --ledger logs/instagram_sent.json record \
+              --title "$TITLE" --video-id "${MEDIA_ID:-unknown}" --url "$PERMALINK" \
+              --date "$(date -u +%F)" --run-id "${{ github.run_id }}" --topic instagram-card
+            RECORDED=1
+          fi
+          if grep -q '^IG_RESULT=sent$' /tmp/ig_story.log 2>/dev/null; then
+            STORY_ID=$(sed -n 's/^IG_MEDIA_ID=//p' /tmp/ig_story.log | tail -1)
+            STORY_LINK=$(sed -n 's/^IG_PERMALINK=//p' /tmp/ig_story.log | tail -1)
+            python3 tools/youtube_ledger.py --ledger logs/instagram_sent.json record \
+              --title "Story · $TITLE" --video-id "${STORY_ID:-unknown}" --url "$STORY_LINK" \
+              --date "$(date -u +%F)" --run-id "${{ github.run_id }}" --topic instagram-story
+            RECORDED=1
+          fi
+          [ "$RECORDED" = 1 ] || echo "Nothing was published, so nothing is recorded."
 
       - name: Commit the ledger
         if: ${{ !inputs.probe_only && !inputs.dry_run }}

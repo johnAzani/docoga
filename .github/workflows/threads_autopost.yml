@@ -264,8 +264,8 @@ jobs:
             exit 0
           fi
           if ! python3 tools/token_vault.py seal --name THREADS_TOKEN \
-               --json /tmp/threads_refresh.json; then
-            echo "::warning title=Threads token not sealed::the vault is not configured (SOCIAL_TOKEN_KEY) or the box could not be written. The refresh was accepted by Meta, so the *stored* value is now the fresher one — a lane without the key cannot keep it, which is exactly why the key is worth one tap."
+               --json /tmp/threads_refresh.json 2>/tmp/threads_seal.err; then
+            echo "::warning title=Threads token not sealed::$(tail -c 300 /tmp/threads_seal.err 2>/dev/null | tr '\n' ' ') — the refresh was accepted by Meta, so the *stored* value is now the fresher one; a lane that cannot seal it cannot keep it."
             exit 0
           fi
           rm -f /tmp/threads_refresh.json   # never leave a plaintext token in the workspace
