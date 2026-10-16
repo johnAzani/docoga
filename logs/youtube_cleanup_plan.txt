@@ -1,0 +1,9 @@
+# DocOga YouTube clean-up plan — run by .github/workflows/youtube_manage.yml whenever this
+# file changes on main (or on dispatch), through tools/yt_manage.py.
+# One action per line: delete | unlist | public | private, then one or more video ids.
+# Every finished line is recorded in logs/youtube_manage.json and never applied twice,
+# so adding a line is the whole act; nothing here needs removing afterwards.
+
+# Owner, 16 Oct 2026: "delete n45ufAFv5OM, unlist 2ruPSaR8-M0 and oBsWKR4AUNA"
+delete n45ufAFv5OM
+unlist 2ruPSaR8-M0 oBsWKR4AUNA
