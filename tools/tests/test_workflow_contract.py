@@ -1152,8 +1152,38 @@ class FacebookReelsContractTests(unittest.TestCase):
     def test_contents_write_is_spent_on_exactly_one_path(self):
         self.assertEqual((self.doc.get("permissions") or {}).get("contents"), "write")
         added = re.findall(r"git add (\S+)", self.text)
-        self.assertEqual(added, ["logs/facebook_reels.json"],
+        # Two ledgers since 16 Oct 2026: the Instagram Reel rides this lane (same render, same
+        # Page token, Meta's resumable upload) and records itself in Instagram's ledger.
+        self.assertEqual(added, ["logs/facebook_reels.json", "logs/instagram_sent.json"],
                          "write access that touches anything else is a bigger question than a ledger")
+
+    def test_the_instagram_reel_follows_facebooks_bookkeeping_and_the_readiness_probe(self):
+        """The Instagram Reel is published from this lane by resumable upload (no host, ₦0).
+        Three things keep it honest: it is gated on a reads-only probe that runs every day,
+        it sits *below* the Facebook ledger commit (a red step above it would skip that record
+        and the next run would publish the Facebook Reel twice), and a failure is a failure."""
+        names = [step.get("name", "") for step in self.job["steps"]]
+        probe = next(i for i, n in enumerate(names) if n.startswith("Instagram Reels — is the Page token ready"))
+        ig_reel = next(i for i, n in enumerate(names) if n.startswith("Instagram Reel — the same render"))
+        fb_ledger = next(i for i, n in enumerate(names) if n == "Reels — commit the ledger")
+        fb_post = next(i for i, n in enumerate(names) if n == "Daily post")
+        self.assertLess(probe, fb_post, "readiness is known before anything is posted")
+        self.assertLess(fb_ledger, ig_reel, "Facebook's ledger is committed before Instagram can fail the run")
+        probe_step = self.job["steps"][probe]
+        self.assertTrue(probe_step.get("continue-on-error"), "a probe that cannot run must not cost the post")
+        self.assertIn("--probe-reels", probe_step["run"])
+        self.assertIn("IG_API_PATH=facebook-login", probe_step["run"])
+        reel_step = self.job["steps"][ig_reel]
+        self.assertIn("steps.ig_reels_probe.outputs.ready == 'yes'", reel_step["if"])
+        self.assertFalse(reel_step.get("continue-on-error"), "a failed Instagram Reel is a red run and an issue")
+        self.assertIn("--video-file", reel_step["run"])
+        self.assertIn("IG_API_PATH=facebook-login", reel_step["run"])
+        self.assertIn("--window-days 30", reel_step["run"])
+        self.assertNotIn("site/social", reel_step["run"], "no render is committed for a Reel")
+        self.assertNotIn("video_url", reel_step["run"], "no public URL is involved")
+        self.assertIn("IG_REELS", self.text)
+        self.assertIn("ig_reel_post.log", self.blob("Open a visible issue if the run failed"))
+        self.assertIn("ig_reel_post.log", self.blob("Record what this run did"))
 
     def test_the_reel_logs_reach_the_summary_and_the_issue(self):
         summary = self.blob("Record what this run did")

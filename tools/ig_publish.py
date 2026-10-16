@@ -46,6 +46,23 @@ Review and Business Verification are what a *third-party SaaS* needs to publish 
 other people's accounts. (Do not let a 2023 tutorial tell you otherwise; the reason the
 lane was blocked was never review.)
 
+Reels, and why they need the *other* path (16 Oct 2026)
+--------------------------------------------------------
+Every image this lane publishes is a URL on docoga.com.ng. A Reel could be too, but a
+rendered MP4 in the deployed tree means a 25 MiB static-asset ceiling, a deploy race with
+every other push, and a CDN terms-of-service grey area — for a file Meta fetches exactly
+once. Meta documents a way that needs no host at all: **resumable upload**
+(developers.facebook.com/docs/instagram-platform/content-publishing/resumable-uploads).
+Create the container with `upload_type=resumable`, POST the bytes to
+`rupload.facebook.com/ig-api-upload/<version>/<container>` with `Authorization: OAuth`,
+`offset` and `file_size` headers, poll `status_code`, publish. It is "available only for
+apps that have implemented Facebook Login for Business" — i.e. the `graph.facebook.com`
+path, a Page token with `instagram_basic` + `instagram_content_publish`, and the Instagram
+professional account linked to the Page. That is the token the Facebook lane already holds,
+so the Facebook workflow publishes the Instagram Reel from the same render (`--video-file`)
+right after the Facebook one, and `--probe-reels` answers — with reads only — whether the
+Page token is ready, naming exactly what is missing when it is not.
+
 Exit codes
     0  published · refused a duplicate · probe ok · dry run
     2  config missing (setup, not an outage)
@@ -60,6 +77,10 @@ Usage
     python3 tools/ig_publish.py --image-url https://docoga.com.ng/social/x.jpg \
         --caption "…" --wait-url
     python3 tools/ig_publish.py --image-urls A.jpg B.jpg --caption "…" --dry-run
+    IG_API_PATH=facebook-login IG_ACCESS_TOKEN=<page token> FB_PAGE_ID=<page> \
+        python3 tools/ig_publish.py --probe-reels
+    IG_API_PATH=facebook-login IG_ACCESS_TOKEN=<page token> IG_USER_ID=<ig id> \
+        python3 tools/ig_publish.py --video-file assets/videos/docoga_reel.mp4 --caption "…"
 """
 
 import argparse
@@ -78,11 +99,23 @@ API_VERSION = os.environ.get("META_GRAPH_VERSION", "v26.0")
 GRAPH_FACEBOOK = "https://graph.facebook.com/" + API_VERSION
 GRAPH_INSTAGRAM = "https://graph.instagram.com/" + API_VERSION
 RUPLOAD = "https://rupload.facebook.com/media/" + API_VERSION
+# Resumable upload host for Instagram containers — a different path from the Facebook Reels
+# one (`/media/`), same host, same `Authorization: OAuth` header shape.
+RUPLOAD_IG = "https://rupload.facebook.com/ig-api-upload/" + API_VERSION
 
 # 4:5 … 1.91:1, JPEG, ≤ 8 MB — Meta's documented content-publishing image limits.
 ASPECT_MIN, ASPECT_MAX = 0.8, 1.91
 MAX_IMAGE_BYTES = 8 * 1024 * 1024
 CAPTION_MAX = 2200
+
+# Reels by resumable upload. Meta's ceiling is 1 GB / 15 minutes; this uploader buffers the
+# file to post it (a 45-second MotionStudio render is a few MB), so the cap here is ours.
+VIDEO_MAX_BYTES = 300 * 1024 * 1024
+VIDEO_MIN_BYTES = 10_000
+# What a Page token must carry for the Facebook-Login path to publish on the linked
+# Instagram account. `pages_show_list` / `pages_read_engagement` are what the Facebook lane
+# already needs to read the Page at all, so they are not re-checked here.
+REEL_SCOPES = ("instagram_basic", "instagram_content_publish")
 
 CAPTION_MARKERS = ("instagram_content_publish", "instagram_business_content_publish")
 
@@ -107,7 +140,8 @@ CAUSES = (
                "image_url", "video_url", "FAILED_PROCESSING", "INVALID_ASPEC",
                "requested url could not be served", "size exceeded")),
     ("state", ("media upload in progress", "container has expired", "status", "still in progress")),
-    ("account", ("only business accounts", "professional account", "not a business")),
+    ("account", ("only business accounts", "professional account", "not a business",
+                 "no instagram professional account", "not linked")),
 )
 
 
@@ -223,14 +257,146 @@ def get_config():
 PROFESSIONAL = ("business", "media_creator", "creator")
 
 
-def whoami(token):
+def whoami(token, user_id=""):
     # The field is `account_type` (BUSINESS / MEDIA_CREATOR / PERSONAL). 16 Oct 2026: the
     # first real probe asked for a field that does not exist and the API answered
     # `(#100) Tried accessing nonexisting field` — a valid token reported as a credentials
     # failure. The Facebook-Login IG User node has no account-type field at all.
-    fields = ("user_id,username,account_type,media_count" if api_path() != "facebook-login"
-              else "id,username")
-    return call("GET", "/me", token, {"fields": fields})
+    if api_path() != "facebook-login":
+        return call("GET", "/me", token, {"fields": "user_id,username,account_type,media_count"})
+    # Facebook-Login path: the credential is a *Page* token, so `/me` is the Page — its id is
+    # not an Instagram id and a container created against it fails with a sentence about
+    # permissions. The Instagram account is the one linked to the Page, read from the Page.
+    if not user_id:
+        linked, page = linked_instagram(token)
+        if not linked.get("id"):
+            raise ApiError(400, json.dumps({"error": {"message": (
+                "no Instagram professional account is linked to Page %s — link @docoga.ng to "
+                "the Page (Instagram app → Settings → Sharing to other apps → Facebook, or the "
+                "Page's Linked accounts) and run the probe again"
+                % (page.get("name") or page.get("id") or "?"))}}), "/instagram_business_account")
+        user_id = str(linked["id"])
+    data = call("GET", "/%s" % user_id, token, {"fields": "id,username,media_count"})
+    data.setdefault("user_id", data.get("id") or user_id)
+    return data
+
+
+def page_node():
+    """The Page the Facebook-Login token belongs to — `FB_PAGE_ID`, or `me` for a Page token."""
+    return (os.environ.get("FB_PAGE_ID") or "").strip() or "me"
+
+
+def linked_instagram(token):
+    """(the Instagram professional account linked to the Page, the Page) — Facebook-Login path.
+
+    `instagram_business_account` is the field Meta documents for this; reading it needs
+    `instagram_basic` on the token, so an empty answer means *either* no link *or* no scope —
+    `reels_readiness` tells those apart with `debug_token`.
+    """
+    page = call("GET", "/%s" % page_node(), token,
+                {"fields": "id,name,instagram_business_account{id,username,media_count}"})
+    return page.get("instagram_business_account") or {}, page
+
+
+def token_scopes(token, app_id, app_secret):
+    """The scopes on `token`, via `/debug_token` with the app token — or None when the app
+    credentials are not in the environment (the fact is then unknown, not false)."""
+    if not (app_id and app_secret):
+        return None
+    status, body, _ = http("GET", GRAPH_FACEBOOK + "/debug_token",
+                           {"input_token": token, "access_token": "%s|%s" % (app_id, app_secret)})
+    try:
+        parsed = json.loads(body) if body.strip().startswith("{") else {}
+    except json.JSONDecodeError:
+        parsed = {}
+    if status >= 400 or parsed.get("error"):
+        print("::warning title=token scopes unreadable::debug_token answered HTTP %s: %s"
+              % (status, redact(body)[:160]))
+        return None
+    data = parsed.get("data") or {}
+    scopes = list(data.get("scopes") or [])
+    for granular in data.get("granular_scopes") or []:
+        if granular.get("scope") and granular["scope"] not in scopes:
+            scopes.append(granular["scope"])
+    return scopes
+
+
+def reels_readiness(token, app_id="", app_secret=""):
+    """Can this Page token publish a Reel on the linked Instagram account? Reads only.
+
+    Three facts, each printed as a line a phone can read, and a verdict the workflow keys on:
+    the Page↔Instagram link, the two Instagram scopes, and whether the Instagram node answers
+    a publishing-limit read (the cheapest call that needs `instagram_content_publish`).
+    """
+    report = {"ready": False, "linked": False, "ig_user_id": "", "ig_username": "",
+              "scopes": None, "missing": [], "why": []}
+    try:
+        linked, page = linked_instagram(token)
+    except ApiError as exc:
+        report["why"].append("the Page could not be read with this token (%s): %s"
+                             % (exc.cause, exc.blurb[:160]))
+        report["missing"].append("page-read")
+        return report
+    report["page"] = page.get("name") or page.get("id") or "?"
+    if linked.get("id"):
+        report["linked"] = True
+        report["ig_user_id"] = str(linked["id"])
+        report["ig_username"] = linked.get("username") or ""
+    scopes = token_scopes(token, app_id, app_secret)
+    report["scopes"] = scopes
+    if scopes is not None:
+        report["missing"].extend(s for s in REEL_SCOPES if s not in scopes)
+        if not report["linked"] and "instagram_basic" in scopes:
+            report["missing"].append("page-link")
+    elif not report["linked"]:
+        # Without debug_token the empty field is ambiguous; both fixes are named.
+        report["missing"].extend(["page-link-or-instagram_basic"])
+    if report["linked"] and "instagram_content_publish" not in report["missing"]:
+        try:
+            call("GET", "/%s/content_publishing_limit" % report["ig_user_id"], token,
+                 {"fields": "quota_usage"})
+        except ApiError as exc:
+            report["why"].append("the Instagram node refused a publishing read (%s): %s"
+                                 % (exc.cause, exc.blurb[:160]))
+            if "instagram_content_publish" not in report["missing"]:
+                report["missing"].append("instagram_content_publish")
+    report["ready"] = report["linked"] and not report["missing"]
+    return report
+
+
+def print_readiness(report):
+    """The probe's human lines, then its machine lines. Fix-it text names the exact boxes."""
+    if report.get("page"):
+        print("page: %s" % report["page"])
+    print("instagram linked to the page: %s" % (
+        "yes — @%s (id %s)" % (report["ig_username"] or "?", report["ig_user_id"])
+        if report["linked"] else "no"))
+    if report["scopes"] is None:
+        print("token scopes: unknown (META_APP_ID/META_APP_SECRET not set, so debug_token "
+              "was not asked)")
+    else:
+        print("token scopes: %s" % ", ".join(
+            "%s %s" % ("✅" if s in report["scopes"] else "❌", s) for s in REEL_SCOPES))
+    for why in report["why"]:
+        print("note: %s" % why)
+    if report["ready"]:
+        print("✅ Reels-ready: this Page token can publish Reels on @%s by resumable upload"
+              % (report["ig_username"] or report["ig_user_id"]))
+    else:
+        fixes = []
+        if any(m in ("page-link", "page-link-or-instagram_basic") for m in report["missing"]):
+            fixes.append("link the Instagram account to the Page (Instagram app → Settings → "
+                         "Sharing to other apps → Facebook → choose the DocOga Page)")
+        if any(m in REEL_SCOPES or m == "page-link-or-instagram_basic" for m in report["missing"]):
+            fixes.append("regenerate FB_PAGE_ACCESS_TOKEN in Graph API Explorer with "
+                         "instagram_basic and instagram_content_publish ticked, Extend → Never, "
+                         "then paste it into the secret")
+        if "page-read" in report["missing"]:
+            fixes.append("the Facebook lane's own preflight will say why the Page is unreadable")
+        print("⏸ not Reels-ready yet — %s" % "; ".join(fixes or ["see the notes above"]))
+    machine("probed", None, IG_REELS_READY="yes" if report["ready"] else "no",
+            IG_REELS_MISSING=",".join(report["missing"]),
+            IG_USER_ID=report["ig_user_id"], IG_USERNAME=report["ig_username"])
 
 
 def account_type(who):
@@ -466,6 +632,116 @@ def publish_container(token, user_id, container_id, attempts=8, delay=10, sleepe
             delay = min(delay * 1.5, 60)
 
 
+def video_spec_ok(path):
+    """The local gate for a Reel file, before a byte leaves the runner. Returns (ok, why).
+
+    Container and size are checked here with stdlib; the 9:16 / duration / codec judgement is
+    borrowed from `tools/fb_publish.reel_spec_ok` when that module can be imported (it needs
+    `requests`), because the same file has to pass the Facebook gate anyway and one gate is
+    better than two that drift. Without ffprobe that judgement degrades to a warning, by that
+    function's own `strict=False` contract.
+    """
+    if not os.path.isfile(path):
+        return False, "video file not found: %s" % path
+    size = os.path.getsize(path)
+    if size < VIDEO_MIN_BYTES:
+        return False, "%d bytes — the render did not finish" % size
+    if size > VIDEO_MAX_BYTES:
+        return False, "%d bytes is over this uploader's %d MB cap" % (size, VIDEO_MAX_BYTES // 1048576)
+    with open(path, "rb") as handle:
+        head = handle.read(12)
+    if head[4:8] != b"ftyp":
+        return False, "not an MP4/MOV container (no ftyp box at the start of the file)"
+    try:
+        import fb_publish  # noqa: WPS433 — optional: lives beside this file, needs `requests`
+    except Exception:  # pragma: no cover - depends on the machine
+        return True, "%d KB, MP4 container (ffprobe gate unavailable here)" % (size // 1024)
+    ok, why, info = fb_publish.reel_spec_ok(path, strict=False)
+    if not ok:
+        return False, why
+    if info.get("seconds"):
+        return True, "%d KB, %dx%d, %.1fs, %s" % (size // 1024, info.get("width", 0),
+                                                   info.get("height", 0), info["seconds"],
+                                                   info.get("codec", "?"))
+    return True, "%d KB, MP4 container (%s)" % (size // 1024, why)
+
+
+def http_bytes(url, payload, headers, timeout=900):
+    """The second HTTP seam: raw bytes to rupload.facebook.com. `http()` form-encodes its body
+    and decodes the answer for JSON; neither is what a video upload is."""
+    request = urllib.request.Request(
+        url, data=payload, method="POST",
+        headers=dict({"User-Agent": "DocOgaGrowthEngine/1.0",
+                      "Content-Type": "application/octet-stream"}, **headers))
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            return response.status, response.read().decode("utf-8", "replace")
+    except urllib.error.HTTPError as exc:
+        return exc.code, exc.read().decode("utf-8", "replace")
+    except (urllib.error.URLError, TimeoutError, OSError) as exc:
+        raise ApiError(0, "transport failure while uploading the video: %s" % (exc,), "rupload")
+
+
+def upload_video(token, container_id, path, offset=0):
+    """One POST of the file (from `offset`) to the container's rupload endpoint.
+
+    Headers, not form fields: `Authorization: OAuth <token>`, `offset`, `file_size` — the
+    documented shape, and the same one tools/fb_publish.reel_upload uses for Facebook Reels.
+    """
+    size = os.path.getsize(path)
+    with open(path, "rb") as handle:
+        if offset:
+            handle.seek(offset)
+        payload = handle.read()
+    headers = {"Authorization": "OAuth %s" % token, "offset": str(int(offset)),
+               "file_size": str(size)}
+    status, body = http_bytes("%s/%s" % (RUPLOAD_IG, container_id), payload, headers)
+    try:
+        parsed = json.loads(body) if body.strip().startswith("{") else {}
+    except json.JSONDecodeError:
+        parsed = {}
+    if status >= 400 or parsed.get("error") or parsed.get("debug_info") \
+            or parsed.get("success") is False:
+        raise ApiError(status, body or "empty answer from rupload", "rupload")
+    return parsed
+
+
+def bytes_transferred(token, container_id):
+    """How much of the file Meta already holds — `video_status.uploading_phase.bytes_transferred`,
+    the documented resume point. 0 when the field is absent."""
+    data = call("GET", "/%s" % container_id, token, {"fields": "status_code,video_status"})
+    phase = (data.get("video_status") or {}).get("uploading_phase") or {}
+    try:
+        return int(phase.get("bytes_transferred") or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def retriable(exc):
+    return exc.status == 0 or exc.status >= 500 or '"retriable":true' in exc.body.replace(" ", "")
+
+
+def upload_with_resume(token, container_id, path, attempts=3, delay=5, sleeper=None):
+    """Upload, and on a transport or retriable failure resume from the byte Meta reports —
+    the one feature that gives this flow its name. A non-retriable refusal is raised at once."""
+    sleeper = sleeper or time.sleep
+    offset = 0
+    for attempt in range(1, attempts + 1):
+        try:
+            return upload_video(token, container_id, path, offset)
+        except ApiError as exc:
+            if attempt == attempts or not retriable(exc):
+                raise
+            try:
+                offset = bytes_transferred(token, container_id)
+            except ApiError:
+                offset = 0
+            print("  upload interrupted (%s) — resuming from byte %d (attempt %d/%d)"
+                  % (exc.blurb[:120], offset, attempt + 1, attempts))
+            sleeper(delay)
+            delay = min(delay * 2, 60)
+
+
 def permalink_for(token, media_id, username=None):
     try:
         data = call("GET", "/%s" % media_id, token, {"fields": "permalink,shortcode,username"})
@@ -513,8 +789,12 @@ def refresh_token(token, app_id, app_secret):
     return parsed
 
 
-def send(token, user_id, container_data, caption, kind, username=""):
-    """container → (poll) → publish → read back. The shared spine of all three shapes."""
+def send(token, user_id, container_data, caption, kind, username="", upload=None):
+    """container → (upload) → poll → publish → read back. The shared spine of every shape.
+
+    `upload` is the resumable-upload hook: for a URL-based container it is None (Meta fetches
+    the URL itself); for `--video-file` it is called with the container id and sends the bytes
+    before the status poll. One spine, so a Reel cannot drift from a photo in how it fails."""
     problems = []
     if not caption.strip() and kind != "story":
         problems.append("an empty caption is accepted by the API and useless in a feed")
@@ -540,6 +820,15 @@ def send(token, user_id, container_data, caption, kind, username=""):
         machine("failed", exc.cause)
         return 6
     print("%s container %s created" % (kind, container_id))
+
+    if upload is not None:
+        try:
+            answer = upload(container_id)
+        except ApiError as exc:
+            print("::error title=video upload rejected (%s)::%s" % (exc.cause, exc.blurb))
+            machine("failed", exc.cause, IG_CONTAINER_ID=container_id)
+            return 3 if exc.cause in ("credentials", "permission") else 6
+        print("  bytes accepted by rupload (%s)" % ((answer or {}).get("message") or "ok"))
 
     # Photos too: a JPEG container is usually FINISHED on the first read, but Instagram fetches
     # the URL asynchronously and publishing before that fetch completes is the "Media ID is not
@@ -585,13 +874,25 @@ def main(argv=None):
     parser.add_argument("--image-urls", nargs="+", help="public JPEG URLs for a carousel (2-10)")
     parser.add_argument("--video-url", help="public video URL for a Reel")
     parser.add_argument("--cover-url", help="public JPEG cover for a Reel")
-    parser.add_argument("--reel", help="local video path (accepted for compatibility; it is "
-                                      "not uploadable — Instagram takes a URL, so this must "
-                                      "be published somewhere first: see tools/social_card.py)")
-    parser.add_argument("--photo", help="local image path (same URL-only caveat as --reel)")
+    parser.add_argument("--video-file", help="local MP4 for a Reel, sent by resumable upload "
+                                            "(IG_API_PATH=facebook-login only — Meta documents "
+                                            "no upload on the Instagram-Login host)")
+    parser.add_argument("--video-story", action="store_true",
+                        help="with --video-file: publish it as a 24-hour video Story instead of a Reel")
+    parser.add_argument("--thumb-offset-ms", type=int, default=1500,
+                        help="with --video-file and no --cover-url: the frame (ms) Instagram uses "
+                             "as the Reel cover; 1500 lands on the navy title card")
+    parser.add_argument("--no-share-to-feed", action="store_true",
+                        help="Reels only: keep it off the profile grid")
+    parser.add_argument("--reel", help="alias of --video-file")
+    parser.add_argument("--photo", help="local image path (not uploadable: Instagram's image "
+                                       "API takes a URL — publish the render and pass --image-url)")
     parser.add_argument("--carousel", nargs="+", help="local image paths (same caveat)")
     parser.add_argument("--probe", action="store_true",
                         help="ask Instagram who this token is and stop; creates nothing")
+    parser.add_argument("--probe-reels", action="store_true",
+                        help="facebook-login path: is this Page token ready to publish Reels on "
+                             "the linked Instagram account? Reads only; prints IG_REELS_READY=")
     parser.add_argument("--dry-run", action="store_true", help="validate, guard, send nothing")
     parser.add_argument("--wait-url", action="store_true",
                         help="poll the media URL until it is live (the site-deploy race)")
@@ -622,8 +923,24 @@ def main(argv=None):
         print(json.dumps(payload))  # to stdout for `token_vault.py seal`; never to a log
         return 0
 
+    if args.probe_reels:
+        if api_path() != "facebook-login":
+            print("::error title=wrong API path for Reels::resumable upload exists on the "
+                  "Facebook-Login path only (graph.facebook.com, a Page token). Run with "
+                  "IG_API_PATH=facebook-login and IG_ACCESS_TOKEN=<FB_PAGE_ACCESS_TOKEN>.")
+            machine("refused", "setup", IG_REELS_READY="no", IG_REELS_MISSING="api-path")
+            return 2
+        try:
+            report = reels_readiness(token, app_id, app_secret)
+        except ApiError as exc:  # transport only: reels_readiness catches API answers itself
+            print("::error title=Reels probe could not reach Meta::%s" % exc.blurb)
+            machine("refused", exc.cause, IG_REELS_READY="no", IG_REELS_MISSING="transport")
+            return 6
+        print_readiness(report)
+        return 0
+
     try:
-        who = whoami(token)
+        who = whoami(token, user_id)
     except ApiError as exc:
         print("::error title=Instagram credentials::/me failed (token fingerprint %s): %s"
               % (fingerprint(token), exc.blurb))
@@ -657,7 +974,36 @@ def main(argv=None):
         return 0
 
     urls = args.image_urls or args.carousel
-    if args.story_url:
+    video_file = args.video_file or args.reel
+    upload = None
+    if video_file:
+        if api_path() != "facebook-login":
+            print("::error title=Reels need the Facebook-Login path::resumable upload is "
+                  "documented for graph.facebook.com only; this token is on the Instagram-Login "
+                  "host. The Facebook lane publishes the Reel with the Page token "
+                  "(IG_API_PATH=facebook-login) — see docs/INSTAGRAM_THREADS_AUTOMATION.md.")
+            machine("refused", "setup")
+            return 2
+        ok, why = video_spec_ok(video_file)
+        if not ok:
+            print("::error title=video rejected before sending::%s → %s" % (video_file, why))
+            machine("refused", "media")
+            return 5
+        print("video ok: %s (%s)" % (os.path.basename(video_file), why))
+        if args.video_story:
+            kind, media = "story", {"media_type": "STORIES", "upload_type": "resumable"}
+        else:
+            kind = "reel"
+            media = {"media_type": "REELS", "upload_type": "resumable", "caption": args.caption,
+                     "share_to_feed": "false" if args.no_share_to_feed else "true"}
+            if args.cover_url:
+                media["cover_url"] = args.cover_url
+            else:
+                media["thumb_offset"] = str(max(0, int(args.thumb_offset_ms)))
+
+        def upload(container_id, _token=token, _path=video_file):
+            return upload_with_resume(_token, container_id, _path)
+    elif args.story_url:
         # Instagram API with Instagram Login publishes Stories for professional accounts:
         # the same container → publish spine, `media_type=STORIES`, image only, no caption
         # (a Story carries its words on the frame — tools/social_card.py --story draws them).
@@ -666,13 +1012,8 @@ def main(argv=None):
         kind, media = "photo", {"image_url": args.image_url, "caption": args.caption}
     elif urls:
         kind, media = "carousel", {"media_type": "CAROUSEL", "caption": args.caption}
-    elif args.video_url or args.reel:
-        if not args.video_url:
-            print("::error title=Reels need a public URL::--reel points at a file Instagram "
-                  "cannot fetch. Commit the render to site/social/ (see "
-                  ".github/workflows/instagram_autopost.yml) or pass --video-url.")
-            machine("refused", "media")
-            return 5
+    elif args.video_url:
+        # A hosted MP4 still works on either path; the lane itself uses --video-file.
         kind = "reel"
         media = {"media_type": "REELS", "video_url": args.video_url, "caption": args.caption,
                  "share_to_feed": "true"}
@@ -690,8 +1031,8 @@ def main(argv=None):
 
     # The media gate, before any container exists: cheap, and the only place a bad JPEG can
     # be fixed with a sentence instead of an opaque API error.
-    check_targets = ([args.image_url] if kind == "photo" else [args.story_url] if kind == "story"
-                     else (urls or [args.video_url]))
+    check_targets = ([] if video_file else [args.image_url] if kind == "photo"
+                     else [args.story_url] if kind == "story" else (urls or [args.video_url]))
     for url in [u for u in check_targets if u]:
         if args.wait_url:
             live, waited = wait_until_live(url, args.wait_url_deadline)
@@ -747,7 +1088,7 @@ def main(argv=None):
         machine("dry-run")
         return 0
 
-    return send(token, user_id, media, args.caption, kind, username=username)
+    return send(token, user_id, media, args.caption, kind, username=username, upload=upload)
 
 
 if __name__ == "__main__":

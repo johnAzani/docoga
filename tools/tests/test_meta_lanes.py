@@ -928,12 +928,14 @@ class InstagramPublisher(unittest.TestCase):
         with mock.patch.dict(os.environ, {"IG_API_PATH": "instagram-login"}):
             self.assertEqual(ig.base_url(), ig.GRAPH_INSTAGRAM)
 
-    def test_a_local_file_is_refused_rather_than_mimed(self):
-        """`--reel social/x.mp4` cannot work: the API fetches URLs. Say so in one line."""
+    def test_a_local_file_on_the_instagram_login_path_is_a_setup_refusal(self):
+        """`--reel x.mp4` with an Instagram-Login token cannot work: Meta's resumable upload is
+        documented for the Facebook-Login host only. Say which token to use, write nothing."""
         code, out, fake = self._publish(self._base_routes(),
                                        ["--reel", "social/x.mp4", "--caption", self.CAPTION])
-        self.assertEqual(code, 5)
-        self.assertIn("public URL", out)
+        self.assertEqual(code, 2, out)
+        self.assertIn("Facebook-Login", out)
+        self.assertIn("IG_CAUSE=setup", out)
         self.assertFalse(fake.wrote_anything())
 
     def test_no_credential_is_setup(self):
@@ -941,6 +943,251 @@ class InstagramPublisher(unittest.TestCase):
         self.assertEqual(code, 2, "setup is exit 2, not a red API failure the owner misreads")
         self.assertIn("secrets missing", out)
         self.assertIn("IG_CAUSE=setup", out)
+
+
+class InstagramReels(unittest.TestCase):
+    """Reels by Meta's resumable upload on the Facebook-Login path (16 Oct 2026).
+
+    The owner asked for Reels at ₦0 and for the research to be done properly first. The verdict
+    was that no public host is needed at all — the Page token the Facebook lane already holds
+    can push the bytes straight to rupload.facebook.com — so these tests pin the exact shape
+    Meta documents: `upload_type=resumable` on the container, the OAuth/offset/file_size
+    headers on the upload, a resume from `bytes_transferred`, and a probe that names what is
+    missing instead of failing on a Monday morning.
+    """
+
+    CAPTION = "Your landlord must give you a receipt for every rent payment — Lagos Tenancy Law s.5."
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self.video = os.path.join(self.tmp, "docoga_reel_20261020.mp4")
+        with open(self.video, "wb") as handle:
+            handle.write(b"\x00\x00\x00\x18ftypmp42" + b"\x00" * 20_000)
+        self.env = {"IG_ACCESS_TOKEN": "EAAPAGETOKEN", "IG_API_PATH": "facebook-login",
+                    "FB_PAGE_ID": "102466208923830"}
+        spec = mock.patch.object(ig, "video_spec_ok", return_value=(True, "stubbed spec"))
+        spec.start()
+        self.addCleanup(spec.stop)
+        self.uploads = []
+
+        def fake_upload(url, payload, headers, timeout=900):
+            self.uploads.append((url, len(payload), dict(headers)))
+            return 200, json.dumps({"success": True, "message": "Upload successful."})
+        self.fake_upload = fake_upload
+        head = mock.patch.object(ig, "raw_head", side_effect=AssertionError("no media fetch"))
+        head.start()
+        self.addCleanup(head.stop)
+
+    def routes(self, extra=None, linked=True, scopes=("pages_show_list", "instagram_basic",
+                                                      "instagram_content_publish")):
+        page = {"id": "102466208923830", "name": "DocOga"}
+        if linked:
+            page["instagram_business_account"] = {"id": "1784", "username": "docoga.ng",
+                                                  "media_count": 3}
+        routes = {
+            "GET /102466208923830": (200, json.dumps(page)),
+            "GET /debug_token": (200, json.dumps({"data": {"scopes": list(scopes)}})),
+            "GET /1784": (200, json.dumps({"id": "1784", "username": "docoga.ng",
+                                            "media_count": 3})),
+            "GET /1784/content_publishing_limit": (200, json.dumps(
+                {"data": [{"quota_usage": 1, "config": {"quota_total": 100}}]})),
+            "GET /1784/media": (200, json.dumps({"data": []})),
+            "POST /1784/media": (200, json.dumps({
+                "id": "CONT", "uri": "https://rupload.facebook.com/ig-api-upload/v26.0/CONT"})),
+            "GET /CONT": (200, json.dumps({"status_code": "FINISHED"})),
+            "POST /1784/media_publish": (200, json.dumps({"id": "REEL7"})),
+            "GET /REEL7": (200, json.dumps({"permalink": "https://www.instagram.com/reel/REEL7/"})),
+        }
+        routes.update(extra or {})
+        return routes
+
+    def run_ig(self, routes, argv, env_extra=None, upload=None):
+        fake = FakeHttp(routes, shape=3)
+        env = dict(self.env)
+        env.update(env_extra or {})
+        with mock.patch.object(ig, "http", fake), \
+                mock.patch.object(ig, "http_bytes", upload or self.fake_upload), \
+                mock.patch.object(ig.time, "sleep", lambda *_: None):
+            code, out = run_publisher(ig, argv, env)
+        return code, out, fake
+
+    # ── the probe ──────────────────────────────────────────────────────────────
+
+    def test_probe_says_ready_when_linked_and_both_scopes_are_on_the_token(self):
+        code, out, fake = self.run_ig(self.routes(), ["--probe-reels"],
+                                      {"META_APP_ID": "931", "META_APP_SECRET": "s3"})
+        self.assertEqual(code, 0, out)
+        self.assertIn("IG_REELS_READY=yes", out)
+        self.assertIn("IG_USER_ID=1784", out)
+        self.assertIn("IG_USERNAME=docoga.ng", out)
+        self.assertFalse(fake.wrote_anything(), "a probe creates nothing")
+        self.assertIn("access_token=931%7Cs3", fake.calls[1][2], "debug_token is asked with the app token")
+
+    def test_probe_names_the_missing_scope_and_the_exact_fix(self):
+        code, out, _ = self.run_ig(self.routes(scopes=("pages_show_list", "instagram_basic")),
+                                   ["--probe-reels"], {"META_APP_ID": "931", "META_APP_SECRET": "s3"})
+        self.assertEqual(code, 0, out)
+        self.assertIn("IG_REELS_READY=no", out)
+        self.assertIn("IG_REELS_MISSING=instagram_content_publish", out)
+        self.assertIn("Graph API Explorer", out)
+        self.assertIn("❌ instagram_content_publish", out)
+
+    def test_probe_names_the_missing_page_link(self):
+        code, out, _ = self.run_ig(self.routes(linked=False), ["--probe-reels"],
+                                   {"META_APP_ID": "931", "META_APP_SECRET": "s3"})
+        self.assertEqual(code, 0, out)
+        self.assertIn("IG_REELS_READY=no", out)
+        self.assertIn("page-link", out)
+        self.assertIn("Sharing to other apps", out)
+
+    def test_probe_without_app_credentials_still_decides_from_the_reads(self):
+        """No META_APP_ID: scopes are unknown, but a linked account whose node answers the
+        publishing-limit read is ready in practice — and the output says the scopes were not asked."""
+        code, out, _ = self.run_ig(self.routes(), ["--probe-reels"])
+        self.assertEqual(code, 0, out)
+        self.assertIn("token scopes: unknown", out)
+        self.assertIn("IG_REELS_READY=yes", out)
+
+    def test_probe_with_a_publishing_read_refused_is_not_ready(self):
+        routes = self.routes({"GET /1784/content_publishing_limit": (400, json.dumps(
+            {"error": {"message": "(#200) Requires instagram_content_publish permission", "code": 200}}))})
+        code, out, _ = self.run_ig(routes, ["--probe-reels"])
+        self.assertEqual(code, 0, out)
+        self.assertIn("IG_REELS_READY=no", out)
+        self.assertIn("instagram_content_publish", out)
+
+    def test_probe_on_the_instagram_login_path_is_a_setup_refusal(self):
+        code, out, fake = self.run_ig(self.routes(), ["--probe-reels"],
+                                      {"IG_API_PATH": "instagram-login"})
+        self.assertEqual(code, 2, out)
+        self.assertIn("IG_REELS_READY=no", out)
+        self.assertEqual(fake.calls, [], "nothing is asked on the wrong path")
+
+    # ── the upload ─────────────────────────────────────────────────────────────
+
+    def test_a_reel_goes_container_upload_poll_publish_with_the_documented_shape(self):
+        code, out, fake = self.run_ig(self.routes(), ["--video-file", self.video,
+                                                      "--caption", self.CAPTION])
+        self.assertEqual(code, 0, out)
+        self.assertIn("IG_RESULT=sent", out)
+        self.assertIn("instagram.com/reel/REEL7/", out)
+        container = [c for c in fake.posts if c[1].endswith("/1784/media")]
+        self.assertEqual(len(container), 1, fake.posts)
+        query = urllib.parse.parse_qs(container[0][2])
+        self.assertEqual(query["upload_type"], ["resumable"])
+        self.assertEqual(query["media_type"], ["REELS"])
+        self.assertEqual(query["share_to_feed"], ["true"])
+        self.assertEqual(query["thumb_offset"], ["1500"], "the navy title card is the cover")
+        self.assertEqual(query["caption"], [self.CAPTION])
+        self.assertNotIn("video_url", query, "no public URL is involved anywhere")
+        self.assertEqual(len(self.uploads), 1)
+        url, size, headers = self.uploads[0]
+        self.assertEqual(url, ig.RUPLOAD_IG + "/CONT")
+        self.assertEqual(size, os.path.getsize(self.video))
+        self.assertEqual(headers["Authorization"], "OAuth EAAPAGETOKEN")
+        self.assertEqual(headers["offset"], "0")
+        self.assertEqual(headers["file_size"], str(size))
+        publish = [c for c in fake.posts if c[1].endswith("/media_publish")]
+        self.assertEqual(len(publish), 1)
+        self.assertIn("creation_id=CONT", publish[0][2])
+        self.assertNotIn("102466208923830/media", "".join(c[1] for c in fake.posts),
+                         "the Page id must never be used as the Instagram user id")
+
+    def test_the_instagram_id_is_resolved_from_the_page_not_from_me(self):
+        """A Page token's `/me` is the Page. The old facebook-login branch would have used the
+        Page id as the Instagram user id and failed with a permissions sentence."""
+        code, out, fake = self.run_ig(self.routes(), ["--probe"])
+        self.assertEqual(code, 0, out)
+        self.assertIn("id 1784", out)
+        self.assertNotIn("GET /me", " ".join("%s %s" % (c[0], c[1][-40:]) for c in fake.calls))
+
+    def test_an_interrupted_upload_resumes_from_the_byte_meta_reports(self):
+        attempts = []
+
+        def flaky(url, payload, headers, timeout=900):
+            attempts.append((len(payload), dict(headers)))
+            if len(attempts) == 1:
+                raise ig.ApiError(0, "transport failure while uploading the video: reset", "rupload")
+            return 200, json.dumps({"success": True})
+        routes = self.routes({"GET /CONT": lambda m, u, q: (200, json.dumps(
+            {"status_code": "FINISHED", "video_status": {"uploading_phase": {
+                "status": "in_progress", "bytes_transferred": 4096}}}))})
+        code, out, _ = self.run_ig(routes, ["--video-file", self.video, "--caption", self.CAPTION],
+                                   upload=flaky)
+        self.assertEqual(code, 0, out)
+        self.assertEqual(len(attempts), 2)
+        self.assertEqual(attempts[1][1]["offset"], "4096")
+        self.assertEqual(attempts[1][0], os.path.getsize(self.video) - 4096)
+        self.assertEqual(attempts[1][1]["file_size"], str(os.path.getsize(self.video)))
+        self.assertIn("resuming from byte 4096", out)
+
+    def test_a_refused_upload_is_a_failed_run_and_never_published(self):
+        def refused(url, payload, headers, timeout=900):
+            return 400, json.dumps({"debug_info": {"retriable": False, "type": "ProcessingFailedError",
+                                                   "message": "unauthorized user request"}})
+        code, out, fake = self.run_ig(self.routes(), ["--video-file", self.video,
+                                                      "--caption", self.CAPTION], upload=refused)
+        self.assertNotEqual(code, 0)
+        self.assertIn("IG_RESULT=failed", out)
+        self.assertIn("IG_CONTAINER_ID=CONT", out)
+        self.assertFalse(any(c[1].endswith("/media_publish") for c in fake.posts),
+                         "a container whose bytes were refused must not be published")
+
+    def test_a_video_story_is_a_stories_container_with_no_caption(self):
+        routes = self.routes({"POST /1784/media_publish": (200, json.dumps({"id": "STORY5"}))})
+        code, out, fake = self.run_ig(routes, ["--video-file", self.video, "--video-story"])
+        self.assertEqual(code, 0, out)
+        self.assertIn("IG_RESULT=sent", out)
+        query = urllib.parse.parse_qs([c for c in fake.posts if c[1].endswith("/1784/media")][0][2])
+        self.assertEqual(query["media_type"], ["STORIES"])
+        self.assertEqual(query["upload_type"], ["resumable"])
+        self.assertNotIn("caption", query)
+        self.assertNotIn("thumb_offset", query)
+
+    def test_a_cover_url_replaces_the_frame_offset(self):
+        code, out, fake = self.run_ig(self.routes(), ["--video-file", self.video, "--caption",
+                                                      self.CAPTION, "--cover-url",
+                                                      "https://docoga.com.ng/social/c.jpg"])
+        self.assertEqual(code, 0, out)
+        query = urllib.parse.parse_qs([c for c in fake.posts if c[1].endswith("/1784/media")][0][2])
+        self.assertEqual(query["cover_url"], ["https://docoga.com.ng/social/c.jpg"])
+        self.assertNotIn("thumb_offset", query)
+
+    def test_a_duplicate_caption_refuses_before_any_byte_is_sent(self):
+        routes = self.routes({"GET /1784/media": (200, json.dumps({"data": [
+            {"id": "1", "caption": self.CAPTION, "permalink": "https://www.instagram.com/reel/OLD/"}]}))})
+        code, out, fake = self.run_ig(routes, ["--video-file", self.video, "--caption", self.CAPTION])
+        self.assertEqual(code, 0, out)
+        self.assertIn("IG_RESULT=refused-duplicate", out)
+        self.assertEqual(self.uploads, [])
+        self.assertFalse(fake.wrote_anything())
+
+    def test_the_local_gate_refuses_a_stub_and_a_non_mp4(self):
+        mock.patch.stopall()  # the real gate, not the stub
+        tiny = os.path.join(self.tmp, "tiny.mp4")
+        with open(tiny, "wb") as handle:
+            handle.write(b"\x00\x00\x00\x18ftypmp42")
+        ok, why = ig.video_spec_ok(tiny)
+        self.assertFalse(ok)
+        self.assertIn("did not finish", why)
+        text = os.path.join(self.tmp, "words.mp4")
+        with open(text, "wb") as handle:
+            handle.write(b"not a video" * 2000)
+        ok, why = ig.video_spec_ok(text)
+        self.assertFalse(ok)
+        self.assertIn("ftyp", why)
+        ok, why = ig.video_spec_ok(os.path.join(self.tmp, "missing.mp4"))
+        self.assertFalse(ok)
+
+    def test_a_bad_file_never_reaches_meta(self):
+        with mock.patch.object(ig, "video_spec_ok", return_value=(False, "aspect ratio is 16:9")):
+            code, out, fake = self.run_ig(self.routes(), ["--video-file", self.video,
+                                                          "--caption", self.CAPTION])
+        self.assertEqual(code, 5, out)
+        self.assertIn("IG_CAUSE=media", out)
+        self.assertIn("16:9", out)
+        self.assertFalse(fake.wrote_anything())
+        self.assertEqual(self.uploads, [])
 
 
 class LaneShell(unittest.TestCase):

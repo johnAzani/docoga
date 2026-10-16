@@ -20,11 +20,14 @@ name: DocOga Instagram Auto-Post
 #      It now has an exit code per outcome (see its header) and the summary prints
 #      `IG_RESULT=`/`IG_CAUSE=` from the publisher's own log line, not from hope.
 #
-# What this lane still cannot promise, stated rather than buried: Reels. A Reel needs a
-# video URL, and the Shorts render is a `assets/videos/` scratch file with no public home
-# and no free host that Meta will accept. So `content_type` defaults to `card` (photo) and
-# `reel` refuses early with cause=media instead of timing out. If a video host ever exists,
-# the container code is already there.
+# Reels are not posted from here, and that is a decision, not a gap (16 Oct 2026). A URL-based
+# Reel would need a public MP4 — a 25 MiB static-asset ceiling, a deploy race, and a CDN
+# terms grey area, for a file Meta fetches once. Meta's resumable upload needs no host at all
+# but exists only on the Facebook-Login path, i.e. with the *Page* token the Facebook lane
+# holds. So the Instagram Reel is published by `facebook_autopost.yml` (Mon + Thu) from the
+# very same MotionStudio render as the Facebook Reel, right after it, with
+# `tools/ig_publish.py --video-file` and the daily readiness probe `--probe-reels`.
+# `content_type: reel` here therefore points at that lane instead of pretending.
 #
 # The caption is today's Threads copy, deliberately: `generate_telegram_content.py` owns
 # the words for every lane, so Instagram, Threads and Facebook say the same thing on the
@@ -284,7 +287,7 @@ jobs:
               exit 0
               ;;
             reel)
-              echo "::error title=Reels need a public video URL::this lane has no free public host for a rendered video, so it refuses instead of creating a container that will fail to fetch. docs/INSTAGRAM_THREADS_AUTOMATION.md has the two real options."
+              echo "::error title=Reels go out through the Facebook lane::the Instagram Reel is uploaded by facebook_autopost.yml (Mon + Thu, or Actions → DocOga Facebook Auto-Post → Run workflow → mode: reel) from the same render as the Facebook Reel, by Meta's resumable upload with the Page token. This lane's token is on the Instagram-Login host, which has no upload endpoint — docs/INSTAGRAM_THREADS_AUTOMATION.md → Reels."
               exit 5
               ;;
             carousel)
