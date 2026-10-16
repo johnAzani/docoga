@@ -719,6 +719,24 @@ class EveryWorkflowTests(unittest.TestCase):
                             % (path.name, problem, m.group(0)[:80]),
                         )
 
+    def test_every_lane_that_seals_a_token_is_given_the_vault_key(self):
+        """Secrets reach a step only through `env:`. 16 Oct 2026: both Meta lanes called
+        `token_vault.py seal`, printed "SOCIAL_TOKEN_KEY is not set" on every run, and the
+        owner added the secret before anyone noticed no workflow ever passed it."""
+        for path, doc in self._workflows():
+            uses_vault = False
+            for job in (doc.get("jobs") or {}).values():
+                for step in job.get("steps") or []:
+                    script = str(step.get("run") or "")
+                    if "token_vault.py seal" in script or "token_vault.py open" in script:
+                        uses_vault = True
+            if not uses_vault:
+                continue
+            with self.subTest(workflow=path.name):
+                text = path.read_text(encoding="utf-8")
+                self.assertIn("SOCIAL_TOKEN_KEY: ${{ secrets.SOCIAL_TOKEN_KEY }}", text,
+                              "%s runs token_vault.py but never maps the key from secrets" % path.name)
+
     def test_every_run_block_is_valid_bash(self):
         """`bash -n` on each script: YAML cannot tell you a quote is unbalanced."""
         import subprocess

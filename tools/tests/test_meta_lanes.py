@@ -701,6 +701,41 @@ class InstagramPublisher(unittest.TestCase):
         self.assertIn("profile MEDIA_CREATOR", out)
         self.assertNotIn("::warning title=account_type", out)
 
+    def test_a_photo_whose_media_is_not_ready_is_retried_not_failed(self):
+        """Run #48, 16 Oct 2026: error 9007 / subcode 2207027 "Media ID is not available …
+        please wait for a moment" on the very first media_publish. A timing answer, so the
+        publisher waits and asks again instead of exiting 6 with a red run."""
+        attempts = {"n": 0}
+        not_ready = json.dumps({"error": {"message": "Media ID is not available", "type": "OAuthException",
+                                          "code": 9007, "error_subcode": 2207027}})
+
+        def flaky(method, url, query):
+            attempts["n"] += 1
+            if attempts["n"] < 3:
+                return 400, not_ready
+            return 200, json.dumps({"id": "MEDIA9"})
+
+        routes = self._base_routes({"POST /1784/media_publish": flaky})
+        with mock.patch.object(ig.time, "sleep"):
+            code, out, fake = self._publish(routes, ["--image-url", "https://docoga.com.ng/social/x.jpg",
+                                                     "--caption", self.CAPTION, "--allow-unknown-specs"])
+        self.assertEqual(code, 0, out)
+        self.assertEqual(attempts["n"], 3)
+        self.assertIn("not ready yet", out)
+        self.assertIn("IG_RESULT=sent", out)
+        # and a photo container's status is read before the first publish attempt
+        self.assertTrue(any(url.endswith("/CONT") for _m, url, _q in fake.calls), fake.calls)
+
+    def test_a_photo_that_stays_not_ready_eventually_fails_honestly(self):
+        not_ready = (400, json.dumps({"error": {"message": "Media ID is not available",
+                                                "code": 9007, "error_subcode": 2207027}}))
+        routes = self._base_routes({"POST /1784/media_publish": not_ready})
+        with mock.patch.object(ig.time, "sleep"):
+            code, out, _fake = self._publish(routes, ["--image-url", "https://docoga.com.ng/social/x.jpg",
+                                                      "--caption", self.CAPTION, "--allow-unknown-specs"])
+        self.assertEqual(code, 6)
+        self.assertIn("IG_RESULT=failed", out)
+
     def test_refresh_uses_the_refresh_endpoint_not_the_exchange(self):
         """`/access_token` is the short→long exchange and answers "client_secret is required"
         — the first real run's warning. A long-lived token is wound forward with

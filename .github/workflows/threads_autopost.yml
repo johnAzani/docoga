@@ -64,6 +64,8 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      SOCIAL_TOKEN_KEY: ${{ secrets.SOCIAL_TOKEN_KEY }}  # tools/token_vault.py reads this; unset = 60-day token, never renewed
     steps:
       - uses: actions/checkout@v4
 
