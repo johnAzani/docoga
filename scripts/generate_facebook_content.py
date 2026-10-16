@@ -64,6 +64,7 @@ LAGOS = timezone(timedelta(hours=1))
 # brand style". social_card.BANNED_PHOTO_PREFIXES keeps brand/ out for good,
 # and post_facebook.py refuses such a path even if one is handed to it.
 import social_card  # noqa: E402  (the one card renderer for every static social post)
+import brain_drafts  # noqa: E402  (the brain's pack for the day, when there is one)
 
 # tools/fb_publish.py refuses a `source` upload above 4 MB; the card renderer
 # walks JPEG quality down to stay under 900 KB, so this is belt and braces.
@@ -98,11 +99,11 @@ def build_message(post_type, rng):
     return "%s\n\n%s" % (plain, hashtags)
 
 
-def render_card(message, day, post_type):
+def render_card(message, day, post_type, visual=None):
     """The day's copy as the brand card; None (text post) only if the render fails."""
     try:
         rel = social_card.card_for_post(message, day.isoformat(), post_type, "facebook",
-                                        out_dir=ASSETS_DIR)
+                                        out_dir=ASSETS_DIR, visual=visual)
     except Exception as exc:  # a missing font or a Pillow regression must not lose the day
         log("⚠️  card render failed (%s: %s) — posting text only" % (type(exc).__name__, exc))
         return None
@@ -118,10 +119,19 @@ def generate(day=None, write=True):
     day = day or datetime.now(LAGOS).date()
     rng = random.Random("docoga-facebook-%s" % day.isoformat())
 
-    post_type = rng.choice(tg.WEEKLY_SCHEDULE.get(day.weekday(), ["promo"]))
-    message = build_message(post_type, rng)
+    # The brain's pack for the day (tools/brain.py) is the voice when there is one;
+    # the date-seeded rotation is the fallback, exactly as before.
+    pack = brain_drafts.draft_for(day)
+    if pack:
+        post_type = brain_drafts.post_type(pack)
+        message = "%s\n\n%s" % (brain_drafts.post_text(pack), brain_drafts.hashtags(pack, "facebook"))
+        visual = brain_drafts.visual(pack)
+    else:
+        post_type = rng.choice(tg.WEEKLY_SCHEDULE.get(day.weekday(), ["promo"]))
+        message = build_message(post_type, rng)
+        visual = None
 
-    photo = render_card(message, day, post_type) if write else None
+    photo = render_card(message, day, post_type, visual) if write else None
 
     content = {
         "date": day.isoformat(),
@@ -133,6 +143,7 @@ def generate(day=None, write=True):
         "photo_path": photo,
         "generated_at": datetime.now(LAGOS).isoformat(),
         "source": "facebook",
+        "brain": pack.get("theme") if pack else None,
     }
 
     if write:

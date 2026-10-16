@@ -24,8 +24,14 @@ BRAND COLORS (sampled from the official brand mark, 18 Sep 2026):
 """
 
 import os
+import sys
 from datetime import date, datetime
 from pathlib import Path
+
+# tools/brain_drafts.py — the brain's Short for a date, when it approved one.
+_TOOLS = str(Path(__file__).resolve().parents[1] / "tools")
+if _TOOLS not in sys.path:
+    sys.path.insert(0, _TOOLS)
 
 try:
     from moviepy import ImageClip, concatenate_videoclips
@@ -166,7 +172,15 @@ VIDEO_SCRIPTS = [
 
 
 def script_for_date(run_date: date):
-    """Return a repeatable topic for a local calendar date."""
+    """The brain's Short for the date when it approved one, else the rotation's topic."""
+    try:
+        import brain_drafts
+        pack = brain_drafts.draft_for(run_date)
+        topic = brain_drafts.short_topic(pack) if pack else None
+    except Exception:  # the rotation must never be lost to the brain
+        topic = None
+    if topic:
+        return topic
     return VIDEO_SCRIPTS[(run_date.toordinal() - 1) % len(VIDEO_SCRIPTS)]
 
 
