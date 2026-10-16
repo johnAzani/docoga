@@ -305,7 +305,10 @@ def raw_head(url, max_bytes=65536, timeout=30):
         raise ApiError(0, "transport failure while reading the media: %s" % (exc,), "media")
 
 
-def media_spec_ok(url, allow_unknown=False):
+STORY_RATIO = 9 / 16.0  # Stories are the one feed shape that is taller than 4:5
+
+
+def media_spec_ok(url, allow_unknown=False, story=False):
     """Read just enough of the media to know Instagram will take it. Returns (ok, why).
 
     The checks are Meta's documented ones — JPEG, ≤ 8 MB, aspect between 4:5 and 1.91:1 —
@@ -344,6 +347,11 @@ def media_spec_ok(url, allow_unknown=False):
     if not width:
         return True, "jpeg, dimensions beyond the sampled head"
     ratio = width / float(height or 1)
+    if story:
+        if abs(ratio - STORY_RATIO) > 0.02:
+            return False, ("%dx%d is %.3f:1 — a Story frame is 9:16 (1080x1920); anything else "
+                           "is letterboxed or cropped by Instagram" % (width, height, ratio))
+        return True, "%dx%d (%.3f:1), a 9:16 Story frame" % (width, height, ratio)
     if not ASPECT_MIN - 1e-6 <= ratio <= ASPECT_MAX + 1e-6:
         return False, ("%dx%d is %.3f:1 — Instagram takes between 4:5 (0.800) and 1.91:1"
                        % (width, height, ratio))
@@ -498,14 +506,17 @@ def refresh_token(token, app_id, app_secret):
     new = parsed.get("access_token")
     if not new:
         raise ApiError(status, "no access_token in the refresh response", url)
-    print("token refreshed (fingerprint %s)" % fingerprint(new))
+    # stderr, deliberately: with --refresh-token, stdout IS the file handed to
+    # `token_vault.py seal --json`. Runs #46–#49 (16 Oct 2026) wrote this line into that file,
+    # the seal failed on "Expecting value: line 1", and the workflow blamed SOCIAL_TOKEN_KEY.
+    print("token refreshed (fingerprint %s)" % fingerprint(new), file=sys.stderr)
     return parsed
 
 
-def send(token, user_id, container_data, caption, kind):
+def send(token, user_id, container_data, caption, kind, username=""):
     """container → (poll) → publish → read back. The shared spine of all three shapes."""
     problems = []
-    if not caption.strip():
+    if not caption.strip() and kind != "story":
         problems.append("an empty caption is accepted by the API and useless in a feed")
     if len(caption) > CAPTION_MAX:
         problems.append("caption is %d characters, over Instagram's %d" % (len(caption), CAPTION_MAX))
@@ -547,6 +558,14 @@ def send(token, user_id, container_data, caption, kind):
         machine("failed", exc.cause)
         return 3 if exc.cause in ("credentials", "permission") else 6
 
+    if kind == "story":
+        # A Story has no permalink: it lives 24 hours in the tray. The id is the read-back.
+        link = "https://www.instagram.com/stories/%s/%s/" % (username or "docoga.ng", media_id) \
+            if username else ""
+        print("✅ published story %s — visible in @%s's story tray for 24 hours"
+              % (media_id, username or "?"))
+        machine("sent", None, IG_MEDIA_ID=media_id, IG_PERMALINK=link)
+        return 0
     link, seen = permalink_for(token, media_id)
     if kind == "photo" and not (seen.get("permalink") or seen.get("shortcode")):
         print("::error title=read-back incomplete::media %s published but Instagram returned no "
@@ -562,6 +581,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description="DocOga Instagram publisher")
     parser.add_argument("--caption", default="", help="post caption (≤2200 characters)")
     parser.add_argument("--image-url", help="public JPEG URL for a photo")
+    parser.add_argument("--story-url", help="public 9:16 JPEG URL for a Story (24-hour, no caption)")
     parser.add_argument("--image-urls", nargs="+", help="public JPEG URLs for a carousel (2-10)")
     parser.add_argument("--video-url", help="public video URL for a Reel")
     parser.add_argument("--cover-url", help="public JPEG cover for a Reel")
@@ -637,7 +657,12 @@ def main(argv=None):
         return 0
 
     urls = args.image_urls or args.carousel
-    if args.image_url:
+    if args.story_url:
+        # Instagram API with Instagram Login publishes Stories for professional accounts:
+        # the same container → publish spine, `media_type=STORIES`, image only, no caption
+        # (a Story carries its words on the frame — tools/social_card.py --story draws them).
+        kind, media = "story", {"media_type": "STORIES", "image_url": args.story_url}
+    elif args.image_url:
         kind, media = "photo", {"image_url": args.image_url, "caption": args.caption}
     elif urls:
         kind, media = "carousel", {"media_type": "CAROUSEL", "caption": args.caption}
@@ -665,7 +690,8 @@ def main(argv=None):
 
     # The media gate, before any container exists: cheap, and the only place a bad JPEG can
     # be fixed with a sentence instead of an opaque API error.
-    check_targets = [args.image_url] if kind == "photo" else (urls or [args.video_url])
+    check_targets = ([args.image_url] if kind == "photo" else [args.story_url] if kind == "story"
+                     else (urls or [args.video_url]))
     for url in [u for u in check_targets if u]:
         if args.wait_url:
             live, waited = wait_until_live(url, args.wait_url_deadline)
@@ -675,7 +701,8 @@ def main(argv=None):
                       "this is a race, not a credential problem." % (url, args.wait_url_deadline))
                 machine("refused", "media")
                 return 5
-        ok, why = media_spec_ok(url, args.allow_unknown_specs or url.lower().endswith(".mp4"))
+        ok, why = media_spec_ok(url, args.allow_unknown_specs or url.lower().endswith(".mp4"),
+                                story=(kind == "story"))
         if not ok:
             print("::error title=media rejected before sending::%s → %s" % (url, why))
             machine("refused", "media")
@@ -699,7 +726,7 @@ def main(argv=None):
             machine("failed", exc.cause)
             return 6
 
-    if not args.no_guard:
+    if not args.no_guard and kind != "story":  # a Story has no caption to be a duplicate of
         try:
             posts = recent_captions(token, user_id, args.skip_pages)
         except ApiError as exc:
@@ -720,7 +747,7 @@ def main(argv=None):
         machine("dry-run")
         return 0
 
-    return send(token, user_id, media, args.caption, kind)
+    return send(token, user_id, media, args.caption, kind, username=username)
 
 
 if __name__ == "__main__":

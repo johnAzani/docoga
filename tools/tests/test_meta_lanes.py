@@ -408,6 +408,24 @@ class TokenVault(unittest.TestCase):
                                             path=self.box, out=out)
         return code, out.getvalue() + err.getvalue()
 
+    def test_a_refresh_file_with_a_stray_stdout_line_still_seals(self):
+        """What runs #46–#49 actually handed the vault: a chatty line, then the JSON. The
+        reader takes the JSON object rather than dying on line 1 — and when there is no
+        object at all, says so instead of letting the workflow blame SOCIAL_TOKEN_KEY."""
+        import token_vault
+        path = Path(self.tmp) / "refresh.json"
+        path.write_text('token refreshed (fingerprint abc)\n{"access_token": "NEW", "expires_in": 5184000}\n')
+        token, expires_at, _dropped = token_vault.read_refresh_response(str(path))
+        self.assertEqual(token, "NEW")
+        self.assertTrue(expires_at)
+        path.write_text("token refreshed (fingerprint abc)\n")
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err), self.assertRaises(SystemExit) as stop:
+            token_vault.read_refresh_response(str(path))
+        self.assertEqual(stop.exception.code, 5)
+        self.assertIn("not JSON", err.getvalue())
+        self.assertNotIn("SOCIAL_TOKEN_KEY", err.getvalue())
+
     def test_seal_then_open_round_trips(self):
         code, out = self._seal()
         self.assertEqual(code, 0, out)
@@ -736,6 +754,33 @@ class InstagramPublisher(unittest.TestCase):
         self.assertEqual(code, 6)
         self.assertIn("IG_RESULT=failed", out)
 
+    def test_a_story_is_a_stories_container_with_no_caption_and_no_duplicate_check(self):
+        """Owner, 16 Oct 2026: "what about Instagram stories". A Story is the 9:16 frame,
+        `media_type=STORIES`, no caption (the words are on the frame), no permalink (it
+        lives 24 h in the tray), and the duplicate guard does not apply."""
+        self.public_media(1080, 1920)
+        routes = self._base_routes({"POST /1784/media_publish": (200, json.dumps({"id": "STORY1"}))})
+        code, out, fake = self._publish(routes, ["--story-url", "https://docoga.com.ng/social/x-story.jpg"])
+        self.assertEqual(code, 0, out)
+        self.assertIn("IG_RESULT=sent", out)
+        self.assertIn("IG_MEDIA_ID=STORY1", out)
+        container = [q for m, url, q in fake.calls if m == "POST" and url.endswith("/1784/media")]
+        self.assertEqual(len(container), 1, fake.calls)
+        self.assertIn("media_type=STORIES", container[0])
+        self.assertNotIn("caption", container[0])
+        self.assertFalse(any(url.endswith("/1784/media") and m == "GET" for m, url, _q in fake.calls),
+                         "a Story has no caption, so the recent-captions guard must not run")
+        self.assertNotIn("copy rejected", out)
+
+    def test_a_story_frame_must_be_nine_by_sixteen(self):
+        self.public_media(1080, 1350)  # the feed card, not a Story frame
+        code, out, fake = self._publish(self._base_routes(),
+                                        ["--story-url", "https://docoga.com.ng/social/x.jpg"])
+        self.assertEqual(code, 5, out)
+        self.assertIn("9:16", out)
+        self.assertIn("IG_CAUSE=media", out)
+        self.assertFalse(fake.wrote_anything())
+
     def test_refresh_uses_the_refresh_endpoint_not_the_exchange(self):
         """`/access_token` is the short→long exchange and answers "client_secret is required"
         — the first real run's warning. A long-lived token is wound forward with
@@ -749,6 +794,23 @@ class InstagramPublisher(unittest.TestCase):
         self.assertTrue(hits[0][0].endswith("/refresh_access_token"), hits[0][0])
         self.assertIn("grant_type=ig_refresh_token", hits[0][1])
         self.assertNotIn("client_secret", hits[0][1])
+
+    def test_refresh_stdout_is_pure_json_for_the_vault(self):
+        """Runs #46–#49: the "token refreshed (fingerprint …)" line went to stdout, which is the
+        file `token_vault.py seal --json` reads, so every seal failed on line 1 and the workflow
+        blamed SOCIAL_TOKEN_KEY. stdout must be exactly one JSON object; chatter goes to stderr."""
+        routes = self._base_routes({"GET /refresh_access_token": (200, json.dumps(
+            {"access_token": "NEwTOKENvalue", "expires_in": 5184000}))})
+        fake = FakeHttp(routes, shape=3)
+        out, err = io.StringIO(), io.StringIO()
+        with mock.patch.dict(os.environ, dict(self.env), clear=True), \
+                mock.patch.object(ig, "http", fake), \
+                contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            code = ig.main(["--refresh-token"])
+        self.assertEqual(code, 0, err.getvalue())
+        self.assertEqual(json.loads(out.getvalue())["access_token"], "NEwTOKENvalue",
+                         "stdout is the vault's input and must parse as one JSON object")
+        self.assertIn("fingerprint", err.getvalue())
 
     def test_refresh_never_prints_the_credential_it_used(self):
         routes = self._base_routes({"GET /refresh_access_token": (200, json.dumps(

@@ -212,7 +212,26 @@ def read_refresh_response(path):
     travels *beside* the ciphertext in the box file is not encrypted, so a second secret belongs in
     a box of its own, never there.
     """
-    blob = json.loads(Path(path).read_text(encoding="utf-8"))
+    text = Path(path).read_text(encoding="utf-8")
+    try:
+        blob = json.loads(text)
+    except json.JSONDecodeError:
+        # A refresh helper that chats on stdout corrupts its own JSON. Take the last line that
+        # is an object rather than failing — and name the real problem if there is none.
+        blob = None
+        for line in reversed(text.splitlines()):
+            line = line.strip()
+            if line.startswith("{"):
+                try:
+                    blob = json.loads(line)
+                    break
+                except json.JSONDecodeError:
+                    continue
+        if blob is None:
+            raise SystemExit(_fail("%s is not JSON (the refresh helper printed something else "
+                                   "on stdout) — refusing to seal" % path, 5))
+    if not isinstance(blob, dict):
+        raise SystemExit(_fail("%s is not a JSON object" % path, 5))
     token = blob.get("access_token") or blob.get("token")
     if not token:
         raise SystemExit(_fail("%s has no access_token key — refusing to seal a value no reader "

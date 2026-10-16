@@ -244,8 +244,13 @@ expires in eight weeks.
   will wire it; say "not yet" and nothing changes.
 * **Facebook Reels**, blocked by the same missing piece (see `FACEBOOK_AUTOMATION.md`), and the
   same decision unblocks it.
-* **Instagram Stories**: same URL requirement, same code path (`media_type=STORIES`), deliberately
-  not scheduled — a Story nobody checks for 24 hours is a missed window, not a win.
+* ~~Instagram Stories~~ — **live since 16 Oct 2026.** The daily run renders the same copy as a
+  9:16 frame (`site/social/<DAY>-instagram-story.jpg`, `tools/social_card.py --story`) in the same
+  commit as the card, posts the feed card first, then the Story (`tools/ig_publish.py --story-url`,
+  `media_type=STORIES`, no caption, no duplicate guard — a Story has no caption to be a duplicate
+  of). The Story step is `continue-on-error`: it cannot cost the feed post. Both land in
+  `logs/instagram_sent.json` (`instagram-card` / `instagram-story`). Dispatch `content_type=story`
+  posts only the Story.
 * **Hashtag count**: one 2026 source claims Threads allows exactly one hashtag per post. I could
   not find it in Meta's docs, so the generator keeps **two** and the API will tell us loudly if
   that is wrong (a rejected post is a red run with a cause, never a silence). If it ever rejects,

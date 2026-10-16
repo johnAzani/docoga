@@ -355,6 +355,8 @@ def main(argv=None):
     parser.add_argument("--quality", type=int, default=88)
     parser.add_argument("--max-kb", type=int, default=900)
     parser.add_argument("--no-footer", action="store_true")
+    parser.add_argument("--story", action="store_true",
+                        help="draw a 9:16 Story frame (1080x1920) with the platform's chrome bands kept clear")
     parser.add_argument("--print", dest="show", action="store_true")
     args = parser.parse_args(argv if argv is not None else sys.argv[1:])
 
@@ -373,8 +375,9 @@ def main(argv=None):
         text = blob.get("text") or ""
         args.kicker = args.kicker or (blob.get("post_type") or "")
 
+    frame = {"size": (STORY_W, STORY_H), "safe": STORY_SAFE} if args.story else {}
     result = render(text, args.out, kicker=args.kicker, quality=args.quality,
-                    max_kb=args.max_kb, footer="" if args.no_footer else FOOTER)
+                    max_kb=args.max_kb, footer="" if args.no_footer else FOOTER, **frame)
 
     absolute = Path(result["path"]).resolve()
     relative = absolute.relative_to(ROOT) if str(absolute).startswith(str(ROOT)) else absolute
