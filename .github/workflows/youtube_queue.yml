@@ -9,9 +9,9 @@ permissions:
   contents: write
 jobs:
   upload:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # An empty queue is a normal state (the scheduler is deliberately disarmed
       # between uploads). Skip cleanly with a visible notice instead of failing —
@@ -30,7 +30,7 @@ jobs:
 
       - name: Set up Python
         if: steps.check.outputs.count != '0'
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
 

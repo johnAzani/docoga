@@ -19,10 +19,10 @@ permissions:
 jobs:
   verify:
     name: QA + repo integrity
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout (full history)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           # pre_push_verify.sh compares against origin/main, so the full
           # history and the main ref must be present.
@@ -34,7 +34,7 @@ jobs:
             echo "::warning::could not fetch origin/main; history check will warn"
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
 

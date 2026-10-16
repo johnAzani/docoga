@@ -58,12 +58,12 @@ jobs:
   probe:
     name: Diagnose the YouTube lane
     if: github.event.inputs.probe_only == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
       - name: Install the upload dependency
@@ -91,16 +91,16 @@ jobs:
     name: Generate and publish one Short
     if: github.event.inputs.probe_only != 'true' || github.event_name == 'schedule'
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       TZ: Africa/Lagos
     steps:
       - name: Check out the default branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
 
@@ -175,7 +175,7 @@ jobs:
       # newest entry and saves its own, so the knowledge is shared across the
       # Shorts, Reels, Deep-Dive and resumer workflows.
       - name: Restore the narrator's cached clips
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: assets/shorts_voice
           key: shorts-voice-v2-${{ github.run_id }}
@@ -207,7 +207,7 @@ jobs:
 
       - name: Save the narrator's cached clips and the quota ledger
         if: always()
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: assets/shorts_voice
           key: shorts-voice-v2-${{ github.run_id }}

@@ -25,7 +25,7 @@ jobs:
   deploy-site:
     name: Deploy site as docoga-git
     if: ${{ contains(github.event.head_commit.message, '[deploy-site]') }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       # Needed to post the deploy log — the agent cannot read run logs through
@@ -35,9 +35,9 @@ jobs:
       pull-requests: write
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: '22'
 
@@ -111,7 +111,7 @@ jobs:
       # docoga-pass log from deploy-pass-now.yml.
       - name: Report the deploy result
         if: always()
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const fs = require('fs');

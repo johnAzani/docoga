@@ -753,6 +753,29 @@ class EveryWorkflowTests(unittest.TestCase):
                 self.assertRegex(scripts.lower(), r"pip install[^\n]*pillow",
                                  "%s runs a copy generator but never installs pillow" % path.name)
 
+    def test_runners_are_pinned_and_actions_run_on_node_24(self):
+        """GitHub moves `ubuntu-latest` to Ubuntu 26 on 19 Oct 2026 and retires Node 20
+        actions after that. A lane that installs ffmpeg and fonts is exactly what an OS jump
+        breaks, so every job names its image; and every first-party action is on a major that
+        runs on Node 24 (checked against each tag's action.yml `runs.using` on 16 Oct 2026)."""
+        node20_majors = ("actions/checkout@v4", "actions/setup-python@v5", "actions/upload-artifact@v4",
+                         "actions/upload-artifact@v5", "actions/download-artifact@v4",
+                         "actions/download-artifact@v5", "actions/download-artifact@v6",
+                         "actions/setup-node@v4", "actions/github-script@v7", "actions/cache@v4",
+                         "actions/cache/save@v4", "actions/cache/restore@v4", "actions/setup-java@v4",
+                         "cloudflare/wrangler-action@v3")
+        for path, doc in self._workflows():
+            with self.subTest(workflow=path.name):
+                for job_name, job in (doc.get("jobs") or {}).items():
+                    runs_on = job.get("runs-on")
+                    if runs_on is not None:
+                        self.assertNotIn("latest", str(runs_on),
+                                         "%s job %s floats on %r" % (path.name, job_name, runs_on))
+                    for step in job.get("steps") or []:
+                        uses = str(step.get("uses") or "")
+                        self.assertNotIn(uses.split(" ")[0], node20_majors,
+                                         "%s step %r is on a Node 20 action major" % (path.name, uses))
+
     def test_every_run_block_is_valid_bash(self):
         """`bash -n` on each script: YAML cannot tell you a quote is unbalanced."""
         import subprocess

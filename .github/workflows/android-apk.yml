@@ -52,17 +52,17 @@ jobs:
 
     steps:
       - name: checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: setup node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: "22"
           cache: npm
           cache-dependency-path: mobile/package-lock.json
 
       - name: setup jdk 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "21"
@@ -203,7 +203,7 @@ jobs:
       # <run> --name gradle-build-log` gets the whole transcript.
       - name: attach gradle log (only when a build failed)
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: gradle-build-log
           path: /tmp/*-build.log
@@ -211,7 +211,7 @@ jobs:
           retention-days: 7
 
       - name: upload debug APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: docoga-owner-debug-apk
           path: mobile/dist/docoga-owner-debug.apk
@@ -220,7 +220,7 @@ jobs:
 
       - name: upload signed release APK
         if: steps.keystore.outputs.ok == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: docoga-owner-release-apk
           path: mobile/dist/docoga-owner-release.apk
