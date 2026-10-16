@@ -245,7 +245,7 @@ def create_text_container(token, user_id, text, link_attachment=None, reply_cont
     return api("POST", "/%s/threads" % user_id, token, params)["id"]
 
 
-def wait_container(token, container_id, tries=6, delay=5, sleeper=time.sleep):
+def wait_container(token, container_id, tries=6, delay=5, sleeper=None):
     """Text containers are usually ready at once; this is the polite version of 'assume'.
 
     Meta documents that a TEXT post needs no polling, and that a failure such as
@@ -253,13 +253,17 @@ def wait_container(token, container_id, tries=6, delay=5, sleeper=time.sleep):
     it is still IN_PROGRESS wait a little — never the 10-minute default that makes a
     one-second post look like a hung job.
     """
+    sleeper = sleeper or time.sleep  # resolved per call, so a stubbed time.sleep is honoured
     state = None
     for attempt in range(tries):
         data = api("GET", "/%s" % container_id, token, {"fields": "status"})
         state = (data.get("status") or "").upper()
-        if state in ("OK", "PUBLISHED"):
+        # Threads' documented container states: IN_PROGRESS, FINISHED, PUBLISHED, ERROR,
+        # EXPIRED. `OK` is the older Instagram wording, kept in case it ever appears. Run #6
+        # (16 Oct 2026) refused a perfectly good container because FINISHED was not listed.
+        if state in ("FINISHED", "OK", "PUBLISHED"):
             return True, state
-        if state in ("FAILED", "EXPIRED"):
+        if state in ("ERROR", "FAILED", "EXPIRED"):
             return False, state
         if attempt < tries - 1:
             sleeper(delay)
