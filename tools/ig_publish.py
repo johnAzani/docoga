@@ -375,6 +375,54 @@ def reels_readiness(token, app_id="", app_secret=""):
     return report
 
 
+def reels_readiness_instagram_login(token, user_id=""):
+    """Can the Instagram-Login token (the one the daily cards use) open a resumable Reel
+    session? One read and ONE unpublished container — nothing is published.
+
+    Meta's guide says resumable upload is "only for apps that have implemented Facebook Login
+    for Business"; third-party guides in 2026 show the same `upload_type=resumable` call on
+    graph.instagram.com working. Rather than argue, ask: create a REELS container with
+    `upload_type=resumable` and look for the `uri`. A container that is never published is
+    invisible and expires in 24 h. This is the second door — it matters because the first
+    (Page token) needs the Page↔Instagram link, and on 16 Oct 2026 Facebook refused to make
+    that link ("temporarily restricted … to protect your profile").
+    """
+    report = {"ready": False, "linked": True, "ig_user_id": "", "ig_username": "",
+              "scopes": None, "missing": [], "why": [], "path": "instagram-login"}
+    try:
+        who = whoami(token, user_id)
+    except ApiError as exc:
+        report["why"].append("the Instagram token could not read its own account (%s): %s"
+                             % (exc.cause, exc.blurb[:160]))
+        report["missing"].append("instagram-token")
+        return report
+    report["ig_user_id"] = str(who.get("user_id") or who.get("id") or "")
+    report["ig_username"] = who.get("username") or ""
+    report["page"] = "(no Page — Instagram-Login token for @%s)" % report["ig_username"]
+    if account_type(who) not in PROFESSIONAL:
+        report["missing"].append("professional-account")
+        report["why"].append("@%s is a %s account; the publishing API needs Business or Creator"
+                             % (report["ig_username"], account_type(who) or "personal"))
+        return report
+    try:
+        answer = call("POST", "/%s/media" % report["ig_user_id"], token,
+                      {"media_type": "REELS", "upload_type": "resumable",
+                       "caption": "DocOga readiness probe — never published"})
+    except ApiError as exc:
+        report["why"].append("graph.instagram.com refused a resumable REELS container (%s): %s"
+                             % (exc.cause, exc.blurb[:200]))
+        report["missing"].append("resumable-on-instagram-login")
+        return report
+    if answer.get("uri"):
+        report["ready"] = True
+        report["probe_container"] = str(answer.get("id") or "")
+    else:
+        report["missing"].append("resumable-on-instagram-login")
+        report["why"].append("the container was created but carries no upload uri: %s"
+                             % json.dumps(answer)[:200])
+    return report
+
+
 def print_readiness(report):
     """The probe's human lines, then its machine lines. Fix-it text names the exact boxes."""
     if report.get("page"):
@@ -390,7 +438,12 @@ def print_readiness(report):
             "%s %s" % ("✅" if s in report["scopes"] else "❌", s) for s in REEL_SCOPES))
     for why in report["why"]:
         print("note: %s" % why)
-    if report["ready"]:
+    print("door: %s" % report.get("path", "facebook-login"))
+    if report["ready"] and report.get("path") == "instagram-login":
+        print("✅ Reels-ready: the Instagram-Login token opened a resumable Reel session for @%s "
+              "(probe container %s, never published, expires in 24 h) — no Page link needed"
+              % (report["ig_username"] or report["ig_user_id"], report.get("probe_container") or "?"))
+    elif report["ready"]:
         print("✅ Reels-ready: this Page token can publish Reels on @%s by resumable upload"
               % (report["ig_username"] or report["ig_user_id"]))
     else:
@@ -409,6 +462,7 @@ def print_readiness(report):
         print("⏸ not Reels-ready yet — %s" % "; ".join(fixes or ["see the notes above"]))
     machine("probed", None, IG_REELS_READY="yes" if report["ready"] else "no",
             IG_REELS_MISSING=",".join(report["missing"]),
+            IG_REELS_PATH=report.get("path", "facebook-login"),
             IG_USER_ID=report["ig_user_id"], IG_USERNAME=report["ig_username"])
 
 
@@ -888,8 +942,8 @@ def main(argv=None):
     parser.add_argument("--video-url", help="public video URL for a Reel")
     parser.add_argument("--cover-url", help="public JPEG cover for a Reel")
     parser.add_argument("--video-file", help="local MP4 for a Reel, sent by resumable upload "
-                                            "(IG_API_PATH=facebook-login only — Meta documents "
-                                            "no upload on the Instagram-Login host)")
+                                            "(documented for IG_API_PATH=facebook-login; on the "
+                                            "Instagram-Login host run --probe-reels first)")
     parser.add_argument("--video-story", action="store_true",
                         help="with --video-file: publish it as a 24-hour video Story instead of a Reel")
     parser.add_argument("--thumb-offset-ms", type=int, default=1500,
@@ -937,14 +991,13 @@ def main(argv=None):
         return 0
 
     if args.probe_reels:
-        if api_path() != "facebook-login":
-            print("::error title=wrong API path for Reels::resumable upload exists on the "
-                  "Facebook-Login path only (graph.facebook.com, a Page token). Run with "
-                  "IG_API_PATH=facebook-login and IG_ACCESS_TOKEN=<FB_PAGE_ACCESS_TOKEN>.")
-            machine("refused", "setup", IG_REELS_READY="no", IG_REELS_MISSING="api-path")
-            return 2
         try:
-            report = reels_readiness(token, app_id, app_secret)
+            if api_path() == "facebook-login":
+                report = reels_readiness(token, app_id, app_secret)
+            else:
+                # The second door: the Instagram-Login token, no Page link required — if Meta
+                # opens a resumable session for it. One unpublished container, nothing visible.
+                report = reels_readiness_instagram_login(token, user_id)
         except ApiError as exc:  # transport only: reels_readiness catches API answers itself
             print("::error title=Reels probe could not reach Meta::%s" % exc.blurb)
             machine("refused", exc.cause, IG_REELS_READY="no", IG_REELS_MISSING="transport")
@@ -991,12 +1044,11 @@ def main(argv=None):
     upload = None
     if video_file:
         if api_path() != "facebook-login":
-            print("::error title=Reels need the Facebook-Login path::resumable upload is "
-                  "documented for graph.facebook.com only; this token is on the Instagram-Login "
-                  "host. The Facebook lane publishes the Reel with the Page token "
-                  "(IG_API_PATH=facebook-login) — see docs/INSTAGRAM_THREADS_AUTOMATION.md.")
-            machine("refused", "setup")
-            return 2
+            # Documented for the Facebook-Login host; observed to work on graph.instagram.com
+            # too. `--probe-reels` on this path is the cheap way to know; here the container
+            # call itself is the verdict, and a refusal is named by Meta, not guessed by us.
+            print("note: resumable upload on the Instagram-Login host — Meta documents it for "
+                  "Facebook Login only; proceeding because the readiness probe said yes")
         ok, why = video_spec_ok(video_file)
         if not ok:
             print("::error title=video rejected before sending::%s → %s" % (video_file, why))

@@ -1233,11 +1233,27 @@ class FacebookReelsContractTests(unittest.TestCase):
         self.assertTrue(probe_step.get("continue-on-error"), "a probe that cannot run must not cost the post")
         self.assertIn("--probe-reels", probe_step["run"])
         self.assertIn("IG_API_PATH=facebook-login", probe_step["run"])
+        # Two doors since 16 Oct 2026: the Page token, or — when the Page↔Instagram link is
+        # refused — the Instagram lane's own token. A merge step picks; the upload reads it.
+        probe2 = next(i for i, n in enumerate(names) if n.startswith("Instagram Reels — second door"))
+        door = next(i for i, n in enumerate(names) if n == "Instagram Reels — which door")
+        self.assertLess(probe, probe2)
+        self.assertLess(probe2, door)
+        self.assertLess(door, fb_post, "the door is known before anything is posted")
+        probe2_step = self.job["steps"][probe2]
+        self.assertTrue(probe2_step.get("continue-on-error"))
+        self.assertIn("steps.ig_reels_probe.outputs.ready != 'yes'", probe2_step["if"],
+                      "the second door is only tried when the first is shut")
+        self.assertIn("IG_API_PATH=instagram-login", probe2_step["run"])
+        self.assertIn("token_vault.py open --name IG_ACCESS_TOKEN", probe2_step["run"])
+        self.assertIn("umask 077", probe2_step["run"], "the token lands as a private file")
+        self.assertIn("cryptography", self.blob("Install dependencies"), "token_vault needs it")
         reel_step = self.job["steps"][ig_reel]
-        self.assertIn("steps.ig_reels_probe.outputs.ready == 'yes'", reel_step["if"])
+        self.assertIn("steps.ig_door.outputs.ready == 'yes'", reel_step["if"])
         self.assertFalse(reel_step.get("continue-on-error"), "a failed Instagram Reel is a red run and an issue")
         self.assertIn("--video-file", reel_step["run"])
-        self.assertIn("IG_API_PATH=facebook-login", reel_step["run"])
+        self.assertIn('IG_API_PATH="$IG_DOOR"', reel_step["run"])
+        self.assertIn("/tmp/ig_login_token", reel_step["run"])
         self.assertIn("--window-days 30", reel_step["run"])
         self.assertNotIn("site/social", reel_step["run"], "no render is committed for a Reel")
         self.assertNotIn("video_url", reel_step["run"], "no public URL is involved")
