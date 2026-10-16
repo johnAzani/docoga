@@ -292,6 +292,9 @@ Reel is published by `facebook_autopost.yml`, not by the Instagram lane whose to
   `IG_RESULT=failed` with the container id, no publish, a red run, and an issue that names the
   cause. The Facebook ledger is committed *before* this step so a red Instagram step can never
   make the next run publish the Facebook Reel twice.
+* **The Reel in the Story tray too:** right after it, the same bytes go out as
+  `media_type=STORIES` (`--video-story`), `continue-on-error`, recorded as `instagram-story` —
+  the mirror of what the Facebook lane does with its own Reel. `FB_STORIES=off` switches both.
 * **Switch:** repository variable `IG_REELS` — `on` (default) or `off`.
 * **Manual:** Actions → DocOga Facebook Auto-Post → Run workflow → `mode: reel` publishes the
   rotation's Reel to both surfaces now (the narrator-resume workflow uses the same path).

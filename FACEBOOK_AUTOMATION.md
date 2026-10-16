@@ -432,6 +432,8 @@ Owner: "what about reals" — at ₦0, researched first. The verdict and the mec
   committed, no size race. Ledger: `logs/instagram_sent.json` (`Reel · <title>`, 30-day window).
 * A failed Instagram upload **is** a red run and an issue — placed below the Facebook ledger
   commit so it can never make the next run publish the Facebook Reel twice.
+* Then "Instagram Story — the Reel in the tray too": the same bytes as a 24-hour video Story
+  on @docoga.ng (`--video-story`), `continue-on-error`, off with `FB_STORIES=off`.
 * Switch: repository variable `IG_REELS` = `on` (default) / `off`.
 
 ## 9b. Stories — two a day, three on Reel days (since 15 Oct 2026)

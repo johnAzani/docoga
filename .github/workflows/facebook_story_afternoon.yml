@@ -70,8 +70,7 @@ jobs:
       - name: Install dependencies
         run: |
           python3 -m pip install --quiet requests Pillow
-          sudo apt-get update -qq >/dev/null 2>&1 || true
-          sudo apt-get install -y -qq fonts-inter >/dev/null 2>&1 || echo "::warning title=Inter not installed::fonts-inter unavailable — the frame falls back to DejaVu for this run"
+          bash tools/install_brand_fonts.sh   # Inter, or a named warning — never a silent DejaVu
 
       - name: Story — afternoon slot
         env:

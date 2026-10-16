@@ -23,7 +23,7 @@ Three things this renderer guarantees, and each is checkable:
   2. **JPEG, under `--max-kb` (default 900)** — Meta's cap is 8 MB, but a card that heavy
      is a slow fetch that can time out on their side, and a timeout arrives as
      "Unsupported URL request". Quality is walked down until the file fits.
-  3. **No glyph the runner cannot draw.** Inter is not installed on ubuntu-latest and the
+  3. **No glyph the runner cannot draw.** Inter is not a stock font on the runners and the
      brand copy is full of 🏛️ 📄 ⚠️, which DejaVu renders as empty boxes on a *public
      post*. So emoji are stripped from what is **drawn** and kept in the **caption** — the
      caption is text Instagram renders with its own fonts, the card is our job.

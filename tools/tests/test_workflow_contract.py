@@ -627,6 +627,38 @@ class EveryWorkflowTests(unittest.TestCase):
         for path in sorted(WORKFLOWS.glob("*.yml")):
             yield path, yaml.safe_load(path.read_text(encoding="utf-8"))
 
+    def test_a_job_that_files_issues_holds_the_issues_grant(self):
+        """`gh issue create` with a GITHUB_TOKEN that has no `issues: write` is a 403, and the
+        step's `|| echo` turned that into "Issue not created: bookkeeping failed" — which is how
+        the Instagram and Threads lanes went from launch to 16 Oct 2026 unable to report a
+        failure anywhere but a run log nobody opens. The grant is checked at the workflow level
+        or on the job, whichever the file uses."""
+        for path, doc in self._workflows():
+            top = (doc.get("permissions") or {}) if isinstance(doc.get("permissions"), dict) else {}
+            for job_name, job in (doc.get("jobs") or {}).items():
+                text = "\n".join(str(step.get("run") or "") for step in job.get("steps") or [])
+                if "gh issue create" not in text and "gh issue comment" not in text:
+                    continue
+                job_perms = job.get("permissions") if isinstance(job.get("permissions"), dict) else None
+                effective = job_perms if job_perms is not None else top
+                with self.subTest(workflow=path.name, job=job_name):
+                    self.assertEqual(effective.get("issues"), "write",
+                                     "%s/%s files issues but has no `issues: write` — every "
+                                     "failure would end in 'Issue not created'" % (path.name, job_name))
+
+    def test_card_rendering_jobs_install_the_brand_font_through_the_one_script(self):
+        """Inter is the brand face. Jobs that draw a card (tools/social_card.py) install it
+        through tools/install_brand_fonts.sh — the apt-only line each job used to carry
+        swallowed its own failure, and the Instagram job had no line at all."""
+        drawers = ("instagram_autopost.yml", "facebook_autopost.yml",
+                   "facebook_story_afternoon.yml", "telegram_autopost.yml")
+        for name in drawers:
+            text = (WORKFLOWS / name).read_text(encoding="utf-8")
+            with self.subTest(workflow=name):
+                self.assertIn("tools/install_brand_fonts.sh", text)
+                self.assertNotIn("apt-get install -y -qq fonts-inter", text,
+                                 "the swallowed apt line is what the script replaces")
+
     def test_no_workflow_has_a_duplicate_mapping_key(self):
         """PyYAML silently keeps the last duplicate; GitHub rejects the whole file.
 
@@ -1154,7 +1186,7 @@ class FacebookReelsContractTests(unittest.TestCase):
         added = re.findall(r"git add (\S+)", self.text)
         # Two ledgers since 16 Oct 2026: the Instagram Reel rides this lane (same render, same
         # Page token, Meta's resumable upload) and records itself in Instagram's ledger.
-        self.assertEqual(added, ["logs/facebook_reels.json", "logs/instagram_sent.json"],
+        self.assertEqual(sorted(set(added)), ["logs/facebook_reels.json", "logs/instagram_sent.json"],
                          "write access that touches anything else is a bigger question than a ledger")
 
     def test_the_instagram_reel_follows_facebooks_bookkeeping_and_the_readiness_probe(self):
@@ -1184,6 +1216,12 @@ class FacebookReelsContractTests(unittest.TestCase):
         self.assertIn("IG_REELS", self.text)
         self.assertIn("ig_reel_post.log", self.blob("Open a visible issue if the run failed"))
         self.assertIn("ig_reel_post.log", self.blob("Record what this run did"))
+        story = next(i for i, n in enumerate(names) if n.startswith("Instagram Story — the Reel in the tray"))
+        self.assertLess(ig_reel, story)
+        story_step = self.job["steps"][story]
+        self.assertTrue(story_step.get("continue-on-error"), "a Story is a window, not the record")
+        self.assertIn("steps.ig_reel.outcome == 'success'", story_step["if"])
+        self.assertIn("--video-story", story_step["run"])
 
     def test_the_reel_logs_reach_the_summary_and_the_issue(self):
         summary = self.blob("Record what this run did")

@@ -155,8 +155,7 @@ jobs:
         # it the card renders in DejaVu — legible, but not ours.
         run: |
           python3 -m pip install --quiet requests Pillow
-          sudo apt-get update -qq >/dev/null 2>&1 || true
-          sudo apt-get install -y -qq fonts-inter >/dev/null 2>&1 || echo "::warning title=Inter not installed::fonts-inter unavailable — the card falls back to DejaVu for this run"
+          bash tools/install_brand_fonts.sh   # Inter, or a named warning — never a silent DejaVu
 
       # ── Instagram Reels readiness (reads only, every run) ───────────────────
       # Three GETs: is @docoga.ng linked to the Page, does the Page token carry
@@ -615,6 +614,63 @@ jobs:
             *) exit "${STATUS:-6}" ;;
           esac
 
+      # The Reel in the @docoga.ng Story tray too — the same bytes as `media_type=STORIES`,
+      # exactly what this lane already does on Facebook right after its own Reel. A Story is a
+      # window, not the record, so this step is continue-on-error; it records itself in the
+      # Instagram ledger as `instagram-story` like the daily Instagram lane's frame does.
+      - name: Instagram Story — the Reel in the tray too
+        id: ig_reel_story
+        if: ${{ steps.ig_reel.outcome == 'success' && env.STORIES_MODE != 'off' }}
+        continue-on-error: true
+        env:
+          IG_USER_ID: ${{ steps.ig_reels_probe.outputs.ig_user_id }}
+          IG_USERNAME: ${{ steps.ig_reels_probe.outputs.ig_username }}
+          VIDEO_PATH: ${{ steps.reel_render.outputs.video_path }}
+          REEL_TITLE: ${{ steps.reel_plan.outputs.title }}
+          REEL_DATE: ${{ steps.reel_plan.outputs.run_date }}
+          LEDGER_LABEL: Instagram publish ledger
+          BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -o pipefail
+          FILE="${VIDEO_PATH:-$(sed -n 's/^video_path=//p' /tmp/fb_reel_render.log 2>/dev/null | tail -1)}"
+          if [ -z "$FILE" ] || [ ! -f "$FILE" ] || ! grep -q '^IG_RESULT=sent$' /tmp/ig_reel_post.log 2>/dev/null; then
+            echo "The Instagram Reel did not go out this run, so there is no video Story to post."
+            exit 0
+          fi
+          TITLE="${REEL_TITLE:-$(sed -n 's/^title=//p' /tmp/fb_reel_render.log | tail -1)}"
+          RUN_DATE="${REEL_DATE:-$(date +%F)}"
+          set +e
+          IG_API_PATH=facebook-login IG_ACCESS_TOKEN="$FB_PAGE_ACCESS_TOKEN" IG_USER_ID="$IG_USER_ID" \
+            python3 tools/ig_publish.py --video-file "$FILE" --video-story 2>&1 | tee /tmp/ig_reel_story.log
+          STATUS=${PIPESTATUS[0]}
+          set -e
+          RESULT=$(sed -n 's/^IG_RESULT=//p' /tmp/ig_reel_story.log | tail -1)
+          CAUSE=$(sed -n 's/^IG_CAUSE=//p' /tmp/ig_reel_story.log | tail -1)
+          MEDIA_ID=$(sed -n 's/^IG_MEDIA_ID=//p' /tmp/ig_reel_story.log | tail -1)
+          {
+            echo "### Instagram video Story"
+            echo
+            echo "- result: \`${RESULT:-?}${CAUSE:+ · cause \`${CAUSE}\`}\` — the Reel, 24 hours in the tray"
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$RESULT" = "sent" ]; then
+            python3 tools/youtube_ledger.py --ledger logs/instagram_sent.json record \
+              --title "Story · Reel · $TITLE" --topic instagram-story --video-id "${MEDIA_ID:-unknown}" \
+              --url "https://www.instagram.com/stories/${IG_USERNAME:-docoga.ng}/${MEDIA_ID:-}/" \
+              --date "$RUN_DATE" --run-id "$GITHUB_RUN_ID" \
+              || echo "::warning title=Instagram video Story not recorded::it is live for 24 hours either way"
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add logs/instagram_sent.json
+            if ! git diff --staged --quiet; then
+              git commit -q -m "Auto: record Instagram video story $RUN_DATE [skip ci]"
+              git pull --rebase --autostash origin "$BRANCH" >/dev/null 2>&1 || true
+              git push origin "HEAD:$BRANCH" || echo "::warning title=Instagram Story ledger not pushed::the Story is live; the entry did not reach $BRANCH"
+            fi
+            exit 0
+          fi
+          echo "::warning title=Instagram video Story not posted::result=${RESULT:-?} cause=${CAUSE:-?} — the Reel itself is live and unaffected"
+          exit "${STATUS:-6}"
+
       - name: Record what this run did
         if: always()
         env:
@@ -668,7 +724,8 @@ jobs:
                         "reel plan:/tmp/fb_reel_plan.log" "reel probe:/tmp/fb_reel_probe.log" \
                         "reel render:/tmp/fb_reel_render.log" "reel publish:/tmp/fb_reel_post.log" \
                         "story:/tmp/fb_story.log" "story video:/tmp/fb_story_video.log" \
-                        "instagram reels probe:/tmp/ig_reels_probe.log" "instagram reel:/tmp/ig_reel_post.log"; do
+                        "instagram reels probe:/tmp/ig_reels_probe.log" "instagram reel:/tmp/ig_reel_post.log" \
+                        "instagram video story:/tmp/ig_reel_story.log"; do
               label=${pair%%:*}; file=${pair#*:}
               if [ -f "$file" ]; then
                 # Sanitised: the log can contain quotes and backticks from an API
