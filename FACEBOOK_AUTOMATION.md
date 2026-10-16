@@ -55,7 +55,9 @@ Nothing here is a server, a queue, or a paid service. A GitHub runner is the cro
 1. <https://developers.facebook.com/tools/explorer/> → app picker → **the DocOga use-case app**.
    *Expected screen:* "Graph API Explorer" with `v26.0` in the version box.
 2. **Get Token → Get User Access Token** → tick `pages_show_list`,
-   `pages_read_engagement`, `pages_manage_posts` → **Generate Access Token** → copy it.
+   `pages_read_engagement`, `pages_manage_posts` — **and, since 16 Oct 2026, `instagram_basic`
+   and `instagram_content_publish`** (the Instagram Reel rides this token, §9c) →
+   **Generate Access Token** → copy it.
    *Expected:* a token beginning `EAAB…`, expiring in ~1–2 hours.
 3. Exchange it for a 60-day user token (the terminal, not the browser):
 
@@ -412,6 +414,25 @@ silent picture only (tests, a laptop without ffmpeg audio).
 * A person pressing `mode=reel` when the bucket is empty gets a named error with the
   resume time, not a voiceless Reel; `SHORTS_VOICE=optional` is the explicit way to
   ship music-only.
+
+## 9c. The Instagram Reel — same render, same token, Meta's resumable upload (since 16 Oct 2026)
+
+Owner: "what about reals" — at ₦0, researched first. The verdict and the mechanism are in
+`docs/INSTAGRAM_THREADS_AUTOMATION.md → Reels`; the short form:
+
+* Every daily run starts with **`tools/ig_publish.py --probe-reels`** (reads only): is
+  @docoga.ng linked to the Page, does this Page token carry `instagram_basic` +
+  `instagram_content_publish`, does the Instagram node answer a publishing read. The step
+  summary shows `IG_REELS_READY=yes|no` and the exact fix when it is `no` — a yellow warning,
+  never a red run.
+* On Reel days, **after** the Facebook Reel is published and recorded, "Instagram Reel — the
+  same render, by resumable upload" sends the identical MP4 to
+  `rupload.facebook.com/ig-api-upload/…` (`upload_type=resumable`, `media_type=REELS`, cover =
+  the navy title frame at 1.5 s) and publishes it on @docoga.ng. No public URL, nothing
+  committed, no size race. Ledger: `logs/instagram_sent.json` (`Reel · <title>`, 30-day window).
+* A failed Instagram upload **is** a red run and an issue — placed below the Facebook ledger
+  commit so it can never make the next run publish the Facebook Reel twice.
+* Switch: repository variable `IG_REELS` = `on` (default) / `off`.
 
 ## 9b. Stories — two a day, three on Reel days (since 15 Oct 2026)
 

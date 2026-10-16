@@ -9,8 +9,9 @@ quoted so you can see what changed and why.
 
 ## The one-sentence version
 
-**Threads can be fully unattended the day two secrets exist. Instagram can be too — except
-for Reels, which need a public video file and have nowhere to live at ₦0 yet.**
+**Threads can be fully unattended the day two secrets exist. Instagram can be too — Reels
+included, since 16 Oct 2026, by Meta's resumable upload through the Facebook lane (see
+"Reels" below): no public video file, no host, ₦0.**
 
 That is the whole asymmetry, and it comes from one design fact on Meta's side: a Threads post
 can be *text*, while every Instagram container (photo, carousel, Reel, Story) is a **URL that
@@ -234,16 +235,90 @@ expires in eight weeks.
 
 ---
 
+## Reels — researched to the thin details, then built the documented way (16 Oct 2026)
+
+**The question was "what is the best way at ₦0?", and the honest answer is: no host at all.**
+
+### Why not a URL
+
+A URL-based Reel container (`video_url`) makes Meta's servers fetch the file, and since 2025
+that URL must be a direct `200` with the right `Content-Type` — no redirects, no tokens, no
+HTML wrappers (Google-Drive-style links now fail with "Media download has failed"). Every ₦0
+host was checked against that and against "no card, no new account, no bloat":
+
+| Candidate | Card needed | Direct 200, no redirect | What bites |
+|---|---|---|---|
+| docoga.com.ng itself (Workers static assets) | no | yes | 25 MiB per file; a deploy race with every other push; CDN terms say video belongs on the paid Developer Platform products (grey, low volume) |
+| Cloudflare R2 | **yes**, even for the free 10 GB | yes | the card |
+| Backblaze B2 public bucket | yes (private + presigned link: no) | yes | a new vendor, 1 GB/day |
+| GitHub Releases | no | **no** (302) | rejected by Meta's rule |
+| commit the MP4 to `site/social/` | no | yes | history grows by ~1 GB a year for a file fetched once |
+| Telegram file URL | no | yes | the bot token is in the URL Meta fetches |
+| Internet Archive | no | **no** (302) | — |
+| Cloudinary / Supabase | no | yes | a third vendor and three more secrets for no gain |
+
+### What Meta documents instead
+
+"Upload Video to Meta Servers" (developers.facebook.com → Instagram Platform → Content
+Publishing → Resumable uploads, updated Mar 2026): create the container with
+`upload_type=resumable` and `media_type=REELS` (or `STORIES`), POST the bytes to
+`https://rupload.facebook.com/ig-api-upload/<version>/<container>` with headers
+`Authorization: OAuth <token>`, `offset: 0`, `file_size: <bytes>`, poll
+`GET /<container>?fields=status_code,video_status` (the `uploading_phase.bytes_transferred`
+field is the resume point after a dropped connection), then `media_publish`. Ceiling 1 GB /
+15 minutes; a 45-second MotionStudio render is a few MB.
+
+The one condition: it is **"available only for apps that have implemented Facebook Login for
+Business"** — the `graph.facebook.com` path, with a **Page token** whose Page has the Instagram
+professional account linked, carrying `instagram_basic` + `instagram_content_publish`. That is
+the token the Facebook lane already holds (`FB_PAGE_ACCESS_TOKEN`), which is why the Instagram
+Reel is published by `facebook_autopost.yml`, not by the Instagram lane whose token lives on
+`graph.instagram.com` (no upload endpoint there, by Meta's design).
+
+### How it runs
+
+* **Every daily Facebook run** (09:30 Lagos) starts with `tools/ig_publish.py --probe-reels` —
+  three reads, nothing created: is @docoga.ng linked to the Page
+  (`GET /{page}?fields=instagram_business_account`), which scopes the Page token carries
+  (`/debug_token` with the app token), and does the Instagram node answer a publishing read
+  (`content_publishing_limit`). It prints `IG_REELS_READY=yes|no`, `IG_REELS_MISSING=…`, and the
+  exact fix in one sentence. Not ready = a yellow warning on a green run, never a failure.
+* **Mon + Thu**, after the Facebook Reel is published *and recorded*, the step "Instagram Reel —
+  the same render, by resumable upload" sends the identical MP4 (`--video-file`) with the day's
+  copy as caption, `share_to_feed=true`, and the frame at 1.5 s — the navy title card — as the
+  cover (`thumb_offset`). Guards: Instagram's 30-day frame window in `logs/instagram_sent.json`
+  (`Reel · <title>`), then the account's own caption duplicate guard inside the publisher. The
+  resumable upload retries from `bytes_transferred` on a transport failure; a refused upload is
+  `IG_RESULT=failed` with the container id, no publish, a red run, and an issue that names the
+  cause. The Facebook ledger is committed *before* this step so a red Instagram step can never
+  make the next run publish the Facebook Reel twice.
+* **Switch:** repository variable `IG_REELS` — `on` (default) or `off`.
+* **Manual:** Actions → DocOga Facebook Auto-Post → Run workflow → `mode: reel` publishes the
+  rotation's Reel to both surfaces now (the narrator-resume workflow uses the same path).
+
+### The one-time step, if the probe says "no"
+
+The probe's own line tells you which of these two it is:
+
+1. **`page-link`** — link the Instagram account to the Page: Instagram app → Settings →
+   *Sharing to other apps* → Facebook → choose the DocOga Page (or Page settings → Linked
+   accounts → Instagram → Connect).
+2. **`instagram_basic` / `instagram_content_publish`** — regenerate the Page token in Graph API
+   Explorer with those two boxes ticked in addition to the existing Page ones, Debugger →
+   *Extend* → "Expires: Never", then paste it into the `FB_PAGE_ACCESS_TOKEN` secret (select-all
+   first — a half-replaced paste is the preflight's exit 4). The next 09:30 run prints
+   `IG_REELS_READY=yes` and Monday's Reel goes out on both surfaces.
+
+Nothing else: no bucket, no domain, no card, no new secret.
+
+---
+
 ## What is still not possible, stated rather than quietly dropped
 
-* **Instagram Reels.** A Reel container is `video_url` — a public file. Renders live in
-  gitignored `assets/videos/`, and there is no ₦0 host Meta will accept for video (R2 has a free
-  tier but needs a bucket, a key pair, and a public access setting; the Worker could proxy an
-  upload but that is a new subsystem). The lane therefore refuses `content_type=reel` with
-  `IG_CAUSE=media` in one line, instead of timing out. **Decision, not drift:** say "R2" and I
-  will wire it; say "not yet" and nothing changes.
-* **Facebook Reels**, blocked by the same missing piece (see `FACEBOOK_AUTOMATION.md`), and the
-  same decision unblocks it.
+* ~~Instagram Reels~~ — **wired 16 Oct 2026, ₦0, no host.** See the "Reels" section below for
+  the research, the mechanism, and the one-time token step it needs.
+* ~~Facebook Reels~~ — live since 15 Oct 2026 (`FACEBOOK_AUTOMATION.md`), by the same kind of
+  byte upload.
 * ~~Instagram Stories~~ — **live since 16 Oct 2026.** The daily run renders the same copy as a
   9:16 frame (`site/social/<DAY>-instagram-story.jpg`, `tools/social_card.py --story`) in the same
   commit as the card, posts the feed card first, then the Story (`tools/ig_publish.py --story-url`,
