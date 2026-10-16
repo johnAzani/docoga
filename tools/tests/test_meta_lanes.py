@@ -264,12 +264,29 @@ class ThreadsPublisher(unittest.TestCase):
                 self.assertEqual(len(fake.posts), expect_posts,
                                  "container, then publish only when ready: %s" % out)
 
-    def test_a_read_back_mismatch_is_not_a_success(self):
-        routes = self._routes(extra={"GET /181": ok({"status": "OK", "permalink": "https://x/1",
+    def test_a_read_back_that_differs_is_a_warning_on_a_live_post_not_a_red_run(self):
+        """Run #7, 16 Oct 2026: the post was live and perfect; Threads returned the text with
+        the link rendered differently; the old byte-for-byte check exited 7, the run went red,
+        and the ledger never recorded a post that readers already had."""
+        routes = self._routes(extra={"GET /181": ok({"status": "FINISHED", "permalink": "https://x/1",
                                                      "text": "something else landed"})})
         code, out, _fake = self._publish(routes)
-        self.assertEqual(code, 7)
-        self.assertIn("read-back mismatch", out)
+        self.assertEqual(code, 0, out)
+        self.assertIn("THREADS_RESULT=sent", out)
+        self.assertIn("THREADS_POST_ID=181", out)
+        self.assertIn("::warning title=Threads read-back differs", out)
+        self.assertNotIn("::error", out)
+
+    def test_a_read_back_with_the_link_rewritten_is_the_same_post(self):
+        sent = "Rent receipts are your proof. Read more: https://docoga.com.ng/guides/rent-receipt"
+        for came_back in (sent,
+                          "Rent receipts are your proof. Read more: https://docoga.com.ng/guides/rent-rec…",
+                          "Rent receipts are your proof. Read more:",
+                          "Rent  receipts are your proof.\nRead more: https://l.threads.net/?u=abc"):
+            with self.subTest(came_back=came_back):
+                self.assertTrue(tp.same_words(came_back, sent))
+        self.assertFalse(tp.same_words("A different post entirely", sent))
+        self.assertTrue(tp.same_words("", sent), "no text in the read-back is not a contradiction")
 
     def test_the_exact_words_already_on_the_profile_are_refused_without_writing(self):
         routes = self._routes(recent=[{"text": self.TEXT.upper() + "  ",
