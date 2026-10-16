@@ -58,6 +58,7 @@ THREADS = "https://graph.threads.net/v1.0"
 WORKER = os.environ.get("DOCOGA_WORKER_URL", "https://docoga-pass.johnazani.workers.dev").rstrip("/")
 POST_WINDOW_DAYS = 14
 RANGE_DAYS = 7
+SAID = Path(os.environ.get("DOCOGA_BRAIN_SAID") or (ROOT / "logs" / "brain_said.json"))
 
 
 # ───────────────────────────── http ─────────────────────────────
@@ -383,8 +384,59 @@ def _by_hour(rows, score):
     return {str(h): round(sum(v) / len(v), 2) for h, v in sorted(buckets.items()) if v}
 
 
-def kpis(channels):
+def _date_wat(iso):
+    s = str(iso or "").replace("Z", "+00:00")
+    if len(s) >= 5 and s[-5] in "+-" and s[-3] != ":":
+        s = s[:-2] + ":" + s[-2:]
+    try:
+        return datetime.fromisoformat(s).astimezone(WAT).date().isoformat()
+    except ValueError:
+        return None
+
+
+def load_said(path=None):
+    try:
+        data = json.loads(Path(path or SAID).read_text(encoding="utf-8"))
+        return {str(e.get("date")): e for e in data if isinstance(e, dict) and e.get("date")}
+    except (OSError, ValueError):
+        return {}
+
+
+def learning(channels, said=None):
+    """What the brain's own choices earned: average engagement by hook, post type and reader.
+
+    Each post is joined to the pack the brain wrote for that Lagos date (logs/brain_said.json).
+    Days the rotation posted (no pack) are counted under 'rotation', so the brain is also measured
+    against the hand-written baseline it replaced. Scores are the same per-channel scores the
+    best-post lists use, so a hook that earns sends on Facebook shows as such."""
+    said = load_said() if said is None else said
+    scorers = {
+        "facebook": ("posts", lambda p: (p.get("shares") or 0) * 3 + (p.get("comments") or 0) * 2 + (p.get("reactions") or 0)),
+        "instagram": ("media", lambda m: (m.get("shares") or 0) * 3 + (m.get("saved") or 0) * 2 + (m.get("comments") or 0) * 2 + (m.get("likes") or 0)),
+        "threads": ("posts", lambda p: (p.get("replies") or 0) * 3 + (p.get("reposts") or 0) * 3 + (p.get("quotes") or 0) * 3 + (p.get("likes") or 0)),
+    }
+    out = {"hook_type": {}, "post_type": {}, "reader": {}, "source": {}}
+    for ch, (key, score) in scorers.items():
+        for row in ((channels.get(ch) or {}).get(key) or []):
+            day = _date_wat(row.get("at"))
+            pack = said.get(day) if day else None
+            labels = {"hook_type": (pack or {}).get("hook_type") or "rotation",
+                      "post_type": (pack or {}).get("post_type") or "rotation",
+                      "reader": (pack or {}).get("reader") or ("rotation" if not pack else "unnamed"),
+                      "source": "brain" if pack else "rotation"}
+            for dim, label in labels.items():
+                bucket = out[dim].setdefault(label, {"n": 0, "total": 0.0})
+                bucket["n"] += 1
+                bucket["total"] += float(score(row) or 0)
+    for dim in out:
+        for label, b in out[dim].items():
+            b["avg"] = round(b["total"] / b["n"], 1) if b["n"] else 0.0
+    return out
+
+
+def kpis(channels, said=None):
     k = {}
+    k["learning"] = learning(channels, said)
     fb = channels.get("facebook") or {}
     if fb:
         posts = fb.get("posts") or []
@@ -543,6 +595,25 @@ def orders(k, grades, streak=None):
         else:
             out.append("Sales are behind: the cited know-your-rights posts carry the send line and the document name; no "
                        "discounts, no new prices — reach first, then the paper.")
+    learn = k.get("learning") or {}
+    hooks = {h: b for h, b in (learn.get("hook_type") or {}).items() if h != "rotation" and b.get("n", 0) >= 2}
+    if len(hooks) >= 2:
+        ranked = sorted(hooks.items(), key=lambda kv: -kv[1]["avg"])
+        best, worst = ranked[0], ranked[-1]
+        if best[1]["avg"] > 0 and best[1]["avg"] >= 1.5 * max(worst[1]["avg"], 0.1):
+            out.append("Hooks, by what they earned this fortnight: %s — use %s on two of the four cited days; "
+                       "rest %s for two weeks." % (", ".join("%s %.0f (n=%d)" % (h, b["avg"], b["n"]) for h, b in ranked),
+                                                  best[0], worst[0]))
+    readers = {r: b for r, b in (learn.get("reader") or {}).items() if r not in ("rotation", "unnamed") and b.get("n", 0) >= 2}
+    if len(readers) >= 2:
+        ranked = sorted(readers.items(), key=lambda kv: -kv[1]["avg"])
+        out.append("Readers, by what they earned: %s — write to %s again this week on a new theme; do not drop the others."
+                   % (", ".join("%s %.0f" % (r.title(), b["avg"]) for r, b in ranked), ranked[0][0].title()))
+    src = learn.get("source") or {}
+    if src.get("brain", {}).get("n", 0) >= 3 and src.get("rotation", {}).get("n", 0) >= 3:
+        b, r = src["brain"]["avg"], src["rotation"]["avg"]
+        out.append("Brain-written days averaged %.0f against %.0f for rotation days (%s)."
+                   % (b, r, "keep going" if b >= r else "the hand-written baseline is winning — study its hooks"))
     if k.get("instagram.online_peak_hours_wat"):
         hrs = k["instagram.online_peak_hours_wat"]
         out.append("Instagram followers are online most at %s WAT — the evening lanes should sit inside that window."
@@ -582,7 +653,7 @@ def previous_week(history, now):
     return older[-1] if older else None
 
 
-def build(http=None, env=None, now=None, history=None, goals=None, stats_path=YT_STATS):
+def build(http=None, env=None, now=None, history=None, goals=None, stats_path=YT_STATS, said=None):
     http = http or _http
     env = dict(os.environ) if env is None else env
     now = now or datetime.now(timezone.utc)
@@ -597,7 +668,7 @@ def build(http=None, env=None, now=None, history=None, goals=None, stats_path=YT
         "youtube": pull_youtube(stats_path),
         "sales": pull_sales(http, env, now, problems),
     }
-    k = kpis(channels)
+    k = kpis(channels, said)
     prev = previous_week(history, now)
     grades = grade(k, prev, goals)
     strk = streaks(history, grades)
@@ -640,6 +711,25 @@ def summary_md(snap):
     for g in snap.get("grades") or []:
         mark = {"on_track": "✅", "behind": "🔻", "no_baseline": "⏳ first measurement", "not_measured": "— not measured"}[g["status"]]
         lines.append("| %s | %s | %s | %s |" % (g["label"], _fmt(g.get("actual")), _fmt(g.get("target")), mark))
+    learn = k.get("learning") or {}
+    hooks = {h: b for h, b in (learn.get("hook_type") or {}).items() if h != "rotation" and b.get("n", 0) >= 2}
+    if len(hooks) >= 2:
+        ranked = sorted(hooks.items(), key=lambda kv: -kv[1]["avg"])
+        best, worst = ranked[0], ranked[-1]
+        if best[1]["avg"] > 0 and best[1]["avg"] >= 1.5 * max(worst[1]["avg"], 0.1):
+            out.append("Hooks, by what they earned this fortnight: %s — use %s on two of the four cited days; "
+                       "rest %s for two weeks." % (", ".join("%s %.0f (n=%d)" % (h, b["avg"], b["n"]) for h, b in ranked),
+                                                  best[0], worst[0]))
+    readers = {r: b for r, b in (learn.get("reader") or {}).items() if r not in ("rotation", "unnamed") and b.get("n", 0) >= 2}
+    if len(readers) >= 2:
+        ranked = sorted(readers.items(), key=lambda kv: -kv[1]["avg"])
+        out.append("Readers, by what they earned: %s — write to %s again this week on a new theme; do not drop the others."
+                   % (", ".join("%s %.0f" % (r.title(), b["avg"]) for r, b in ranked), ranked[0][0].title()))
+    src = learn.get("source") or {}
+    if src.get("brain", {}).get("n", 0) >= 3 and src.get("rotation", {}).get("n", 0) >= 3:
+        b, r = src["brain"]["avg"], src["rotation"]["avg"]
+        out.append("Brain-written days averaged %.0f against %.0f for rotation days (%s)."
+                   % (b, r, "keep going" if b >= r else "the hand-written baseline is winning — study its hooks"))
     if k.get("instagram.online_peak_hours_wat"):
         lines += ["", "Instagram followers online most at: " + ", ".join("%02d:00 WAT" % h for h in k["instagram.online_peak_hours_wat"])]
     for ch in ("facebook", "instagram", "threads"):
@@ -647,6 +737,12 @@ def summary_md(snap):
         if by_hour:
             top = sorted(by_hour.items(), key=lambda kv: -kv[1])[:3]
             lines.append("%s engagement by posting hour (WAT): %s" % (ch.title(), ", ".join("%s:00 → %s" % kv for kv in top)))
+    learn = k.get("learning") or {}
+    rows = [(dim, label, b) for dim in ("hook_type", "post_type", "reader", "source")
+            for label, b in sorted((learn.get(dim) or {}).items(), key=lambda kv: -kv[1].get("avg", 0)) if b.get("n")]
+    if rows:
+        lines += ["", "### What the brain's choices earned (avg engagement score, posts)", "| Dimension | Choice | Avg | n |", "|---|---|---|---|"]
+        lines += ["| %s | %s | %s | %d |" % (dim, label, b.get("avg"), b.get("n")) for dim, label, b in rows]
     lines += ["", "### Orders for the coming week"] + ["- " + o for o in snap.get("orders") or []]
     if snap.get("problems"):
         lines += ["", "### Not measured (and why)"] + ["- " + p for p in snap["problems"]]

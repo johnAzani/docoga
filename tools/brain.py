@@ -227,6 +227,7 @@ OUTPUT — one JSON object with exactly these keys:
   "state": "{ctx['state']}" or null if the post makes no legal claim,
   "claims": [{{"text": "the legal sentence as it appears in the post", "fact_id": "an id from the shelf"}}],
   "reader": one of {list(PERSONAS)} — the person from AUDIENCE this day is written to,
+  "tool": one of {list(drafts.TOOLS)} or null — the ONE document the post points at; the renderer links straight to that tool's page for the post's state,
   "post": {{"headline": "<= {HEADLINE_MAX} characters, sentence case", "lines": ["2 to 5 lines, each <= {LINE_MAX} characters"],
            "cta": "<= {CTA_MAX} characters: the send/forward/reply line naming a receiver or a five-word answer, e.g. 'Send this to the friend whose rent is due in January.' or 'Which state are you renting in? Tell us below.'",
            "hashtags": ["#DocOga", "3 to 5 total"]}},
@@ -311,6 +312,9 @@ def lint(pack, ctx, said):
     full = drafts.post_text({**pack, "post": {"headline": headline, "lines": lines}}) if headline else ""
     if full and len(full) > POST_MAX:
         p.append("the post is %d characters with link and disclaimer; max %d" % (len(full), POST_MAX))
+    tool = pack.get("tool")
+    if tool is not None and str(tool).strip().lower() not in drafts.TOOLS:
+        p.append("tool must be one of %s or null" % ", ".join(drafts.TOOLS))
     cta = str(post.get("cta") or "").strip()
     if not cta:
         p.append("post.cta is missing — the send/forward/reply line is how a post travels")

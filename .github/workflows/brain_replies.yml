@@ -1,0 +1,137 @@
+# Brain replies — the community manager. Every comment under our posts answered within
+# about ninety minutes, from the facts the post was built on, three times a day.
+#
+# Research, 17 Oct 2026: on Threads the replies are worth as much as the posts and the
+# first 30–90 minutes decide a post's reach; Facebook ranks on back-and-forth comments;
+# Instagram ranks on the conversation under a post as well as on sends. A Page that
+# posts and leaves is a billboard. This lane makes it a person who answers.
+#
+# One Gemini call per run (free tier), every reply gated like a post (≤280 chars, only
+# that state's cited sections, no price but ours, no "stop paying", no court promises,
+# only docoga.com.ng links, abuse skipped). The run never goes red for a missing
+# permission: it names the exact scope in the summary and answers on the channels it can.
+#
+#   Threads    threads_read_replies + threads_content_publish
+#   Instagram  instagram_business_manage_comments (Instagram Login)
+#   Facebook   pages_read_engagement + pages_manage_engagement
+name: Brain replies
+
+on:
+  schedule:
+    - cron: '40 10 * * *'         # 11:40 WAT — after the Facebook morning post (09:30)
+    - cron: '40 13 * * *'         # 14:40 WAT — after Threads (13:10)
+    - cron: '40 19 * * *'         # 20:40 WAT — after Instagram (19:10) and the evening Story
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Read and draft, publish nothing, commit nothing'
+        required: false
+        default: false
+        type: boolean
+      platform:
+        description: 'Only this platform (blank = all three)'
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: write        # logs/brain_replied.json
+
+concurrency:
+  group: docoga-brain
+  cancel-in-progress: false
+
+jobs:
+  answer:
+    name: Answer the comments
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      TZ: Africa/Lagos
+      REPLIES_DRY_RUN: ${{ inputs.dry_run }}
+      REPLIES_PLATFORM: ${{ inputs.platform }}
+      SOCIAL_TOKEN_KEY: ${{ secrets.SOCIAL_TOKEN_KEY }}
+      IG_API_PATH: ${{ vars.IG_API_PATH || 'instagram-login' }}
+      DOCOGA_BRAIN: ${{ vars.DOCOGA_BRAIN || 'on' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          ref: main
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install the vault's one dependency
+        run: python3 -m pip install --quiet cryptography
+
+      - name: Open the Instagram and Threads vault boxes
+        env:
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
+        run: |
+          set -u
+          umask 077
+          if [ -f logs/ig_access_token.box ] && python3 tools/token_vault.py open --name IG_ACCESS_TOKEN --out /tmp/ig_token; then
+            echo "IG_TOKEN_FILE=/tmp/ig_token" >> "$GITHUB_ENV"
+          elif [ -n "${IG_ACCESS_TOKEN:-}" ]; then
+            printf '%s' "$IG_ACCESS_TOKEN" > /tmp/ig_token && chmod 600 /tmp/ig_token
+            echo "IG_TOKEN_FILE=/tmp/ig_token" >> "$GITHUB_ENV"
+          fi
+          if [ -f logs/threads_token.box ] && python3 tools/token_vault.py open --name THREADS_ACCESS_TOKEN --out /tmp/threads_token; then
+            echo "THREADS_TOKEN_FILE=/tmp/threads_token" >> "$GITHUB_ENV"
+          elif [ -n "${THREADS_ACCESS_TOKEN:-}" ]; then
+            printf '%s' "$THREADS_ACCESS_TOKEN" > /tmp/threads_token && chmod 600 /tmp/threads_token
+            echo "THREADS_TOKEN_FILE=/tmp/threads_token" >> "$GITHUB_ENV"
+          fi
+          echo "vault step done (tokens, if any, are in 0600 files; never printed)"
+
+      - name: Read, draft, gate, answer
+        id: answer
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          FB_PAGE_ACCESS_TOKEN: ${{ secrets.FB_PAGE_ACCESS_TOKEN }}
+          FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
+        run: |
+          set +e
+          if [ "$DOCOGA_BRAIN" = "off" ]; then
+            echo "DOCOGA_BRAIN=off — the community manager stays quiet" | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          ARGS=""
+          if [ "$REPLIES_DRY_RUN" = "true" ]; then ARGS="$ARGS --dry-run"; fi
+          if [ -n "$REPLIES_PLATFORM" ]; then ARGS="$ARGS --platform $REPLIES_PLATFORM"; fi
+          python3 tools/brain_replies.py run $ARGS
+          CODE=$?
+          echo "code=$CODE" >> "$GITHUB_OUTPUT"
+          if [ "$CODE" = "6" ]; then
+            echo "::notice title=Gemini quota spent::pending replies wait for the next slot"
+          elif [ "$CODE" != "0" ]; then
+            echo "::warning title=Replies lane error::exit $CODE — see the log"
+          fi
+          exit 0
+
+      - name: Commit the reply ledger
+        if: ${{ env.REPLIES_DRY_RUN != 'true' }}
+        env:
+          BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          git add -A logs/brain_replied.json 2>/dev/null || true
+          if git diff --staged --quiet; then
+            echo "nothing new to commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -m "Brain replies: $(date +%Y-%m-%d\ %H:%M) WAT [skip ci]"
+          if ! git pull --rebase --autostash origin "$BRANCH"; then
+            echo "::warning title=Reply ledger not committed::could not rebase on $BRANCH — next run may re-read answered comments, but it checks the platform's own reply list first"
+            exit 0
+          fi
+          if ! git push origin "HEAD:$BRANCH"; then
+            echo "::warning title=Reply ledger not pushed::did not reach $BRANCH"
+            exit 0
+          fi
+          echo "✅ pushed to $BRANCH"

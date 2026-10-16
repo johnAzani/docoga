@@ -11,3 +11,4 @@ The standing editor's memory. Read `docs/BRAIN.md` first.
 - `drafts/` — approved packs, one JSON per day, consumed by the posting lanes. Pruned after 10 days.
 
 Kill switch for every lane at once: repository variable `DOCOGA_BRAIN=off` (the hand-written rotation posts instead).
+- `../logs/brain_replied.json` — every comment the community manager answered (platform, comment, reply, why). Written by `brain_replies.yml`; delete a row and the comment is re-read, but the lane also checks the platform's own reply list before answering.

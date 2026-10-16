@@ -52,6 +52,7 @@ def good_pack(day=MONDAY, **over):
                  "cta": "Send this to the friend whose rent is due in January.",
                  "hashtags": ["#DocOga", "#TenantRights", "#Lagos", "#NoticeToQuit"]},
         "reader": "ngozi",
+        "tool": "notice-to-quit",
         "threads": {"text": "Yearly tenant in Lagos? The law gives you six months' notice, not three. "
                             "s.13(1)(e), Tenancy Law 2011. Count the months on the paper before you pack. "
                             "How many months did your last notice give you?",
@@ -202,6 +203,18 @@ class GateTests(Sandbox):
         self.assertEqual(brain.lint(good_pack(post=post), self.ctx(), []), [])
         self.assertIn("Tag the friend who paid cash with no receipt.", brain_drafts.post_text(good_pack(post=post)),
                       "the send line is in the copy the lanes post and the card renders")
+
+    def test_the_post_links_to_the_state_page_for_its_tool_and_never_to_a_404(self):
+        """17 Oct 2026: one tap less between the post and the paper."""
+        self.assertTrue(brain_drafts.post_text(good_pack()).endswith("https://docoga.com.ng/notice-to-quit-lagos.html"))
+        self.assertIn("notice-to-quit-lagos.html", brain_drafts.threads_text(good_pack()))
+        self.assertTrue(brain_drafts.post_text(good_pack(state="kwara")).endswith("notice-to-quit-nigeria.html"),
+                        "no Kwara page → the national guide")
+        self.assertTrue(brain_drafts.post_text(good_pack(tool="payslip")).endswith("https://docoga.com.ng"),
+                        "no payslip page → the homepage")
+        self.assertTrue(brain_drafts.post_text(good_pack(tool=None)).endswith("https://docoga.com.ng"))
+        self.assertTrue(any("tool must be one of" in p for p in brain.lint(good_pack(tool="lease"), self.ctx(), [])))
+        self.assertEqual(brain.lint(good_pack(tool=None), self.ctx(), []), [])
 
     def test_a_threads_post_that_does_not_end_with_a_question_is_refused(self):
         pack = good_pack(threads={"text": "Yearly tenant in Lagos? Six months' notice, not three. Count the months.",

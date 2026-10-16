@@ -73,7 +73,7 @@ What the merge turns on, exactly:
 | `telegram_autopost.yml` | 08:00 UTC daily (09:00 WAT) | post one text/tip card to `@docogadaily`, record it in `logs/telegram_sent.json`, and cross-check the channel page first |
 | `facebook_autopost.yml` | 08:30 UTC daily | post to the Page, and to Reels when a render exists; asks Graph API before repeating itself |
 | `youtube_scheduled.yml` | 17:00 UTC Tue & Fri | render → upload → read back → record `logs/youtube_published.json` |
-| `automation-heartbeat.yml` | 18:00 UTC daily | judge each lane from run history **and** the ledgers; file/update/close one issue |
+| `automation-heartbeat.yml` | 20:00 UTC daily | judge each lane from run history **and** the ledgers; file/update/close one issue |
 | `threads_autopost.yml` | 08:45 UTC daily | needs two secrets (step 5). Until they exist it files **one** `[setup]` issue and stops — it does not pretend. |
 | `instagram_autopost.yml` | 09:00 UTC daily | same contract: `[setup]` issue until `IG_ACCESS_TOKEN` exists, then a card on the profile with the render committed under `site/social/`. |
 
