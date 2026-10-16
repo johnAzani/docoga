@@ -613,7 +613,7 @@ class InstagramPublisher(unittest.TestCase):
     def _base_routes(self, extra=None):
         routes = {
             "GET /me": (200, json.dumps({"user_id": "1784", "username": "docogadaily",
-                                         "profile_type": "BUSINESS", "media_count": 12})),
+                                         "account_type": "BUSINESS", "media_count": 12})),
             "GET /1784/content_publishing_limit": (200, json.dumps(
                 {"data": [{"quota_usage": 2, "config": {"quota_total": 100}}]})),
             "GET /1784/media": (200, json.dumps({"data": []})),
@@ -681,13 +681,42 @@ class InstagramPublisher(unittest.TestCase):
 
     def test_a_personal_account_is_refused_with_the_real_reason(self):
         routes = self._base_routes({"GET /me": (200, json.dumps(
-            {"user_id": "1784", "username": "me", "profile_type": "PERSONAL"}))})
+            {"user_id": "1784", "username": "me", "account_type": "PERSONAL"}))})
         code, out, _fake = self._publish(routes, ["--probe"])
         self.assertEqual(code, 3)
         self.assertIn("professional", out.lower())
 
+    def test_probe_asks_for_fields_that_exist_and_accepts_a_creator(self):
+        """16 Oct 2026, first real probe: `(#100) Tried accessing nonexisting field
+        (profile_type)`. The field is `account_type`; creators come back as MEDIA_CREATOR."""
+        routes = self._base_routes({"GET /me": (200, json.dumps(
+            {"user_id": "1784", "username": "me", "account_type": "MEDIA_CREATOR",
+             "media_count": 3}))})
+        code, out, fake = self._publish(routes, ["--probe"])
+        self.assertEqual(code, 0, out)
+        me = [q for m, url, q in fake.calls if url.endswith("/me")]
+        self.assertTrue(me)
+        self.assertNotIn("profile_type", me[0])
+        self.assertIn("account_type", me[0])
+        self.assertIn("profile MEDIA_CREATOR", out)
+        self.assertNotIn("::warning title=account_type", out)
+
+    def test_refresh_uses_the_refresh_endpoint_not_the_exchange(self):
+        """`/access_token` is the short→long exchange and answers "client_secret is required"
+        — the first real run's warning. A long-lived token is wound forward with
+        `/refresh_access_token` and nothing but the token."""
+        routes = self._base_routes({"GET /refresh_access_token": (200, json.dumps(
+            {"access_token": "NEwTOKENvalue", "expires_in": 5184000}))})
+        code, out, fake = self._publish(routes, ["--refresh-token"])
+        self.assertEqual(code, 0, out)
+        hits = [(url, q) for m, url, q in fake.calls if "access_token" in url]
+        self.assertEqual(len(hits), 1, fake.calls)
+        self.assertTrue(hits[0][0].endswith("/refresh_access_token"), hits[0][0])
+        self.assertIn("grant_type=ig_refresh_token", hits[0][1])
+        self.assertNotIn("client_secret", hits[0][1])
+
     def test_refresh_never_prints_the_credential_it_used(self):
-        routes = self._base_routes({"GET /access_token": (200, json.dumps(
+        routes = self._base_routes({"GET /refresh_access_token": (200, json.dumps(
             {"access_token": "NEwTOKENvalue", "expires_in": 5184000}))})
         code, out, _fake = self._publish(routes, ["--refresh-token"])
         self.assertEqual(code, 0, out)
