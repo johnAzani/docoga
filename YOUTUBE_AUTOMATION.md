@@ -168,12 +168,17 @@ screen in brackets at each step.
       Client secret from step 4 → close the panel. *(Without this tick the
       Playground uses Google's demo client and revokes the token within 24 h.)*
    2. In **Step 1**, scroll past the list to the **Input your own scopes** box and
-      paste, space-separated:
-      `https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly`
+      paste **one** scope:
+      `https://www.googleapis.com/auth/youtube.force-ssl`
+      *(Since 16 Oct 2026. It is a superset of the two the lane first used —
+      `youtube.upload` + `youtube.readonly` — and it is what lets
+      `.github/workflows/youtube_manage.yml` delete, unlist and re-publish videos
+      from a plan file; a token with only the old pair uploads fine and answers
+      `insufficientPermissions` to a delete.)*
       → **Authorize APIs** → pick the Google account that **owns the DocOga
       channel** (check the account picker — the wrong account mints a token for a
       channel with zero videos) → *"Google hasn't verified this app"* →
-      **Continue** → tick both permissions → **Continue**.
+      **Continue** → tick the permission → **Continue**.
    3. In **Step 2**, click **Exchange authorization code for tokens**. Copy the
       **Refresh token** (starts with `1//`). The access token beside it is
       irrelevant; it dies in an hour by design.
@@ -193,6 +198,20 @@ screen in brackets at each step.
    channel and last upload": the log ends with* `✅ probe complete — a token
    works, the channel is named, and uploads are not held.` *If it instead prints*
    `↳ fix:`, *do what that line says — it was written for this exact failure.]*
+
+## Deleting, unlisting, re-publishing — the plan file (since 16 Oct 2026)
+
+Owner: "I want you to be able to delete it." `logs/youtube_cleanup_plan.txt` is the
+instruction and `.github/workflows/youtube_manage.yml` is the hand: a line such as
+`delete n45ufAFv5OM` or `unlist 2ruPSaR8-M0 oBsWKR4AUNA` merged to main runs
+`tools/yt_manage.py`, which reads each video first (already gone / already unlisted
+is a success, not a retry), sends `videos.update` with the whole status object so
+`embeddable`/`license` are not reset by omission, and records every finished line in
+`logs/youtube_manage.json` — so the plan is idempotent and a re-run is always safe.
+It checks the token's scopes before touching anything: without `youtube.force-ssl` it
+stops at exit 2 with the re-consent line above, the plan stays pending, and the next
+push or dispatch applies it. Manual: Actions → **DocOga YouTube Manage** → Run
+workflow, with an inline plan or `dry_run`.
 
 ## Content safeguards
 
