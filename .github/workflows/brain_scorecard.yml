@@ -30,6 +30,7 @@ on:
 
 permissions:
   contents: write        # logs/scorecard.json, brain/feedback.md
+  issues: write          # ONE living issue "📊 Weekly scorecard" — updated, never multiplied (owner reads on his phone)
 
 concurrency:
   group: docoga-brain
@@ -91,14 +92,50 @@ jobs:
         run: |
           set +e
           if [ "$SCORECARD_DRY_RUN" = "true" ]; then
-            python3 tools/brain_scorecard.py pull --dry-run
+            python3 tools/brain_scorecard.py pull --dry-run --summary-file /tmp/scorecard.md
           else
-            python3 tools/brain_scorecard.py pull
+            python3 tools/brain_scorecard.py pull --summary-file /tmp/scorecard.md
           fi
           CODE=$?
           echo "code=$CODE" >> "$GITHUB_OUTPUT"
+          cat /tmp/scorecard.md >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
           if [ "$CODE" = "2" ]; then
             echo "::warning title=Scorecard measured nothing::no channel could be read this week — check the token lines in the summary"
+          fi
+          exit 0
+
+      - name: Keep the one weekly scorecard issue current (the owner's phone view)
+        if: ${{ env.SCORECARD_DRY_RUN != 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set +e
+          [ -s /tmp/scorecard.md ] || { echo "no summary to post"; exit 0; }
+          WEEK="$(date +%G-W%V)"
+          TITLE="📊 Weekly scorecard"
+          {
+            echo "_Updated every Monday 06:40 WAT by the brain scorecard. Latest: week $WEEK — [run]($RUN_URL)._"
+            echo
+            cat /tmp/scorecard.md
+            echo
+            echo "---"
+            echo "Nothing to do here unless an order asks for a tap. Close it and it will be reopened next Monday."
+          } > /tmp/issue_body.md
+          gh label create brain-scorecard --color 1d4ed8 --description "the brain's weekly numbers" --force >/dev/null 2>&1 || true
+          NUM="$(gh issue list --repo "$REPO" --label brain-scorecard --state open --json number,title \
+                 --jq '[.[] | select(.title | startswith("📊 Weekly scorecard"))][0].number' 2>/dev/null)"
+          if [ -n "$NUM" ] && [ "$NUM" != "null" ]; then
+            gh issue edit "$NUM" --repo "$REPO" --body-file /tmp/issue_body.md >/dev/null \
+              || gh api -X PATCH "repos/$REPO/issues/$NUM" -F body=@/tmp/issue_body.md >/dev/null
+            gh issue comment "$NUM" --repo "$REPO" --body-file /tmp/scorecard.md >/dev/null \
+              && echo "✅ issue #$NUM updated and commented (week $WEEK)" \
+              || echo "::warning title=Scorecard issue not updated::#$NUM — the grades are still in the run summary"
+          else
+            gh issue create --repo "$REPO" --title "$TITLE" --label brain-scorecard --body-file /tmp/issue_body.md \
+              && echo "✅ weekly scorecard issue opened" \
+              || echo "::warning title=Scorecard issue not created::the grades are still in the run summary"
           fi
           exit 0
 

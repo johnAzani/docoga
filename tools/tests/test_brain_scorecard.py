@@ -119,7 +119,7 @@ class PullTests(unittest.TestCase):
     def build(self, routes=None, env=None, history=None, fail=()):
         net = FakeNet(routes or full_routes(), fail=fail)
         snap = sc.build(http=net, env=ENV if env is None else env, now=NOW, history=history or [],
-                        goals=sc.load_goals(), stats_path=self.stats)
+                        goals=sc.load_goals(), stats_path=self.stats, said={})
         return snap, net
 
     def test_every_channel_is_measured_from_the_2026_metric_names(self):
@@ -204,6 +204,46 @@ class PullTests(unittest.TestCase):
         login = next(c for c in net.calls if c[1].endswith("/admin/login"))
         self.assertEqual(login[3], {"pass": "open-sesame"})
         self.assertEqual(snap["channels"]["sales"]["passes_28d"], 1 + 9)
+
+
+class LearningTests(unittest.TestCase):
+    """The brain is measured against its own choices and against the rotation it replaced."""
+
+    def channels(self):
+        return {"facebook": {"posts": [
+            {"at": "2026-10-15T08:31:00+0000", "shares": 12, "comments": 5, "reactions": 40},   # Thu 15 → STAKES/ngozi
+            {"at": "2026-10-16T08:31:00+0000", "shares": 1, "comments": 1, "reactions": 10},    # Fri 16 → QUESTION/okafor
+            {"at": "2026-10-17T08:31:00+0000", "shares": 9, "comments": 4, "reactions": 30},    # Sat 17 → STAKES/ngozi
+            {"at": "2026-10-18T08:31:00+0000", "shares": 0, "comments": 2, "reactions": 8},     # Sun 18 → QUESTION/okafor
+            {"at": "2026-10-13T23:30:00+0000", "shares": 2, "comments": 0, "reactions": 5},     # 00:30 WAT on the 14th → rotation
+        ]}}
+
+    def said(self):
+        return {"2026-10-15": {"hook_type": "STAKES", "post_type": "story", "reader": "ngozi"},
+                "2026-10-16": {"hook_type": "QUESTION", "post_type": "promo", "reader": "okafor"},
+                "2026-10-17": {"hook_type": "STAKES", "post_type": "checklist", "reader": "ngozi"},
+                "2026-10-18": {"hook_type": "QUESTION", "post_type": "engagement", "reader": "okafor"}}
+
+    def test_posts_are_joined_to_the_pack_of_their_lagos_date(self):
+        learn = sc.learning(self.channels(), self.said())
+        self.assertEqual(learn["hook_type"]["STAKES"]["n"], 2)
+        self.assertEqual(learn["hook_type"]["STAKES"]["avg"], (86 + 65) / 2)
+        self.assertEqual(learn["hook_type"]["QUESTION"]["avg"], (15 + 12) / 2)
+        self.assertEqual(learn["source"]["rotation"]["n"], 1, "23:30 UTC on the 13th is the 14th in Lagos — no pack, so rotation")
+        self.assertEqual(learn["reader"]["ngozi"]["n"], 2)
+
+    def test_orders_name_the_hook_and_reader_that_earned_the_most(self):
+        k = {"learning": sc.learning(self.channels(), self.said())}
+        text = "\n".join(sc.orders(k, []))
+        self.assertIn("use STAKES on two of the four cited days", text)
+        self.assertIn("rest QUESTION", text)
+        self.assertIn("write to Ngozi again", text)
+
+    def test_one_post_per_hook_is_not_evidence(self):
+        ch = {"facebook": {"posts": [{"at": "2026-10-15T08:31:00+0000", "shares": 12},
+                                     {"at": "2026-10-16T08:31:00+0000", "shares": 0}]}}
+        text = "\n".join(sc.orders({"learning": sc.learning(ch, self.said())}, []))
+        self.assertNotIn("Hooks, by what they earned", text, "n=1 per hook says nothing; the order waits for two")
 
 
 class GradeTests(unittest.TestCase):
@@ -298,7 +338,12 @@ class WorkflowContractTests(unittest.TestCase):
         doc = yaml.safe_load(text)
         on = doc[True] if True in doc else doc["on"]
         self.assertEqual(on["schedule"][0]["cron"], "40 5 * * 1", "after youtube_stats (05:00 UTC Monday)")
-        self.assertEqual(doc["permissions"], {"contents": "write"}, "no issues: write — a missing number is not an incident")
+        self.assertEqual(doc["permissions"], {"contents": "write", "issues": "write"},
+                         "issues: write is for the ONE living '📊 Weekly scorecard' issue, never a new issue per week")
+        text = (ROOT / ".github" / "workflows" / "brain_scorecard.yml").read_text(encoding="utf-8")
+        self.assertIn("--label brain-scorecard", text)
+        self.assertIn("gh issue edit", text, "an existing scorecard issue is updated in place")
+        self.assertIn("gh issue comment", text, "and commented, so the owner's phone gets one notification a week")
         steps = " ".join(s.get("run", "") for s in doc["jobs"]["measure"]["steps"])
         self.assertIn("brain_scorecard.py pull", steps)
         self.assertIn("brain.py feedback", steps)

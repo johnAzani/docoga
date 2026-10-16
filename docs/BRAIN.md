@@ -63,6 +63,42 @@ Facebook post 09:30 stay. The scorecard records the hour each post went out, its
 engagement by hour, and Instagram's `online_followers` curve, so the slots are
 corrected from evidence.
 
+## The community manager, the learning loop and the deep links (17 Oct 2026)
+**Replies.** `tools/brain_replies.py` + `.github/workflows/brain_replies.yml` (11:40 /
+14:40 / 20:40 WAT, ninety minutes after each posting slot). Lists our last three days of
+posts on Threads (`/me/threads` → `/{id}/replies`), Instagram (`/me/media` →
+`/{id}/comments`) and the Facebook Page (`/{page}/posts` → `/{id}/comments?filter=toplevel`);
+drops our own comments, already-answered ones (ledger `logs/brain_replied.json` *and* the
+platform's own reply list), emoji-only and abusive ones; asks Gemini once for all pending
+replies with each post's text, the pack of that day (state, reader, the facts it cited) and
+the deep link; gates every reply (`lint_reply`: ≤280 chars, sections must be on that
+state's shelf, no price but ₦2,000/free, no "stop paying"/"you will win"/"guarantee", only
+docoga.com.ng links, no markdown/hashtags, no "as an AI"); publishes — Threads as a
+container with `reply_to_id` then `threads_publish`, Instagram `POST /{comment}/replies`,
+Facebook `POST /{comment}/comments`. Capability detection: a permission error (OAuth code
+10/200/190, HTTP 401/403, "permission" in the message) stops that platform for the run and
+the summary names the scope — `threads_read_replies`, `instagram_business_manage_comments`,
+`pages_manage_engagement` — so the owner knows exactly which token to re-mint. Exit 6 when
+Gemini's quota is spent (replies wait for the next slot). Kill switch `DOCOGA_BRAIN=off`;
+dispatch inputs `dry_run`, `platform`.
+
+**Learning loop.** `brain_scorecard.learning` joins each Facebook/Instagram/Threads post to
+the pack the brain wrote for that Lagos date (`logs/brain_said.json`, env
+`DOCOGA_BRAIN_SAID`) and averages the channel's engagement score by `hook_type`,
+`post_type`, `reader` and source (brain vs rotation). The summary carries the table; the
+orders name the best hook and reader once there are two or more posts per label and a 1.5×
+gap. `kpis["learning"]` is in `logs/scorecard.json`, so next week's comparison is free.
+
+**Weekly issue.** The scorecard keeps **one** open issue titled "📊 Weekly scorecard"
+(label `brain-scorecard`): body replaced with the latest summary, one comment added so the
+owner's phone gets one notification a week. `issues: write` was added to that workflow for
+this alone; nothing else opens issues.
+
+**Deep links.** Pack schema gained `tool` (one of `brain_drafts.TOOLS` or null; the lint
+refuses anything else). `brain_drafts.link_for(pack)` → `https://docoga.com.ng/<tool>-<state>.html`
+when that page exists in `site/`, else the national `<tool>-nigeria.html`, else the homepage.
+`post_text`, `threads_text` and every reply use it.
+
 ## The gates (why a legal-documents brand can let a model write)
 1. **Citation** — every legal claim names a fact id on the shelf for the state
    the post names. The shelf is `tools/state_law_data.py`, the same verified,

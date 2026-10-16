@@ -26,11 +26,13 @@ name: Automation Heartbeat
 
 on:
   schedule:
-    # 19:00 in Lagos — after today's 08:00/08:30 UTC lanes and after Tue/Fri's
-    # 17:00 UTC Shorts run, so "nothing arrived today" is judged at the end of the
-    # day rather than the start. It is also after GitHub's measured scheduler delay
-    # has had time to stop looking like a missing run.
-    - cron: '0 18 * * *'
+    # 21:00 in Lagos — after the last lane of the day (the 19:40 UTC replies run,
+    # the 18:40 UTC evening Story, the 18:10 UTC Instagram card, Tue/Fri's 17:00 UTC
+    # Short), so "nothing arrived today" is judged at the end of the day rather than
+    # the start. It is also after GitHub's measured scheduler delay has had time to
+    # stop looking like a missing run. Moved from 18:00 on 17 Oct 2026 when the
+    # evening slots moved later.
+    - cron: '0 20 * * *'
   workflow_dispatch:
     inputs:
       dry_run:

@@ -111,6 +111,33 @@ A goal behind for two weeks running changes the orders (below), not the goal.
 - *Sales flat while reach grows* → promo moves to the payday window; posts name the exact
   document and "two minutes, free to start" in the last line; one testimonial-style scenario.
 - *Everything up* → do not change the mix; rotate states and hooks only.
+- *Learning loop (from 17 Oct 2026)* → every post is joined to the pack the brain wrote that
+  day (`logs/brain_said.json`), so the scorecard knows what each **hook type, post type and
+  reader** actually earned, and what brain days earned against rotation days. With two or
+  more posts per hook and a 1.5× gap, the order names the winner ("use STAKES on two of the
+  four cited days; rest QUESTION for two weeks") and the reader to write to again. One post
+  is not evidence; the order waits.
+
+## Answer every comment within ninety minutes (the lever the numbers point at)
+Threads ranks a post on replies in its first 30–90 minutes and on how deep the conversation
+goes; Facebook ranks on back-and-forth comments of five words or more; Instagram ranks on
+the conversation under a post as much as on sends. A Page that posts and leaves is a
+billboard. So `brain_replies.yml` runs **11:40 / 14:40 / 20:40 WAT** — about ninety minutes
+after the Facebook, Threads and Instagram slots — reads every new top-level comment under
+our last three days of posts, and answers the real ones: the general rule with its section
+(only facts the post itself was built on, only for that state), the document that fixes it,
+the **deep link** to that tool's page for that state, and "which state?" when the state is
+unknown. Praise gets one warm line and a question back; abuse and bait get nothing.
+One Gemini call per run; every reply passes the same gates as a post (≤280 characters, no
+price but ours, no "stop paying rent", no court promises, no link but ours). Ledger:
+`logs/brain_replied.json`. A missing permission is named in the run summary, never a red run.
+
+## Deep links (one tap less between the post and the paper)
+Every pack names its `tool`; `brain_drafts.link_for` turns tool + state into the exact page
+— `docoga.com.ng/notice-to-quit-lagos.html` — falling back to the national guide
+(`*-nigeria.html`) and then the homepage, and never to a page that does not exist. Posts,
+Threads and replies all use it. Facebook penalises links out, so there the link stays in the
+last line and the body carries the value.
 
 ## Sources (Oct 2026 research pass)
 DataReportal Digital 2026 (Nigeria 5.84 days/week; 3 h 18–27 m/day); Kreste Digital 2026

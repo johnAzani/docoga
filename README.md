@@ -43,8 +43,11 @@ no server, 0 Naira/month to run.
   it drafts the next Deep-Dive episode. It is held to a plan (`brain/strategy.md`,
   `brain/audience.md`, `brain/goals.json`): every Monday `brain_scorecard.yml` grades
   followers, sends, replies, hours and — with the `DOCOGA_ADMIN_PASSPHRASE` secret — pass
-  sales against the goals and writes the week's orders into the brain. Handbook:
-  **`docs/BRAIN.md`**. Kill switch: variable `DOCOGA_BRAIN=off`.
+  sales against the goals, learns which hooks and readers actually earned, keeps the one
+  "📊 Weekly scorecard" issue current, and writes the week's orders into the brain.
+  `brain_replies.yml` answers every real comment on Threads, Instagram and Facebook within
+  ~90 minutes of each post, from the post's own cited facts, with a deep link to the exact
+  tool page. Handbook: **`docs/BRAIN.md`**. Kill switch: variable `DOCOGA_BRAIN=off`.
 - `mobile/` — the Android app: a Capacitor shell around `/admin`, built to a
   sideloadable APK by CI (`ADMIN_DASHBOARD.md` §7, `mobile/README.md`)
 
