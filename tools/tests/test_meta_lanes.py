@@ -1038,7 +1038,26 @@ class InstagramReels(unittest.TestCase):
         self.assertEqual(code, 0, out)
         self.assertIn("IG_REELS_READY=no", out)
         self.assertIn("page-link", out)
-        self.assertIn("Sharing to other apps", out)
+        self.assertIn("Linked accounts", out)
+
+    def test_probe_accepts_a_page_linked_only_through_connected_instagram_account(self):
+        """16 Oct 2026: the token had both scopes and had been minted with @docoga.ng selected
+        in the login dialog, and the probe still said `page-link` — because it read only
+        `instagram_business_account`. A Page linked the Accounts-Center way shows the account in
+        `connected_instagram_account`. Both fields are asked for; either one is a link."""
+        page = {"id": "102466208923830", "name": "DocOga",
+                "connected_instagram_account": {"id": "1784", "username": "docoga.ng",
+                                                "media_count": 3}}
+        routes = self.routes(linked=False)
+        routes["GET /102466208923830"] = (200, json.dumps(page))
+        code, out, fake = self.run_ig(routes, ["--probe-reels"],
+                                      {"META_APP_ID": "931", "META_APP_SECRET": "s3"})
+        self.assertEqual(code, 0, out)
+        self.assertIn("IG_REELS_READY=yes", out)
+        self.assertIn("IG_USER_ID=1784", out)
+        page_read = fake.calls[0][2]
+        self.assertIn("instagram_business_account", urllib.parse.unquote(page_read))
+        self.assertIn("connected_instagram_account", urllib.parse.unquote(page_read))
 
     def test_probe_without_app_credentials_still_decides_from_the_reads(self):
         """No META_APP_ID: scopes are unknown, but a linked account whose node answers the

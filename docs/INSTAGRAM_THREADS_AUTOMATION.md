@@ -279,7 +279,8 @@ Reel is published by `facebook_autopost.yml`, not by the Instagram lane whose to
 
 * **Every daily Facebook run** (09:30 Lagos) starts with `tools/ig_publish.py --probe-reels` —
   three reads, nothing created: is @docoga.ng linked to the Page
-  (`GET /{page}?fields=instagram_business_account`), which scopes the Page token carries
+  (`GET /{page}?fields=instagram_business_account,connected_instagram_account` — either field
+  is a link; a Page linked the Accounts-Center way often fills only the second), which scopes the Page token carries
   (`/debug_token` with the app token), and does the Instagram node answer a publishing read
   (`content_publishing_limit`). It prints `IG_REELS_READY=yes|no`, `IG_REELS_MISSING=…`, and the
   exact fix in one sentence. Not ready = a yellow warning on a green run, never a failure.
@@ -303,9 +304,11 @@ Reel is published by `facebook_autopost.yml`, not by the Instagram lane whose to
 
 The probe's own line tells you which of these two it is:
 
-1. **`page-link`** — link the Instagram account to the Page: Instagram app → Settings →
-   *Sharing to other apps* → Facebook → choose the DocOga Page (or Page settings → Linked
-   accounts → Instagram → Connect).
+1. **`page-link`** — link the Instagram account to the Page: on the Page, facebook.com →
+   DocOga Page → Settings → *Linked accounts* → Instagram → **Connect account**; or Instagram
+   app → Settings → *Business tools and controls* → *Connect a Facebook Page* → DocOga. (Since
+   16 Oct 2026 the probe reads both `instagram_business_account` and
+   `connected_instagram_account`, so a link made either way counts.)
 2. **`instagram_basic` / `instagram_content_publish`** — regenerate the Page token in Graph API
    Explorer with those two boxes ticked in addition to the existing Page ones, Debugger →
    *Extend* → "Expires: Never", then paste it into the `FB_PAGE_ACCESS_TOKEN` secret (select-all
