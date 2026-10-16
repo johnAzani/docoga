@@ -366,6 +366,18 @@ class ThreadsPublisher(unittest.TestCase):
                                        "the tail of stderr — an empty warning is a worse lie than "
                                        "a red one")
 
+    def test_a_text_post_states_media_type_text(self):
+        """Run #5, 16 Oct 2026: `(#100) The parameter media_type is required`. Threads does not
+        infer TEXT from the absence of media; the container must say so."""
+        fake = FakeHttp(self._routes())
+        env, token_path = threads_env(self.tmp)
+        with mock.patch.object(tp, "_request", fake):
+            code, out = run_publisher(tp, ["--text", self.TEXT, "--token-file", token_path], env)
+        self.assertEqual(code, 0, out)
+        containers = [q for m, url, q in fake.calls if m == "POST" and url.endswith("/42/threads")]
+        self.assertEqual(len(containers), 1, fake.calls)
+        self.assertIn("media_type=TEXT", containers[0])
+
     def test_whoami_asks_only_for_documented_fields_and_refresh_is_at_the_root(self):
         """Day-one Threads: `/me` must not carry invented fields (Instagram's first probe died on
         one), and the refresh lives at `/refresh_access_token`, not under the user id."""

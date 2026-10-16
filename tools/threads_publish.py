@@ -235,7 +235,9 @@ def find_duplicate(posts, text):
 
 
 def create_text_container(token, user_id, text, link_attachment=None, reply_control=None):
-    params = {"text": text}
+    # `media_type=TEXT` is required, not implied: run #5 (16 Oct 2026, the first real post) got
+    # `(#100) The parameter media_type is required` back from a container that carried only text.
+    params = {"media_type": "TEXT", "text": text}
     if link_attachment:
         params["link_attachment"] = link_attachment
     if reply_control:
