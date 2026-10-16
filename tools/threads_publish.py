@@ -246,15 +246,50 @@ def find_duplicate(posts, text):
     return None
 
 
-def create_text_container(token, user_id, text, link_attachment=None, reply_control=None):
+def create_text_container(token, user_id, text, link_attachment=None, reply_control=None,
+                          topic_tag=None, poll=None, share_to_ig=False):
     # `media_type=TEXT` is required, not implied: run #5 (16 Oct 2026, the first real post) got
     # `(#100) The parameter media_type is required` back from a container that carried only text.
     params = {"media_type": "TEXT", "text": text}
-    if link_attachment:
+    if link_attachment and not poll:          # Threads refuses a poll beside a link attachment
         params["link_attachment"] = link_attachment
     if reply_control:
         params["reply_control"] = reply_control
+    if topic_tag:
+        params["topic_tag"] = topic_tag       # one per post; ≤50 chars; no '.' or '&'
+    if poll:
+        params["poll_attachment"] = json.dumps(poll, ensure_ascii=False)
+    if share_to_ig:
+        params["crossreshare_to_ig"] = "true"  # the same post as an Instagram Story (threads_share_to_instagram)
     return api("POST", "/%s/threads" % user_id, token, params)["id"]
+
+
+def create_text_container_with_fallbacks(token, user_id, text, link_attachment=None, reply_control=None,
+                                         topic_tag=None, poll=None, share_to_ig=False, log=print):
+    """The 2026 extras are reach, not the post. If Threads refuses the cross-share (token minted
+    before the scope existed) or the poll/topic (shape), the post still goes out plain, and the
+    log names what was dropped so the owner knows which tap would restore it."""
+    attempts = [dict(topic_tag=topic_tag, poll=poll, share_to_ig=share_to_ig)]
+    if share_to_ig:
+        attempts.append(dict(topic_tag=topic_tag, poll=poll, share_to_ig=False))
+    if poll or topic_tag:
+        attempts.append(dict(topic_tag=None, poll=None, share_to_ig=False))
+    last = None
+    for i, extra in enumerate(attempts):
+        try:
+            cid = create_text_container(token, user_id, text, link_attachment, reply_control, **extra)
+            if i > 0:
+                dropped = [k for k in ("share_to_ig", "poll", "topic_tag") if attempts[0].get(k) and not extra.get(k)]
+                log("::warning title=Threads extras dropped::%s refused by the API (%s) — posted without; "
+                    "if share_to_ig: re-mint the Threads token with threads_share_to_instagram"
+                    % (", ".join(dropped), last.blurb if last else "?"))
+                print("THREADS_EXTRAS_DROPPED=%s" % ",".join(dropped))
+            return cid
+        except ApiError as exc:
+            last = exc
+            if exc.cause in ("credentials", "quota"):
+                raise
+    raise last
 
 
 def wait_container(token, container_id, tries=6, delay=5, sleeper=None):
@@ -283,7 +318,11 @@ def wait_container(token, container_id, tries=6, delay=5, sleeper=None):
 
 
 def publish_container(token, user_id, container_id):
-    return api("POST", "/%s/threads_publish" % user_id, token, {"creation_id": container_id})["id"]
+    data = api("POST", "/%s/threads_publish" % user_id, token, {"creation_id": container_id})
+    status = data.get("crossreshare_to_ig_status")
+    if status:
+        print("THREADS_SHARE_TO_IG=%s" % str(status).lower())
+    return data["id"]
 
 
 def read_back(token, post_id):
@@ -422,6 +461,11 @@ def main(argv=None):
         text = blob.get("text") or ""
         if blob.get("trimmed"):
             print("content was trimmed: %s" % "; ".join(blob["trimmed"]))
+        topic_tag = blob.get("topic_tag") or None
+        poll = blob.get("poll") if isinstance(blob.get("poll"), dict) and len(blob.get("poll")) >= 2 else None
+    else:
+        topic_tag, poll = None, None
+    share_to_ig = (os.environ.get("THREADS_SHARE_TO_IG") or "on").strip().lower() in ("1", "true", "yes", "on")
     text = text.strip()
 
     problems = check_copy(text)
@@ -476,8 +520,11 @@ def main(argv=None):
         return 4
 
     try:
-        container_id = create_text_container(token, target, text, args.link_attachment,
-                                             args.reply_control)
+        if topic_tag or poll or share_to_ig:
+            print("extras: topic=%r poll=%s share_to_ig=%s" % (topic_tag, "yes" if poll else "no", "yes" if share_to_ig else "no"))
+        container_id = create_text_container_with_fallbacks(token, target, text, args.link_attachment,
+                                                            args.reply_control, topic_tag=topic_tag, poll=poll,
+                                                            share_to_ig=share_to_ig)
         ready, state = wait_container(token, container_id)
         if not ready:
             print("::error title=Threads container did not finish::status=%s for container %s "

@@ -99,6 +99,50 @@ refuses anything else). `brain_drafts.link_for(pack)` → `https://docoga.com.ng
 when that page exists in `site/`, else the national `<tool>-nigeria.html`, else the homepage.
 `post_text`, `threads_text` and every reply use it.
 
+## The reach layer (17 Oct 2026, fourth round)
+Seven changes from the "every platform signal, every Nigeria number" research, all ₦0:
+
+**Newsdesk.** `tools/newsdesk.py` + `brain/newsdesk.json`: a hand-kept shelf of dated rent
+and tenancy news hooks (the Lagos ₦200k→₦350k hike, Abuja +40–120 %, the Lagos Tenancy
+Bill still not law, Enugu's 10 % agency cap bill…). The brain's prompt carries the
+freshest live hook for the day's state; the lint refuses a hook that has gone stale or
+that the shelf does not know. Nothing is invented: a hook is a line the owner (or a PR)
+wrote with a date and a source. Env `DOCOGA_NEWSDESK` points tests at a fixture.
+
+**Threads upgrade.** Pack gains `threads.topic` (one topic tag from
+`brain_drafts.TOPIC_TAGS`, 1–50 chars, no `#`/`.`/`&`) and `threads.poll` (2–4 options,
+1–25 chars each, text posts only). `tools/threads_publish.py` sends `topic_tag`,
+`poll_attachment` and `crossreshare_to_ig` and **falls back** one extra at a time when
+Threads refuses one (`THREADS_EXTRAS_DROPPED=…`), so the words always post. Cross-sharing
+to Instagram needs the Threads token re-minted with `threads_share_to_instagram`; the
+summary prints `THREADS_SHARE_TO_IG=<status>`. Variable `THREADS_SHARE_TO_IG` (default
+`on`).
+
+**Instagram Trial Reels.** `tools/ig_publish.py --trial` adds
+`trial_params={"graduation_strategy":"SS_PERFORMANCE"}` to Reel containers: Instagram
+shows the Reel to non-followers first and graduates it to followers when it performs —
+the free way to buy reach for a new account. Refused → plain Reel (`IG_TRIAL=refused`).
+Variable `IG_TRIAL_REELS` (default `on`).
+
+**Telegram quiz.** Tuesdays the pack carries `quiz{question, options, correct,
+explanation, fact_id}`; the lint demands the fact be on the shelf and the explanation
+carry its citation. `scripts/post_telegram.py send_quiz` sends a native quiz poll after
+the post (`sendPoll type=quiz`, ≤200-char explanation that reveals the section);
+`TELEGRAM_QUIZ=sent|failed`, never fatal. Research: polls lift Telegram engagement past
+50 % and a quiz answer is a tap from a reader who would not type.
+
+**LinkedIn lane.** `tools/linkedin_publish.py` / `linkedin_autopost.yml`, Mon/Wed/Fri
+08:30 Lagos, the brain's pack in little-text format to the owner's profile. 60-day token
+clock with a day-50 warning. Handbook: `docs/LINKEDIN_AUTOMATION.md`.
+
+**TikTok inbox drafts.** `tools/tiktok_draft.py` rides the Shorts lane: the same Short
+into the owner's TikTok inbox (the only unaudited route that is not forced-private); the
+owner pastes the caption and posts. Handbook: `docs/TIKTOK_AUTOMATION.md`.
+
+**Template fix.** The Telegram templates said "3 months' notice" for a yearly tenant in
+Lagos; s.13(1)(e) says six months. Fixed — the brain's lint would have refused it from a
+model; the hand-written rotation needed a human to read it.
+
 ## The gates (why a legal-documents brand can let a model write)
 1. **Citation** — every legal claim names a fact id on the shelf for the state
    the post names. The shelf is `tools/state_law_data.py`, the same verified,

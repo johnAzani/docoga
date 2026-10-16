@@ -48,6 +48,10 @@ no server, 0 Naira/month to run.
   `brain_replies.yml` answers every real comment on Threads, Instagram and Facebook within
   ~90 minutes of each post, from the post's own cited facts, with a deep link to the exact
   tool page. Handbook: **`docs/BRAIN.md`**. Kill switch: variable `DOCOGA_BRAIN=off`.
+  Reach layer (17 Oct): a dated newsdesk the brain quotes, Threads topic tags + polls +
+  cross-share to Instagram, Instagram Trial Reels, a Tuesday Telegram quiz, a **LinkedIn
+  lane** (`docs/LINKEDIN_AUTOMATION.md`, Mon/Wed/Fri) and **TikTok inbox drafts** riding the
+  Shorts lane (`docs/TIKTOK_AUTOMATION.md`) — both dormant until their secrets exist.
 - `mobile/` — the Android app: a Capacitor shell around `/admin`, built to a
   sideloadable APK by CI (`ADMIN_DASHBOARD.md` §7, `mobile/README.md`)
 

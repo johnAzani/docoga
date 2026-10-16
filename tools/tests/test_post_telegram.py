@@ -108,6 +108,34 @@ class PosterFallbackTests(unittest.TestCase):
             result = func(*args, **kwargs)
         return result, out.getvalue()
 
+    QUIZ = {"question": "A yearly tenant in Lagos: how much notice to quit?", "options": ["One month", "Three months", "Six months"],
+            "correct": 2, "explanation": "Six months — s.13(1)(e), Lagos Tenancy Law 2011."}
+
+    def test_a_quiz_is_a_native_quiz_poll_with_the_section_as_the_explanation(self):
+        """17 Oct 2026: a tap from a reader who would not type; the answer reveals the law."""
+        self.responses = [ok(44)]
+        mid, output = self._run(post_telegram.send_quiz, self.QUIZ)
+        self.assertEqual(mid, 44)
+        call = self.calls[0]
+        self.assertTrue(call["url"].endswith("/sendPoll"))
+        self.assertEqual(call["data"]["type"], "quiz")
+        self.assertEqual(json.loads(call["data"]["options"]), ["One month", "Three months", "Six months"])
+        self.assertEqual(json.loads(call["data"]["correct_option_ids"]), [2])
+        self.assertIn("s.13(1)(e)", call["data"]["explanation"])
+        self.assertIn("TELEGRAM_QUIZ=sent", output)
+
+    def test_an_older_bot_api_gets_the_singular_parameter_and_a_failed_quiz_is_not_fatal(self):
+        self.responses = [error("Bad Request: correct_option_ids is not supported"), ok(45)]
+        mid, _ = self._run(post_telegram.send_quiz, self.QUIZ)
+        self.assertEqual(mid, 45)
+        self.assertEqual(self.calls[1]["data"]["correct_option_id"], 2)
+        self.assertNotIn("correct_option_ids", self.calls[1]["data"])
+        self.responses = [error("Bad Request: POLL_OPTION_INVALID")]
+        mid, output = self._run(post_telegram.send_quiz, self.QUIZ)
+        self.assertIsNone(mid)
+        self.assertIn("TELEGRAM_QUIZ=failed", output)
+        self.assertIsNone(post_telegram.send_quiz(None))
+
     def test_parse_error_retries_as_plain_text_without_markup(self):
         self.responses = [error(PARSE_ERROR), ok()]
         result, output = self._run(

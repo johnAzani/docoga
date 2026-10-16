@@ -37,6 +37,8 @@ because they lead sales by two to four weeks.
 | **Threads** | **reply velocity in the first 90 minutes**, conversation depth, reposts; "reply more than you post" (Mosseri); connected reach weighs more since Nov 2024 | every Threads post ends with a question people can answer in five words; post at lunch when people are idle |
 | **YouTube Shorts** | viewed-vs-swiped (hook in 2 s), average % viewed (≥70% for ≤30 s), loops, shares; views now count any play so completion decides distribution | STAKES/number hooks in the first line, payoff before second 3, tips with a rhythm, 24 s length |
 | **Telegram** | no algorithm: **forwards** and the view/subscriber ratio; growth comes from cross-promotion and forwardable posts | a forward line on every post; checklists and templates; weekly "forward this to one person" ask |
+| **LinkedIn** (owner profile, Mon/Wed/Fri) | dwell time and comments in the first hour; hashtags count for little in 2026; links out are tolerated in the post but a card holds the eye | the payslip/invoice/tenancy angle for the 25–34 professional (7.7 M Nigerians); morning slot; no hashtags; the deep link rides as the article card |
+| **TikTok** (inbox drafts riding the Short) | completion and rewatch in the first hour; the caption and first frame; sounds | the same 22–45 s Short with the locked voice; the owner posts from the inbox with the caption the run prints |
 | **Deep-Dive (YouTube long-form)** | click-through on the cover + first 30 s retention; search traffic on state + topic | title names state + rule + number; Hook section names the loss in the first sentence |
 
 ## Posting windows — Nigeria (WAT), from the 2026 data
@@ -48,10 +50,11 @@ and evening.
 
 | Lane | Slot (WAT) | Why |
 |---|---|---|
+| LinkedIn | 08:30 Mon/Wed/Fri | the desk reader before the first meeting; LinkedIn's weekday-morning peak |
 | Telegram | 09:00 | read like the morning paper; forwards happen all day |
 | Facebook post (+Reel Mon/Thu) | 09:30 | the Facebook morning window; same-day Reel |
 | Threads | 13:10 | lunch idle time → reply velocity in the first 90 min |
-| YouTube Short | 18:00 Tue/Fri | the evening ramp |
+| YouTube Short (+ TikTok inbox draft) | 18:00 Tue/Fri | the evening ramp; the owner posts the TikTok draft in the 7–9 pm peak |
 | Instagram card + Story | 19:10 | the 7–9 pm peak for the visual platform |
 | Facebook evening Story | 19:40 | the 7–9 pm peak; Stories sit at the top of the app |
 | Deep-Dive | 03:00 render, public when the owner taps | search-driven, time-insensitive |
@@ -138,6 +141,17 @@ Every pack names its `tool`; `brain_drafts.link_for` turns tool + state into the
 (`*-nigeria.html`) and then the homepage, and never to a page that does not exist. Posts,
 Threads and replies all use it. Facebook penalises links out, so there the link stays in the
 last line and the body carries the value.
+
+## The reach layer (fourth research pass, 17 Oct 2026)
+Where Nigerians actually are (DataReportal Oct 2026, 18+ ad reach): TikTok **47.8 M (+43 %)**,
+Facebook 38.0 M, YouTube 30.5 M, **LinkedIn 13–14 M** (25–34 = 7.7 M), Instagram 10.0 M
+(−6 %), X 6.95 M (−11 %, 74 % male, API no longer free → skipped). Monthly use: WhatsApp
+96.5 %, TikTok 89.7 %, Facebook/Instagram 89.2 %, Telegram 79.2 %, Threads 15.5 %. Moves:
+a dated newsdesk so every post can open on this week's rent story; Threads topic tags
+(more views) + polls (a tap, not a sentence) + cross-share to Instagram; Instagram Trial
+Reels (non-followers first, graduate on performance); a Tuesday Telegram quiz (polls lift
+engagement past 50 %); the LinkedIn lane; TikTok inbox drafts. Rent seasonality the brain
+leans into: Jan–Mar and Aug–Oct peaks, payday 25th–month-end.
 
 ## Sources (Oct 2026 research pass)
 DataReportal Digital 2026 (Nigeria 5.84 days/week; 3 h 18–27 m/day); Kreste Digital 2026

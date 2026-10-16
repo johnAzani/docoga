@@ -369,12 +369,13 @@ Nothing else: no bucket, no domain, no card, no new secret.
 
 | lane | when (UTC) | Lagos |
 |---|---|---|
+| LinkedIn | 07:30 Mon/Wed/Fri | 08:30 — the desk reader, before the first meeting |
 | Telegram | 08:00 daily | 09:00 |
 | Facebook | 08:30 daily | 09:30 |
 | Brain replies (comments) | 10:40 daily | 11:40 — ninety minutes after the Facebook post |
 | **Threads** | **12:10 daily** | **13:10** (lunch — reply velocity) |
 | Brain replies (comments) | 13:40 daily | 14:40 — ninety minutes after Threads |
-| YouTube Shorts | 17:00 Tue & Fri | 18:00 |
+| YouTube Shorts (+ TikTok inbox draft) | 17:00 Tue & Fri | 18:00 |
 | **Instagram** | **18:10 daily** | **19:10** (the 7–9 pm peak) |
 | Facebook evening Story | 18:40 daily | 19:40 |
 | Brain replies (comments) | 19:40 daily | 20:40 — after Instagram and the evening Story |

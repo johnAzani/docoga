@@ -53,7 +53,7 @@ TEMPLATES = {
     "educational": [
         "📌 *Did You Know?*\n\nIn Nigeria, a tenancy agreement should include:\n✅ Landlord & tenant names\n✅ Property address\n✅ Rent amount & payment terms\n✅ Duration\n✅ Notice period\n\nGenerate yours instantly: https://docoga\\.com\\.ng",
         "💡 *Tenancy Tip:*\n\nAlways get a written receipt for every rent payment\\. It's your proof of payment\\!\n\nDocOga makes it easy: https://docoga\\.com\\.ng",
-        "⚠️ *Important:*\n\nIn Lagos, the standard notice to quit is 3 months for yearly tenancies under the Tenancy Law 2011\\. Know your rights\\!\n\nNeed a Notice to Quit? https://docoga\\.com\\.ng",
+        "⚠️ *Important:*\n\nIn Lagos, a yearly tenant gets 6 months' notice to quit under s\\.13\\(1\\)\\(e\\) of the Tenancy Law 2011 \\(3 months is for quarterly and half\\-yearly tenants\\)\\. Know your rights\\!\n\nNeed a Notice to Quit? https://docoga\\.com\\.ng",
         "📝 *Rent Receipt Must\\-Haves:*\n\n✔️ Date of payment\n✔️ Amount paid\n✔️ Property address\n✔️ Landlord/agent name\n✔️ Tenant name\n\nGenerate professional receipts: https://docoga\\.com\\.ng",
         "🔍 *Caution Fee in Nigeria:*\n\nA caution fee is a refundable security deposit — typically 5\\-10% of rent\\. It MUST be refunded when you vacate if the property is in good condition\\.\n\nGet a Caution Fee Receipt: https://docoga\\.com\\.ng",
         "📖 *Tenant Rights 101:*\n\nAs a Nigerian tenant, you have the right to:\n🔹 Peaceful enjoyment of the property\n🔹 A written rent receipt\n🔹 Proper notice before eviction\n🔹 Return of caution fee\n\nLearn more: https://docoga\\.com\\.ng/tenant\\-rights\\-nigeria\\.html",
@@ -76,7 +76,7 @@ TEMPLATES = {
         "🏆 *Why Nigerians Choose DocOga*\n\n\"I needed a notice to quit urgently\\. DocOga generated it in 2 minutes\\. My lawyer said it was perfect\\.\" — Ngozi, Port Harcourt\n\nTry it free: https://docoga\\.com\\.ng",
     ],
     "state_spotlight": [
-        "📍 *Lagos Tenancy Guide*\n\nLagos tenants: your landlord MUST give you 3 months notice for yearly tenancies under the Lagos Tenancy Law 2011\\.\n\nGet your Notice to Quit: https://docoga\\.com\\.ng/notice\\-to\\-quit\\-lagos\\.html",
+        "📍 *Lagos Tenancy Guide*\n\nLagos tenants: a yearly tenancy gets 6 months' notice to quit under s\\.13\\(1\\)\\(e\\) of the Lagos Tenancy Law 2011; monthly tenants get one month\\.\n\nGet your Notice to Quit: https://docoga\\.com\\.ng/notice\\-to\\-quit\\-lagos\\.html",
         "📍 *Abuja Tenancy Guide*\n\nFCT tenants: always get a written tenancy agreement before moving in\\. DocOga generates one for Abuja properties in minutes\\.\n\n👉 https://docoga\\.com\\.ng/tenancy\\-agreement\\-abuja\\.html",
         "📍 *Rivers State Guide*\n\nPort Harcourt landlords: proper rent receipts protect you AND your tenant\\. Generate professional receipts instantly\\.\n\n👉 https://docoga\\.com\\.ng/rent\\-receipt\\-rivers\\.html",
         "📍 *Kano Tenancy Tips*\n\nIn Kano, tenancy agreements should clearly state the rent amount, duration, and renewal terms\\. DocOga covers all states\\.\n\n👉 https://docoga\\.com\\.ng/tenancy\\-agreement\\-kano\\.html",
@@ -207,6 +207,7 @@ def generate_daily_content():
         "photo_path": photo_path,
         "generated_at": today.isoformat(),
         "brain": pack.get("theme") if pack else None,
+        "quiz": brain_drafts.quiz(pack) if pack else None,
     }
 
     # Save to files

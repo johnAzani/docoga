@@ -118,6 +118,10 @@ env:
   # (default) publishes whenever the daily readiness probe below says the token can;
   # `off` switches it off. There is no `probe` mode because the probe runs every day anyway.
   IG_REELS_MODE: ${{ vars.IG_REELS || 'on' }}
+  # Trial Reels (17 Oct 2026): the Reel is shown to non-followers first and graduates to
+  # followers by itself when it performs — Instagram's own growth lever, ₦0. `off` posts
+  # ordinary Reels. A token or account Meta has not opened it to falls back on its own.
+  IG_TRIAL_REELS: ${{ vars.IG_TRIAL_REELS || 'on' }}
   TZ: Africa/Lagos
 
 jobs:
@@ -665,8 +669,12 @@ jobs:
           # The door the probes opened: the Page token, or the Instagram lane's own token.
           if [ "$IG_DOOR" = "instagram-login" ]; then IG_TOKEN="$(cat /tmp/ig_login_token)"; else IG_TOKEN="$FB_PAGE_ACCESS_TOKEN"; fi
           set +e
+          TRIAL=""
+          case "$(printf '%s' "${IG_TRIAL_REELS:-on}" | tr '[:upper:]' '[:lower:]')" in
+            1|true|yes|on) TRIAL="--trial" ;;
+          esac
           IG_API_PATH="$IG_DOOR" IG_ACCESS_TOKEN="$IG_TOKEN" IG_USER_ID="$IG_USER_ID" \
-            python3 tools/ig_publish.py --video-file "$FILE" --caption "$CAPTION" --thumb-offset-ms 1500 $FORCE \
+            python3 tools/ig_publish.py --video-file "$FILE" --caption "$CAPTION" --thumb-offset-ms 1500 $TRIAL $FORCE \
             2>&1 | tee /tmp/ig_reel_post.log
           STATUS=${PIPESTATUS[0]}
           set -e

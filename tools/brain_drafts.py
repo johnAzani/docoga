@@ -128,15 +128,52 @@ def hashtags(pack, channel="facebook"):
 
 
 def threads_text(pack):
-    """The short copy for Threads/Instagram, link at the end, no hashtags."""
+    """The short copy for Threads/Instagram, link at the end, no hashtags.
+
+    A poll post carries no link: Threads refuses a poll next to a link attachment, and a
+    bare URL in the text becomes one. The poll's job is replies; the link's turn is the reply."""
     text = ((pack.get("threads") or {}).get("text") or "").strip()
     if not text:
         text = pack["post"]["headline"].strip()
     if has_claims(pack) and DISCLAIMER.lower() not in text.lower():
         text = text.rstrip() + "\n\n" + DISCLAIMER
-    if LINK not in text:
+    if LINK not in text and not threads_poll(pack):
         text = text.rstrip() + "\n" + link_for(pack)
     return text
+
+
+# Threads topic tags (one per post, ≤50 chars, no periods or ampersands). Meta: posts with a
+# topic collect more views than posts without one — it is the subject label people browse.
+TOPIC_TAGS = {"tenancy-agreement": "Tenant Rights Nigeria", "notice-to-quit": "Tenant Rights Nigeria",
+              "rent-receipt": "Tenant Rights Nigeria", "caution-fee": "Tenant Rights Nigeria",
+              "tenant-rights": "Tenant Rights Nigeria", "shop-tenancy-agreement": "Nigerian Small Business",
+              "invoice": "Nigerian Small Business", "payslip": "Nigerian Workplace",
+              "power-of-attorney": "Nigerian Law", "affidavit": "Nigerian Law"}
+DEFAULT_TOPIC = "Rent in Nigeria"
+POLL_OPTION_MAX = 25
+
+
+def threads_topic(pack):
+    given = str(((pack or {}).get("threads") or {}).get("topic") or "").strip()
+    tag = given or TOPIC_TAGS.get(str((pack or {}).get("tool") or "").strip().lower(), DEFAULT_TOPIC)
+    tag = tag.replace(".", "").replace("&", "and").strip()
+    return tag[:50]
+
+
+def threads_poll(pack):
+    """{"option_a": …, "option_b": …[, option_c, option_d]} when the pack carries a valid poll, else None."""
+    poll = ((pack or {}).get("threads") or {}).get("poll")
+    if not isinstance(poll, dict):
+        return None
+    out = {}
+    for key in ("option_a", "option_b", "option_c", "option_d"):
+        val = str(poll.get(key) or "").strip()
+        if not val:
+            break
+        if len(val) > POLL_OPTION_MAX:
+            return None
+        out[key] = val
+    return out if len(out) >= 2 else None
 
 
 def cta(pack):
@@ -186,3 +223,33 @@ def similarity(a, b):
     if not wa or not wb:
         return 0.0
     return len(wa & wb) / float(len(wa | wb))
+
+
+QUIZ_QUESTION_MAX = 300
+QUIZ_OPTION_MAX = 100
+QUIZ_EXPLANATION_MAX = 200
+
+
+def quiz(pack):
+    """The Telegram quiz of the day — {"question", "options", "correct", "explanation"} — or None.
+
+    A quiz is the one Telegram format that gets a tap from a reader who would not type: the
+    answer is revealed with the section, and the explanation is where the law lives."""
+    q = (pack or {}).get("quiz")
+    if not isinstance(q, dict):
+        return None
+    question = str(q.get("question") or "").strip()
+    options = [str(o).strip() for o in (q.get("options") or []) if str(o).strip()]
+    explanation = str(q.get("explanation") or "").strip()
+    try:
+        correct = int(q.get("correct"))
+    except (TypeError, ValueError):
+        return None
+    if not question or len(question) > QUIZ_QUESTION_MAX or not 2 <= len(options) <= 4:
+        return None
+    if any(len(o) > QUIZ_OPTION_MAX for o in options) or not 0 <= correct < len(options):
+        return None
+    if not explanation or len(explanation) > QUIZ_EXPLANATION_MAX:
+        return None
+    return {"question": question, "options": options, "correct": correct, "explanation": explanation}
+

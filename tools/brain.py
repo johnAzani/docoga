@@ -60,6 +60,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 import brain_drafts as drafts  # noqa: E402
 import gemini_text  # noqa: E402
 import law_index  # noqa: E402
+import newsdesk  # noqa: E402
 
 LAGOS = ZoneInfo("Africa/Lagos")
 BRAIN = ROOT / "brain"
@@ -180,7 +181,8 @@ def day_context(day, said=None):
                 state_name=facts[0]["state"] if facts else slug, facts=facts,
                 short_day=day.weekday() in SHORT_DAYS, calendar=calendar_notes(day),
                 recent=recent, feedback=read(FEEDBACK).strip(),
-                strategy=read(STRATEGY).strip(), audience=read(AUDIENCE).strip())
+                strategy=read(STRATEGY).strip(), audience=read(AUDIENCE).strip(),
+                news=newsdesk.fresh_items())
 
 
 def prompt_for(ctx, problems=None):
@@ -210,6 +212,12 @@ TODAY
 - {short_rule}
 - Calendar: {' '.join(ctx['calendar']) or 'nothing special.'}
 
+NEWSDESK — WHAT NIGERIA IS TALKING ABOUT THIS WEEK (headline — paper)
+{newsdesk.prompt_block(ctx.get('news') or [])}
+A story may be the OPENING LINE only ("This week a Lagos landlord…"), named as "reported by <paper>".
+Never invent a detail that is not in the headline. The law still comes from the shelf below with a
+fact id. If no story fits today's lead and state, set news_hook to null — do not force it.
+
 WHAT THE NUMBERS SAID — SCORECARD, GOALS AND THIS WEEK'S ORDERS (obey the orders)
 {ctx['feedback'] or 'No feedback yet — use the editorial rhythm.'}
 
@@ -227,13 +235,17 @@ OUTPUT — one JSON object with exactly these keys:
   "state": "{ctx['state']}" or null if the post makes no legal claim,
   "claims": [{{"text": "the legal sentence as it appears in the post", "fact_id": "an id from the shelf"}}],
   "reader": one of {list(PERSONAS)} — the person from AUDIENCE this day is written to,
+  "news_hook": the exact headline from NEWSDESK the post opens with, or null,
   "tool": one of {list(drafts.TOOLS)} or null — the ONE document the post points at; the renderer links straight to that tool's page for the post's state,
   "post": {{"headline": "<= {HEADLINE_MAX} characters, sentence case", "lines": ["2 to 5 lines, each <= {LINE_MAX} characters"],
            "cta": "<= {CTA_MAX} characters: the send/forward/reply line naming a receiver or a five-word answer, e.g. 'Send this to the friend whose rent is due in January.' or 'Which state are you renting in? Tell us below.'",
            "hashtags": ["#DocOga", "3 to 5 total"]}},
-  "threads": {{"text": "<= 360 characters, self-contained, no link, no hashtags, ENDS WITH A QUESTION answerable in five words", "hashtags": ["#DocOga", "at most 2"]}},
+  "threads": {{"text": "<= 360 characters, self-contained, no link, no hashtags, ENDS WITH A QUESTION answerable in five words", "hashtags": ["#DocOga", "at most 2"],
+              "topic": "the one Threads topic tag, 2-4 plain words, no punctuation, e.g. 'Tenant Rights Nigeria'",
+              "poll": null, or on the engagement day (Sunday) {{"option_a": "<= 25 chars", "option_b": "<= 25 chars", "option_c": "optional", "option_d": "optional"}} — the answers to the closing question; a poll post carries no link}},
   "visual": {{"kicker": "2-4 words", "layout": one of {list(LAYOUTS)}, "big": "number or 1-3 words for the stat layout, else empty",
              "plate": "2-4 plain words for a background photograph with no faces and no signs"}},
+  "quiz": null, or on Tuesday (quiz day) {{"question": "<= 120 characters, one rule from the shelf as a question", "options": ["2 to 4 answers, <= 40 characters each, one correct"], "correct": 0-based index, "explanation": "<= 200 characters: the answer with its section, e.g. 'Six months — s.13(1)(e), Lagos Tenancy Law 2011.'", "fact_id": "the shelf fact the answer rests on"}},
   "short": null or {{"title": "one or two short sentences", "hook_sub": "<= 9 words",
                      "tips": [{{"text": "<= 5 words", "sub": "<= 9 words"}}, "... exactly four"]}},
   "why": "one sentence: why today says this"
@@ -315,6 +327,23 @@ def lint(pack, ctx, said):
     tool = pack.get("tool")
     if tool is not None and str(tool).strip().lower() not in drafts.TOOLS:
         p.append("tool must be one of %s or null" % ", ".join(drafts.TOOLS))
+    qz = pack.get("quiz")
+    if qz is not None:
+        if not isinstance(qz, dict) or drafts.quiz(pack) is None:
+            p.append("quiz must be null or {question <= 300, options 2-4 of <= 100 chars, correct index, explanation <= 200}")
+        else:
+            fid = str(qz.get("fact_id") or "")
+            if fid not in ctx.get("facts_by_id", {}):
+                p.append("quiz.fact_id must be a fact id from the shelf — a quiz answer is a legal claim")
+            else:
+                cite = (ctx["facts_by_id"][fid].get("cite") or "").replace(" ", "").lower()
+                if cite and cite not in str(qz.get("explanation") or "").replace(" ", "").lower():
+                    p.append("quiz.explanation must carry the section of its fact (%s)" % ctx["facts_by_id"][fid].get("cite"))
+    hook = pack.get("news_hook")
+    if hook is not None and str(hook).strip():
+        titles = {str(n.get("title", "")).strip().lower() for n in ctx.get("news") or []}
+        if str(hook).strip().lower() not in titles:
+            p.append("news_hook is not one of this week's NEWSDESK headlines — a story the papers did not print is not a story")
     cta = str(post.get("cta") or "").strip()
     if not cta:
         p.append("post.cta is missing — the send/forward/reply line is how a post travels")
@@ -344,6 +373,22 @@ def lint(pack, ctx, said):
             p.append("threads.text must not carry the link or hashtags — the renderer adds them")
     if len([t for t in (threads.get("hashtags") or [])]) > 2:
         p.append("threads.hashtags: at most 2")
+    topic = str(threads.get("topic") or "").strip()
+    if topic and (len(topic) > 50 or "." in topic or "&" in topic or "#" in topic):
+        p.append("threads.topic: 2-4 plain words, no '#', '.', '&', max 50 characters")
+    poll = threads.get("poll")
+    if poll is not None:
+        if not isinstance(poll, dict):
+            p.append("threads.poll must be an object with option_a, option_b (option_c, option_d optional) or null")
+        else:
+            opts = [str(poll.get(k) or "").strip() for k in ("option_a", "option_b", "option_c", "option_d")]
+            filled = [o for o in opts if o]
+            if len(filled) < 2 or opts[:len(filled)] != filled:
+                p.append("threads.poll needs option_a and option_b filled in order")
+            if any(len(o) > drafts.POLL_OPTION_MAX for o in filled):
+                p.append("threads.poll options are at most %d characters" % drafts.POLL_OPTION_MAX)
+            if len(set(o.lower() for o in filled)) != len(filled):
+                p.append("threads.poll options repeat")
 
     corpus = "\n".join([headline] + lines + [ttext])
     low = corpus.lower()
@@ -528,7 +573,8 @@ def remember(said, approved):
                  "post_type": approved["post_type"], "hook_type": approved["hook_type"],
                  "state": approved.get("state"), "fact_ids": [c.get("fact_id") for c in approved["claims"]],
                  "plate": approved["visual"].get("plate", ""), "short": bool(approved.get("short")),
-                 "reader": approved.get("reader") or ""})
+                 "reader": approved.get("reader") or "", "tool": approved.get("tool"),
+                 "news_hook": approved.get("news_hook") or None})
     floor = (date.fromisoformat(approved["date"]) - timedelta(days=180)).isoformat()
     said[:] = [e for e in said if str(e.get("date", "")) >= floor]
     save_said(said)

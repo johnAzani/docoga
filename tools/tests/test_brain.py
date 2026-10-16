@@ -15,7 +15,7 @@ import sys
 import tempfile
 import unittest
 from contextlib import redirect_stdout
-from datetime import date
+from datetime import date, datetime, timezone
 from pathlib import Path
 from unittest.mock import patch
 
@@ -29,6 +29,7 @@ import brain_drafts  # noqa: E402
 import gemini_quota  # noqa: E402
 import gemini_text  # noqa: E402
 import law_index  # noqa: E402
+import newsdesk  # noqa: E402
 
 MONDAY = date(2026, 10, 19)      # a Reel day: the pack must carry a Short
 SUNDAY = date(2026, 10, 18)      # no Short rendered
@@ -109,6 +110,7 @@ class Sandbox(unittest.TestCase):
         self.addCleanup(self.env.stop)
         for target, name, value in ((brain, "SAID", root / "said.json"),
                                     (brain, "FEEDBACK", root / "feedback.md"),
+                                    (newsdesk, "OUT", root / "newsdesk.json"),
                                     (gemini_quota, "LEDGER", root / "quota.json")):
             p = patch.object(target, name, value)
             p.start()
@@ -215,6 +217,53 @@ class GateTests(Sandbox):
         self.assertTrue(brain_drafts.post_text(good_pack(tool=None)).endswith("https://docoga.com.ng"))
         self.assertTrue(any("tool must be one of" in p for p in brain.lint(good_pack(tool="lease"), self.ctx(), [])))
         self.assertEqual(brain.lint(good_pack(tool=None), self.ctx(), []), [])
+
+    def test_a_news_hook_must_be_a_headline_the_papers_printed(self):
+        """17 Oct 2026: the brain reads the morning papers; it may not write them."""
+        newsdesk.OUT.write_text(json.dumps({"fetched": datetime.now(timezone.utc).isoformat(),
+                                            "items": [{"title": "Lagos landlord punched over 75% rent hike", "source": "The Trumpet",
+                                                       "published": "2026-10-15T09:00:00+00:00", "score": 9}]}), encoding="utf-8")
+        ctx = self.ctx()
+        self.assertIn("Lagos landlord punched over 75% rent hike", brain.prompt_for(ctx))
+        self.assertEqual(brain.lint(good_pack(news_hook="Lagos landlord punched over 75% rent hike"), ctx, []), [])
+        self.assertEqual(brain.lint(good_pack(news_hook=None), ctx, []), [])
+        self.assertTrue(any("NEWSDESK" in p for p in brain.lint(good_pack(news_hook="Senate passes rent control act"), ctx, [])))
+
+    def test_stale_news_is_not_offered(self):
+        newsdesk.OUT.write_text(json.dumps({"fetched": "2026-09-01T00:00:00+00:00",
+                                            "items": [{"title": "Old story", "source": "Punch"}]}), encoding="utf-8")
+        self.assertIn("no fresh stories", brain.prompt_for(self.ctx()))
+
+    def test_threads_topic_tag_and_poll_travel_with_the_pack(self):
+        """17 Oct 2026: a topic tag is the subject label people browse; a poll is replies without a link."""
+        self.assertEqual(brain_drafts.threads_topic(good_pack()), "Tenant Rights Nigeria")
+        self.assertEqual(brain_drafts.threads_topic(good_pack(tool="payslip")), "Nigerian Workplace")
+        self.assertEqual(brain_drafts.threads_topic(good_pack(tool=None)), brain_drafts.DEFAULT_TOPIC)
+        pack = good_pack()
+        pack["threads"]["poll"] = {"option_a": "Six months", "option_b": "Three months", "option_c": "One month"}
+        self.assertEqual(brain_drafts.threads_poll(pack), {"option_a": "Six months", "option_b": "Three months", "option_c": "One month"})
+        self.assertNotIn("http", brain_drafts.threads_text(pack), "a poll post carries no link — Threads refuses the pair")
+        self.assertIn("http", brain_drafts.threads_text(good_pack()))
+        self.assertEqual(brain.lint(pack, self.ctx(), []), [])
+        bad = good_pack(); bad["threads"]["poll"] = {"option_a": "x" * 26, "option_b": "y"}
+        self.assertTrue(any("at most 25" in p for p in brain.lint(bad, self.ctx(), [])))
+        bad = good_pack(); bad["threads"]["poll"] = {"option_a": "only one"}
+        self.assertTrue(any("option_a and option_b" in p for p in brain.lint(bad, self.ctx(), [])))
+        self.assertIsNone(brain_drafts.threads_poll(bad))
+        bad = good_pack(); bad["threads"]["topic"] = "Rent & Law."
+        self.assertTrue(any("threads.topic" in p for p in brain.lint(bad, self.ctx(), [])))
+
+    def test_a_telegram_quiz_is_a_cited_claim_or_nothing(self):
+        """17 Oct 2026: a quiz gets a tap from a reader who would not type; the explanation is the law."""
+        quiz = {"question": "A yearly tenant in Lagos: how much notice to quit?", "options": ["One month", "Three months", "Six months"],
+                "correct": 2, "explanation": "Six months — s.13(1)(e), Lagos Tenancy Law 2011.", "fact_id": "lagos:notice_ladder:5"}
+        self.assertEqual(brain.lint(good_pack(quiz=quiz), self.ctx(), []), [])
+        self.assertEqual(brain_drafts.quiz(good_pack(quiz=quiz))["correct"], 2)
+        self.assertIsNone(brain_drafts.quiz(good_pack(quiz=None)))
+        self.assertTrue(any("quiz.fact_id" in p for p in brain.lint(good_pack(quiz={**quiz, "fact_id": "made:up"}), self.ctx(), [])))
+        self.assertTrue(any("section of its fact" in p for p in brain.lint(good_pack(quiz={**quiz, "explanation": "Six months."}), self.ctx(), [])))
+        self.assertTrue(any("quiz must be null" in p for p in brain.lint(good_pack(quiz={**quiz, "correct": 7}), self.ctx(), [])))
+        self.assertTrue(any("quiz must be null" in p for p in brain.lint(good_pack(quiz={**quiz, "options": ["only"]}), self.ctx(), [])))
 
     def test_a_threads_post_that_does_not_end_with_a_question_is_refused(self):
         pack = good_pack(threads={"text": "Yearly tenant in Lagos? Six months' notice, not three. Count the months.",
@@ -401,7 +450,7 @@ class LaneConsumptionTests(Sandbox):
         self.approve_monday()
         import generate_threads_content as th
         import random
-        post_type, text, notes = th.build(MONDAY, random.Random(1))
+        post_type, text, notes, extras = th.build(MONDAY, random.Random(1))
         self.assertEqual(post_type, "educational")
         self.assertIn("six months' notice", text)
         self.assertIn("https://docoga.com.ng", text)
@@ -560,7 +609,7 @@ class WorkflowContractTests(unittest.TestCase):
         self.assertIn("contents: write", self.wf)
         self.assertIn("issues: write", self.wf)
         self.assertIn("cancel-in-progress: false", self.wf)
-        self.assertIn("git add -A brain/drafts brain/feedback.md logs/brain_said.json episodes", self.wf)
+        self.assertIn("git add -A brain/drafts brain/feedback.md brain/newsdesk.json logs/brain_said.json episodes", self.wf)
         self.assertIn("gh issue create", self.wf)
         self.assertIn("brain-automation", self.wf)
 

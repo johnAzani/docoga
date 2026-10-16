@@ -413,7 +413,8 @@ class FailureIssueHygieneTests(unittest.TestCase):
              # The Meta lanes join the same contract on the day they are written, not "later":
              # every rule in this class exists because a lane without one hid a failure for days.
              "threads_autopost.yml": "threads-automation",
-             "instagram_autopost.yml": "instagram-automation"}
+             "instagram_autopost.yml": "instagram-automation",
+             "linkedin_autopost.yml": "linkedin-automation"}
 
     @classmethod
     def setUpClass(cls):
