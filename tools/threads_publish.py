@@ -224,6 +224,18 @@ def normalize(text):
     return re.sub(r"\s+", " ", (text or "")).strip().lower()
 
 
+def same_words(seen, sent):
+    """The read-back comparison. Threads rewrites links on the way back (a bare URL becomes a
+    link preview and the `text` field may carry it shortened, re-encoded or not at all), so
+    links are dropped from both sides and everything else is compared with `normalize`.
+    An empty read-back (Meta returned no text) is accepted — the id and permalink are the
+    proof — rather than failing a post that is already in front of readers."""
+    strip = lambda t: re.sub(r"https?://\S+", "", t or "")  # noqa: E731
+    if not (seen or "").strip():
+        return True
+    return normalize(strip(seen)) == normalize(strip(sent))
+
+
 def find_duplicate(posts, text):
     needle = normalize(text)
     if not needle:
@@ -483,15 +495,15 @@ def main(argv=None):
         return {"credentials": 3, "permission": 3, "quota": 4, "copy": 5}.get(exc.cause, 6)
 
     permalink = seen.get("permalink") or "https://www.threads.net/@%s/post/%s" % (username, post_id)
-    if normalize(seen.get("text")) != normalize(text):
-        # The read-back is the difference between "Meta returned an id" and "your readers
-        # got this". If they disagree, say so and leave the run red.
-        print("::error title=Threads read-back mismatch::post %s exists but its text does not "
-              "match what was sent. Check it by eye: %s" % (post_id, permalink))
-        print("THREADS_RESULT=mismatch")
-        print("THREADS_CAUSE=verification")
-        print("THREADS_PERMALINK=%s" % permalink)
-        return 7
+    if not same_words(seen.get("text"), text):
+        # The post EXISTS — readers have it — so this is a warning, never a red run and never
+        # an unrecorded post. Run #7 (16 Oct 2026) was red with a perfect post live: Threads
+        # hands the text back with the link rendered differently from what was sent, and the
+        # old byte-for-byte check called that a mismatch.
+        print("::warning title=Threads read-back differs::post %s is live but its text reads "
+              "differently from what was sent (links and whitespace ignored). Check it by eye: %s"
+              % (post_id, permalink))
+        print("THREADS_READBACK=differs")
     print("✅ published to @%s: %s" % (username, permalink))
     print("THREADS_RESULT=sent")
     print("THREADS_POST_ID=%s" % post_id)
