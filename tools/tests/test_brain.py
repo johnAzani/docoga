@@ -629,5 +629,58 @@ class WorkflowContractTests(unittest.TestCase):
         self.assertEqual(ig.count('--brief "$DAY"'), 2)
 
 
+
+class SearchDemandTests(unittest.TestCase):
+    """17 Oct 2026: Google's own queries, in the prompt, when the pull is fresh."""
+
+    def test_striking_distance_queries_lead_and_a_stale_pull_is_silence(self):
+        import json
+        import tempfile
+        from datetime import datetime, timedelta, timezone
+        sys.path.insert(0, str(ROOT / "tools"))
+        import brain
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp) / "sc.json"
+            fresh = datetime.now(timezone.utc).isoformat(timespec="seconds")
+            p.write_text(json.dumps({"taken_at": fresh,
+                                     "top_queries": [{"query": "tenancy agreement sample nigeria", "clicks": 60, "impressions": 2000, "position": 4.2, "page": "https://docoga.com.ng/tenancy-agreement-nigeria.html"}],
+                                     "striking_distance": [{"query": "notice to quit lagos", "clicks": 3, "impressions": 800, "position": 9.1, "page": "https://docoga.com.ng/notice-to-quit-lagos.html"}]}))
+            rows = brain.search_demand(p)
+            self.assertEqual([r["query"] for r in rows], ["notice to quit lagos", "tenancy agreement sample nigeria"])
+            block = brain.search_block(rows)
+            self.assertIn('"notice to quit lagos" — almost page one, position 9.1', block)
+            self.assertIn("→ /notice-to-quit-lagos.html", block)
+            stale = (datetime.now(timezone.utc) - timedelta(days=40)).isoformat(timespec="seconds")
+            p.write_text(json.dumps({"taken_at": stale, "top_queries": [{"query": "x", "clicks": 1}]}))
+            self.assertEqual(brain.search_demand(p), [])
+            self.assertIn("no Search Console pull yet", brain.search_block([]))
+
+
+class LinkTagTests(unittest.TestCase):
+    """17 Oct 2026: every link we post says which channel it came from (?s=tg|fb|…) so the worker's
+    checkout/sale counters can tell the brain which channel moves money."""
+
+    def test_links_carry_the_channel_tag_once_and_only_ours(self):
+        sys.path.insert(0, str(ROOT / "tools"))
+        import brain_drafts as bd
+        text = "Start here: https://docoga.com.ng/rent-receipt-lagos.html and https://docoga.com.ng — not https://lagos.gov.ng/x"
+        out = bd.tag_links(text, "telegram")
+        self.assertIn("https://docoga.com.ng/rent-receipt-lagos.html?s=tg", out)
+        self.assertIn("https://docoga.com.ng/?s=tg", out, "the bare domain gets a slash so the query parses")
+        self.assertIn("https://lagos.gov.ng/x", out)
+        self.assertEqual(bd.tag_links(out, "telegram"), out, "tagging twice adds nothing")
+        self.assertEqual(bd.tag_links("https://docoga.com.ng/x.html?utm=1", "facebook"), "https://docoga.com.ng/x.html?utm=1")
+        self.assertEqual(bd.tag_links(text, "unknown-channel"), text)
+        for channel, tag in (("facebook", "fb"), ("instagram", "ig"), ("threads", "th"), ("linkedin", "li"), ("youtube", "yt"), ("tiktok", "tt")):
+            self.assertIn("?s=%s" % tag, bd.tag_links("https://docoga.com.ng/a.html", channel))
+
+    def test_pre_escaped_telegram_templates_are_tagged_without_breaking_markdownv2(self):
+        sys.path.insert(0, str(ROOT / "tools"))
+        import brain_drafts as bd
+        out = bd.tag_links_mdv2("👉 Try am: https://docoga\\.com\\.ng\n\nRead https://docoga\\.com\\.ng/notice\\-to\\-quit\\.html\\. Now")
+        self.assertEqual(out, "👉 Try am: https://docoga\\.com\\.ng/?s\\=tg\n\nRead https://docoga\\.com\\.ng/notice\\-to\\-quit\\.html?s\\=tg\\. Now")
+        import telegram_mdv2
+        self.assertEqual(telegram_mdv2.escape("https://docoga.com.ng/?s=tg"), "https://docoga\\.com\\.ng/?s\\=tg", "`=` is reserved, `?` is not")
+
 if __name__ == "__main__":
     unittest.main()

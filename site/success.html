@@ -110,7 +110,9 @@ const SUPPORT_WHATSAPP = "2349021852845"; // your WhatsApp number, intl format, 
 
   let prevCode = "";
   try { const p = JSON.parse(localStorage.getItem("docoga_pass") || "null"); if (p && p.c) prevCode = String(p.c).replace(/[\s-]/g, ""); } catch (e) {}
-  const verifyUrl = WORKER_URL + "/verify?ids=" + encodeURIComponent(candidates.join(",")) + "&ref=" + encodeURIComponent(ref) + (prevCode ? "&prev=" + encodeURIComponent(prevCode) : "");
+  let src = "direct";
+  try { const s = JSON.parse(localStorage.getItem("docoga_src") || "null"); if (s && s.t && Date.now() - s.at < 30 * 864e5) src = String(s.t).slice(0, 12); } catch (e) {}
+  const verifyUrl = WORKER_URL + "/verify?ids=" + encodeURIComponent(candidates.join(",")) + "&ref=" + encodeURIComponent(ref) + (prevCode ? "&prev=" + encodeURIComponent(prevCode) : "") + "&src=" + encodeURIComponent(src);
   // Retry loop: the payment webhook can land moments AFTER the browser redirect —
   // keep checking for up to ~60s before falling back to manual support.
   let j = null;

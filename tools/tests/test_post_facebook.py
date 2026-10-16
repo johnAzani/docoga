@@ -382,5 +382,52 @@ class ContentTests(unittest.TestCase):
                           "there is no `link` field on the request, so the URL must be in the text")
 
 
+
+class LinkInFirstCommentTests(Base):
+    """17 Oct 2026: the body is link-free, the first comment carries the link — or the post is edited to."""
+
+    def test_the_daily_post_puts_the_link_in_the_first_comment(self):
+        graph = Graph({"/comments": ok({"id": "PAGE_p1_c1"}), "/photos": ok({"id": "p1", "post_id": "PAGE_p1"}),
+                       "/feed": lambda url, data, files, method: ok({"data": []}) if method == "GET" else ok({"id": "PAGE_t1"})})
+        code, log = self.run_poster(graph, ["--date", "2026-10-13", "--force"])
+        self.assertEqual(code, 0, log)
+        published = [c for c in graph.calls if c["method"] == "POST" and ("/photos" in c["url"] or c["url"].endswith("/feed"))]
+        self.assertTrue(published, log)
+        words = published[0]["data"].get("caption") or published[0]["data"].get("message")
+        self.assertNotIn("https://docoga.com.ng", words, "the body must be native — a link in the body costs ~75% of reach")
+        self.assertIn("#DocOga", words, "the hashtags stay with the words")
+        comments = [c for c in graph.calls if c["method"] == "POST" and "/comments" in c["url"]]
+        self.assertEqual(len(comments), 1, log)
+        self.assertIn("https://docoga.com.ng", comments[0]["data"]["message"])
+        self.assertIn("?s=fb", comments[0]["data"]["message"], "the link keeps its channel tag")
+        self.assertIn("FB_LINK=comment", log)
+
+    def test_without_the_comment_permission_the_post_is_edited_to_carry_the_link(self):
+        graph = Graph({"/comments": api_error(200, "(#200) Requires pages_manage_engagement", status=403),
+                       "/photos": ok({"id": "p1", "post_id": "PAGE_p1"}),
+                       "/feed": lambda url, data, files, method: ok({"data": []}) if method == "GET" else ok({"id": "PAGE_t1"})})
+        code, log = self.run_poster(graph, ["--date", "2026-10-13", "--force"])
+        self.assertEqual(code, 0, log)
+        edits = [c for c in graph.calls if c["method"] == "POST" and c["url"].endswith("/PAGE_p1")]
+        self.assertEqual(len(edits), 1, "the post itself is edited so the day keeps its link: %s" % log)
+        self.assertIn("https://docoga.com.ng", edits[0]["data"]["message"])
+        self.assertIn("FB_LINK=body", log)
+        self.assertIn("pages_manage_engagement", log)
+
+    def test_the_switch_restores_the_old_shape(self):
+        graph = Graph({"/photos": ok({"id": "p1", "post_id": "PAGE_p1"}),
+                       "/feed": lambda url, data, files, method: ok({"data": []}) if method == "GET" else ok({"id": "PAGE_t1"})})
+        with patch.dict(os.environ, {"FB_LINK_IN_COMMENT": "off"}):
+            code, log = self.run_poster(graph, ["--date", "2026-10-13", "--force"])
+        self.assertEqual(code, 0, log)
+        self.assertFalse([c for c in graph.calls if "/comments" in c["url"]])
+        published = [c for c in graph.calls if c["method"] == "POST" and ("/photos" in c["url"] or c["url"].endswith("/feed"))]
+        self.assertIn("https://docoga.com.ng", published[0]["data"].get("caption") or published[0]["data"].get("message"))
+
+    def test_split_link_leaves_an_inline_link_alone(self):
+        self.assertEqual(fb_publish.split_link("Read https://docoga.com.ng today."), ("Read https://docoga.com.ng today.", None))
+        body, link = fb_publish.split_link("Words.\n\n👉 https://docoga.com.ng/x.html?s=fb\n\n#DocOga")
+        self.assertEqual((body, link), ("Words.\n\n#DocOga", "https://docoga.com.ng/x.html?s=fb"))
+
 if __name__ == "__main__":
     unittest.main()

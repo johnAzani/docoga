@@ -128,7 +128,8 @@ def copy_for(day):
     """(plain text, link, source) for the day: the brain's pack, else the rotation."""
     pack = brain_drafts.draft_for(day)
     if pack:
-        return strip_hashtags(brain_drafts.post_text(pack)), brain_drafts.link_for(pack), "brain:%s" % pack.get("theme")
+        return (brain_drafts.tag_links(strip_hashtags(brain_drafts.post_text(pack)), "linkedin"),
+                brain_drafts.tag_links(brain_drafts.link_for(pack), "linkedin"), "brain:%s" % pack.get("theme"))
     import random
     from telegram_mdv2 import to_plain
     import generate_telegram_content as tg

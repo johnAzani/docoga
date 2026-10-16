@@ -2,7 +2,7 @@
   "written": "2026-10-17",
   "horizon_start": "2026-10-20",
   "horizon_weeks": 13,
-  "note": "Weekly rates the scorecard holds every channel to. Baselines are taken from the first scorecard that sees a number; a null baseline means 'not measured yet'. Edit the rates here, the reasoning in strategy.md.",
+  "note": "Weekly rates the scorecard holds every channel to. Baselines are taken from the first scorecard that sees a number; a null baseline means 'not measured yet'. Edit the rates here, the reasoning in strategy.md. `milestones` are the platform thresholds that turn an audience into a second income (Stars, fan funding): the scorecard measures the pace and says how many weeks each is away.",
   "weekly": {
     "sales.passes": {
       "kind": "absolute_step",
@@ -53,6 +53,32 @@
     "facebook.comments_per_post": {
       "min": 2.0,
       "label": "Facebook comments per post (>= 2)"
+    }
+  },
+  "milestones": {
+    "facebook.followers": {
+      "target": 500,
+      "due": "2027-01-31",
+      "label": "Facebook 500 followers — unlocks Stars (needs 500 for 30 straight days)",
+      "unlocks": "Facebook Stars"
+    },
+    "youtube.subscribers": {
+      "target": 500,
+      "due": "2027-03-31",
+      "label": "YouTube 500 subscribers — fan-funding tier of the Partner Program",
+      "unlocks": "YouTube fan funding"
+    },
+    "instagram.followers": {
+      "target": 1000,
+      "due": "2027-04-30",
+      "label": "Instagram 1,000 followers — subscriptions/gifts eligibility",
+      "unlocks": "Instagram gifts"
+    },
+    "telegram.members": {
+      "target": 1000,
+      "due": "2027-04-30",
+      "label": "Telegram 1,000 members — channel ads/stars eligibility",
+      "unlocks": "Telegram Stars"
     }
   }
 }

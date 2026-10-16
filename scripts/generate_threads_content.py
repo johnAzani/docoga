@@ -197,13 +197,44 @@ def fit(body, hashtags):
     return text, notes
 
 
-def build(day, rng):
-    """Today's Threads post: the brain's short copy when there is a pack, else one
-    template, de-escaped — either way fitted to Meta's limits, with its post type."""
+CARD_URL = "https://docoga.com.ng/social/%s-instagram.jpg"   # the Instagram lane's card, live by 19:10 UTC
+
+
+def build_evening(day, rng):
+    """The 20:10 WAT post (17 Oct 2026, brain/strategy.md): Threads' best hour in Nigeria is
+    7–9 pm; an image post earns ~1.6× a text post; a link in the body costs reach. So the
+    evening slot is the day's card as an IMAGE post, link-free words, and the link in our own
+    reply. The card is the one the Instagram lane published an hour earlier (no second render,
+    no second commit, ₦0); if it is not there the publisher posts the words alone."""
     pack = brain_drafts.draft_for(day)
     if pack:
         post_type = brain_drafts.post_type(pack)
-        text, notes = fit(brain_drafts.threads_text(pack), brain_drafts.hashtags(pack, "threads"))
+        text, notes = fit(brain_drafts.threads_evening(pack), "")
+        notes = ["brain: %s (evening)" % pack.get("theme")] + list(notes)
+    else:
+        options = [t for t in tg.WEEKLY_SCHEDULE.get(day.weekday(), ["promo"]) if t != "promo"] or ["promo"]
+        post_type = rng.choice(options)
+        plain = to_plain(rng.choice(tg.TEMPLATES[post_type])).strip()
+        plain = brain_drafts.strip_links(plain)
+        if not plain:
+            raise ValueError("template for %r de-escaped to nothing" % post_type)
+        text, notes = fit(plain, "")
+    extras = extras_for(pack)
+    extras["poll"] = None                       # a poll next to an image is refused; the poll is the lunch post's
+    extras["image_url"] = CARD_URL % day.isoformat()
+    extras["reply_text"] = brain_drafts.evening_reply(pack)
+    return post_type, text, notes, extras
+
+
+def build(day, rng, slot="lunch"):
+    """Today's Threads post: the brain's short copy when there is a pack, else one
+    template, de-escaped — either way fitted to Meta's limits, with its post type."""
+    if slot == "evening":
+        return build_evening(day, rng)
+    pack = brain_drafts.draft_for(day)
+    if pack:
+        post_type = brain_drafts.post_type(pack)
+        text, notes = fit(brain_drafts.tag_links(brain_drafts.threads_text(pack), "threads"), brain_drafts.hashtags(pack, "threads"))
         return post_type, text, ["brain: %s" % pack.get("theme")] + list(notes), extras_for(pack)
     post_type = rng.choice(tg.WEEKLY_SCHEDULE.get(day.weekday(), ["promo"]))
     template = rng.choice(tg.TEMPLATES[post_type])
@@ -211,7 +242,7 @@ def build(day, rng):
     if not plain:
         raise ValueError("template for %r de-escaped to nothing" % post_type)
     hashtags = tg.HASHTAGS.get(post_type, "#DocOga")
-    text, notes = fit(plain, hashtags)
+    text, notes = fit(brain_drafts.tag_links(plain, "threads"), hashtags)
     return post_type, text, notes, extras_for(None)
 
 
@@ -221,15 +252,28 @@ def extras_for(pack):
     return {"topic_tag": brain_drafts.threads_topic(pack or {}), "poll": brain_drafts.threads_poll(pack or {})}
 
 
-def generate(day=None, write=True):
+def generate(day=None, write=True, slot="lunch"):
     """Return today's Threads post, and by default write it under `assets/threads/`."""
     day = day or datetime.now(LAGOS).date()
-    rng = random.Random("docoga-threads-%s" % day.isoformat())
+    rng = random.Random("docoga-threads-%s%s" % (day.isoformat(), "-evening" if slot == "evening" else ""))
 
-    post_type, text, notes, extras = build(day, rng)
+    post_type, text, notes, extras = build(day, rng, slot)
+    pack = brain_drafts.draft_for(day)
+    # Instagram reads the same copy (instagram_autopost.yml): its caption opens with the search
+    # phrase (Google indexes professional posts; Instagram search reads the first line), its link
+    # carries the Instagram tag, and the card gets alt text (≤1,000 chars) — ₦0 SEO, 17 Oct 2026.
+    seo = brain_drafts.seo_line(pack, post_type)
+    ig_caption = text.replace("?s=th", "?s=ig")
+    if seo.lower() not in ig_caption.lower():
+        ig_caption = seo + "\n\n" + ig_caption
 
     content = {
+        "ig_caption": ig_caption,
+        "alt_text": brain_drafts.alt_text(pack, text),
         "date": day.isoformat(),
+        "slot": slot,
+        "image_url": extras.get("image_url"),
+        "reply_text": extras.get("reply_text"),
         "day_of_week": day.weekday(),
         "day_name": day.strftime("%A"),
         "post_type": post_type,
@@ -245,12 +289,13 @@ def generate(day=None, write=True):
 
     if write:
         ASSETS_DIR.mkdir(parents=True, exist_ok=True)
-        for name in ("threads_content_%s.json" % day.isoformat(), "threads_content_latest.json"):
+        suffix = "-evening" if slot == "evening" else ""
+        for name in ("threads_content_%s%s.json" % (day.isoformat(), suffix), "threads_content_latest.json"):
             with open(ASSETS_DIR / name, "w") as handle:
                 json.dump(content, handle, indent=2)
 
-    log(" Threads content for %s — %s post, %d of %d characters, trimmed=%s"
-        % (day.isoformat(), post_type, content["cost"], MAX_COST,
+    log(" Threads content for %s (%s) — %s post, %d of %d characters, trimmed=%s"
+        % (day.isoformat(), slot, post_type, content["cost"], MAX_COST,
            "; ".join(notes) if notes else "nothing"))
     return content
 
@@ -260,10 +305,12 @@ def main(argv=None):
     parser.add_argument("--date", help="ISO date to generate for (default: today in Africa/Lagos)")
     parser.add_argument("--print", dest="show", action="store_true", help="print the post and exit")
     parser.add_argument("--no-write", action="store_true", help="do not touch assets/")
+    parser.add_argument("--slot", choices=["lunch", "evening"], default="lunch",
+                        help="lunch = the 13:10 WAT text post; evening = the 20:10 WAT image post with the link in a reply")
     args = parser.parse_args(sys.argv[1:] if argv is None else argv)
 
     day = date.fromisoformat(args.date) if args.date else datetime.now(LAGOS).date()
-    content = generate(day, write=not args.no_write)
+    content = generate(day, write=not args.no_write, slot=args.slot)
 
     if args.show:
         print("\n── today's Threads post (%d/%d characters) ─────────────────────────"

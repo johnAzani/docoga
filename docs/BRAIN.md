@@ -143,6 +143,70 @@ owner pastes the caption and posts. Handbook: `docs/TIKTOK_AUTOMATION.md`.
 Lagos; s.13(1)(e) says six months. Fixed — the brain's lint would have refused it from a
 model; the hand-written rotation needed a human to read it.
 
+## The money layer (17 Oct 2026, fifth round — "which channel pays, and what each platform needs before it pays")
+Seven changes, all ₦0; the payment flow is untouched (attribution is counters, never checkout).
+
+**Channel → revenue attribution.** Every link the lanes post carries a channel tag
+(`brain_drafts.tag_links`: `?s=tg|fb|ig|th|li|tt|yt|wa`; hand-written Telegram templates go
+through `tag_links_mdv2` so MarkdownV2 stays valid). `site/index.html` remembers the first
+`?s=` / `utm_source` / Google referrer for 30 days (`localStorage.docoga_src`); the Buy
+button fires `POST /tap {kind:checkout, src}` (keepalive) and `success.html` appends `&src=`
+to the verify call. The worker counts `src:<checkout|sale>:<channel>:<ISO week>` in KV (60-day
+TTL) and exposes `sources{checkout,sale}` in `/admin/data`. The scorecard turns that into
+`sales.by_source_28d/7d`, `sales.checkouts_by_source_28d` and the order **"Money follows
+X"**. Site traffic by channel comes from Cloudflare Web Analytics (`tools/site_analytics.py`,
+GraphQL `rumPageloadEventsAdaptiveGroups`; secrets `CLOUDFLARE_ACCOUNT_ID` +
+`CF_ANALYTICS_TOKEN`, optional var `CF_WEB_ANALYTICS_SITE_TAG`; `SITE_ANALYTICS=ok|not-connected`).
+
+**Search demand.** `tools/search_console.py` rides the Monday stats lane with the YouTube
+OAuth client: 28 days of Google queries for docoga.com.ng, Nigeria first, written to
+`logs/search_console.json` (`clicks, impressions, ctr, top_queries, striking_distance (pos
+5–20, ≥20 impressions), top_pages`). The brain's prompt gets **"what Nigerians type into
+Google before they find us"** when the file is ≤21 days old; the scorecard grades
+`google.clicks_28d`. Needs the `webmasters.readonly` scope on the same refresh token — one
+re-consent (below). Without it: `SEARCH_CONSOLE=missing-scope`, a notice, never red.
+
+**Facebook link in the first comment.** `scripts/post_facebook.py` posts the words
+link-free and puts the link in the first comment (`POST /{post_id}/comments`); when the Page
+token cannot comment (`pages_manage_engagement` missing) it edits the post to carry the link
+instead, so no day loses it. `FB_LINK=comment|body`; variable `FB_LINK_IN_COMMENT=off`
+restores the old shape. Research: a link in the body reaches ~0.20 % of followers, a native
+post ~0.80 %.
+
+**Threads evening slot.** `threads_autopost.yml` runs twice: 13:10 WAT (text, poll on
+Sundays) and **20:10 WAT** (`generate_threads_content.py --slot evening`): the day's
+Instagram card as an IMAGE post (`https://docoga.com.ng/social/<day>-instagram.jpg`, no
+second render), link-free words (`threads.evening` in the pack, else headline + first line +
+send line), and the link in **our own reply** (`reply_to_id`). Card not fetchable → text
+post; reply refused → warning. `THREADS_IMAGE=sent|dropped`, `THREADS_REPLY=sent|failed`.
+(Also fixed: `approve()` now carries `threads.topic` and `threads.poll` into the pack — the
+fourth round wrote them but dropped them on the way to the lanes.)
+
+**Instagram SEO.** Caption opens with the search phrase (`brain_drafts.seo_line`: "Rent
+receipt format Nigeria (Lagos)"), the link carries `?s=ig`, and the card gets alt text
+(`brain_drafts.alt_text`, ≤1,000 chars) via `ig_publish.py --alt-text` on photos and carousel
+items. Google indexes professional accounts' posts since 10 Jul 2025.
+
+**Wednesday Short + Telegram native video.** `youtube_scheduled.yml` runs Tue/Wed/Fri 18:00
+WAT (brain `SHORT_DAYS` now Mon–Fri). After every YouTube upload, `tools/telegram_video.py`
+posts the same MP4 to the Telegram channel with `sendVideo` (≤50 MB, caption with the
+tagged link and the YouTube URL); refused or oversized → the link as text.
+`TELEGRAM_VIDEO=sent|link|skipped|failed`, never fatal.
+
+**Milestones and slot advice.** `brain/goals.json` → `milestones`: Facebook 500 followers
+(Stars, 30 straight days), YouTube 500 subscribers (fan funding), Instagram and Telegram
+1,000. The scorecard measures the four-week pace, prints weeks-to-go and needed-per-week, and
+issues orders when a milestone is behind its date or reached. `slot_advice` compares
+Instagram's `online_followers` peak with our 19:10 WAT slot and says when to move it.
+
+### The one Google re-consent (adds Search Console + YouTube Analytics)
+On the phone: Google Cloud console → APIs & Services → **Library** → enable "Google Search
+Console API" and "YouTube Analytics API" → **OAuth consent screen → Data access → Add or
+remove scopes** → tick `…/auth/youtube.force-ssl`, `…/auth/yt-analytics.readonly`,
+`…/auth/webmasters.readonly` → Save. Then redo the consent exactly as in
+`docs/LAUNCH_SEQUENCE.md` Step 3 (same client id/secret) and paste the new refresh token into
+the `YT_REFRESH_TOKEN` secret. Next Monday 06:00 WAT the stats lane prints `SEARCH_CONSOLE=ok`.
+
 ## The gates (why a legal-documents brand can let a model write)
 1. **Citation** — every legal claim names a fact id on the shelf for the state
    the post names. The shelf is `tools/state_law_data.py`, the same verified,

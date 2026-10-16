@@ -35,6 +35,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 sys.path.insert(0, str(ROOT / "scripts"))
 
 import generate_threads_content as gc  # noqa: E402
+import brain_drafts as bd  # noqa: E402
 import threads_publish as tp  # noqa: E402
 import ig_publish as ig  # noqa: E402
 import social_card  # noqa: E402
@@ -788,6 +789,30 @@ class InstagramPublisher(unittest.TestCase):
         self.assertIn("instagram.com/p/MEDIA9/", out)
         self.assertEqual(len(fake.posts), 2)
 
+    def test_alt_text_rides_on_the_photo_container(self):
+        """17 Oct 2026, Instagram SEO: the card's alt text goes to Meta with the container."""
+        code, out, fake = self._publish(self._base_routes(),
+                                       ["--image-url", "https://docoga.com.ng/social/x.jpg",
+                                        "--caption", self.CAPTION, "--alt-text", "DocOga navy text card: stamp duty in Lagos.",
+                                        "--allow-unknown-specs"])
+        self.assertEqual(code, 0, out)
+        container = [c for c in fake.posts if c[1].endswith("/1784/media")][0]
+        q = urllib.parse.parse_qs(container[2])
+        self.assertEqual(q["alt_text"], ["DocOga navy text card: stamp duty in Lagos."])
+        self.assertEqual(q["caption"], [self.CAPTION])
+
+    def test_the_instagram_caption_opens_with_the_search_phrase_and_the_card_has_alt_text(self):
+        with mock.patch.dict(os.environ, {"DOCOGA_BRAIN_DRAFTS": os.path.join(self.tmp, "none")}):
+            content = gc.generate(datetime.date(2026, 10, 21), write=False)
+        self.assertTrue(content["ig_caption"].startswith("Rent and tenancy documents Nigeria\n\n"), content["ig_caption"])
+        self.assertIn("?s=ig", content["ig_caption"], "Instagram's link carries Instagram's tag")
+        self.assertNotIn("?s=th", content["ig_caption"])
+        self.assertTrue(content["alt_text"].startswith("DocOga navy text card"), content["alt_text"])
+        self.assertLessEqual(len(content["alt_text"]), 1000)
+        pack = {"tool": "notice-to-quit", "state": "lagos", "post": {"headline": "Six months, in writing.", "lines": ["s.13(1)(e)."]}, "visual": {"kicker": "Notice to quit"}}
+        self.assertEqual(bd.seo_line(pack), "Notice to quit Nigeria (Lagos)")
+        self.assertEqual(bd.alt_text(pack), "DocOga navy text card — Notice to quit: Six months, in writing. s.13(1)(e). Notice to quit Nigeria (Lagos). docoga.com.ng.")
+
     def test_a_failed_publish_is_a_failed_run(self):
         """The bug this file was rewritten for: `return None` from main() exited 0."""
         routes = self._base_routes({"POST /1784/media_publish": (400, json.dumps(
@@ -1452,6 +1477,109 @@ class LaneRegistration(unittest.TestCase):
                          "step 1's table still promises Instagram will do nothing")
         self.assertIn("threads", text.lower(), "the launch sequence must include the new lane")
 
+
+
+class ThreadsEveningSlot(unittest.TestCase):
+    """17 Oct 2026: the 20:10 WAT post — the day's card as an image, link-free words, link in our reply."""
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+
+    def test_the_evening_copy_is_link_free_and_names_the_card_and_the_reply(self):
+        with mock.patch.dict(os.environ, {"DOCOGA_BRAIN_DRAFTS": os.path.join(self.tmp, "none")}):
+            content = gc.generate(datetime.date(2026, 10, 21), write=False, slot="evening")
+        self.assertEqual(content["slot"], "evening")
+        self.assertNotIn("http", content["text"], "the body carries no link — Threads ranks it higher without one")
+        self.assertNotIn("👉", content["text"].split("\n")[-1].strip() or "x", "no dangling arrow where the link was")
+        self.assertEqual(content["image_url"], "https://docoga.com.ng/social/2026-10-21-instagram.jpg")
+        self.assertIn("https://docoga.com.ng", content["reply_text"])
+        self.assertIn("?s=th", content["reply_text"], "the reply's link carries the Threads tag")
+        self.assertIsNone(content["poll"], "a poll beside an image is refused by the API")
+        lunch = gc.generate(datetime.date(2026, 10, 21), write=False)
+        self.assertEqual(lunch.get("slot"), "lunch")
+        self.assertIsNone(lunch["image_url"])
+        self.assertNotEqual(lunch["text"], content["text"], "two posts a day, not the same post twice")
+
+    def test_a_brain_pack_writes_the_evening_angle(self):
+        pack = {"date": "2026-10-21", "theme": "x", "claims": [], "tool": "rent-receipt", "state": "lagos",
+                "post": {"headline": "A rent receipt is seven lines.", "lines": ["Date, amount, period, address, names, signature, stamp."],
+                         "cta": "Send this to a landlord you know.", "hashtags": ["#DocOga"]},
+                "threads": {"text": "Lunch text?", "evening": "The receipt you did not collect is the dispute you will have in March."}}
+        self.assertEqual(bd.threads_evening(pack), "The receipt you did not collect is the dispute you will have in March.")
+        del pack["threads"]["evening"]
+        self.assertEqual(bd.threads_evening(pack), "A rent receipt is seven lines.\n\nDate, amount, period, address, names, signature, stamp.\n\nSend this to a landlord you know.")
+        self.assertTrue(bd.evening_reply(pack).endswith("?s=th"), bd.evening_reply(pack))
+        self.assertEqual(bd.strip_links("Words.\n\n👉 Try am: https://docoga.com.ng\n\nMore."), "Words.\n\nMore.")
+
+
+class ThreadsImageAndReply(ThreadsPublisher):
+    """The publisher side of the evening slot: IMAGE container, then a TEXT reply under it."""
+
+    def _evening_content(self):
+        path = os.path.join(self.tmp, "threads_content_latest.json")
+        with open(path, "w", encoding="utf-8") as fh:
+            json.dump({"text": self.TEXT, "slot": "evening", "topic_tag": "Tenant Rights Nigeria",
+                       "image_url": "https://docoga.com.ng/social/2026-10-21-instagram.jpg",
+                       "reply_text": "The page, free to start: https://docoga.com.ng/?s=th"}, fh)
+        return path
+
+    def test_the_card_rides_as_an_image_post_and_the_link_is_a_reply(self):
+        seen = []
+
+        def container(method, url, query):
+            q = urllib.parse.parse_qs(query)
+            seen.append(q)
+            return ok({"id": "181" if "reply_to_id" not in q else "182"})
+        routes = self._routes(extra={"POST /42/threads": container, "GET /182": ok({"status": "FINISHED"}),
+                                     "POST /42/threads_publish": lambda m, u, q: ok({"id": "182" if "182" in q else "181"})})
+        path = self._evening_content()
+        env, token_path = threads_env(self.tmp)
+        code, out, fake = self._publish(routes, argv=["--from-json", path, "--token-file", token_path],
+                                        env_extra={"THREADS_SHARE_TO_IG": "off"})
+        self.assertEqual(code, 0, out)
+        self.assertEqual(seen[0]["media_type"], ["IMAGE"])
+        self.assertEqual(seen[0]["image_url"], ["https://docoga.com.ng/social/2026-10-21-instagram.jpg"])
+        self.assertEqual(seen[0]["topic_tag"], ["Tenant Rights Nigeria"])
+        self.assertEqual(seen[1]["media_type"], ["TEXT"])
+        self.assertEqual(seen[1]["reply_to_id"], ["181"])
+        self.assertIn("docoga.com.ng/?s=th", seen[1]["text"][0])
+        self.assertIn("THREADS_IMAGE=sent", out)
+        self.assertIn("THREADS_REPLY=sent", out)
+        self.assertIn("THREADS_RESULT=sent", out)
+
+    def test_a_card_threads_cannot_fetch_falls_back_to_the_words(self):
+        seen = []
+
+        def container(method, url, query):
+            q = urllib.parse.parse_qs(query)
+            seen.append(q)
+            if q.get("media_type") == ["IMAGE"]:
+                return (400, json.dumps({"error": {"message": "Media download failed", "code": 9004}}))
+            return ok({"id": "181" if "reply_to_id" not in q else "182"})
+        routes = self._routes(extra={"POST /42/threads": container, "GET /182": ok({"status": "FINISHED"})})
+        path = self._evening_content()
+        env, token_path = threads_env(self.tmp)
+        code, out, _ = self._publish(routes, argv=["--from-json", path, "--token-file", token_path],
+                                     env_extra={"THREADS_SHARE_TO_IG": "off"})
+        self.assertEqual(code, 0, out)
+        self.assertEqual([q["media_type"][0] for q in seen], ["IMAGE", "TEXT", "TEXT"], "image refused → text post → link reply")
+        self.assertIn("THREADS_IMAGE=dropped", out)
+        self.assertIn("THREADS_REPLY=sent", out)
+
+    def test_a_failed_reply_is_a_warning_not_a_red_run(self):
+        def container(method, url, query):
+            q = urllib.parse.parse_qs(query)
+            if "reply_to_id" in q:
+                return (403, json.dumps({"error": {"message": "(#10) permission", "code": 10}}))
+            return ok({"id": "181"})
+        routes = self._routes(extra={"POST /42/threads": container})
+        path = self._evening_content()
+        env, token_path = threads_env(self.tmp)
+        code, out, _ = self._publish(routes, argv=["--from-json", path, "--token-file", token_path],
+                                     env_extra={"THREADS_SHARE_TO_IG": "off"})
+        self.assertEqual(code, 0, out)
+        self.assertIn("THREADS_REPLY=failed", out)
+        self.assertIn("THREADS_RESULT=sent", out)
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

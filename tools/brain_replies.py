@@ -402,7 +402,8 @@ def context_for(comment, packs_by_date):
     cited = {c.get("fact_id") for c in (pack or {}).get("claims") or []}
     shelf = [f for f in facts if f["id"] in cited] or facts[:12]
     return {"pack": pack, "state": state, "facts": shelf, "reader": (pack or {}).get("reader"),
-            "tool": (pack or {}).get("tool"), "link": drafts.link_for(pack or {})}
+            "tool": (pack or {}).get("tool"),
+            "link": drafts.tag_links(drafts.link_for(pack or {}), comment.get("platform"))}
 
 
 def prompt_for(pending, contexts):

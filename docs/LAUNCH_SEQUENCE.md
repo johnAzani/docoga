@@ -289,6 +289,19 @@ while you decide.
 
 Opt-outs are variables: `THREADS_SHARE_TO_IG=off`, `IG_TRIAL_REELS=off`.
 
+## Step 7 — the money layer (17 Oct 2026): three optional taps
+
+Already live; each tap switches one more number on. Nothing goes red while you decide.
+
+| tap | where (phone) | what wakes up |
+|---|---|---|
+| Cloudflare Web Analytics: dash.cloudflare.com → **Web Analytics** → Add a site → `docoga.com.ng` (Pages: one-click enable) → copy the **site tag** → repo var `CF_WEB_ANALYTICS_SITE_TAG`; then My Profile → API Tokens → Create → template **Read analytics and logs** → secret `CF_ANALYTICS_TOKEN` | GitHub → Settings → Secrets and variables → Actions | Monday scorecard shows visits by channel, top pages, Nigeria share (`SITE_ANALYTICS=ok`) |
+| Google re-consent once with the two extra scopes (`docs/BRAIN.md` → "The one Google re-consent") → paste the new `YT_REFRESH_TOKEN` | Google Cloud console → OAuth consent → Data access | Search Console queries in the brain's prompt + `google.clicks_28d` on the scorecard (`SEARCH_CONSOLE=ok`); YouTube Analytics metrics |
+| Facebook: Page → Professional dashboard → **Monetisation** → "Express interest" (Stars unlocks at 500 followers for 30 days — the scorecard counts the weeks) | Facebook app | nothing in the repo; Meta knows you want in the day you qualify |
+| (nothing) | — | link tags, checkout/sale counters, first-comment links, the 20:10 Threads image post, Instagram alt text, the Wednesday Short and the Telegram video all run on what you already have |
+
+Opt-outs: `FB_LINK_IN_COMMENT=off`. The checkout counters are counters only — the payment link, the webhook and the pass code are untouched.
+
 ---
 
 ## What this page is not

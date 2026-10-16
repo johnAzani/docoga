@@ -47,10 +47,24 @@ jobs:
         run: |
           set -o pipefail
           python3 tools/yt_stats.py --days "${DAYS:-28}" 2>&1 | tee /tmp/yt_stats.log
+      # Google Search Console rides the same token (17 Oct 2026): what Nigerians search before they
+      # find us, 28 days, Nigeria first. Needs the webmasters.readonly scope on the one re-consent;
+      # until then it prints a notice and the scorecard says "not measured". Never red.
+      - name: Pull Google Search Console
+        if: always()
+        continue-on-error: true
+        env:
+          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+          YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+        run: |
+          set -o pipefail
+          python3 tools/search_console.py --days 28 2>&1 | tee /tmp/search_console.log
       - name: Put the report in the run summary
         if: always()
         run: |
           if [ -f docs/YOUTUBE_PERFORMANCE.md ]; then cat docs/YOUTUBE_PERFORMANCE.md >> "$GITHUB_STEP_SUMMARY"; else tail -n 20 /tmp/yt_stats.log >> "$GITHUB_STEP_SUMMARY"; fi
+          { echo; echo "### Google Search Console"; echo '```'; tail -n 8 /tmp/search_console.log 2>/dev/null || echo "(not run)"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
       - name: Commit the snapshot
         continue-on-error: true
         env:
@@ -60,4 +74,5 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git pull --rebase --autostash origin "$BRANCH" || { echo "::warning title=Stats not committed::could not rebase on $BRANCH"; exit 1; }
           git add logs/youtube_stats.json docs/YOUTUBE_PERFORMANCE.md
+          git add logs/search_console.json 2>/dev/null || true
           git diff --staged --quiet || { git commit -m "Auto: YouTube stats snapshot $(date +%F) [skip ci]" && git push origin "HEAD:$BRANCH"; }

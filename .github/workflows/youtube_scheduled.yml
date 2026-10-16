@@ -12,8 +12,10 @@ name: YouTube Shorts Auto-Generate and Publish
 
 on:
   schedule:
-    # Twice weekly at 6 PM West Africa Time (UTC+1).
-    - cron: '0 17 * * 2,5'
+    # Three times a week at 6 PM West Africa Time (UTC+1): Tuesday, Wednesday, Friday.
+    # Wednesday added 17 Oct 2026 — YouTube's 2026 Shorts ranking rewards cadence, and the
+    # narrator's free bucket comfortably covers a third Short (tools/gemini_quota.py).
+    - cron: '0 17 * * 2,3,5'
   workflow_dispatch:
     inputs:
       privacy:
@@ -345,6 +347,24 @@ jobs:
           RESULT=$(sed -n 's/^TIKTOK_RESULT=//p' /tmp/tiktok.log | tail -1)
           echo "result=${RESULT:-unknown}" >> "$GITHUB_OUTPUT"
           echo "publish_id=$(sed -n 's/^TIKTOK_PUBLISH_ID=//p' /tmp/tiktok.log | tail -1)" >> "$GITHUB_OUTPUT"
+
+      # The same Short goes into the Telegram channel as a native video (17 Oct 2026): Telegram
+      # counts its own views, autoplays, and readers forward the file. Never fatal: a Telegram
+      # refusal is a warning on a run whose YouTube upload already succeeded.
+      - name: Post the Short to the Telegram channel
+        id: telegram
+        if: always() && steps.upload.outputs.video_id != '' && steps.short.outputs.paused != 'yes'
+        continue-on-error: true
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          VIDEO_PATH: ${{ steps.short.outputs.video_path }}
+          VIDEO_TITLE: ${{ steps.short.outputs.title }}
+          VIDEO_URL: ${{ steps.upload.outputs.video_url }}
+        run: |
+          set -o pipefail
+          python3 tools/telegram_video.py --video "$VIDEO_PATH" --title "$VIDEO_TITLE" --url "$VIDEO_URL" 2>&1 | tee /tmp/telegram_video.log
+          echo "result=$(sed -n 's/^TELEGRAM_VIDEO=//p' /tmp/telegram_video.log | tail -1)" >> "$GITHUB_OUTPUT"
 
       - name: Commit the publish ledger
         if: steps.guard.outputs.skip != 'yes' && steps.short.outputs.paused != 'yes'

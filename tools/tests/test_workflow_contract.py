@@ -267,9 +267,16 @@ class ScheduledShortsWorkflowTests(unittest.TestCase):
         step = self.by_name[name]
         return "\n".join([str(step.get("run", "")), str(step.get("if", "")), str(step.get("env", ""))])
 
-    def test_it_still_runs_on_the_tuesday_friday_schedule(self):
+    def test_it_runs_on_the_tuesday_wednesday_friday_schedule(self):
         crons = [entry["cron"] for entry in (self.doc[True] if True in self.doc else self.doc["on"])["schedule"]]
-        self.assertEqual(crons, ["0 17 * * 2,5"], "the twice-weekly slot must not drift")
+        self.assertEqual(crons, ["0 17 * * 2,3,5"], "the 18:00 WAT slot, three days a week (Wed added 17 Oct 2026), must not drift")
+
+    def test_the_short_also_goes_to_telegram_as_a_native_video(self):
+        step = self.by_name["Post the Short to the Telegram channel"]
+        self.assertTrue(step.get("continue-on-error"), "a Telegram refusal must not redden a successful YouTube upload")
+        self.assertIn("tools/telegram_video.py", step["run"])
+        self.assertIn("steps.upload.outputs.video_id != ''", step["if"])
+        self.assertIn("TELEGRAM_BOT_TOKEN", step["env"])
 
     def test_it_can_write_the_ledger_and_open_an_issue(self):
         permissions = self.doc.get("permissions") or {}
