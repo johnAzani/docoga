@@ -953,6 +953,8 @@ def send(token, user_id, container_data, caption, kind, username="", upload=None
 def main(argv=None):
     parser = argparse.ArgumentParser(description="DocOga Instagram publisher")
     parser.add_argument("--caption", default="", help="post caption (≤2200 characters)")
+    parser.add_argument("--alt-text", dest="alt_text", default="",
+                        help="alt text for a photo or each carousel image (≤1000 characters; Instagram search and screen readers read it)")
     parser.add_argument("--image-url", help="public JPEG URL for a photo")
     parser.add_argument("--story-url", help="public 9:16 JPEG URL for a Story (24-hour, no caption)")
     parser.add_argument("--image-urls", nargs="+", help="public JPEG URLs for a carousel (2-10)")
@@ -1097,6 +1099,8 @@ def main(argv=None):
         kind, media = "story", {"media_type": "STORIES", "image_url": args.story_url}
     elif args.image_url:
         kind, media = "photo", {"image_url": args.image_url, "caption": args.caption}
+        if args.alt_text:
+            media["alt_text"] = args.alt_text[:1000]
     elif urls:
         kind, media = "carousel", {"media_type": "CAROUSEL", "caption": args.caption}
     elif args.video_url:
@@ -1148,7 +1152,8 @@ def main(argv=None):
         try:
             for index, url in enumerate(urls, 1):
                 children.append(create_container(token, user_id,
-                                                 {"image_url": url, "is_carousel_item": "true"}))
+                                                 dict({"image_url": url, "is_carousel_item": "true"},
+                                                      **({"alt_text": args.alt_text[:1000]} if args.alt_text else {}))))
                 print("  child %d/%d: %s" % (index, len(urls), children[-1]))
             media["children"] = ",".join(children)
         except ApiError as exc:

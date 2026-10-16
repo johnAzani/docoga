@@ -96,13 +96,33 @@ def full_routes():
                          "snapshot": {"series": [{"date": (NOW - timedelta(days=i)).strftime("%Y-%m-%d"),
                                                   "sold": 1 if i % 3 == 0 else 0, "rev": 2000 if i % 3 == 0 else 0,
                                                   "offline": 0, "manual": 0, "bizpaid": 0, "bizrev": 0}
-                                                 for i in range(1, 31)]}}),
+                                                 for i in range(1, 31)],
+                                      "sources": {"checkout": {"2026-W42": {"telegram": 9, "facebook": 4}, "2026-W40": {"facebook": 3}},
+                                                  "sale": {"2026-W42": {"telegram": 2}, "2026-W41": {"facebook": 1}, "2026-W40": {"telegram": 1}}}}}),
     ]
 
 
 ENV = {"FB_PAGE_ACCESS_TOKEN": "pt", "FB_PAGE_ID": "102466208923830", "IG_ACCESS_TOKEN": "igt",
        "THREADS_ACCESS_TOKEN": "tht", "TELEGRAM_BOT_TOKEN": "8852331279:x", "TELEGRAM_CHAT_ID": "@docogadaily",
-       "DOCOGA_ADMIN_PASSPHRASE": "open-sesame", "DOCOGA_WORKER_URL": "https://docoga-pass.example.workers.dev"}
+       "DOCOGA_ADMIN_PASSPHRASE": "open-sesame", "DOCOGA_WORKER_URL": "https://docoga-pass.example.workers.dev",
+       "CLOUDFLARE_ACCOUNT_ID": "acc123", "CF_ANALYTICS_TOKEN": "cft"}
+
+SITE_GRAPHQL = {"data": {"viewer": {"accounts": [{
+    "total": [{"count": 900, "sum": {"visits": 400}}],
+    "referers": [{"sum": {"visits": 120}, "dimensions": {"refererHost": "t.me"}},
+                 {"sum": {"visits": 90}, "dimensions": {"refererHost": "l.facebook.com"}},
+                 {"sum": {"visits": 60}, "dimensions": {"refererHost": "www.google.com"}},
+                 {"sum": {"visits": 40}, "dimensions": {"refererHost": ""}},
+                 {"sum": {"visits": 30}, "dimensions": {"refererHost": "docoga.com.ng"}},
+                 {"sum": {"visits": 4}, "dimensions": {"refererHost": "l.threads.net"}}],
+    "paths": [{"sum": {"visits": 150}, "dimensions": {"requestPath": "/"}},
+              {"sum": {"visits": 90}, "dimensions": {"requestPath": "/rent-receipt-lagos.html"}}],
+    "countries": [{"sum": {"visits": 360}, "dimensions": {"countryName": "Nigeria"}},
+                  {"sum": {"visits": 40}, "dimensions": {"countryName": "United Kingdom"}}]}]}}}
+
+SEARCH_FIXTURE = {"taken_at": "2026-10-19T05:00:00+00:00", "clicks": 210, "impressions": 9000, "ctr": 0.023,
+                  "top_queries": [{"query": "tenancy agreement sample nigeria", "clicks": 60, "impressions": 2000, "position": 4.2}],
+                  "striking_distance": [{"query": "notice to quit lagos", "clicks": 3, "impressions": 800, "position": 9.1}]}
 
 
 class PullTests(unittest.TestCase):
@@ -118,7 +138,13 @@ class PullTests(unittest.TestCase):
 
     def build(self, routes=None, env=None, history=None, fail=()):
         net = FakeNet(routes or full_routes(), fail=fail)
-        snap = sc.build(http=net, env=ENV if env is None else env, now=NOW, history=history or [],
+        import site_analytics
+        site_analytics.http = lambda token, body, timeout=40: (200, SITE_GRAPHQL)
+        search = Path(self.tmp.name) / "search_console.json"
+        search.write_text(json.dumps(SEARCH_FIXTURE), encoding="utf-8")
+        use = dict(ENV if env is None else env)
+        use.setdefault("DOCOGA_SEARCH_CONSOLE", str(search))
+        snap = sc.build(http=net, env=use, now=NOW, history=history or [],
                         goals=sc.load_goals(), stats_path=self.stats, said={})
         return snap, net
 
@@ -143,6 +169,22 @@ class PullTests(unittest.TestCase):
         self.assertEqual(k["youtube.subscribers"], 62)
         self.assertEqual(k["sales.passes"], 1 + 2, "today + the two sold days in the last six")
         self.assertEqual(k["sales.revenue"], 6000)
+        # 17 Oct 2026: the site's referrers, Google's queries and the worker's sale tags are channels too.
+        self.assertEqual(k["site.visits_7d"], 400)
+        self.assertEqual(k["site.by_channel"], {"telegram": 120, "facebook": 90, "google": 60, "direct": 40, "threads": 4},
+                         "internal referrers are dropped; empty referrer is direct")
+        self.assertEqual(k["site.nigeria_share"], 0.9)
+        self.assertEqual(k["google.clicks_28d"], 210)
+        self.assertEqual(k["sales.by_source_28d"], {"telegram": 3, "facebook": 1})
+        self.assertEqual(k["sales.by_source_7d"], {"telegram": 2}, "the week that just ended plus today")
+        self.assertEqual(k["sales.checkouts_by_source_28d"], {"telegram": 9, "facebook": 7})
+        text = sc.summary_md(snap)
+        self.assertIn("Sold by channel (28 days):** telegram 3, facebook 1", text)
+        self.assertIn("**Traffic:** 400 visits", text)
+        self.assertIn("Google (28 days):** 210 clicks", text)
+        self.assertTrue(any("Money follows Telegram" in o for o in snap["orders"]), snap["orders"])
+        self.assertTrue(any("notice to quit lagos" in o for o in snap["orders"]), snap["orders"])
+        self.assertEqual(k["google.striking_distance"][0]["query"], "notice to quit lagos")
         self.assertEqual(snap["problems"], [])
         # the metrics asked for are the ones that survive the Nov-2025/Jun-2026 deprecations
         asked = " ".join(c[2].get("metric", "") for c in net.calls)
@@ -295,6 +337,49 @@ class GradeTests(unittest.TestCase):
         self.assertEqual(strk["telegram.members"], 2)
         text = "\n".join(sc.orders({}, grades, strk))
         self.assertIn("two weeks running", text)
+
+    def test_milestones_measure_pace_against_the_platform_thresholds(self):
+        """17 Oct 2026: Facebook Stars at 500 followers, YouTube fan funding at 500 subs — the scorecard
+        says how many weeks each is away at the last four weeks' pace, and when the pace misses the date."""
+        now = NOW
+        history = [{"taken_at": (now - timedelta(days=28)).isoformat(), "kpis": {"facebook.followers": 300, "youtube.subscribers": 40}}]
+        k = {"facebook.followers": 380, "youtube.subscribers": 44, "instagram.followers": 1200}
+        goals = {"milestones": {"facebook.followers": {"target": 500, "due": (now + timedelta(days=70)).date().isoformat(), "unlocks": "Facebook Stars", "label": "FB 500"},
+                                "youtube.subscribers": {"target": 500, "due": (now + timedelta(days=70)).date().isoformat(), "unlocks": "YouTube fan funding", "label": "YT 500"},
+                                "instagram.followers": {"target": 1000, "due": "2027-04-30", "unlocks": "Instagram gifts", "label": "IG 1000"}}}
+        rows = {m["key"]: m for m in sc.milestones(k, goals, history, now)}
+        fb, yt, ig = rows["facebook.followers"], rows["youtube.subscribers"], rows["instagram.followers"]
+        self.assertEqual((fb["remaining"], fb["pace_per_week"]), (120, 20.0))
+        self.assertEqual(fb["weeks_to_go"], 6.0)
+        self.assertEqual(fb["status"], "on_pace", fb)
+        self.assertEqual(yt["pace_per_week"], 1.0)
+        self.assertEqual(yt["status"], "behind_pace", yt)
+        self.assertAlmostEqual(yt["needed_per_week"], 456 / (69 / 7.0), places=1)
+        self.assertEqual(ig["status"], "reached")
+        text = "\n".join(sc.orders(dict(k, milestones=list(rows.values())), []))
+        self.assertIn("YouTube fan funding is behind pace: 456 to go, 1.0 a week now, %s a week needed" % yt["needed_per_week"], text)
+        self.assertIn("Instagram gifts reached", text)
+        self.assertNotIn("Facebook Stars is behind", text)
+        md = sc.summary_md({"week": "2026-W42", "taken_at": now.isoformat(), "kpis": dict(k, milestones=list(rows.values())), "grades": [], "orders": []})
+        self.assertIn("### Milestones", md)
+        self.assertIn("| YT 500 | 44 | 456 | 1.0 | %s | 456.0 wk | 🔻 behind pace" % yt["needed_per_week"], md)
+
+    def test_slot_advice_moves_only_when_the_audience_is_two_hours_away(self):
+        self.assertIsNone(sc.slot_advice({}))
+        self.assertFalse(sc.slot_advice({"instagram.online_peak_hours_wat": [20, 19, 21]})["move"])
+        adv = sc.slot_advice({"instagram.online_peak_hours_wat": [13, 12, 20]})
+        self.assertEqual((adv["move"], adv["suggest_hour_wat"]), (True, 13))
+        text = "\n".join(sc.orders({"slot_advice": adv}, []))
+        self.assertIn("online most at 13:00, 12:00, 20:00 WAT", text)
+        self.assertIn("13:10 WAT", text)
+
+    def test_the_summary_renders_when_two_hooks_have_evidence(self):
+        """Regression: summary_md carried a copy of the orders' hook block and died on `out` (NameError)."""
+        lt = LearningTests("test_orders_name_the_hook_and_reader_that_earned_the_most")
+        k = {"learning": sc.learning(lt.channels(), lt.said())}
+        md = sc.summary_md({"week": "2026-W42", "taken_at": NOW.isoformat(), "kpis": k, "grades": [], "orders": sc.orders(k, [])})
+        self.assertIn("What the brain's choices earned", md)
+        self.assertIn("use STAKES on two of the four cited days", md)
 
 
 class LedgerTests(unittest.TestCase):

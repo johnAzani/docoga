@@ -269,6 +269,63 @@ async function dailyRenewalReminders(env) {
  * specific customer's pass.
  * Field names are whitelisted: a typo must not mint an unbounded key family. */
 const STAT_FIELDS = "sold,rev,offline,manual,revoked,wait,bizcreate,bizpaid,bizrev".split(",");
+
+/* ---------- Channel attribution (17 Oct 2026) ----------
+ * Every link the social lanes post carries `?s=<tag>`; the site keeps the first tag it saw
+ * (localStorage, 30 days) and sends it with the checkout tap (POST /tap) and the /verify
+ * call. Two whitelisted families of weekly counters — never a key per visitor, never an
+ * email — so the Monday scorecard can say which channel *sold* a pass, not only which one
+ * got likes. A counter must never fail the money path. */
+const SRC_TAGS = { tg: "telegram", fb: "facebook", ig: "instagram", th: "threads", li: "linkedin", tt: "tiktok", yt: "youtube", wa: "whatsapp", google: "google", direct: "direct" };
+const SRC_KINDS = ["checkout", "sale"];
+const SRC_WEEKS = 5; // weeks the snapshot reports (28 days + the current one)
+function srcName(raw) {
+  const t = String(raw || "").toLowerCase().slice(0, 12);
+  if (!t) return "direct";
+  if (SRC_TAGS[t]) return SRC_TAGS[t];
+  const byName = Object.keys(SRC_TAGS).map(k => SRC_TAGS[k]);
+  return byName.indexOf(t) >= 0 ? t : "other";
+}
+function isoWeek(ms) {
+  const d = new Date(ms); d.setUTCHours(0, 0, 0, 0);
+  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+  const y0 = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return d.getUTCFullYear() + "-W" + String(Math.ceil(((d - y0) / 864e5 + 1) / 7)).padStart(2, "0");
+}
+async function srcBump(env, kind, raw) {
+  // One small JSON row per (kind, ISO week): {channel: n}. Read-modify-write rather than one
+  // atomic counter per channel because the snapshot must stay cheap (10 reads for 5 weeks ×
+  // 2 kinds, inside /admin/data's budget). Taps are a handful a day, so the race window is
+  // academic; the money path itself never depends on this.
+  if (SRC_KINDS.indexOf(kind) < 0) return;
+  try {
+    const key = "src:" + kind + ":" + isoWeek(Date.now());
+    let row = {};
+    try { row = JSON.parse(await env.KV.get(key) || "{}"); } catch (e) {}
+    if (!row || typeof row !== "object") row = {};
+    const name = srcName(raw);
+    row[name] = Number(row[name] || 0) + 1;
+    await env.KV.put(key, JSON.stringify(row), { expirationTtl: 60 * 86400 });
+  } catch (e) { /* attribution never breaks a sale */ }
+}
+async function readSources(env) {
+  const weeks = []; for (let i = 0; i < SRC_WEEKS; i++) weeks.push(isoWeek(Date.now() - i * 7 * 864e5));
+  const out = {};
+  for (const kind of SRC_KINDS) {
+    out[kind] = {};
+    const rows = await Promise.all(weeks.map(w => env.KV.get("src:" + kind + ":" + w, { cacheTtl: 300 }).catch(() => null)));
+    weeks.forEach((w, i) => { let row = {}; try { row = JSON.parse(rows[i] || "{}"); } catch (e) {} out[kind][w] = (row && typeof row === "object") ? row : {}; });
+  }
+  return out;
+}
+async function handleTap(request, env, cors) {
+  let body = null;
+  try { body = await request.json(); } catch (e) {}
+  const kind = body && String(body.kind || "");
+  if (SRC_KINDS.indexOf(kind) < 0 || kind === "sale") return json({ ok: false }, cors, 400); // sales are counted by /verify, never self-reported
+  await srcBump(env, kind, body.src);
+  return json({ ok: true }, cors);
+}
 const STAT_TTL_SEC = 400 * 86400; // outlives any dashboard window we would want
 const EXP_INDEX_TTL_SEC = 130 * 86400; // buckets are only interesting around their own date
 const EXP_INDEX_CAP = 300; // max codes remembered per expiry-date
@@ -1452,6 +1509,7 @@ async function handleVerify(url, env, cors) {
     // and the day-27 renewal reminder can reach them. Was "" before: buyers who
     // came through the payment-link redirect were invisible to the reminder cron.
     const code = await issueCode(env, { email: buyerEmailFromCharge(charge, url), ref: matched });
+    await srcBump(env, "sale", url.searchParams.get("src"));
     return json({ ok: true, ...(await finalizeCode(env, code, url.searchParams.get("prev"))) }, cors);
   }
 
@@ -1489,6 +1547,7 @@ async function handleVerify(url, env, cors) {
     return json({ ok: false, error: "payment not found or not successful yet" }, cors, 402);
 
   const code = await issueCode(env, { email: buyerEmail, ref });
+  await srcBump(env, "sale", url.searchParams.get("src"));
   return json({ ok: true, ...(await finalizeCode(env, code, url.searchParams.get("prev"))) }, cors);
 }
 
@@ -1896,6 +1955,7 @@ async function buildAdminSnapshot(env) {
   const snap = {
     at: now,
     series, totals,
+    sources: await readSources(env).catch(() => null), // weekly checkout taps and verified sales by channel tag
     passes: { stored: codesStored, activeEstimate: future.size, activeBasis: "distinct codes in the expiry index (an upper bound: revoked and renewed codes are only subtracted inside the 14-day verified window)", expiringWindowDays: 14, expiring: expiringRows, expiringTotal: expiring.length, indexOnly: expiring.length - expiringRows.length },
     teams, teamScanCapped,
     leads: { total: leadTotal, bySegment: leads.reduce((a, x) => { const k = x.segment || "unspecified"; a[k] = (a[k] || 0) + 1; return a; }, {}), rows: leads.slice(0, 60) },
@@ -2174,6 +2234,7 @@ export default {
       if (url.pathname === "/resend-email" && request.method === "POST") return await handleResendEmail(request, env, cors);
       if (url.pathname === "/flw-webhook" && request.method === "POST") return await handleFlwWebhook(request, env, cors);
       if (url.pathname === "/verify" && request.method === "GET") return await handleVerify(url, env, cors);
+      if (url.pathname === "/tap" && request.method === "POST") return await handleTap(request, env, cors);
       if (url.pathname === "/activate" && request.method === "GET") return await handleActivate(url, env, cors);
       if (url.pathname === "/business/waitlist" && request.method === "POST") return await handleBusinessWaitlist(request, env, cors);
       if (url.pathname === "/business/login" && request.method === "POST") return await handleBusinessLogin(request, env, cors);

@@ -153,6 +153,19 @@ Reels (non-followers first, graduate on performance); a Tuesday Telegram quiz (p
 engagement past 50 %); the LinkedIn lane; TikTok inbox drafts. Rent seasonality the brain
 leans into: Jan–Mar and Aug–Oct peaks, payday 25th–month-end.
 
+## The money layer (fifth research pass, 17 Oct 2026)
+The question this pass answers: **which channel pays, and what does each platform need from
+us before it pays us.** Moves: channel tags on every link (`?s=`) + first-touch source on the
+site + checkout/sale counters in the worker → the scorecard's "Money follows X" order; Google
+Search Console demand in the brain's prompt (answer a position-9 query in the first line and
+it becomes page one); Facebook's link in the first comment (body reach 0.20 % → 0.80 %);
+a second Threads post at 20:10 WAT as an image with the link in our reply (Threads' Nigeria
+peak is 7–9 pm; images earn ~1.6× text); Instagram captions that open with the search phrase
++ alt text (Google indexes them); a Wednesday Short and the same Short as a native Telegram
+video; and **milestones** — Facebook Stars at 500 followers for 30 days, YouTube fan funding
+at 500 subscribers, Instagram/Telegram at 1,000 — graded weekly on pace, so the plan is
+always "this many a week, by this date". Seasonality unchanged: Jan–Mar, Aug–Oct, payday.
+
 ## Sources (Oct 2026 research pass)
 DataReportal Digital 2026 (Nigeria 5.84 days/week; 3 h 18–27 m/day); Kreste Digital 2026
 Nigeria report (47.8 M social identities; WhatsApp 96.5%, Facebook 38 M, Instagram 10 M);

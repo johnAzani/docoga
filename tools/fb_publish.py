@@ -79,6 +79,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -241,6 +242,57 @@ def post_text(token, page_id, message):
     if not ok:
         return False, body
     return True, body.get("id")
+
+
+# ── the link goes in the first comment (17 Oct 2026) ─────────────────────────
+# Socialinsider's 872k-post study (Aug 2026): a Page post with an outbound link in the body
+# reaches ~0.20 % of followers; a native post ~0.80 %. The first comment recovers most of the
+# difference and keeps the link one tap away. When the token cannot comment (needs
+# `pages_manage_engagement`), the post is *edited* to carry the link, so no day loses it.
+_LINK_LINE = re.compile(r"^\s*(?:👉\s*)?(https://docoga\.com\.ng\S*)\s*$", re.M)
+
+
+def split_link(message):
+    """→ (body without the standalone link line, the link) — or (message, None) when the link
+    sits inside a sentence (then it stays; cutting mid-sentence would mangle the copy)."""
+    links = _LINK_LINE.findall(message or "")
+    if not links:
+        return message, None
+    link = links[-1]
+    body = _LINK_LINE.sub("", message, count=0)
+    body = re.sub(r"\n{3,}", "\n\n", body).strip()
+    return body, link
+
+
+def comment(token, post_id, message):
+    try:
+        r = requests.post("%s/%s/comments" % (GRAPH, post_id), data={"message": message[:MAX_MESSAGE_CHARS], "access_token": token}, timeout=TIMEOUT)
+    except requests.RequestException as e:
+        return False, "%s: %s" % (type(e).__name__, e)
+    ok, body = _ok(r)
+    return (True, body.get("id")) if ok else (False, body)
+
+
+def edit_message(token, post_id, message):
+    try:
+        r = requests.post("%s/%s" % (GRAPH, post_id), data={"message": message[:MAX_MESSAGE_CHARS], "access_token": token}, timeout=TIMEOUT)
+    except requests.RequestException as e:
+        return False, "%s: %s" % (type(e).__name__, e)
+    ok, body = _ok(r)
+    return (True, post_id) if ok else (False, body)
+
+
+def place_link(token, post_id, body, link, line=None):
+    """First comment with the link; else edit the post to carry it. → (where, detail)."""
+    text = line or ("The page, free to start: %s" % link)
+    ok, detail = comment(token, post_id, text)
+    if ok:
+        return "comment", detail
+    first = detail
+    ok, detail = edit_message(token, post_id, body.rstrip() + "\n\n" + ("👉 " + link))
+    if ok:
+        return "body", "comment refused (%s) — link appended to the post" % str(first)[:120]
+    return "lost", "comment refused (%s); edit refused (%s)" % (str(first)[:100], str(detail)[:100])
 
 
 def post_photo_file(token, page_id, path, caption=""):

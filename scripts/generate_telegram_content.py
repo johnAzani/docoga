@@ -154,7 +154,7 @@ def generate_daily_content():
     if pack:
         # The brain's words are plain text; escape them once for MarkdownV2 like the hashtags.
         post_type = brain_drafts.post_type(pack)
-        template = escape(brain_drafts.post_text(pack))
+        template = escape(brain_drafts.tag_links(brain_drafts.post_text(pack), "telegram"))
         hashtag = brain_drafts.hashtags(pack, "telegram")
         visual = brain_drafts.visual(pack)
         log("🧠 brain pack for %s: %s (%s)" % (pack["date"], pack.get("theme"), post_type))
@@ -164,7 +164,7 @@ def generate_daily_content():
         post_type = random.choice(options)
 
         # Select a random template from the chosen type
-        template = random.choice(TEMPLATES[post_type])
+        template = brain_drafts.tag_links_mdv2(random.choice(TEMPLATES[post_type]), "telegram")
         hashtag = HASHTAGS.get(post_type, "#DocOga #NigerianProperty")
 
     # Build the full message. The templates carry their own MarkdownV2 escapes

@@ -307,8 +307,12 @@ jobs:
               exit 5
               ;;
           esac
-          CAPTION=$(python3 -c 'import json;print(json.load(open("assets/threads/threads_content_latest.json"))["text"])')
+          # The caption opens with the search phrase and the card carries alt text (Instagram SEO,
+          # 17 Oct 2026); a dispatch caption override wins because it rewrote `text`, not `ig_caption`.
+          CAPTION=$(python3 -c 'import json;d=json.load(open("assets/threads/threads_content_latest.json"));print(d["text"] if d.get("post_type")=="manual" else (d.get("ig_caption") or d["text"]))')
+          ALT=$(python3 -c 'import json;print((json.load(open("assets/threads/threads_content_latest.json")).get("alt_text") or "")[:1000])')
           ARGS=(--caption "$CAPTION" --wait-url --wait-url-deadline 900)
+          [ -n "$ALT" ] && ARGS+=(--alt-text "$ALT")
           if [ -n "${IG_IMAGE_URL_OVERRIDE:-}" ]; then
             ARGS+=(--image-url "$IG_IMAGE_URL_OVERRIDE")
           else

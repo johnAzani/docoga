@@ -127,6 +127,56 @@ def hashtags(pack, channel="facebook"):
     return " ".join(tags)
 
 
+# Channel tags on every link we post (17 Oct 2026, fifth research pass). `?s=tg` is short
+# enough for Threads' character budget and survives MarkdownV2 escaping; the site turns it
+# into a first-touch source (localStorage) that rides the checkout tap and the /verify call,
+# so the scorecard can say which channel *sold* a pass, not only which one got likes.
+SOURCE_TAGS = {"telegram": "tg", "facebook": "fb", "instagram": "ig", "threads": "th", "linkedin": "li",
+               "tiktok": "tt", "youtube": "yt", "whatsapp": "wa"}
+_OUR_LINK = re.compile(r"https://docoga\.com\.ng(?:/[^\s)\]<>\"']*)?")
+
+
+def tag_links(text, channel):
+    """Append `?s=<tag>` to every docoga.com.ng link in `text` that has no query string yet."""
+    tag = SOURCE_TAGS.get(str(channel or "").lower())
+    if not tag or not text:
+        return text
+
+    def one(m):
+        url = m.group(0)
+        if "?" in url or "#" in url:
+            return url
+        if url == LINK:
+            url += "/"
+        return url + "?s=" + tag
+    return _OUR_LINK.sub(one, text)
+
+
+_OUR_LINK_MDV2 = re.compile(r"https://docoga\\\.com\\\.ng[^\s\"']*")
+
+
+def tag_links_mdv2(text, channel="telegram"):
+    """`tag_links` for copy that is ALREADY MarkdownV2-escaped (the hand-written Telegram
+    templates): each escaped link is unescaped, tagged, and escaped again, so `?s\\=tg` lands
+    with the `=` escaped and nothing else in the message is touched. Trailing escaped
+    punctuation (`\\.` `\\!` `\\,`) that belongs to the sentence stays outside the link."""
+    tag = SOURCE_TAGS.get(str(channel or "").lower())
+    if not tag or not text:
+        return text
+    import telegram_mdv2
+
+    def one(m):
+        raw = m.group(0)
+        tail = ""
+        while raw.endswith(("\\.", "\\!", "\\,", "\\)", "\\:")):
+            tail, raw = raw[-2:] + tail, raw[:-2]
+        url = re.sub(r"\\(.)", r"\1", raw)
+        if not _OUR_LINK.fullmatch(url):
+            return m.group(0)
+        return telegram_mdv2.escape(tag_links(url, channel)) + tail
+    return _OUR_LINK_MDV2.sub(one, text)
+
+
 def threads_text(pack):
     """The short copy for Threads/Instagram, link at the end, no hashtags.
 
@@ -150,7 +200,81 @@ TOPIC_TAGS = {"tenancy-agreement": "Tenant Rights Nigeria", "notice-to-quit": "T
               "invoice": "Nigerian Small Business", "payslip": "Nigerian Workplace",
               "power-of-attorney": "Nigerian Law", "affidavit": "Nigerian Law"}
 DEFAULT_TOPIC = "Rent in Nigeria"
+# Instagram SEO (Google indexes professional accounts' posts since 10 Jul 2025; Instagram's own
+# search reads the caption's first line and the alt text). One plain search phrase per tool —
+# the words a Nigerian types, not a slogan.
+SEO_PHRASES = {"tenancy-agreement": "Tenancy agreement sample Nigeria", "notice-to-quit": "Notice to quit Nigeria",
+               "rent-receipt": "Rent receipt format Nigeria", "caution-fee": "Caution fee refund Nigeria",
+               "tenant-rights": "Tenant rights in Nigeria", "shop-tenancy-agreement": "Shop tenancy agreement Nigeria",
+               "invoice": "Invoice template Nigeria", "payslip": "Payslip format Nigeria",
+               "power-of-attorney": "Power of attorney Nigeria", "affidavit": "Affidavit format Nigeria"}
+DEFAULT_SEO = "Rent and tenancy documents Nigeria"
+STATE_NAMES = {"lagos": "Lagos", "abuja": "Abuja", "fct": "Abuja", "rivers": "Rivers", "kano": "Kano", "oyo": "Oyo",
+               "ogun": "Ogun", "enugu": "Enugu", "kaduna": "Kaduna", "delta": "Delta", "anambra": "Anambra"}
+
+
+def seo_line(pack, post_type=None):
+    """The caption's first line: the search phrase, with the state when there is one.
+    'Rent receipt format Nigeria (Lagos)'."""
+    tool = str((pack or {}).get("tool") or "").strip().lower()
+    state = str((pack or {}).get("state") or "").strip().lower()
+    phrase = SEO_PHRASES.get(tool) or DEFAULT_SEO
+    if state in STATE_NAMES:
+        phrase += " (%s)" % STATE_NAMES[state]
+    return phrase
+
+
+def alt_text(pack, text=""):
+    """Alt text for the card (Instagram reads it for search and for screen readers; ≤1,000
+    characters). Says what the picture IS — a DocOga text card — and what it says."""
+    post = (pack or {}).get("post") or {}
+    headline = str(post.get("headline") or "").strip() or strip_links(text).split("\n")[0].strip()
+    lines = [str(x).strip() for x in post.get("lines") or [] if str(x).strip()]
+    kicker = str(((pack or {}).get("visual") or {}).get("kicker") or "").strip()
+    bits = ["DocOga navy text card%s: %s" % ((" — " + kicker) if kicker else "", headline)]
+    if lines:
+        bits.append(lines[0])
+    bits.append(seo_line(pack) + ". docoga.com.ng")
+    out = " ".join(b if b[-1] in ".?!" else b + "." for b in (x.strip() for x in bits) if b)
+    return out[:1000]
 POLL_OPTION_MAX = 25
+
+
+def strip_links(text):
+    """Remove every URL and the stub it leaves behind ("👉", "Try am:", a line of punctuation)."""
+    out = []
+    for line in re.sub(r"https?://\S+", "", text or "").split("\n"):
+        bare = line.strip()
+        if bare and not re.search(r"[A-Za-z0-9₦]", bare):
+            continue                                  # "👉" alone
+        if bare.endswith(":") and len(bare) <= 24:
+            continue                                  # "👉 Try am:" / "Start here:"
+        out.append(line.rstrip())
+    return re.sub(r"\n{3,}", "\n\n", "\n".join(out)).strip()
+
+
+def threads_evening(pack):
+    """The 8 pm Threads post (17 Oct 2026): a second angle on the day's idea, link-free — the
+    link rides in our own reply. The brain writes `threads.evening`; without it, the headline
+    plus the first line plus the send/forward line is a post in its own right."""
+    text = str(((pack or {}).get("threads") or {}).get("evening") or "").strip()
+    if not text:
+        post = (pack or {}).get("post") or {}
+        lines = [str(x).strip() for x in post.get("lines") or [] if str(x).strip()]
+        parts = [str(post.get("headline") or "").strip()] + lines[:1]
+        cta = str(post.get("cta") or "").strip()
+        if cta:
+            parts.append(cta)
+        text = "\n\n".join(p for p in parts if p)
+    text = strip_links(text)
+    if has_claims(pack or {}) and DISCLAIMER.lower() not in text.lower():
+        text = text.rstrip() + "\n\n" + DISCLAIMER
+    return text
+
+
+def evening_reply(pack, channel="threads"):
+    """The one-line self-reply that carries the page: 'The page, free to start: <link?s=th>'."""
+    return "The page, free to start: " + tag_links(link_for(pack or {}), channel)
 
 
 def threads_topic(pack):

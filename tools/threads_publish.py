@@ -292,6 +292,32 @@ def create_text_container_with_fallbacks(token, user_id, text, link_attachment=N
     raise last
 
 
+def create_image_container(token, user_id, text, image_url, reply_control=None, topic_tag=None, share_to_ig=False):
+    """An IMAGE post (17 Oct 2026, the evening slot): Threads fetches `image_url` itself, so the
+    card must already be public — the Instagram lane's `site/social/<day>-instagram.jpg`."""
+    params = {"media_type": "IMAGE", "image_url": image_url, "text": text}
+    if reply_control:
+        params["reply_control"] = reply_control
+    if topic_tag:
+        params["topic_tag"] = topic_tag
+    if share_to_ig:
+        params["crossreshare_to_ig"] = "true"
+    return api("POST", "/%s/threads" % user_id, token, params)["id"]
+
+
+def post_reply(token, user_id, text, reply_to_id, sleeper=None):
+    """A reply under our own post — where the link lives on the evening slot (Threads ranks a
+    link-free body higher; the reply keeps the page one tap away). → (ok, id_or_reason)."""
+    try:
+        cid = api("POST", "/%s/threads" % user_id, token, {"media_type": "TEXT", "text": text, "reply_to_id": reply_to_id})["id"]
+        ready, state = wait_container(token, cid, tries=4, delay=3, sleeper=sleeper)
+        if not ready:
+            return False, "container %s" % state
+        return True, publish_container(token, user_id, cid)
+    except ApiError as exc:
+        return False, "%s: %s" % (exc.cause, exc.blurb[:140])
+
+
 def wait_container(token, container_id, tries=6, delay=5, sleeper=None):
     """Text containers are usually ready at once; this is the polite version of 'assume'.
 
@@ -463,8 +489,10 @@ def main(argv=None):
             print("content was trimmed: %s" % "; ".join(blob["trimmed"]))
         topic_tag = blob.get("topic_tag") or None
         poll = blob.get("poll") if isinstance(blob.get("poll"), dict) and len(blob.get("poll")) >= 2 else None
+        image_url = str(blob.get("image_url") or "").strip() or None      # evening slot: the day's card
+        reply_text = str(blob.get("reply_text") or "").strip() or None    # evening slot: the link, one tap under
     else:
-        topic_tag, poll = None, None
+        topic_tag, poll, image_url, reply_text = None, None, None, None
     share_to_ig = (os.environ.get("THREADS_SHARE_TO_IG") or "on").strip().lower() in ("1", "true", "yes", "on")
     text = text.strip()
 
@@ -520,12 +548,32 @@ def main(argv=None):
         return 4
 
     try:
-        if topic_tag or poll or share_to_ig:
-            print("extras: topic=%r poll=%s share_to_ig=%s" % (topic_tag, "yes" if poll else "no", "yes" if share_to_ig else "no"))
-        container_id = create_text_container_with_fallbacks(token, target, text, args.link_attachment,
-                                                            args.reply_control, topic_tag=topic_tag, poll=poll,
-                                                            share_to_ig=share_to_ig)
-        ready, state = wait_container(token, container_id)
+        if topic_tag or poll or share_to_ig or image_url:
+            print("extras: topic=%r poll=%s share_to_ig=%s image=%s" % (topic_tag, "yes" if poll else "no", "yes" if share_to_ig else "no",
+                                                                     "yes" if image_url else "no"))
+        container_id, ready, state = None, False, None
+        if image_url and not poll:
+            # Image posts earn ~1.6× a text post's engagement (Buffer, 2026). The card is the lever,
+            # not the post: if Threads cannot fetch it or the container dies, the words go out plain.
+            try:
+                container_id = create_image_container(token, target, text, image_url, args.reply_control,
+                                                      topic_tag=topic_tag, share_to_ig=share_to_ig)
+                ready, state = wait_container(token, container_id, tries=10, delay=6)
+            except ApiError as exc:
+                if exc.cause in ("credentials", "quota"):
+                    raise
+                container_id, ready, state = None, False, "refused: %s" % exc.blurb[:120]
+            if ready:
+                print("THREADS_IMAGE=sent")
+            else:
+                print("::warning title=Threads image dropped::the card at %s was not accepted (%s) — posting the words alone"
+                      % (image_url, state))
+                print("THREADS_IMAGE=dropped")
+        if not ready:
+            container_id = create_text_container_with_fallbacks(token, target, text, args.link_attachment,
+                                                                args.reply_control, topic_tag=topic_tag, poll=poll,
+                                                                share_to_ig=share_to_ig)
+            ready, state = wait_container(token, container_id)
         if not ready:
             print("::error title=Threads container did not finish::status=%s for container %s "
                   "(containers die after 24h, so this run must not be retried blindly)"
@@ -552,6 +600,12 @@ def main(argv=None):
               % (post_id, permalink))
         print("THREADS_READBACK=differs")
     print("✅ published to @%s: %s" % (username, permalink))
+    if reply_text:
+        ok_reply, detail = post_reply(token, target, reply_text, post_id)
+        print("THREADS_REPLY=%s" % ("sent" if ok_reply else "failed"))
+        if not ok_reply:
+            print("::warning title=Threads self-reply failed::the link reply under %s was not posted (%s); the post itself is live"
+                  % (post_id, detail))
     print("THREADS_RESULT=sent")
     print("THREADS_POST_ID=%s" % post_id)
     print("THREADS_PERMALINK=%s" % permalink)

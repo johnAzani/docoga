@@ -124,11 +124,11 @@ def generate(day=None, write=True):
     pack = brain_drafts.draft_for(day)
     if pack:
         post_type = brain_drafts.post_type(pack)
-        message = "%s\n\n%s" % (brain_drafts.post_text(pack), brain_drafts.hashtags(pack, "facebook"))
+        message = "%s\n\n%s" % (brain_drafts.tag_links(brain_drafts.post_text(pack), "facebook"), brain_drafts.hashtags(pack, "facebook"))
         visual = brain_drafts.visual(pack)
     else:
         post_type = rng.choice(tg.WEEKLY_SCHEDULE.get(day.weekday(), ["promo"]))
-        message = build_message(post_type, rng)
+        message = brain_drafts.tag_links(build_message(post_type, rng), "facebook")
         visual = None
 
     photo = render_card(message, day, post_type, visual) if write else None

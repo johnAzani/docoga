@@ -305,6 +305,29 @@ def pull_telegram(http, env, now, problems):
     return None
 
 
+def pull_search(problems, env=None, path=None):
+    """Google Search Console, as written weekly by tools/search_console.py (same Google consent
+    as the YouTube lane, scope webmasters.readonly). Stale beyond 14 days = not measured."""
+    env = dict(os.environ) if env is None else env
+    path = Path(path or env.get("DOCOGA_SEARCH_CONSOLE") or (ROOT / "logs" / "search_console.json"))
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        problems.append("google: no Search Console pull yet — re-consent the YouTube token with webmasters.readonly (docs/BRAIN.md) and youtube_stats.yml writes logs/search_console.json")
+        return None
+    taken = str(data.get("taken_at") or "")
+    try:
+        age = (datetime.now(timezone.utc) - datetime.fromisoformat(taken)).days
+    except ValueError:
+        age = 99
+    if env.get("DOCOGA_SEARCH_CONSOLE"):
+        age = 0  # a fixture is as fresh as the test says
+    if age > 14:
+        problems.append("google: the Search Console pull is %d days old" % age)
+        return None
+    return data
+
+
 def pull_youtube(stats_path=YT_STATS):
     try:
         stats = json.loads(Path(stats_path).read_text(encoding="utf-8"))
@@ -356,8 +379,43 @@ def pull_sales(http, env, now, problems):
         return sum(by_day[d]["sold"] for d in keep), sum(by_day[d]["rev"] for d in keep), sum(by_day[d]["biz"] for d in keep)
     s7, r7, b7 = window(7)
     s28, r28, b28 = window(28)
-    return {"passes_7d": s7, "revenue_7d": r7, "business_7d": b7, "passes_28d": s28, "revenue_28d": r28,
-            "business_28d": b28, "price": data.get("priceNGN"), "by_day": {d: by_day[d] for d in days[-28:]}}
+    out = {"passes_7d": s7, "revenue_7d": r7, "business_7d": b7, "passes_28d": s28, "revenue_28d": r28,
+           "business_28d": b28, "price": data.get("priceNGN"), "by_day": {d: by_day[d] for d in days[-28:]}}
+    out.update(sources_from(((data.get("snapshot") or {}).get("sources") or {}), now))
+    return out
+
+
+def sources_from(sources, now):
+    """The worker's weekly `src:*` counters → checkout taps and verified sales by channel,
+    for the week that just ended (+ today's) and for the whole window the worker keeps."""
+    if not sources:
+        return {}
+    this_week = now.strftime("%G-W%V")
+    last_week = (now - timedelta(days=7)).strftime("%G-W%V")
+    out = {}
+    for kind in ("checkout", "sale"):
+        weeks = sources.get(kind) or {}
+        recent, total = {}, {}
+        for week, row in weeks.items():
+            for ch, n in (row or {}).items():
+                total[ch] = total.get(ch, 0) + int(n or 0)
+                if week in (this_week, last_week):
+                    recent[ch] = recent.get(ch, 0) + int(n or 0)
+        out[kind + "s_by_source_7d"] = dict(sorted(recent.items(), key=lambda kv: -kv[1]))
+        out[kind + "s_by_source_28d"] = dict(sorted(total.items(), key=lambda kv: -kv[1]))
+    return out
+
+
+def pull_site(env, now, problems):
+    try:
+        import site_analytics
+    except ImportError:
+        return None
+    data, problem = site_analytics.pull(env=env, days=RANGE_DAYS, now=now)
+    if problem:
+        problems.append(problem)
+        return None
+    return data
 
 
 # ───────────────────────────── kpis ─────────────────────────────
@@ -499,6 +557,23 @@ def kpis(channels, said=None):
         k["sales.revenue"] = sales.get("revenue_7d")
         k["sales.passes_28d"] = sales.get("passes_28d")
         k["sales.revenue_28d"] = sales.get("revenue_28d")
+        if sales.get("sales_by_source_28d") is not None:
+            k["sales.by_source_28d"] = sales.get("sales_by_source_28d")
+            k["sales.checkouts_by_source_28d"] = sales.get("checkouts_by_source_28d")
+            k["sales.by_source_7d"] = sales.get("sales_by_source_7d")
+    site = channels.get("site") or {}
+    if site:
+        k["site.visits_7d"] = site.get("visits")
+        k["site.by_channel"] = site.get("by_channel")
+        k["site.top_pages"] = site.get("by_path")
+        k["site.nigeria_share"] = site.get("nigeria_share")
+    search = channels.get("search") or {}
+    if search:
+        k["google.clicks_28d"] = search.get("clicks")
+        k["google.impressions_28d"] = search.get("impressions")
+        k["google.ctr"] = search.get("ctr")
+        k["google.top_queries"] = search.get("top_queries")
+        k["google.striking_distance"] = search.get("striking_distance")
     return k
 
 
@@ -539,6 +614,55 @@ def grade(current, previous, goals):
             row["status"] = "on_track" if float(actual) >= float(spec.get("min", 0)) else "behind"
         rows.append(row)
     return rows
+
+
+def milestones(k, goals, history, now):
+    """How far each platform threshold is, at the pace of the last four weeks (17 Oct 2026).
+    The thresholds are where an audience becomes a second income (Facebook Stars at 500
+    followers for 30 days; YouTube fan funding at 500 subs; Instagram/Telegram at 1,000). A
+    milestone whose ETA is more than two weeks past its due date is flagged `behind_pace`."""
+    out = []
+    four_weeks_ago = (now - timedelta(days=26)).isoformat()
+    older = [h for h in history if str(h.get("taken_at", "")) <= four_weeks_ago]
+    base = older[-1] if older else (history[0] if history else None)
+    for key, m in (goals.get("milestones") or {}).items():
+        current = k.get(key)
+        if current is None:
+            continue
+        target = int(m.get("target") or 0)
+        remaining = max(target - int(current), 0)
+        pace = None
+        if base and (base.get("kpis") or {}).get(key) is not None:
+            then = base["kpis"][key]
+            weeks = max((now - datetime.fromisoformat(str(base["taken_at"]))).days / 7.0, 1.0)
+            pace = (int(current) - int(then)) / weeks
+        weeks_to_go = None if not pace or pace <= 0 else remaining / pace
+        due = m.get("due")
+        status = "reached" if remaining == 0 else "no-pace-yet"
+        needed = None
+        if due:
+            weeks_left = max((datetime.fromisoformat(due).replace(tzinfo=timezone.utc) - now).days / 7.0, 0.0)
+            needed = (remaining / weeks_left) if weeks_left > 0 else None
+            if remaining and weeks_to_go is not None:
+                status = "on_pace" if weeks_to_go <= weeks_left + 2 else "behind_pace"
+            elif remaining and pace is not None and pace <= 0:
+                status = "behind_pace"
+        out.append({"key": key, "label": m.get("label"), "unlocks": m.get("unlocks"), "target": target, "current": int(current),
+                    "remaining": remaining, "pace_per_week": round(pace, 1) if pace is not None else None,
+                    "weeks_to_go": round(weeks_to_go, 1) if weeks_to_go is not None else None,
+                    "needed_per_week": round(needed, 1) if needed is not None else None, "due": due, "status": status})
+    return out
+
+
+def slot_advice(k):
+    """Where the audience is awake versus when we post (Instagram's online_followers curve, WAT)."""
+    peaks = k.get("instagram.online_peak_hours_wat") or []
+    if not peaks:
+        return None
+    ours = 19     # instagram_autopost.yml: 18:10 UTC = 19:10 WAT
+    best = peaks[0]
+    gap = min(abs(best - ours), 24 - abs(best - ours))
+    return {"peak_hours_wat": peaks, "our_hour_wat": ours, "move": gap >= 2, "suggest_hour_wat": best if gap >= 2 else ours}
 
 
 def streaks(history, grades):
@@ -614,6 +738,44 @@ def orders(k, grades, streak=None):
         b, r = src["brain"]["avg"], src["rotation"]["avg"]
         out.append("Brain-written days averaged %.0f against %.0f for rotation days (%s)."
                    % (b, r, "keep going" if b >= r else "the hand-written baseline is winning — study its hooks"))
+    for m in k.get("milestones") or []:
+        if m["status"] == "behind_pace" and m.get("needed_per_week"):
+            out.append("%s is behind pace: %s to go, %s a week now, %s a week needed by %s — this week every %s post ends with "
+                       "the follow line ('follow for the next rule') and the Reel/Short names the Page by hand."
+                       % (m["unlocks"] or m["key"], _fmt(m["remaining"]), _fmt(m["pace_per_week"] or 0), _fmt(m["needed_per_week"]),
+                          m["due"], m["key"].split(".")[0].title()))
+        elif m["status"] == "reached":
+            out.append("%s reached (%s ≥ %s): switch it on in the platform's Professional dashboard and say so once in the channel."
+                       % (m["unlocks"] or m["key"], _fmt(m["current"]), _fmt(m["target"])))
+    advice = k.get("slot_advice") or {}
+    if advice.get("move"):
+        out.append("Instagram's audience is online most at %s WAT and we post at %s:10 — the evening Story and the Threads "
+                   "evening post already sit in that window; the Instagram cron may move to %02d:10 WAT (owner's one tap)."
+                   % (", ".join("%02d:00" % h for h in advice["peak_hours_wat"]), advice["our_hour_wat"], advice["suggest_hour_wat"]))
+    sold = k.get("sales.by_source_28d") or {}
+    taps = k.get("sales.checkouts_by_source_28d") or {}
+    if sum(sold.values()) >= 3:
+        top = next(iter(sold))
+        out.append("Money follows %s: %d of %d tagged passes in 28 days came through it — its send line names the "
+                   "document and the price every day this week; the other channels copy its best hook."
+                   % (top.title(), sold[top], sum(sold.values())))
+    elif sum(taps.values()) >= 5:
+        top = next(iter(taps))
+        out.append("Checkout taps come mostly from %s (%d of %d) but few close: that channel's posts carry 'free to "
+                   "start, ₦2,000 only when you need the stamp' in the last line this week." % (top.title(), taps[top], sum(taps.values())))
+    visits = k.get("site.by_channel") or {}
+    if visits:
+        social = {c: n for c, n in visits.items() if c in ("telegram", "facebook", "instagram", "threads", "linkedin", "youtube", "tiktok", "whatsapp")}
+        if social and sum(social.values()) >= 20:
+            best = max(social.items(), key=lambda kv: kv[1])
+            weak = [c for c, n in social.items() if n * 5 < best[1]]
+            out.append("Readers reach the site from %s most (%d visits); %s"
+                       % (best[0].title(), best[1], ("%s send almost none — their posts put the link where it can be tapped (first comment, reply, bio) and name the page" % ", ".join(weak)) if weak else "keep the mix"))
+    striking = k.get("google.striking_distance") or []
+    if striking:
+        out.append("Google is already showing us for %s — one post and one Short this week answer each of those "
+                   "questions in the first line, linking the page Google ranks."
+                   % ", ".join("'%s' (pos %s, %s impressions)" % (q["query"], q["position"], q["impressions"]) for q in striking[:3]))
     if k.get("instagram.online_peak_hours_wat"):
         hrs = k["instagram.online_peak_hours_wat"]
         out.append("Instagram followers are online most at %s WAT — the evening lanes should sit inside that window."
@@ -667,11 +829,15 @@ def build(http=None, env=None, now=None, history=None, goals=None, stats_path=YT
         "telegram": pull_telegram(http, env, now, problems),
         "youtube": pull_youtube(stats_path),
         "sales": pull_sales(http, env, now, problems),
+        "site": pull_site(env, now, problems),
+        "search": pull_search(problems, env),
     }
     k = kpis(channels, said)
     prev = previous_week(history, now)
     grades = grade(k, prev, goals)
     strk = streaks(history, grades)
+    k["milestones"] = milestones(k, goals, history, now)
+    k["slot_advice"] = slot_advice(k)
     snap = {"taken_at": now.isoformat(timespec="seconds"), "week": now.strftime("%G-W%V"),
             "channels": channels, "kpis": k, "grades": grades, "streaks": strk,
             "orders": orders(k, grades, strk), "problems": problems}
@@ -695,6 +861,18 @@ def summary_md(snap):
                      % (_fmt(sales.get("passes_7d")), _fmt(sales.get("revenue_7d")), _fmt(sales.get("passes_28d")), _fmt(sales.get("revenue_28d"))))
     else:
         lines.append("**Money:** not connected — add the dashboard passphrase as `DOCOGA_ADMIN_PASSPHRASE` and sales are graded weekly.")
+    if k.get("site.visits_7d") is not None:
+        chans = ", ".join("%s %s" % (c, n) for c, n in list((k.get("site.by_channel") or {}).items())[:6]) or "no referrers yet"
+        lines.append("**Traffic:** %s visits to the site this week (Nigeria %s) — %s"
+                     % (_fmt(k["site.visits_7d"]), _fmt(k.get("site.nigeria_share")), chans))
+    if k.get("sales.by_source_28d") is not None:
+        sold = ", ".join("%s %s" % kv for kv in list(k["sales.by_source_28d"].items())[:6]) or "none tagged yet"
+        taps = ", ".join("%s %s" % kv for kv in list((k.get("sales.checkouts_by_source_28d") or {}).items())[:6]) or "none yet"
+        lines.append("**Sold by channel (28 days):** %s · checkout taps: %s" % (sold, taps))
+    if k.get("google.clicks_28d") is not None:
+        qs = ", ".join("'%s' (%s clicks, pos %s)" % (q["query"], q["clicks"], q["position"]) for q in (k.get("google.top_queries") or [])[:4])
+        lines.append("**Google (28 days):** %s clicks / %s impressions, CTR %s — %s"
+                     % (_fmt(k["google.clicks_28d"]), _fmt(k["google.impressions_28d"]), _fmt(k.get("google.ctr")), qs or "no queries yet"))
     lines += ["", "| Channel | Followers | 7-day views | Signal |", "|---|---|---|---|"]
     lines.append("| Facebook | %s | %s | shares/post %s · comments/post %s · clicks/post %s |"
                  % (_fmt(k.get("facebook.followers")), _fmt(k.get("facebook.views_7d")), _fmt(k.get("facebook.shares_per_post")),
@@ -711,25 +889,13 @@ def summary_md(snap):
     for g in snap.get("grades") or []:
         mark = {"on_track": "✅", "behind": "🔻", "no_baseline": "⏳ first measurement", "not_measured": "— not measured"}[g["status"]]
         lines.append("| %s | %s | %s | %s |" % (g["label"], _fmt(g.get("actual")), _fmt(g.get("target")), mark))
-    learn = k.get("learning") or {}
-    hooks = {h: b for h, b in (learn.get("hook_type") or {}).items() if h != "rotation" and b.get("n", 0) >= 2}
-    if len(hooks) >= 2:
-        ranked = sorted(hooks.items(), key=lambda kv: -kv[1]["avg"])
-        best, worst = ranked[0], ranked[-1]
-        if best[1]["avg"] > 0 and best[1]["avg"] >= 1.5 * max(worst[1]["avg"], 0.1):
-            out.append("Hooks, by what they earned this fortnight: %s — use %s on two of the four cited days; "
-                       "rest %s for two weeks." % (", ".join("%s %.0f (n=%d)" % (h, b["avg"], b["n"]) for h, b in ranked),
-                                                  best[0], worst[0]))
-    readers = {r: b for r, b in (learn.get("reader") or {}).items() if r not in ("rotation", "unnamed") and b.get("n", 0) >= 2}
-    if len(readers) >= 2:
-        ranked = sorted(readers.items(), key=lambda kv: -kv[1]["avg"])
-        out.append("Readers, by what they earned: %s — write to %s again this week on a new theme; do not drop the others."
-                   % (", ".join("%s %.0f" % (r.title(), b["avg"]) for r, b in ranked), ranked[0][0].title()))
-    src = learn.get("source") or {}
-    if src.get("brain", {}).get("n", 0) >= 3 and src.get("rotation", {}).get("n", 0) >= 3:
-        b, r = src["brain"]["avg"], src["rotation"]["avg"]
-        out.append("Brain-written days averaged %.0f against %.0f for rotation days (%s)."
-                   % (b, r, "keep going" if b >= r else "the hand-written baseline is winning — study its hooks"))
+    if k.get("milestones"):
+        lines += ["", "### Milestones (where the audience becomes income)", "| Milestone | Now | To go | Pace/week | Needed/week | ETA | Status |", "|---|---|---|---|---|---|---|"]
+        for m in k["milestones"]:
+            mark = {"reached": "🏁 reached", "on_pace": "✅ on pace", "behind_pace": "🔻 behind pace", "no-pace-yet": "⏳ measuring"}[m["status"]]
+            eta = ("%s wk" % _fmt(m["weeks_to_go"])) if m.get("weeks_to_go") is not None else "—"
+            lines.append("| %s | %s | %s | %s | %s | %s | %s (due %s) |" % (m["label"], _fmt(m["current"]), _fmt(m["remaining"]),
+                         _fmt(m.get("pace_per_week")), _fmt(m.get("needed_per_week")), eta, mark, m.get("due")))
     if k.get("instagram.online_peak_hours_wat"):
         lines += ["", "Instagram followers online most at: " + ", ".join("%02d:00 WAT" % h for h in k["instagram.online_peak_hours_wat"])]
     for ch in ("facebook", "instagram", "threads"):

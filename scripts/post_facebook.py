@@ -107,6 +107,22 @@ def load_today(day):
     return generate_facebook_content.generate(day), "generated in-process"
 
 
+def place_link_after(token, post_id, body, link):
+    """The first comment carries the link (or the post is edited to). Prints FB_LINK=…; never fatal."""
+    if not link or not post_id:
+        return ""
+    where, detail = fb_publish.place_link(token, post_id, body, link)
+    print("FB_LINK=%s" % where)
+    if where == "comment":
+        print("🔗 link placed in the first comment (%s)" % detail)
+        return " · link in first comment"
+    if where == "body":
+        print("::notice title=Link in the post body::%s — add pages_manage_engagement to the Page token for first-comment links" % detail)
+        return " · link in body"
+    print("::warning title=Link not placed::%s — the post is live without its link" % detail)
+    return " · ⚠️ link lost"
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Post today's content to the DocOga Facebook Page")
     parser.add_argument("--date", help="ISO date to post for (default: today in Africa/Lagos)")
@@ -203,6 +219,11 @@ def main(argv=None):
         log("using %s" % source)
 
     message = content["message"]
+    # The link goes in the first comment (reach), the words stay native. Variable FB_LINK_IN_COMMENT=off restores the old shape.
+    link_in_comment = os.environ.get("FB_LINK_IN_COMMENT", "on").lower() != "off" and not args.text
+    body_text, link = (fb_publish.split_link(message) if link_in_comment else (message, None))
+    if link:
+        message = body_text
     # An explicit --photo-file wins (that is the manual override); otherwise the
     # generator's decision is honoured, including its "no photo" answer.
     photo_rel = args.photo_file or (content.get("photo_path") if content.get("send_photo") else None)
@@ -219,7 +240,8 @@ def main(argv=None):
         ok, result = fb_publish.post_photo_file(token, page_id, photo_abs, message)
         if ok:
             print("✅ photo post published: %s" % result)
-            summary("| Facebook post %s | ✅ published (photo) `%s` |" % (day.isoformat(), result))
+            where = place_link_after(token, result, message, link)
+            summary("| Facebook post %s | ✅ published (photo) `%s`%s |" % (day.isoformat(), result, where))
             return 0
         log("❌ photo post refused — %s" % result)
         log("↩︎ falling back to a text post so the day is not lost")
@@ -227,7 +249,8 @@ def main(argv=None):
     ok, result = fb_publish.post_text(token, page_id, message)
     if ok:
         print("✅ text post published: %s" % result)
-        summary("| Facebook post %s | ✅ published (text) `%s` |" % (day.isoformat(), result))
+        where = place_link_after(token, result, message, link)
+        summary("| Facebook post %s | ✅ published (text) `%s`%s |" % (day.isoformat(), result, where))
         return 0
 
     print("❌ Facebook refused the post — %s" % result)

@@ -1203,7 +1203,21 @@ if(j&&j.error){ toast('❌ '+j.error); return; }
 if(CODE_HASHES.has(h)){ save(Math.max((pass&&pass.exp)||0, Date.now())+30*864e5, norm); return; }
 toast('❌ Invalid code. Please check and try again.');
 }
-function buyPass(){ trackEvent('pass_checkout_opened',{value:2000, currency:'NGN'}); window.open(PAYMENT_URL,'_blank'); toast('Complete payment — you\'ll be returned here and your pass activates automatically.'); }
+/* Channel attribution (17 Oct 2026): the first `?s=<tag>` (or utm_source) a visitor arrives with is
+   kept 30 days and rides the checkout tap and the success page's /verify call — so the Monday
+   scorecard knows which channel sold the pass. Counters only; never an email, never a cookie. */
+function docogaSource(){
+  try{
+    const q=new URLSearchParams(location.search); const tag=(q.get('s')||q.get('utm_source')||'').toLowerCase().slice(0,12);
+    const saved=JSON.parse(localStorage.getItem('docoga_src')||'null');
+    if(tag && !(saved && saved.t && Date.now()-saved.at<30*864e5)){ localStorage.setItem('docoga_src',JSON.stringify({t:tag,at:Date.now()})); return tag; }
+    if(saved && saved.t && Date.now()-saved.at<30*864e5) return saved.t;
+    if(!tag && document.referrer && /google\./.test(document.referrer)){ localStorage.setItem('docoga_src',JSON.stringify({t:'google',at:Date.now()})); return 'google'; }
+    return tag||'direct';
+  }catch(e){ return 'direct'; }
+}
+docogaSource();
+function buyPass(){ trackEvent('pass_checkout_opened',{value:2000, currency:'NGN'}); try{ fetch(WORKER_URL+'/tap',{method:'POST',keepalive:true,headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'checkout',src:docogaSource()})}).catch(function(){}); }catch(e){} window.open(PAYMENT_URL,'_blank'); toast('Complete payment — you\'ll be returned here and your pass activates automatically.'); }
 /* Business waitlist (11 Oct 2026): self-serve notify at launch. Replaces the
    retired "quote by WhatsApp" CTA — owner instruction: the Business path must
    run end-to-end without the customer sending a WhatsApp message. */

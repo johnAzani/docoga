@@ -35,6 +35,7 @@ name: DocOga Threads Auto-Post
 on:
   schedule:
     - cron: '10 12 * * *'  # 12:10 UTC = 13:10 Lagos — lunch idle time, when replies arrive in the first 90 minutes (brain/strategy.md)
+    - cron: '10 19 * * *'  # 19:10 UTC = 20:10 Lagos — the evening slot (17 Oct 2026): the day's card as an image post, link in our own reply
   workflow_dispatch:
     inputs:
       dry_run:
@@ -56,6 +57,12 @@ on:
         description: 'Post this exact text instead of today generated copy (still duplicate-checked)'
         required: false
         type: string
+      slot:
+        description: 'lunch = text post; evening = image post with the link in a reply (scheduled runs pick by the clock)'
+        required: false
+        default: 'auto'
+        type: choice
+        options: [auto, lunch, evening]
 
 permissions:
   contents: write  # the ledger and the sealed token box are committed back to the default branch
@@ -162,9 +169,18 @@ jobs:
         if: ${{ !inputs.probe_only && !inputs.dry_run }}
         env:
           THREADS_TEXT: ${{ inputs.text }}
+          THREADS_SLOT: ${{ inputs.slot }}
         run: |
           set -o pipefail
-          python3 scripts/generate_threads_content.py 2>&1 | tee /tmp/threads_generate.log
+          # Two posts a day (Threads' own guidance is 2–3): lunch is the text post, evening the
+          # image post. A scheduled run has no inputs, so the clock decides: after 15:00 UTC it is
+          # the evening slot. A dispatch may name the slot.
+          SLOT="${THREADS_SLOT:-auto}"
+          if [ "$SLOT" = "auto" ] || [ -z "$SLOT" ]; then
+            if [ "$(date -u +%H)" -ge 15 ]; then SLOT=evening; else SLOT=lunch; fi
+          fi
+          echo "THREADS_SLOT=$SLOT" | tee -a "$GITHUB_ENV"
+          python3 scripts/generate_threads_content.py --slot "$SLOT" 2>&1 | tee /tmp/threads_generate.log
           # A dispatch `text` replaces the day's copy. It arrives as an environment variable and
           # python reads it from there. Interpolating an input expression into this script — or
           # into a heredoc, which is no more quoted — turns the input into shell code on a runner
@@ -239,11 +255,15 @@ jobs:
           RESULT=$(sed -n 's/^THREADS_RESULT=//p' /tmp/threads_post.log | tail -1)
           CAUSE=$(sed -n 's/^THREADS_CAUSE=//p' /tmp/threads_post.log | tail -1)
           PERMALINK=$(sed -n 's/^THREADS_PERMALINK=//p' /tmp/threads_post.log | tail -1)
+          IMAGE=$(sed -n 's/^THREADS_IMAGE=//p' /tmp/threads_post.log | tail -1)
+          REPLY=$(sed -n 's/^THREADS_REPLY=//p' /tmp/threads_post.log | tail -1)
           {
-            echo "### Threads post"
+            echo "### Threads post (${THREADS_SLOT:-lunch} slot)"
             echo
             echo "- result: \`${RESULT:-?}${CAUSE:+ \`${CAUSE}\`}\`"
             echo "- permalink: ${PERMALINK:-not reported}"
+            [ -n "$IMAGE" ] && echo "- image: \`$IMAGE\` (the day's Instagram card; dropped = posted as text)"
+            [ -n "$REPLY" ] && echo "- link reply: \`$REPLY\`"
             echo "- duplicate guard: read from the profile, not from a local counter"
             echo "- ledger: \`logs/threads_sent.json\`"
           } >> "$GITHUB_STEP_SUMMARY"

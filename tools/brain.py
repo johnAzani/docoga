@@ -51,7 +51,7 @@ import json
 import os
 import re
 import sys
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -80,7 +80,7 @@ POST_MAX = 900
 THREADS_MAX = 480
 HEADLINE_MAX = 70
 LINE_MAX = 110
-SHORT_DAYS = (0, 1, 3, 4)            # Mon (FB/IG Reel), Tue (YouTube), Thu (FB/IG Reel), Fri (YouTube)
+SHORT_DAYS = (0, 1, 2, 3, 4)         # Mon (FB/IG Reel), Tue (YouTube), Wed (YouTube, since 17 Oct 2026), Thu (FB/IG Reel), Fri (YouTube)
 POST_TYPES = ("educational", "state_spotlight", "pidgin", "story", "promo", "checklist", "engagement")
 HOOKS = ("STAT", "QUESTION", "CLAIM", "STAKES", "CURIOSITY", "HOWTO", "STORY")
 LAYOUTS = ("poster", "stat", "checklist")
@@ -182,7 +182,47 @@ def day_context(day, said=None):
                 short_day=day.weekday() in SHORT_DAYS, calendar=calendar_notes(day),
                 recent=recent, feedback=read(FEEDBACK).strip(),
                 strategy=read(STRATEGY).strip(), audience=read(AUDIENCE).strip(),
-                news=newsdesk.fresh_items())
+                news=newsdesk.fresh_items(), search=search_demand())
+
+
+SEARCH_CONSOLE = Path(os.environ.get("DOCOGA_SEARCH_CONSOLE") or (ROOT / "logs" / "search_console.json"))
+
+
+def search_demand(path=None, max_age_days=21):
+    """What Nigerians typed into Google before they found us — tools/search_console.py's weekly
+    pull, if it exists and is fresh. Striking-distance queries first (one good answer moves them
+    to page one), then the top clicked. Empty list when the pull is missing, stale or broken."""
+    path = Path(path or SEARCH_CONSOLE)
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        taken = datetime.fromisoformat(str(data.get("taken_at")))
+    except (OSError, ValueError, TypeError):
+        return []
+    if taken.tzinfo is None:
+        taken = taken.replace(tzinfo=timezone.utc)
+    if (datetime.now(timezone.utc) - taken).days > max_age_days:
+        return []
+    out, seen = [], set()
+    for kind, rows in (("striking", data.get("striking_distance") or []), ("top", data.get("top_queries") or [])):
+        for q in rows:
+            text = str(q.get("query") or "").strip()
+            if not text or text in seen:
+                continue
+            seen.add(text)
+            out.append({"query": text, "kind": kind, "position": q.get("position"), "impressions": q.get("impressions"),
+                        "clicks": q.get("clicks"), "page": q.get("page") or ""})
+            if len(out) >= 12:
+                return out
+    return out
+
+
+def search_block(rows):
+    if not rows:
+        return "(no Search Console pull yet — write from the shelf and the plan)"
+    return "\n".join("- \"%s\" — %s, position %s, %s impressions, %s clicks%s"
+                     % (r["query"], "almost page one" if r["kind"] == "striking" else "already brings readers",
+                        r.get("position"), r.get("impressions"), r.get("clicks"),
+                        (" → " + r["page"].replace("https://docoga.com.ng", "")) if r.get("page") else "") for r in rows)
 
 
 def prompt_for(ctx, problems=None):
@@ -218,6 +258,12 @@ A story may be the OPENING LINE only ("This week a Lagos landlord…"), named as
 Never invent a detail that is not in the headline. The law still comes from the shelf below with a
 fact id. If no story fits today's lead and state, set news_hook to null — do not force it.
 
+WHAT NIGERIANS TYPE INTO GOOGLE BEFORE THEY FIND US (Search Console, last 28 days, Nigeria)
+{search_block(ctx.get('search') or [])}
+When one of these questions fits today's state and lead, answer it in the FIRST LINE in the
+reader's own words and set `tool` to the page Google already shows — that post and that Short are
+how a position-9 query becomes page one. Never bend the law to fit a query.
+
 WHAT THE NUMBERS SAID — SCORECARD, GOALS AND THIS WEEK'S ORDERS (obey the orders)
 {ctx['feedback'] or 'No feedback yet — use the editorial rhythm.'}
 
@@ -242,6 +288,7 @@ OUTPUT — one JSON object with exactly these keys:
            "hashtags": ["#DocOga", "3 to 5 total"]}},
   "threads": {{"text": "<= 360 characters, self-contained, no link, no hashtags, ENDS WITH A QUESTION answerable in five words", "hashtags": ["#DocOga", "at most 2"],
               "topic": "the one Threads topic tag, 2-4 plain words, no punctuation, e.g. 'Tenant Rights Nigeria'",
+              "evening": "<= 220 characters for the 8 pm image post: a SECOND angle on the same idea (the consequence, the mistake, the one-line rule), no link, no hashtags, no question needed",
               "poll": null, or on the engagement day (Sunday) {{"option_a": "<= 25 chars", "option_b": "<= 25 chars", "option_c": "optional", "option_d": "optional"}} — the answers to the closing question; a poll post carries no link}},
   "visual": {{"kicker": "2-4 words", "layout": one of {list(LAYOUTS)}, "big": "number or 1-3 words for the stat layout, else empty",
              "plate": "2-4 plain words for a background photograph with no faces and no signs"}},
@@ -376,6 +423,9 @@ def lint(pack, ctx, said):
     topic = str(threads.get("topic") or "").strip()
     if topic and (len(topic) > 50 or "." in topic or "&" in topic or "#" in topic):
         p.append("threads.topic: 2-4 plain words, no '#', '.', '&', max 50 characters")
+    evening = str(threads.get("evening") or "").strip()
+    if evening and (len(evening) > 280 or "http" in evening.lower() or "#" in evening):
+        p.append("threads.evening: at most 280 characters, no link, no hashtags — the link rides in the reply")
     poll = threads.get("poll")
     if poll is not None:
         if not isinstance(poll, dict):
@@ -552,7 +602,10 @@ def approve(pack, ctx, model_note=""):
                  "lines": [str(x).strip() for x in pack["post"]["lines"] if str(x).strip()],
                  "hashtags": list(pack["post"]["hashtags"])},
         "threads": {"text": pack["threads"]["text"].strip(),
-                    "hashtags": list(pack["threads"].get("hashtags") or [])[:2]},
+                    "hashtags": list(pack["threads"].get("hashtags") or [])[:2],
+                    "topic": str(pack["threads"].get("topic") or "").strip(),
+                    "poll": pack["threads"].get("poll") if isinstance(pack["threads"].get("poll"), dict) else None,
+                    "evening": str(pack["threads"].get("evening") or "").strip()[:280]},
         "visual": {k: str(pack["visual"].get(k) or "").strip() for k in ("kicker", "layout", "big", "plate")},
         "short": short, "why": str(pack.get("why") or "").strip(),
         "gates": ["citation", "verification" if pack.get("claims") else "no-claims", "lint", "repetition", "shape"],

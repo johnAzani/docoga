@@ -361,6 +361,25 @@ console.log('— the daily cron rebuilds the snapshot for the owner —');
   ok('with the admin unconfigured, the cron does no snapshot work at all', (await off.KV.get('adm:snap')) === null);
 }
 
+console.log('— channel → revenue attribution: /tap counts checkouts, /verify counts sales, the snapshot reports both (17 Oct 2026) —');
+{
+  const env = makeEnv({});
+  const tap = async (body) => hit(env, '/tap', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+  const a = await tap({ kind: 'checkout', src: 'tg' });
+  await tap({ kind: 'checkout', src: 'fb' });
+  await tap({ kind: 'checkout', src: 'tg' });
+  await tap({ kind: 'checkout', src: 'weird<script>' });
+  const bad = await tap({ kind: 'sale', src: 'tg' });
+  ok('a checkout tap is accepted', a.status === 200 && a.j.ok === true, String(a.status));
+  ok('a self-reported sale is refused — sales are counted by /verify only', bad.status === 400, String(bad.status));
+  const weekKeys = [...env.KV._store ? env.KV._store.keys() : []].filter(k => k.startsWith('src:'));
+  const row = JSON.parse(await env.KV.get(weekKeys.find(k => k.startsWith('src:checkout:')) || 'none') || '{}');
+  ok('counters are per channel per ISO week, unknown tags fold into other', row.telegram === 2 && row.facebook === 1 && row.other === 1, JSON.stringify(row));
+  const snap = await buildSnap(env);
+  const wk = Object.keys(snap.sources.checkout)[0];
+  ok('the snapshot carries sources{checkout,sale}{week:{channel:n}}', !!snap.sources && !!snap.sources.sale && snap.sources.checkout[wk].telegram === 2, JSON.stringify(snap.sources));
+}
+
 console.log('');
 console.log(fails ? `❌ ADMIN SUITE: ${fails} failure(s)` : '🏆 admin suite green');
 process.exit(fails ? 1 : 0);
