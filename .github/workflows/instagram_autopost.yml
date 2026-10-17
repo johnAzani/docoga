@@ -311,8 +311,19 @@ jobs:
             # No workflow expression is interpolated into this command line: this is the one step that pushes, and a
             # push destination built from an interpolated expression is where a trust mistake
             # becomes a write to the wrong ref.
-            git push origin "HEAD:${BRANCH}" \
-              || echo "::warning title=Card not pushed::the JPEG exists only in this run, so the URL Instagram will be given is not published yet. If the push failed, the media-liveness wait below will fail with cause=media — which is the honest outcome, not a mystery."
+            # 17 Oct 2026, 7:10pm: the first clock-driven run lost its card because main moved
+            # (a PR merged) between checkout and this push — rejected as non-fast-forward, then
+            # 15 minutes waiting for a URL that could never answer. Rebase onto the branch and
+            # try three times; a moving main is normal, not a reason to miss the slot.
+            PUSHED=no
+            for attempt in 1 2 3; do
+              git pull --rebase --autostash origin "$BRANCH" >/dev/null 2>&1 || true
+              if git push origin "HEAD:${BRANCH}"; then PUSHED=yes; break; fi
+              echo "push attempt $attempt did not land — the branch moved; rebasing and retrying"
+              sleep 5
+            done
+            [ "$PUSHED" = yes ] \
+              || echo "::warning title=Card not pushed::the JPEG exists only in this run, so the URL Instagram will be given is not published yet. The push failed three times, so the media-liveness wait below will fail with cause=media — which is the honest outcome, not a mystery."
           fi
 
       # Skipped on a story-only dispatch: a Story has no caption to be a duplicate of, and the
