@@ -84,11 +84,19 @@ abuse. Pidgin is welcome when the commenter wrote pidgin. You answer with one JS
 
 
 # ───────────────────────────── http ─────────────────────────────
-def _http(method, url, params=None, data=None, timeout=30):
-    """(status, json). Params go in the query for GET and in the form body for POST."""
+def _http(method, url, params=None, data=None, timeout=30, json=None):
+    """(status, json). Params go in the query for GET and in the form body for POST; a `json`
+    body (the messaging endpoints want nested objects) travels as JSON with `params` in the
+    query."""
+    import json as _json
     body = None
     headers = {"User-Agent": "DocOga-replies/1.0 (+https://docoga.com.ng)"}
-    if method == "GET" and params:
+    if json is not None:
+        if params:
+            url = url + ("&" if "?" in url else "?") + urllib.parse.urlencode(params)
+        body = _json.dumps(json).encode("utf-8")
+        headers["Content-Type"] = "application/json"
+    elif method == "GET" and params:
         url = url + ("&" if "?" in url else "?") + urllib.parse.urlencode(params)
     elif params or data:
         body = urllib.parse.urlencode(data or params).encode("utf-8")
@@ -102,7 +110,7 @@ def _http(method, url, params=None, data=None, timeout=30):
     except (urllib.error.URLError, OSError, ValueError) as e:
         return 0, {"error": {"message": str(e)}}
     try:
-        return status, json.loads(raw)
+        return status, _json.loads(raw)
     except ValueError:
         return status, {"error": {"message": raw[:200]}}
 
@@ -188,6 +196,23 @@ class Platform:
     def reply(self, comment, text):
         return None
 
+    dm_scope = ""                        # set by the adapters that can send a private reply
+    dm_capability = "unsupported"        # "ok" / "missing: <scope>" / "error: …" / "unsupported"
+
+    def private_reply(self, comment, text):
+        """Send ONE private message to the commenter, by Meta's private-replies rule (one per
+        comment, within 7 days). Returns the message id or None; a permission refusal parks
+        `dm_capability` so the lane stops trying this run and the summary names the scope."""
+        return None
+
+    def _dm_fail(self, status, body, what="the private reply"):
+        if _is_permission_error(status, body):
+            self.dm_capability = "missing: %s" % self.dm_scope
+            self.log("%s: %s refused — the token lacks %s (%s)" % (self.name, what, self.dm_scope, _err(body)))
+        else:
+            self.dm_capability = "error: %s" % _err(body)
+            self.log("%s: %s failed — %s" % (self.name, what, _err(body)))
+
     def _fail(self, status, body, scope, what):
         if _is_permission_error(status, body):
             self.capability = "missing: %s" % scope
@@ -254,11 +279,25 @@ class Instagram(Platform):
 
     def __init__(self, *a):
         super().__init__(*a)
+        self.dm_capability = "ok"
         if self.env.get("IG_API_PATH", "instagram-login") == "facebook-login":
             self.base, self.node = GRAPH, (self.env.get("IG_USER_ID") or "me").strip()
             self.read_scope = self.write_scope = "instagram_manage_comments"
+            self.dm_scope = "instagram_manage_messages"
         else:
             self.base, self.node = GRAPH_IG, "me"
+            self.dm_scope = "instagram_business_manage_messages"
+
+    def private_reply(self, comment, text):
+        # Instagram API: POST /{ig-user-id}/messages {recipient:{comment_id}, message:{text}} —
+        # the DM the keyword mechanic ("comment RECEIPT and I send it") lands in the inbox with.
+        st, body = self.http("POST", "%s/%s/messages" % (self.base, self.node),
+                             json={"recipient": {"comment_id": _cid(comment)}, "message": {"text": text}},
+                             params={"access_token": self.token()})
+        if st != 200 or not (body.get("message_id") or body.get("id")):
+            self._dm_fail(st, body)
+            return None
+        return body.get("message_id") or body.get("id")
 
     def token(self):
         return _read_secret(self.env, "IG_TOKEN_FILE", "IG_ACCESS_TOKEN")
@@ -301,12 +340,27 @@ class Instagram(Platform):
 
 class Facebook(Platform):
     name, read_scope, write_scope = "facebook", "pages_read_engagement", "pages_manage_engagement"
+    dm_scope = "pages_messaging"
+
+    def __init__(self, *a):
+        super().__init__(*a)
+        self.dm_capability = "ok"
 
     def token(self):
         return (self.env.get("FB_PAGE_ACCESS_TOKEN") or "").strip()
 
     def page(self):
         return (self.env.get("FB_PAGE_ID") or "").strip()
+
+    def private_reply(self, comment, text):
+        # Messenger Platform private replies: POST /{page-id}/messages with recipient.comment_id.
+        st, body = self.http("POST", "%s/%s/messages" % (GRAPH, self.page()),
+                             json={"recipient": {"comment_id": _cid(comment)}, "message": {"text": text}},
+                             params={"access_token": self.token()})
+        if st != 200 or not (body.get("message_id") or body.get("id")):
+            self._dm_fail(st, body)
+            return None
+        return body.get("message_id") or body.get("id")
 
     def posts(self):
         if not self.page():
@@ -361,6 +415,55 @@ def is_abuse(text):
 
 def worth_answering(text):
     return bool(WORDY.search(text or "")) and not is_abuse(text)
+
+
+# ───────────────────────────── comment → DM ─────────────────────────────
+# The keyword mechanic (17 Oct 2026). A post says "comment LINK and I send it"; a reader who
+# asks for the link, the template or "how do I get it" is asking to be sold to, and the honest
+# answer is the exact page in their inbox. Meta's rule: one private reply per comment, within 7
+# days; the thread continues only if they write back. Benchmarks for comment→DM in 2026: 85–92%
+# open, 18–35% click, which no public reply approaches. Template text, no Gemini call (₦0, no
+# quota), the deep link tagged by channel so the scorecard sees the money it moves.
+DM_WORDS = ("link", "send", "template", "format", "sample", "dm", "how do i get", "how can i get",
+            "where can i", "where do i", "pls", "please", "abeg", "share", "download", "interested", "need")
+DM_LINES = ("Hi{name}! Here is the free {tool} you asked about: {link}\n\n"
+            "Fill it on your phone, check it, download the PDF. If any line is unclear, reply here \u2014 "
+            "a human reads every message. \u2014 DocOga")
+TOOL_NAMES = {"tenancy-agreement": "tenancy agreement", "notice-to-quit": "notice to quit",
+              "rent-receipt": "rent receipt", "caution-fee": "caution fee receipt",
+              "letter-of-demand": "letter of demand", "invoice": "invoice", "payslip": "payslip",
+              "employment-contract": "employment contract", "warning-letter": "warning letter",
+              "power-of-attorney": "power of attorney", "tenant-rights": "tenant-rights guide"}
+
+
+def wants_link(text):
+    """True when the comment asks for the thing rather than discussing it."""
+    t = " " + re.sub(r"[^a-z0-9 ]+", " ", (text or "").lower()) + " "
+    return any((" %s " % w) in t if " " not in w else w in t for w in DM_WORDS)
+
+
+def dm_text(comment, context):
+    tool = TOOL_NAMES.get(str((context or {}).get("tool") or ""), "document tool")
+    link = (context or {}).get("link") or drafts.tag_links(drafts.LINK, comment.get("platform"))
+    name = (comment.get("author") or "").strip()
+    name = (" " + name.split()[0]) if name and not name.startswith("@") and len(name) <= 24 else ""
+    return DM_LINES.format(name=name, tool=tool, link=link)
+
+
+def send_dms(pending, contexts, platforms, dry_run, log):
+    """One private reply per asking comment; returns {comment_id: message_id}."""
+    out = {}
+    for c, ctx in zip(pending, contexts):
+        if not wants_link(c.get("text")):
+            continue
+        pf = next((p for p in platforms if p.name == c["platform"]), None)
+        if pf is None or pf.dm_capability != "ok":
+            continue
+        mid = "dry-run" if dry_run else pf.private_reply(c, dm_text(c, ctx))
+        if mid:
+            out[c["comment_id"]] = mid
+            log("%s: private reply to %s (%s)" % (pf.name, c.get("author") or "someone", mid))
+    return out
 
 
 def collect(platforms, ledger, log, max_per_run=MAX_PER_RUN):
@@ -516,40 +619,71 @@ def run(http=None, gemini_http=None, env=None, now=None, dry_run=False, only=Non
     pending, skipped = collect(platforms, ledger, log, max_per_run)
     result = {"pending": len(pending), "answered": 0, "refused": 0, "skipped": skipped, "replies": [],
               "capabilities": {}, "quota": None}
+    result["dms"] = 0
     if pending:
         contexts = [context_for(c, packs) for c in pending]
+        # The inbox first: a template, no quota, and it must not wait on Gemini's mood.
+        dms = send_dms(pending, contexts, platforms, dry_run, log) if (env.get("BRAIN_DM", "on").lower() not in ("off", "0", "false", "no")) else {}
+        result["dms"] = len(dms)
         try:
             drafted = draft(pending, contexts, http=gemini_http, sleep=sleep, log=log)
         except gemini_text.Exhausted as e:
             result["quota"] = str(e)
             drafted = []
+        seen = set()
         for c, text, why in drafted:
+            seen.add(c["comment_id"])
             if text is None:
                 result["refused"] += 1
+                if c["comment_id"] in dms:
+                    row = {"platform": c["platform"], "comment_id": c["comment_id"], "post_id": c["post_id"], "reply_id": None,
+                           "dm_id": dms[c["comment_id"]], "author": c["author"], "comment": c["text"][:200], "reply": None,
+                           "why": why, "at": now.isoformat(timespec="seconds"), "dry_run": bool(dry_run)}
+                    result["replies"].append(row)
+                    if not dry_run:
+                        ledger.append(row)
                 continue
             pf = next(p for p in platforms if p.name == c["platform"])
             if pf.capability.startswith("missing"):
                 continue
             reply_id = "dry-run" if dry_run else pf.reply(c, text)
-            if reply_id:
-                result["answered"] += 1
+            if reply_id or c["comment_id"] in dms:
+                result["answered"] += 1 if reply_id else 0
                 row = {"platform": c["platform"], "comment_id": c["comment_id"], "post_id": c["post_id"], "reply_id": reply_id,
-                       "author": c["author"], "comment": c["text"][:200], "reply": text, "why": why,
+                       "dm_id": dms.get(c["comment_id"]), "author": c["author"], "comment": c["text"][:200], "reply": text, "why": why,
                        "at": now.isoformat(timespec="seconds"), "dry_run": bool(dry_run)}
+                result["replies"].append(row)
+                if not dry_run:
+                    ledger.append(row)
+        # A DM sent while Gemini's quota was spent is still a DM: record it so it is never sent twice.
+        for c in pending:
+            if c["comment_id"] in dms and c["comment_id"] not in seen:
+                row = {"platform": c["platform"], "comment_id": c["comment_id"], "post_id": c["post_id"], "reply_id": None,
+                       "dm_id": dms[c["comment_id"]], "author": c["author"], "comment": c["text"][:200], "reply": None,
+                       "why": "dm-only (public reply pending quota)", "at": now.isoformat(timespec="seconds"), "dry_run": bool(dry_run)}
                 result["replies"].append(row)
                 if not dry_run:
                     ledger.append(row)
     for pf in platforms:
         result["capabilities"][pf.name] = pf.capability
-    if not dry_run and result["answered"]:
+        result.setdefault("dm_capabilities", {})[pf.name] = pf.dm_capability
+    if not dry_run and (result["answered"] or result["dms"]):
         save_ledger(ledger)
     return result
 
 
 def summary_md(result):
-    lines = ["### Community manager — %d pending, %d answered, %d refused by the gates" % (result["pending"], result["answered"], result["refused"])]
+    lines = ["### Community manager — %d pending, %d answered, %d refused by the gates, %d sent to the inbox"
+             % (result["pending"], result["answered"], result["refused"], result.get("dms", 0))]
     for r in result["replies"]:
-        lines.append("- **%s** %s: _%s_ → %s" % (r["platform"], r["author"] or "someone", r["comment"][:80].replace("\n", " "), r["reply"]))
+        lines.append("- **%s** %s: _%s_ → %s%s" % (r["platform"], r["author"] or "someone", r["comment"][:80].replace("\n", " "),
+                                                 r.get("reply") or "(no public reply)", " · 📩 DM" if r.get("dm_id") else ""))
+    for name, cap in (result.get("dm_capabilities") or {}).items():
+        if cap.startswith("missing"):
+            lines.append("- 📩 %s: comment→DM is waiting on `%s` — re-mint the token with it and the inbox opens"
+                         % (name, cap.split(": ", 1)[1]))
+        elif cap.startswith("error"):
+            lines.append("- ❌ %s DM: %s" % (name, cap))
     for name, cap in (result.get("capabilities") or {}).items():
         if cap.startswith("missing"):
             lines.append("- ⚠️ %s: %s — re-mint that token with this permission and the lane answers there too" % (name, cap))
@@ -575,6 +709,8 @@ def main(argv=None):
     result = run(dry_run=a.dry_run, only=a.platform, max_per_run=a.max)
     text = summary_md(result)
     print(text, end="")
+    print("REPLIES_DM=%s" % ",".join("%s=%s" % (n, "ok" if c == "ok" else c.split(":")[0])
+                                     for n, c in (result.get("dm_capabilities") or {}).items()), flush=True)
     if a.summary_file:
         try:
             with open(a.summary_file, "a", encoding="utf-8") as fh:

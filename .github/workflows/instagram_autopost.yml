@@ -43,6 +43,12 @@ name: DocOga Instagram Auto-Post
 
 on:
   schedule:
+    # Three candidate windows (WAT 07:10, 13:10, 19:10 — Nigeria's morning, lunch and evening
+    # peaks); the `slot` job below lets exactly ONE of them post each day, the one brain/slots.json
+    # names. The scorecard rewrites that file every Monday from what our posts earned by hour and
+    # from Instagram's online_followers curve (17 Oct 2026). Default 19:10 WAT.
+    - cron: '10 6 * * *'   # 06:10 UTC = 07:10 Lagos
+    - cron: '10 12 * * *'  # 12:10 UTC = 13:10 Lagos
     - cron: '10 18 * * *'  # 18:10 UTC = 19:10 Lagos — the 7–9 pm peak for Nigeria's visual platform (brain/strategy.md); :10 so a late scheduler still lands in the window
   workflow_dispatch:
     inputs:
@@ -92,7 +98,44 @@ permissions:
                    # every failure since launch ended in "Issue not created: bookkeeping failed"
 
 jobs:
+  slot:
+    name: Is this the hour the numbers chose?
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      go: ${{ steps.gate.outputs.go }}
+      why: ${{ steps.gate.outputs.why }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Slot gate
+        id: gate
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          set -o pipefail
+          python3 tools/brain_scorecard.py slot instagram | tee /tmp/slot.log
+          WANT=$(sed -n 's/^SLOT_HOUR_WAT=//p' /tmp/slot.log | tail -1)
+          WHY=$(sed -n 's/^SLOT_WHY=//p' /tmp/slot.log | tail -1)
+          NOW=$(TZ=Africa/Lagos date +%-H)
+          # A dispatch always posts. A scheduled run posts only in the chosen window: the cron fires
+          # at :10, and the scheduler can be an hour late, so the window is the hour and the next.
+          if [ "$EVENT" != "schedule" ] || [ "$NOW" = "$WANT" ] || [ "$NOW" = "$(( (WANT + 1) % 24 ))" ]; then
+            echo "go=true" >> "$GITHUB_OUTPUT"
+            echo "IG_SLOT=go hour=${NOW} chosen=${WANT}"
+          else
+            echo "go=false" >> "$GITHUB_OUTPUT"
+            echo "IG_SLOT=skipped hour=${NOW} chosen=${WANT}"
+          fi
+          echo "why=${WHY}" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Instagram slot"
+            echo
+            echo "- Lagos hour now: ${NOW} · chosen slot: ${WANT}:10 WAT — ${WHY}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
   publish:
+    needs: slot
+    if: ${{ needs.slot.outputs.go == 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30  # > the 15-minute media-liveness wait, or the deadline is fiction
     env:
@@ -211,6 +254,8 @@ jobs:
         if: ${{ !inputs.probe_only && !inputs.dry_run && inputs.content_type != 'reel' }}
         env:
           BRANCH: ${{ github.event.repository.default_branch }}
+          IG_CAROUSEL: ${{ vars.IG_CAROUSEL }}             # on (default) · off
+          IG_CAROUSEL_DAYS: ${{ vars.IG_CAROUSEL_DAYS }}   # ISO weekdays, default 2,4 (Tue, Thu)
         run: |
           set -o pipefail
           DAY=$(date -u +%F)
@@ -232,9 +277,23 @@ jobs:
           STORY_URL=$(sed -n 's/^CARD_URL=//p' /tmp/ig_story_render.log | tail -1)
           echo "IG_MEDIA_URL=${CARD_URL}" >> "$GITHUB_ENV"
           echo "IG_STORY_URL=${STORY_URL}" >> "$GITHUB_ENV"
+          # Carousel days (17 Oct 2026): on Tue + Thu (ISO weekdays in IG_CAROUSEL_DAYS, default 2,4)
+          # the brain pack's lines become one slide each — hook, points, close. Carousels carry
+          # 0.55% ER against 0.37% for a single image and nine times the saves (Socialinsider,
+          # Metricool 2026). CARD_SLIDES=0 means the pack had too few lines: the single card posts.
+          SLIDE_URLS=""
+          DOW=$(date -u +%u)
+          if [ "${IG_CAROUSEL:-on}" != "off" ] && printf ',%s,' "${IG_CAROUSEL_DAYS:-2,4}" | grep -q ",${DOW},"; then
+            python3 tools/social_card.py --slides --brief "$DAY" \
+              --out "site/social/${DAY}-instagram-slide.jpg" 2>&1 | tee /tmp/ig_slides.log || true
+            SLIDE_URLS=$(sed -n 's/^CARD_URLS=//p' /tmp/ig_slides.log | tail -1)
+            echo "carousel: $(sed -n 's/^CARD_SLIDES=//p' /tmp/ig_slides.log | tail -1) slide(s)"
+          fi
+          echo "IG_SLIDE_URLS=${SLIDE_URLS}" >> "$GITHUB_ENV"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -f "$OUT" "$STORY_OUT"
+          [ -n "$SLIDE_URLS" ] && git add -f site/social/"${DAY}"-instagram-slide-*.jpg
           if git diff --staged --quiet; then
             echo "Render already committed on this branch — nothing to push."
           else
@@ -315,6 +374,12 @@ jobs:
           [ -n "$ALT" ] && ARGS+=(--alt-text "$ALT")
           if [ -n "${IG_IMAGE_URL_OVERRIDE:-}" ]; then
             ARGS+=(--image-url "$IG_IMAGE_URL_OVERRIDE")
+          elif [ -n "${IG_SLIDE_URLS:-}" ]; then
+            # Word-splitting is the point: CARD_URLS is space-separated and URLs carry no spaces.
+            # shellcheck disable=SC2206
+            SLIDES=(${IG_SLIDE_URLS})
+            ARGS+=(--image-urls "${SLIDES[@]}")
+            echo "carousel: ${#SLIDES[@]} slides"
           else
             [ -n "${IG_MEDIA_URL:-}" ] || { echo "::error title=no card URL::the render step did not produce CARD_URL"; exit 5; }
             ARGS+=(--image-url "$IG_MEDIA_URL")
@@ -339,7 +404,7 @@ jobs:
             echo
             echo "- result: \`${RESULT:-?}${CAUSE:+ · cause \`${CAUSE}\`}\`"
             echo "- permalink: ${PERMALINK:-not reported}"
-            echo "- media: ${IG_MEDIA_URL:-dispatch URL} — served from the deployed site, which is why the wait exists"
+            echo "- media: ${IG_SLIDE_URLS:-${IG_MEDIA_URL:-dispatch URL}} — served from the deployed site, which is why the wait exists"
             echo "- ledger: \`logs/instagram_sent.json\`"
           } >> "$GITHUB_STEP_SUMMARY"
           # sent / refused-duplicate / probed are successes; a red publisher is a red run.

@@ -365,7 +365,9 @@ def _encode(image, quality):
     return buffer.getvalue()
 
 
-DATED_RENDER = re.compile(r"^\d{4}-\d{2}-\d{2}-instagram\.jpg$")
+# The card, its Story frame and its carousel slides (17 Oct 2026) — one day's renders share one
+# date, and `prune` keeps the newest `keep` DAYS, so a carousel day does not cost six days of window.
+DATED_RENDER = re.compile(r"^(\d{4}-\d{2}-\d{2})-instagram(?:-story|-slide-\d+)?\.jpg$")
 
 
 def prune(directory, keep=60):
@@ -388,16 +390,65 @@ def prune(directory, keep=60):
     if not directory.is_dir():
         return [], []
     dated = sorted(p for p in directory.iterdir() if DATED_RENDER.match(p.name))
-    if len(dated) <= keep:
+    days = sorted({DATED_RENDER.match(p.name).group(1) for p in dated})
+    if len(days) <= keep:
         # Nothing past the window. Written as an early return rather than a slice expression:
-        # `dated[:-0]` is `dated[0:]`, i.e. *everything*, which is the opposite of a retention
+        # `days[:-0]` is `days[0:]`, i.e. *everything*, which is the opposite of a retention
         # rule — a `…, … if … else …` one-liner here did exactly that on its first draft.
-        return [], dated
-    split = len(dated) - keep
-    doomed, kept = dated[:split], dated[split:]
+        return [], [p.name for p in dated]
+    survivors = set(days[len(days) - keep:])
+    doomed = [p for p in dated if DATED_RENDER.match(p.name).group(1) not in survivors]
+    kept = [p for p in dated if DATED_RENDER.match(p.name).group(1) in survivors]
     for path in doomed:
         path.unlink()
     return [p.name for p in doomed], [p.name for p in kept]
+
+
+def public_url(path, base_url):
+    """The URL the deployed site serves this repo path at (`site/` is the web root)."""
+    absolute = Path(path).resolve()
+    relative = absolute.relative_to(ROOT) if str(absolute).startswith(str(ROOT)) else absolute
+    serving = str(relative).replace(os.sep, "/")
+    if serving.startswith("site/"):
+        serving = serving[len("site/"):]
+    return "%s/%s" % (base_url.rstrip("/"), serving.lstrip("/"))
+
+
+def render_slides(args):
+    """`--slides`: the carousel for the brain pack of `--brief`, one JPEG per slide.
+
+    Prints `CARD_SLIDES=<n>` and `CARD_URLS=<url …>` (space-separated, in order). `CARD_SLIDES=0`
+    with exit 0 means "no carousel today" — the pack had fewer than two lines or there is no
+    pack — so the workflow falls back to the single card without going red.
+    """
+    import brain_drafts
+    pack = brain_drafts.draft_for(args.brief) if args.brief else None
+    slides = brain_drafts.carousel_slides(pack) if pack else []
+    if not slides:
+        print("CARD_SLIDES=0")
+        print("CARD_URLS=")
+        return 0
+    size = (CARD_W, CARD_H)
+    kicker, background, layout, big = _brief(brain_drafts.visual(pack), brain_drafts.post_type(pack), size)
+    stem = re.sub(r"\.jpe?g$", "", args.out, flags=re.I)
+    urls, total = [], 0
+    for index, (label, text) in enumerate(slides, 1):
+        out = "%s-%d.jpg" % (stem, index)
+        # The hook and the close carry the brain's plate and kicker; the points sit on the
+        # plain navy so the words, not the picture, are what a thumb stops on.
+        first_or_last = index in (1, len(slides))
+        result = render(text, out, kicker=(kicker or label) if index == 1 else label,
+                        quality=args.quality, max_kb=args.max_kb,
+                        footer="" if args.no_footer else FOOTER,
+                        background=background if first_or_last else None,
+                        layout=layout if first_or_last else "poster", big=big if index == 1 else "")
+        urls.append(public_url(result["path"], args.base_url))
+        total += result["bytes"]
+        print("CARD_SLIDE=%d %s %dx%d %dKB" % (index, out, result["width"], result["height"], result["bytes"] // 1024))
+    print("CARD_SLIDES=%d" % len(slides))
+    print("CARD_URLS=%s" % " ".join(urls))
+    print("CARD_BYTES=%d" % total)
+    return 0
 
 
 def main(argv=None):
@@ -418,6 +469,9 @@ def main(argv=None):
                         help="draw a 9:16 Story frame (1080x1920) with the platform's chrome bands kept clear")
     parser.add_argument("--brief", metavar="YYYY-MM-DD",
                         help="apply the brain's visual brief for this date when brain/drafts has one")
+    parser.add_argument("--slides", action="store_true",
+                        help="render the brain pack's carousel (needs --brief): --out is the stem, "
+                             "files are <stem>-1.jpg … and CARD_URLS lists them in order")
     parser.add_argument("--print", dest="show", action="store_true")
     args = parser.parse_args(argv if argv is not None else sys.argv[1:])
 
@@ -429,6 +483,9 @@ def main(argv=None):
         return 0
     if not args.out:
         parser.error("--out is required unless --prune is doing the work")
+
+    if args.slides:
+        return render_slides(args)
 
     text = args.text or ""
     if args.from_json:

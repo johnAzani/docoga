@@ -382,12 +382,67 @@ class GradeTests(unittest.TestCase):
         self.assertIn("use STAKES on two of the four cited days", md)
 
 
+class SlotPlanTests(unittest.TestCase):
+    """17 Oct 2026: the Instagram hour is chosen by the numbers and read by a slot gate."""
+
+    def test_no_evidence_keeps_the_default_evening_slot(self):
+        plan = sc.slot_plan({}, {}, now=NOW)
+        self.assertEqual(plan["lanes"]["instagram"]["hour_wat"], 19)
+        self.assertFalse(plan["lanes"]["instagram"]["changed"])
+
+    def test_the_audience_curve_moves_the_slot_to_the_nearest_window_only_when_two_hours_off(self):
+        plan = sc.slot_plan({"instagram.online_peak_hours_wat": [13, 14, 12]}, {}, now=NOW)
+        self.assertEqual((plan["lanes"]["instagram"]["hour_wat"], plan["lanes"]["instagram"]["changed"]), (13, True))
+        self.assertIn("online most at 13:00", plan["lanes"]["instagram"]["why"])
+        plan = sc.slot_plan({"instagram.online_peak_hours_wat": [20, 19, 21]}, {}, now=NOW)
+        self.assertEqual(plan["lanes"]["instagram"]["hour_wat"], 19, "20:00 is inside the 19:10 window")
+        plan = sc.slot_plan({"instagram.online_peak_hours_wat": [2]}, {}, now=NOW)
+        self.assertEqual(plan["lanes"]["instagram"]["hour_wat"], 19, "no window near 02:00 — stay put")
+
+    def test_our_own_numbers_outrank_the_curve_and_need_three_posts_per_window_and_a_clear_margin(self):
+        k = {"instagram.by_hour": {"13": 30.0, "19": 10.0, "7": 12.0}, "instagram.by_hour_n": {"13": 4, "19": 5, "7": 1},
+             "instagram.online_peak_hours_wat": [21]}
+        plan = sc.slot_plan(k, {}, now=NOW)
+        self.assertEqual(plan["lanes"]["instagram"]["hour_wat"], 13)
+        self.assertIn("measured, not guessed", plan["lanes"]["instagram"]["why"])
+        k["instagram.by_hour"] = {"13": 11.0, "19": 10.0}
+        self.assertEqual(sc.slot_plan(k, {}, now=NOW)["lanes"]["instagram"]["hour_wat"], 19, "a 10% edge is noise")
+        k["instagram.by_hour_n"] = {"13": 2, "19": 5}
+        k["instagram.by_hour"] = {"13": 90.0, "19": 10.0}
+        self.assertEqual(sc.slot_plan(k, {}, now=NOW)["lanes"]["instagram"]["hour_wat"], 19, "two posts prove nothing")
+
+    def test_the_previous_plan_is_the_baseline_and_the_gate_reads_it_back(self):
+        previous = {"lanes": {"instagram": {"hour_wat": 13}}}
+        plan = sc.slot_plan({}, previous, now=NOW)
+        self.assertEqual(plan["lanes"]["instagram"]["hour_wat"], 13)
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / "slots.json"
+            sc.save_slots(plan, path)
+            self.assertEqual(sc.slot_hour("instagram", sc.load_slots(path)), 13)
+            self.assertEqual(sc.slot_hour("instagram", {}), 19)
+            self.assertEqual(sc.slot_hour("instagram", {"lanes": {"instagram": {"hour_wat": "garbage"}}}), 19)
+
+    def test_the_instagram_lane_fires_in_every_candidate_window_and_the_slot_job_gates_the_post(self):
+        text = (Path(__file__).resolve().parents[2] / ".github" / "workflows" / "instagram_autopost.yml").read_text(encoding="utf-8")
+        import yaml
+        doc = yaml.safe_load(text)
+        crons = [c["cron"] for c in (doc.get(True) or doc.get("on"))["schedule"]]
+        hours_utc = sorted(int(c.split()[1]) for c in crons)
+        self.assertEqual(hours_utc, [(h - 1) % 24 for h in sc.SLOT_CANDIDATES["instagram"]], "one cron per candidate WAT hour")
+        self.assertEqual(doc["jobs"]["publish"]["needs"], "slot")
+        self.assertIn("needs.slot.outputs.go == 'true'", doc["jobs"]["publish"]["if"])
+        self.assertIn("python3 tools/brain_scorecard.py slot instagram", text)
+        sched = (Path(__file__).resolve().parents[2] / ".github" / "workflows" / "brain_scorecard.yml").read_text(encoding="utf-8")
+        self.assertIn("brain/slots.json", sched, "the Monday lane commits the plan the gate reads")
+
+
 class LedgerTests(unittest.TestCase):
     def test_pull_appends_and_summary_reads_back(self):
         with tempfile.TemporaryDirectory() as d:
             ledger = Path(d) / "scorecard.json"
-            old_ledger, old_env = sc.LEDGER, dict(os.environ)
+            old_ledger, old_env, old_slots = sc.LEDGER, dict(os.environ), sc.SLOTS
             sc.LEDGER = ledger
+            sc.SLOTS = Path(d) / "slots.json"
             try:
                 os.environ.update({k: "" for k in ENV})   # nothing configured → nothing measured but YouTube
                 sc._http = FakeNet([])   # no network in a test, ever
@@ -396,12 +451,15 @@ class LedgerTests(unittest.TestCase):
                 history = json.loads(ledger.read_text(encoding="utf-8"))
                 self.assertEqual(len(history), 1)
                 self.assertIn("orders", history[0])
+                self.assertEqual(sc.slot_hour("instagram", sc.load_slots(Path(d) / "slots.json")), 19,
+                                 "the pull writes the slot plan the Instagram gate reads")
                 text = sc.feedback_section(history)
                 self.assertIn("Scorecard", text)
                 self.assertIn("not connected", text, "revenue line tells the owner the one secret that connects it")
                 self.assertIn("Not measured (and why)", text)
             finally:
                 sc.LEDGER = old_ledger
+                sc.SLOTS = old_slots
                 os.environ.clear()
                 os.environ.update(old_env)
 

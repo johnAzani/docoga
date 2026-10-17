@@ -151,7 +151,7 @@ jobs:
         env:
           BRANCH: ${{ github.event.repository.default_branch }}
         run: |
-          git add -A logs/scorecard.json brain/feedback.md 2>/dev/null || true
+          git add -A logs/scorecard.json brain/feedback.md brain/slots.json 2>/dev/null || true
           if git diff --staged --quiet; then
             echo "nothing new to commit"
             exit 0

@@ -82,7 +82,10 @@ jobs:
         env:
           LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
         run: |
-          set -o pipefail
+          # `set +e`: the publisher's exit code must reach the outputs below even when it
+          # is non-zero (the failure issue reads `result`); GitHub's default `bash -e`
+          # would end the step at the pipe and leave `result` empty.
+          set +e -o pipefail
           ARGS=""
           if [ "$LI_PROBE_ONLY" = "true" ]; then ARGS="$ARGS --probe"; fi
           if [ "$LI_DRY_RUN" = "true" ]; then ARGS="$ARGS --dry-run"; fi
@@ -94,6 +97,7 @@ jobs:
             python3 tools/linkedin_publish.py $ARGS 2>&1 | tee /tmp/linkedin_post.log
           fi
           CODE=${PIPESTATUS[0]}
+          set -e
           echo "code=$CODE" >> "$GITHUB_OUTPUT"
           RESULT=$(sed -n 's/^LINKEDIN_RESULT=//p' /tmp/linkedin_post.log | tail -1)
           echo "result=${RESULT:-unknown}" >> "$GITHUB_OUTPUT"

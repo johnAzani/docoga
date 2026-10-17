@@ -108,8 +108,11 @@ class Sandbox(unittest.TestCase):
                                            "BRAIN_PLATES": "off", "GEMINI_API_KEY": "test-key"})
         self.env.start()
         self.addCleanup(self.env.stop)
+        import brain_scorecard
         for target, name, value in ((brain, "SAID", root / "said.json"),
                                     (brain, "FEEDBACK", root / "feedback.md"),
+                                    (brain_scorecard, "LEDGER", root / "scorecard.json"),
+                                    (newsdesk, "PINNED", root / "newsdesk_pinned.json"),
                                     (newsdesk, "OUT", root / "newsdesk.json"),
                                     (gemini_quota, "LEDGER", root / "quota.json")):
             p = patch.object(target, name, value)
@@ -335,6 +338,55 @@ class GateTests(Sandbox):
         problems = brain.lint(pack, self.ctx(), [])
         self.assertTrue(any("link is added" in p for p in problems))
         self.assertTrue(any("disclaimer is added" in p for p in problems))
+
+
+class HookBanditTests(Sandbox):
+    """17 Oct 2026: the opening hook is chosen by what hooks earned, not by a rota."""
+
+    def history(self, **arms):
+        return [{"kpis": {"learning": {"hook_type": {h: {"n": n, "avg": avg, "total": n * avg} for h, (n, avg) in arms.items()}}}}]
+
+    def test_without_numbers_the_order_is_advice_and_spreads_the_bets(self):
+        said = [{"date": "2026-10-15", "hook_type": "STAT"}, {"date": "2026-10-16", "hook_type": "STAT"},
+                {"date": "2026-10-17", "hook_type": "QUESTION"}]
+        hook, why, binding = brain.hook_order(MONDAY, said, history=[])
+        self.assertFalse(binding)
+        self.assertNotIn(hook, ("STAT", "QUESTION"), "the last two days' hooks are excluded")
+        self.assertIn("numbers have not spoken", why)
+        ctx = self.ctx()
+        self.assertEqual(brain.lint(good_pack(hook_type="STORY"), ctx, []), [], "advice, not a gate, until the numbers exist")
+
+    def test_with_numbers_the_best_earning_hook_wins_and_the_lint_holds_the_model_to_it(self):
+        history = self.history(STAT=(6, 40.0), QUESTION=(5, 12.0), CLAIM=(4, 9.0), STAKES=(3, 30.0),
+                               CURIOSITY=(3, 8.0), HOWTO=(3, 10.0), STORY=(3, 11.0))
+        hook, why, binding = brain.hook_order(MONDAY, [], history=history)
+        self.assertTrue(binding)
+        self.assertEqual(hook, "STAT")
+        self.assertIn("earned 40 per post over 6 posts", why)
+        ctx = self.ctx()
+        ctx.update(hook=hook, hook_why=why, hook_binding=binding)
+        self.assertEqual(brain.lint(good_pack(hook_type="STAT"), ctx, []), [])
+        problems = brain.lint(good_pack(hook_type="CLAIM"), ctx, [])
+        self.assertTrue(any("hook_type must be STAT today" in p for p in problems), problems)
+
+    def test_an_untried_hook_is_explored_before_a_mediocre_one_is_repeated_forever(self):
+        """UCB: five hooks measured and poor, two never tried — the exploration bonus sends the
+        brain to an untried arm instead of grinding the best of a bad bunch."""
+        history = self.history(STAT=(8, 5.0), QUESTION=(8, 4.0), CLAIM=(8, 4.5), STAKES=(8, 5.5), CURIOSITY=(8, 3.0))
+        hook, why, _ = brain.hook_order(MONDAY, [], history=history)
+        self.assertIn(hook, ("HOWTO", "STORY"))
+        self.assertIn("explore", why)
+
+    def test_yesterdays_hook_is_never_todays_even_when_it_is_the_best(self):
+        history = self.history(STAT=(9, 80.0), QUESTION=(5, 10.0), CLAIM=(5, 10.0))
+        said = [{"date": "2026-10-18", "hook_type": "STAT"}]
+        hook, _, _ = brain.hook_order(MONDAY, said, history=history)
+        self.assertNotEqual(hook, "STAT")
+
+    def test_the_prompt_carries_the_hook_order_and_the_keyword_money_line(self):
+        prompt = brain.prompt_for(self.ctx())
+        self.assertIn("Hook for today:", prompt)
+        self.assertIn("Comment LINK", prompt)
 
 
 class PlanTests(Sandbox):
@@ -626,7 +678,7 @@ class WorkflowContractTests(unittest.TestCase):
         for name in ("instagram_autopost.yml", "facebook_autopost.yml", "telegram_autopost.yml"):
             self.assertIn("numpy", (ROOT / ".github" / "workflows" / name).read_text(encoding="utf-8"), name)
         ig = (ROOT / ".github" / "workflows" / "instagram_autopost.yml").read_text(encoding="utf-8")
-        self.assertEqual(ig.count('--brief "$DAY"'), 2)
+        self.assertEqual(ig.count('--brief "$DAY"'), 3, "the card, the Story and the carousel slides all read the brief")
 
 
 

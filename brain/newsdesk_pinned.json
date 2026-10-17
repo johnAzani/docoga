@@ -1,0 +1,50 @@
+{
+ "_about": "Hand-dated stories from the research passes. tools/newsdesk.py merges these into the brain's NEWSDESK block ahead of the RSS pull; each expires 21 days after `published`. Only headlines a paper printed — the brain may open with one, named as 'reported by <source>', and the law still comes from the shelf. Add rows at the top; never backdate.",
+ "items": [
+  {
+   "published": "2026-10-15",
+   "source": "The Trumpet / Linda Ikeji's Blog",
+   "title": "Viral video: Lagos landlord reportedly punched by tenant after proposing a ₦200k → ₦350k rent jump on a self-contain he had rented for six years",
+   "link": "https://thetrumpet.ng",
+   "score": 90,
+   "note": "unverified footage, possibly staged — the brain may say 'a video circulating this week', never state it as fact"
+  },
+  {
+   "published": "2026-10-12",
+   "source": "Daily Trust / HDAN",
+   "title": "Residential rents under fresh upward pressure in Q4 2026 across Lagos, Abuja, Port Harcourt and Ibadan — housing group",
+   "link": "https://dailytrust.com",
+   "score": 80
+  },
+  {
+   "published": "2026-10-12",
+   "source": "The Guardian Nigeria",
+   "title": "States weigh tenancy reforms: agency fee capped at 10%, advance rent limited to one year, legal fee at 5%, rent tribunals proposed",
+   "link": "https://guardian.ng",
+   "score": 85,
+   "note": "proposals, not law — say 'proposed', never 'now the law'"
+  },
+  {
+   "published": "2026-10-07",
+   "source": "NOIPolls",
+   "title": "Abuja poll: 71% say rent is much harder to pay than three years ago; 93% were asked for a full year upfront",
+   "link": "https://noi-polls.com",
+   "score": 75
+  },
+  {
+   "published": "2026-10-05",
+   "source": "PropertyPro (Sept–Oct 2026 listings)",
+   "title": "Lagos mini-flat asking rents: Surulere ₦2.2m, Yaba/Gbagada ₦2.5m, Ikeja ₦3m, Lekki ₦4.8m a year",
+   "link": "https://www.propertypro.ng",
+   "score": 70
+  },
+  {
+   "published": "2026-10-02",
+   "source": "Lagos House of Assembly (bill tracker)",
+   "title": "Lagos Tenancy and Recovery of Premises Bill — 5% agency fee cap and ₦1m fine for breaches — still a bill, not law, as of October 2026",
+   "link": "https://lagoshouseofassembly.gov.ng",
+   "score": 65,
+   "note": "the one correction readers need: the 2011 Law is still the law in force"
+  }
+ ]
+}

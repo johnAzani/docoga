@@ -1734,6 +1734,55 @@ class RenderRetention(unittest.TestCase):
                          "another lane's render is not this lane's to delete")
         self.assertTrue((d / "brand-mark.jpg").exists())
 
+    def test_a_days_story_and_slides_go_with_its_card_and_keep_counts_days(self):
+        """17 Oct 2026: a carousel day writes up to eight files. `keep` is a number of days,
+        so one carousel does not push six older cards out of the window."""
+        d = self._make("2026-10-01-instagram.jpg", "2026-10-01-instagram-story.jpg",
+                       "2026-10-02-instagram.jpg", "2026-10-02-instagram-slide-1.jpg",
+                       "2026-10-02-instagram-slide-2.jpg", "2026-10-03-instagram.jpg")
+        deleted, kept = social_card.prune(d, keep=2)
+        self.assertEqual(sorted(deleted), ["2026-10-01-instagram-story.jpg", "2026-10-01-instagram.jpg"])
+        self.assertEqual(len(kept), 4)
+
+    def test_the_carousel_is_the_packs_lines_one_slide_each_with_hook_and_close(self):
+        """17 Oct 2026: Tue/Thu the pack becomes a carousel — hook, one point per slide, the
+        CTA last — rendered under one date stem and listed in order on CARD_URLS. A pack with
+        fewer than two lines yields CARD_SLIDES=0 and exit 0, so the single card posts."""
+        pack = {"date": "2026-10-20", "status": "approved", "version": bd.SCHEMA_VERSION,
+                "tool": "notice-to-quit", "state": "lagos", "theme": "notice",
+                "post": {"headline": "Six months. In writing. https://docoga.com.ng",
+                         "lines": ["Yearly tenant: six months — s.13(1)(e).", "Monthly: one month.", "Then a court order."],
+                         "cta": "Send this to one tenant."}}
+        slides = bd.carousel_slides(pack)
+        self.assertEqual([k for k, _ in slides], ["swipe \u2192", "1 of 3", "2 of 3", "3 of 3", "free \u00b7 docoga.com.ng"])
+        self.assertEqual(slides[0][1], "Six months. In writing.", "the hook is link-free")
+        self.assertEqual(slides[-1][1], "Send this to one tenant.")
+        self.assertEqual(bd.carousel_slides({"post": {"headline": "x", "lines": ["only one"]}}), [])
+
+        drafts = Path(tempfile.mkdtemp())
+        (drafts / "2026-10-20.json").write_text(json.dumps(pack), encoding="utf-8")
+        out = Path(tempfile.mkdtemp()) / "site" / "social"
+        with mock.patch.dict(os.environ, {"DOCOGA_BRAIN_DRAFTS": str(drafts), "BRAIN_PLATES": "off"}):
+            with mock.patch.object(social_card, "ROOT", out.parents[1]):
+                buf = io.StringIO()
+                with contextlib.redirect_stdout(buf):
+                    code = social_card.main(["--slides", "--brief", "2026-10-20",
+                                             "--out", str(out / "2026-10-20-instagram-slide.jpg"),
+                                             "--base-url", "https://docoga.com.ng"])
+                self.assertEqual(code, 0)
+                text = buf.getvalue()
+                self.assertIn("CARD_SLIDES=5", text)
+                urls = re.search(r"^CARD_URLS=(.*)$", text, re.M).group(1).split()
+                self.assertEqual(urls[0], "https://docoga.com.ng/social/2026-10-20-instagram-slide-1.jpg")
+                self.assertEqual(len(urls), 5)
+                self.assertTrue(all((out / u.rsplit("/", 1)[1]).is_file() for u in urls))
+                self.assertTrue(all(social_card.DATED_RENDER.match(u.rsplit("/", 1)[1]) for u in urls),
+                                "slides must be named so the pruner sweeps them with their day")
+                buf = io.StringIO()
+                with contextlib.redirect_stdout(buf):
+                    code = social_card.main(["--slides", "--brief", "2026-10-21", "--out", str(out / "x.jpg")])
+                self.assertEqual((code, "CARD_SLIDES=0" in buf.getvalue()), (0, True))
+
     def test_todays_own_card_cannot_be_pruned(self):
         """`keep` is floored at 1: pruning the file about to be handed to Meta is a 404 that
         reads like a permissions problem."""

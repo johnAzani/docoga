@@ -93,6 +93,13 @@ jobs:
           EXTRA=()
           [ -n "${JITTER_HOURS:-}" ] && EXTRA+=(--jitter-hours "$JITTER_HOURS")
           [ -n "${MISSES:-}" ]       && EXTRA+=(--misses "$MISSES")
+          # GitHub runs `run:` under `bash -eo pipefail`. The tool exits 1 on purpose when a lane
+          # is silent — exactly the case the next step must hear about — and under `-e` that exit
+          # killed this step before the outputs below were written, so the filing step saw an
+          # empty signature and refused to file ("exit ?"). Four nights of a red monitor that
+          # never opened its issue (13–16 Oct 2026). `set +e` around the one command that is
+          # allowed to fail; the verdict travels in CODE.
+          set +e
           python3 tools/automation_heartbeat.py \
             --repo "$REPOSITORY" \
             --branch "${DEFAULT_BRANCH:-main}" \
@@ -105,6 +112,7 @@ jobs:
           # it, and a code captured from the wrong pipeline is a lie that still looks
           # like a number.
           CODE=${PIPESTATUS[0]}
+          set -e
           echo "signature=$(sed -n 's/^HEARTBEAT_SIGNATURE=//p' /tmp/heartbeat.log | tail -1)" >> "$GITHUB_OUTPUT"
           echo "state=$(sed -n 's/^HEARTBEAT_STATE=//p' /tmp/heartbeat.log | tail -1)" >> "$GITHUB_OUTPUT"
           echo "silent=$(sed -n 's/^HEARTBEAT_SILENT=//p' /tmp/heartbeat.log | tail -1)" >> "$GITHUB_OUTPUT"

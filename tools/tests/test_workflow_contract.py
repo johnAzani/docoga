@@ -635,6 +635,38 @@ class EveryWorkflowTests(unittest.TestCase):
         for path in sorted(WORKFLOWS.glob("*.yml")):
             yield path, yaml.safe_load(path.read_text(encoding="utf-8"))
 
+    def test_an_exit_code_captured_from_pipestatus_is_captured_with_errexit_off(self):
+        """GitHub runs every `run:` under `bash -eo pipefail`. A step that pipes a tool into
+        `tee` and then reads `${PIPESTATUS[0]}` only reaches that line when the tool exits 0 —
+        the one case where nobody needs the code. When the tool exits 1 on purpose (the
+        heartbeat judging a lane silent, a publisher refusing to post), `-e` ends the step at
+        the pipe, the outputs are never written, and the next step sees an empty signature or
+        result. That is how the heartbeat went red four nights running (13–16 Oct 2026)
+        without ever filing its issue. Rule: errexit must be off (`set +e`) at the line that
+        reads PIPESTATUS, and `set -o pipefail` alone does not switch it off."""
+        flag = re.compile(r"\bset ([+-][a-zA-Z]+)")
+        for path, doc in self._workflows():
+            for job in (doc.get("jobs") or {}).values():
+                for step in job.get("steps") or []:
+                    run = step.get("run") or ""
+                    if "PIPESTATUS" not in run:
+                        continue
+                    lines = run.split("\n")
+                    for index, line in enumerate(lines):
+                        if "PIPESTATUS" not in line or line.strip().startswith("#") or "=" not in line:
+                            continue
+                        errexit = True
+                        code = "\n".join(l for l in lines[:index] if not l.strip().startswith("#"))
+                        for flags in flag.findall(code):
+                            if "e" in flags[1:]:
+                                errexit = flags[0] == "-"
+                        self.assertFalse(errexit,
+                                         "%s step %r reads PIPESTATUS with errexit on: the tool's "
+                                         "non-zero exit kills the step before this line, so the "
+                                         "outputs after it are never written. Put `set +e` before "
+                                         "the pipeline and `set -e` after the capture."
+                                         % (path.name, step.get("name")))
+
     def test_a_step_excluded_for_an_inputs_default_is_also_excluded_on_schedule(self):
         """`inputs.mode != 'daily'` reads as "manual modes only" — but on a *scheduled* run every
         input is empty, '' != 'daily' is true, and the manual step runs with no message. That is

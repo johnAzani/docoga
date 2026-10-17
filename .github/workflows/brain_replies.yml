@@ -53,6 +53,7 @@ jobs:
       SOCIAL_TOKEN_KEY: ${{ secrets.SOCIAL_TOKEN_KEY }}
       IG_API_PATH: ${{ vars.IG_API_PATH || 'instagram-login' }}
       DOCOGA_BRAIN: ${{ vars.DOCOGA_BRAIN || 'on' }}
+      BRAIN_DM: ${{ vars.BRAIN_DM || 'on' }}   # comment→DM private replies (one per asking comment)
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5

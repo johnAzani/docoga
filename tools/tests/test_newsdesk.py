@@ -75,10 +75,41 @@ class PullTests(unittest.TestCase):
 
     def test_fresh_items_and_prompt_block(self):
         data = {"fetched": NOW.isoformat(), "items": [{"title": "T", "source": "Punch", "published": "2026-10-15T09:00:00+00:00"}]}
-        self.assertEqual(len(newsdesk.fresh_items(data, now=NOW)), 1)
-        self.assertEqual(newsdesk.fresh_items({"fetched": "2026-09-01T00:00:00+00:00", "items": data["items"]}, now=NOW), [])
+        self.assertEqual(len(newsdesk.fresh_items(data, now=NOW, pinned=[])), 1)
+        self.assertEqual(newsdesk.fresh_items({"fetched": "2026-09-01T00:00:00+00:00", "items": data["items"]}, now=NOW, pinned=[]), [])
         self.assertIn("- T — Punch (2026-10-15)", newsdesk.prompt_block(data["items"]))
         self.assertIn("no fresh stories", newsdesk.prompt_block([]))
+
+
+class PinnedShelfTests(unittest.TestCase):
+    """17 Oct 2026: hand-dated stories ride ahead of the RSS pull and expire on their own date."""
+
+    def test_pinned_stories_lead_expire_at_21_days_and_are_not_duplicated(self):
+        import tempfile
+        rows = [{"published": "2026-10-15", "source": "Trumpet", "title": "Landlord punched over rent hike"},
+                {"published": "2026-09-20", "source": "Old", "title": "Stale story"},
+                {"published": "", "source": "Nobody", "title": "Undated story"}]
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / "pinned.json"
+            path.write_text(json.dumps(rows), encoding="utf-8")
+            pins = newsdesk.pinned_items(path, now=NOW)
+        self.assertEqual([p["title"] for p in pins], ["Landlord punched over rent hike"])
+        self.assertTrue(pins[0]["pinned"])
+        data = {"fetched": NOW.isoformat(), "items": [{"title": "Landlord punched over rent hike", "source": "Punch"},
+                                                      {"title": "Other", "source": "Guardian"}]}
+        merged = newsdesk.fresh_items(data, now=NOW, pinned=pins)
+        self.assertEqual([m["title"] for m in merged], ["Landlord punched over rent hike", "Other"])
+        self.assertEqual(newsdesk.fresh_items({"fetched": None, "items": []}, now=NOW, pinned=pins), pins,
+                         "an empty RSS pull still leaves the pinned shelf")
+        self.assertEqual(newsdesk.pinned_items(Path("/nonexistent/pinned.json"), now=NOW), [])
+
+    def test_the_repo_shelf_is_valid_dated_and_sourced(self):
+        path = Path(__file__).resolve().parents[2] / "brain" / "newsdesk_pinned.json"
+        rows = json.loads(path.read_text(encoding="utf-8"))["items"]
+        self.assertTrue(rows)
+        for it in rows:
+            self.assertRegex(it["published"], r"^\d{4}-\d{2}-\d{2}$")
+            self.assertTrue(it["source"] and it["title"], it)
 
 
 class WorkflowTests(unittest.TestCase):
