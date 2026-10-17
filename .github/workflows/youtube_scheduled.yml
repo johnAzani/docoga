@@ -401,9 +401,12 @@ jobs:
           VIDEO_PATH: ${{ steps.short.outputs.video_path }}
           VIDEO_TITLE: ${{ steps.short.outputs.title }}
           VIDEO_URL: ${{ steps.upload.outputs.video_url }}
+          PARENT_URL: ${{ steps.short.outputs.parent_url }}
+          PARENT_TITLE: ${{ steps.short.outputs.parent_title }}
         run: |
           set -o pipefail
-          python3 tools/telegram_video.py --video "$VIDEO_PATH" --title "$VIDEO_TITLE" --url "$VIDEO_URL" 2>&1 | tee /tmp/telegram_video.log
+          python3 tools/telegram_video.py --video "$VIDEO_PATH" --title "$VIDEO_TITLE" --url "$VIDEO_URL" \
+            --parent-url "$PARENT_URL" --parent-title "$PARENT_TITLE" 2>&1 | tee /tmp/telegram_video.log
           echo "result=$(sed -n 's/^TELEGRAM_VIDEO=//p' /tmp/telegram_video.log | tail -1)" >> "$GITHUB_OUTPUT"
 
       - name: Commit the publish ledger

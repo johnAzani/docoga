@@ -23,7 +23,8 @@ for _p in (SCRIPTS_DIR, TOOLS_DIR):
         sys.path.insert(0, str(_p))
 
 import shorts_reel  # noqa: E402  — MotionStudio bridge (the only renderer this lane knows)
-import deepdive_links  # noqa: E402  — which Deep-Dive this Short trails, and its watch link
+import deepdive_links  # noqa: E402
+import deepdive_promo  # noqa: E402  — the latest episode, when the parent is not out yet  — which Deep-Dive this Short trails, and its watch link
 import shorts_sound  # noqa: E402  — the soundtrack report, for the run summary
 
 
@@ -116,7 +117,16 @@ def main():
     if video.suffix.lower() != ".mp4" or not video.is_file() or video.stat().st_size < 10_000:
         raise RuntimeError(f"Video generation did not produce a usable MP4: {video}")
 
-    link = deepdive_links.parent_link(script.get("parent"))
+    parent = script.get("parent")
+    link = deepdive_links.parent_link(parent) if parent and parent != "brain" else None
+    if not link:
+        # No published parent (a brain Short, or an episode still in the queue): the Short trails
+        # the latest watchable Deep-Dive instead (tools/deepdive_promo.py, 17 Oct 2026) — every
+        # Short is a trailer for *some* episode, in its description and its first comment.
+        link = deepdive_promo.latest_link()
+        if link:
+            print(f"::notice title=Trailing the latest Deep-Dive::{script['title']} has no published "
+                  f"parent; the description and comment point at '{link[0]}'.")
     if script.get("parent") and not link:
         print(f"::notice title=Parent Deep-Dive not published yet::{script['title']} trails "
               f"'{script['parent']}', which is not in logs/youtube_longform.json yet — the "
@@ -137,6 +147,7 @@ def main():
         # summary still shows the line so the owner can pin it from the app in one tap.
         "pinned_comment": deepdive_links.pinned_comment(link),
         "parent_url": link[1] if link else "",
+        "parent_title": link[0] if link else "",
         "narrator": gemini_quota_status(),
     }
     write_outputs(outputs)

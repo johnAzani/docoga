@@ -249,7 +249,17 @@ def post_text(token, page_id, message):
 # reaches ~0.20 % of followers; a native post ~0.80 %. The first comment recovers most of the
 # difference and keeps the link one tap away. When the token cannot comment (needs
 # `pages_manage_engagement`), the post is *edited* to carry the link, so no day loses it.
-_LINK_LINE = re.compile(r"^\s*(?:👉\s*)?(https://docoga\.com\.ng\S*)\s*$", re.M)
+# A standalone link line — our site, or (17 Oct 2026, Deep-Dive promotion) the YouTube episode.
+# Facebook reaches a body with an external link 60–80 % less and caps Pages at two body links a
+# month; either link travels in the first comment under the native card.
+_LINK_LINE = re.compile(r"^\s*(?:👉\s*)?(https://(?:docoga\.com\.ng|www\.youtube\.com|youtu\.be|youtube\.com)\S*)\s*$", re.M)
+
+
+def link_line(link):
+    """The first comment's words for a link: the tool page, or the episode when it is YouTube."""
+    if "youtube.com" in link or "youtu.be" in link:
+        return "▶ The full episode, free (9 minutes): %s" % link
+    return "The page, free to start: %s" % link
 
 
 def split_link(message):
@@ -284,7 +294,7 @@ def edit_message(token, post_id, message):
 
 def place_link(token, post_id, body, link, line=None):
     """First comment with the link; else edit the post to carry it. → (where, detail)."""
-    text = line or ("The page, free to start: %s" % link)
+    text = line or link_line(link)
     ok, detail = comment(token, post_id, text)
     if ok:
         return "comment", detail

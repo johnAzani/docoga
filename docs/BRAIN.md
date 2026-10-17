@@ -475,3 +475,29 @@ Known limit, written down so nobody chases it: replying to *other people's* Thre
 keyword (`/keyword_search`) only returns public posts after Meta App Review approves
 `threads_keyword_search`; until then the endpoint searches our own posts. Not built.
 
+
+## Deep-Dive promotion (17 Oct 2026) — every channel trails the episode
+
+Owner, 17 Oct 2026: *"Also remember to promote deep dives in the other social media channels."*
+Until now a Deep-Dive lived on YouTube alone (plus the Shorts' description link). `tools/deepdive_promo.py`
+now rides the **existing** lanes — no new workflow, no new cron, no new token — and the week after an
+episode goes public looks like this (P = the day the episode's YouTube slot passes, 19:00 WAT Monday):
+
+| When | Channel | What goes out | Why this shape |
+|---|---|---|---|
+| P 20:10 WAT | Threads evening | **Launch** — "New Deep-Dive, just published: …", a question, link-free; the link rides in the reply | Threads ranks by replies and docks links in the body (+17% for links vs +60% for images); the card is the post's image |
+| P+1 09:00 | Telegram | **Feature** — the episode card, hook, what you will learn, YouTube link + transcript page, the ▶ Deep-Dive button **first** | Telegram counts forwards; a photo post with a button is the forwardable unit |
+| P+1 09:30 | Facebook | **Feature** — same words, YouTube link on its own line → `fb_publish.split_link` lifts it into the **first comment** | A Facebook post with a link in its body reaches 60–80% fewer people, and since Sep 2026 Pages get two body links a month |
+| P+2 13:10 | Threads lunch + Instagram | **Recap** — "In case you missed it", the four things you learn; Instagram's caption says *link in bio* and names `docoga.com.ng/videos/<id>.html` in plain words (the API cannot place a link sticker) | Second touch two days later catches the people who were not online on Monday night |
+| P+1 … P+14 | Telegram | **Footer** — every daily post appends a "▶ This week's Deep-Dive (9 min)" button row | Zero extra posts; the button is the only Telegram surface that is a real link |
+| Mon–Fri 18:00 | YouTube Short, Telegram video | The Short's description and its Telegram caption carry the **parent** Deep-Dive link; a Short whose parent is not published yet trails the **latest watchable** episode instead | Research: ~5 Shorts/month lifts long-form views +46% when the Shorts link back |
+
+Rules that keep the locks intact:
+
+- The promo is **not** a Gemini call — the words are assembled from `episodes/<id>/episode.json` (title, hook, section titles) and `logs/youtube_longform.json`. The brain's Gemini-only lock, the voice lock and the quota ledger are untouched.
+- `deepdive_promo.latest()` only returns an episode whose YouTube slot has passed (scheduled uploads count from `publish_at`), never one in `youtube_ledger.deleted_ids()` and never a failed/rejected upload. No watchable episode → `pack_for()` is `None` → every lane posts the ordinary rotation. **A promo can never block a post.**
+- The card uses the `deepdive` kicker ("new deep-dive · 9 min") and the navy poster layout; the matching CC0 plate comes from the same `shot_match` path as every other card.
+- Legal copy is the episode's own, already cited and verified when the Deep-Dive was written; the promo adds "General information, not legal advice." and nothing new about the law.
+- Owner never acts: the week's schedule follows the ledger automatically. First live: Telegram footer button from the next 09:00 run (dd3); dd4 publishes Mon 19 Oct 19:00 → Threads launch 20:10, Telegram/Facebook feature Tue 20 Oct, Threads lunch + Instagram recap Wed 21 Oct.
+
+`python3 tools/deepdive_promo.py show --day 2026-10-20` prints what each channel would say that day.

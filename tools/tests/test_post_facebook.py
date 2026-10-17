@@ -377,7 +377,13 @@ class ContentTests(unittest.TestCase):
 
     def test_the_link_is_in_the_copy(self):
         for day in range(12, 19):
-            message = self.generate(date(2026, 10, day))["message"]
+            content = self.generate(date(2026, 10, day))
+            message = content["message"]
+            if content["post_type"] == "deepdive":
+                # 17 Oct 2026: the day after a Deep-Dive goes public the post is the episode's
+                # trailer and its one link is the YouTube URL (lifted into the first comment).
+                self.assertIn("https://www.youtube.com/watch?v=", message)
+                continue
             self.assertIn("https://docoga.com.ng", message,
                           "there is no `link` field on the request, so the URL must be in the text")
 

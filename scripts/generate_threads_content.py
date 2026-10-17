@@ -52,6 +52,7 @@ for p in (ROOT / "tools", ROOT / "scripts"):
 from telegram_mdv2 import to_plain          # noqa: E402  the one markup stripper
 import generate_telegram_content as tg       # noqa: E402  the copy lives there
 import brain_drafts  # noqa: E402  the brain's pack for the day, when there is one
+import deepdive_promo  # noqa: E402  the Deep-Dive's week in this channel (17 Oct 2026)
 
 import docoga_log  # noqa: E402  "where do the scratch files live", answered once
 
@@ -261,7 +262,13 @@ def build_evening(day, rng):
     reply. The card is the one the Instagram lane published an hour earlier (no second render,
     no second commit, ₦0); if it is not there the publisher posts the words alone."""
     pack = brain_drafts.draft_for(day)
-    if pack:
+    promo = deepdive_promo.pack_for(day, "threads_evening")
+    if promo:
+        # Launch night (tools/deepdive_promo.py): ~70 minutes after the episode went public.
+        post_type = "deepdive"
+        text, notes = fit(promo["text"], "")
+        notes = ["deep-dive launch: %s" % promo["title"]] + list(notes)
+    elif pack:
         post_type = brain_drafts.post_type(pack)
         text, notes = fit(brain_drafts.threads_evening(pack), "")
         notes = ["brain: %s (evening)" % pack.get("theme")] + list(notes)
@@ -276,7 +283,9 @@ def build_evening(day, rng):
     extras = extras_for(pack)
     extras["poll"] = None                       # a poll next to an image is refused; the poll is the lunch post's
     extras["image_url"], extras["card_path"] = card_for(day, "evening")
-    extras["reply_text"] = brain_drafts.evening_reply(pack)
+    extras["reply_text"] = promo["reply_text"] if promo else brain_drafts.evening_reply(pack)
+    if promo:
+        extras["card_text"] = promo["card_text"]
     return post_type, text, notes, extras
 
 
@@ -288,7 +297,19 @@ def build(day, rng, slot="lunch"):
     if slot == "morning":
         return build_morning(day, rng)
     pack = brain_drafts.draft_for(day)
-    if pack:
+    promo = deepdive_promo.pack_for(day, "threads")
+    if promo:
+        # Two days after the episode went public: "in case you missed it", link in our reply;
+        # the Instagram lane reads the same file and gets its own caption (link in bio).
+        post_type = "deepdive"
+        text, notes = fit(promo["text"], "")
+        extras = extras_for(pack)
+        extras["poll"] = None
+        extras["reply_text"] = promo["reply_text"]
+        extras["card_text"] = promo["card_text"]
+        extras["ig_caption"] = promo["ig_caption"]
+        notes = ["deep-dive recap: %s" % promo["title"]] + list(notes)
+    elif pack:
         post_type = brain_drafts.post_type(pack)
         text, notes = fit(brain_drafts.tag_links(brain_drafts.threads_text(pack), "threads"), brain_drafts.hashtags(pack, "threads"))
         extras = extras_for(pack)
@@ -329,6 +350,8 @@ def generate(day=None, write=True, slot="lunch"):
     ig_caption = text.replace("?s=th", "?s=ig")
     if seo.lower() not in ig_caption.lower():
         ig_caption = seo + "\n\n" + ig_caption
+    if extras.get("ig_caption"):
+        ig_caption = extras["ig_caption"]           # a Deep-Dive recap day: Instagram's own words
 
     content = {
         "ig_caption": ig_caption,
@@ -337,6 +360,7 @@ def generate(day=None, write=True, slot="lunch"):
         "slot": slot,
         "image_url": extras.get("image_url"),
         "card_path": extras.get("card_path"),
+        "card_text": extras.get("card_text"),
         "reply_text": extras.get("reply_text"),
         "day_of_week": day.weekday(),
         "day_name": day.strftime("%A"),
