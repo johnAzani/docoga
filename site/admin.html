@@ -358,7 +358,7 @@ function renderAll(){
   renderHealth();renderRecent();renderExpiring();renderTeams();renderLeads();renderSellCap();renderExplainer();
   if(currentView==='sec')renderSessions();
   const warns=[];
-  if(sn.drift&&sn.drift.suspect)warns.push('Ledger drift: '+sn.drift.codesStored+' codes are stored but only '+sn.drift.counted+' were counted in 31 days. The counters are the dashboard’s source for money, so check the day they diverge before reporting figures to anyone.');
+  if(sn.drift&&sn.drift.suspect)warns.push('Ledger drift: '+sn.drift.newCodes+' new codes since '+sn.drift.since+' but only '+sn.drift.countedSince+' sales counted in that time. The counters are the dashboard’s source for money, so check the day they diverge before reporting figures to anyone.');
   if(DATA.health&&DATA.health.lastWebhookMinutesAgo===null)warns.push('No payment webhook has EVER reached the Worker. Payments will still land through the redirect path, but a buyer who closes the tab too early gets nothing — check the Flutterwave webhook endpoint.');
   if(!sn.at)warns.push('The rollup has never been built: charts below are empty until the daily cron or a manual Refresh runs.');
   const b=$('banner');
@@ -384,7 +384,7 @@ function renderHealth(){
   let rows=[
     ['Payment webhook',webhook+(h.event?' · '+esc(h.event.type||'')+' '+(h.event.amount!=null?ngn(h.event.amount):''):'')],
     ['Rollup built',chip(sn.at?ago(sn.at):'never',sn.at&&(Date.now()-sn.at)>6*3600e3?'warn':'ok')],
-    ['Ledger cross-check',d.suspect?chip('counters below stored codes by '+(d.codesStored-d.counted),'warn'):chip('counters vs '+d.codesStored+' stored codes: consistent','ok')],
+    ['Ledger cross-check',d.suspect?chip('since '+d.since+': '+d.newCodes+' new codes, '+d.countedSince+' counted — off by '+(d.newCodes-d.countedSince),'warn'):chip('since '+(d.since||'today')+': '+(d.newCodes||0)+' new codes vs '+(d.countedSince||0)+' counted — consistent ('+(d.codesStored||0)+' stored all-time)','ok')],
     ['This session',chip(sessionLeft(),'ok')],
   ];
   $('health').innerHTML='<table><tbody>'+rows.map(r=>'<tr><td style="width:42%">'+r[0]+'</td><td>'+r[1]+'</td></tr>').join('')+'</tbody></table>';

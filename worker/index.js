@@ -1950,7 +1950,28 @@ async function buildAdminSnapshot(env) {
   let lastlogin = null; try { lastlogin = JSON.parse(await env.KV.get("adm:lastlogin") || "null"); } catch (e) {}
 
   // Self-check: a broken counter family must be visible, not silently optimistic.
-  const drift = { codesStored, counted: totals.sold + totals.manual + totals.offline, suspect: codesStored > totals.sold + totals.manual + totals.offline + 5 };
+  // 17 Oct 2026: compare like with like. `code:` keys live forever; the day counters live
+  // 31 days — so "every code ever vs. this month's sales" rang the alarm from the moment the
+  // business was a month old (8 stored, 0 counted, on the first day the counters existed).
+  // Now a baseline {codes, since} is pinned the first time this runs and rolled forward
+  // every 28 days (one KV write, at most once a month); the check is "codes created since
+  // the baseline vs. sales counted since the baseline", both inside the counters' window.
+  let baseline = null;
+  try { baseline = JSON.parse(await env.KV.get("adm:baseline") || "null"); } catch (e) {}
+  const today = iso(now);
+  const baselineAge = baseline && baseline.since ? Math.floor((now - Date.parse(baseline.since)) / dayMs) : null;
+  if (!baseline || typeof baseline.codes !== "number" || !baseline.since || baselineAge === null || baselineAge >= 28 || baselineAge < 0) {
+    baseline = { codes: codesStored, since: today };
+    try { await env.KV.put("adm:baseline", JSON.stringify(baseline)); } catch (e) {}
+  }
+  const sinceRows = series.filter(x => x.date >= baseline.since);
+  const countedSince = sinceRows.reduce((a, x) => a + (x.sold || 0) + (x.manual || 0) + (x.offline || 0), 0);
+  const newCodes = Math.max(0, codesStored - baseline.codes);
+  const drift = {
+    codesStored, counted: totals.sold + totals.manual + totals.offline,
+    since: baseline.since, baselineCodes: baseline.codes, newCodes, countedSince,
+    suspect: newCodes > countedSince + 5,
+  };
 
   const snap = {
     at: now,
