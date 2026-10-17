@@ -840,6 +840,12 @@ class GithubApiTests(unittest.TestCase):
         self.assertIsNone(hb.parse_stamp(""))
         self.assertIsNone(hb.parse_stamp("tom morning"))
         self.assertEqual(hb.parse_stamp("2026-10-12T17:31:57Z").hour, 17)
+        # A ledger `date` with no zone must come back aware, or it cannot be compared with
+        # GitHub's stamps — the heartbeat crashed on exactly that at 9:00pm on 17 Oct 2026.
+        for naive in ("2026-10-17", "2026-10-17T18:26:33"):
+            moment = hb.parse_stamp(naive)
+            self.assertIsNotNone(moment.tzinfo, naive)
+            self.assertLess(moment, hb.parse_stamp("2026-10-18T00:00:00Z"))
         self.assertEqual(hb.parse_stamp("2026-10-12T17:31:57+01:00").utcoffset(),
                          timedelta(hours=1))
 
