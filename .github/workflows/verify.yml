@@ -8,10 +8,30 @@ name: Verify
 # existence with `git ls-tree`, which exits 0 for missing paths) AND was never
 # wired to anything, so nothing stopped a force-push that orphaned 124 commits.
 
+# Minutes budget (17 Oct 2026). This is a private repository on the free plan: 2,000
+# Actions minutes a month, and when they are gone every lane stops — silently
+# (community #197954). Measured 10–17 Oct, this gate and the Cloudflare build check
+# were ~70% of all minutes: every push to every branch AND every pull-request event
+# ran both, and every automated card/ledger commit on main ran them again. So: pull
+# requests always; pushes only on main, and not for the lanes' own bookkeeping
+# commits (ledgers, cards, plates, episode pages) — code reaches main through a PR
+# that was already verified.
 on:
   push:
+    branches: [main]
+    paths-ignore:
+      - "logs/**"
+      - "assets/**"
+      - "site/social/**"
+      - "site/videos/**"
+      - "brain/**"
+      - "episodes/**/words.json"
   pull_request:
   workflow_dispatch: {}
+
+concurrency:
+  group: verify-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read

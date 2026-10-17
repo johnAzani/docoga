@@ -91,6 +91,11 @@ on:
         required: false
         default: false
         type: boolean
+      clock:
+        description: 'Set by the DocOga clock (workers/clock) — behave exactly like the scheduled run: post only in the hour the numbers chose'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write  # the render under site/social/ and the ledger are committed back
@@ -111,8 +116,12 @@ jobs:
         id: gate
         env:
           EVENT: ${{ github.event_name }}
+          CLOCK: ${{ inputs.clock }}
         run: |
           set -o pipefail
+          # The clock (workers/clock) dispatches this lane at each of its three cron minutes with
+          # clock=true, which is "I am the schedule" — the same gate applies. 17 Oct 2026.
+          if [ "${CLOCK:-false}" = "true" ]; then EVENT=schedule; fi
           python3 tools/brain_scorecard.py slot instagram | tee /tmp/slot.log
           WANT=$(sed -n 's/^SLOT_HOUR_WAT=//p' /tmp/slot.log | tail -1)
           WHY=$(sed -n 's/^SLOT_WHY=//p' /tmp/slot.log | tail -1)

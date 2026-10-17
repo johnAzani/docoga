@@ -68,9 +68,43 @@ on:
 permissions:
   contents: write  # the ledger and the sealed token box are committed back to the default branch
   issues: write    # a failed run opens (or comments on) a visible issue; missing until 16 Oct 2026
+  actions: read    # the clock gate reads this workflow's own recent runs (tools/clock_guard.py)
 
 jobs:
+  # Since 17 Oct 2026 the three slots are rung on time by the clock (workers/clock →
+  # workflow_dispatch with `slot`). GitHub's own cron still fires — hours late, when it
+  # fires — and a late `slot: auto` run would call 16:00 UTC "evening" and post the evening
+  # copy early. So a *scheduled* run first asks whether the clock dispatched this lane in
+  # the last 36 h; if it did, the cron stands down (a skipped job, a green run). If the
+  # clock is idle or GitHub cannot be asked, the cron posts as before.
+  gate:
+    name: Clock on duty?
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    outputs:
+      go: ${{ steps.clock.outputs.go }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          sparse-checkout: tools/clock_guard.py
+          sparse-checkout-cone-mode: false
+      - name: Ask
+        id: clock
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -o pipefail
+          python3 tools/clock_guard.py | tee /tmp/clock_guard.log
+          if grep -q '^STAND_DOWN=yes' /tmp/clock_guard.log; then
+            echo "go=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Late cron stood down::the clock dispatched this lane within 36 h — this scheduled arrival is the backstop, not the post"
+          else
+            echo "go=true" >> "$GITHUB_OUTPUT"
+          fi
+
   publish:
+    needs: gate
+    if: ${{ needs.gate.outputs.go == 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
