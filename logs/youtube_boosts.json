@@ -22,7 +22,10 @@
     "playlist_id": "PLMaRfKBHWW2g",
     "playlist_item_id": "UExNYVJmS0JIV1cyZy4yODlGNEE0NkRGMEEzMEQy",
     "planned_at": "2026-10-17T18:20:44+00:00",
-    "notes": []
+    "notes": [
+      "2026-10-17T20:44:32+00:00: video not on the channel any more"
+    ],
+    "gave_up": true
   },
   {
     "video_id": "x5W0568lJbc",
@@ -59,8 +62,8 @@
     "date": "2026-10-15",
     "comment_text": "Which part surprised you most? Drop your question below — the next episode answers the best ones.\n\nFree receipt, tenancy agreement and notice templates (no sign-up): https://docoga.com.ng/?s=yt",
     "comment_id": "",
-    "playlist_id": "",
-    "playlist_item_id": "",
+    "playlist_id": "PLZUZE04gzvwg",
+    "playlist_item_id": "UExaVVpFMDRnenZ3Zy41NkI0NEY2RDEwNTU3Q0M2",
     "planned_at": "2026-10-17T18:20:44+00:00",
     "notes": []
   },
@@ -70,10 +73,11 @@
     "title": "Caution Fee: The Refund War",
     "date": "2026-10-14",
     "comment_text": "Which part surprised you most? Drop your question below — the next episode answers the best ones.\n\nFree receipt, tenancy agreement and notice templates (no sign-up): https://docoga.com.ng/?s=yt",
-    "comment_id": "",
-    "playlist_id": "",
-    "playlist_item_id": "",
+    "comment_id": "UgxkrX_dY5cT-m9L67Z4AaABAg",
+    "playlist_id": "PLZUZE04gzvwg",
+    "playlist_item_id": "UExaVVpFMDRnenZ3Zy4yODlGNEE0NkRGMEEzMEQy",
     "planned_at": "2026-10-17T18:20:44+00:00",
-    "notes": []
+    "notes": [],
+    "commented_at": "2026-10-17T20:44:34+00:00"
   }
 ]
