@@ -107,6 +107,29 @@ jobs:
           fi
           exit 0
 
+      # Every Monday: are the tokens complete? One line per token in the summary and the issue,
+      # naming any missing permission and the lane it starves — so the owner mints ONCE with the
+      # full list (docs/TOKENS.md) and is never asked to go back (owner, 17 Oct 2026).
+      - name: Token permissions — complete, or what is missing
+        continue-on-error: true
+        env:
+          FB_PAGE_ACCESS_TOKEN: ${{ secrets.FB_PAGE_ACCESS_TOKEN }}
+          META_APP_ID: ${{ secrets.META_APP_ID }}
+          META_APP_SECRET: ${{ secrets.META_APP_SECRET }}
+          THREADS_APP_SECRET: ${{ secrets.THREADS_APP_SECRET }}
+          YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+          LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
+          LINKEDIN_CLIENT_ID: ${{ secrets.LINKEDIN_CLIENT_ID }}
+          LINKEDIN_CLIENT_SECRET: ${{ secrets.LINKEDIN_CLIENT_SECRET }}
+        run: |
+          set +e
+          python3 tools/token_scopes.py audit --markdown /tmp/scorecard.md 2>&1 | tee /tmp/scopes.log
+          grep '^SCOPES_' /tmp/scopes.log
+          sed -n '/^### Token permissions/,$p' /tmp/scopes.log >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+
       - name: Keep the one weekly scorecard issue current (the owner's phone view)
         if: ${{ env.SCORECARD_DRY_RUN != 'true' }}
         env:
