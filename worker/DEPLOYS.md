@@ -1,3 +1,4 @@
 # Worker deploy log
 
 - 17 Oct 2026, 5:35pm WAT — published the owner dashboard + attribution worker (code from 12 Oct 18:37 and 16 Oct had never been deployed; live worker answered `not found` on /admin/login).
+- 17 Oct 2026, 6:05pm WAT — ledger cross-check fixed: compares codes minted since a pinned baseline with sales counted since it (the first open had rung a false "8 stored, 0 counted" alarm). Run 39049825243 → PR #79.
