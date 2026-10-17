@@ -193,14 +193,41 @@ def load(path=None):
         return {"items": []}
 
 
-def fresh_items(data=None, now=None, max_age_days=7):
-    """The headlines the brain may open with — only those pulled recently."""
+PINNED = Path(os.environ.get("DOCOGA_NEWSDESK_PINNED") or (ROOT / "brain" / "newsdesk_pinned.json"))
+PINNED_MAX_AGE_DAYS = 21
+
+
+def pinned_items(path=None, now=None, max_age_days=PINNED_MAX_AGE_DAYS):
+    """Hand-dated stories the research pass found (17 Oct 2026): each carries its own date and
+    paper and expires on its own — a three-week-old rent story is still the talk of a WhatsApp
+    group, a two-month-old one is not. Never raises; a missing or broken file is no stories."""
+    now = now or datetime.now(timezone.utc)
+    try:
+        rows = json.loads(Path(path or PINNED).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    out = []
+    for it in rows if isinstance(rows, list) else (rows.get("items") or []):
+        when = _when(str(it.get("published") or "") + ("T12:00:00+00:00" if len(str(it.get("published") or "")) == 10 else ""))
+        if not it.get("title") or not when or (now - when) > timedelta(days=max_age_days):
+            continue
+        out.append({"title": it["title"], "source": it.get("source", ""), "published": str(it.get("published"))[:10],
+                    "link": it.get("link", ""), "score": int(it.get("score") or 50), "pinned": True})
+    return out
+
+
+def fresh_items(data=None, now=None, max_age_days=7, pinned=None):
+    """The headlines the brain may open with — the RSS pull when it is recent, plus the pinned
+    shelf; pinned stories come first because a human dated and read them."""
     data = load() if data is None else data
     now = now or datetime.now(timezone.utc)
     fetched = _when(data.get("fetched"))
-    if not fetched or (now - fetched) > timedelta(days=max_age_days):
-        return []
-    return [it for it in data.get("items") or [] if it.get("title")]
+    pulled = []
+    if fetched and (now - fetched) <= timedelta(days=max_age_days):
+        pulled = [it for it in data.get("items") or [] if it.get("title")]
+    pins = pinned_items(now=now) if pinned is None else pinned
+    titles = {p["title"] for p in pins}
+    return pins + [it for it in pulled if it["title"] not in titles]
 
 
 def prompt_block(items):

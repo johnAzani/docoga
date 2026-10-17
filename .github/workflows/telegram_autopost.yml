@@ -99,6 +99,7 @@ jobs:
         env:
           LEDGER_LABEL: Telegram publish ledger
           TELEGRAM_FORCE: ${{ inputs.force }}
+          TELEGRAM_BUTTONS: ${{ vars.TELEGRAM_BUTTONS }}   # on (default) · off · force
         run: |
           set -o pipefail
           python3 scripts/post_telegram.py 2>&1 | tee /tmp/telegram_post.log
@@ -108,11 +109,13 @@ jobs:
           SENT=$(sed -n 's/^TELEGRAM_SENT=//p' /tmp/telegram_post.log | tail -1)
           SKIPPED=$(sed -n 's/^TELEGRAM_SKIPPED=//p' /tmp/telegram_post.log | tail -1)
           GUARD=$(sed -n 's/^TELEGRAM_CHANNEL_GUARD=//p' /tmp/telegram_post.log | tail -1)
+          BUTTONS=$(sed -n 's/^TELEGRAM_BUTTONS=//p' /tmp/telegram_post.log | tail -1)
           {
             echo "### Telegram post"
             echo
             echo "- sent: ${SENT:-?} · already on the channel (skipped): ${SKIPPED:-?}"
             echo "- duplicate guard: ${GUARD:-not reported} — the ledger, plus the channel's own page when it is public"
+            echo "- inline buttons (open the tool · share on WhatsApp · forward): ${BUTTONS:-not reported}"
             echo "- ledger: \`logs/telegram_sent.json\`"
           } >> "$GITHUB_STEP_SUMMARY"
 

@@ -304,6 +304,23 @@ Opt-outs: `FB_LINK_IN_COMMENT=off`. The checkout counters are counters only — 
 
 ---
 
+## Step 8 — the conversion layer (17 Oct 2026): two optional taps, both token re-mints
+
+Everything else in this round runs on what you already have (Telegram buttons, Tuesday/Thursday
+carousels, the slot gate, the hook bandit, the pinned newsdesk, the heartbeat fix). The two taps
+below open the inbox: a reader who comments "link" gets the page by private message.
+
+| tap | where (phone) | what wakes up |
+|---|---|---|
+| Instagram token re-mint with the messaging scope: developers.facebook.com → the app → **Instagram** use case → **User token generator** → tick `instagram_business_manage_messages` beside the comment scopes → Generate → paste the new `IG_ACCESS_TOKEN` | GitHub → Settings → Secrets and variables → Actions | the replies lane's run summary stops saying "comment→DM is waiting on `instagram_business_manage_messages`" and starts showing 📩 DM lines |
+| Facebook Page token re-mint with `pages_messaging` (and `pages_manage_engagement` from Step 6 if not yet done): Graph API Explorer → the Business app → Page token → add both permissions → Generate → paste `FB_PAGE_ACCESS_TOKEN` | same | Facebook comments that ask for the link get the Messenger private reply |
+
+Opt-outs: repo vars `TELEGRAM_BUTTONS=off`, `IG_CAROUSEL=off`, `BRAIN_DM=off`. The slot gate has no switch — a dispatch always posts, and `brain/slots.json` can be edited by hand (`"hour_wat": 19`).
+
+One thing to know before Sunday: if you ever link a discussion group to @docogadaily, the poster notices (`getChat.linked_chat_id`) and drops the buttons so the "Leave a comment" button survives; the links stay in the caption. `TELEGRAM_BUTTONS=force` overrides.
+
+---
+
 ## What this page is not
 
 Not a status page: the current truth is `gh run list` and the ledgers. Not a substitute for the

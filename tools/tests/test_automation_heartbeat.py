@@ -699,8 +699,9 @@ class DiscoveryTests(unittest.TestCase):
         self.assertTrue(by_file["instagram_autopost.yml"]["scheduled"],
                         "the media bridge exists; a lane that went back to dispatch-only "
                         "should be loud about it, not quietly off the monitor")
-        self.assertEqual(by_file["instagram_autopost.yml"]["crons"], ["10 18 * * *"],
-                         "Instagram posts in the 7–9 pm WAT window the 2026 Nigeria data names (brain/strategy.md)")
+        self.assertEqual(by_file["instagram_autopost.yml"]["crons"], ["10 6 * * *", "10 12 * * *", "10 18 * * *"],
+                         "Instagram fires in Nigeria's three windows (07:10, 13:10, 19:10 WAT); the slot job lets "
+                         "the one brain/slots.json names post (17 Oct 2026) — default the 7–9 pm peak")
         self.assertIn("threads_autopost.yml", by_file)
         self.assertEqual(by_file["threads_autopost.yml"]["crons"], ["10 12 * * *", "10 19 * * *"],
                          "Threads posts at lunch (13:10 WAT) for reply velocity and at 20:10 WAT (the "

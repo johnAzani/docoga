@@ -191,6 +191,46 @@ class PosterFallbackTests(unittest.TestCase):
         self.assertIn("plain caption", output)
         self.assertNotIn("parse_mode", self.calls[1]["data"])
 
+    def test_inline_buttons_ride_the_photo_as_a_json_string_and_survive_the_text_fallback(self):
+        """17 Oct 2026: sendPhoto is multipart, so `reply_markup` must be a JSON string; when
+        the photo is refused the same keyboard must follow the caption onto sendMessage."""
+        photo = Path(self.enterContext(_temp_png()))
+        buttons = post_telegram.brain_drafts.telegram_buttons(
+            {"tool": "notice-to-quit", "state": "lagos",
+             "post": {"headline": "Six months. Not a WhatsApp message.", "lines": []}})
+        self.responses = [error("Bad Request: PHOTO_INVALID_DIMENSIONS", 400), ok(9)]
+        result, _ = self._run(post_telegram.send_photo_message, str(photo), "Caption", buttons=buttons)
+        self.assertTrue(result)
+        markup = json.loads(self.calls[0]["data"]["reply_markup"])
+        self.assertEqual(markup["inline_keyboard"][0][0]["url"], "https://docoga.com.ng/notice-to-quit-lagos.html?s=tg")
+        self.assertIn("wa.me/?text=", markup["inline_keyboard"][1][0]["url"])
+        self.assertIn("s%3Dwa", markup["inline_keyboard"][1][0]["url"])
+        self.assertIn("t.me/share/url?url=", markup["inline_keyboard"][1][1]["url"])
+        self.assertEqual(self.calls[1]["json"]["reply_markup"]["inline_keyboard"], markup["inline_keyboard"])
+
+    def test_buttons_step_aside_for_a_linked_discussion_group_unless_forced(self):
+        """An inline keyboard removes the native 'Leave a comment' button on a channel with a
+        discussion group; comments outrank buttons, so `getChat.linked_chat_id` decides."""
+        buttons = post_telegram.brain_drafts.telegram_buttons(None)
+        answers = {"linked": FakeResponse({"ok": True, "result": {"id": 1, "linked_chat_id": -100}}),
+                   "plain": FakeResponse({"ok": True, "result": {"id": 1}})}
+        state = {"chat": "linked"}
+        with patch.object(post_telegram.requests, "get", side_effect=lambda *a, **k: answers[state["chat"]]):
+            with patch.dict(post_telegram.os.environ, {"TELEGRAM_BUTTONS": "on"}):
+                (allowed, why), _ = self._run(post_telegram.buttons_allowed, buttons)
+                self.assertEqual((allowed, why), (False, "skipped-comments"))
+                state["chat"] = "plain"
+                self.assertEqual(post_telegram.buttons_allowed(buttons), (True, "on"))
+            with patch.dict(post_telegram.os.environ, {"TELEGRAM_BUTTONS": "force"}):
+                state["chat"] = "linked"
+                self.assertEqual(post_telegram.buttons_allowed(buttons), (True, "forced"))
+            with patch.dict(post_telegram.os.environ, {"TELEGRAM_BUTTONS": "off"}):
+                self.assertEqual(post_telegram.buttons_allowed(buttons), (False, "off"))
+        with patch.object(post_telegram.requests, "get", side_effect=OSError("no network")):
+            with patch.dict(post_telegram.os.environ, {"TELEGRAM_BUTTONS": "on"}):
+                allowed, why = self._run(post_telegram.buttons_allowed, buttons)[0]
+                self.assertEqual((allowed, why), (True, "unchecked"))
+
     def test_over_long_caption_is_trimmed_not_rejected(self):
         photo = Path(self.enterContext(_temp_png()))
         self.responses = [ok(3)]

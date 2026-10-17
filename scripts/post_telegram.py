@@ -34,6 +34,7 @@ import docoga_log  # noqa: E402  where the scratch files live
 import telegram_preview  # noqa: E402  reads the channel's own public preview page
 import youtube_ledger as ledger  # noqa: E402  — the same bookkeeping the Shorts and
 # Reels lanes use, pointed at this lane's file. A forked ledger drifts.
+import brain_drafts  # noqa: E402  — the inline buttons under every post
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -194,7 +195,43 @@ def validate_credentials():
     return True
 
 
-def send_text_message(text, parse_mode="MarkdownV2"):
+def _buttons_markup(buttons):
+    """Bot API `reply_markup` for a list of inline-keyboard rows, or None."""
+    if not buttons:
+        return None
+    return json.dumps({"inline_keyboard": buttons})
+
+
+def buttons_allowed(buttons):
+    """Decide whether this post may carry inline buttons (17 Oct 2026).
+
+    Telegram has one hard rule here: a channel post that carries an inline keyboard loses the
+    native "Leave a comment" button when the channel has a linked discussion group. Comments
+    are a ranking signal we will not trade for a button, so when `getChat` reports a
+    `linked_chat_id` the buttons are skipped and the links stay in the caption. Knobs:
+    `TELEGRAM_BUTTONS=off` never sends buttons; `=force` sends them even beside a discussion
+    group. The machine line `TELEGRAM_BUTTONS=` says which happened.
+    """
+    mode = (os.getenv("TELEGRAM_BUTTONS") or "on").strip().lower()
+    if not buttons or mode in ("off", "0", "false", "no"):
+        return False, "off"
+    if mode == "force":
+        return True, "forced"
+    try:
+        r = requests.get(f"{TELEGRAM_API}/bot{TELEGRAM_BOT_TOKEN}/getChat",
+                         params={"chat_id": TELEGRAM_CHAT_ID}, timeout=20)
+        chat = (r.json() or {}).get("result") or {}
+    except Exception as e:  # noqa: BLE001 — an unreadable chat must not cost the post
+        log(f"   ℹ️ getChat unavailable ({e}); buttons go out, comments assumed off")
+        return True, "unchecked"
+    if chat.get("linked_chat_id"):
+        log("   ℹ️ channel has a linked discussion group — buttons skipped so the "
+            "'Leave a comment' button survives (TELEGRAM_BUTTONS=force overrides)")
+        return False, "skipped-comments"
+    return True, "on"
+
+
+def send_text_message(text, parse_mode="MarkdownV2", buttons=None):
     """Send a text-only message to Telegram.
 
     Returns True if the message reached the channel, by any route.
@@ -208,6 +245,8 @@ def send_text_message(text, parse_mode="MarkdownV2"):
         "parse_mode": parse_mode,
         "disable_web_page_preview": False,
     }
+    if buttons:
+        payload["reply_markup"] = {"inline_keyboard": buttons}
 
     try:
         r = requests.post(url, json=payload, timeout=30)
@@ -241,7 +280,7 @@ def send_text_message(text, parse_mode="MarkdownV2"):
         return False
 
 
-def send_photo_message(photo_path, caption=None, parse_mode="MarkdownV2"):
+def send_photo_message(photo_path, caption=None, parse_mode="MarkdownV2", buttons=None):
     """Send a photo with optional caption to Telegram.
 
     If the photo cannot be sent for any reason — a parse error, an unsupported
@@ -254,7 +293,7 @@ def send_photo_message(photo_path, caption=None, parse_mode="MarkdownV2"):
         log(f"❌ Photo not found: {photo_path}")
         if caption:
             log("⚠️ Falling back to text-only post")
-            return send_text_message(caption, parse_mode)
+            return send_text_message(caption, parse_mode, buttons=buttons)
         return False
 
     caption = _clamp(caption, MAX_CAPTION_CHARS, "caption") if caption else caption
@@ -264,6 +303,9 @@ def send_photo_message(photo_path, caption=None, parse_mode="MarkdownV2"):
         if caption:
             data["caption"] = caption
             data["parse_mode"] = parse_mode
+        markup = _buttons_markup(buttons)
+        if markup:
+            data["reply_markup"] = markup   # multipart form: the keyboard travels as a JSON string
 
         with open(photo_path, "rb") as photo:
             files = {"photo": photo}
@@ -298,7 +340,7 @@ def send_photo_message(photo_path, caption=None, parse_mode="MarkdownV2"):
         # Not a markup problem, or the plain retry failed too: post the words.
         if caption:
             log("⚠️ Photo could not be sent — falling back to a text post")
-            return send_text_message(caption, parse_mode)
+            return send_text_message(caption, parse_mode, buttons=buttons)
         return False
     except requests.exceptions.RequestException as e:
         log(f"❌ Photo upload failed: {e}")
@@ -438,10 +480,18 @@ def post_to_telegram():
             log("   \u2139\ufe0f live channel guard %s — %s. The ledger is guarding this run."
                 % (guard_state, guard_detail))
 
+        buttons = post.get("buttons")
+        if buttons is None and i == 0:
+            buttons = brain_drafts.telegram_buttons(None)   # a content file from before the buttons
+        allowed, button_state = buttons_allowed(buttons)
+        if not allowed:
+            buttons = None
         if send_photo and photo_path:
-            ok = send_photo_message(photo_path, caption=message)
+            ok = send_photo_message(photo_path, caption=message, buttons=buttons)
         else:
-            ok = send_text_message(message)
+            ok = send_text_message(message, buttons=buttons)
+        if ok:
+            print("TELEGRAM_BUTTONS=%s" % ("sent" if buttons else button_state), flush=True)
 
         if ok:
             sent += 1

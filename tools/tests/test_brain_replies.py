@@ -28,9 +28,9 @@ class FakeNet:
     def __init__(self, routes):
         self.routes, self.posts = routes, []
 
-    def __call__(self, method, url, params=None, data=None, timeout=30):
+    def __call__(self, method, url, params=None, data=None, timeout=30, json=None):
         if method == "POST":
-            self.posts.append((url, dict(data or params or {})))
+            self.posts.append((url, dict(json if json is not None else (data or params or {}))))
         for (m, needle), resp in self.routes:
             if m == method and needle in url:
                 return resp() if callable(resp) else resp
@@ -232,6 +232,97 @@ class FacebookInstagramShapeTests(unittest.TestCase):
         pf = br.Instagram(net, ENV, NOW, lambda *_: None)
         br.collect([pf], [], lambda *_: None)
         self.assertEqual(pf.capability, "missing: instagram_business_manage_comments")
+
+
+class CommentToDmTests(unittest.TestCase):
+    """17 Oct 2026: a comment that asks for the link gets the exact page in the inbox — one
+    private reply per comment, template text (no Gemini), tagged link, dormant until the scope."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self._old = br.LEDGER
+        br.LEDGER = Path(self.tmp.name) / "replied.json"
+
+    def tearDown(self):
+        br.LEDGER = self._old
+        self.tmp.cleanup()
+
+    def test_asking_for_the_thing_is_recognised_and_discussion_is_not(self):
+        for text in ("Link pls", "Abeg send am", "How do I get the template?", "Where can I download it", "interested", "LINK"):
+            self.assertTrue(br.wants_link(text), text)
+        for text in ("Six months? Na lie", "Thank you for this", "🔥🔥", "My landlord is wicked", "unlinked thoughts"):
+            self.assertFalse(br.wants_link(text), text)
+
+    def test_the_dm_names_the_tool_and_carries_the_channel_tagged_deep_link(self):
+        ctx = br.context_for({"post_at": "2026-10-17T12:10:00+0000", "platform": "instagram"}, PACKS)
+        text = br.dm_text({"author": "Ngozi Okafor", "platform": "instagram"}, ctx)
+        self.assertIn("Hi Ngozi!", text)
+        self.assertIn("free notice to quit", text)
+        self.assertIn("https://docoga.com.ng/notice-to-quit-lagos.html?s=ig", text)
+        self.assertNotIn("Hi @", br.dm_text({"author": "@handle", "platform": "facebook"}, ctx))
+
+    def _ig_net(self, dm_status=200):
+        return FakeNet([
+            (("GET", "/me/media"), (200, {"data": [{"id": "m1", "caption": "comment LINK", "timestamp": "2026-10-17T18:11:00+0000", "comments_count": 2}]})),
+            (("GET", "/m1/comments"), (200, {"data": [
+                {"id": "ic1", "text": "Link pls 🙏", "username": "okafor", "timestamp": "2026-10-17T18:30:00+0000"},
+                {"id": "ic2", "text": "Is this for Abuja too?", "username": "musa", "timestamp": "2026-10-17T18:31:00+0000"}]})),
+            (("POST", "/me/messages"), (dm_status, {"message_id": "mid.1"} if dm_status == 200 else
+                                        {"error": {"message": "(#10) Application does not have permission for this action", "code": 10}})),
+            (("POST", "/ic1/replies"), (200, {"id": "ic1_r"})),
+            (("POST", "/ic2/replies"), (200, {"id": "ic2_r"})),
+        ])
+
+    def test_instagram_private_reply_goes_to_the_messages_edge_with_the_comment_as_recipient(self):
+        net = self._ig_net()
+        result = br.run(http=net, gemini_http=gemini([
+            {"n": 1, "comment_id": "ic1", "skip": False, "text": "Sent you the link — check your inbox."},
+            {"n": 2, "comment_id": "ic2", "skip": False, "text": "Abuja has its own rules; the national guide covers it: https://docoga.com.ng/notice-to-quit-nigeria.html"}]),
+            env=ENV, now=NOW, only="instagram", log=lambda *_: None, sleep=lambda *_: None, ledger=[], packs=PACKS)
+        dms = [(u, d) for u, d in net.posts if u.endswith("/me/messages")]
+        self.assertEqual(len(dms), 1, "only the comment that asked gets a DM")
+        self.assertEqual(dms[0][1]["recipient"], {"comment_id": "ic1"})
+        self.assertIn("?s=ig", dms[0][1]["message"]["text"])
+        self.assertEqual((result["dms"], result["answered"]), (1, 2))
+        row = next(r for r in result["replies"] if r["comment_id"] == "ic1")
+        self.assertEqual(row["dm_id"], "mid.1")
+        self.assertIn("📩 DM", br.summary_md(result))
+        self.assertEqual(result["dm_capabilities"]["instagram"], "ok")
+
+    def test_without_the_messaging_scope_the_lane_parks_the_dm_and_names_the_scope(self):
+        net = self._ig_net(dm_status=403)
+        result = br.run(http=net, gemini_http=gemini([{"n": 1, "comment_id": "ic1", "skip": False, "text": "Here: https://docoga.com.ng/notice-to-quit-lagos.html"},
+                                                      {"n": 2, "comment_id": "ic2", "skip": True}]),
+                        env=ENV, now=NOW, only="instagram", log=lambda *_: None, sleep=lambda *_: None, ledger=[], packs=PACKS)
+        self.assertEqual(result["dms"], 0)
+        self.assertEqual(result["dm_capabilities"]["instagram"], "missing: instagram_business_manage_messages")
+        self.assertIn("instagram_business_manage_messages", br.summary_md(result))
+        self.assertEqual(result["answered"], 1, "the public reply still goes out")
+
+    def test_a_dm_sent_while_gemini_is_spent_is_still_recorded_so_it_is_never_repeated(self):
+        def exhausted(url, payload, timeout=120):
+            return 429, json.dumps({"error": {"code": 429, "status": "RESOURCE_EXHAUSTED", "message": "quota"}})
+        ledger = []
+        result = br.run(http=self._ig_net(), gemini_http=exhausted, env=ENV, now=NOW, only="instagram", dry_run=True,
+                        log=lambda *_: None, sleep=lambda *_: None, ledger=ledger, packs=PACKS)
+        self.assertEqual(result["dms"], 1)
+        self.assertEqual([r["comment_id"] for r in result["replies"]], ["ic1"])
+        self.assertTrue(result["quota"])
+
+    def test_facebook_private_reply_uses_the_page_messages_edge_and_pages_messaging(self):
+        page = ENV["FB_PAGE_ID"]
+        net = FakeNet([(("POST", "/%s/messages" % page), (403, {"error": {"message": "(#200) Requires pages_messaging", "code": 200}}))])
+        pf = br.Facebook(net, ENV, NOW, lambda *_: None)
+        self.assertIsNone(pf.private_reply({"id": "c1"}, "hi"))
+        self.assertEqual(pf.dm_capability, "missing: pages_messaging")
+        self.assertEqual(net.posts[-1][1]["recipient"], {"comment_id": "c1"})
+
+    def test_brain_dm_off_sends_nothing_to_the_inbox(self):
+        net = self._ig_net()
+        result = br.run(http=net, gemini_http=gemini([{"n": 1, "comment_id": "ic1", "skip": True}, {"n": 2, "comment_id": "ic2", "skip": True}]),
+                        env=dict(ENV, BRAIN_DM="off"), now=NOW, only="instagram", log=lambda *_: None, sleep=lambda *_: None, ledger=[], packs=PACKS)
+        self.assertEqual(result["dms"], 0)
+        self.assertFalse(any(u.endswith("/me/messages") for u, _ in net.posts))
 
 
 class ContextTests(unittest.TestCase):

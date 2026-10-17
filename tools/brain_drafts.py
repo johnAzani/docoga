@@ -177,6 +177,62 @@ def tag_links_mdv2(text, channel="telegram"):
     return _OUR_LINK_MDV2.sub(one, text)
 
 
+def share_line(pack):
+    """The one sentence a reader forwards: the headline, link-free, ≤ 140 characters."""
+    post = (pack or {}).get("post") or {}
+    text = strip_links(str(post.get("headline") or "")).strip()
+    if not text:
+        return "Free Nigerian legal documents — tenancy, notice to quit, rent receipt."
+    return (text[:137].rsplit(" ", 1)[0] + "…") if len(text) > 140 else text
+
+
+def telegram_buttons(pack=None, link=None):
+    """Inline buttons for the Telegram post (17 Oct 2026, sixth pass).
+
+    Row 1 is the tap we want: the exact page the post is about, tagged `?s=tg`, so a reader
+    who read "notice to quit in Lagos" lands on that page and the tap is counted. Row 2 is
+    the growth loop — WhatsApp is on 96.5% of Nigerian phones every month, Telegram's own
+    share sheet forwards to any chat — pre-filled with the headline and a `?s=wa` / `?s=tg`
+    link, so a forward is a counted visit, not a rumour. URL buttons need no callback server
+    (₦0): the attribution lives in the link. Returned as Bot API `inline_keyboard` rows.
+    """
+    from urllib.parse import quote
+    page = link or link_for(pack)
+    page = page.split("?")[0]
+    tg = tag_links(page, "telegram")
+    wa = tag_links(page, "whatsapp")
+    line = share_line(pack)
+    return [
+        [{"text": "📄 Open the free tool", "url": tg}],
+        [{"text": "💬 Share on WhatsApp", "url": "https://wa.me/?text=" + quote(line + " " + wa, safe="")},
+         {"text": "↗️ Forward on Telegram",
+          "url": "https://t.me/share/url?url=" + quote(tg, safe="") + "&text=" + quote(line, safe="")}],
+    ]
+
+
+def carousel_slides(pack, max_points=6):
+    """The Instagram carousel copy (17 Oct 2026): hook → one point per slide → the close.
+
+    Carousels out-engage single images on Instagram in 2026 (0.55% vs 0.37% ER, nine times the
+    saves — Socialinsider/Metricool) because every swipe and every save is a signal. The brain's
+    pack already has the shape: the headline is the hook, each line is a slide, the CTA closes.
+    Returns a list of (kicker, text); empty when the pack has fewer than two lines, in which
+    case the lane posts its single card as before.
+    """
+    post = (pack or {}).get("post") or {}
+    headline = strip_links(str(post.get("headline") or "")).strip()
+    lines = [strip_links(str(line)).strip() for line in post.get("lines") or []]
+    lines = [line for line in lines if len(line) > 3][:max_points]
+    if not headline or len(lines) < 2:
+        return []
+    slides = [("swipe \u2192", headline)]
+    for index, line in enumerate(lines, 1):
+        slides.append(("%d of %d" % (index, len(lines)), line))
+    close = strip_links(str(post.get("cta") or "")).strip() or "Save this. Send it to one tenant who needs it."
+    slides.append(("free \u00b7 docoga.com.ng", close))
+    return slides
+
+
 def threads_text(pack):
     """The short copy for Threads/Instagram, link at the end, no hashtags.
 

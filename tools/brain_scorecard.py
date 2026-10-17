@@ -442,6 +442,15 @@ def _by_hour(rows, score):
     return {str(h): round(sum(v) / len(v), 2) for h, v in sorted(buckets.items()) if v}
 
 
+def _by_hour_n(rows):
+    counts = {}
+    for r in rows:
+        h = r.get("hour_wat")
+        if h is not None:
+            counts[str(h)] = counts.get(str(h), 0) + 1
+    return counts
+
+
 def _date_wat(iso):
     s = str(iso or "").replace("Z", "+00:00")
     if len(s) >= 5 and s[-5] in "+-" and s[-3] != ":":
@@ -527,6 +536,7 @@ def kpis(channels, said=None):
         score = lambda m: (m.get("shares") or 0) * 3 + (m.get("saved") or 0) * 2 + (m.get("comments") or 0) * 2 + (m.get("likes") or 0)
         k["instagram.best_posts"] = _best(media, score)
         k["instagram.by_hour"] = _by_hour(media, score)
+        k["instagram.by_hour_n"] = _by_hour_n(media)
         online = ig.get("online_followers_wat") or {}
         if online:
             top = sorted(online.items(), key=lambda kv: -kv[1])[:3]
@@ -665,6 +675,87 @@ def slot_advice(k):
     return {"peak_hours_wat": peaks, "our_hour_wat": ours, "move": gap >= 2, "suggest_hour_wat": best if gap >= 2 else ours}
 
 
+# ───────────────────────────── posting slots ─────────────────────────────
+SLOTS = Path(os.environ.get("DOCOGA_SLOTS") or (ROOT / "brain" / "slots.json"))
+# The hours (WAT) a lane's workflow actually fires at. Each is a cron in the lane's file; the
+# slot gate lets exactly one of them post. Nigeria's windows: 06:00–08:00, 12:30–14:00, 19:00–20:30.
+SLOT_CANDIDATES = {"instagram": (7, 13, 19)}
+SLOT_DEFAULT = {"instagram": 19}
+
+
+def slot_plan(k, previous=None, now=None):
+    """Which of a lane's candidate hours posts this week — decided by the numbers (17 Oct 2026).
+
+    Two witnesses, in order: what our own posts earned by posting hour (`instagram.by_hour`, the
+    scorecard's engagement score averaged per hour) when at least two candidate windows have
+    three measured posts each; else Instagram's `online_followers` curve (the top hour the
+    audience is awake), moved to the nearest candidate when the current slot is two or more
+    hours off the peak. Otherwise the slot stays where it is: a slot that moves on thin evidence
+    is a slot that never accumulates evidence. Returns the plan `{lane: {hour_wat, why, …}}`.
+    """
+    now = now or datetime.now(timezone.utc)
+    previous = previous or {}
+    plan = {"written": now.isoformat(timespec="seconds"), "lanes": {}}
+    for lane, candidates in SLOT_CANDIDATES.items():
+        current = int(((previous.get("lanes") or {}).get(lane) or {}).get("hour_wat") or SLOT_DEFAULT[lane])
+        chosen, why = current, "no new evidence — the slot stays at %02d:10 WAT" % current
+        by_hour = {int(h): float(v) for h, v in (k.get("%s.by_hour" % lane) or {}).items()}
+        counts = {int(h): int(v) for h, v in (k.get("%s.by_hour_n" % lane) or {}).items()}
+        windows = {}
+        for c in candidates:
+            hours = [h for h in by_hour if min(abs(h - c), 24 - abs(h - c)) <= 1]
+            n = sum(counts.get(h, 0) for h in hours)
+            if n >= 3:
+                windows[c] = (sum(by_hour[h] * counts.get(h, 1) for h in hours) / max(1, sum(counts.get(h, 1) for h in hours)), n)
+        if len(windows) >= 2:
+            best = max(windows.items(), key=lambda kv: kv[1][0])
+            if best[0] != current and best[1][0] >= 1.25 * windows.get(current, (0.0, 0))[0]:
+                chosen = best[0]
+                why = "our posts at %02d:xx earned %.0f per post (n=%d) against %.0f at %02d:xx — measured, not guessed" % (
+                    best[0], best[1][0], best[1][1], windows.get(current, (0.0, 0))[0], current)
+            else:
+                why = "our own numbers keep %02d:10 WAT (%s)" % (current, ", ".join("%02d:xx %.0f/n=%d" % (c, v[0], v[1]) for c, v in sorted(windows.items())))
+        else:
+            peaks = k.get("%s.online_peak_hours_wat" % lane) or []
+            if peaks:
+                peak = int(peaks[0])
+                gap = min(abs(peak - current), 24 - abs(peak - current))
+                nearest = min(candidates, key=lambda c: min(abs(peak - c), 24 - abs(peak - c)))
+                if gap >= 2 and nearest != current and min(abs(peak - nearest), 24 - abs(peak - nearest)) <= 1:
+                    chosen = nearest
+                    why = "the audience is online most at %02d:00 WAT; %02d:10 is the nearest window we fire in" % (peak, nearest)
+                else:
+                    why = "the audience peaks at %02d:00 WAT; %02d:10 already sits in that window" % (peak, current)
+        plan["lanes"][lane] = {"hour_wat": chosen, "candidates": list(candidates), "why": why,
+                               "changed": chosen != current}
+    return plan
+
+
+def load_slots(path=None):
+    try:
+        data = json.loads(Path(path or SLOTS).read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def save_slots(plan, path=None):
+    path = Path(path or SLOTS)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text(json.dumps(plan, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+    os.replace(tmp, path)
+
+
+def slot_hour(lane, plan=None):
+    """The hour (WAT) `lane` posts at this week — the plan's, else the lane's default."""
+    plan = load_slots() if plan is None else plan
+    try:
+        return int(((plan.get("lanes") or {}).get(lane) or {}).get("hour_wat") or SLOT_DEFAULT.get(lane, 19))
+    except (TypeError, ValueError):
+        return SLOT_DEFAULT.get(lane, 19)
+
+
 def streaks(history, grades):
     """How many consecutive weeks (including now) each goal has been behind."""
     out = {}
@@ -749,8 +840,8 @@ def orders(k, grades, streak=None):
                        % (m["unlocks"] or m["key"], _fmt(m["current"]), _fmt(m["target"])))
     advice = k.get("slot_advice") or {}
     if advice.get("move"):
-        out.append("Instagram's audience is online most at %s WAT and we post at %s:10 — the evening Story and the Threads "
-                   "evening post already sit in that window; the Instagram cron may move to %02d:10 WAT (owner's one tap)."
+        out.append("Instagram's audience is online most at %s WAT and we post at %s:10 — brain/slots.json moves the "
+                   "Instagram slot to %02d:10 WAT by itself from this week; no tap needed."
                    % (", ".join("%02d:00" % h for h in advice["peak_hours_wat"]), advice["our_hour_wat"], advice["suggest_hour_wat"]))
     sold = k.get("sales.by_source_28d") or {}
     taps = k.get("sales.checkouts_by_source_28d") or {}
@@ -925,10 +1016,17 @@ def feedback_section(history=None):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("command", choices=("pull", "summary", "grade"))
+    ap.add_argument("command", choices=("pull", "summary", "grade", "slot"))
+    ap.add_argument("lane", nargs="?", default="instagram", help="for `slot`: which lane's hour to print")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--summary-file", default=os.environ.get("GITHUB_STEP_SUMMARY"))
     a = ap.parse_args(argv)
+    if a.command == "slot":
+        plan = load_slots()
+        hour = slot_hour(a.lane, plan)
+        print("SLOT_HOUR_WAT=%d" % hour)
+        print("SLOT_WHY=%s" % (((plan.get("lanes") or {}).get(a.lane) or {}).get("why") or "default — no plan written yet"))
+        return 0
     history = load_history()
     if a.command == "summary":
         print(feedback_section(history), end="")
@@ -956,6 +1054,10 @@ def main(argv=None):
         history.append(snap)
         save_history(history)
         print("scorecard: appended to %s (%d kept)" % (LEDGER, min(len(history), KEEP)))
+        plan = slot_plan(snap.get("kpis") or {}, load_slots())
+        save_slots(plan)
+        for lane, row in plan["lanes"].items():
+            print("SLOT_%s=%02d:10 WAT%s — %s" % (lane.upper(), row["hour_wat"], " (moved)" if row["changed"] else "", row["why"]))
     return 0 if measured else 2
 
 

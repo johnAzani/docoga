@@ -166,6 +166,31 @@ video; and **milestones** — Facebook Stars at 500 followers for 30 days, YouTu
 at 500 subscribers, Instagram/Telegram at 1,000 — graded weekly on pace, so the plan is
 always "this many a week, by this date". Seasonality unchanged: Jan–Mar, Aug–Oct, payday.
 
+## The conversion layer (sixth research pass, 17 Oct 2026)
+The question this pass answers: **what turns a reader who already stopped into a visit, a
+forward and a sale — and what stops the machine itself from failing quietly.** Moves:
+**inline buttons under every Telegram post** ("Open the free tool" → the exact page, `?s=tg`;
+"Share on WhatsApp" pre-filled with the headline and a `?s=wa` link — WhatsApp is on 96.5 %
+of Nigerian phones; "Forward on Telegram"); the buttons step aside by themselves if the
+channel ever gains a discussion group, because comments outrank buttons. **Instagram
+carousels on Tuesday and Thursday** (the pack's lines, one slide each: 0.55 % ER vs 0.37 %
+for a single image, nine times the saves — Socialinsider/Metricool 2026). **Comment → DM**:
+a reader who comments "link", "send", "template" gets the exact page in the inbox — one
+private reply per comment, template text, no Gemini, tagged link (open rates 85–92 %, clicks
+18–35 % for comment-to-DM in 2026); dormant until the two messaging scopes are on the tokens,
+and the lane says which. **The hour is chosen by the numbers**: the Instagram lane fires in
+all three Nigerian windows (07:10, 13:10, 19:10 WAT) and a slot gate lets exactly one post —
+the one `brain/slots.json` names, rewritten every Monday from what our posts earned by hour,
+else from the audience's online curve. **The hook is a bandit, not a rota**: each hook
+archetype is an arm scored by what it earned; the plan picks by UCB (best average plus an
+exploration bonus), never repeats the last two days' hooks, and once two hooks have three
+measured posts the lint holds the model to the chosen hook. **A pinned newsdesk** carries the
+hand-dated October stories (the viral landlord video, the Q4 rent-pressure report, the state
+tenancy reforms, the Abuja poll) ahead of the RSS pull, each expiring on its own date. And the
+monitor is fixed: the heartbeat had been red four nights running without filing its issue,
+because the workflow's default `bash -e` ended the step at the one command that is allowed
+to exit 1 — a contract test now forbids that shape in every workflow.
+
 ## Sources (Oct 2026 research pass)
 DataReportal Digital 2026 (Nigeria 5.84 days/week; 3 h 18–27 m/day); Kreste Digital 2026
 Nigeria report (47.8 M social identities; WhatsApp 96.5%, Facebook 38 M, Instagram 10 M);

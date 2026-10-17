@@ -172,17 +172,66 @@ def weekday_lead(day):
 
 
 # ───────────────────────────── the prompt ─────────────────────────────
+def hook_order(day, said, history=None, min_n=3):
+    """Which hook archetype today's post opens with — chosen by the numbers (17 Oct 2026).
+
+    A bandit, not a rota. Each hook's arm is what posts with that hook earned (the scorecard's
+    `learning.hook_type`: sends ×3, comments ×2, likes ×1 per post, across Facebook, Instagram
+    and Threads). The pick is UCB1 — the best average plus an exploration bonus that shrinks as
+    a hook is tried — so a winning hook is used more and no hook is ever written off on two
+    posts. Yesterday's and the day before's hooks are excluded so three days never open the same
+    way. Returns (hook, reason, binding): `binding` is True once at least two hooks have `min_n`
+    measured posts — until then the order is advice, and the lint lets the model choose.
+    """
+    import math
+    learn = {}
+    try:
+        import brain_scorecard
+        rows = brain_scorecard.load_history() if history is None else history
+        learn = (((rows[-1] if rows else {}).get("kpis") or {}).get("learning") or {}).get("hook_type") or {}
+    except Exception:  # the scorecard is an input, never a reason to have no hook
+        learn = {}
+    arms = {h: (int((learn.get(h) or {}).get("n") or 0), float((learn.get(h) or {}).get("avg") or 0.0)) for h in HOOKS}
+    measured = [h for h, (n, _) in arms.items() if n >= min_n]
+    binding = len(measured) >= 2
+    recent = {e.get("hook_type") for e in said
+              if (day - timedelta(days=2)).isoformat() <= str(e.get("date", "")) < day.isoformat()}
+    candidates = [h for h in HOOKS if h not in recent] or list(HOOKS)
+    total = sum(n for n, _ in arms.values()) or 1
+    mean = (sum(n * avg for n, avg in arms.values()) / total) if total else 0.0
+    best, best_score, why = None, -1.0, ""
+    for h in candidates:
+        n, avg = arms[h]
+        prior = avg if n else mean            # an untried hook is assumed average, then explored
+        bonus = (max(mean, 1.0)) * math.sqrt(2.0 * math.log(total + 1) / (n + 1))
+        score = prior + bonus
+        if score > best_score:
+            best, best_score, why = h, score, ("earned %.0f per post over %d posts" % (avg, n) if n else "not measured yet — explore")
+    if not binding:
+        # No numbers yet: the least-used hook in the last 28 days, so the first weeks spread the bets.
+        floor = (day - timedelta(days=28)).isoformat()
+        used = {h: 0 for h in HOOKS}
+        for e in said:
+            if str(e.get("date", "")) >= floor and e.get("hook_type") in used:
+                used[e["hook_type"]] += 1
+        best = min(candidates, key=lambda h: (used[h], HOOKS.index(h)))
+        why = "least used in 28 days (%d) — the numbers have not spoken yet" % used[best]
+    return best, why, binding
+
+
 def day_context(day, said=None):
     said = load_said() if said is None else said
     recent = [e for e in said if (day - timedelta(days=HEADLINE_WINDOW_DAYS)).isoformat() <= str(e.get("date", ""))]
     slug = state_for(day)
     facts = law_index.facts_for(slug)
+    hook, hook_why, hook_binding = hook_order(day, said)
     return dict(day=day, weekday=day.strftime("%A"), lead=weekday_lead(day), state=slug,
                 state_name=facts[0]["state"] if facts else slug, facts=facts,
                 short_day=day.weekday() in SHORT_DAYS, calendar=calendar_notes(day),
                 recent=recent, feedback=read(FEEDBACK).strip(),
                 strategy=read(STRATEGY).strip(), audience=read(AUDIENCE).strip(),
-                news=newsdesk.fresh_items(), search=search_demand())
+                news=newsdesk.fresh_items(), search=search_demand(),
+                hook=hook, hook_why=hook_why, hook_binding=hook_binding)
 
 
 SEARCH_CONSOLE = Path(os.environ.get("DOCOGA_SEARCH_CONSOLE") or (ROOT / "logs" / "search_console.json"))
@@ -251,6 +300,8 @@ TODAY
 - State on rotation: {ctx['state_name']} ({ctx['state']}). Legal claims may use only the shelf below.
 - {short_rule}
 - Calendar: {' '.join(ctx['calendar']) or 'nothing special.'}
+- Hook for today: {ctx.get('hook') or 'your choice'} — {ctx.get('hook_why') or ''}. {'`hook_type` MUST be this value; the numbers chose it.' if ctx.get('hook_binding') else 'Use it unless the lead clearly wants another.'}
+- Money line: when `tool` is set, the `cta` MAY be the keyword line — "Comment LINK and the exact page lands in your inbox." — the lane sends that private reply itself.
 
 NEWSDESK — WHAT NIGERIA IS TALKING ABOUT THIS WEEK (headline — paper)
 {newsdesk.prompt_block(ctx.get('news') or [])}
@@ -357,6 +408,8 @@ def lint(pack, ctx, said):
         p.append("post_type must be one of %s" % ", ".join(POST_TYPES))
     if pack.get("hook_type") not in HOOKS:
         p.append("hook_type must be one of %s" % ", ".join(HOOKS))
+    elif ctx.get("hook_binding") and ctx.get("hook") and pack.get("hook_type") != ctx["hook"]:
+        p.append("hook_type must be %s today — the scorecard chose it (%s)" % (ctx["hook"], ctx.get("hook_why", "")))
     if not headline:
         p.append("post.headline is missing")
     elif len(headline) > HEADLINE_MAX:
