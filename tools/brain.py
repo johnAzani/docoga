@@ -94,6 +94,8 @@ PLATE_BANNED = ("face", "person", "people", "man", "woman", "child", "children",
 EMOJI = re.compile("[\U0001F300-\U0001FAFF\U00002600-\U000027BF\U0001F000-\U0001F2FF\u2B50\u2705\u274C]")
 NAIRA = re.compile(r"₦\s?([0-9][0-9,\.]*)")
 MAX_ATTEMPTS = 2
+SAY_WORDS = (12, 45)      # a Short's spoken explanation per scene (tools/shorts_sound.SAY_WORDS)
+SAY_TOTAL_MAX = 160       # hook_say + four says: ~65 s read, under the 90 s Facebook Reels ceiling with room
 CTA_MAX = 110
 CTA_VERBS = ("send", "forward", "share", "tag", "tell", "reply", "comment", "save", "drop", "ask", "show", "answer")
 PERSONAS = ("ngozi", "tunde", "okafor", "amaka", "dayo")
@@ -351,7 +353,9 @@ OUTPUT — one JSON object with exactly these keys:
              "plate": "2-4 plain words for a background photograph with no faces and no signs"}},
   "quiz": null, or on Tuesday (quiz day) {{"question": "<= 120 characters, one rule from the shelf as a question", "options": ["2 to 4 answers, <= 40 characters each, one correct"], "correct": 0-based index, "explanation": "<= 200 characters: the answer with its section, e.g. 'Six months — s.13(1)(e), Lagos Tenancy Law 2011.'", "fact_id": "the shelf fact the answer rests on"}},
   "short": null or {{"title": "one or two short sentences", "hook_sub": "<= 9 words",
-                     "tips": [{{"text": "<= 5 words", "sub": "<= 9 words"}}, "... exactly four"]}},
+                     "hook_say": "20-35 words the narrator reads over the hook: the scene, the mistake, the stake — as a presenter would say it",
+                     "tips": [{{"text": "<= 5 words", "sub": "<= 9 words",
+                               "say": "25-40 words the narrator reads over this tip: what to do, why, what goes wrong without it; name the state when a rule is cited. The five says together stay under 160 words"}}, "... exactly four"]}},
   "why": "one sentence: why today says this"
 }}
 Rules: do not put the link or the disclaimer in `lines`, `cta` or `threads.text` — the renderer adds them.
@@ -634,6 +638,9 @@ def short_problems(short):
     sub = str(short.get("hook_sub") or "").strip()
     if len(sub.split()) > 9:
         p.append("short.hook_sub: at most 9 words")
+    hook_say = str(short.get("hook_say") or "").strip()
+    if hook_say and not (SAY_WORDS[0] <= len(hook_say.split()) <= SAY_WORDS[1]):
+        p.append("short.hook_say: %d-%d words" % SAY_WORDS)
     tips = short.get("tips")
     if not isinstance(tips, list) or len(tips) != 4:
         p.append("short.tips: exactly four")
@@ -648,6 +655,18 @@ def short_problems(short):
             p.append("short.tips[%d].text: 1-5 words, <= 30 characters" % i)
         if len(tsub.split()) > 9 or len(tsub) > 64:
             p.append("short.tips[%d].sub: <= 9 words, <= 64 characters" % i)
+        say = str(tip.get("say") or "").strip()
+        if say and not (SAY_WORDS[0] <= len(say.split()) <= SAY_WORDS[1]):
+            p.append("short.tips[%d].say: %d-%d words" % (i, SAY_WORDS[0], SAY_WORDS[1]))
+        if say and ("http" in say or "docoga.com.ng" in say.lower()):
+            p.append("short.tips[%d].say: no link — the end card carries it" % i)
+        if not say:
+            p.append("short.tips[%d].say is required — a detailed Short, not points (owner, 17 Oct 2026)" % i)
+    if not hook_say:
+        p.append("short.hook_say is required — a detailed Short, not points (owner, 17 Oct 2026)")
+    spoken = len(hook_say.split()) + sum(len(str(t.get("say") or "").split()) for t in tips if isinstance(t, dict))
+    if spoken > SAY_TOTAL_MAX:
+        p.append("short: hook_say + says total %d words; at most %d (the Reel must stay under 90 s)" % (spoken, SAY_TOTAL_MAX))
         if "*" in text or "*" in tsub:
             p.append("short.tips[%d]: no markdown" % i)
     return p

@@ -139,6 +139,7 @@ class LockedVoiceTests(unittest.TestCase):
         calls = []
         with tempfile.TemporaryDirectory() as tmp, \
              patch.object(shorts_sound, "VOICE_CACHE_DIR", Path(tmp)), \
+             patch.object(shorts_sound.gemini_quota, "LEDGER", Path(tmp) / "quota.json"), \
              patch.dict(os.environ, {"GEMINI_API_KEY": "test-key"}):
             clips, dropped = quiet(shorts_sound.narrate, lines, tts=fake_tts_factory(log=calls))
         self.assertEqual(dropped, "")
@@ -327,7 +328,7 @@ class TimingTests(unittest.TestCase):
     def test_the_hard_cap_is_a_refusal_not_a_trim(self):
         reel = self.reel()
         with self.assertRaises(RuntimeError):
-            shorts_sound.fit_scenes(reel, [{"scene": sc["id"], "seconds": 12.0} for sc in reel["scenes"]])
+            shorts_sound.fit_scenes(reel, [{"scene": sc["id"], "seconds": 20.0} for sc in reel["scenes"]])
 
     def test_the_engine_does_not_trim_the_stretched_scenes_back(self):
         """schedule() trims to reading time when over cap; with narration the cap is lifted."""
@@ -399,6 +400,7 @@ class ScoreTests(unittest.TestCase):
     def test_voice_mix_keeps_the_bed_under_the_narrator(self):
         lines = shorts_sound.narration_for(self.reel, TOPIC)
         with patch.object(shorts_sound, "VOICE_CACHE_DIR", Path(self.tmp.name) / "vc"), \
+             patch.object(shorts_sound.gemini_quota, "LEDGER", Path(self.tmp.name) / "quota.json"), \
              patch.dict(os.environ, {"GEMINI_API_KEY": "k"}):
             clips, dropped = quiet(shorts_sound.narrate, lines, tts=fake_tts_factory(seconds_per_word=0.05))
         self.assertEqual(dropped, "")

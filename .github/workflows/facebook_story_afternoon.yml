@@ -40,6 +40,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
+  DOCOGA_SHOTS: ${{ vars.DOCOGA_SHOTS || 'on' }}   # CC0 photograph behind the Story frame, matched to the copy (tools/shot_match.py)
   FB_PAGE_ACCESS_TOKEN: ${{ secrets.FB_PAGE_ACCESS_TOKEN }}
   FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
   META_APP_ID: ${{ secrets.META_APP_ID }}

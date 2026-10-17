@@ -22,8 +22,15 @@ already owns and the owner already approved:
 Timing is voice-first. Each scene's narration is one TTS clip; the clip's
 measured length stretches that scene so the words and the type land together,
 instead of a 3.4-second scene cutting a 4-second sentence in half. The reel's
-cap is raised to fit (Shorts allow 60 s, Reels 90 s; `HARD_CAP_S` holds it well
+cap is raised to fit (Shorts allow 3 min, Reels 90 s; `HARD_CAP_S` holds it
 under both).
+
+Detailed, not points (owner, 17 Oct 2026: "like the long form video"). A slide
+may carry `say` — the explanation the narrator actually reads, two to four
+sentences — and then the scene is captioned like a Deep-Dive: each sentence
+appears under the headline while it is spoken (`caption_beats`, MotionStudio
+kind 'caption'), timed by its share of the clip. Without `say` the old read
+(headline + sub-line) stands, and nothing is captioned.
 
 Free plan, always — and knowledgeable about it (owner, 15 Oct 2026: "I want to
 automatically know when the voice over resets and automatically continue at that
@@ -52,6 +59,7 @@ the voice was dropped. The lanes print it; the tests pin it.
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -69,7 +77,8 @@ import gemini_quota  # noqa: E402
 
 SR = soundkit.SR
 VOICE_CACHE_DIR = ROOT / "assets" / "shorts_voice"
-HARD_CAP_S = 45.0          # Shorts ≤ 60 s, Reels ≤ 90 s; a tip reel past this has lost the thread
+HARD_CAP_S = 90.0          # Shorts ≤ 3 min, Reels ≤ 90 s, TikTok ≤ 10 min; a detailed Short (owner, 17 Oct
+                           # 2026: "detailed, not just points, like the long form") reads 60–80 s
 VOICE_LEAD_S = 0.30        # the clip starts after the scene's transition has landed
 VOICE_TAIL_S = 0.45        # room after the last word before the next scene cuts
 SILENCE_FLOOR_DBFS = -45.0  # a finished soundtrack quieter than this (RMS, dBFS) is "silent"
@@ -160,22 +169,85 @@ def sentence(text):
     return t
 
 
+_SENT_END = re.compile(r"(?<=[.!?])\s+(?=[A-Z0-9₦\"'(])")
+SAY_WORDS = (12, 45)       # a `say` shorter than this is a point, longer is a lecture (tools/brain.SAY_WORDS)
+
+
+def spoken(text):
+    """A `say` paragraph as the narrator reads it: whitespace folded, the brand spelled for the
+    ear, a full stop at the end. Case is the writer's — this is prose, not a slide."""
+    t = " ".join(str(text or "").split())
+    if not t:
+        return ""
+    t = t.replace(" · ", ", ").replace("·", ",")
+    t = t.replace("docoga.com.ng", "Doc Oga dot com dot N G").replace("DocOga", "Doc Oga").replace("Docoga", "Doc Oga")
+    t = t.replace("Doc Oga.com.ng", "Doc Oga dot com dot N G")
+    if t[-1] not in ".!?":
+        t += "."
+    return t
+
+
+def sentences(text):
+    """Split a read into the sentences the captions will show, one at a time."""
+    parts = [p.strip() for p in _SENT_END.split(str(text or "").strip()) if p.strip()]
+    return parts or ([str(text).strip()] if str(text or "").strip() else [])
+
+
 def narration_for(reel, topic):
-    """One narration line per scene, in scene order: [{scene, role, text}]."""
+    """One narration line per scene, in scene order: [{scene, role, text, detailed, sentences}].
+
+    `detailed` is True when the slide carried `say` (the explanation, not the point); the
+    captioner only works on detailed scenes."""
     slides = list(topic.get("slides") or [])
     hook, tips, _disc = slides[0], slides[1:-1], slides[-1]
     lines = []
-    # The hook reads from the title (natural case, two sentences) with its sub-line.
+
+    def line(scene, role, slide, fallback):
+        say = spoken(slide.get("say"))
+        text = say or fallback
+        lines.append({"scene": scene, "role": role, "text": text, "detailed": bool(say),
+                      "sentences": sentences(text)})
+    # The hook reads from the title (natural case, two sentences) with its sub-line — or its `say`.
     hook_text = sentence(topic.get("title") or hook.get("text"))
     sub = sentence(hook.get("sub"))
-    lines.append({"scene": reel["scenes"][0]["id"], "role": "hook",
-                  "text": (hook_text + " " + sub).strip()})
+    line(reel["scenes"][0]["id"], "hook", hook, (hook_text + " " + sub).strip())
     for sc, tip in zip(reel["scenes"][1:1 + len(tips)], tips):
-        lines.append({"scene": sc["id"], "role": "tip",
-                      "text": (sentence(tip.get("text")) + " " + sentence(tip.get("sub"))).strip()})
-    lines.append({"scene": reel["scenes"][-1]["id"], "role": "conclusion",
+        line(sc["id"], "tip", tip, (sentence(tip.get("text")) + " " + sentence(tip.get("sub"))).strip())
+    lines.append({"scene": reel["scenes"][-1]["id"], "role": "conclusion", "detailed": False,
                   "text": "Free, at Doc Oga dot com dot N G. No signup. General information only."})
+    lines[-1]["sentences"] = sentences(lines[-1]["text"])
     return lines
+
+
+def caption_beats(reel, clips, ms=None):
+    """Caption every detailed scene like a Deep-Dive: one MotionStudio 'caption' beat per
+    sentence, timed by the sentence's share of the clip (characters, the same proxy
+    tools/deepdive.py uses before alignment). The scene's sub-line beat makes way — the
+    captions ARE the explanation. Returns the number of captions added. Pure: no rendering."""
+    ms = ms or _motionstudio()
+    by_scene = {c["scene"]: c for c in clips}
+    added = 0
+    for sc in reel["scenes"]:
+        c = by_scene.get(sc["id"])
+        if not c or not c.get("detailed") or not c.get("sentences") or not c.get("seconds"):
+            continue
+        sents = list(c["sentences"])
+        total_chars = sum(len(x) for x in sents) or 1
+        sc["beats"] = [b for b in sc["beats"] if b["kind"] != "support"]
+        t = VOICE_LEAD_S
+        for sent in sents:
+            share = len(sent) / total_chars * float(c["seconds"])
+            t0, t1 = round(t, 2), round(min(t + share, sc["dur"] - 0.05), 2)
+            if t1 - t0 >= 0.6:
+                sc["beats"].append(ms.Beat("caption", "caption", sent, t0=t0, t1=t1, exempt=True, color=ms.WHITE))
+                added += 1
+            t += share
+    return added
+
+
+def _motionstudio():
+    import motionstudio
+    return motionstudio
 
 
 # ───────────────────────────── voice (locked narrator) ─────────────────────────────
