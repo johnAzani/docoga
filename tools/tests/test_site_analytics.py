@@ -59,6 +59,7 @@ class SiteTagDiscovery(unittest.TestCase):
         self.assertEqual(data["visits"], 40)
         self.assertEqual(data["by_channel"], {"telegram": 30})
         self.assertEqual(data["nigeria_share"], 0.95)   # Cloudflare answers ISO codes, not names
+        self.assertEqual(data["by_country"], {"NG": 38, "GB": 2})
 
     def test_try_again_later_is_retried_but_bounded(self):
         sa.fetch = lambda url, token=None, timeout=15: (200, BEACON)
