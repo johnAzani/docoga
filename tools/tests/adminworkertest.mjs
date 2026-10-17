@@ -142,9 +142,32 @@ console.log('— /admin/data reads counters, not the keyspace —');
   ok('no snapshot existed → built inline once and cached to KV', !!r.j.snapshot && r.j.snapshotJustBuilt === true && (await env.KV.get('adm:snap')) !== null);
   ok('the snapshot has the ledger series, passes block, teams and leads', Array.isArray(r.j.snapshot.series) && r.j.snapshot.series.length === 31 && !!r.j.snapshot.passes && Array.isArray(r.j.snapshot.teams), JSON.stringify(Object.keys(r.j.snapshot)));
   ok('drift self-check computed', typeof r.j.snapshot.drift.codesStored === 'number' && r.j.snapshot.drift.suspect === false, JSON.stringify(r.j.snapshot.drift));
+  ok('drift pins a baseline {codes, since} on first build', r.j.snapshot.drift.baselineCodes === 1 && r.j.snapshot.drift.since === t && r.j.snapshot.drift.newCodes === 0 && (await env.KV.get('adm:baseline')) !== null, JSON.stringify(r.j.snapshot.drift));
   ok('a normal load reads ≤ 20 KV keys and writes nothing more than the snapshot', after.reads - before.reads <= 420 && after.writes - before.writes <= 2, JSON.stringify({ r: after.reads - before.reads, w: after.writes - before.writes }));
   ok('admin answers are no-store (revenue + emails must not sit in a shared cache)', r.headers.get('cache-control') === 'no-store' && r.headers.get('x-frame-options') === 'DENY', r.headers.get('cache-control') + '/' + r.headers.get('x-frame-options'));
   ok('no secret material in any admin response', r.text.indexOf(PASS) < 0 && r.text.indexOf(SIGN) < 0);
+}
+
+
+console.log('— drift compares codes created since the baseline with sales counted since it —');
+{
+  const t = dayOf(Date.now());
+  const seed = {};
+  for (let i = 0; i < 8; i++) seed['code:OGA-OLD' + i + '-BBBB-CCCC'] = rec('OGA-OLD' + i + '-BBBB-CCCC', { email: 'a@b.co' });
+  const env = makeEnv(seed);
+  const tok = await authed(env);
+  const r1 = await hit(env, '/admin/data', get(tok));
+  ok('eight old codes and zero counted sales is NOT drift on day one (the counters are younger than the codes)', r1.j.snapshot.drift.suspect === false && r1.j.snapshot.drift.baselineCodes === 8, JSON.stringify(r1.j.snapshot.drift));
+  // Seven more codes appear with no counted sale → the counters really are missing money.
+  for (let i = 0; i < 7; i++) await env.KV.put('code:OGA-NEW' + i + '-BBBB-CCCC', rec('OGA-NEW' + i + '-BBBB-CCCC', { email: 'a@b.co' }));
+  await env.KV.delete('adm:snap');
+  const r2 = await hit(env, '/admin/data', get(tok));
+  ok('seven new codes with zero counted sales IS drift (off by 7 > 5)', r2.j.snapshot.drift.suspect === true && r2.j.snapshot.drift.newCodes === 7 && r2.j.snapshot.drift.countedSince === 0, JSON.stringify(r2.j.snapshot.drift));
+  // A stale baseline (29 days old) is rolled forward.
+  await env.KV.put('adm:baseline', JSON.stringify({ codes: 0, since: dayOf(Date.now() - 29 * 864e5) }));
+  await env.KV.delete('adm:snap');
+  const r3 = await hit(env, '/admin/data', get(tok));
+  ok('a baseline older than 28 days is re-pinned to today', r3.j.snapshot.drift.since === t && r3.j.snapshot.drift.baselineCodes === 15 && r3.j.snapshot.drift.suspect === false, JSON.stringify(r3.j.snapshot.drift));
 }
 
 console.log('— snapshot freshness and the rebuild throttle —');
