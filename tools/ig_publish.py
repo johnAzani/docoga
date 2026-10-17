@@ -178,6 +178,24 @@ class ApiError(Exception):
         return "run"
 
 
+def collaborators_param(raw=None, kind="photo"):
+    """`collaborators` for a container: ≤3 public usernames, Reels/photos/carousel parents only.
+
+    Meta (Oct 2026): the parameter is accepted on image, Reels and carousel-parent containers —
+    not Stories, not carousel children. Each named account gets an invite; when they accept, the
+    post sits on both profiles with both names on it. Borrowed audience for ₦0. Returns the JSON
+    string the API wants, or None when there is nobody to invite or the kind cannot carry it."""
+    raw = os.environ.get("IG_COLLABORATORS", "") if raw is None else raw
+    names = []
+    for part in re.split(r"[,\s]+", raw or ""):
+        name = part.strip().lstrip("@")
+        if name and re.fullmatch(r"[A-Za-z0-9._]{1,30}", name) and name.lower() not in [n.lower() for n in names]:
+            names.append(name)
+    if not names or kind not in ("photo", "reel", "carousel"):
+        return None
+    return json.dumps(names[:3])
+
+
 def machine(result, cause=None, *, stream=None, **extra):
     """One fact per line: the workflow reads these with `sed`, and a shell should not have
     to split a compound line to find out whether a post happened.
@@ -1121,6 +1139,11 @@ def main(argv=None):
         parser.print_help()
         machine("refused", "usage")
         return 5
+
+    collab = collaborators_param(kind=kind)
+    if collab:
+        media["collaborators"] = collab
+        print("collaborators: %s invited (they accept once; the post then shows on both profiles)" % collab)
 
     # The media gate, before any container exists: cheap, and the only place a bad JPEG can
     # be fixed with a sentence instead of an opaque API error.

@@ -44,6 +44,11 @@ on:
         required: false
         default: false
         type: boolean
+      forum_answer:
+        description: 'Also draft this week''s forum answer now (normally Mondays)'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write        # brain/drafts, logs/brain_said.json, brain/feedback.md, episodes/ddN
@@ -64,6 +69,7 @@ jobs:
       BRAIN_DAYS: ${{ inputs.days }}
       BRAIN_DEEPDIVE: ${{ inputs.deepdive }}
       BRAIN_DRY_RUN: ${{ inputs.dry_run }}
+      BRAIN_FORUM_ANSWER: ${{ inputs.forum_answer }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -86,6 +92,23 @@ jobs:
           fi
           echo "key: present"
 
+      - name: Which Gemini rungs does this key get? (ListModels — costs no quota)
+        run: |
+          set +e
+          python3 tools/gemini_text.py probe 2>&1 | tee /tmp/gemini_probe.log
+          CODE=${PIPESTATUS[0]}
+          set -e
+          {
+            echo "### Gemini ladder"
+            echo
+            echo '```'
+            cat /tmp/gemini_probe.log
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          if grep -q '^GEMINI_LADDER=empty' /tmp/gemini_probe.log; then
+            echo "::error title=No Gemini model served::the key is served none of the brain's models — set BRAIN_MODELS to a model the probe lists, or make a new key in AI Studio"
+          fi
+
       - name: Newsdesk — what Nigeria is talking about this week
         run: |
           set +e
@@ -100,6 +123,23 @@ jobs:
             echo
             echo '```'
             python3 tools/newsdesk.py show 2>/dev/null | head -n 10
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Listening — what Nigerians asked this week (Nairaland, r/Nigeria)
+        run: |
+          set +e
+          python3 tools/listening.py pull 2>&1 | tee /tmp/listening.log
+          CODE=${PIPESTATUS[0]}
+          set -e
+          if [ "$CODE" != "0" ]; then
+            echo "::warning title=Listening did not pull::the brain plans without this week's questions (exit $CODE)"
+          fi
+          {
+            echo "### What Nigerians asked"
+            echo
+            echo '```'
+            python3 tools/listening.py show 2>/dev/null | head -n 10
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -182,16 +222,60 @@ jobs:
           fi
           if [ "$CODE" != "0" ] && [ "$CODE" != "3" ] && [ "$CODE" != "6" ]; then exit "$CODE"; fi
 
+      - name: Forum answer (Mondays) — one cited reply for the owner to paste
+        if: ${{ env.BRAIN_DRY_RUN != 'true' && steps.plan.outputs.code != '6' }}
+        run: |
+          if [ "$(date +%u)" != "1" ] && [ "$BRAIN_FORUM_ANSWER" != "true" ]; then
+            echo "not Monday and not asked — no forum answer tonight"
+            exit 0
+          fi
+          set +e
+          python3 tools/listening.py answer 2>&1 | tee /tmp/listening_answer.log
+          set -e
+          ANSWER=$(sed -n 's/^LISTENING_ANSWER=//p' /tmp/listening_answer.log | tail -1)
+          {
+            echo "### Forum answer"
+            echo
+            if [ -n "$ANSWER" ] && [ "$ANSWER" != "none" ] && [ -f "$ANSWER" ]; then
+              echo "- ✍️ drafted: \`$ANSWER\` — Monday's scorecard issue carries it; paste it into the thread (2 minutes)"
+            else
+              echo "- no answer this week ($(tail -n 1 /tmp/listening_answer.log))"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Prune old drafts
         if: ${{ env.BRAIN_DRY_RUN != 'true' }}
         run: python3 tools/brain.py prune
+
+      # The day's approved packs as cited guide pages under site/guides/ (tools/guides_build.py):
+      # a post lives a day, a page is a Google result for years, and the site is static files on
+      # Cloudflare — ₦0. Touches only site/guides/, the sitemap and the IndexNow key file; never a
+      # tool page or the payment flow. Variable BRAIN_GUIDES=off turns it off.
+      - name: Guides — today's packs as pages on the site
+        if: ${{ env.BRAIN_DRY_RUN != 'true' }}
+        env:
+          BRAIN_GUIDES: ${{ vars.BRAIN_GUIDES }}
+          INDEXNOW_KEY: ${{ vars.INDEXNOW_KEY }}
+        run: |
+          set +e
+          python3 tools/guides_build.py build 2>&1 | tee /tmp/guides.log
+          set -e
+          {
+            echo "### Guides"
+            echo
+            echo '```'
+            cat /tmp/guides.log
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Commit what the brain decided
         if: ${{ env.BRAIN_DRY_RUN != 'true' }}
         env:
           BRANCH: ${{ github.event.repository.default_branch }}
+          INDEXNOW_KEY: ${{ vars.INDEXNOW_KEY }}
         run: |
-          git add -A brain/drafts brain/feedback.md brain/newsdesk.json logs/brain_said.json episodes 2>/dev/null || true
+          git add -A brain/drafts brain/feedback.md brain/newsdesk.json brain/listening.json brain/answers logs/brain_said.json episodes site/guides site/sitemap.xml 2>/dev/null || true
+          if [ -n "${INDEXNOW_KEY:-}" ] && [ -f "site/${INDEXNOW_KEY}.txt" ]; then git add "site/${INDEXNOW_KEY}.txt"; fi
           if git diff --staged --quiet; then
             echo "nothing new to commit"
             exit 0

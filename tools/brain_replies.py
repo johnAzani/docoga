@@ -72,7 +72,7 @@ NAIRA = re.compile(r"₦\s?([0-9][0-9,\.]*)")
 SECTION = re.compile(r"\b(?:s\.|section|sec\.)\s?([0-9]+[A-Za-z]?(?:\([0-9a-z]+\))*)", re.I)
 URL = re.compile(r"https?://\S+", re.I)
 WORDY = re.compile(r"[A-Za-z]{2,}")
-MODELS = ("gemini-2.5-flash-lite", "gemini-flash-lite-latest", "gemini-2.5-flash", "gemini-2.0-flash")
+MODELS = gemini_text.LITE_FIRST_MODELS   # the 500/day Lite rungs first; see gemini_text.DEFAULT_MODELS
 
 SYSTEM = """You answer comments for DocOga, Nigeria's document engine, as a warm, direct Nigerian
 community manager — short, human, never a bot voice. You answer from the facts you are given for

@@ -116,7 +116,10 @@ ASSETS = EPISODES / "assets"
 BUILD = ROOT / "build" / "deepdive"
 
 GEMINI_API = "https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent"
-GEMINI_MODELS = ("gemini-2.5-flash-preview-tts", "gemini-2.5-pro-preview-tts")
+# The narrator's ladder. 2.5 Flash TTS is what the lock was fingerprinted on; 2.5 Pro TTS left the
+# free tier in Oct 2026 and 3.8 Flash-Lite TTS joined it — the voice (Orus) and the instruction are
+# the same prebuilt-voice contract on every rung, so the lock holds whichever rung answers.
+GEMINI_MODELS = ("gemini-2.5-flash-preview-tts", "gemini-3.8-flash-lite-tts", "gemini-2.5-pro-preview-tts")
 VOSK_MODEL_DIR = Path(os.environ.get("VOSK_MODEL_DIR", "/tmp/vosk/vosk-model-small-en-us-0.15"))
 VOSK_MODEL_URL = "https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip"
 # Words the TTS model sometimes reads aloud from the style instruction. If any of them
@@ -1192,6 +1195,9 @@ def stage_qa(ep, args):
 def stage_meta(ep, args):
     yt = ep.meta["youtube"]
     desc = yt["description"].rstrip() + "\n\n" + chapters_text(ep)
+    more = crosslinks_text()
+    if more:
+        desc = (desc.rstrip() + "\n\n" + more)[:4900]
     out = {"video_path": str(ep.master_path), "cover_path": str(ep.cover_path),
            "title": yt["title"], "topic": ep.meta["title"], "description": desc,
            "tags": yt.get("tags", "docoga,nigeria,tenant,landlord,tenancy"),
@@ -1206,6 +1212,31 @@ def stage_meta(ep, args):
                     fh.write("%s=%s\n" % (k, v))
     for k, v in out.items():
         print("%s=%s" % (k, v.replace("\n", " / ") if k == "description" else v))
+
+
+def crosslinks_text(limit=3, root=None):
+    """'More from DocOga' — the latest public Shorts and the previous Deep-Dives, from the ledgers.
+
+    YouTube's Shorts→long-form "Related video" link is a Studio-only tap (no API, Oct 2026), so
+    the description carries the funnel the other way round: a Deep-Dive names the channel's
+    recent Shorts and earlier episodes, and the viewer who finished one has the next in reach."""
+    root = Path(root) if root else ROOT
+    lines = []
+    for ledger, label in ((root / "logs" / "youtube_longform.json", "Earlier Deep-Dives"),
+                          (root / "logs" / "youtube_published.json", "60-second versions (Shorts)")):
+        try:
+            rows = json.loads(ledger.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        public = [r for r in rows if isinstance(r, dict) and r.get("privacy") == "public" and r.get("url")]
+        public.sort(key=lambda r: str(r.get("date") or ""), reverse=True)
+        picked = public[:limit]
+        if picked:
+            lines.append(label + ":")
+            lines += ["%s — %s" % (str(r.get("topic") or r.get("title") or "").split(" #Shorts")[0].strip()[:70], r["url"])
+                      for r in picked]
+            lines.append("")
+    return "\n".join(lines).rstrip()
 
 
 def chapters_text(ep):

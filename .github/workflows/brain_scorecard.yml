@@ -130,6 +130,28 @@ jobs:
           sed -n '/^### Token permissions/,$p' /tmp/scopes.log >> "$GITHUB_STEP_SUMMARY"
           exit 0
 
+      # The week's forum answer (tools/listening.py, drafted by the brain on Monday night, 01:30
+      # WAT — this job runs at 06:40 so the file is already on main). The one manual act of the
+      # week: two minutes, a paste, into a thread where a real tenant asked the exact question.
+      - name: This week's forum answer — into the issue
+        continue-on-error: true
+        run: |
+          set +e
+          ANSWER="$(python3 tools/listening.py latest 2>/dev/null | sed -n 's/^LISTENING_ANSWER=//p' | tail -1)"
+          if [ -n "$ANSWER" ] && [ "$ANSWER" != "none" ] && [ -f "$ANSWER" ]; then
+            {
+              echo
+              echo "### ✍️ Forum answer — paste this (2 minutes)"
+              echo
+              sed -n '2,$p' "$ANSWER"
+              echo
+            } >> /tmp/scorecard.md
+            echo "forum answer attached: $ANSWER"
+          else
+            echo "no forum answer this week"
+          fi
+          exit 0
+
       - name: Keep the one weekly scorecard issue current (the owner's phone view)
         if: ${{ env.SCORECARD_DRY_RUN != 'true' }}
         env:

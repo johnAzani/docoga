@@ -30,6 +30,7 @@ import gemini_quota  # noqa: E402
 import gemini_text  # noqa: E402
 import law_index  # noqa: E402
 import newsdesk  # noqa: E402
+import listening  # noqa: E402
 
 MONDAY = date(2026, 10, 19)      # a Reel day: the pack must carry a Short
 SUNDAY = date(2026, 10, 18)      # no Short rendered
@@ -114,6 +115,7 @@ class Sandbox(unittest.TestCase):
                                     (brain_scorecard, "LEDGER", root / "scorecard.json"),
                                     (newsdesk, "PINNED", root / "newsdesk_pinned.json"),
                                     (newsdesk, "OUT", root / "newsdesk.json"),
+                                    (listening, "OUT", root / "listening.json"),
                                     (gemini_quota, "LEDGER", root / "quota.json")):
             p = patch.object(target, name, value)
             p.start()
@@ -661,7 +663,7 @@ class WorkflowContractTests(unittest.TestCase):
         self.assertIn("contents: write", self.wf)
         self.assertIn("issues: write", self.wf)
         self.assertIn("cancel-in-progress: false", self.wf)
-        self.assertIn("git add -A brain/drafts brain/feedback.md brain/newsdesk.json logs/brain_said.json episodes", self.wf)
+        self.assertIn("git add -A brain/drafts brain/feedback.md brain/newsdesk.json brain/listening.json brain/answers logs/brain_said.json episodes site/guides site/sitemap.xml", self.wf)
         self.assertIn("gh issue create", self.wf)
         self.assertIn("brain-automation", self.wf)
 

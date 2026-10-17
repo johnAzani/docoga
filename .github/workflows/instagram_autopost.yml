@@ -346,6 +346,7 @@ jobs:
           IG_FORCE: ${{ inputs.force }}
           IG_CONTENT_TYPE: ${{ inputs.content_type }}
           IG_IMAGE_URL_OVERRIDE: ${{ inputs.image_url }}
+          IG_COLLABORATORS: ${{ vars.IG_COLLABORATORS }}   # up to 3 public usernames invited as co-authors (blank = none)
         run: |
           set -o pipefail
           # Dispatch strings reach this script through `env:` only. Interpolating an input into
