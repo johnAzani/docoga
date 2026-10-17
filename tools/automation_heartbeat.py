@@ -148,7 +148,11 @@ def parse_stamp(value):
     if text.endswith("Z"):
         text = text[:-1] + "+00:00"
     try:
-        return datetime.fromisoformat(text)
+        parsed = datetime.fromisoformat(text)
+        # A ledger `date` of "2026-10-17" (or a stamp with no zone) parses naive; every
+        # other moment here is aware, and Python refuses to compare the two. 17 Oct 2026,
+        # 9:00pm: that refusal crashed the heartbeat before it reached a verdict.
+        return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
     except ValueError:
         pass
     for fmt in ("%Y-%m-%dT%H:%M:%S%z", "%Y-%m-%dT%H:%M:%S"):
