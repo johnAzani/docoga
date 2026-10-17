@@ -193,6 +193,7 @@ def cmd_record(args):
         date=args.date,
         run_id=args.run_id or "",
         size_bytes=args.size_bytes,
+        **({"publish_at": args.publish_at} if getattr(args, "publish_at", "") else {}),
     )
     print(json.dumps(entry, indent=2, ensure_ascii=False))
     print("Recorded in %s (%d entries)." % (args.ledger, len(load(args.ledger))))
@@ -243,6 +244,7 @@ def build_parser():
     rec.add_argument("--state", default="uploaded",
                      help="what YouTube reported after the upload, not what was requested")
     rec.add_argument("--note", default="", help="the uploader's own words about the read-back")
+    rec.add_argument("--publish-at", default="", help="RFC3339 instant a scheduled upload goes public (empty = immediate)")
     rec.add_argument("--date", required=True, help="run date, YYYY-MM-DD (WAT)")
     rec.add_argument("--run-id", default="")
     rec.add_argument("--topic", default="")

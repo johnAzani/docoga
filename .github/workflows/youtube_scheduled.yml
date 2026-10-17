@@ -256,6 +256,10 @@ jobs:
           VIDEO_DESCRIPTION: ${{ steps.short.outputs.description }}
           VIDEO_TAGS: ${{ steps.short.outputs.tags }}
           PRIVACY: ${{ steps.settings.outputs.privacy }}
+          # Owner, 17 Oct 2026: a public upload is SCHEDULED — private now, public at the slot
+          # (default 19:00 WAT today; the Short renders at 18:00). YT_SCHEDULE=off = publish at once.
+          YT_PUBLISH_HOUR_WAT: ${{ vars.YT_PUBLISH_HOUR_WAT }}
+          YT_SCHEDULE: ${{ vars.YT_SCHEDULE }}
         run: |
           # The uploader exits 2 for "a human with a browser must fix this" and 1 for "the code
           # or the network failed". Both are red here, but only one is a Google-account
@@ -275,6 +279,8 @@ jobs:
           VIDEO_ID=$(marker VIDEO_ID)
           RESULT=$(marker YT_UPLOAD_RESULT)
           PRIVACY_SEEN=$(marker YT_PRIVACY)
+          PUBLISH_AT=$(marker YT_PUBLISH_AT)
+          PUBLISH_AT_WAT=$(marker YT_PUBLISH_AT_WAT)
           STATE=$(marker YT_UPLOAD_STATE)
           NOTE=$(marker YT_NOTE)
           FAIL_KIND=$(marker YT_FAIL_KIND)
@@ -288,6 +294,8 @@ jobs:
             echo "video_url=https://www.youtube.com/watch?v=$VIDEO_ID"
             echo "result=${RESULT:-uploaded}"
             echo "privacy_seen=${PRIVACY_SEEN:-unknown}"
+            echo "publish_at=${PUBLISH_AT:-}"
+            echo "publish_at_wat=${PUBLISH_AT_WAT:-}"
             echo "upload_state=${STATE:-unknown}"
             echo "fail_kind=${FAIL_KIND:-none}"
             echo "fail_reason=${FAIL_REASON:-none}"
@@ -311,11 +319,13 @@ jobs:
           PRIVACY: ${{ steps.upload.outputs.privacy_seen || steps.settings.outputs.privacy }}
           STATE: ${{ steps.upload.outputs.result }}
           NOTE: ${{ steps.upload.outputs.note }}
+          PUBLISH_AT: ${{ steps.upload.outputs.publish_at }}
           RUN_DATE: ${{ steps.settings.outputs.run_date }}
         run: |
           python3 tools/youtube_ledger.py record \
             --state "${STATE:-uploaded}" \
             --note "${NOTE:-}" \
+            --publish-at "${PUBLISH_AT:-}" \
             --title "$VIDEO_TITLE" \
             --topic "$VIDEO_TOPIC" \
             --video-id "$VIDEO_ID" \
@@ -406,6 +416,7 @@ jobs:
           VIDEO_ID: ${{ steps.upload.outputs.video_id }}
           RESULT: ${{ steps.upload.outputs.result }}
           PRIVACY_SEEN: ${{ steps.upload.outputs.privacy_seen }}
+          PUBLISH_AT_WAT: ${{ steps.upload.outputs.publish_at_wat }}
           UPLOAD_STATE: ${{ steps.upload.outputs.upload_state }}
           NOTE: ${{ steps.upload.outputs.note }}
           SKIP: ${{ steps.guard.outputs.skip }}
@@ -439,6 +450,8 @@ jobs:
               # audience stays empty.
               if [ "$RESULT" = "published" ]; then
                 echo "| Result | ✅ Published (public) |"
+              elif [ "$RESULT" = "scheduled" ]; then
+                echo "| Result | 🗓 Scheduled — YouTube makes it public at **${PUBLISH_AT_WAT:-the slot}** (Studio shows it as Scheduled until then) |"
               else
                 echo "| Result | ⚠️ On the channel as \`$RESULT\` — privacy \`$PRIVACY_SEEN\`, uploadStatus \`$UPLOAD_STATE\` |"
                 [ -n "$NOTE" ] && echo "| Why | $NOTE |"

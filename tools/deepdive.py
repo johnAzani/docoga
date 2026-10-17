@@ -1201,7 +1201,10 @@ def stage_meta(ep, args):
     out = {"video_path": str(ep.master_path), "cover_path": str(ep.cover_path),
            "title": yt["title"], "topic": ep.meta["title"], "description": desc,
            "tags": yt.get("tags", "docoga,nigeria,tenant,landlord,tenancy"),
-           "category": str(yt.get("category", 27))}
+           "category": str(yt.get("category", 27)),
+           # the date the episode is meant to go public (episodes/<id>/episode.json → youtube.publish_at,
+           # 'YYYY-MM-DD' or an ISO instant, WAT); empty = the slot hour on the day it is published
+           "publish_at": str(yt.get("publish_at") or "")}
     gh = os.environ.get("GITHUB_OUTPUT")
     if gh:
         with open(gh, "a", encoding="utf-8") as fh:

@@ -571,6 +571,55 @@ class ReadBackTests(TransportTestCase):
 class CommandLineTests(TransportTestCase):
     """What the workflow greps for, and what it exits with."""
 
+    def test_a_public_upload_is_scheduled_by_default_private_now_public_at_the_slot(self):
+        """Owner, 17 Oct 2026: "scheduled in YouTube for the date intended to go public"."""
+        self.write_video(1024)
+        self.fake.queue("init", [Resp(200, {}, {"Location": "https://u/1"})])
+        self.fake.queue("put", [Resp(201, {"id": "vidSch"})])
+        self.fake.queue("status", [Resp(200, {"items": [{"status": {"uploadStatus": "processed",
+                                                                   "privacyStatus": "private",
+                                                                   "publishAt": "2026-10-20T18:00:00Z"}}]})])
+        code, out, _err = self.run_main(["--video", str(self.video), "--title", "T",
+                                         "--publish-at", "2026-10-20T19:00"])
+        self.assertEqual(yt_publish.EXIT_OK, code, out)
+        sent = json.loads(self.fake.of("init")[0]["data"])
+        self.assertEqual("private", sent["status"]["privacyStatus"])
+        self.assertEqual("2026-10-20T18:00:00Z", sent["status"]["publishAt"])
+        self.assertIn("YT_UPLOAD_RESULT=scheduled", out)
+        self.assertIn("YT_PUBLISH_AT=2026-10-20T18:00:00Z", out)
+        self.assertIn("YT_PUBLISH_AT_WAT=Tue 20 Oct 2026 19:00 WAT", out)
+        self.assertIn("VIDEO_ID=vidSch", out)
+
+    def test_unlisted_and_private_uploads_are_never_scheduled(self):
+        for privacy in ("unlisted", "private"):
+            meta, _t, _n, _p = yt_publish.build_metadata("T", "", "", privacy, "22",
+                                                         publish_at=yt_publish.publish_slot())
+            self.assertEqual(privacy, meta["status"]["privacyStatus"])
+            self.assertNotIn("publishAt", meta["status"])
+
+    def test_yt_schedule_off_publishes_public_immediately(self):
+        with patch.dict(os.environ, {"YT_SCHEDULE": "off"}):
+            self.assertFalse(yt_publish.schedule_enabled("public"))
+        with patch.dict(os.environ, {"YT_SCHEDULE": ""}):
+            self.assertTrue(yt_publish.schedule_enabled("public"))
+        self.assertFalse(yt_publish.schedule_enabled("unlisted"))
+
+    def test_the_slot_is_19_wat_today_or_the_next_safe_mark(self):
+        from datetime import datetime, timezone
+        with patch.dict(os.environ, {"YT_PUBLISH_HOUR_WAT": ""}):
+            slot = yt_publish.publish_slot(datetime(2026, 10, 20, 17, 5, tzinfo=timezone.utc))   # 18:05 WAT
+            self.assertEqual("2026-10-20T18:00:00Z", yt_publish.rfc3339_utc(slot))                # 19:00 WAT
+            late = yt_publish.publish_slot(datetime(2026, 10, 20, 18, 55, tzinfo=timezone.utc))   # 19:55 WAT
+            self.assertEqual("2026-10-20T19:05:00Z", yt_publish.rfc3339_utc(late))                # 20:05 WAT
+            day = yt_publish.parse_publish_at("2026-10-24", datetime(2026, 10, 20, tzinfo=timezone.utc))
+            self.assertEqual("2026-10-24T18:00:00Z", yt_publish.rfc3339_utc(day))
+            past = yt_publish.parse_publish_at("2026-10-01T08:30", datetime(2026, 10, 20, 17, 5, tzinfo=timezone.utc))
+            self.assertGreater(past, datetime(2026, 10, 20, 17, 5, tzinfo=timezone.utc))
+            self.assertIsNone(yt_publish.parse_publish_at("off"))
+        with patch.dict(os.environ, {"YT_PUBLISH_HOUR_WAT": "20"}):
+            slot = yt_publish.publish_slot(datetime(2026, 10, 20, 17, 5, tzinfo=timezone.utc))
+            self.assertEqual("2026-10-20T19:00:00Z", yt_publish.rfc3339_utc(slot))
+
     def test_a_public_processed_upload_is_green_with_markers(self):
         self.write_video(1024)
         self.fake.queue("init", [Resp(200, {}, {"Location": "https://u/1"})])
@@ -579,7 +628,7 @@ class CommandLineTests(TransportTestCase):
                                                                    "privacyStatus": "public"},
                                                        "snippet": {"title": "T"}}]})])
         code, out, _err = self.run_main(["--video", str(self.video), "--title", "T",
-                                         "--description", "d", "--tags", "a,b"])
+                                         "--description", "d", "--tags", "a,b", "--publish-at", "off"])
         self.assertEqual(yt_publish.EXIT_OK, code)
         self.assertIn("VIDEO_ID=vidOK", out)
         self.assertIn("YT_UPLOAD_RESULT=published", out)
@@ -594,7 +643,7 @@ class CommandLineTests(TransportTestCase):
         self.fake.queue("put", [Resp(201, {"id": "vidHeld"})])
         self.fake.queue("status", [Resp(200, {"items": [{"status": {"uploadStatus": "processed",
                                                                    "privacyStatus": "private"}}]})])
-        code, out, err = self.run_main(["--video", str(self.video), "--title", "T"])
+        code, out, err = self.run_main(["--video", str(self.video), "--title", "T", "--publish-at", "off"])
         self.assertEqual(yt_publish.EXIT_NEEDS_HUMAN, code)
         self.assertIn("VIDEO_ID=vidHeld", out)
         self.assertIn("YT_UPLOAD_RESULT=held", out)

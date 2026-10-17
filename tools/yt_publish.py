@@ -52,7 +52,9 @@ import os
 import re
 import sys
 import time
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import requests
 
@@ -155,7 +157,7 @@ REASONS = {
     "invalidFilename": ("metadata", "The Slug header (file name) was rejected.",
                         "This file sends no Slug; if one appears, sanitize it."),
     "invalidPublishAt": ("metadata", "The scheduled publish time was invalid.",
-                         "publishAt must be >= 1 minute in the future; this lane does not use it."),
+                         "publishAt must be in the future; parse_publish_at moves a past slot forward — check the clock."),
     "authError": ("credentials", "The access token was not accepted by YouTube.",
                   "Usually a token minted for the wrong scope. The flow must ask for BOTH "
                   "https://www.googleapis.com/auth/youtube.upload (the upload) and "
@@ -371,9 +373,78 @@ def clamp_tags(tags):
     return kept, warn
 
 
+# ───────────────────────────── scheduled publishing ─────────────────────────────
+# Owner, 17 Oct 2026: "YT_PRIVACY — I will want it scheduled in YouTube for the date intended to
+# go public." A public upload is therefore sent as privacyStatus=private + status.publishAt
+# (YouTube's own scheduler flips it to public at that instant and Studio shows it as
+# "Scheduled"), so a Short rendered at 18:00 lands in the 19:00 prime window and a Deep-Dive
+# produced at 03:00 waits for the evening instead of going live to an empty room.
+LAGOS = ZoneInfo("Africa/Lagos")
+SCHEDULE_HOUR_WAT = 19          # 19:00–20:30 WAT is the measured Nigerian prime window
+SCHEDULE_LEAD_MIN = 10          # publishAt must be in the future; leave processing time too
+
+
+def schedule_hour():
+    try:
+        h = int(os.environ.get("YT_PUBLISH_HOUR_WAT") or SCHEDULE_HOUR_WAT)
+    except ValueError:
+        h = SCHEDULE_HOUR_WAT
+    return h if 0 <= h <= 23 else SCHEDULE_HOUR_WAT
+
+
+def schedule_enabled(privacy):
+    """Public uploads are scheduled unless YT_SCHEDULE=off; unlisted/private never are."""
+    return privacy == "public" and (os.environ.get("YT_SCHEDULE") or "on").strip().lower() not in ("off", "0", "false", "no")
+
+
+def publish_slot(now=None, hour=None, minute=0, lead_min=SCHEDULE_LEAD_MIN):
+    """The instant a public upload goes live: today at HH:MM WAT, or — when that has passed or is
+    nearer than the lead — the next 5-minute mark at least `lead_min` away. Aware, Lagos tz."""
+    now = (now or datetime.now(timezone.utc)).astimezone(LAGOS)
+    hour = schedule_hour() if hour is None else hour
+    slot = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+    floor = now + timedelta(minutes=lead_min)
+    if slot < floor:
+        slot = floor + timedelta(minutes=(5 - floor.minute % 5) % 5)
+        slot = slot.replace(second=0, microsecond=0)
+    return slot
+
+
+def parse_publish_at(text, now=None):
+    """'' / off / now → None. 'HH:MM' → today at that WAT time (or the next safe mark).
+    'YYYY-MM-DD' → that day at the slot hour. 'YYYY-MM-DDTHH:MM[:SS][zone]' — naive means WAT.
+    A past instant is moved to the next safe mark rather than refused (Google rejects the past)."""
+    text = (text or "").strip()
+    if not text or text.lower() in ("off", "now", "none"):
+        return None
+    now_l = (now or datetime.now(timezone.utc)).astimezone(LAGOS)
+    if re.fullmatch(r"\d{1,2}:\d{2}", text):
+        h, m = (int(x) for x in text.split(":"))
+        return publish_slot(now=now_l, hour=h, minute=m)
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", text):
+        day = datetime.strptime(text, "%Y-%m-%d").replace(tzinfo=LAGOS)
+        when = day.replace(hour=schedule_hour())
+    else:
+        when = datetime.fromisoformat(text.replace("Z", "+00:00"))
+        if when.tzinfo is None:
+            when = when.replace(tzinfo=LAGOS)
+        when = when.astimezone(LAGOS)
+    floor = now_l + timedelta(minutes=SCHEDULE_LEAD_MIN)
+    return when if when >= floor else publish_slot(now=now_l, hour=now_l.hour, minute=now_l.minute)
+
+
+def rfc3339_utc(when):
+    return when.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def wat_text(when):
+    return when.astimezone(LAGOS).strftime("%a %d %b %Y %H:%M WAT")
+
+
 def build_metadata(title, description, tags, privacy, category_id, notify=None,
-                   synthetic=None, language=None):
-    """The video resource for `part=snippet,status`, with the limits applied here."""
+                   synthetic=None, language=None, publish_at=None):
+    """The video resource for `part=snippet,status`, with the limits applied here.
+    `publish_at` (aware datetime) turns a public upload into a scheduled one."""
     notes = []
     title, warn = clamp_title(title)
     if warn:
@@ -396,6 +467,11 @@ def build_metadata(title, description, tags, privacy, category_id, notify=None,
     if language:
         snippet["defaultLanguage"] = language
     status = {"privacyStatus": privacy, "selfDeclaredMadeForKids": False}
+    if publish_at is not None and privacy == "public":
+        # YouTube's contract: a scheduled video is private with publishAt set; it goes public
+        # by itself at that instant. Sending public + publishAt is a 400 (invalidPublishAt).
+        status = {"privacyStatus": "private", "publishAt": rfc3339_utc(publish_at),
+                  "selfDeclaredMadeForKids": False}
     if synthetic is not None:
         status["containsSyntheticMedia"] = bool(synthetic)
     params = {}
@@ -572,7 +648,8 @@ class ResumableUploader:
                       "The render produced a truncated file; re-render rather than re-upload.")
 
 
-def read_back(http, video_id, want_privacy, poll_times=3, poll_sleep=20.0, sleep=time.sleep):
+def read_back(http, video_id, want_privacy, poll_times=3, poll_sleep=20.0, sleep=time.sleep,
+              publish_at=None):
     """Confirm what YouTube actually made of the upload, instead of assuming it.
 
     201 means the bytes arrived. It does not mean the video is watchable: processing runs for
@@ -609,6 +686,15 @@ def read_back(http, video_id, want_privacy, poll_times=3, poll_sleep=20.0, sleep
                                                        state["failure_reason"],
                                                        state["reject_reason"])
             return state
+        if publish_at is not None and status.get("privacyStatus") == "public":
+            want_privacy = "public"      # already live (the slot passed during processing) — fine
+        if publish_at is not None and status.get("privacyStatus") == "private":
+            # Scheduled: private now, public at publishAt — by our request, not the channel's.
+            state["result"] = "scheduled"
+            state["publish_at"] = status.get("publishAt") or rfc3339_utc(publish_at)
+            state["note"] = "scheduled — YouTube makes it public at %s%s" % (
+                wat_text(publish_at), "" if status.get("publishAt") else " (publishAt not echoed yet)")
+            return state
         if status.get("privacyStatus") and want_privacy and \
                 status["privacyStatus"] != want_privacy:
             state["result"] = "held"
@@ -629,7 +715,7 @@ def read_back(http, video_id, want_privacy, poll_times=3, poll_sleep=20.0, sleep
 
 
 def publish(video_path, title, description="", tags="", privacy="public", category_id="22",
-            http=None, notify=None, synthetic=None, poll_times=3, sleep=time.sleep):
+            http=None, notify=None, synthetic=None, poll_times=3, sleep=time.sleep, publish_at=None):
     """Upload one file. Returns a PublishResult, or raises Problem."""
     path = Path(video_path)
     if not path.exists():
@@ -641,7 +727,9 @@ def publish(video_path, title, description="", tags="", privacy="public", catego
                       "Re-render; ffmpeg produced a header-only file.")
     metadata, kept_tags, notes, params = build_metadata(title, description, tags, privacy,
                                                         category_id, notify=notify,
-                                                        synthetic=synthetic)
+                                                        synthetic=synthetic, publish_at=publish_at)
+    if publish_at is not None and privacy == "public":
+        print("🗓 scheduled: goes public at %s" % wat_text(publish_at))
     for note in notes:
         emit("warning", "Metadata adjusted", note)
     http = http or Http()
@@ -660,9 +748,10 @@ def publish(video_path, title, description="", tags="", privacy="public", catego
                       "Treat this as not published: check the channel before re-running, since "
                       "a re-run may create a second copy.")
     state = read_back(http, video_id, metadata["status"]["privacyStatus"],
-                      poll_times=poll_times, sleep=sleep)
+                      poll_times=poll_times, sleep=sleep,
+                      publish_at=publish_at if privacy == "public" else None)
     if state.get("note"):
-        emit("warning" if state["result"] in ("uploaded", "listed", "published") else "error",
+        emit("warning" if state["result"] in ("uploaded", "listed", "published", "scheduled") else "error",
              "YouTube read-back: %s" % state["result"], state["note"])
     return PublishResult(video_id, state, metadata, size, kept_tags, len(notes))
 
@@ -698,6 +787,10 @@ class PublishResult(str):
     @property
     def note(self):
         return self.state.get("note", "")
+
+    @property
+    def publish_at(self):
+        return self.state.get("publish_at", "")
 
 
 def upload_video(video_path, title, description="", tags="", privacy="public", category_id="22"):
@@ -792,6 +885,10 @@ def main(argv=None, http=None):
                         help="notifySubscribers (leave empty to let YouTube decide)")
     parser.add_argument("--synthetic-media", default="", choices=["", "true", "false"],
                         help="declare AI-generated/altered content (leave empty to say nothing)")
+    parser.add_argument("--publish-at", default=os.environ.get("YT_PUBLISH_AT") or "",
+                        help="when a public upload goes live: 'HH:MM' (WAT today), 'YYYY-MM-DD' (that day at "
+                             "the slot hour), an ISO instant, or 'off' (publish immediately). Default: today "
+                             "at YT_PUBLISH_HOUR_WAT (19) — public uploads are always scheduled unless YT_SCHEDULE=off")
     parser.add_argument("--poll", type=int, default=3,
                         help="how many times to read the video back before calling it 'uploaded'")
     # Cheap credential check for the scheduled workflow: prove a token can be minted before
@@ -833,10 +930,13 @@ def main(argv=None, http=None):
 
     try:
         http = http if isinstance(http, Http) else (Http(session=http) if http else None)
+        publish_at = None
+        if schedule_enabled(args.privacy) and (args.publish_at or "").strip().lower() not in ("off", "now", "none"):
+            publish_at = parse_publish_at(args.publish_at) or publish_slot()
         result = publish(args.video, args.title, args.description, args.tags, args.privacy,
                          args.category, notify=flag(args.notify),
                          synthetic=flag(args.synthetic_media), poll_times=max(1, args.poll),
-                         http=http)
+                         http=http, publish_at=publish_at)
     except Problem as exc:
         print(exc.report(), file=sys.stderr)
         emit("error", "YouTube upload failed (%s)" % exc.kind,
@@ -870,9 +970,16 @@ def main(argv=None, http=None):
     print("YT_VIDEO_ID=%s" % result)
     print("YT_URL=%s" % result.url)
     print("YT_UPLOAD_RESULT=%s" % result.result)
-    print("YT_PRIVACY=%s" % result.privacy)
+    # A scheduled video is private this minute and public at publishAt by YouTube's own hand;
+    # the ledger and the cross-links want the intended state, the summary gets both.
+    print("YT_PRIVACY=%s" % ("public" if result.result == "scheduled" else result.privacy))
+    if result.result == "scheduled":
+        print("YT_PRIVACY_NOW=%s" % result.privacy)
     print("YT_UPLOAD_STATE=%s" % result.upload_status)
     print("YT_NOTE=%s" % (result.note or "").replace("\n", " "))
+    if result.result == "scheduled" or publish_at is not None:
+        print("YT_PUBLISH_AT=%s" % (result.publish_at or rfc3339_utc(publish_at)))
+        print("YT_PUBLISH_AT_WAT=%s" % wat_text(publish_at))
     return EXIT_OK
 
 
