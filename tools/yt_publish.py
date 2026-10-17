@@ -292,6 +292,25 @@ def refresh_access_token(client_id, client_secret, refresh_token, http=None):
     return payload
 
 
+VAULT_NAME = "YT_REFRESH_TOKEN"
+
+
+def vault_refresh_token(env=None):  # env kept for callers that pass one
+    """The refresh token sealed by tools/google_consent.py (logs/yt_refresh_token.box), when the
+    box exists and SOCIAL_TOKEN_KEY opens it; else "". The vault wins over the secret because
+    it is the one minted with every scope — the secret is the bootstrap and the fallback."""
+    if not os.environ.get("SOCIAL_TOKEN_KEY"):   # the vault key is only ever read from the process env
+        return ""
+    try:
+        import token_vault
+        if not token_vault._vault_path(VAULT_NAME).is_file():
+            return ""
+        plaintext, _payload = token_vault.open_box(VAULT_NAME)
+        return (plaintext or "").strip()
+    except Exception:  # noqa: BLE001 — a damaged box falls back to the secret, loudly nowhere
+        return ""
+
+
 def authorize(http=None):
     """Mint an access token onto (and return) the given transport.
 
@@ -299,6 +318,9 @@ def authorize(http=None):
     silently swaps the transport is a function no test can drive end to end.
     """
     http = http or Http()
+    vaulted = vault_refresh_token()
+    if vaulted:
+        os.environ["YT_REFRESH_TOKEN"] = vaulted
     for name in ("YT_REFRESH_TOKEN", "YT_CLIENT_ID", "YT_CLIENT_SECRET"):
         if not os.environ.get(name):
             raise Problem("credentials", "missing_secret", "%s is not set." % name,

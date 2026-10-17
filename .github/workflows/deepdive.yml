@@ -140,7 +140,7 @@ jobs:
       - name: Install MotionStudio deps (ffmpeg + Inter) and the ASR engine
         run: |
           bash tools/install_motionstudio_deps.sh
-          python -m pip install --quiet "requests>=2.31,<3" vosk
+          python -m pip install --quiet "requests>=2.31,<3" cryptography vosk
           mkdir -p /tmp/vosk && cd /tmp/vosk
           curl -fsSL -o model.zip https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip
           unzip -q -o model.zip && rm model.zip
@@ -384,7 +384,7 @@ jobs:
       - name: Install the uploader's dependencies (same installer as the other jobs)
         run: |
           bash tools/install_motionstudio_deps.sh
-          python -m pip install --quiet "requests>=2.31,<3"
+          python -m pip install --quiet "requests>=2.31,<3" cryptography
       - name: Restore the master, cover and timings from the bank
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -399,6 +399,7 @@ jobs:
       - name: Preflight — credentials usable, channel named
         env:
           YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+          SOCIAL_TOKEN_KEY: ${{ secrets.SOCIAL_TOKEN_KEY }}
           YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
           YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
           YT_CHANNEL_ID: ${{ vars.YT_CHANNEL_ID }}
@@ -426,6 +427,7 @@ jobs:
         if: steps.guard.outputs.skip != 'yes'
         env:
           YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+          SOCIAL_TOKEN_KEY: ${{ secrets.SOCIAL_TOKEN_KEY }}
           YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
           YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
           YT_CHANNEL_ID: ${{ vars.YT_CHANNEL_ID }}
@@ -462,6 +464,7 @@ jobs:
         continue-on-error: true
         env:
           YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+          SOCIAL_TOKEN_KEY: ${{ secrets.SOCIAL_TOKEN_KEY }}
           YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
           YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
           VIDEO_ID: ${{ steps.upload.outputs.video_id }}
@@ -476,6 +479,7 @@ jobs:
         continue-on-error: true
         env:
           YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+          SOCIAL_TOKEN_KEY: ${{ secrets.SOCIAL_TOKEN_KEY }}
           YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
           YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
           VIDEO_ID: ${{ steps.upload.outputs.video_id }}

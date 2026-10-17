@@ -36,12 +36,13 @@ jobs:
 
       - name: Install dependencies
         if: steps.check.outputs.count != '0'
-        run: pip install requests
+        run: pip install requests cryptography
 
       - name: Read queue and upload
         if: steps.check.outputs.count != '0'
         env:
           YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+          SOCIAL_TOKEN_KEY: ${{ secrets.SOCIAL_TOKEN_KEY }}
           YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
           YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
         run: |
