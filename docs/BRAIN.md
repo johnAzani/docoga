@@ -314,7 +314,20 @@ projects at 3.8 Flash / 3.5 Flash-Lite; 2.5 Pro joined the free tier; 2.0 Flash 
 retired. A rung the key is not served answers 403/404 and costs nothing — the chain
 steps down. Every brain run starts with `python3 tools/gemini_text.py probe`
 (ListModels, no quota): the summary lists ✅/— per rung and `GEMINI_LADDER=ok|thin|empty`;
-`empty` is the one case that is an error line. A per-minute 429 is waited out once; a per-day
+`empty` is the one case that is an error line.
+
+**The last door (17 Oct 2026).** When every Gemini rung refuses or fails, `gemini_text`
+tries **Cloudflare Workers AI** once — `@cf/openai/gpt-oss-120b`, then Llama 3.3 70B —
+through its OpenAI-compatible endpoint, with the same prompt, JSON mode, and the same
+gates judging the answer. 10,000 neurons a day on the Free plan (≈ 8 brain calls), ₦0,
+no new account: it uses `CLOUDFLARE_ACCOUNT_ID` and a token with the **Workers AI: Read**
+permission — secret `CF_AI_TOKEN` if set, else the deploy token `CLOUDFLARE_API_TOKEN`.
+A 401/403 means the token lacks that permission: the log says so once and the night
+ends exactly as it did before this door existed (exit 6, rotation posts). The research
+is unambiguous that this is a backstop, not a peer — gpt-oss-120b scores 11.6 on the
+Artificial Analysis index against 40.9 for Gemini 3.8 Flash, and Groq's free tier
+cannot even admit the brain's ~12K-token prompt (8,000 tokens/minute). Variable
+`CF_AI_FALLBACK=off` closes the door. A per-minute 429 is waited out once; a per-day
 429 moves to the next model; when every model is spent the lane exits **6** — a
 pause, not a failure, no issue opened — and tries again the next night. Thinking
 is capped (`thinkingBudget`) so the JSON always fits the output ceiling. The

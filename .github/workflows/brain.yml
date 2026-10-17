@@ -66,6 +66,12 @@ jobs:
     env:
       TZ: Africa/Lagos
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      # The last door when every Gemini rung refuses: Cloudflare Workers AI, 10,000 neurons/day, ₦0.
+      # Needs a token with 'Workers AI: Read' — CF_AI_TOKEN, else the deploy token. CF_AI_FALLBACK=off disables.
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CF_AI_TOKEN: ${{ secrets.CF_AI_TOKEN }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CF_AI_FALLBACK: ${{ vars.CF_AI_FALLBACK }}
       BRAIN_DAYS: ${{ inputs.days }}
       BRAIN_DEEPDIVE: ${{ inputs.deepdive }}
       BRAIN_DRY_RUN: ${{ inputs.dry_run }}
