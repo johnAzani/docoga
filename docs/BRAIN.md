@@ -200,6 +200,8 @@ issues orders when a milestone is behind its date or reached. `slot_advice` comp
 Instagram's `online_followers` peak with our 19:10 WAT slot and says when to move it.
 
 ### The one Google re-consent (adds Search Console + YouTube Analytics)
+
+*The complete scope list for this consent — and for every other token — is `docs/TOKENS.md` (code: `tools/token_scopes.py`). Mint with all of it once; the Monday scorecard audits and says what, if anything, is missing.*
 On the phone: Google Cloud console → APIs & Services → **Library** → enable "Google Search
 Console API" and "YouTube Analytics API" → **OAuth consent screen → Data access → Add or
 remove scopes** → tick `…/auth/youtube.force-ssl`, `…/auth/yt-analytics.readonly`,

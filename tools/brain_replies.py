@@ -680,13 +680,13 @@ def summary_md(result):
                                                  r.get("reply") or "(no public reply)", " · 📩 DM" if r.get("dm_id") else ""))
     for name, cap in (result.get("dm_capabilities") or {}).items():
         if cap.startswith("missing"):
-            lines.append("- 📩 %s: comment→DM is waiting on `%s` — re-mint the token with it and the inbox opens"
+            lines.append("- 📩 %s: comment→DM is waiting on `%s` — one mint with the full list (docs/TOKENS.md) and the inbox opens"
                          % (name, cap.split(": ", 1)[1]))
         elif cap.startswith("error"):
             lines.append("- ❌ %s DM: %s" % (name, cap))
     for name, cap in (result.get("capabilities") or {}).items():
         if cap.startswith("missing"):
-            lines.append("- ⚠️ %s: %s — re-mint that token with this permission and the lane answers there too" % (name, cap))
+            lines.append("- ⚠️ %s: %s — mint that token ONCE with the full list in docs/TOKENS.md and the lane answers there too" % (name, cap))
         elif cap == "no token":
             lines.append("- %s: no token in this run" % name)
         elif cap.startswith("error"):

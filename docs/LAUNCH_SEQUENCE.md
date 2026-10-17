@@ -310,10 +310,15 @@ Everything else in this round runs on what you already have (Telegram buttons, T
 carousels, the slot gate, the hook bandit, the pinned newsdesk, the heartbeat fix). The two taps
 below open the inbox: a reader who comments "link" gets the page by private message.
 
+**Mint with the FULL list, once — `docs/TOKENS.md`.** It carries every permission each token can
+hold (15 for the Page token, 5 for Instagram, 10 for Threads, 7 Google scopes), so no later
+feature ever asks for a re-mint. The Monday scorecard audits every token and prints ✅ complete
+or the exact names missing.
+
 | tap | where (phone) | what wakes up |
 |---|---|---|
-| Instagram token re-mint with the messaging scope: developers.facebook.com → the app → **Instagram** use case → **User token generator** → tick `instagram_business_manage_messages` beside the comment scopes → Generate → paste the new `IG_ACCESS_TOKEN` | GitHub → Settings → Secrets and variables → Actions | the replies lane's run summary stops saying "comment→DM is waiting on `instagram_business_manage_messages`" and starts showing 📩 DM lines |
-| Facebook Page token re-mint with `pages_messaging` (and `pages_manage_engagement` from Step 6 if not yet done): Graph API Explorer → the Business app → Page token → add both permissions → Generate → paste `FB_PAGE_ACCESS_TOKEN` | same | Facebook comments that ask for the link get the Messenger private reply |
+| Instagram token re-mint with **all five** scopes (`docs/TOKENS.md` § 2): developers.facebook.com → the app → **Instagram** use case → **User token generator** → every permission on → Generate → paste the new `IG_ACCESS_TOKEN` | GitHub → Settings → Secrets and variables → Actions | the replies lane's run summary stops saying "comment→DM is waiting on `instagram_business_manage_messages`" and starts showing 📩 DM lines |
+| Facebook Page token re-mint with **all fifteen** permissions (`docs/TOKENS.md` § 1): Graph API Explorer → the Business app → Page token → tick the whole list → Generate → extend → paste `FB_PAGE_ACCESS_TOKEN` | same | Facebook comments that ask for the link get the Messenger private reply |
 
 Opt-outs: repo vars `TELEGRAM_BUTTONS=off`, `IG_CAROUSEL=off`, `BRAIN_DM=off`. The slot gate has no switch — a dispatch always posts, and `brain/slots.json` can be edited by hand (`"hour_wat": 19`).
 

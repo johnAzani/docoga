@@ -172,7 +172,7 @@ class RunTests(unittest.TestCase):
         _, _, result = self.run_threads([{"n": 1, "comment_id": "r1", "skip": False, "text": "Six months' notice — s.13(1)(e)."}], routes=routes)
         self.assertEqual(result["answered"], 0)
         self.assertEqual(result["capabilities"]["threads"], "missing: threads_content_publish")
-        self.assertIn("re-mint that token with this permission", br.summary_md(result))
+        self.assertIn("mint that token ONCE with the full list in docs/TOKENS.md", br.summary_md(result))
 
     def test_gemini_quota_spent_means_wait_not_crash(self):
         def exhausted(url, payload, timeout=120):
