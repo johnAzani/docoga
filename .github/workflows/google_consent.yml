@@ -1,0 +1,111 @@
+name: Google consent — seal the YouTube token (phone path)
+
+# The owner's phone cannot see the client secret in the Cloud console, so the secret never
+# leaves GitHub. One tap on the consent link (printed by "Show the link"), every box ticked,
+# then the Playground address with ?code=… pasted here. This job swaps the code for a refresh
+# token with ALL 7 Google scopes (docs/TOKENS.md), refuses a partial one, and seals it into
+# logs/yt_refresh_token.box under SOCIAL_TOKEN_KEY — every YouTube / Analytics / Search Console
+# lane prefers the vault over the YT_REFRESH_TOKEN secret from then on. Minted once, complete.
+
+on:
+  workflow_dispatch:
+    inputs:
+      code:
+        description: 'Paste the Playground address (…oauthplayground/?code=4/0A…) or just the code. Leave empty to only print the consent link.'
+        required: false
+        default: ''
+        type: string
+      accept_partial:
+        description: 'Seal even if a scope is missing (default: refuse and keep the old token)'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+concurrency:
+  group: google-consent
+  cancel-in-progress: false
+
+jobs:
+  consent:
+    name: Exchange and seal
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      TZ: Africa/Lagos
+      YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+      YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+      SOCIAL_TOKEN_KEY: ${{ secrets.SOCIAL_TOKEN_KEY }}
+      GOOGLE_AUTH_CODE: ${{ inputs.code }}
+      ACCEPT_PARTIAL: ${{ inputs.accept_partial }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - run: python3 -m pip install --quiet "requests>=2.31,<3" cryptography
+
+      - name: Show the link
+        run: |
+          link="$(python3 tools/google_consent.py url)"
+          {
+            echo "### 1 · Open this link on the phone, tick EVERY box, then copy the address it lands on"
+            echo
+            echo "$link"
+            echo
+            echo "It lands on \`developers.google.com/oauthplayground/?code=4/0A…\`. Copy that whole address,"
+            echo "run this workflow again and paste it into **code**."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Exchange the code and seal the token
+        if: ${{ inputs.code != '' }}
+        run: |
+          set +e
+          args=""
+          [ "$ACCEPT_PARTIAL" = "true" ] && args="--accept-partial"
+          python3 tools/google_consent.py exchange $args | tee /tmp/consent.log
+          code=${PIPESTATUS[0]}
+          set -e
+          echo "consent_code=$code" >> "$GITHUB_ENV"
+          {
+            echo "### 2 · Result"
+            echo
+            echo '```'
+            grep -E "^(google consent:|GOOGLE_)" /tmp/consent.log || true
+            echo '```'
+            case "$code" in
+              0) echo "✅ Sealed. Every YouTube, Analytics and Search Console lane now uses this token — nothing to paste anywhere." ;;
+              3) echo "❌ Google refused the code (used twice, or older than ~10 minutes). Open the link in step 1 again and paste the new address." ;;
+              4) echo "⏸ A box was left unticked — refused, the old token stays. Open the link again and tick every box." ;;
+              *) echo "❌ Exit $code — read the lines above." ;;
+            esac
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$code"
+
+      - name: Commit the vault box
+        if: ${{ inputs.code != '' && env.consent_code == '0' }}
+        run: |
+          git config user.name "docoga-bot"
+          git config user.email "docoga-bot@users.noreply.github.com"
+          git add logs/yt_refresh_token.box
+          git commit -m "vault: Google refresh token sealed (all scopes) [skip ci]" || exit 0
+          git pull --rebase origin main || true
+          git push origin HEAD:main
+
+      - name: Prove it — which scopes does the sealed token carry?
+        if: ${{ inputs.code != '' && env.consent_code == '0' }}
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          set +e
+          python3 tools/token_scopes.py audit google | tee /tmp/scopes.log
+          set -e
+          {
+            echo "### 3 · Token audit"
+            echo
+            echo '```'
+            grep -E "^SCOPES_" /tmp/scopes.log || cat /tmp/scopes.log | tail -n 20
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

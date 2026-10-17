@@ -64,9 +64,10 @@ Where: the app → **Use cases → Threads API → Customize → User token gene
 
 Paste into `THREADS_ACCESS_TOKEN`. Refreshed by the lane; never again.
 
-## 4 · Google (YouTube + Analytics + Search Console) → secret `YT_REFRESH_TOKEN`
+## 4 · Google (YouTube + Analytics + Search Console) → the vault (`logs/yt_refresh_token.box`)
 
-One consent screen, **all 7 scopes**, one refresh token. In Google Cloud → **APIs & Services → OAuth consent screen → Data access → Add or remove scopes**, make sure these are added; then run the consent once with all of them (`docs/BRAIN.md` → "The one Google re-consent" has the taps):
+One consent, **all 7 scopes**, one refresh token — minted **from the phone**, and the client
+secret never leaves GitHub (17 Oct 2026: the phone layout of the Cloud console does not show it).
 
 ```
 https://www.googleapis.com/auth/youtube
@@ -78,7 +79,25 @@ https://www.googleapis.com/auth/yt-analytics-monetary.readonly
 https://www.googleapis.com/auth/webmasters.readonly
 ```
 
-Also enable the APIs once: **YouTube Data API v3**, **YouTube Analytics API**, **Google Search Console API**. On the consent page tick **every** box (Google shows them as checkboxes — an unticked one is a scope missing from the token, and that is the only way this token can come out short).
+Done once in Google Cloud (17 Oct 2026, project DocOga): consent screen **In production**;
+the 7 scopes declared under **Data Access**; APIs enabled — YouTube Data API v3, YouTube
+Analytics API, Google Search Console API; the client (Web application) carries the redirect
+`https://developers.google.com/oauthplayground`.
+
+The mint, three taps:
+1. Actions → **Google consent — seal the YouTube token (phone path)** → Run workflow with
+   **code** empty → the run summary prints the consent link.
+2. Open the link, pick the DocOga Google account, **tick every box**, Continue. It lands on
+   `developers.google.com/oauthplayground/?code=4/0A…` — copy that whole address.
+3. Run the workflow again, paste the address into **code**. The job exchanges it with
+   `YT_CLIENT_ID`/`YT_CLIENT_SECRET`, checks all 7 scopes are on the token (**a short token is
+   refused and the old one stays** — tick every box), seals it under `SOCIAL_TOKEN_KEY` into
+   `logs/yt_refresh_token.box`, commits, and prints `SCOPES_GOOGLE=complete`.
+
+Every Google-facing lane (`yt_publish.authorize`, used by Shorts, Deep-Dive upload, manage,
+captions, stats, Search Console; and the Monday scope audit) reads the vault first and the
+`YT_REFRESH_TOKEN` secret only when there is no box. The secret is never edited again.
+Machine lines: `GOOGLE_CONSENT=ok|partial|refused|failed`, `GOOGLE_SCOPES_MISSING=`.
 
 ## 5 · LinkedIn → secret `LINKEDIN_ACCESS_TOKEN` (+ `LINKEDIN_CLIENT_ID`, `LINKEDIN_CLIENT_SECRET` so the audit can read it)
 

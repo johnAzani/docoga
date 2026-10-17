@@ -50,6 +50,7 @@ jobs:
     timeout-minutes: 10
     env:
       YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+      SOCIAL_TOKEN_KEY: ${{ secrets.SOCIAL_TOKEN_KEY }}
       YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
       YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
     steps:
@@ -62,7 +63,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install the one dependency
-        run: python3 -m pip install --quiet "requests>=2.31,<3"
+        run: python3 -m pip install --quiet "requests>=2.31,<3" cryptography
 
       - name: Apply the plan
         id: apply

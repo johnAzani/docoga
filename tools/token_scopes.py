@@ -219,7 +219,11 @@ def read_threads(env, http=_http):
 
 
 def read_google(env, http=_http):
-    refresh = _secret(env, "YT_REFRESH_TOKEN")
+    try:
+        import yt_publish
+        refresh = yt_publish.vault_refresh_token(env) or _secret(env, "YT_REFRESH_TOKEN")
+    except ImportError:
+        refresh = _secret(env, "YT_REFRESH_TOKEN")
     cid, csec = env.get("YT_CLIENT_ID", ""), env.get("YT_CLIENT_SECRET", "")
     if not (refresh and cid and csec):
         return None, "no-token"

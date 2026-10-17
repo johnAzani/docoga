@@ -69,10 +69,11 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install the upload dependency
-        run: python -m pip install --quiet "requests>=2.31,<3"
+        run: python -m pip install --quiet "requests>=2.31,<3" cryptography
       - name: Probe credentials, channel and last upload
         env:
           YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+          SOCIAL_TOKEN_KEY: ${{ secrets.SOCIAL_TOKEN_KEY }}
           YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
           YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
           YT_CHANNEL_ID: ${{ vars.YT_CHANNEL_ID }}
@@ -150,6 +151,7 @@ jobs:
       - name: Preflight — are the YouTube secrets present and usable?
         env:
           YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+          SOCIAL_TOKEN_KEY: ${{ secrets.SOCIAL_TOKEN_KEY }}
           YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
           YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
         run: |
@@ -245,6 +247,7 @@ jobs:
         if: steps.guard.outputs.skip != 'yes' && steps.short.outputs.paused != 'yes'
         env:
           YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+          SOCIAL_TOKEN_KEY: ${{ secrets.SOCIAL_TOKEN_KEY }}
           YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
           YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
           YT_CHANNEL_ID: ${{ vars.YT_CHANNEL_ID }}
