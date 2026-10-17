@@ -49,7 +49,9 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
           if grep -q '^SITE_ANALYTICS=ok$' /tmp/site.txt; then
-            echo "::notice title=Site analytics::connected — the Monday scorecard will carry visits by channel"
+            # The numbers as an annotation too: annotations are readable from the API, the raw log is not.
+            FIGURES=$(grep -v '^SITE_ANALYTICS=' /tmp/site.txt | sed 's/^  */  /' | paste -sd '|' - | sed 's/|/ | /g' | cut -c1-900)
+            echo "::notice title=Site analytics (last 7 days)::connected — $FIGURES"
           else
             echo "::error title=Site analytics::not connected — see the notice above for which secret is missing or refused"
             exit 1
