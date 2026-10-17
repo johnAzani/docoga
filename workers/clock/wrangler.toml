@@ -1,0 +1,15 @@
+# DocOga clock — see index.js and docs/CLOCK.md.
+# Deployed by .github/workflows/deploy-clock.yml (never by hand on a phone).
+name = "docoga-clock"
+main = "index.js"
+compatibility_date = "2026-09-18"
+
+[triggers]
+crons = ["*/5 * * * *"]   # one of the five Cron Triggers a Workers Free account has (docoga-pass uses one)
+
+[vars]
+GH_REPO = "johnAzani/docoga"
+# CLOCK = "off"           # set in the dashboard to pause every dispatch without a deploy
+
+# Secret (wrangler secret put GH_DISPATCH_TOKEN, or the GH_DISPATCH_TOKEN repo secret the deploy workflow forwards):
+#   GH_DISPATCH_TOKEN — fine-grained PAT, repository johnAzani/docoga, Actions: Read and write

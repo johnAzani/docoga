@@ -1,0 +1,133 @@
+name: Deploy the clock (Cloudflare Worker)
+
+# The DocOga clock rings GitHub's doorbell on time — see docs/CLOCK.md and
+# tools/clock_schedule.py for why GitHub's own `schedule:` is not a clock any more.
+#
+# This workflow (re)deploys workers/clock whenever its code, its generated table or
+# any lane's cron changes, and forwards the GH_DISPATCH_TOKEN repository secret into
+# the Worker. Without that secret the Worker still deploys and simply logs
+# "no-token" every five minutes — nothing breaks, nothing is dispatched.
+#
+# The daily schedule is a backstop for exactly one case: the owner adds the secret
+# after the last push. GitHub's scheduler may deliver it hours late; that is fine
+# here, the clock itself does not depend on it (and once on duty the clock rings this
+# file too, which is a harmless one-minute redeploy).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "workers/clock/**"
+      - "tools/clock_schedule.py"
+      - ".github/workflows/*.yml"
+  schedule:
+    - cron: '35 3 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Build only — no deploy, no secret'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-clock
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build the table and deploy docoga-clock
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      - name: Build schedule.json from the workflows' own crons
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet pyyaml
+          python3 tools/clock_schedule.py emit
+          python3 tools/clock_schedule.py today | tee -a "$GITHUB_STEP_SUMMARY"
+          # The committed copy must already match — a stale table in Git is a review trap.
+          git diff --quiet -- workers/clock/schedule.json || {
+            echo "::warning title=schedule.json was stale in Git::deploying the freshly generated table; run 'python3 tools/clock_schedule.py emit' and commit"
+          }
+
+      - name: Dry-run build
+        if: ${{ inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          cd workers/clock
+          npx --yes wrangler@latest deploy --config wrangler.toml --dry-run --outdir "$RUNNER_TEMP/clock-dry-run"
+
+      - name: Deploy
+        if: ${{ !inputs.dry_run }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          if [ -z "${CLOUDFLARE_API_TOKEN:-}" ] || [ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]; then
+            echo "::error title=Cloudflare secrets missing::CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID are not set — the clock cannot be deployed"
+            exit 1
+          fi
+          cd workers/clock
+          RAW="$RUNNER_TEMP/wrangler-clock.raw.log"
+          trap 'rm -f "$RAW"' EXIT
+          set +e
+          npx --yes wrangler@latest deploy --config wrangler.toml --keep-vars >"$RAW" 2>&1
+          CODE=$?
+          set -e
+          python3 ../../tools/redact_deploy_log.py "$RAW" || cat "$RAW" | sed -E 's/[A-Za-z0-9_-]{30,}/<redacted>/g'
+          echo "CLOCK_DEPLOY=$([ "$CODE" = 0 ] && echo ok || echo failed)"
+          exit "$CODE"
+
+      - name: Forward the dispatch token into the Worker
+        if: ${{ !inputs.dry_run }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          GH_DISPATCH_TOKEN: ${{ secrets.GH_DISPATCH_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${GH_DISPATCH_TOKEN:-}" ]; then
+            echo "CLOCK_TOKEN=missing"
+            echo "::warning title=GH_DISPATCH_TOKEN not set::the clock is deployed but idle. One-time: mint a fine-grained token (docs/CLOCK.md) and add it as the GH_DISPATCH_TOKEN repository secret — this workflow re-runs daily and will pick it up."
+            {
+              echo "### Clock: waiting for GH_DISPATCH_TOKEN"
+              echo
+              echo "Deployed, idle. Add the **GH_DISPATCH_TOKEN** repository secret (docs/CLOCK.md) and the next run of this workflow forwards it."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          cd workers/clock
+          printf '%s' "$GH_DISPATCH_TOKEN" | npx --yes wrangler@latest secret put GH_DISPATCH_TOKEN --config wrangler.toml >/dev/null
+          echo "CLOCK_TOKEN=forwarded"
+
+      - name: Probe the live clock
+        if: ${{ !inputs.dry_run }}
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          # The Worker's GET / answers with token present/missing and what is due this tick.
+          curl -sS --max-time 20 https://docoga-clock.johnazani.workers.dev/ | tee /tmp/clock.json
+          echo
+          python3 - <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
+          import json
+          d = json.load(open("/tmp/clock.json"))
+          print("### Clock")
+          print()
+          print("- token: **%s** · entries: %s · paused: %s" % (d.get("token"), d.get("entries"), d.get("paused")))
+          print("CLOCK_LIVE=%s" % ("on-duty" if d.get("token") == "present" and not d.get("paused") else "idle"))
+          PY

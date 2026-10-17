@@ -501,3 +501,14 @@ Rules that keep the locks intact:
 - Owner never acts: the week's schedule follows the ledger automatically. First live: Telegram footer button from the next 09:00 run (dd3); dd4 publishes Mon 19 Oct 19:00 → Threads launch 20:10, Telegram/Facebook feature Tue 20 Oct, Threads lunch + Instagram recap Wed 21 Oct.
 
 `python3 tools/deepdive_promo.py show --day 2026-10-20` prints what each channel would say that day.
+
+## The clock (17 Oct 2026) — why the plan now actually happens on time
+
+All of the above assumed GitHub ran the crons. It did not: since 26 Aug 2026 GitHub's
+`schedule` event in private repositories arrives hours late or never (measured here:
+about a third of the slots, all in the dead afternoon). `workers/clock/` — a Cloudflare
+Worker on the free plan — now rings every lane through `workflow_dispatch` on the minute,
+from a table generated out of the workflows' own crons (`tools/clock_schedule.py`). The
+brain's plan, the slot the scorecard chose, the 07:20 Threads question, the 18:00 Short,
+the Deep-Dive promo week — all of it is only as good as the clock, and the clock is now
+ours. Details, the measurements and the owner's one-time token: `docs/CLOCK.md`.

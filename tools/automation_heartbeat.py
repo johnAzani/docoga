@@ -536,12 +536,27 @@ def workflow_index(client):
     return out
 
 
+# Since 17 Oct 2026 the lanes are rung on time by the DocOga clock (workers/clock), which
+# arrives as `workflow_dispatch`, while GitHub's own `schedule` event is a late backstop.
+# Both are "the cadence being kept", so a lane's recent runs are the union of the two.
+CADENCE_EVENTS = ("schedule", "workflow_dispatch")
+
+
 def recent_runs(client, workflow_id, branch, event="schedule", per_page=RUNS_PER_LANE):
-    body = client.get("/repos/%s/%s/actions/workflows/%s/runs" % (
-        client.owner, client.repo, workflow_id),
-        {"per_page": per_page, "event": event, "branch": branch})
+    events = CADENCE_EVENTS if event == "schedule" else (event,)
+    seen, raw = set(), []
+    for name in events:
+        body = client.get("/repos/%s/%s/actions/workflows/%s/runs" % (
+            client.owner, client.repo, workflow_id),
+            {"per_page": per_page, "event": name, "branch": branch})
+        for run in body.get("workflow_runs", []) if isinstance(body, dict) else []:
+            key = run.get("html_url") or run.get("id") or id(run)
+            if key in seen:
+                continue
+            seen.add(key)
+            raw.append(run)
     runs = []
-    for run in body.get("workflow_runs", []) if isinstance(body, dict) else []:
+    for run in raw:
         runs.append({
             "created_at": parse_stamp(run.get("created_at")),
             "updated_at": parse_stamp(run.get("updated_at")),
@@ -858,6 +873,30 @@ def signature(verdicts):
     return digest[:12]
 
 
+def clock_line(runs_by_id, now, window=timedelta(hours=24)):
+    """One line on the DocOga clock (workers/clock): how many lanes it rang in the last
+    24 h versus how many GitHub's own scheduler delivered. `CLOCK=on-duty` once any
+    dispatch arrived; `CLOCK=idle` means the token is missing or dead (docs/CLOCK.md),
+    and every slot is riding GitHub's late, best-effort cron again."""
+    rung = late = 0
+    floor = now - window
+    for runs in runs_by_id.values():
+        for run in runs:
+            created = run.get("created_at")
+            if not created or created < floor:
+                continue
+            if run.get("event") == "workflow_dispatch":
+                rung += 1
+            elif run.get("event") == "schedule":
+                late += 1
+    state = "on-duty" if rung else "idle"
+    return ("CLOCK=%s dispatched_24h=%d github_cron_24h=%d — %s" % (
+        state, rung, late,
+        "the clock is ringing the lanes on time" if rung else
+        "no clock dispatch in 24 h: GH_DISPATCH_TOKEN missing or dead (docs/CLOCK.md); "
+        "GitHub's own cron is the only clock"))
+
+
 def markdown(verdicts, now=None, repo=None, branch_hint=None):
     lines = ["", "## Automation heartbeat — %s" % (iso(now) if now else ""), ""]
     if repo:
@@ -1074,6 +1113,7 @@ def main(argv=None):
     fails = [item for item in verdicts if item["status"] in ("fail", "unknown")]
 
     print(markdown(verdicts, now=now, repo=repo, branch_hint=args.branch))
+    print(clock_line(runs_by_id, now))
     for item in verdicts:
         if args.verbose or item["status"] in ("fail", "unknown", "warn"):
             print("%-4s %-38s %s" % (item["status"].upper(), str(item["lane"])[:38], item["reason"]))

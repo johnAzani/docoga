@@ -115,5 +115,23 @@ Telegram app → channel → **Administrators → @docoga_daily_bot** → turn o
 
 ---
 
+## 8 · GitHub — the clock's doorbell token → secret `GH_DISPATCH_TOKEN`
+
+Why: GitHub's own schedules in private repositories arrive hours late or not at all since
+26 Aug 2026; a Cloudflare Worker (`workers/clock`, ₦0) now rings every lane on time through
+`workflow_dispatch`, and that needs a token GitHub will not let the repository mint for itself
+(`docs/CLOCK.md`).
+
+`github.com/settings/personal-access-tokens/new` → name **docoga-clock** → **Expiration: No
+expiration** → **Only select repositories → johnAzani/docoga** → Repository permissions:
+**Actions RW · Contents RW · Issues RW · Pull requests RW · Secrets RW · Variables RW ·
+Workflows RW** (Metadata read is automatic) → Account permissions: **Plan: Read-only** →
+Generate → copy → `github.com/johnAzani/docoga/settings/secrets/actions/new` → Name
+**GH_DISPATCH_TOKEN** → paste → Add secret. The clock needs only *Actions: write*; the rest is
+the superset so this token is never minted twice (Secrets/Variables RW let future lanes
+rotate their own keys; Plan read lets the heartbeat read the Actions-minutes budget).
+
+---
+
 ## How you know it is done
 Monday's "📊 Weekly scorecard" issue carries a block **"Token permissions — minted once, complete?"** with one line per token. ✅ on every line = this page is finished forever. ⚠️ names the exact permissions and the lane each one starves — mint that one token once with its full list above.

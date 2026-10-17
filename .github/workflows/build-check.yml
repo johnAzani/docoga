@@ -13,11 +13,24 @@ name: Cloudflare build check
 # Unlike net-probe.yml this runs on push, so it works on a feature branch
 # (workflow_dispatch only registers workflows from the default branch).
 
+# Minutes budget (17 Oct 2026, see verify.yml): pull requests always; pushes only on
+# main and only when something the Cloudflare build actually consumes changed.
 on:
   push:
-    branches: ['**']
+    branches: [main]
+    paths:
+      - "site/**"
+      - "wrangler.jsonc"
+      - "worker/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/build-check.yml"
   pull_request:
   workflow_dispatch:
+
+concurrency:
+  group: build-check-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
