@@ -84,12 +84,14 @@ the 7 scopes declared under **Data Access**; APIs enabled — YouTube Data API v
 Analytics API, Google Search Console API; the client (Web application) carries the redirect
 `https://developers.google.com/oauthplayground`.
 
-The mint, three taps:
-1. Actions → **Google consent — seal the YouTube token (phone path)** → Run workflow with
-   **code** empty → the run summary prints the consent link.
+The mint, three taps (**DONE 17 Oct 2026 10:06 WAT — 7 of 7, `SCOPES_GOOGLE=complete`, box committed `3557f1f`**):
+1. The consent link (Actions masks the client id as `***` in the run summary because
+   `YT_CLIENT_ID` is stored as a secret — an OAuth client id is a public identifier, so it is
+   written here; `python3 tools/google_consent.py url` rebuilds it):
+   `https://accounts.google.com/o/oauth2/v2/auth?client_id=635194176409-ppu1quhcgjkrjkdh1ab3b37f40njnsah.apps.googleusercontent.com&redirect_uri=https%3A%2F%2Fdevelopers.google.com%2Foauthplayground&response_type=code&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fyoutube+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fyoutube.force-ssl+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fyoutube.upload+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fyoutube.readonly+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fyt-analytics.readonly+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fyt-analytics-monetary.readonly+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fwebmasters.readonly&access_type=offline&prompt=consent&include_granted_scopes=true`
 2. Open the link, pick the DocOga Google account, **tick every box**, Continue. It lands on
    `developers.google.com/oauthplayground/?code=4/0A…` — copy that whole address.
-3. Run the workflow again, paste the address into **code**. The job exchanges it with
+3. Actions → **Google consent — seal the YouTube token (phone path)** → Run workflow → paste the address (or the code from the Playground's "Authorization code" box) into **code**. The job exchanges it with
    `YT_CLIENT_ID`/`YT_CLIENT_SECRET`, checks all 7 scopes are on the token (**a short token is
    refused and the old one stays** — tick every box), seals it under `SOCIAL_TOKEN_KEY` into
    `logs/yt_refresh_token.box`, commits, and prints `SCOPES_GOOGLE=complete`.
