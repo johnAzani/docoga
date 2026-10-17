@@ -52,6 +52,23 @@ DEFAULT_MODELS = ("gemini-3.8-flash", "gemini-2.5-flash", "gemini-2.5-pro", "gem
 LITE_FIRST_MODELS = ("gemini-3.5-flash-lite", "gemini-2.5-flash-lite", "gemini-3.1-flash-lite",
                      "gemini-flash-lite-latest", "gemini-3.8-flash", "gemini-2.5-flash")
 MODELS_URL = "https://generativelanguage.googleapis.com/v1beta/models?pageSize=200"
+
+# 🔒 THE BRAIN IS LOCKED (owner, 17 Oct 2026: "use only Gemini and plan with it — lock it in").
+# Every model the brain, the replies lane, the forum answer and the Deep-Dive writer may call is a
+# Google Gemini model on this one host. There is no second provider and no fallback to one: when
+# every Gemini rung is spent the night ends with exit 6 (a pause, not a failure), the lanes post
+# from the rotation, and the brain tries again the next night. tools/qa.py and
+# tools/tests/test_brain_lock.py refuse any change that names another provider.
+LOCKED_HOST = "generativelanguage.googleapis.com"
+LOCKED_MODEL_PREFIXES = ("gemini-", "gemma-")
+
+
+def assert_locked(model):
+    """Raise unless `model` is a Gemini-family name — called before every request."""
+    name = str(model or "").strip().lower()
+    if not name.startswith(LOCKED_MODEL_PREFIXES):
+        raise GeminiError("THE BRAIN IS LOCKED to Gemini — refused to call %r" % model)
+    return model
 THINKING_MODELS = re.compile(r"gemini-(2\.5|3)")   # models whose output budget also pays for "thoughts"
 MINUTE_WAIT_CAP_S = 75          # a per-minute refusal is waited out once, never longer than this
 TIMEOUT_S = 120
@@ -73,7 +90,7 @@ class Exhausted(GeminiError):
 def models():
     env = os.environ.get("BRAIN_MODELS", "").strip()
     if env:
-        return tuple(m.strip() for m in env.split(",") if m.strip())
+        return tuple(assert_locked(m.strip()) for m in env.split(",") if m.strip())
     return DEFAULT_MODELS
 
 
@@ -155,6 +172,7 @@ def generate_json(prompt, system=None, models_chain=None, http=None, sleep=None,
     chain = tuple(models_chain or models())
     last_error, exhausted = None, []
     for model in chain:
+        assert_locked(model)
         payload = payload_for(model, prompt, system, temperature, max_output_tokens, thinking_budget)
         waited_minute = False
         while True:
@@ -192,86 +210,10 @@ def generate_json(prompt, system=None, models_chain=None, http=None, sleep=None,
             last_error = "%s: HTTP %s %s" % (model, status, body[:200].replace("\n", " "))
             log("brain: " + last_error)
             break
-    # Every Gemini rung refused or failed. One last door, still ₦0, still without a new account:
-    # Cloudflare Workers AI (10,000 neurons/day on the Free plan — ~8 brain calls on gpt-oss-120b).
-    # Weaker than any Gemini rung (AA index 11.6 vs 40.9 for 3.8 Flash), so it is never first;
-    # it exists so that a night when Gemini serves nothing is still a night with a plan. The
-    # brain's gates (citation, verification, lint) judge its answer exactly like Gemini's.
-    if http is _http or os.environ.get("CF_AI_FALLBACK_IN_TESTS"):
-        backup = cloudflare_json(prompt, system, temperature=temperature, max_output_tokens=max_output_tokens,
-                                 log=log, lane=lane, http=None if http is _http else http)
-        if backup is not None:
-            return backup
     if exhausted and len(exhausted) == len(chain):
         raise Exhausted("every model refused for the day: %s" % ", ".join(exhausted),
                         resumes_at=gemini_quota.next_reset())
     raise GeminiError(last_error or "no model answered")
-
-
-# ───────────────────────────── the last door: Cloudflare Workers AI ─────────────────────────────
-CF_AI_URL = "https://api.cloudflare.com/client/v4/accounts/{account}/ai/v1/chat/completions"
-CF_AI_MODELS = ("@cf/openai/gpt-oss-120b", "@cf/meta/llama-3.3-70b-instruct-fp8-fast")
-
-
-def cloudflare_ready():
-    """(account_id, token) when the backstop can be tried, else None. Variable CF_AI_FALLBACK=off disables."""
-    if os.environ.get("CF_AI_FALLBACK", "on").strip().lower() in ("off", "0", "false", "no"):
-        return None
-    account = os.environ.get("CLOUDFLARE_ACCOUNT_ID", "").strip()
-    token = (os.environ.get("CF_AI_TOKEN") or os.environ.get("CLOUDFLARE_API_TOKEN") or "").strip()
-    return (account, token) if account and token else None
-
-
-def _cf_http(url, payload, token):
-    data = json.dumps(payload).encode("utf-8")
-    req = urllib.request.Request(url, data=data, method="POST",
-                                 headers={"Content-Type": "application/json", "Authorization": "Bearer %s" % token})
-    try:
-        with urllib.request.urlopen(req, timeout=TIMEOUT_S) as resp:
-            return resp.status, resp.read().decode("utf-8", "replace")
-    except urllib.error.HTTPError as exc:
-        return exc.code, exc.read().decode("utf-8", "replace")
-    except (urllib.error.URLError, TimeoutError, OSError) as exc:
-        return 0, str(exc)
-
-
-def cloudflare_json(prompt, system=None, temperature=0.8, max_output_tokens=8192, log=print, lane="brain",
-                    http=None, models_chain=CF_AI_MODELS):
-    """One JSON answer from Workers AI's OpenAI-compatible endpoint, or None (never raises).
-
-    Needs CLOUDFLARE_ACCOUNT_ID and a token with the *Workers AI: Read* permission (CF_AI_TOKEN,
-    else CLOUDFLARE_API_TOKEN). 403/401 means the token lacks that permission — said once, in
-    plain words, and the night proceeds as it did before this door existed."""
-    ready = cloudflare_ready()
-    if not ready:
-        return None
-    account, token = ready
-    http = http or _cf_http
-    messages = ([{"role": "system", "content": system}] if system else []) + [{"role": "user", "content": prompt}]
-    for model in models_chain:
-        payload = {"model": model, "messages": messages, "temperature": temperature,
-                   "max_tokens": int(min(max_output_tokens, 8192)), "response_format": {"type": "json_object"}}
-        status, body = http(CF_AI_URL.format(account=account), payload, token)
-        if status == 200:
-            try:
-                data = json.loads(body)
-                text = ((data.get("choices") or [{}])[0].get("message") or {}).get("content") or ""
-                answer = parse_json(text)
-            except (ValueError, GeminiError, AttributeError) as exc:
-                log("brain: cloudflare %s: %s" % (model, exc))
-                continue
-            gemini_quota.note_request("cloudflare:" + model, "ok", lane=lane)
-            log("brain: Gemini gave nothing tonight — Cloudflare Workers AI answered (%s)" % model)
-            return answer
-        if status in (401, 403):
-            log("brain: cloudflare backstop refused (HTTP %d) — the token needs the 'Workers AI: Read' permission; "
-                "add it once, or set the CF_AI_TOKEN secret" % status)
-            return None
-        if status == 429:
-            log("brain: cloudflare %s: the day's 10,000 neurons are spent" % model)
-            return None
-        log("brain: cloudflare %s: HTTP %s %s" % (model, status, body[:160].replace("\n", " ")))
-    return None
 
 
 # ───────────────────────────── probe: which rungs does this key get? ─────────────────────────────

@@ -172,10 +172,10 @@ class GeminiTextTests(Sandbox):
         self.assertLessEqual(waits[0], gemini_text.MINUTE_WAIT_CAP_S)
 
     def test_every_model_spent_raises_exhausted_with_the_reset_instant(self):
-        fake = FakeGemini([refusal("day", "a"), refusal("day", "b")])
+        fake = FakeGemini([refusal("day", "gemini-a"), refusal("day", "gemini-b")])
         with self.assertRaises(gemini_text.Exhausted) as cm:
             gemini_text.generate_json("hi", http=fake, sleep=lambda s: None, log=lambda *a: None,
-                                      models_chain=("a", "b"))
+                                      models_chain=("gemini-a", "gemini-b"))
         self.assertIsNotNone(cm.exception.resumes_at)
 
     def test_json_is_parsed_through_a_code_fence(self):
@@ -188,7 +188,7 @@ class GeminiTextTests(Sandbox):
         def http(url, payload, key):
             seen.update(payload)
             return 200, json.dumps({"candidates": [{"content": {"parts": [{"text": "{}"}]}}]})
-        gemini_text.generate_json("hi", http=http, log=lambda *a: None, models_chain=("m",))
+        gemini_text.generate_json("hi", http=http, log=lambda *a: None, models_chain=("gemini-m",))
         self.assertEqual(seen["generationConfig"]["responseMimeType"], "application/json")
         self.assertNotIn("tools", seen, "search grounding is not free-tier; the shelf is the law")
 

@@ -1176,6 +1176,33 @@ if os.path.isfile(dd_wf) and os.path.isfile(dd_tool):
           and "GEMINI_API_KEY" in open(os.path.join(ROOT, "docs", "LONGFORM_AUTOMATION.md"),
                                        encoding="utf-8").read())
 
+# THE BRAIN — LOCKED to Gemini (owner, 17 Oct 2026: "I don't want the gpt-oss, use only Gemini and
+# plan with it, lock it in"). One host, Gemini-family model names, no second provider, no fallback.
+# Never edit this check; revert the change that trips it.
+_brain_files = ("gemini_text.py", "brain.py", "brain_replies.py", "listening.py", "deepdive.py", "gemini_tts.py",
+                "gemini_quota.py")
+_brain_text = {f: open(os.path.join(ROOT, "tools", f), encoding="utf-8").read().lower()
+               for f in _brain_files if os.path.isfile(os.path.join(ROOT, "tools", f))}
+_foreign = ("api.groq.com", "openrouter.ai", "/ai/v1/chat/completions", "api.openai.com", "api.mistral.ai",
+            "integrate.api.nvidia.com", "api.cerebras.ai", "api-inference.huggingface.co", "router.huggingface.co",
+            "models.github.ai", "api.together.xyz", "api.sambanova.ai", "gpt-oss", "@cf/", "llama-3", "anthropic.com")
+_foreign_hits = ["%s: %s" % (f, w) for f, t in _brain_text.items() for w in _foreign if w in t]
+_gt = _brain_text.get("gemini_text.py", "")
+check("brain: THE BRAIN IS LOCKED to Gemini — one host, no second provider, no fallback",
+      not _foreign_hits
+      and 'locked_host = "generativelanguage.googleapis.com"' in _gt
+      and 'locked_model_prefixes = ("gemini-", "gemma-")' in _gt
+      and "assert_locked(model)" in _gt and "def assert_locked" in _gt
+      and _gt.count("https://") == 2    # the generateContent URL and the ListModels URL — nothing else
+      and "api = \"https://generativelanguage.googleapis.com/v1beta/models/{model}:generatecontent\"" in _gt,
+      "owner instruction 17 Oct 2026 — revert the change; never edit this check"
+      + (" — found: " + "; ".join(_foreign_hits) if _foreign_hits else ""))
+_wf_brain = "".join(open(os.path.join(ROOT, ".github", "workflows", n), encoding="utf-8").read()
+                    for n in ("brain.yml", "brain_replies.yml") if os.path.isfile(os.path.join(ROOT, ".github", "workflows", n)))
+check("brain: the brain workflows carry no second provider's secret",
+      not any(k in _wf_brain for k in ("CF_AI_", "GROQ_", "OPENROUTER_", "OPENAI_API_KEY", "MISTRAL_", "NVIDIA_")),
+      "the only key the brain holds is GEMINI_API_KEY")
+
 # The unittest files are the real gate; run them when their deps are present.
 import importlib.util as _ilu
 missing_mods = [m for m in ("requests", "yaml") if _ilu.find_spec(m) is None]
