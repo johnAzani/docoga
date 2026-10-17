@@ -1119,6 +1119,12 @@ if os.path.isfile(dd_wf) and os.path.isfile(dd_tool):
           "Synthetic timings" in dd_wf_text and "allow_synthetic" in dd_tool_text)
     check("deepdive: long-form has its own ledger and the duplicate guard reads it",
           "--ledger logs/youtube_longform.json check" in dd_wf_text)
+    _ytp = open(os.path.join(ROOT, "tools", "yt_publish.py"), encoding="utf-8").read()
+    check("youtube: a public upload is SCHEDULED for the intended moment (private + publishAt), never dumped live",
+          '"publishAt": rfc3339_utc(publish_at)' in _ytp and "def publish_slot" in _ytp and "SCHEDULE_HOUR_WAT = 19" in _ytp
+          and 'state["result"] = "scheduled"' in _ytp and "--publish-at" in dd_wf_text
+          and '"publish_at": str(yt.get("publish_at") or "")' in dd_tool_text,
+          "owner instruction 17 Oct 2026 — Shorts at the 19:00 WAT slot, Deep-Dives on their intended date")
     check("deepdive: the publish is never public by default — the owner's YT_PRIVACY variable is the switch",
           'PRIVACY="${IN_PRIVACY:-${IN_YT_PRIVACY:-unlisted}}"' in dd_wf_text
           and "IN_YT_PRIVACY: ${{ vars.YT_PRIVACY }}" in dd_wf_text and "default: public" not in dd_wf_text)

@@ -445,12 +445,17 @@ jobs:
           VIDEO_TAGS: ${{ steps.meta.outputs.tags }}
           CATEGORY: ${{ steps.meta.outputs.category }}
           PRIVACY: ${{ needs.pick.outputs.privacy }}
+          # Owner, 17 Oct 2026: a public episode is SCHEDULED for the date it is meant to go public —
+          # episode.json youtube.publish_at when set, else today at the slot hour (19:00 WAT).
+          PUBLISH_AT: ${{ steps.meta.outputs.publish_at }}
+          YT_PUBLISH_HOUR_WAT: ${{ vars.YT_PUBLISH_HOUR_WAT }}
+          YT_SCHEDULE: ${{ vars.YT_SCHEDULE }}
         run: |
           set -o pipefail
           set +e
           python3 tools/yt_publish.py --video "$VIDEO_PATH" --title "$VIDEO_TITLE" \
             --description "$VIDEO_DESCRIPTION" --tags "$VIDEO_TAGS" --category "$CATEGORY" \
-            --privacy "$PRIVACY" 2>&1 | tee /tmp/yt_upload.log
+            --privacy "$PRIVACY" --publish-at "$PUBLISH_AT" 2>&1 | tee /tmp/yt_upload.log
           code=${PIPESTATUS[0]}
           set -e
           marker() { sed -n "s/^$1=//p" /tmp/yt_upload.log | tail -1; }
@@ -464,6 +469,8 @@ jobs:
             echo "video_url=https://www.youtube.com/watch?v=$VIDEO_ID"
             echo "result=$(marker YT_UPLOAD_RESULT)"
             echo "privacy_seen=$(marker YT_PRIVACY)"
+            echo "publish_at=$(marker YT_PUBLISH_AT)"
+            echo "publish_at_wat=$(marker YT_PUBLISH_AT_WAT)"
             echo "size_bytes=$(stat -c%s "$VIDEO_PATH")"
           } >> "$GITHUB_OUTPUT"
           exit "$code"
@@ -502,9 +509,10 @@ jobs:
           PRIVACY: ${{ steps.upload.outputs.privacy_seen || needs.pick.outputs.privacy }}
           STATE: ${{ steps.upload.outputs.result }}
           SIZE_BYTES: ${{ steps.upload.outputs.size_bytes }}
+          PUBLISH_AT: ${{ steps.upload.outputs.publish_at }}
         run: |
           python3 tools/youtube_ledger.py --ledger logs/youtube_longform.json record \
-            --state "${STATE:-uploaded}" --title "$VIDEO_TITLE" --topic "$VIDEO_TOPIC" \
+            --state "${STATE:-uploaded}" --title "$VIDEO_TITLE" --topic "$VIDEO_TOPIC" --publish-at "${PUBLISH_AT:-}" \
             --video-id "$VIDEO_ID" --url "$VIDEO_URL" --privacy "$PRIVACY" \
             --date "$(date +%F)" --run-id "$GITHUB_RUN_ID" --size-bytes "${SIZE_BYTES:-0}"
       - name: Commit the ledger
@@ -525,6 +533,7 @@ jobs:
           VIDEO_URL: ${{ steps.upload.outputs.video_url }}
           RESULT: ${{ steps.upload.outputs.result }}
           PRIVACY_SEEN: ${{ steps.upload.outputs.privacy_seen }}
+          PUBLISH_AT_WAT: ${{ steps.upload.outputs.publish_at_wat }}
           PRIVACY_ASKED: ${{ needs.pick.outputs.privacy }}
           SKIP: ${{ steps.guard.outputs.skip }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -537,6 +546,7 @@ jobs:
             echo "| Title | $TITLE |"
             echo "| Privacy | ${PRIVACY_SEEN:-$PRIVACY_ASKED} |"
             if [ "$SKIP" = "yes" ]; then echo "| Result | ⏭️ already in the ledger — nothing uploaded |";
+            elif [ "$RESULT" = "scheduled" ]; then echo "| Result | 🗓 Scheduled — public at **${PUBLISH_AT_WAT:-the slot}** — $VIDEO_URL |";
             elif [ -n "$VIDEO_URL" ]; then echo "| Result | ✅ ${RESULT:-uploaded} — $VIDEO_URL |";
             else echo "| Result | ❌ not uploaded — see the log |"; fi
             echo "| Bank | $(gh release view "$RELEASE_TAG" --json url -q .url 2>/dev/null || echo "release $RELEASE_TAG") |"

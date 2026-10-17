@@ -368,6 +368,23 @@ queue; `deepdive.py ddN check` runs. The nightly Deep-Dive lane then narrates,
 renders and uploads it exactly as it does today. YouTube privacy stays whatever
 `YT_PRIVACY` says — that is the owner's one look before the public sees it.
 
+### 🗓 Scheduled, not dumped (owner, 17 Oct 2026: "scheduled in YouTube for the date intended to go public")
+With `YT_PRIVACY=public`, no upload goes live the second it lands. `tools/yt_publish.py` sends
+a public upload as **private + `status.publishAt`** — YouTube's own scheduler flips it to public
+at that instant, and Studio shows it as *Scheduled* until then. The intended moment:
+- **Shorts** (rendered Tue/Wed/Fri 18:00 WAT): today at the slot hour — `YT_PUBLISH_HOUR_WAT`,
+  default **19:00 WAT** (the measured Nigerian prime window 19:00–20:30). A late run (scheduler
+  lag) schedules the next 5-minute mark at least 10 minutes out, never the past.
+- **Deep-Dive** (produced 03:00 WAT): `episodes/<id>/episode.json → youtube.publish_at`
+  (`YYYY-MM-DD` = that day at the slot hour, or an ISO instant, WAT) when set; else today at the
+  slot hour — the evening, not 3 a.m. to an empty room.
+- **Queue** (`youtube_queue.json`): an item's `publish_at`, same formats.
+`unlisted`/`private` are never scheduled. `YT_SCHEDULE=off` (repository variable) restores
+publish-at-once. Read-back reports `YT_UPLOAD_RESULT=scheduled`, `YT_PUBLISH_AT=<UTC>`,
+`YT_PUBLISH_AT_WAT=<Lagos>`; the ledger carries `publish_at`; `YT_PRIVACY=public` is the intended
+state (`YT_PRIVACY_NOW=private` this minute) so cross-links and the scorecard count it as a
+public video from the start.
+
 ## Running it by hand
 ```
 python3 tools/brain.py status                 # the next 7 days: pack or rotation
