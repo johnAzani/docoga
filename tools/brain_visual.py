@@ -88,9 +88,48 @@ def search(query, http=None):
         if min(w, h) and min(w, h) < MIN_SIDE:
             continue
         out.append({"id": r.get("id"), "url": r.get("url"), "title": r.get("title"),
+                    "tags_text": tags,   # for tools/shot_match.relevant(): does it show what was asked?
                     "width": w, "height": h, "license": r.get("license"),
                     "creator": r.get("creator"), "foreign": r.get("foreign_landing_url")})
     return out, "%d candidates" % len(out)
+
+
+def fetch_candidate(cand, query, http=None):
+    """Download one search candidate → (PIL image, provenance) or (None, why). Cached under
+    `cache_dir()` by candidate id so a beat and a card asking for the same picture pay once."""
+    http = http or _get
+    if not cand or not cand.get("url"):
+        return None, "no url"
+    cdir = cache_dir()
+    key = hashlib.sha1(str(cand.get("id") or cand["url"]).encode("utf-8")).hexdigest()[:16]
+    cached, side = cdir / ("%s.jpg" % key), cdir / ("%s.json" % key)
+    if cached.is_file():
+        try:
+            return Image.open(cached).convert("RGB"), (json.loads(side.read_text()) if side.is_file() else dict(cand))
+        except (OSError, ValueError):
+            pass
+    try:
+        body, _ = http(cand["url"], accept="image/*")
+    except (urllib.error.URLError, TimeoutError, OSError):
+        return None, "download failed"
+    if not body or len(body) > MAX_BYTES:
+        return None, "empty or too large"
+    try:
+        img = Image.open(io.BytesIO(body))
+        img.load()
+        img = ImageOps.exif_transpose(img).convert("RGB")
+    except (OSError, ValueError):
+        return None, "not an image"
+    if min(img.size) < MIN_SIDE:
+        return None, "too small"
+    prov = {"query": query, **{k: v for k, v in cand.items() if k != "tags_text"}}
+    try:
+        cdir.mkdir(parents=True, exist_ok=True)
+        img.save(cached, quality=90)
+        side.write_text(json.dumps(prov, ensure_ascii=False, indent=1))
+    except OSError:
+        pass
+    return img, prov
 
 
 def fetch(query, http=None):

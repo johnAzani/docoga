@@ -191,15 +191,22 @@ def is_banned_photo(path):
     return any(rel.startswith(prefix) or ("/" + prefix) in rel for prefix in BANNED_PHOTO_PREFIXES)
 
 
-def _brief(visual, post_type, size):
-    """(kicker, background, layout, big) from the brain's visual brief, or the lane's defaults."""
+def _brief(visual, post_type, size, said=None):
+    """(kicker, background, layout, big) from the brain's visual brief, or the lane's defaults.
+    `said` is the card's own copy — the words the photograph behind it must match."""
     visual = dict(visual or {})
+    if said and not visual.get("said"):
+        visual["said"] = said
     kicker = (("DocOga · %s" % visual["kicker"]) if visual.get("kicker") else
               (("DocOga · %s" % KICKER_NAMES.get(post_type, post_type.replace("_", " "))) if post_type else "DocOga"))
     background = None
-    if visual.get("plate"):
-        import brain_visual  # a network fetch, only when a brief asks for a plate
-        background = brain_visual.background_for(visual["plate"], size)
+    if visual.get("plate") or visual.get("said"):
+        # A network fetch, only when there are words to match. The brain's `plate` is the hint;
+        # `said` (the card's own copy) is what the picture must match — tools/shot_match.py
+        # scores every result against it, so a rotation card gets a photo as surely as a
+        # brain card (owner, 17 Oct 2026: "make sure it matches what is being said").
+        import shot_match
+        background, _ = shot_match.photo_for(visual.get("said") or visual["plate"], hint=visual.get("plate"), size=size)
     layout = visual.get("layout") if visual.get("layout") in ("poster", "stat", "checklist") else "poster"
     return kicker, background, layout, (visual.get("big") or "").strip()
 
@@ -214,7 +221,7 @@ def card_for_post(message, day_iso, post_type, lane, out_dir=None, visual=None):
     out_dir = Path(out_dir) if out_dir else LANE_CARD_DIRS[lane]
     out_dir.mkdir(parents=True, exist_ok=True)
     out = out_dir / ("%s_card_%s.jpg" % (lane, day_iso))
-    kicker, background, layout, big = _brief(visual, post_type, (CARD_W, CARD_H))
+    kicker, background, layout, big = _brief(visual, post_type, (CARD_W, CARD_H), said=message)
     render(message, out, kicker=kicker, background=background, layout=layout, big=big)
     return str(out)
 
@@ -228,7 +235,7 @@ def story_for_post(message, day_iso, post_type, lane, out_dir=None, visual=None)
     out_dir = Path(out_dir) if out_dir else LANE_CARD_DIRS[lane]
     out_dir.mkdir(parents=True, exist_ok=True)
     out = out_dir / ("%s_story_%s.jpg" % (lane, day_iso))
-    kicker, background, layout, big = _brief(visual, post_type, (STORY_W, STORY_H))
+    kicker, background, layout, big = _brief(visual, post_type, (STORY_W, STORY_H), said=message)
     render(message, out, kicker=kicker, size=(STORY_W, STORY_H), safe=STORY_SAFE,
            background=background, layout=layout, big=big)
     return str(out)
@@ -498,12 +505,17 @@ def main(argv=None):
     if args.brief:
         import brain_drafts
         pack = brain_drafts.draft_for(args.brief)
+        size = frame.get("size", (CARD_W, CARD_H))
         if pack:
-            size = frame.get("size", (CARD_W, CARD_H))
-            kicker, background, layout, big = _brief(brain_drafts.visual(pack), brain_drafts.post_type(pack), size)
+            kicker, background, layout, big = _brief(brain_drafts.visual(pack), brain_drafts.post_type(pack), size, said=text)
             brief = {"background": background, "layout": layout, "big": big}
             args.kicker = kicker
             print("CARD_BRIEF=%s layout=%s plate=%s" % (pack.get("theme"), layout, "yes" if background is not None else "no"))
+        else:
+            # No pack (rotation day, brain paused): the copy itself picks the photograph.
+            _, background, _, _ = _brief({}, "", size, said=text)
+            brief = {"background": background}
+            print("CARD_BRIEF=rotation plate=%s" % ("yes" if background is not None else "no"))
     result = render(text, args.out, kicker=args.kicker, quality=args.quality,
                     max_kb=args.max_kb, footer="" if args.no_footer else FOOTER, **frame, **brief)
 

@@ -140,6 +140,7 @@ jobs:
     timeout-minutes: 30  # > the 15-minute media-liveness wait, or the deadline is fiction
     env:
       SOCIAL_TOKEN_KEY: ${{ secrets.SOCIAL_TOKEN_KEY }}  # tools/token_vault.py reads this; unset = 60-day token, never renewed
+      DOCOGA_SHOTS: ${{ vars.DOCOGA_SHOTS || 'on' }}   # CC0 photograph behind the card, matched to the copy (tools/shot_match.py)
       META_GRAPH_VERSION: ${{ vars.META_GRAPH_VERSION || 'v26.0' }}
       IG_API_PATH: ${{ vars.IG_API_PATH || 'instagram-login' }}
     steps:

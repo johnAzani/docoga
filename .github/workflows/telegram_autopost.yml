@@ -58,6 +58,7 @@ jobs:
       TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
       TZ: Africa/Lagos
+      DOCOGA_SHOTS: ${{ vars.DOCOGA_SHOTS || 'on' }}   # CC0 photograph behind the card, matched to the copy (tools/shot_match.py)
 
     steps:
       - name: Checkout repository

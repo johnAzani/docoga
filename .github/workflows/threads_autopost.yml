@@ -74,6 +74,7 @@ jobs:
     timeout-minutes: 15
     env:
       SOCIAL_TOKEN_KEY: ${{ secrets.SOCIAL_TOKEN_KEY }}  # tools/token_vault.py reads this; unset = 60-day token, never renewed
+      DOCOGA_SHOTS: ${{ vars.DOCOGA_SHOTS || 'on' }}   # CC0 photograph behind the card, matched to the copy (tools/shot_match.py)
     steps:
       - uses: actions/checkout@v5
 

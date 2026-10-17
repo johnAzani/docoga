@@ -59,6 +59,7 @@ concurrency:
 # `needs`, and the episode id is decided by the `pick` job, not by the trigger.
 env:
   TZ: Africa/Lagos
+  DOCOGA_SHOTS: ${{ vars.DOCOGA_SHOTS || 'on' }}   # CC0 photographs behind each beat, matched to its words (tools/shot_match.py); off = the fixed plates
 
 jobs:
   pick:

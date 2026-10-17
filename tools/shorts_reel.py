@@ -161,6 +161,44 @@ def reel_from_topic(topic, out_path, platform="YouTube Shorts"):
     )
 
 
+def shots_for(reel, topic):
+    """[(scene, what is said, query chain)] for the hook and tip scenes — the words the narrator
+    reads in that scene are the words the picture must match. The conclusion stays on the navy:
+    FREE. and the button are the brand's own frame."""
+    import shorts_sound
+    import shot_match
+    said = {line["scene"]: line["text"] for line in shorts_sound.narration_for(reel, topic)}
+    out = []
+    for sc in reel["scenes"]:
+        if sc["role"] not in ("hook", "tip"):
+            continue
+        text = said.get(sc["id"]) or " ".join(b.get("text") or "" for b in sc["beats"])
+        out.append((sc, text, shot_match.query_chain(text, hint=sc.get("shot"))))
+    return out
+
+
+def attach_shots(reel, topic):
+    """Put a matched CC0 photograph behind each hook/tip scene (`_bg`, W×H, brand duotone) — owner,
+    17 Oct 2026: free images behind the cards, matching what is being said. A scene whose picture
+    cannot be found or fetched keeps the navy; the Short is never late because of a photo."""
+    import shot_match
+    if not shot_match.enabled():
+        return 0
+    import brain_visual
+    hits = 0
+    for sc, text, chain in shots_for(reel, topic):
+        img, note = shot_match.photo_for(text, hint=sc.get("shot"), size=(ms.W, ms.H),
+                                         treat=lambda im, size: brain_visual.treat(im, size, darken=0.36))
+        sc["shot"] = chain[0]
+        if img is not None:
+            sc["_bg"] = img
+            hits += 1
+            print("  📷 scene %s ← %s (%s)" % (sc["id"], note.get("query"), note.get("license") or "cc0"))
+        else:
+            print("  · scene %s stays navy (%s)" % (sc["id"], note))
+    return hits
+
+
 def planned_seconds(topic):
     """The solved timeline length, without rendering a frame."""
     reel = reel_from_topic(topic, "/tmp/_planned.mp4")
@@ -214,6 +252,7 @@ def render_topic(topic, out_path, tag="short", platform="YouTube Shorts", sound=
             print("  scenes stretched to the read: %.1fs" % total)
         else:
             print("  ⚠️  " + dropped)
+    attach_shots(reel, topic)
     ok = ms.build(reel, tag)
     if not ok:
         raise RuntimeError("MotionStudio refused to encode '%s' — the video QA engine found "

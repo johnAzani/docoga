@@ -236,6 +236,7 @@ class Episode:
         for b in bs:
             b.setdefault("sub", "")
             b.setdefault("img", None)
+            b.setdefault("shot", None)
             b.setdefault("rows", [])
             b.setdefault("row_trigs", [])
             b.setdefault("center", False)
@@ -663,6 +664,52 @@ def stage_align(ep, args):
 _plates = {}
 
 
+def treat_plate(im, size=(2400, 1350)):
+    """Any photograph → the brand duotone plate at `size` (the same ramp every plate wears, so a
+    fetched picture and a shipped one sit side by side without a seam)."""
+    tw, th = size
+    im = im.convert("L")
+    im = ImageOps.colorize(im, black=(8, 24, 46), white=PLATE_LIGHT).convert("RGB")
+    im = ImageEnhance.Contrast(im).enhance(1.05)
+    im = ImageEnhance.Brightness(im).enhance(1.14)
+    r = max(tw / im.width, th / im.height)
+    im = im.resize((math.ceil(im.width * r), math.ceil(im.height * r)), Image.LANCZOS)
+    x = (im.width - tw) // 2
+    y = (im.height - th) // 2
+    return im.crop((x, y, x + tw, y + th))
+
+
+def plate_for_beat(b):
+    """The picture behind a beat: a CC0 photograph that MATCHES the beat's words (owner, 17 Oct
+    2026: "make sure it matches what is being said"), else the beat's named plate, else None.
+
+    tools/shot_match.py does the matching — the brain's `shot` hint first, then the glossary
+    read of head + sub, every result scored against the query. Cached per beat so a 30 fps
+    scene asks once. DOCOGA_SHOTS unset/off keeps the fixed plates (tests, air-gapped runners)."""
+    key = ("beat", id(b))
+    if key in _plates:
+        return _plates[key]
+    im = None
+    try:
+        import shot_match
+        if shot_match.enabled():
+            said = " ".join(str(b.get(k) or "") for k in ("head", "sub"))
+            img, prov = shot_match.photo_for(said, hint=b.get("shot"))
+            if img is not None:
+                im = treat_plate(img)
+                noise = Image.effect_noise(im.size, 16).convert("L")
+                im = Image.composite(im, Image.new("RGB", im.size, PLATE_DARK), noise.point(lambda v: 255 - min(42, v // 4)))
+                vig = Image.radial_gradient("L").resize(im.size).point(lambda v: min(85, v * 2))
+                im = Image.composite(Image.new("RGB", im.size, PLATE_DARK), im, vig)
+                print("  📷 beat %r ← %s (%s)" % (str(b.get("head") or "")[:28], prov.get("query"), prov.get("license") or "cc0"))
+    except Exception as exc:  # a picture must never cost the episode
+        print("  ⚠️  shot lookup failed for %r: %s" % (str(b.get("head") or "")[:28], exc))
+    if im is None and b.get("img"):
+        im = plate(b["img"])
+    _plates[key] = im
+    return im
+
+
 def plate(name):
     """The duotone photographic plate (2400×1350) or a quiet generated one if the asset is absent."""
     if name in _plates:
@@ -675,15 +722,7 @@ def plate(name):
         if name in aliases and (ASSETS / ("%s.jpg" % aliases[name])).is_file():
             p = ASSETS / ("%s.jpg" % aliases[name])
     if p.is_file():
-        im = Image.open(p).convert("L")
-        im = ImageOps.colorize(im, black=(8, 24, 46), white=PLATE_LIGHT).convert("RGB")
-        im = ImageEnhance.Contrast(im).enhance(1.05)
-        im = ImageEnhance.Brightness(im).enhance(1.14)
-        r = max(tw / im.width, th / im.height)
-        im = im.resize((math.ceil(im.width * r), math.ceil(im.height * r)), Image.LANCZOS)
-        x = (im.width - tw) // 2
-        y = (im.height - th) // 2
-        im = im.crop((x, y, x + tw, y + th))
+        im = treat_plate(Image.open(p), (tw, th))
     else:
         print("  ⚠️  plate '%s' missing (%s) — using a generated glow" % (name, p))
         im = Image.new("RGB", (tw, th), PLATE_DARK)
@@ -950,8 +989,8 @@ def render_scene(ep, n, words, secs, by_sec, out_path=None, preview_every=0):
             if t >= st:
                 cur, cur_st, cur_lay = b, st, lay
         frame = base_plate()
-        if cur["img"]:
-            im = plate(cur["img"])
+        im = plate_for_beat(cur) if (cur["img"] or cur.get("shot")) else None
+        if im is not None:
             u = min(1.0, (t - cur_st) / max(0.001, (t1 - cur_st)))
             d = 1 if beat_index[id(cur)] % 2 == 0 else -1
             zw, zh = int(W - 85 * u), int(H - 48 * u)
