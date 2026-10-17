@@ -196,6 +196,7 @@ def pull(env=None, days=7, now=None):
             "by_channel": dict(sorted(by_channel.items(), key=lambda kv: -kv[1])),
             "by_host": dict(sorted(by_host.items(), key=lambda kv: -kv[1])[:15]),
             "by_path": dict(sorted(by_path.items(), key=lambda kv: -kv[1])[:20]),
+            "by_country": dict(sorted(by_country.items(), key=lambda kv: -kv[1])[:12]),
             "nigeria_share": round(nigeria / all_c, 3) if all_c else None}, None
 
 
@@ -216,6 +217,9 @@ def main(argv=None):
         print("by channel:")
         for ch, n in data["by_channel"].items():
             print("  %-10s %d" % (ch, n))
+        print("by country:")
+        for c, n in data["by_country"].items():
+            print("  %-10s %d" % (c, n))
         print("top pages:")
         for path, n in list(data["by_path"].items())[:10]:
             print("  %-40s %d" % (path[:40], n))
