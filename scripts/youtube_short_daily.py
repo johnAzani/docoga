@@ -9,6 +9,7 @@ underline, the grain. Nothing else may render a Short that this lane uploads
 """
 
 import os
+import re
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -26,20 +27,51 @@ import deepdive_links  # noqa: E402  — which Deep-Dive this Short trails, and 
 import shorts_sound  # noqa: E402  — the soundtrack report, for the run summary
 
 
+HASHTAGS = "#Shorts #TenantTips #NigeriaRent"
+FOLLOW = ("Daily tips on Telegram: https://t.me/docogadaily · Facebook: https://facebook.com/docoga.com.ng")
+
+
+def headlines(script):
+    """The tip slides' on-screen headlines (hook and disclaimer left out), Sentence case."""
+    out = []
+    for slide in (script.get("slides") or [])[1:]:
+        if not slide.get("say"):
+            continue
+        text = " ".join(str(slide.get("text") or "").split())
+        if text:
+            lowered = text[:1] + text[1:].lower()
+            out.append(re.sub(r"([.!?]\s+)([a-z])", lambda m: m.group(1) + m.group(2).upper(), lowered))
+    return out
+
+
 def describe(script, link=None):
     """The YouTube description for a rotation topic.
 
-    The parent Deep-Dive link comes first — the first two lines are what the
-    Shorts player shows under "...more", and the whole point of a Short is to
-    send the viewer to the nine-minute episode it was cut from (first stats
-    snapshot, 14 Oct 2026: Shorts at 108 views, the long-forms at 0–2)."""
-    return (
-        deepdive_links.description_block(link)
-        + "Practical document-keeping tips for Nigerian tenants and landlords. "
+    The parent Deep-Dive link comes first — the first two lines are what the Shorts player
+    shows under "...more", and the whole point of a Short is to send the viewer to the
+    nine-minute episode it was cut from (first stats snapshot, 14 Oct 2026: Shorts at 108
+    views, the long-forms at 0–2). Then the words YouTube search can read (17 Oct 2026
+    research: the description is indexed, the pixels of the burned-in captions are not): the
+    spoken hook sentence and the tip headlines, so "rent receipt" / "agency fee" / "notice to
+    quit" sit in text. Three hashtags — YouTube shows the first three above the title; more
+    than fifteen and it ignores them all — and the places the daily tips live."""
+    slides = script.get("slides") or []
+    hook = " ".join(str((slides[0] if slides else {}).get("say") or "").split())
+    tips = headlines(script)
+    body = []
+    if hook:
+        body.append(hook)
+    if tips:
+        body.append("In this Short:\n" + "\n".join("• " + t for t in tips))
+    body.append(
+        "Practical document-keeping tips for Nigerian tenants and landlords. "
         "General information only; rules vary by state and agreement. "
         "This is not legal advice. More free document tools: "
-        "https://docoga.com.ng #Shorts"
+        "https://docoga.com.ng"
     )
+    body.append(FOLLOW)
+    body.append(HASHTAGS)
+    return deepdive_links.description_block(link) + "\n\n".join(body)
 
 
 def write_outputs(outputs):
@@ -100,9 +132,9 @@ def main():
         "topic": script["title"],
         "description": describe(script, link),
         "tags": "docoga,nigeria,tenant tips,landlord tips,shorts",
-        # Posting comments needs youtube.force-ssl, a scope the uploader token
-        # does not hold; the run summary shows this line so the owner can pin it
-        # from the YouTube app in one paste.
+        # The channel's first comment under the Short (tools/yt_boost.py posts it once the
+        # Short is public — the token holds youtube.force-ssl since 17 Oct 2026); the run
+        # summary still shows the line so the owner can pin it from the app in one tap.
         "pinned_comment": deepdive_links.pinned_comment(link),
         "parent_url": link[1] if link else "",
         "narrator": gemini_quota_status(),

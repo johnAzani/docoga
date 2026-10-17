@@ -254,8 +254,10 @@ receipt format Nigeria (Lagos)"), the link carries `?s=ig`, and the card gets al
 (`brain_drafts.alt_text`, ≤1,000 chars) via `ig_publish.py --alt-text` on photos and carousel
 items. Google indexes professional accounts' posts since 10 Jul 2025.
 
-**Wednesday Short + Telegram native video.** `youtube_scheduled.yml` runs Tue/Wed/Fri 18:00
-WAT (brain `SHORT_DAYS` now Mon–Fri). After every YouTube upload, `tools/telegram_video.py`
+**Weekday Shorts + Telegram native video.** `youtube_scheduled.yml` runs every weekday 18:00
+WAT (Mon + Thu added 17 Oct 2026 — the Reels lane narrates the same topic that morning and the
+voice comes back from the shared cache, so the extra Shorts cost the narrator nothing; brain
+`SHORT_DAYS` is Mon–Fri). After every YouTube upload, `tools/telegram_video.py`
 posts the same MP4 to the Telegram channel with `sendVideo` (≤50 MB, caption with the
 tagged link and the YouTube URL); refused or oversized → the link as text.
 `TELEGRAM_VIDEO=sent|link|skipped|failed`, never fatal.
@@ -416,7 +418,7 @@ renders and uploads it exactly as it does today. YouTube privacy stays whatever
 With `YT_PRIVACY=public`, no upload goes live the second it lands. `tools/yt_publish.py` sends
 a public upload as **private + `status.publishAt`** — YouTube's own scheduler flips it to public
 at that instant, and Studio shows it as *Scheduled* until then. The intended moment:
-- **Shorts** (rendered Tue/Wed/Fri 18:00 WAT): today at the slot hour — `YT_PUBLISH_HOUR_WAT`,
+- **Shorts** (rendered every weekday 18:00 WAT): today at the slot hour — `YT_PUBLISH_HOUR_WAT`,
   default **19:00 WAT** (the measured Nigerian prime window 19:00–20:30). A late run (scheduler
   lag) schedules the next 5-minute mark at least 10 minutes out, never the past.
 - **Deep-Dive** (produced 03:00 WAT): `episodes/<id>/episode.json → youtube.publish_at`
@@ -442,3 +444,34 @@ python3 tools/brain_scorecard.py summary      # the latest scorecard block
 ```
 Edit `brain/business.md` or `brain/editorial.md` to change what the brain knows
 or how it decides; nothing in the code needs to change for that.
+
+## Visibility round (17 Oct 2026) — what the research changed
+
+Owner: "research in depth to the thinnest details; improve visibility on all my platforms."
+Sources: YouTube's 2026 Shorts data (Metricool 800K videos; 61 % of Shorts views from the Shorts
+feed; channels under 10K subscribers +200 % Shorts views in a year; 3–5 a week), Mosseri's
+2026 Instagram signals (watch time, likes per reach, **sends per reach**; captions over
+hashtags), Meta's UTIS Reels model and original-content rule (Jan/Mar 2026), the Threads
+studies (reply rate first; images +60 %; peak 7 am), and the Threads/YouTube API references.
+Everything below is ₦0 and runs itself.
+
+- **Five Shorts a week, not three.** `youtube_scheduled.yml` cron `0 17 * * 1-5`. Monday and
+  Thursday reuse the Reels lane's narration from the `shorts-voice-v2-*` cache.
+- **Every video joins its series playlist and gets the channel's first comment**
+  (`tools/yt_boost.py`; Shorts lane, Deep-Dive lane, and the 19:20 WAT sweep
+  `youtube_boost.yml` that posts the comment once a scheduled video is public and catches up
+  older videos four a night). Playlists are YouTube's session signal and a search result of
+  their own; the comment carries the Deep-Dive link a Short's player cannot and asks the
+  question that starts the thread. Ledger `logs/youtube_boosts.json`.
+- **Shorts descriptions YouTube search can read**: the spoken hook sentence, the tip headlines,
+  three hashtags, the Telegram channel — after the parent Deep-Dive link, which stays first.
+- **A transcript page for every Deep-Dive** on docoga.com.ng (`tools/video_pages.py` →
+  `site/videos/<id>.html`, VideoObject JSON-LD with chapter clips, the player, the tool link,
+  sitemap + IndexNow). Google indexes pages; it never indexed the MP4.
+- **Threads morning slot, 07:20 WAT**: the day's Short hook as a question, image post, no link
+  (`generate_threads_content.py --slot morning`). Three posts a day; the question rotates.
+
+Known limit, written down so nobody chases it: replying to *other people's* Threads posts by
+keyword (`/keyword_search`) only returns public posts after Meta App Review approves
+`threads_keyword_search`; until then the endpoint searches our own posts. Not built.
+

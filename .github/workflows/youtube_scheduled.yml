@@ -12,10 +12,14 @@ name: YouTube Shorts Auto-Generate and Publish
 
 on:
   schedule:
-    # Three times a week at 6 PM West Africa Time (UTC+1): Tuesday, Wednesday, Friday.
-    # Wednesday added 17 Oct 2026 — YouTube's 2026 Shorts ranking rewards cadence, and the
-    # narrator's free bucket comfortably covers a third Short (tools/gemini_quota.py).
-    - cron: '0 17 * * 2,3,5'
+    # Every weekday at 6 PM West Africa Time (UTC+1). Tue/Wed/Fri since 17 Oct 2026; Monday
+    # and Thursday added the same day (visibility research): 61 % of Shorts views come from the
+    # Shorts feed, channels under 10K subscribers grew Shorts views >200 % in a year, and 3–5
+    # Shorts a week is the cadence YouTube's own data rewards. Monday and Thursday cost the
+    # narrator nothing new: the Facebook/Instagram Reels lane (08:30 UTC) narrates the same
+    # rotation topic hours earlier and the clips come back from the shared cache
+    # (`shorts-voice-v2-*`), so this run finds every line already spoken.
+    - cron: '0 17 * * 1-5'
   workflow_dispatch:
     inputs:
       privacy:
@@ -336,6 +340,28 @@ jobs:
             --run-id "$GITHUB_RUN_ID" \
             --size-bytes "$SIZE_BYTES"
 
+      # Series playlist + first comment (tools/yt_boost.py, 17 Oct 2026): the playlist earns the
+      # "session contribution" YouTube ranks long-form by and is its own search result; the
+      # channel's comment carries the Deep-Dive link a Short's player cannot and asks the question
+      # that starts the thread. A scheduled Short is private until its slot, so the comment is
+      # planned now and posted by the sweep (this lane tomorrow, youtube_boost.yml tonight).
+      # ≤160 quota units a video; never fails the publish.
+      - name: Playlist + first comment (never fails the publish)
+        if: always() && steps.guard.outputs.skip != 'yes' && steps.upload.outputs.video_id != ''
+        continue-on-error: true
+        env:
+          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+          SOCIAL_TOKEN_KEY: ${{ secrets.SOCIAL_TOKEN_KEY }}
+          YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+          VIDEO_ID: ${{ steps.upload.outputs.video_id }}
+          VIDEO_TOPIC: ${{ steps.short.outputs.topic }}
+          PINNED_COMMENT: ${{ steps.short.outputs.pinned_comment }}
+          RUN_DATE: ${{ steps.settings.outputs.run_date }}
+        run: |
+          python3 tools/yt_boost.py plan --video-id "$VIDEO_ID" --kind short --title "$VIDEO_TOPIC" \
+            --parent-comment "$PINNED_COMMENT" --date "$RUN_DATE"
+          python3 tools/yt_boost.py run --max 3 2>&1 | tee /tmp/yt_boost.log
       # Never let bookkeeping turn a successful publish red: continue-on-error
       # keeps the job green and leaves a visible warning instead.
       # TikTok: 47.8M Nigerian adults, +43 % in a year (research, 17 Oct 2026). The same Short
@@ -394,7 +420,7 @@ jobs:
             exit 1
           fi
           git add logs/youtube_published.json
-          git add -f logs/tiktok_drafts.json logs/tiktok_refresh_token.box 2>/dev/null || true
+          git add -f logs/youtube_boosts.json logs/tiktok_drafts.json logs/tiktok_refresh_token.box 2>/dev/null || true
           if git diff --staged --quiet; then
             echo "Ledger unchanged — nothing to commit."
             exit 0

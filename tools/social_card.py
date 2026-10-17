@@ -183,7 +183,7 @@ BANNED_PHOTO_PREFIXES = ("brand/",)
 KICKER_NAMES = {"promo": "free documents", "educational": "know your rights", "pidgin": "oya, make we talk",
                 "testimonial_style": "from our users", "state_spotlight": "state spotlight",
                 "urgent": "don't wait", "engagement": "your turn", "tip": "tenant tip",
-                "guide": "guide", "manual": ""}
+                "guide": "guide", "manual": "", "morning": "morning question"}
 
 
 def is_banned_photo(path):
@@ -374,7 +374,7 @@ def _encode(image, quality):
 
 # The card, its Story frame and its carousel slides (17 Oct 2026) — one day's renders share one
 # date, and `prune` keeps the newest `keep` DAYS, so a carousel day does not cost six days of window.
-DATED_RENDER = re.compile(r"^(\d{4}-\d{2}-\d{2})-(?:instagram(?:-story|-slide-\d+)?|threads(?:-evening)?)\.jpg$")
+DATED_RENDER = re.compile(r"^(\d{4}-\d{2}-\d{2})-(?:instagram(?:-story|-slide-\d+)?|threads(?:-evening|-morning)?)\.jpg$")
 
 
 def prune(directory, keep=60):
@@ -498,7 +498,10 @@ def main(argv=None):
     if args.from_json:
         blob = json.loads(Path(args.from_json).read_text(encoding="utf-8"))
         text = blob.get("text") or ""
-        args.kicker = args.kicker or (blob.get("post_type") or "")
+        post_type = str(blob.get("post_type") or "")
+        if not args.kicker and post_type:
+            # the same words _brief() would choose — a rotation day's kicker is never the raw key
+            args.kicker = "DocOga · " + KICKER_NAMES.get(post_type, post_type.replace("_", " "))
 
     frame = {"size": (STORY_W, STORY_H), "safe": STORY_SAFE} if args.story else {}
     brief = {}

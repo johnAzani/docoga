@@ -122,11 +122,27 @@ class DailyOutputTests(unittest.TestCase):
         self.assertTrue(outputs["pinned_comment"].startswith("Full episode"))
         self.assertEqual(outputs["parent_url"], deepdive_links.parent_link("dd2")[1])
 
+    def test_description_carries_the_words_search_can_read(self):
+        """17 Oct 2026: the spoken hook, the tip headlines, three hashtags, the Telegram channel."""
+        topic = dict(words.VIDEO_SCRIPTS[0], parent="dd3")
+        with patch.object(deepdive_links, "parent_link", return_value=None):
+            outputs = self._run(topic)
+        desc = outputs["description"]
+        self.assertTrue(desc.startswith(topic["slides"][0]["say"][:40]), desc[:80])
+        self.assertIn("In this Short:", desc)
+        self.assertIn("• Take the receipt", desc)
+        self.assertNotIn("GENERAL INFO ONLY", desc)              # the disclaimer slide is not a tip
+        self.assertIn("https://t.me/docogadaily", desc)
+        self.assertEqual(desc.count("#"), 3)
+        self.assertTrue(desc.rstrip().endswith("#NigeriaRent"))
+        self.assertLess(len(desc), 4900)
+
     def test_unpublished_parent_leaves_a_clean_description(self):
         topic = dict(words.VIDEO_SCRIPTS[0], parent="dd3")
         with patch.object(deepdive_links, "parent_link", return_value=None):
             outputs = self._run(topic)
-        self.assertTrue(outputs["description"].startswith("Practical document-keeping"))
+        self.assertFalse(outputs["description"].startswith("Watch the full Deep-Dive"))
+        self.assertIn("Practical document-keeping", outputs["description"])
         self.assertEqual(outputs["pinned_comment"], "")
         self.assertEqual(outputs["parent_url"], "")
         self.assertEqual(outputs["title"], topic["title"] + " #Shorts")

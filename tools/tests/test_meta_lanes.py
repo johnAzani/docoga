@@ -1509,10 +1509,38 @@ class ThreadsEveningSlot(unittest.TestCase):
         self.assertEqual(lunch["card_path"], "site/social/2026-10-21-threads.jpg")
         self.assertNotEqual(lunch["text"], content["text"], "two posts a day, not the same post twice")
 
+    def test_the_morning_slot_asks_a_question_under_the_days_hook(self):
+        """17 Oct 2026 (visibility research): 07:20 WAT is Threads' peak hour in Nigeria and reply
+        rate is its first ranking signal — so the morning post is the Short's spoken hook plus one
+        rotating question, as an image post with no link and no poll."""
+        with mock.patch.dict(os.environ, {"DOCOGA_BRAIN_DRAFTS": os.path.join(self.tmp, "none")}):
+            day = datetime.date(2026, 10, 20)
+            content = gc.generate(day, write=False, slot="morning")
+            lunch = gc.generate(day, write=False)
+            evening = gc.generate(day, write=False, slot="evening")
+            nxt = gc.generate(datetime.date(2026, 10, 21), write=False, slot="morning")
+        self.assertEqual(content["slot"], "morning")
+        self.assertEqual(content["post_type"], "morning")
+        self.assertNotIn("http", content["text"])
+        self.assertTrue(content["text"].rstrip().endswith("?") or "?" in content["text"].split("\n")[-1],
+                        "the morning post ends in a question: %r" % content["text"])
+        import generate_short_video as words
+        hook = words.script_for_date(day)["slides"][0]["say"]
+        self.assertTrue(content["text"].startswith(hook[:60]), content["text"][:80])
+        self.assertEqual(content["image_url"], "https://docoga.com.ng/social/2026-10-20-threads-morning.jpg")
+        self.assertEqual(content["card_path"], "site/social/2026-10-20-threads-morning.jpg")
+        self.assertIsNone(content["poll"])
+        self.assertIsNone(content["reply_text"])
+        self.assertTrue(content["topic_tag"])
+        self.assertLessEqual(content["cost"], gc.MAX_COST)
+        self.assertEqual(len({content["text"], lunch["text"], evening["text"]}), 3, "three posts, three texts")
+        self.assertNotEqual(content["text"].split("\n")[-1], nxt["text"].split("\n")[-1],
+                            "the question rotates day to day")
+
     def test_both_cards_are_dated_renders_the_pruner_recognises(self):
         """`social_card.prune` keeps the newest 60 days of dated renders; a name it does not match
-        is kept forever, and site/social/ grows by two files a day until the deploy is slow."""
-        for name in ("2026-10-21-threads.jpg", "2026-10-21-threads-evening.jpg",
+        is kept forever, and site/social/ grows by three files a day until the deploy is slow."""
+        for name in ("2026-10-21-threads.jpg", "2026-10-21-threads-evening.jpg", "2026-10-21-threads-morning.jpg",
                      "2026-10-21-instagram.jpg", "2026-10-21-instagram-story.jpg"):
             self.assertTrue(social_card.DATED_RENDER.match(name), name)
         self.assertFalse(social_card.DATED_RENDER.match("og-image.jpg"))

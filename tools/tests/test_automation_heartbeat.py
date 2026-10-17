@@ -703,10 +703,11 @@ class DiscoveryTests(unittest.TestCase):
                          "Instagram fires in Nigeria's three windows (07:10, 13:10, 19:10 WAT); the slot job lets "
                          "the one brain/slots.json names post (17 Oct 2026) — default the 7–9 pm peak")
         self.assertIn("threads_autopost.yml", by_file)
-        self.assertEqual(by_file["threads_autopost.yml"]["crons"], ["10 12 * * *", "10 19 * * *"],
-                         "Threads posts at lunch (13:10 WAT) for reply velocity and at 20:10 WAT (the "
-                         "evening image post, 17 Oct 2026); no two lanes share a minute, so one broken "
-                         "runner cannot look like two broken lanes")
+        self.assertEqual(by_file["threads_autopost.yml"]["crons"], ["10 12 * * *", "10 19 * * *", "20 6 * * *"],
+                         "Threads posts at lunch (13:10 WAT) for reply velocity, at 20:10 WAT (the "
+                         "evening image post, 17 Oct 2026) and at 07:20 WAT (the morning question, Threads' "
+                         "peak hour); no two lanes share a minute, so one broken runner cannot look like "
+                         "two broken lanes")
         # A lane the monitor cannot classify is a lane nobody is watching.
         for name in ("threads_autopost.yml", "instagram_autopost.yml"):
             with self.subTest(lane=name):
