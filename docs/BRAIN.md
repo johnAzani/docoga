@@ -201,6 +201,19 @@ post ~0.80 %.
 (`threads.evening` in the pack, else headline + first line + send line) with the link in
 **our own reply** (`reply_to_id`). Reply refused → warning. `THREADS_REPLY=sent|failed`.
 
+**A Short is detailed, not points (17 Oct 2026).** Owner: "like the long form video". Every
+slide carries `say` — the explanation the locked narrator reads (hook 20–35 words, tips
+25–40, the five together ≤ 160 = `brain.SAY_TOTAL_MAX`, so a Reel stays under 90 s). The
+brain must write `short.hook_say` and `tips[].say` (`short_problems` refuses a Short
+without them or over budget; the verifier sees them with the rest of the Short); the six
+rotation scripts in `scripts/generate_short_video.py` carry their own. `shorts_sound.
+narration_for` reads the `say`, `fit_scenes` stretches the scene to the clip, and
+`caption_beats` captions the scene like a Deep-Dive: one MotionStudio **`caption`** beat
+per sentence, timed by its share of the clip, fading in and out under the headline inside
+the safe zone (the sub-line beat makes way — the captions are the explanation). Render
+and QA share the caption's events, so the motion engine still passes. `HARD_CAP_S` = 90.
+A slide without `say` (older packs) reads headline + sub-line as before.
+
 **The picture matches the words (17 Oct 2026).** Owner: "You can use free images and video
 clips in video … behind the cards — make sure it matches what is being said."
 `tools/shot_match.py` is the one place every renderer asks what to show behind a line:

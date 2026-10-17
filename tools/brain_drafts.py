@@ -382,9 +382,9 @@ def short_topic(pack):
     if len(tips) < 3:
         return None
     slides = [{"text": short.get("hook_text") or short["title"].upper(),
-               "sub": short.get("hook_sub", ""), "duration": 3}]
+               "sub": short.get("hook_sub", ""), "say": short.get("hook_say") or "", "duration": 3}]
     for tip in tips:
-        slides.append({"text": tip["text"], "sub": tip.get("sub", ""), "duration": 4})
+        slides.append({"text": tip["text"], "sub": tip.get("sub", ""), "say": tip.get("say") or "", "duration": 4})
     slides.append({"text": "GENERAL INFO ONLY", "sub": "Rules vary by state and agreement", "duration": 4})
     return {"title": short["title"], "parent": short.get("parent") or "brain",
             "brain": pack.get("date"), "slides": slides}

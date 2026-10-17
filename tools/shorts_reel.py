@@ -250,6 +250,9 @@ def render_topic(topic, out_path, tag="short", platform="YouTube Shorts", sound=
         if clips:
             total = shorts_sound.fit_scenes(reel, clips)
             print("  scenes stretched to the read: %.1fs" % total)
+            captions = shorts_sound.caption_beats(reel, clips, ms=ms)
+            if captions:
+                print("  detailed read: %d caption sentence(s) follow the narrator" % captions)
         else:
             print("  ⚠️  " + dropped)
     attach_shots(reel, topic)

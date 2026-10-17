@@ -245,8 +245,8 @@ class Cards(unittest.TestCase):
         self.assertEqual(pf.call_args.kwargs.get("hint"), "lagos rooftops dusk")
 
     def test_every_publishing_lane_turns_shots_on_and_the_test_lane_does_not(self):
-        for name in ("deepdive", "facebook_autopost", "instagram_autopost", "telegram_autopost",
-                     "threads_autopost", "youtube_scheduled"):
+        for name in ("deepdive", "facebook_autopost", "facebook_story_afternoon", "instagram_autopost",
+                     "telegram_autopost", "threads_autopost", "youtube_scheduled"):
             text = (ROOT / ".github/workflows" / ("%s.yml" % name)).read_text(encoding="utf-8")
             self.assertIn("DOCOGA_SHOTS: ${{ vars.DOCOGA_SHOTS || 'on' }}", text, name)
         self.assertNotIn("DOCOGA_SHOTS", (ROOT / ".github/workflows/verify.yml").read_text(encoding="utf-8"))

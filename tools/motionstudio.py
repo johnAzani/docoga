@@ -38,6 +38,7 @@ CX = W // 2
 SAFE = dict(top=300, bottom=1240, left=80, right=1000)
 SAFE_W = SAFE['right'] - SAFE['left']
 EXIT, FLASH = 0.22, 0.09
+CAPTION_FADE, CAPTION_Y = 0.20, 980   # subtitle sentences (kind 'caption'): fade length, highest band top
 TRANS_DUR = {'flash': FLASH, 'whip': 0.20, 'dissolve': 0.30}
 REEL_CAP = 15.6
 DISPLAY_FLOOR = 96   # smallest size a multi-word cascade may shrink to before it wraps
@@ -201,7 +202,8 @@ ICONS = ['icon-agreement', 'icon-receipt', 'icon-seal', 'icon-house',
 # ═══════════════════════ 2. TYPOGRAPHY SOLVER ═══════════════════════
 def weight_of(b):
     return {'cascade': 'Black', 'headline': 'Black', 'wordpop': 'Black',
-            'kicker': 'SemiBold', 'support': 'Light', 'odometer': 'Black'}.get(b['kind'], 'Black')
+            'kicker': 'SemiBold', 'support': 'Light', 'odometer': 'Black',
+            'caption': 'Medium'}.get(b['kind'], 'Black')
 
 def rel_lum(c):
     def ch(v):
@@ -314,7 +316,7 @@ GRAMMAR = {
     'blur':        'everything fast carries motion blur (ghost trails) — 30fps film feel',
 }
 ENTR = {'wordpop': 0.45, 'badge': 0.40, 'kicker': 0.35, 'support': 0.40,
-        'button': 0.50, 'headline': 0.0}
+        'button': 0.50, 'headline': 0.0, 'caption': CAPTION_FADE}
 
 def entrance_dur(b):
     k = b['kind']
@@ -408,6 +410,11 @@ def events_of(reel):
                 ev.append((t0, t0 + 0.05 * (len(b['text']) - 1) + 0.56, 'cascade (springs)'))
             elif k in ('support', 'kicker', 'badge'):
                 ev.append((t0, t0 + ent + 0.12, f'{k} in'))
+            elif k == 'caption':
+                # A subtitle sentence: fades in at t0, holds still, fades out into t1. The two
+                # fades are the only motion it owns; the hold is as still as the headline.
+                ev.append((t0, t0 + CAPTION_FADE + 0.06, 'caption in'))
+                ev.append((off + b['t1'] - CAPTION_FADE - 0.03, off + b['t1'] + 0.06, 'caption out'))
             elif k == 'wordpop':
                 ev.append((t0, t0 + ent + 0.60, 'wordpop + rings + underline'))
             elif k == 'button':
@@ -560,6 +567,76 @@ def r_support(d, img, b, lt):
         ctext(d, yy + i * (font('Light', b['size']).getmetrics()[0] + 14), line,
               font('Light', b['size']), col)
 
+def caption_layout(sc, b):
+    """(y, size, lines) for a caption under the scene's other type, inside the safe zone.
+
+    Captions are placed at render time, after the solver has moved everything else: the band
+    starts 28px under the lowest box above it, the sentence wraps to SAFE_W, and the size steps
+    down (42 → 30) until the lines fit above SAFE['bottom']. Cached on the beat."""
+    if b.get('_layout'):
+        return b['_layout']
+    floor = CAPTION_Y
+    for o in sc['beats']:
+        if o is b or o['kind'] == 'caption':
+            continue
+        if o['kind'] in BOX_KINDS:
+            floor = max(floor, beat_box(o)[1] + 28)
+    chosen = None
+    for size in (42, 38, 34, 30):
+        f = font('Medium', size)
+        asc, desc = f.getmetrics()
+        lh = asc + desc + 6
+        lines, cur = [], ''
+        for wd in b['text'].split():
+            t = (cur + ' ' + wd).strip()
+            if _scratch.textbbox((0, 0), t, font=f)[2] <= SAFE_W - 48:
+                cur = t
+            else:
+                if cur:
+                    lines.append(cur)
+                cur = wd
+        if cur:
+            lines.append(cur)
+        if floor + 24 + lh * len(lines) <= SAFE['bottom']:
+            chosen = (floor, size, lines)
+            break
+    if chosen is None:
+        # No room at all (a two-line hook that wrapped twice): one line, clipped with an ellipsis.
+        size = 30
+        f = font('Medium', size)
+        words = b['text'].split()
+        while words and _scratch.textbbox((0, 0), ' '.join(words) + '…', font=f)[2] > SAFE_W - 48:
+            words.pop()
+        chosen = (floor, size, [' '.join(words) + '…'] if words else [])
+    b['_layout'] = chosen
+    return chosen
+
+def r_caption(d, img, b, lt):
+    t1 = b.get('t1')
+    if lt < b['t0'] or (t1 is not None and lt >= t1):
+        return
+    a = min(1.0, (lt - b['t0']) / CAPTION_FADE)
+    if t1 is not None:
+        a = min(a, max(0.0, (t1 - lt) / CAPTION_FADE))
+    a = ease_cubic(a)
+    sc = b.get('_scene')
+    y, size, lines = caption_layout(sc, b) if sc else (CAPTION_Y, 38, [b['text']])
+    if not lines:
+        return
+    f = font('Medium', size)
+    asc, desc = f.getmetrics()
+    lh = asc + desc + 6
+    band_h = 24 + lh * len(lines)
+    wmax = max(_scratch.textbbox((0, 0), ln, font=f)[2] for ln in lines)
+    x0, x1 = CX - wmax // 2 - 24, CX + wmax // 2 + 24
+    glass = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+    gd = ImageDraw.Draw(glass)
+    gd.rounded_rectangle([x0, y, x1, y + band_h], radius=14, fill=NAVY + (int(200 * a),))
+    for i, ln in enumerate(lines):
+        w = _scratch.textbbox((0, 0), ln, font=f)[2]
+        gd.text((CX - w // 2, y + 12 + i * lh), ln, font=f, fill=b.get('color', WHITE) + (int(255 * a),))
+    img.alpha_composite(glass)
+
 def r_kicker(d, img, b, lt):
     if lt < b['t0']: return
     p = min(1.0, (lt - b['t0']) / 0.35)
@@ -663,7 +740,7 @@ def r_cycler(d, img, b, lt):
     d.rectangle([CX - 230, 1210, CX + 230, 1215],
                 fill=lerp_c(NAVY2, YELLOW, min(1.0, (lt - sw[k]) / 0.08)))
 
-RENDER = {'odometer': r_odometer, 'cascade': r_cascade, 'support': r_support,
+RENDER = {'caption': r_caption, 'odometer': r_odometer, 'cascade': r_cascade, 'support': r_support,
           'kicker': r_kicker, 'badge': r_badge, 'wordpop': r_wordpop,
           'button': r_button, 'headline': r_headline, 'icons': r_icons, 'cycler': r_cycler}
 
@@ -722,6 +799,7 @@ def render_reel(reel, tag):
                    if bb['kind'] == 'odometer' and bb.get('strike') and 'strike_at_local' in bb]
         for beat in sc['beats']:
             beat['_dur'] = sc['dur']
+            beat['_scene'] = sc
             if lt >= beat['t0']:
                 RENDER[beat['kind']](d, content, beat, lt)
         content = apply_shake(content, lt, impacts)
