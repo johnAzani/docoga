@@ -189,7 +189,7 @@ def pull(env=None, days=7, now=None):
     for row in acc.get("countries") or []:
         c = (row.get("dimensions") or {}).get("countryName") or "?"
         by_country[c] = by_country.get(c, 0) + int((row.get("sum") or {}).get("visits") or 0)
-    nigeria = by_country.get("Nigeria", 0)
+    nigeria = by_country.get("Nigeria", 0) + by_country.get("NG", 0)   # the dataset answers ISO codes ("NG")
     all_c = sum(by_country.values()) or 0
     return {"days": days, "site_tag": site_tag or None,
             "visits": int((total.get("sum") or {}).get("visits") or 0), "pageviews": int(total.get("count") or 0),

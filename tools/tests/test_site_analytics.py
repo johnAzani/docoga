@@ -20,7 +20,8 @@ ENV = {"CLOUDFLARE_ACCOUNT_ID": "acc", "CF_ANALYTICS_TOKEN": "tok"}
 OK = {"data": {"viewer": {"accounts": [{"total": [{"count": 100, "sum": {"visits": 40}}],
                                         "referers": [{"sum": {"visits": 30}, "dimensions": {"refererHost": "t.me"}}],
                                         "paths": [{"sum": {"visits": 40}, "dimensions": {"requestPath": "/"}}],
-                                        "countries": [{"sum": {"visits": 38}, "dimensions": {"countryName": "Nigeria"}}]}]}}}
+                                        "countries": [{"sum": {"visits": 38}, "dimensions": {"countryName": "NG"}},
+                                                      {"sum": {"visits": 2}, "dimensions": {"countryName": "GB"}}]}]}}}
 
 
 class SiteTagDiscovery(unittest.TestCase):
@@ -57,6 +58,7 @@ class SiteTagDiscovery(unittest.TestCase):
         self.assertEqual(seen[0]["siteTag"], "abc")
         self.assertEqual(data["visits"], 40)
         self.assertEqual(data["by_channel"], {"telegram": 30})
+        self.assertEqual(data["nigeria_share"], 0.95)   # Cloudflare answers ISO codes, not names
 
     def test_try_again_later_is_retried_but_bounded(self):
         sa.fetch = lambda url, token=None, timeout=15: (200, BEACON)
