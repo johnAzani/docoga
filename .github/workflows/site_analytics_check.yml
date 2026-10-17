@@ -1,0 +1,56 @@
+name: Site analytics — is Cloudflare connected?
+
+# A read-only probe of tools/site_analytics.py: pulls the last 7 days of docoga.com.ng visits
+# from Cloudflare Web Analytics (visits by channel, top pages, Nigeria share) and prints them
+# in the run summary. It runs whenever the probe or the puller changes, and on demand, so a
+# freshly minted CF_ANALYTICS_TOKEN is proven the same minute instead of next Monday.
+# Writes nothing, posts nowhere. Cost: one GraphQL call, ₦0.
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/site_analytics_check.yml'
+      - 'tools/site_analytics.py'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: site-analytics-check
+  cancel-in-progress: true
+
+env:
+  TZ: Africa/Lagos
+
+jobs:
+  probe:
+    name: Pull 7 days of site visits
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - name: Pull from Cloudflare Web Analytics (read-only)
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_ANALYTICS_TOKEN: ${{ secrets.CF_ANALYTICS_TOKEN }}
+          CF_WEB_ANALYTICS_SITE_TAG: ${{ vars.CF_WEB_ANALYTICS_SITE_TAG }}
+        run: |
+          python3 tools/site_analytics.py --days 7 > /tmp/site.txt
+          cat /tmp/site.txt
+          {
+            echo "## docoga.com.ng — last 7 days (Cloudflare Web Analytics)"
+            echo
+            echo '```'
+            cat /tmp/site.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          if grep -q '^SITE_ANALYTICS=ok$' /tmp/site.txt; then
+            echo "::notice title=Site analytics::connected — the Monday scorecard will carry visits by channel"
+          else
+            echo "::error title=Site analytics::not connected — see the notice above for which secret is missing or refused"
+            exit 1
+          fi
