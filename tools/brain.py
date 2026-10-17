@@ -394,6 +394,42 @@ def _emoji_count(text):
     return len(EMOJI.findall(text or ""))
 
 
+def _wrap_line(text, width):
+    """Split one over-long line at the best boundary at or before `width` — sentence end, then clause,
+    then a space. Returns a list of lines (unchanged list of one when it already fits or cannot split)."""
+    text = re.sub(r"\s+", " ", str(text or "")).strip()
+    if len(text) <= width:
+        return [text] if text else []
+    for pattern in (r"[.!?…]\s", r"[;:—–]\s", r",\s", r"\s"):
+        best = None
+        for m in re.finditer(pattern, text):
+            if m.end() - 1 <= width:
+                best = m.end()
+        if best and best > 20:
+            head, tail = text[:best].rstrip(), text[best:].strip()
+            return [head] + _wrap_line(tail, width)
+    return [text]
+
+
+def tidy(pack):
+    """The editor's pencil, applied before the gates: a body line that runs a few characters past
+    LINE_MAX is re-broken at a sentence or clause boundary instead of costing a whole second Gemini
+    call (night one: three of five attempts were refused for 115–125-character lines). Only layout
+    is touched — never a word; if the reflow would push the post past 5 lines it is left for lint."""
+    if not isinstance(pack, dict) or not isinstance(pack.get("post"), dict):
+        return pack
+    post = pack["post"]
+    lines = [str(x).strip() for x in (post.get("lines") or []) if str(x).strip()]
+    if not lines or all(len(ln) <= LINE_MAX for ln in lines):
+        return pack
+    out = []
+    for ln in lines:
+        out.extend(_wrap_line(ln, LINE_MAX) if len(ln) > LINE_MAX else [ln])
+    if 2 <= len(out) <= 5 and all(len(ln) <= LINE_MAX for ln in out):
+        post["lines"] = out
+    return pack
+
+
 def lint(pack, ctx, said):
     """Deterministic gates. Returns a list of problems (empty = passed)."""
     p = []
@@ -706,8 +742,8 @@ def plan_day(day, said, http=None, sleep=None, log=print, dry_run=False):
     ctx["facts_by_id"] = {f["id"]: f for f in ctx["facts"]}
     problems = []
     for attempt in range(1, MAX_ATTEMPTS + 1):
-        pack = gemini_text.generate_json(prompt_for(ctx, problems or None), system=SYSTEM, http=http,
-                                         sleep=sleep, log=log)
+        pack = tidy(gemini_text.generate_json(prompt_for(ctx, problems or None), system=SYSTEM, http=http,
+                                              sleep=sleep, log=log))
         problems = lint(pack, ctx, said)
         if not problems:
             problems = verify(pack, ctx, http=http, sleep=sleep, log=log)
