@@ -22,7 +22,9 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
+import time
 import urllib.error
 import urllib.request
 from datetime import datetime, timedelta, timezone
@@ -81,6 +83,56 @@ def _post(token, body, timeout=40):
 
 http = _post
 
+# The Web Analytics beacon Cloudflare injects into every page: its "token" IS the site tag.
+BEACON_RE = re.compile(r'data-cf-beacon=[\'"]\{[^}]*?"token"\s*:\s*"([0-9a-f]{20,40})"', re.I)
+RUM_SITES = "https://api.cloudflare.com/client/v4/accounts/%s/rum/site_info/list"
+
+
+def _get(url, token=None, timeout=15):
+    headers = {"User-Agent": "docoga-site-analytics/1 (+https://docoga.com.ng)", "Accept": "*/*"}
+    if token:
+        headers["Authorization"] = "Bearer " + token
+    req = urllib.request.Request(url, headers=headers)
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return resp.status, resp.read(400000).decode("utf-8", "replace")
+    except urllib.error.HTTPError as e:
+        try:
+            return e.code, e.read(4000).decode("utf-8", "replace")
+        except OSError:
+            return e.code, ""
+    except (urllib.error.URLError, OSError, ValueError):
+        return 0, ""
+
+
+fetch = _get
+
+
+def discover_site_tag(account, token, host=HOST):
+    """The Web Analytics *site tag* the GraphQL filter wants (not the account id, not the zone id).
+
+    Cloudflare's dashboard always sends one, and without it the RUM dataset answers
+    "unable to execute query". Two ₦0 ways to learn it, no extra tap from the owner:
+      1. the account's Web Analytics site list (REST, same read-only token);
+      2. the beacon the site itself serves — its data-cf-beacon token is the site tag.
+    Returns "" when neither works; the caller then queries without the filter.
+    """
+    status, text = fetch(RUM_SITES % account, token)
+    if status == 200:
+        try:
+            sites = (json.loads(text) or {}).get("result") or []
+        except ValueError:
+            sites = []
+        for s in sites:
+            h = (s.get("host") or "").lower().strip()
+            if h in (host, "www." + host) and s.get("site_tag"):
+                return str(s["site_tag"])
+        if len(sites) == 1 and sites[0].get("site_tag"):
+            return str(sites[0]["site_tag"])
+    status, html = fetch("https://%s/" % host)
+    m = BEACON_RE.search(html or "")
+    return m.group(1) if m else ""
+
 
 def pull(env=None, days=7, now=None):
     """→ dict or (None, reason). Visits by channel, by page, by country, for the last `days`."""
@@ -92,15 +144,28 @@ def pull(env=None, days=7, now=None):
     now = now or datetime.now(timezone.utc)
     flt = {"datetime_geq": (now - timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%SZ"),
            "datetime_leq": now.strftime("%Y-%m-%dT%H:%M:%SZ"), "requestHost": HOST}
-    site_tag = (env.get("CF_WEB_ANALYTICS_SITE_TAG") or "").strip()
+    site_tag = (env.get("CF_WEB_ANALYTICS_SITE_TAG") or "").strip() or discover_site_tag(account, token)
     if site_tag:
         flt["siteTag"] = site_tag
-    status, data = http(token, {"query": QUERY, "variables": {"account": account, "filter": flt}})
-    errors = data.get("errors") or []
+    # One call normally. "try again later" is Cloudflare's transient 503 → one retry after a
+    # pause; an "unknown field" on an optional filter → drop it and retry once. Never more.
+    attempts, status, data, errors = 0, 0, {}, []
+    while attempts < 3:
+        attempts += 1
+        status, data = http(token, {"query": QUERY, "variables": {"account": account, "filter": flt}})
+        errors = data.get("errors") or []
+        if status == 200 and not errors:
+            break
+        msg = ((errors[0].get("message") if errors else "") or "").lower()
+        if "try again later" in msg and attempts < 3:
+            time.sleep(4)
+            continue
+        break
     if status != 200 or errors:
         msg = (errors[0].get("message") if errors else "HTTP %s" % status) or "unknown"
         hint = " — the token needs Account Analytics: Read" if "auth" in msg.lower() or status in (401, 403) else ""
-        return None, "site: Cloudflare analytics refused (%s)%s" % (msg[:120], hint)
+        where = " [siteTag %s]" % (site_tag[:6] + "…" if site_tag else "not found — set CF_WEB_ANALYTICS_SITE_TAG")
+        return None, "site: Cloudflare analytics refused (%s)%s%s" % (msg[:120], hint, where)
     accounts = ((data.get("data") or {}).get("viewer") or {}).get("accounts") or []
     if not accounts:
         return None, "site: Cloudflare returned no account — check CLOUDFLARE_ACCOUNT_ID"
@@ -124,9 +189,10 @@ def pull(env=None, days=7, now=None):
     for row in acc.get("countries") or []:
         c = (row.get("dimensions") or {}).get("countryName") or "?"
         by_country[c] = by_country.get(c, 0) + int((row.get("sum") or {}).get("visits") or 0)
-    nigeria = by_country.get("Nigeria", 0)
+    nigeria = by_country.get("Nigeria", 0) + by_country.get("NG", 0)   # the dataset answers ISO codes ("NG")
     all_c = sum(by_country.values()) or 0
-    return {"days": days, "visits": int((total.get("sum") or {}).get("visits") or 0), "pageviews": int(total.get("count") or 0),
+    return {"days": days, "site_tag": site_tag or None,
+            "visits": int((total.get("sum") or {}).get("visits") or 0), "pageviews": int(total.get("count") or 0),
             "by_channel": dict(sorted(by_channel.items(), key=lambda kv: -kv[1])),
             "by_host": dict(sorted(by_host.items(), key=lambda kv: -kv[1])[:15]),
             "by_path": dict(sorted(by_path.items(), key=lambda kv: -kv[1])[:20]),
@@ -147,8 +213,12 @@ def main(argv=None):
         print(json.dumps(data, indent=1))
     else:
         print("%d visits / %d pageviews in %d days; Nigeria share %s" % (data["visits"], data["pageviews"], a.days, data["nigeria_share"]))
+        print("by channel:")
         for ch, n in data["by_channel"].items():
             print("  %-10s %d" % (ch, n))
+        print("top pages:")
+        for path, n in list(data["by_path"].items())[:10]:
+            print("  %-40s %d" % (path[:40], n))
     print("SITE_ANALYTICS=ok")
     return 0
 

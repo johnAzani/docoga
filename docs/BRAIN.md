@@ -179,7 +179,7 @@ TTL) and exposes `sources{checkout,sale}` in `/admin/data`. The scorecard turns 
 `sales.by_source_28d/7d`, `sales.checkouts_by_source_28d` and the order **"Money follows
 X"**. Site traffic by channel comes from Cloudflare Web Analytics (`tools/site_analytics.py`,
 GraphQL `rumPageloadEventsAdaptiveGroups`; secrets `CLOUDFLARE_ACCOUNT_ID` +
-`CF_ANALYTICS_TOKEN`, optional var `CF_WEB_ANALYTICS_SITE_TAG`; `SITE_ANALYTICS=ok|not-connected`).
+`CF_ANALYTICS_TOKEN` (live since 17 Oct 2026); the site tag is discovered from the account's site list or the beacon on the live page, var `CF_WEB_ANALYTICS_SITE_TAG` only overrides it; `SITE_ANALYTICS=ok|not-connected`). Prove it any time: Actions → *Site analytics — is Cloudflare connected?* → Run workflow.
 
 **Search demand.** `tools/search_console.py` rides the Monday stats lane with the YouTube
 OAuth client: 28 days of Google queries for docoga.com.ng, Nigeria first, written to

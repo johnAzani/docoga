@@ -140,6 +140,7 @@ class PullTests(unittest.TestCase):
         net = FakeNet(routes or full_routes(), fail=fail)
         import site_analytics
         site_analytics.http = lambda token, body, timeout=40: (200, SITE_GRAPHQL)
+        site_analytics.fetch = lambda url, token=None, timeout=15: (0, "")   # no live site-tag discovery in tests
         search = Path(self.tmp.name) / "search_console.json"
         search.write_text(json.dumps(SEARCH_FIXTURE), encoding="utf-8")
         use = dict(ENV if env is None else env)
