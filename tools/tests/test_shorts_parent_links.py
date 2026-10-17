@@ -18,7 +18,8 @@ for _p in (ROOT / "scripts", ROOT / "tools", ROOT / "tools" / "tests"):
     if str(_p) not in sys.path:
         sys.path.insert(0, str(_p))
 
-import deepdive_links  # noqa: E402
+import deepdive_links
+import deepdive_promo  # noqa: E402
 import generate_short_video as words  # noqa: E402
 import shorts_reel  # noqa: E402
 from test_youtube_short_generation import parse_github_output  # noqa: E402
@@ -125,7 +126,8 @@ class DailyOutputTests(unittest.TestCase):
     def test_description_carries_the_words_search_can_read(self):
         """17 Oct 2026: the spoken hook, the tip headlines, three hashtags, the Telegram channel."""
         topic = dict(words.VIDEO_SCRIPTS[0], parent="dd3")
-        with patch.object(deepdive_links, "parent_link", return_value=None):
+        with patch.object(deepdive_links, "parent_link", return_value=None), \
+                patch.object(deepdive_promo, "latest_link", return_value=None):
             outputs = self._run(topic)
         desc = outputs["description"]
         self.assertTrue(desc.startswith(topic["slides"][0]["say"][:40]), desc[:80])
@@ -137,9 +139,21 @@ class DailyOutputTests(unittest.TestCase):
         self.assertTrue(desc.rstrip().endswith("#NigeriaRent"))
         self.assertLess(len(desc), 4900)
 
+    def test_a_short_without_a_published_parent_trails_the_latest_episode(self):
+        """17 Oct 2026 (owner: promote the Deep-Dives everywhere): a brain Short, or one whose
+        parent is still in the queue, carries the latest watchable episode instead."""
+        topic = dict(words.VIDEO_SCRIPTS[0], parent="brain")
+        with patch.object(deepdive_promo, "latest_link",
+                          return_value=("Caution Fee: The Refund War", "https://www.youtube.com/watch?v=pl5Z8ueg1ZI")):
+            outputs = self._run(topic)
+        self.assertTrue(outputs["description"].startswith("Watch the full Deep-Dive — Caution Fee"))
+        self.assertEqual(outputs["parent_url"], "https://www.youtube.com/watch?v=pl5Z8ueg1ZI")
+        self.assertTrue(outputs["pinned_comment"].startswith("Full episode"))
+
     def test_unpublished_parent_leaves_a_clean_description(self):
         topic = dict(words.VIDEO_SCRIPTS[0], parent="dd3")
-        with patch.object(deepdive_links, "parent_link", return_value=None):
+        with patch.object(deepdive_links, "parent_link", return_value=None), \
+                patch.object(deepdive_promo, "latest_link", return_value=None):
             outputs = self._run(topic)
         self.assertFalse(outputs["description"].startswith("Watch the full Deep-Dive"))
         self.assertIn("Practical document-keeping", outputs["description"])

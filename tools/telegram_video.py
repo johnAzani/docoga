@@ -27,19 +27,24 @@ TIMEOUT = (10, 180)
 SITE = "https://docoga.com.ng/?s=tg"
 
 
-def caption_for(title, url):
-    title = (title or "").strip()
+def caption_for(title, url, parent_url="", parent_title=""):
+    """The Short's caption. `parent_url` (17 Oct 2026, owner: promote the Deep-Dives everywhere)
+    names the nine-minute episode this Short trails, so the channel's video post is a trailer
+    with its feature attached, not a dead end."""
+    title = (title or "").strip().replace(" #Shorts", "")
     lines = [title] if title else []
+    if parent_url:
+        lines.append("▶ The full Deep-Dive (9 min)%s: %s" % ((" — " + parent_title.strip()) if parent_title.strip() else "", parent_url))
     lines.append("Free Nigerian tenancy documents: %s" % SITE)
     if url:
         lines.append("Watch on YouTube: %s" % url)
     return "\n\n".join(lines)[:1024]          # Telegram's caption limit
 
 
-def send(token, chat_id, video, title, url, post=None):
+def send(token, chat_id, video, title, url, post=None, parent_url="", parent_title=""):
     """→ (state, detail). state ∈ sent | link | failed."""
     post = post or requests.post
-    caption = caption_for(title, url)
+    caption = caption_for(title, url, parent_url, parent_title)
     path = Path(video) if video else None
     if path and path.is_file() and path.stat().st_size <= MAX_BYTES:
         try:
@@ -74,6 +79,8 @@ def main(argv=None):
     ap.add_argument("--video", required=True)
     ap.add_argument("--title", default="")
     ap.add_argument("--url", default="", help="the YouTube URL (fallback text and the caption's last line)")
+    ap.add_argument("--parent-url", default="", help="the Deep-Dive this Short trails (its link rides in the caption)")
+    ap.add_argument("--parent-title", default="")
     a = ap.parse_args(argv)
     token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
     chat_id = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
@@ -81,7 +88,7 @@ def main(argv=None):
         print("TELEGRAM_VIDEO=skipped")
         print("Telegram secrets not present in this job — the Short stays on YouTube only.")
         return 0
-    state, detail = send(token, chat_id, a.video, a.title, a.url)
+    state, detail = send(token, chat_id, a.video, a.title, a.url, parent_url=a.parent_url, parent_title=a.parent_title)
     detail = detail.replace(token, "<token>")
     if state == "failed":
         print("::warning title=Telegram video not posted::%s" % detail)

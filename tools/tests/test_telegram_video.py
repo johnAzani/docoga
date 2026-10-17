@@ -77,3 +77,19 @@ class TelegramVideoTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ParentLink(unittest.TestCase):
+    """17 Oct 2026: the Short's Telegram caption names the Deep-Dive it trails."""
+
+    def test_caption_carries_the_episode_when_given(self):
+        text = tv.caption_for("Pay without a receipt. Pay twice. #Shorts", "https://youtube.com/shorts/abc",
+                              "https://www.youtube.com/watch?v=NEW", "Rent Receipt in Nigeria (Deep-Dive 3)")
+        self.assertTrue(text.startswith("Pay without a receipt. Pay twice.\n\n▶ The full Deep-Dive (9 min) — Rent Receipt"))
+        self.assertIn("https://www.youtube.com/watch?v=NEW", text)
+        self.assertNotIn("#Shorts", text)
+        self.assertTrue(text.endswith("Watch on YouTube: https://youtube.com/shorts/abc"))
+        self.assertLessEqual(len(text), 1024)
+
+    def test_without_an_episode_the_caption_is_as_before(self):
+        self.assertNotIn("Deep-Dive", tv.caption_for("t", "https://youtube.com/x"))

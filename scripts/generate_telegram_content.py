@@ -37,6 +37,7 @@ from telegram_mdv2 import to_plain  # noqa: E402
 # The brain (tools/brain.py) may have decided today's post the night before; when it
 # has, the rotation below is the fallback, not the voice.
 import brain_drafts  # noqa: E402
+import deepdive_promo  # noqa: E402  — the Deep-Dive's week in this channel
 
 # ===== CONTENT TEMPLATES =====
 
@@ -137,6 +138,16 @@ def render_card(message, day_iso, post_type, visual=None):
         return None
 
 
+def telegram_buttons_for(pack, promo):
+    """The usual two rows; a feature day leads with the episode, a footer day appends it."""
+    if promo and promo["stage"] == "feature":
+        return promo["buttons"] + brain_drafts.telegram_buttons(pack)
+    rows = brain_drafts.telegram_buttons(pack)
+    if promo and promo["stage"] == "footer":
+        rows = rows + promo["buttons"]
+    return rows
+
+
 def should_send_photo():
     """Decide if today's post should include a photo (40% chance)"""
     return random.random() < 0.4
@@ -151,7 +162,18 @@ def generate_daily_content():
 
     pack = brain_drafts.draft_for(today)
     visual = None
-    if pack:
+    # The Deep-Dive's week (tools/deepdive_promo.py, 17 Oct 2026): the day after an episode
+    # goes public this post IS the episode — card, hook, chapters, watch + read buttons; for a
+    # fortnight after, the usual post simply gains a "▶ This week's Deep-Dive" button.
+    promo = deepdive_promo.pack_for(today.date(), "telegram")
+    card_text = None
+    if promo and promo["stage"] == "feature":
+        post_type = "deepdive"
+        template = escape(promo["text"])
+        hashtag = ""
+        card_text = promo["card_text"]
+        log("🎬 Deep-Dive feature day: %s" % promo["title"])
+    elif pack:
         # The brain's words are plain text; escape them once for MarkdownV2 like the hashtags.
         post_type = brain_drafts.post_type(pack)
         template = escape(brain_drafts.tag_links(brain_drafts.post_text(pack), "telegram"))
@@ -173,7 +195,7 @@ def generate_daily_content():
     # MarkdownV2 and a raw hashtag makes Telegram reject the entire post with
     # "can't parse entities: Character '#' is reserved". That was the 7 Oct
     # 2026 outage — every post failed, every day, for four days.
-    message = f"{template}\n\n{escape(hashtag)}"
+    message = f"{template}\n\n{escape(hashtag)}" if hashtag else template
 
     # Fail loudly in the log rather than silently in the channel. The unit
     # tests in tools/tests/test_telegram_mdv2.py cover every template; this is
@@ -185,10 +207,10 @@ def generate_daily_content():
             log(f"   • {problem}")
 
     # Decide on photo vs text post (a brain day always carries its card)
-    send_photo = True if pack else should_send_photo()
+    send_photo = True if (pack or card_text) else should_send_photo()
     photo_path = None
     if send_photo:
-        photo_path = render_card(message, today.strftime("%Y-%m-%d"), post_type, visual)
+        photo_path = render_card(card_text or message, today.strftime("%Y-%m-%d"), post_type, visual)
         if photo_path:
             log(f"📸 Photo post: brand card rendered at {photo_path}")
         else:
@@ -203,7 +225,7 @@ def generate_daily_content():
         "message": message,
         "hashtags": hashtag,
         "link": brain_drafts.tag_links(brain_drafts.link_for(pack) if pack else brain_drafts.LINK, "telegram"),
-        "buttons": brain_drafts.telegram_buttons(pack),
+        "buttons": telegram_buttons_for(pack, promo),
         "send_photo": send_photo,
         "photo_path": photo_path,
         "generated_at": today.isoformat(),

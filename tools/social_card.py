@@ -183,7 +183,7 @@ BANNED_PHOTO_PREFIXES = ("brand/",)
 KICKER_NAMES = {"promo": "free documents", "educational": "know your rights", "pidgin": "oya, make we talk",
                 "testimonial_style": "from our users", "state_spotlight": "state spotlight",
                 "urgent": "don't wait", "engagement": "your turn", "tip": "tenant tip",
-                "guide": "guide", "manual": "", "morning": "morning question"}
+                "guide": "guide", "manual": "", "morning": "morning question", "deepdive": "new deep-dive · 9 min"}
 
 
 def is_banned_photo(path):
@@ -497,7 +497,7 @@ def main(argv=None):
     text = args.text or ""
     if args.from_json:
         blob = json.loads(Path(args.from_json).read_text(encoding="utf-8"))
-        text = blob.get("text") or ""
+        text = blob.get("card_text") or blob.get("text") or ""   # card_text: a promo day's tighter card copy
         post_type = str(blob.get("post_type") or "")
         if not args.kicker and post_type:
             # the same words _brief() would choose — a rotation day's kicker is never the raw key

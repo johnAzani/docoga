@@ -65,6 +65,7 @@ LAGOS = timezone(timedelta(hours=1))
 # and post_facebook.py refuses such a path even if one is handed to it.
 import social_card  # noqa: E402  (the one card renderer for every static social post)
 import brain_drafts  # noqa: E402  (the brain's pack for the day, when there is one)
+import deepdive_promo  # noqa: E402  (the Deep-Dive's week in this channel, 17 Oct 2026)
 
 # tools/fb_publish.py refuses a `source` upload above 4 MB; the card renderer
 # walks JPEG quality down to stay under 900 KB, so this is belt and braces.
@@ -122,7 +123,15 @@ def generate(day=None, write=True):
     # The brain's pack for the day (tools/brain.py) is the voice when there is one;
     # the date-seeded rotation is the fallback, exactly as before.
     pack = brain_drafts.draft_for(day)
-    if pack:
+    promo = deepdive_promo.pack_for(day, "facebook")
+    card_text = None
+    if promo:
+        # The day after a Deep-Dive goes public (tools/deepdive_promo.py, 17 Oct 2026): the post
+        # is the episode. The YouTube link is a standalone line, so post_facebook.py moves it
+        # to the first comment — a body link costs 60–80 % of the reach.
+        post_type, message, visual, card_text = "deepdive", promo["text"], None, promo["card_text"]
+        log("🎬 Deep-Dive feature day: %s" % promo["title"])
+    elif pack:
         post_type = brain_drafts.post_type(pack)
         message = "%s\n\n%s" % (brain_drafts.tag_links(brain_drafts.post_text(pack), "facebook"), brain_drafts.hashtags(pack, "facebook"))
         visual = brain_drafts.visual(pack)
@@ -131,7 +140,7 @@ def generate(day=None, write=True):
         message = brain_drafts.tag_links(build_message(post_type, rng), "facebook")
         visual = None
 
-    photo = render_card(message, day, post_type, visual) if write else None
+    photo = render_card(card_text or message, day, post_type, visual) if write else None
 
     content = {
         "date": day.isoformat(),
