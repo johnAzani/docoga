@@ -205,9 +205,53 @@ CARD_URL = "https://docoga.com.ng/social/%s-threads%s.jpg"
 CARD_PATH = "site/social/%s-threads%s.jpg"
 
 
+SLOT_SUFFIX = {"lunch": "", "evening": "-evening", "morning": "-morning"}
+
+# The 07:20 WAT post asks one of these under the day's hook. Threads ranks by reply rate first
+# (every 2026 study agrees), so the morning post is a question, not an announcement — and it
+# rotates, so the account never asks the same thing two days running.
+MORNING_QUESTIONS = (
+    "Has this happened to you or someone you know? Tell me how it ended.",
+    "Tenant or landlord — which side of this have you been on?",
+    "What would you have done differently?",
+    "What is the one thing you would tell a first-time tenant about this?",
+    "Lagos, Abuja, Port Harcourt, Kano — where are you renting, and is it the same there?",
+)
+
+
+def slot_suffix(slot):
+    return SLOT_SUFFIX.get(slot, "")
+
+
 def card_for(day, slot):
-    suffix = "-evening" if slot == "evening" else ""
+    suffix = slot_suffix(slot)
     return CARD_URL % (day.isoformat(), suffix), CARD_PATH % (day.isoformat(), suffix)
+
+
+def build_morning(day, rng):
+    """The 07:20 WAT post (17 Oct 2026, visibility research): 7 am is Threads' peak hour in
+    Nigeria (pre-work browsing), a question earns the replies Threads ranks by, and the words
+    already exist — the spoken hook of the day's Short (the brain's, or the rotation's), the
+    one paragraph written to stop a thumb. Image post, no link (a link costs reach; the lunch
+    post carries it), the day's topic tag, no poll (refused beside an image)."""
+    import generate_short_video as words  # the Short's words; the renderer is never imported
+    script = words.script_for_date(day)
+    slides = script.get("slides") or []
+    hook = " ".join(str((slides[0] if slides else {}).get("say") or "").split())
+    if not hook:
+        hook = str(script.get("title") or "").strip()
+    question = MORNING_QUESTIONS[day.toordinal() % len(MORNING_QUESTIONS)]
+    pack = brain_drafts.draft_for(day)
+    text = hook + "\n\n" + question
+    if pack and brain_drafts.has_claims(pack) and brain_drafts.DISCLAIMER.lower() not in text.lower():
+        text = text + "\n\n" + brain_drafts.DISCLAIMER
+    text, notes = fit(brain_drafts.strip_links(text), "")
+    notes = ["morning: hook of '%s'" % script.get("title", "")] + list(notes)
+    extras = extras_for(pack)
+    extras["poll"] = None
+    extras["image_url"], extras["card_path"] = card_for(day, "morning")
+    extras["reply_text"] = None
+    return "morning", text, notes, extras
 
 
 def build_evening(day, rng):
@@ -241,6 +285,8 @@ def build(day, rng, slot="lunch"):
     template, de-escaped — either way fitted to Meta's limits, with its post type."""
     if slot == "evening":
         return build_evening(day, rng)
+    if slot == "morning":
+        return build_morning(day, rng)
     pack = brain_drafts.draft_for(day)
     if pack:
         post_type = brain_drafts.post_type(pack)
@@ -272,7 +318,7 @@ def extras_for(pack):
 def generate(day=None, write=True, slot="lunch"):
     """Return today's Threads post, and by default write it under `assets/threads/`."""
     day = day or datetime.now(LAGOS).date()
-    rng = random.Random("docoga-threads-%s%s" % (day.isoformat(), "-evening" if slot == "evening" else ""))
+    rng = random.Random("docoga-threads-%s%s" % (day.isoformat(), slot_suffix(slot)))
 
     post_type, text, notes, extras = build(day, rng, slot)
     pack = brain_drafts.draft_for(day)
@@ -307,7 +353,7 @@ def generate(day=None, write=True, slot="lunch"):
 
     if write:
         ASSETS_DIR.mkdir(parents=True, exist_ok=True)
-        suffix = "-evening" if slot == "evening" else ""
+        suffix = slot_suffix(slot)
         for name in ("threads_content_%s%s.json" % (day.isoformat(), suffix), "threads_content_latest.json"):
             with open(ASSETS_DIR / name, "w") as handle:
                 json.dump(content, handle, indent=2)
@@ -323,8 +369,9 @@ def main(argv=None):
     parser.add_argument("--date", help="ISO date to generate for (default: today in Africa/Lagos)")
     parser.add_argument("--print", dest="show", action="store_true", help="print the post and exit")
     parser.add_argument("--no-write", action="store_true", help="do not touch assets/")
-    parser.add_argument("--slot", choices=["lunch", "evening"], default="lunch",
-                        help="lunch = the 13:10 WAT text post; evening = the 20:10 WAT image post with the link in a reply")
+    parser.add_argument("--slot", choices=["morning", "lunch", "evening"], default="lunch",
+                        help="morning = the 07:20 WAT question under the day's hook; lunch = the 13:10 WAT post; "
+                             "evening = the 20:10 WAT image post with the link in a reply")
     args = parser.parse_args(sys.argv[1:] if argv is None else argv)
 
     day = date.fromisoformat(args.date) if args.date else datetime.now(LAGOS).date()

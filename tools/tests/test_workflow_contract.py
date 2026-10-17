@@ -267,9 +267,19 @@ class ScheduledShortsWorkflowTests(unittest.TestCase):
         step = self.by_name[name]
         return "\n".join([str(step.get("run", "")), str(step.get("if", "")), str(step.get("env", ""))])
 
-    def test_it_runs_on_the_tuesday_wednesday_friday_schedule(self):
+    def test_it_runs_on_the_weekday_schedule(self):
         crons = [entry["cron"] for entry in (self.doc[True] if True in self.doc else self.doc["on"])["schedule"]]
-        self.assertEqual(crons, ["0 17 * * 2,3,5"], "the 18:00 WAT slot, three days a week (Wed added 17 Oct 2026), must not drift")
+        self.assertEqual(crons, ["0 17 * * 1-5"], "the 18:00 WAT slot, every weekday (Mon + Thu added 17 Oct 2026), must not drift")
+
+    def test_every_upload_gets_its_playlist_and_first_comment(self):
+        step = self.by_name["Playlist + first comment (never fails the publish)"]
+        self.assertTrue(step.get("continue-on-error"), "a boost must never turn a publish red")
+        self.assertIn("yt_boost.py plan", step["run"])
+        self.assertIn("yt_boost.py run", step["run"])
+        self.assertIn("--parent-comment", step["run"])
+        for key in ("YT_CLIENT_ID", "YT_CLIENT_SECRET", "SOCIAL_TOKEN_KEY", "PINNED_COMMENT"):
+            self.assertIn(key, step["env"])
+        self.assertIn("logs/youtube_boosts.json", self.by_name["Commit the publish ledger"]["run"])
 
     def test_the_short_also_goes_to_telegram_as_a_native_video(self):
         step = self.by_name["Post the Short to the Telegram channel"]

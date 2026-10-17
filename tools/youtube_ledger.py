@@ -64,6 +64,19 @@ EXIT_DUPLICATE = 3
 WAT = timezone(timedelta(hours=1))
 
 
+def deleted_ids(path=None):
+    """Video ids tools/yt_manage.py deleted (logs/youtube_manage.json) — the publish ledgers keep
+    their rows for history, so anything that reads them as "the channel's videos" subtracts these."""
+    path = path or os.path.join(ROOT, "logs", "youtube_manage.json")
+    try:
+        with io.open(path, encoding="utf-8") as handle:
+            data = json.load(handle)
+    except (OSError, ValueError):
+        return set()
+    return {str(row.get("video_id")) for row in (data.get("done") or []) if isinstance(data, dict)
+            and isinstance(row, dict) and row.get("action") == "delete" and row.get("video_id")}
+
+
 def parse_date(value):
     return datetime.strptime(value, "%Y-%m-%d").date()
 

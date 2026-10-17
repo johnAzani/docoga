@@ -36,6 +36,7 @@ on:
   schedule:
     - cron: '10 12 * * *'  # 12:10 UTC = 13:10 Lagos — lunch idle time, when replies arrive in the first 90 minutes (brain/strategy.md)
     - cron: '10 19 * * *'  # 19:10 UTC = 20:10 Lagos — the evening slot (17 Oct 2026): the evening card as an image post, link in our own reply
+    - cron: '20 6 * * *'   # 06:20 UTC = 07:20 Lagos — the morning slot (17 Oct 2026, visibility research): Threads' peak hour in Nigeria; the day's hook as a question, image post, no link
   workflow_dispatch:
     inputs:
       dry_run:
@@ -58,11 +59,11 @@ on:
         required: false
         type: string
       slot:
-        description: 'lunch = card + copy; evening = card + copy with the link in a reply (scheduled runs pick by the clock)'
+        description: 'morning = the question under the day hook; lunch = card + copy; evening = card + copy with the link in a reply (scheduled runs pick by the clock)'
         required: false
         default: 'auto'
         type: choice
-        options: [auto, lunch, evening]
+        options: [auto, morning, lunch, evening]
 
 permissions:
   contents: write  # the ledger and the sealed token box are committed back to the default branch
@@ -176,12 +177,14 @@ jobs:
           THREADS_SLOT: ${{ inputs.slot }}
         run: |
           set -o pipefail
-          # Two posts a day (Threads' own guidance is 2–3), both image posts since 17 Oct 2026
+          # Three posts a day (Threads' own guidance is 2–3; the morning question joined 17 Oct 2026), all image posts since 17 Oct 2026
           # (owner: "the Thread is only text it uploads"). A scheduled run has no inputs, so the
-          # clock decides: after 15:00 UTC it is the evening slot. A dispatch may name the slot.
+          # clock decides: before 09:00 UTC it is the morning slot, after 15:00 UTC the evening
+          # slot, lunch between. A dispatch may name the slot.
           SLOT="${THREADS_SLOT:-auto}"
           if [ "$SLOT" = "auto" ] || [ -z "$SLOT" ]; then
-            if [ "$(date -u +%H)" -ge 15 ]; then SLOT=evening; else SLOT=lunch; fi
+            HOUR=$(date -u +%H)
+            if [ "$HOUR" -ge 15 ]; then SLOT=evening; elif [ "$HOUR" -lt 9 ]; then SLOT=morning; else SLOT=lunch; fi
           fi
           echo "THREADS_SLOT=$SLOT" | tee -a "$GITHUB_ENV"
           python3 scripts/generate_threads_content.py --slot "$SLOT" 2>&1 | tee /tmp/threads_generate.log
@@ -222,7 +225,8 @@ jobs:
           JSON=assets/threads/threads_content_latest.json
           OUT=$(python3 -c 'import json;print(json.load(open("assets/threads/threads_content_latest.json")).get("card_path") or "")')
           if [ -z "$OUT" ]; then
-            SUFFIX=""; [ "${THREADS_SLOT:-lunch}" = "evening" ] && SUFFIX="-evening"
+            SUFFIX=""
+            case "${THREADS_SLOT:-lunch}" in evening) SUFFIX="-evening";; morning) SUFFIX="-morning";; esac
             OUT="site/social/${DAY}-threads${SUFFIX}.jpg"
           fi
           KICKER="$(python3 -c 'import json;print(json.load(open("assets/threads/threads_content_latest.json")).get("post_type",""))')"

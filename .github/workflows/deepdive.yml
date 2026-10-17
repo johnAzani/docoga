@@ -500,6 +500,22 @@ jobs:
           YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
           VIDEO_ID: ${{ steps.upload.outputs.video_id }}
         run: python3 tools/yt_captions.py --video-id "$VIDEO_ID" --words "$BUILD_DIR/words.json" --srt "/tmp/$EPISODE.srt"
+      # Series playlist + first comment (tools/yt_boost.py, 17 Oct 2026) — the autoplay chain
+      # YouTube's session signal rewards, and the channel's own comment that opens the thread.
+      # Never fails the publish; the comment waits for the public slot when the upload is scheduled.
+      - name: Playlist + first comment (never fails the publish)
+        if: always() && steps.upload.outputs.video_id != ''
+        continue-on-error: true
+        env:
+          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+          SOCIAL_TOKEN_KEY: ${{ secrets.SOCIAL_TOKEN_KEY }}
+          YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+          VIDEO_ID: ${{ steps.upload.outputs.video_id }}
+          VIDEO_TOPIC: ${{ steps.meta.outputs.topic }}
+        run: |
+          python3 tools/yt_boost.py plan --video-id "$VIDEO_ID" --kind deepdive --title "$VIDEO_TOPIC" --date "$(date +%F)"
+          python3 tools/yt_boost.py run --max 3 2>&1 | tee /tmp/yt_boost.log
       - name: Record in the long-form ledger
         if: always() && steps.upload.outputs.video_id != ''
         env:
@@ -516,6 +532,17 @@ jobs:
             --state "${STATE:-uploaded}" --title "$VIDEO_TITLE" --topic "$VIDEO_TOPIC" --publish-at "${PUBLISH_AT:-}" \
             --video-id "$VIDEO_ID" --url "$VIDEO_URL" --privacy "$PRIVACY" \
             --date "$(date +%F)" --run-id "$GITHUB_RUN_ID" --size-bytes "${SIZE_BYTES:-0}"
+      # The episode's page on docoga.com.ng (tools/video_pages.py, 17 Oct 2026): full transcript by
+      # chapter, the player, VideoObject structured data with the chapters' timestamps from this
+      # build's words.json, the tool link. Google indexes the page; YouTube only ever read the
+      # description. Written after the ledger so the page knows the video id; committed with it.
+      - name: Write the episode's transcript page
+        if: always() && steps.upload.outputs.video_id != ''
+        continue-on-error: true
+        env:
+          INDEXNOW_KEY: ${{ vars.INDEXNOW_KEY }}
+          YT_CHANNEL_ID: ${{ vars.YT_CHANNEL_ID }}
+        run: python3 tools/video_pages.py build --ping 2>&1 | tee /tmp/video_pages.log
       - name: Commit the ledger
         if: always() && steps.upload.outputs.video_id != ''
         continue-on-error: true
@@ -526,7 +553,12 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git pull --rebase --autostash origin "$BRANCH" || { echo "::warning title=Ledger not committed::could not rebase on $BRANCH"; exit 1; }
           git add logs/youtube_longform.json
-          git diff --staged --quiet || { git commit -m "Auto: record Deep-Dive $EPISODE published $(date +%F) [skip ci]" && git push origin "HEAD:$BRANCH"; }
+          git add -f logs/youtube_boosts.json 2>/dev/null || true
+          git add site/videos site/sitemap.xml 2>/dev/null || true
+          # No `[skip ci]`: this commit carries the episode's page under site/, and the site deploy
+          # is a push-triggered workflow — skipping CI would leave the page unpublished (the
+          # Instagram lane's card commit follows the same rule). Once a week; minutes are fine.
+          git diff --staged --quiet || { git commit -m "Auto: record Deep-Dive $EPISODE published $(date +%F)" && git push origin "HEAD:$BRANCH"; }
       - name: Run summary
         if: always()
         env:
