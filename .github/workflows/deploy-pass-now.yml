@@ -103,6 +103,37 @@ jobs:
           echo "DEPLOY_LOG=$DEPLOY_LOG" >> "$GITHUB_ENV"
           exit "$DEXIT"
 
+      # The owner dashboard's read-side glue (17 Oct 2026): the social board reads GitHub
+      # Actions with the same fine-grained token the clock uses, and the website panel reads
+      # Cloudflare Web Analytics with the read-only token minted for the Monday scorecard.
+      # Both already live in the repository secrets — forwarding them here means the owner
+      # never has to type a secret into Cloudflare. Each is skipped (with a warning) when
+      # unset; the worker answers {connected:false, reason} for that panel and nothing else
+      # changes. Values go to wrangler on stdin only; nothing is echoed.
+      - name: Forward the dashboard's read-side secrets to the worker
+        if: ${{ (github.event_name != 'workflow_dispatch' || !inputs.dry_run) && env.RESULT == 'SECRETS_PRESENT' && !contains(github.event.head_commit.message, '[check-pass-auth]') }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          GH_DISPATCH_TOKEN: ${{ secrets.GH_DISPATCH_TOKEN }}
+          CF_ANALYTICS_TOKEN: ${{ secrets.CF_ANALYTICS_TOKEN }}
+        run: |
+          set -euo pipefail
+          cd worker
+          forward() {
+            local name="$1" value="$2"
+            if [ -z "$value" ]; then
+              echo "::warning title=$name not forwarded::the repository secret is unset, so the dashboard panel that needs it will say 'not connected' until it exists and docoga-pass is deployed again."
+              return 0
+            fi
+            printf '%s' "$value" | npx --yes wrangler@latest secret put "$name" --config wrangler.toml >/dev/null 2>&1 \
+              && echo "forwarded $name" \
+              || echo "::warning title=$name not forwarded::wrangler secret put failed; the live worker keeps whatever value it had."
+          }
+          forward GH_DISPATCH_TOKEN "${GH_DISPATCH_TOKEN:-}"
+          forward CF_ANALYTICS_TOKEN "${CF_ANALYTICS_TOKEN:-}"
+          forward CLOUDFLARE_ACCOUNT_ID "${CLOUDFLARE_ACCOUNT_ID:-}"
+
       - name: Probe the live worker
         if: ${{ (github.event_name != 'workflow_dispatch' || !inputs.dry_run) && env.RESULT == 'SECRETS_PRESENT' && !contains(github.event.head_commit.message, '[check-pass-auth]') }}
         env:

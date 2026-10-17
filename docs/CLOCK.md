@@ -101,3 +101,10 @@ secret into the Worker, and from the next five-minute tick every lane is on time
   arrival harmless.
 * **GitHub App instead of a PAT** — more taps for the owner, no gain for one private
   repository.
+
+## The health page feeds the owner dashboard
+
+`GET https://docoga-clock.johnazani.workers.dev/` also returns `entries_table` — every
+row of `schedule.json` (workflow, cron, dispatch inputs; nothing secret). The owner
+dashboard's **Social** tab (`docoga-pass` → `/admin/social`, `ADMIN_DASHBOARD.md` §5a)
+reads it so the plan it shows is, by construction, the plan this clock rings.

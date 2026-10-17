@@ -109,6 +109,8 @@ footer{font-size:11.5px;color:#94A3B8;text-align:center;padding:16px 0 4px}
   <div id="banner"></div>
   <nav class="tabs" role="tablist">
     <button class="tab" type="button" role="tab" data-view="ov" aria-selected="true">Today</button>
+    <button class="tab" type="button" role="tab" data-view="social">Social</button>
+    <button class="tab" type="button" role="tab" data-view="site">Website</button>
     <button class="tab" type="button" role="tab" data-view="passes">Passes</button>
     <button class="tab" type="button" role="tab" data-view="biz">Business</button>
     <button class="tab" type="button" role="tab" data-view="leads">Leads</button>
@@ -147,6 +149,45 @@ footer{font-size:11.5px;color:#94A3B8;text-align:center;padding:16px 0 4px}
       <div class="scroll"><table id="expiring"></table></div>
       <p class="hint" id="expiring-note"></p>
     </div>
+  </section>
+
+  <section id="v-social" class="hide">
+    <div id="social-msg"></div>
+    <div class="cards" id="social-kpis"></div>
+    <div class="panel">
+      <h2>Today’s plan — <span id="social-day"></span></h2>
+      <p class="hint" style="margin:0 0 8px">Every row is a slot the clock rings. <b>Posted</b> = the lane ran clean; <b>failed</b> shows the lane’s own reason; <b>missed</b> = the slot passed and nothing ran. “Run now” asks GitHub to start that lane this minute — the lane’s own ledger still refuses a duplicate, so it is safe to tap.</p>
+      <div class="scroll"><table id="social-today"></table></div>
+    </div>
+    <div class="grid2">
+      <div class="panel">
+        <h2>Last 7 days</h2>
+        <div class="scroll"><table id="social-week"></table></div>
+        <p class="hint" id="social-week-note"></p>
+      </div>
+      <div class="panel">
+        <h2>Machinery</h2>
+        <div id="social-health"></div>
+        <div id="social-extras" style="margin-top:10px"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="v-site" class="hide">
+    <div id="site-msg"></div>
+    <div class="cards" id="site-kpis"></div>
+    <div class="panel">
+      <h2>Visits per day — last 28 days</h2>
+      <div class="chart" id="chart-visits"></div>
+      <div class="barlabels"><span id="vchart-from"></span><span id="vchart-to"></span></div>
+      <div class="hint" id="vchart-note"></div>
+    </div>
+    <div class="grid2">
+      <div class="panel"><h2>Where readers came from — 7 days</h2><div class="scroll"><table id="site-channels"></table></div></div>
+      <div class="panel"><h2>Countries — 7 days</h2><div class="scroll"><table id="site-countries"></table></div></div>
+    </div>
+    <div class="panel"><h2>Most-read pages — 7 days</h2><div class="scroll"><table id="site-pages"></table></div></div>
+    <p class="hint">Cloudflare Web Analytics counts real browsers only (no cookies, no bots, no link-preview fetchers, none of your own automation). Numbers refresh every 30 minutes.</p>
   </section>
 
   <section id="v-passes" class="hide">
@@ -576,8 +617,108 @@ $('v-sec').addEventListener('click',async e=>{
   b.disabled=false;
 });
 
+/* ---------------- social board: the day's plan vs what actually ran ---------------- */
+let SOCIAL=null,SOCIAL_BUSY=false;
+function lagos(ms){if(!ms)return '—';return new Date(Number(ms)).toLocaleTimeString('en-NG',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'Africa/Lagos'}).replace(/\s?([ap])\.?m\.?/i,(m,x)=>x.toLowerCase()+'m');}
+function lagosDay(day){const d=new Date(day+'T12:00:00Z');return d.toLocaleDateString('en-NG',{weekday:'short',day:'numeric',month:'short',timeZone:'Africa/Lagos'});}
+const STATUS_WORD={done:['posted','ok'],failed:['failed','bad'],running:['running…','warn'],upcoming:['upcoming',''],due:['due now','warn'],missed:['missed','bad'],cancelled:['cancelled','warn'],skipped:['skipped',''],unknown:['unknown','warn']};
+function statusChip(s,kind){const w=STATUS_WORD[s]||[s,''];let word=w[0];if(s==='done'&&kind!=='post')word='done';return chip(word,w[1]);}
+async function loadSocial(){
+  if(SOCIAL_BUSY)return;SOCIAL_BUSY=true;
+  try{SOCIAL=await api('/admin/social');renderSocial();}
+  catch(e){if(e.status!==401)$('social-msg').innerHTML='<div class="msg err">'+esc('could not read the board: '+e.message)+'</div>';}
+  finally{SOCIAL_BUSY=false;}
+}
+function renderSocial(){
+  const S=SOCIAL||{};
+  if(S.connected===false){
+    $('social-msg').innerHTML='<div class="msg warn">'+esc(S.reason||'not connected')+'</div>';
+    $('social-kpis').innerHTML='';$('social-today').innerHTML='';$('social-week').innerHTML='';$('social-health').innerHTML='';return;
+  }
+  $('social-msg').innerHTML='';
+  const t=S.today||{},c=t.counts||{},slots=t.slots||[];
+  const posts=slots.filter(s=>s.kind==='post');
+  const postsDone=posts.filter(s=>s.status==='done').length,postsFailed=posts.filter(s=>s.status==='failed').length,postsMissed=posts.filter(s=>s.status==='missed').length,postsLeft=posts.filter(s=>s.status==='upcoming'||s.status==='due'||s.status==='running').length;
+  $('social-day').textContent=lagosDay(S.day||'')+' · '+slots.length+' slots';
+  $('social-kpis').innerHTML=
+    kpi('Posts out today',String(postsDone),posts.length+' planned')+
+    kpi('Failed',String(postsFailed),postsFailed?'tap a row to see why':'none',postsFailed?'#B91C1C':null)+
+    kpi('Missed',String(postsMissed),postsMissed?'slot passed, nothing ran':'none',postsMissed?'#B91C1C':null)+
+    kpi('Still to come',String(postsLeft),postsLeft?'next: '+(()=>{const n=posts.find(s=>s.status==='upcoming'||s.status==='due');return n?lagos(n.at)+' '+n.lane:'—';})():'day complete');
+  if(!slots.length){
+    $('social-today').innerHTML='<tbody><tr><td class="hint">'+esc(S.planFrom?'no slots today':'the plan is not available yet — the clock publishes its table at its next deploy (4:35am daily, or on the next change to any lane). Runs still show under Machinery.')+'</td></tr></tbody>';
+  }else{
+    $('social-today').innerHTML='<thead><tr><th>Time</th><th>Lane</th><th>What</th><th>Status</th><th></th></tr></thead><tbody>'+
+      slots.map((s,i)=>'<tr'+(s.kind!=='post'?' style="color:#64748B"':'')+'><td class="num" style="text-align:left;white-space:nowrap">'+esc(lagos(s.at))+'</td>'+
+        '<td><b>'+esc(s.lane)+'</b></td><td>'+esc(s.what||s.name)+'</td>'+
+        '<td>'+statusChip(s.status,s.kind)+(s.run&&s.run.started&&s.status!=='upcoming'?'<br><span class="hint">started '+esc(lagos(s.run.started))+(s.run.event==='schedule'?' · GitHub’s own timer':'')+'</span>':'')+
+          (s.cause?'<br><span class="hint" style="color:#991B1B">'+esc(s.cause)+'</span>':'')+'</td>'+
+        '<td style="white-space:nowrap">'+(s.run?'<a class="mini" style="text-decoration:none;display:inline-block" href="'+esc(s.run.url)+'" target="_blank" rel="noopener">log</a> ':'')+
+          ((s.status==='failed'||s.status==='missed'||s.status==='due'||s.status==='cancelled')?'<button class="mini" data-run="'+i+'" type="button">'+(s.status==='due'?'Run now':'Retry')+'</button>':'')+'</td></tr>').join('')+'</tbody>';
+  }
+  const days=S.days||[];
+  $('social-week').innerHTML='<thead><tr><th>Day</th><th class="num">Posted</th><th class="num">Failed</th><th class="num">Missed</th><th></th></tr></thead><tbody>'+
+    days.map(d=>{if(d.pending)return '<tr><td>'+esc(lagosDay(d.day))+'</td><td colspan="4" class="hint">being counted — open again later</td></tr>';
+      const ps=(d.slots||[]).filter(s=>s.kind==='post');const f=ps.filter(s=>s.status==='failed'),m=ps.filter(s=>s.status==='missed'),ok=ps.filter(s=>s.status==='done').length;
+      const tone=f.length+m.length===0?'ok':(ok===0?'bad':'warn');
+      return '<tr><td>'+esc(lagosDay(d.day))+'</td><td class="num">'+ok+'/'+ps.length+'</td><td class="num"'+(f.length?' style="color:#B91C1C"':'')+'>'+f.length+'</td><td class="num"'+(m.length?' style="color:#B91C1C"':'')+'>'+m.length+'</td><td>'+chip(tone==='ok'?'clean':(tone==='bad'?'nothing went out':'gaps'),tone)+(f.length?'<br><span class="hint">'+esc(f.map(x=>x.lane+' '+lagos(x.at)).join(', '))+'</span>':'')+'</td></tr>';}).join('')+'</tbody>';
+  $('social-week-note').textContent=days.some(d=>d.pending)?'Days before the board existed fill in two at a time, each time this tab is opened.':'';
+  const ck=S.clock||{};
+  const clockChip=ck.ok===false?chip('clock unreachable','bad'):ck.paused?chip('paused (CLOCK=off)','warn'):ck.token==='present'?chip('on duty · '+(ck.entries||0)+' slots','ok'):chip('idle — no token','bad');
+  const rows=[['Clock (rings the lanes every 5 min)',clockChip],['Plan source',chip(S.planFrom==='clock'?'the clock’s own table':'not available','')],['Board refreshed',chip(t.at?ago(t.at):'—','ok')]];
+  $('social-health').innerHTML='<table><tbody>'+rows.map(r=>'<tr><td style="width:46%">'+r[0]+'</td><td>'+r[1]+'</td></tr>').join('')+'</tbody></table>';
+  const ex=t.extras||[];
+  $('social-extras').innerHTML=ex.length?'<p class="hint" style="margin:0 0 4px">Runs outside the plan today (manual or re-runs):</p><table><tbody>'+ex.map(x=>'<tr><td>'+esc(lagos(x.started))+'</td><td><b>'+esc(x.lane||x.name)+'</b></td><td>'+statusChip(x.status,'care')+(x.cause?'<br><span class="hint" style="color:#991B1B">'+esc(x.cause)+'</span>':'')+'</td><td><a class="mini" style="text-decoration:none" href="'+esc(x.url)+'" target="_blank" rel="noopener">log</a></td></tr>').join('')+'</tbody></table>':'';
+}
+$('social-today').addEventListener('click',async e=>{
+  const b=e.target.closest('button[data-run]');if(!b||!SOCIAL)return;
+  const s=(SOCIAL.today.slots||[])[Number(b.getAttribute('data-run'))];if(!s)return;
+  if(!confirm('Ask GitHub to run “'+s.lane+' — '+(s.what||s.name)+'” now?\n\nIf today’s post already went out, the lane will say so and publish nothing.'))return;
+  b.disabled=true;
+  try{
+    const j=await api('/admin/social/run',{workflow:s.workflow,inputs:s.inputs||{}});
+    $('social-msg').innerHTML='<div class="msg info">Asked. It starts within about '+esc(String(j.startsWithinSeconds||30))+' seconds — this board refreshes every minute.</div>';
+    setTimeout(loadSocial,20000);
+  }catch(err){
+    const m=err.status===429?'Already asked in the last 10 minutes — give it '+Math.ceil((err.payload&&err.payload.retryInSeconds||60)/60)+' more minute(s).':('GitHub did not accept the request: '+err.message+(err.payload&&err.payload.detail?' — '+err.payload.detail:''));
+    $('social-msg').innerHTML='<div class="msg err">'+esc(m)+'</div>';
+  }finally{b.disabled=false;}
+});
+
+/* ---------------- website: Cloudflare Web Analytics ---------------- */
+let SITE=null;
+async function loadSite(){
+  try{SITE=await api('/admin/site');renderSite();}
+  catch(e){if(e.status!==401)$('site-msg').innerHTML='<div class="msg err">'+esc('could not read the visits: '+e.message)+'</div>';}
+}
+function renderSite(){
+  const W=SITE||{};
+  if(W.connected===false){$('site-msg').innerHTML='<div class="msg warn">'+esc(W.reason||'not connected')+'</div>';$('site-kpis').innerHTML='';return;}
+  if(W.error){$('site-msg').innerHTML='<div class="msg err">'+esc(W.error)+'</div>';$('site-kpis').innerHTML='';return;}
+  $('site-msg').innerHTML=W.stale?'<div class="msg warn">'+esc('showing the last good numbers — '+W.stale)+'</div>':'';
+  const ng=W.nigeriaShare7==null?'—':Math.round(W.nigeriaShare7*100)+'%';
+  const week=(W.days28||[]).slice(-7).reduce((a,d)=>a+(d.visits||0),0),prev=(W.days28||[]).slice(-14,-7).reduce((a,d)=>a+(d.visits||0),0);
+  const trend=prev?Math.round((week-prev)/prev*100):null;
+  $('site-kpis').innerHTML=
+    kpi('Visits — 7 days',String(W.visits7||0),(W.pageviews7||0)+' page views')+
+    kpi('Visits — 28 days',String(W.visits28||0),(W.pageviews28||0)+' page views')+
+    kpi('From Nigeria',ng,'of the last 7 days')+
+    kpi('Week on week',trend==null?'—':(trend>0?'+':'')+trend+'%',prev?'vs the 7 days before':'not enough history yet',trend==null?null:(trend>=0?'#166534':'#B91C1C'));
+  const series=(W.days28||[]).map(d=>({day:d.date,v:d.visits||0}));
+  const max=Math.max(1,...series.map(x=>x.v));
+  $('chart-visits').innerHTML=series.map(x=>'<div class="bar'+(x.v?'':' zero')+'" style="height:'+Math.max(2,Math.round(x.v/max*96))+'px" title="'+esc(x.day+': '+x.v+' visits')+'"></div>').join('')||'<span class="hint">no days yet</span>';
+  $('vchart-from').textContent=series.length?lagosDay(series[0].day):'';$('vchart-to').textContent=series.length?lagosDay(series[series.length-1].day):'';
+  $('vchart-note').textContent='Cloudflare keeps days with no visits out of the series, so a gap is a quiet day, not missing data.';
+  const tbl=(rows,label,total)=>'<thead><tr><th>'+label+'</th><th class="num">Visits</th><th class="num">Share</th></tr></thead><tbody>'+(rows.length?rows.map(r=>'<tr><td>'+esc(r[0])+'</td><td class="num">'+r[1]+'</td><td class="num">'+(total?Math.round(r[1]/total*100)+'%':'—')+'</td></tr>').join(''):'<tr><td class="hint" colspan="3">nothing yet</td></tr>')+'</tbody>';
+  const chTotal=(W.byChannel||[]).reduce((a,r)=>a+r[1],0),cTotal=(W.byCountry||[]).reduce((a,r)=>a+r[1],0),pTotal=W.visits7||0;
+  $('site-channels').innerHTML=tbl(W.byChannel||[],'Channel',chTotal);
+  $('site-countries').innerHTML=tbl((W.byCountry||[]).map(r=>[countryName(r[0]),r[1]]),'Country',cTotal);
+  $('site-pages').innerHTML=tbl((W.byPath||[]).map(r=>[r[0],r[1]]),'Page',pTotal);
+}
+function countryName(c){try{return new Intl.DisplayNames(['en'],{type:'region'}).of(String(c))||c;}catch(e){return c;}}
+
 /* ---------------- tabs ---------------- */
-const VIEWS={ov:'v-ov',passes:'v-passes',biz:'v-biz',leads:'v-leads',sell:'v-sell',sec:'v-sec'};
+const VIEWS={ov:'v-ov',social:'v-social',site:'v-site',passes:'v-passes',biz:'v-biz',leads:'v-leads',sell:'v-sell',sec:'v-sec'};
 let currentView='ov';
 function showView(v){
   if(!VIEWS[v])return;
@@ -586,6 +727,8 @@ function showView(v){
   Object.keys(VIEWS).forEach(k=>$(VIEWS[k]).classList.toggle('hide',k!==v));
   if(v==='biz')renderInvoices();
   if(v==='sec')renderSessions();
+  if(v==='social')loadSocial();
+  if(v==='site')loadSite();
 }
 document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
   showView(t.getAttribute('data-view'));
@@ -600,7 +743,7 @@ document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
     DATA={today:{},snapshot:{},limits:{},health:{}};
     $('login').classList.add('hide');$('app').classList.remove('hide');
     await load();
-    setInterval(async()=>{if(document.hidden||!token)return;await load();ME=await api('/admin/me').catch(()=>ME);},REFRESH_MS);
+    setInterval(async()=>{if(document.hidden||!token)return;await load();if(currentView==='social')loadSocial();ME=await api('/admin/me').catch(()=>ME);},REFRESH_MS);
   }catch(e){signedOut();}
 })();
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&token&&$('app').classList.contains('hide')===false)load();});

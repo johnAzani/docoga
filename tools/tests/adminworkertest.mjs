@@ -403,6 +403,151 @@ console.log('— channel → revenue attribution: /tap counts checkouts, /verify
   ok('the snapshot carries sources{checkout,sale}{week:{channel:n}}', !!snap.sources && !!snap.sources.sale && snap.sources.checkout[wk].telegram === 2, JSON.stringify(snap.sources));
 }
 
+console.log('— social board: today\'s plan vs what GitHub Actions did (17 Oct 2026) —');
+{
+  // A fixed instant: Saturday 17 Oct 2026, 8:30pm Lagos (19:30 UTC).
+  const T = Date.parse('2026-10-17T19:30:00Z');
+  const realNow = Date.now; Date.now = () => T;
+  const realFetch = globalThis.fetch;
+  const table = [
+    { workflow: 'instagram_autopost.yml', name: 'IG', cron: '10 18 * * *', inputs: { clock: 'true' } },
+    { workflow: 'instagram_autopost.yml', name: 'IG', cron: '10 6 * * *', inputs: { clock: 'true' } },
+    { workflow: 'youtube_boost.yml', name: 'Boost', cron: '20 18 * * *', inputs: {} },
+    { workflow: 'facebook_story_afternoon.yml', name: 'FB story', cron: '40 18 * * *', inputs: {} },
+    { workflow: 'threads_autopost.yml', name: 'Threads', cron: '10 19 * * *', inputs: { slot: 'evening' } },
+    { workflow: 'automation-heartbeat.yml', name: 'Heartbeat', cron: '0 20 * * *', inputs: {} },
+    { workflow: 'youtube_scheduled.yml', name: 'Shorts', cron: '0 17 * * 1-5', inputs: {} },   // weekdays only: not on a Saturday
+    { workflow: 'brain.yml', name: 'Brain', cron: '30 0 * * *', inputs: {} },                  // 1:30am Lagos = 00:30 UTC same date
+    { workflow: 'brain_scorecard.yml', name: 'Scorecard', cron: '40 5 * * 1', inputs: {} },    // Mondays only
+  ];
+  const run = (id, file, created, status, conclusion, event = 'workflow_dispatch') => ({
+    id, name: file, path: '.github/workflows/' + file, event, status, conclusion, created_at: created, run_started_at: created,
+    updated_at: created, run_attempt: 1, html_url: 'https://github.com/johnAzani/docoga/actions/runs/' + id, triggering_actor: { login: 'johnAzani' } });
+  const runs = [
+    run(1, 'instagram_autopost.yml', '2026-10-17T18:10:33Z', 'completed', 'failure'),
+    run(2, 'youtube_boost.yml', '2026-10-17T18:20:33Z', 'completed', 'success'),
+    run(3, 'threads_autopost.yml', '2026-10-17T19:10:31Z', 'in_progress', null),
+    run(4, 'brain.yml', '2026-10-17T04:50:00Z', 'completed', 'success', 'schedule'),      // GitHub's own schedule, 4h20 late — still that slot
+    run(5, 'facebook_autopost.yml', '2026-10-17T15:03:00Z', 'completed', 'success'),      // a manual run with no slot → extra
+    run(6, 'deploy-pass-now.yml', '2026-10-17T16:40:00Z', 'completed', 'success', 'push'), // pushes are not plan material
+  ];
+  const calls = [];
+  globalThis.fetch = async (url, init = {}) => {
+    const u = String(url); calls.push((init.method || 'GET') + ' ' + u);
+    const reply = (obj, status = 200) => new Response(JSON.stringify(obj), { status, headers: { 'content-type': 'application/json' } });
+    if (u.startsWith('https://docoga-clock.')) return reply({ ok: true, token: 'present', paused: false, entries: table.length, utc: new Date(T).toISOString(), entries_table: table });
+    if (u.includes('/actions/runs?created=')) {
+      const m = /created=([^.]+)\.\.([^&]+)/.exec(u);
+      const a = Date.parse(m[1]), b = Date.parse(m[2]);
+      return reply({ workflow_runs: runs.filter(r => { const c = Date.parse(r.created_at); return c >= a && c <= b; }) });
+    }
+    if (u.includes('/actions/runs/1/jobs')) return reply({ jobs: [{ id: 901, name: 'publish', conclusion: 'failure' }] });
+    if (u.includes('/check-runs/901/annotations')) return reply([
+      { annotation_level: 'failure', title: '', message: 'Process completed with exit code 5.' },
+      { annotation_level: 'failure', title: '', message: 'https://docoga.com.ng/social/2026-10-17-instagram.jpg did not answer 200 within 900s. The render is committed but the site deploy has not published it — this is a race, not a credential problem.' }]);
+    if (u.endsWith('/dispatches')) return new Response(null, { status: 204 });
+    return reply({ message: 'unexpected ' + u }, 500);
+  };
+  try {
+    const bare = makeEnv();
+    const tokB = await authed(bare);
+    const off = await hit(bare, '/admin/social', get(tokB));
+    ok('no GH_DISPATCH_TOKEN → 200 {connected:false, reason}, never a 500 and never an empty table', off.status === 200 && off.j.connected === false && /GH_DISPATCH_TOKEN/.test(off.j.reason), off.text.slice(0, 160));
+    const runOff = await hit(bare, '/admin/social/run', post({ workflow: 'threads_autopost.yml' }, tokB));
+    ok('…and "run now" is 503 not_connected', runOff.status === 503 && runOff.j.error === 'not_connected', runOff.text.slice(0, 120));
+
+    const env = makeEnv({}, { GH_DISPATCH_TOKEN: 'ghp_test' });
+    const tok = await authed(env);
+    const anon = await hit(env, '/admin/social', get());
+    ok('the board needs a session', anon.status === 401, anon.status + '');
+    const r = await hit(env, '/admin/social', get(tok));
+    ok('connected board answers 200 with today = the Lagos day', r.status === 200 && r.j.connected === true && r.j.day === '2026-10-17', r.text.slice(0, 200));
+    const slots = r.j.today.slots;
+    const by = (file, utc) => slots.find(s => s.workflow === file && new Date(s.at).toISOString().startsWith(utc));
+    ok('the plan is the clock\'s table: 7 slots for a Saturday (no weekday Short, no Monday scorecard)', slots.length === 7, slots.map(s => s.workflow + '@' + new Date(s.at).toISOString().slice(11, 16)).join(','));
+    ok('slot times are the cron instants in UTC (Lagos 7:10pm = 18:10Z)', !!by('instagram_autopost.yml', '2026-10-17T18:10'), '');
+    ok('a 1:30am Lagos slot lands on the right UTC date (00:30Z of the same date)', !!by('brain.yml', '2026-10-17T00:30'), '');
+    const ig = by('instagram_autopost.yml', '2026-10-17T18:10'), igAm = by('instagram_autopost.yml', '2026-10-17T06:10');
+    ok('the failed Instagram run is matched to its 7:10pm slot and reads "failed"', ig && ig.status === 'failed' && ig.run && ig.run.id === 1, JSON.stringify(ig));
+    ok('…with the reason taken from the annotations, skipping the generic exit-code line', ig && /did not answer 200 within 900s/.test(ig.cause), ig && ig.cause);
+    ok('the morning Instagram slot nobody ran reads "missed"', igAm && igAm.status === 'missed' && !igAm.run, JSON.stringify(igAm));
+    ok('YouTube boost reads "done"', by('youtube_boost.yml', '2026-10-17T18:20').status === 'done', '');
+    ok('Threads, still running, reads "running"', by('threads_autopost.yml', '2026-10-17T19:10').status === 'running', '');
+    ok('the heartbeat at 9:00pm is "upcoming" at 8:30pm', by('automation-heartbeat.yml', '2026-10-17T20:00').status === 'upcoming', '');
+    ok('the Facebook Story at 7:40pm with no run is "missed" (50 min past, beyond the 20-min grace)', by('facebook_story_afternoon.yml', '2026-10-17T18:40').status === 'missed', '');
+    ok('GitHub\'s own late schedule run (4h20 after the slot) still counts for that slot', by('brain.yml', '2026-10-17T00:30').status === 'done', JSON.stringify(by('brain.yml', '2026-10-17T00:30').run));
+    ok('a manual run with no slot shows under extras; a push run does not appear at all', r.j.today.extras.length === 1 && r.j.today.extras[0].workflow === 'facebook_autopost.yml', JSON.stringify(r.j.today.extras));
+    const c = r.j.today.counts;
+    ok('counts: posted counts only lanes a reader sees (boost is care, not a post)', c.posted === 0 && c.done === 2 && c.failed === 1 && c.running === 1 && c.missed === 2 && c.upcoming === 1, JSON.stringify(c));
+    ok('the clock\'s health rides along', r.j.clock && r.j.clock.token === 'present' && r.j.clock.paused === false && r.j.planFrom === 'clock', JSON.stringify(r.j.clock));
+    ok('seven history days are listed (pending until digested — at most two built per load)', r.j.days.length === 7 && r.j.days.filter(d => !d.pending).length <= 2, JSON.stringify(r.j.days.map(d => d.pending ? 'p' : 'ok')));
+    const todayCalls = () => calls.filter(x => x.includes('created=2026-10-16T23:00:00Z')).length;
+    const t1 = todayCalls();
+    const again = await hit(env, '/admin/social', get(tok));
+    ok('a second load inside 45 s re-reads neither today nor any finished day already digested (only the next two history days are filled in)',
+       again.status === 200 && todayCalls() === t1 && again.j.days.filter(d => !d.pending).length === 4, (todayCalls() - t1) + ' today calls; ' + again.j.days.filter(d => !d.pending).length + ' digested');
+    const fails1 = calls.filter(x => x.includes('/check-runs/901/annotations')).length;
+    ok('the failure reason was fetched exactly once', fails1 === 1, fails1 + '');
+
+    // Run now
+    const before = calls.length;
+    const go = await hit(env, '/admin/social/run', post({ workflow: 'threads_autopost.yml', inputs: { slot: 'evening', nope: '$(rm -rf /)', 'bad key!': 'x' } }, tok));
+    const dispatch = calls.slice(before).find(x => x.startsWith('POST ') && x.endsWith('/dispatches')) || '';
+    ok('"run now" dispatches the allow-listed workflow on main and keeps only clean inputs', go.status === 200 && go.j.ok && dispatch.includes('/actions/workflows/threads_autopost.yml/dispatches') && go.j.inputs.slot === 'evening' && !('nope' in go.j.inputs), go.text.slice(0, 200) + ' ' + dispatch);
+    const twice = await hit(env, '/admin/social/run', post({ workflow: 'threads_autopost.yml' }, tok));
+    ok('a second ask inside 10 minutes is 429 with the wait', twice.status === 429 && twice.j.error === 'already_asked' && twice.j.retryInSeconds > 0, twice.text.slice(0, 120));
+    const unknown = await hit(env, '/admin/social/run', post({ workflow: 'deploy-pass-now.yml' }, tok));
+    ok('a workflow outside the plan is refused (400 unknown_workflow)', unknown.status === 400 && unknown.j.error === 'unknown_workflow', unknown.text.slice(0, 120));
+    const recent = JSON.parse(await env.KV.get('adm:recent') || '[]');
+    ok('the dispatch is written to the activity feed', recent.some(x => x.kind === 'dispatch' && x.workflow === 'threads_autopost.yml'), JSON.stringify(recent[0]));
+
+    // The daily cron digests yesterday once.
+    let job; await mod.scheduled({ cron: '0 7 * * *' }, env, { waitUntil: (p) => { job = p; } }); await job;
+    const yd = JSON.parse(await env.KV.get('adm:social:2026-10-16') || 'null');
+    ok('the daily cron leaves yesterday\'s digest in KV', yd && yd.ok && yd.day === '2026-10-16' && Array.isArray(yd.slots), String(await env.KV.get('adm:social:2026-10-16')).slice(0, 80));
+    ok('no route echoed the token', !JSON.stringify([r.j, go.j, again.j]).includes('ghp_test'), '');
+  } finally {
+    Date.now = realNow; globalThis.fetch = realFetch;
+  }
+}
+
+console.log('— website visits: Cloudflare Web Analytics, read-only, cached —');
+{
+  const realFetch = globalThis.fetch; const calls = [];
+  const gql = { data: { viewer: { accounts: [{
+    t7: [{ count: 70, sum: { visits: 52 } }], t28: [{ count: 240, sum: { visits: 180 } }],
+    ref7: [{ sum: { visits: 33 }, dimensions: { refererHost: '' } }, { sum: { visits: 13 }, dimensions: { refererHost: 'www.google.com' } }, { sum: { visits: 6 }, dimensions: { refererHost: 'l.facebook.com' } }, { sum: { visits: 9 }, dimensions: { refererHost: 'docoga.com.ng' } }],
+    path7: [{ count: 40, sum: { visits: 31 }, dimensions: { requestPath: '/' } }, { count: 5, sum: { visits: 4 }, dimensions: { requestPath: '/notice-to-quit-enugu' } }],
+    country7: [{ sum: { visits: 45 }, dimensions: { countryName: 'NG' } }, { sum: { visits: 7 }, dimensions: { countryName: 'US' } }],
+    days28: [{ count: 10, sum: { visits: 8 }, dimensions: { date: '2026-10-16' } }, { count: 12, sum: { visits: 9 }, dimensions: { date: '2026-10-17' } }],
+  }] } } };
+  globalThis.fetch = async (url, init = {}) => {
+    const u = String(url); calls.push((init.method || 'GET') + ' ' + u);
+    if (u === 'https://docoga.com.ng/') return new Response("<html><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{\"token\": \"0123456789abcdef0123456789abcdef\"}'></script></html>", { headers: { 'content-type': 'text/html' } });
+    if (u === 'https://api.cloudflare.com/client/v4/graphql') {
+      const body = JSON.parse(init.body);
+      calls.push('gql siteTag=' + body.variables.f7.siteTag + ' host=' + body.variables.f7.requestHost);
+      return new Response(JSON.stringify(gql), { headers: { 'content-type': 'application/json' } });
+    }
+    return new Response('{}', { status: 500 });
+  };
+  try {
+    const bare = makeEnv(); const tokB = await authed(bare);
+    const off = await hit(bare, '/admin/site', get(tokB));
+    ok('no Cloudflare token → 200 {connected:false, reason}', off.status === 200 && off.j.connected === false && /CF_ANALYTICS_TOKEN/.test(off.j.reason), off.text.slice(0, 120));
+    const env = makeEnv({}, { CF_ANALYTICS_TOKEN: 'cf_test', CLOUDFLARE_ACCOUNT_ID: 'acc' });
+    const tok = await authed(env);
+    const r = await hit(env, '/admin/site', get(tok));
+    ok('visits 7 + 28 days, page views, Nigeria share from the ISO code', r.status === 200 && r.j.visits7 === 52 && r.j.pageviews7 === 70 && r.j.visits28 === 180 && r.j.nigeriaShare7 === 0.865, r.text.slice(0, 200));
+    ok('channels: direct / google / facebook — the site\'s own host is dropped', JSON.stringify(r.j.byChannel) === JSON.stringify([['direct', 33], ['google', 13], ['facebook', 6]]), JSON.stringify(r.j.byChannel));
+    ok('the site tag was read from the beacon the site serves and sent to Cloudflare', calls.some(x => x.startsWith('gql siteTag=0123456789abcdef0123456789abcdef host=docoga.com.ng')), calls.join('\n'));
+    ok('the answer never carries the token or the whole tag', !r.text.includes('cf_test') && !r.text.includes('0123456789abcdef0123456789abcdef'), '');
+    const n = calls.length;
+    const again = await hit(env, '/admin/site', get(tok));
+    ok('a second load inside 30 min is served from KV (no Cloudflare call)', again.status === 200 && again.j.cached === true && calls.length === n, (calls.length - n) + ' calls');
+  } finally { globalThis.fetch = realFetch; }
+}
+
 console.log('');
 console.log(fails ? `❌ ADMIN SUITE: ${fails} failure(s)` : '🏆 admin suite green');
 process.exit(fails ? 1 : 0);

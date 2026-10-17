@@ -81,6 +81,7 @@ function makeEnv(records) {
     },
     SITE_URL: 'https://docoga.com.ng', PAYMENT_URL: 'https://flutterwave.com/pay/x', PROVIDER: 'flw',
     ADMIN_PASSPHRASE: PASS, ADMIN_AUTH_SECRET: SIGN,
+    GH_DISPATCH_TOKEN: 'ghp_dom_test', CF_ANALYTICS_TOKEN: 'cf_dom_test', CLOUDFLARE_ACCOUNT_ID: 'acc',
     _store: store, _c: counters,
   };
   return env;
@@ -203,6 +204,63 @@ check('open invoices are surfaced on the Business tab', /₦120,000/.test(txt('i
 click([...doc.querySelectorAll('.tab')].find(t => t.getAttribute('data-view') === 'leads'));
 await until(() => /lead@firm\.ng/.test(txt('leads')), 40);
 check('the waitlist row shows company and segment', /lead@firm\.ng/.test(txt('leads')) && /Firm Ltd/.test(txt('leads')) && /property-manager/.test(txt('leads')), txt('leads').slice(0, 160));
+
+console.log('— Social tab: the day’s plan, in the owner’s clock —');
+{
+  // The worker reaches the clock, GitHub and Cloudflare through Node's fetch; stand them in.
+  const realFetch = globalThis.fetch; const outbound = [];
+  // Freeze the worker's clock (Node's Date, not the page's): Saturday 17 Oct 2026, 8:30pm Lagos.
+  const realNow = Date.now; const FIXED = Date.parse('2026-10-17T19:30:00Z'); Date.now = () => FIXED;
+  const nowUTC = new Date(FIXED);
+  // 7:10pm Lagos failed · 10:10pm Lagos still to come · 1:10pm Lagos ran clean
+  const table = [
+    { workflow: 'instagram_autopost.yml', name: 'IG', cron: '10 18 * * *', inputs: { clock: 'true' } },
+    { workflow: 'threads_autopost.yml', name: 'Threads', cron: '10 21 * * *', inputs: { slot: 'evening' } },
+    { workflow: 'telegram_autopost.yml', name: 'Telegram', cron: '10 12 * * *', inputs: {} },
+  ];
+  const mk = (id, name, file, at, conclusion) => ({ id, name, path: '.github/workflows/' + file, event: 'workflow_dispatch', status: 'completed', conclusion, created_at: at, run_started_at: at, updated_at: at, run_attempt: 1, html_url: 'https://github.com/johnAzani/docoga/actions/runs/' + id });
+  const runs = [mk(71, 'IG', 'instagram_autopost.yml', '2026-10-17T18:10:33Z', 'failure'), mk(72, 'Telegram', 'telegram_autopost.yml', '2026-10-17T12:10:40Z', 'success')];
+  globalThis.fetch = async (url, init = {}) => {
+    const u = String(url); outbound.push((init.method || 'GET') + ' ' + u);
+    const reply = (o, status = 200) => new Response(JSON.stringify(o), { status, headers: { 'content-type': 'application/json' } });
+    if (u.startsWith('https://docoga-clock.')) return reply({ ok: true, token: 'present', paused: false, entries: 3, utc: nowUTC.toISOString(), entries_table: table });
+    if (u.includes('/actions/runs?created=')) { const m = /created=([^.]+)\.\.([^&]+)/.exec(u); const a = Date.parse(m[1]), b = Date.parse(m[2]); return reply({ workflow_runs: runs.filter(r => { const c = Date.parse(r.created_at); return c >= a && c <= b; }) }); }
+    if (u.includes('/actions/runs/71/jobs')) return reply({ jobs: [{ id: 7101, name: 'publish', conclusion: 'failure' }] });
+    if (u.includes('/check-runs/7101/annotations')) return reply([{ annotation_level: 'failure', message: 'IG_CAUSE=media — the card URL never answered 200' }]);
+    if (u.endsWith('/dispatches')) return new Response(null, { status: 204 });
+    if (u === 'https://docoga.com.ng/') return new Response("<script data-cf-beacon='{\"token\": \"0123456789abcdef0123456789abcdef\"}'></script>", { headers: { 'content-type': 'text/html' } });
+    if (u === 'https://api.cloudflare.com/client/v4/graphql') return reply({ data: { viewer: { accounts: [{ t7: [{ count: 70, sum: { visits: 52 } }], t28: [{ count: 240, sum: { visits: 180 } }],
+      ref7: [{ sum: { visits: 33 }, dimensions: { refererHost: '' } }, { sum: { visits: 13 }, dimensions: { refererHost: 'www.google.com' } }], path7: [{ count: 40, sum: { visits: 31 }, dimensions: { requestPath: '/' } }],
+      country7: [{ sum: { visits: 45 }, dimensions: { countryName: 'NG' } }, { sum: { visits: 7 }, dimensions: { countryName: 'US' } }], days28: [{ count: 10, sum: { visits: 8 }, dimensions: { date: '2026-10-16' } }] }] } } });
+    return reply({ message: 'unexpected ' + u }, 500);
+  };
+  try {
+    click([...doc.querySelectorAll('.tab')].find(t => t.getAttribute('data-view') === 'social'));
+    await until(() => /Instagram/.test(txt('social-today')), 80);
+    const board = txt('social-today');
+    check('the three slots are painted with lane and what', /Instagram/.test(board) && /Threads/.test(board) && /Telegram/.test(board), board.slice(0, 200));
+    check('times are 12-hour Lagos (7:10pm, 1:10pm, 10:10pm), never 19:10', /7:10pm/.test(board) && /1:10pm/.test(board) && /10:10pm/.test(board) && !/19:10/.test(board), board.slice(0, 200));
+    check('the failed Instagram slot says failed and shows the lane’s reason', /failed/.test(board) && /IG_CAUSE=media/.test(board), board.slice(0, 300));
+    check('the clean Telegram slot reads posted; the future Threads slot reads upcoming', /posted/.test(board) && /upcoming/.test(board), board);
+    const kv = [...doc.querySelectorAll('#social-kpis .v')].map(e => e.textContent);
+    check('the KPI cards count posts: 1 out, 1 failed, 0 missed, 1 still to come', kv.join(',') === '1,1,0,1', kv.join(','));
+    check('the clock is reported on duty', /on duty/.test(txt('social-health')), txt('social-health'));
+    const retry = doc.querySelector('#social-today button[data-run]');
+    check('only the failed row offers Retry', !!retry && doc.querySelectorAll('#social-today button[data-run]').length === 1);
+    click(retry);
+    await until(() => /Asked\./.test(txt('social-msg')), 60);
+    check('Retry dispatches the lane through the worker and tells the owner it is asked', /Asked\./.test(txt('social-msg')) && outbound.some(x => x === 'POST https://api.github.com/repos/johnAzani/docoga/actions/workflows/instagram_autopost.yml/dispatches'), txt('social-msg') + ' | ' + outbound.filter(x => x.startsWith('POST')).join(','));
+    check('the page never saw the GitHub token', !doc.documentElement.outerHTML.includes('ghp_dom_test'));
+
+    console.log('— Website tab: visits from Cloudflare —');
+    click([...doc.querySelectorAll('.tab')].find(t => t.getAttribute('data-view') === 'site'));
+    await until(() => /70 page views/.test(txt('site-kpis')), 80);
+    const sv = [...doc.querySelectorAll('#site-kpis .v')].map(e => e.textContent);
+    check('visits (7 + 28 days) and the Nigeria share are painted', sv[0] === '52' && sv[1] === '180' && sv[2] === '87%', sv.join(','));
+    check('channels and countries tables are filled, country codes spelled out', /google/.test(txt('site-channels')) && /Nigeria/.test(txt('site-countries')) && /United States/.test(txt('site-countries')), txt('site-countries'));
+    check('no page error was thrown while painting the new tabs', pageErrors.length === 0, pageErrors.join(' | '));
+  } finally { globalThis.fetch = realFetch; Date.now = realNow; }
+}
 
 console.log('— security tab —');
 click([...doc.querySelectorAll('.tab')].find(t => t.getAttribute('data-view') === 'sec'));
