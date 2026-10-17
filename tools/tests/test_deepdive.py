@@ -231,7 +231,12 @@ class WorkflowWiringTests(unittest.TestCase):
         wf = yaml.safe_load(self.src)
         priv = wf[True]["workflow_dispatch"]["inputs"]["privacy"] if True in wf else \
             wf["on"]["workflow_dispatch"]["inputs"]["privacy"]
-        self.assertEqual(priv["default"], "unlisted", "a long-form goes public only when the owner says so")
+        self.assertNotEqual(priv["default"], "public", "a long-form goes public only when the owner says so")
+        # 17 Oct 2026: the owner says so through the YT_PRIVACY repository variable — the same
+        # switch the Shorts lane reads — so a blank dispatch input defers to it, then to unlisted.
+        self.assertIn("IN_YT_PRIVACY: ${{ vars.YT_PRIVACY }}", self.src)
+        self.assertIn('PRIVACY="${IN_PRIVACY:-${IN_YT_PRIVACY:-unlisted}}"', self.src)
+        self.assertIn("Bad privacy setting", self.src)
 
     def test_scenes_render_as_a_nine_way_matrix(self):
         self.assertIn("scene: [1, 2, 3, 4, 5, 6, 7, 8, 9]", self.src)

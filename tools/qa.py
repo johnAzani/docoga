@@ -1119,8 +1119,9 @@ if os.path.isfile(dd_wf) and os.path.isfile(dd_tool):
           "Synthetic timings" in dd_wf_text and "allow_synthetic" in dd_tool_text)
     check("deepdive: long-form has its own ledger and the duplicate guard reads it",
           "--ledger logs/youtube_longform.json check" in dd_wf_text)
-    check("deepdive: the publish is never public by default",
-          "default: unlisted" in dd_wf_text)
+    check("deepdive: the publish is never public by default — the owner's YT_PRIVACY variable is the switch",
+          'PRIVACY="${IN_PRIVACY:-${IN_YT_PRIVACY:-unlisted}}"' in dd_wf_text
+          and "IN_YT_PRIVACY: ${{ vars.YT_PRIVACY }}" in dd_wf_text and "default: public" not in dd_wf_text)
     check("deepdive: exit codes survive the log capture",
           "code=${PIPESTATUS[0]}" in dd_wf_text)
     check("deepdive: the ledger commit does not retrigger CI", "[skip ci]" in dd_wf_text)

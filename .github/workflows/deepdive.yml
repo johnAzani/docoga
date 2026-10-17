@@ -36,11 +36,11 @@ on:
         type: choice
         options: [all, voice, render, publish]
       privacy:
-        description: 'YouTube privacy for the upload'
-        required: true
-        default: unlisted
+        description: 'YouTube privacy for this upload (default: the YT_PRIVACY repository variable, else unlisted)'
+        required: false
+        default: ''
         type: choice
-        options: [unlisted, private, public]
+        options: ['', unlisted, private, public]
       force:
         description: 'Publish even if this title is already in the long-form ledger'
         required: false
@@ -79,6 +79,7 @@ jobs:
           IN_EPISODE: ${{ inputs.episode }}
           IN_STAGE: ${{ inputs.stage }}
           IN_PRIVACY: ${{ inputs.privacy }}
+          IN_YT_PRIVACY: ${{ vars.YT_PRIVACY }}
           IN_FORCE: ${{ inputs.force }}
           EVENT: ${{ github.event_name }}
         run: |
@@ -90,10 +91,17 @@ jobs:
             exit 1
           fi
           [ -n "$EP" ] || EP="$(python3 tools/deepdive_queue.py next)"
+          PRIVACY="${IN_PRIVACY:-${IN_YT_PRIVACY:-unlisted}}"
+          case "$PRIVACY" in
+            public|unlisted|private) ;;
+            *) echo "::error title=Bad privacy setting::'$PRIVACY' is not public/unlisted/private — fix the YT_PRIVACY repository variable."; exit 1 ;;
+          esac
           {
             echo "episode=$EP"
             echo "stage=${IN_STAGE:-all}"
-            echo "privacy=${IN_PRIVACY:-unlisted}"
+            # dispatch input > YT_PRIVACY repository variable (the same switch the Shorts lane
+            # reads; 17 Oct 2026 the owner set it to public) > unlisted
+            echo "privacy=$PRIVACY"
             echo "force=${IN_FORCE:-false}"
           } >> "$GITHUB_OUTPUT"
           if [ -z "$EP" ]; then
