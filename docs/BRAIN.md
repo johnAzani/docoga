@@ -196,12 +196,22 @@ instead, so no day loses it. `FB_LINK=comment|body`; variable `FB_LINK_IN_COMMEN
 restores the old shape. Research: a link in the body reaches ~0.20 % of followers, a native
 post ~0.80 %.
 
-**Threads evening slot.** `threads_autopost.yml` runs twice: 13:10 WAT (text, poll on
-Sundays) and **20:10 WAT** (`generate_threads_content.py --slot evening`): the day's
-Instagram card as an IMAGE post (`https://docoga.com.ng/social/<day>-instagram.jpg`, no
-second render), link-free words (`threads.evening` in the pack, else headline + first line +
-send line), and the link in **our own reply** (`reply_to_id`). Card not fetchable → text
-post; reply refused → warning. `THREADS_IMAGE=sent|dropped`, `THREADS_REPLY=sent|failed`.
+**Threads evening slot.** `threads_autopost.yml` runs twice: 13:10 WAT and **20:10 WAT**
+(`generate_threads_content.py --slot evening`): the evening post is link-free words
+(`threads.evening` in the pack, else headline + first line + send line) with the link in
+**our own reply** (`reply_to_id`). Reply refused → warning. `THREADS_REPLY=sent|failed`.
+
+**Every Threads post carries a card (17 Oct 2026).** Owner: "the Thread is only text it
+uploads." The evening image used to borrow the Instagram lane's card, which exists only on
+days that lane rendered; Threads went out as words. Now the lane draws its **own** card each
+slot (`site/social/<day>-threads.jpg`, `<day>-threads-evening.jpg`; `card_path`/`image_url`
+in the content JSON), commits and pushes it to the default branch (the push deploys the
+site; no skip-CI marker), and `threads_publish.py wait_until_live` polls the URL until it
+answers 200 (`--image-wait`, default 600 s) before creating the IMAGE container with
+`alt_text`. Not live / refused → the words post as TEXT (`THREADS_IMAGE=dropped`), never a
+red run. A poll cannot sit beside an image, so on poll days the card wins and the poll is
+asked in our own reply (`THREADS_POLL_REPLY=sent|failed`). `social_card.prune` recognises
+the Threads renders, so the 60-day window still holds.
 (Also fixed: `approve()` now carries `threads.topic` and `threads.poll` into the pack — the
 fourth round wrote them but dropped them on the way to the lanes.)
 

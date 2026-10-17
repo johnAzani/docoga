@@ -35,7 +35,7 @@ name: DocOga Threads Auto-Post
 on:
   schedule:
     - cron: '10 12 * * *'  # 12:10 UTC = 13:10 Lagos — lunch idle time, when replies arrive in the first 90 minutes (brain/strategy.md)
-    - cron: '10 19 * * *'  # 19:10 UTC = 20:10 Lagos — the evening slot (17 Oct 2026): the day's card as an image post, link in our own reply
+    - cron: '10 19 * * *'  # 19:10 UTC = 20:10 Lagos — the evening slot (17 Oct 2026): the evening card as an image post, link in our own reply
   workflow_dispatch:
     inputs:
       dry_run:
@@ -58,7 +58,7 @@ on:
         required: false
         type: string
       slot:
-        description: 'lunch = text post; evening = image post with the link in a reply (scheduled runs pick by the clock)'
+        description: 'lunch = card + copy; evening = card + copy with the link in a reply (scheduled runs pick by the clock)'
         required: false
         default: 'auto'
         type: choice
@@ -84,12 +84,15 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python3 -m pip install --quiet cryptography pillow
+          python3 -m pip install --quiet cryptography pillow numpy
           # No `requests`: tools/threads_publish.py is stdlib-only, and the fewer packages a
           # 08:45 UTC job installs, the fewer ways it can fail for reasons that are not ours.
-          # `pillow` is not for this lane's own sake: scripts/generate_threads_content.py reuses
-          # the Telegram copy generator, which imports tools/social_card.py at module level.
-          # Run #4 (16 Oct 2026, the first real post) died on `No module named 'PIL'` there.
+          # `pillow` + `numpy` render the slot's card (tools/social_card.py); run #4 (16 Oct
+          # 2026, the first real post) died on `No module named 'PIL'` before the lane drew
+          # anything of its own.
+          # Inter, the brand face — without it Pillow falls back to a bitmap font and the card
+          # is off-brand (docs/BRAND_STYLE.md).
+          bash tools/install_brand_fonts.sh
 
       # The token is read from a 0600 file, not the environment, wherever the vault has it:
       # `/proc/<pid>/environ` is world-readable to anything on the runner, and a step that
@@ -172,9 +175,9 @@ jobs:
           THREADS_SLOT: ${{ inputs.slot }}
         run: |
           set -o pipefail
-          # Two posts a day (Threads' own guidance is 2–3): lunch is the text post, evening the
-          # image post. A scheduled run has no inputs, so the clock decides: after 15:00 UTC it is
-          # the evening slot. A dispatch may name the slot.
+          # Two posts a day (Threads' own guidance is 2–3), both image posts since 17 Oct 2026
+          # (owner: "the Thread is only text it uploads"). A scheduled run has no inputs, so the
+          # clock decides: after 15:00 UTC it is the evening slot. A dispatch may name the slot.
           SLOT="${THREADS_SLOT:-auto}"
           if [ "$SLOT" = "auto" ] || [ -z "$SLOT" ]; then
             if [ "$(date -u +%H)" -ge 15 ]; then SLOT=evening; else SLOT=lunch; fi
@@ -201,6 +204,73 @@ jobs:
           print("dispatch text overrides today's generated copy (%d characters)" % len(text))
           THREADS_OVERRIDE
           fi
+
+      - name: Render the card and publish it
+        if: ${{ !inputs.probe_only && !inputs.dry_run }}
+        env:
+          BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -o pipefail
+          # 17 Oct 2026: the evening post used to borrow the Instagram lane's card, which only
+          # exists on days that lane's slot gate let it render — so Threads went out as words.
+          # Now every slot draws its own card, commits it to the site, and waits for the URL to
+          # answer 200 (the publisher does the waiting, tools/threads_publish.py wait_until_live).
+          # Nothing here is fatal: when the card cannot be drawn or pushed, image_url is blanked
+          # and the words go out alone with a warning in the summary — a post always happens.
+          DAY=$(date -u +%F)
+          JSON=assets/threads/threads_content_latest.json
+          OUT=$(python3 -c 'import json;print(json.load(open("assets/threads/threads_content_latest.json")).get("card_path") or "")')
+          if [ -z "$OUT" ]; then
+            SUFFIX=""; [ "${THREADS_SLOT:-lunch}" = "evening" ] && SUFFIX="-evening"
+            OUT="site/social/${DAY}-threads${SUFFIX}.jpg"
+          fi
+          KICKER="$(python3 -c 'import json;print(json.load(open("assets/threads/threads_content_latest.json")).get("post_type",""))')"
+          drop_image() {
+            echo "::warning title=Threads card not published::$1 — posting the words alone this slot"
+            python3 - <<'DROP_IMAGE'
+          import json, pathlib
+          path = pathlib.Path("assets/threads/threads_content_latest.json")
+          blob = json.loads(path.read_text(encoding="utf-8"))
+          blob["image_url"] = None
+          path.write_text(json.dumps(blob, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+          DROP_IMAGE
+          echo "- card: **not published** ($1); text post instead" >> "$GITHUB_STEP_SUMMARY"
+          }
+          set +e
+          python3 tools/social_card.py --from-json "$JSON" --kicker "$KICKER" --brief "$DAY" --out "$OUT" 2>&1 | tee /tmp/threads_render.log
+          RENDER_RC=${PIPESTATUS[0]}
+          set -e
+          if [ "$RENDER_RC" != "0" ] || [ ! -s "$OUT" ]; then
+            drop_image "render failed (exit $RENDER_RC)"; exit 0
+          fi
+          CARD_URL=$(sed -n 's/^CARD_URL=//p' /tmp/threads_render.log | tail -1)
+          # The JSON's image_url is whatever the renderer actually published, never a guess.
+          CARD_URL="$CARD_URL" python3 - <<'SET_IMAGE'
+          import json, os, pathlib
+          path = pathlib.Path("assets/threads/threads_content_latest.json")
+          blob = json.loads(path.read_text(encoding="utf-8"))
+          url = os.environ.get("CARD_URL", "").strip()
+          if url:
+              blob["image_url"] = url
+          path.write_text(json.dumps(blob, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+          SET_IMAGE
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f "$OUT"
+          if git diff --staged --quiet; then
+            echo "Card already committed on this branch — nothing to push."
+          else
+            # No skip-CI marker in this message: this push is what deploys the site, and the
+            # deploy is what makes the URL answer 200. No workflow expression is interpolated
+            # into the push.
+            git commit -q -m "Auto: Threads card ${DAY} (${THREADS_SLOT:-lunch})"
+            git pull --rebase --autostash origin "$BRANCH" >/dev/null 2>&1 || true
+            if ! git push origin "HEAD:${BRANCH}"; then
+              drop_image "push to ${BRANCH} failed"; exit 0
+            fi
+          fi
+          echo "THREADS_CARD_URL=${CARD_URL}" | tee -a "$GITHUB_ENV"
+          echo "- card: ${CARD_URL}" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Ledger — has today already been posted?
         if: ${{ !inputs.probe_only && !inputs.dry_run }}
@@ -262,7 +332,7 @@ jobs:
             echo
             echo "- result: \`${RESULT:-?}${CAUSE:+ \`${CAUSE}\`}\`"
             echo "- permalink: ${PERMALINK:-not reported}"
-            [ -n "$IMAGE" ] && echo "- image: \`$IMAGE\` (the day's Instagram card; dropped = posted as text)"
+            [ -n "$IMAGE" ] && echo "- image: \`$IMAGE\` (this slot's own card; dropped = posted as text)"
             [ -n "$REPLY" ] && echo "- link reply: \`$REPLY\`"
             echo "- duplicate guard: read from the profile, not from a local counter"
             echo "- ledger: \`logs/threads_sent.json\`"

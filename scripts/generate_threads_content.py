@@ -197,7 +197,17 @@ def fit(body, hashtags):
     return text, notes
 
 
-CARD_URL = "https://docoga.com.ng/social/%s-instagram.jpg"   # the Instagram lane's card, live by 19:10 UTC
+# Owner, 17 Oct 2026: "the Thread is only text it uploads." Every slot now carries a card the
+# lane renders and publishes itself (site/social/<day>-threads[-evening].jpg → this URL). The old
+# evening design borrowed the Instagram lane's card, so a day the Instagram slot gate skipped —
+# or the restricted profile failed — left Threads with words alone.
+CARD_URL = "https://docoga.com.ng/social/%s-threads%s.jpg"
+CARD_PATH = "site/social/%s-threads%s.jpg"
+
+
+def card_for(day, slot):
+    suffix = "-evening" if slot == "evening" else ""
+    return CARD_URL % (day.isoformat(), suffix), CARD_PATH % (day.isoformat(), suffix)
 
 
 def build_evening(day, rng):
@@ -221,7 +231,7 @@ def build_evening(day, rng):
         text, notes = fit(plain, "")
     extras = extras_for(pack)
     extras["poll"] = None                       # a poll next to an image is refused; the poll is the lunch post's
-    extras["image_url"] = CARD_URL % day.isoformat()
+    extras["image_url"], extras["card_path"] = card_for(day, "evening")
     extras["reply_text"] = brain_drafts.evening_reply(pack)
     return post_type, text, notes, extras
 
@@ -235,15 +245,22 @@ def build(day, rng, slot="lunch"):
     if pack:
         post_type = brain_drafts.post_type(pack)
         text, notes = fit(brain_drafts.tag_links(brain_drafts.threads_text(pack), "threads"), brain_drafts.hashtags(pack, "threads"))
-        return post_type, text, ["brain: %s" % pack.get("theme")] + list(notes), extras_for(pack)
-    post_type = rng.choice(tg.WEEKLY_SCHEDULE.get(day.weekday(), ["promo"]))
-    template = rng.choice(tg.TEMPLATES[post_type])
-    plain = to_plain(template).strip()
-    if not plain:
-        raise ValueError("template for %r de-escaped to nothing" % post_type)
-    hashtags = tg.HASHTAGS.get(post_type, "#DocOga")
-    text, notes = fit(brain_drafts.tag_links(plain, "threads"), hashtags)
-    return post_type, text, notes, extras_for(None)
+        extras = extras_for(pack)
+        notes = ["brain: %s" % pack.get("theme")] + list(notes)
+    else:
+        post_type = rng.choice(tg.WEEKLY_SCHEDULE.get(day.weekday(), ["promo"]))
+        template = rng.choice(tg.TEMPLATES[post_type])
+        plain = to_plain(template).strip()
+        if not plain:
+            raise ValueError("template for %r de-escaped to nothing" % post_type)
+        hashtags = tg.HASHTAGS.get(post_type, "#DocOga")
+        text, notes = fit(brain_drafts.tag_links(plain, "threads"), hashtags)
+        extras = extras_for(None)
+    # The lunch post carries the day's card too (image posts earn ~1.6× a text post). A poll
+    # cannot sit beside an image, so on poll days the publisher posts the card and asks the poll
+    # in its own reply underneath.
+    extras["image_url"], extras["card_path"] = card_for(day, "lunch")
+    return post_type, text, notes, extras
 
 
 def extras_for(pack):
@@ -273,6 +290,7 @@ def generate(day=None, write=True, slot="lunch"):
         "date": day.isoformat(),
         "slot": slot,
         "image_url": extras.get("image_url"),
+        "card_path": extras.get("card_path"),
         "reply_text": extras.get("reply_text"),
         "day_of_week": day.weekday(),
         "day_name": day.strftime("%A"),
