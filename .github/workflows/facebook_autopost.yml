@@ -122,6 +122,7 @@ env:
   # followers by itself when it performs — Instagram's own growth lever, ₦0. `off` posts
   # ordinary Reels. A token or account Meta has not opened it to falls back on its own.
   IG_TRIAL_REELS: ${{ vars.IG_TRIAL_REELS || 'on' }}
+  IG_COLLABORATORS: ${{ vars.IG_COLLABORATORS }}   # up to 3 public usernames invited as Reel co-authors (blank = none)
   TZ: Africa/Lagos
 
 jobs:

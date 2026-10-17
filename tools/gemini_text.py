@@ -40,7 +40,18 @@ sys.path.insert(0, str(ROOT / "tools"))
 import gemini_quota  # noqa: E402
 
 API = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
-DEFAULT_MODELS = ("gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-flash-lite-latest", "gemini-2.0-flash")
+# The ladder, 17 Oct 2026. Since 18 Sep 2026 Google serves the 2.5 text models only to projects
+# that used them before that date and points new projects at 3.8 Flash / 3.5 Flash-Lite; 2.5 Pro
+# joined the free tier; 2.0 Flash is retired. Every rung is free of charge. A rung the key is not
+# served answers 404/403 and costs nothing — the chain simply steps down. Flash-class rungs hold
+# ~20 requests/day each, the Lite rungs ~500/day: the editor's two or three calls fit many times.
+DEFAULT_MODELS = ("gemini-3.8-flash", "gemini-2.5-flash", "gemini-2.5-pro", "gemini-3.5-flash",
+                  "gemini-3.5-flash-lite", "gemini-2.5-flash-lite", "gemini-3.1-flash-lite",
+                  "gemini-flash-lite-latest")
+# The replies lane talks more often and needs less brain: Lite rungs first, the 500/day buckets.
+LITE_FIRST_MODELS = ("gemini-3.5-flash-lite", "gemini-2.5-flash-lite", "gemini-3.1-flash-lite",
+                     "gemini-flash-lite-latest", "gemini-3.8-flash", "gemini-2.5-flash")
+MODELS_URL = "https://generativelanguage.googleapis.com/v1beta/models?pageSize=200"
 THINKING_MODELS = re.compile(r"gemini-(2\.5|3)")   # models whose output budget also pays for "thoughts"
 MINUTE_WAIT_CAP_S = 75          # a per-minute refusal is waited out once, never longer than this
 TIMEOUT_S = 120
@@ -170,7 +181,10 @@ def generate_json(prompt, system=None, models_chain=None, http=None, sleep=None,
                 exhausted.append(model)
                 log("brain: %s refused for the day (%s) — next model" % (model, refusal.get("quota_id") or "quota"))
                 break
-            if status in (404, 400) and ("not found" in body.lower() or "not supported" in body.lower()):
+            if (status in (404, 400) and ("not found" in body.lower() or "not supported" in body.lower())) \
+                    or (status == 403 and "quota" not in body.lower()):
+                # 404: no such model for this key. 403 without a quota word: Google is not serving
+                # this model to this project (the 2.5 rule since Sep 2026). Neither costs a request.
                 last_error = "%s: unavailable (%d)" % (model, status)
                 log("brain: " + last_error)
                 break
@@ -182,3 +196,58 @@ def generate_json(prompt, system=None, models_chain=None, http=None, sleep=None,
         raise Exhausted("every model refused for the day: %s" % ", ".join(exhausted),
                         resumes_at=gemini_quota.next_reset())
     raise GeminiError(last_error or "no model answered")
+
+
+# ───────────────────────────── probe: which rungs does this key get? ─────────────────────────────
+def _get(url, key):
+    req = urllib.request.Request(url, headers={"x-goog-api-key": key})
+    try:
+        with urllib.request.urlopen(req, timeout=TIMEOUT_S) as resp:
+            return resp.status, resp.read().decode("utf-8", "replace")
+    except urllib.error.HTTPError as exc:
+        return exc.code, exc.read().decode("utf-8", "replace")
+    except (urllib.error.URLError, TimeoutError, OSError) as exc:
+        return 0, str(exc)
+
+
+def served_models(http_get=None, key=None):
+    """The model names Google lists for this key (ListModels costs no generation quota)."""
+    status, body = (http_get or _get)(MODELS_URL, key or api_key())
+    if status != 200:
+        raise GeminiError("ListModels answered HTTP %s: %s" % (status, body[:200]))
+    names = []
+    for m in (json.loads(body).get("models") or []):
+        name = str(m.get("name") or "").split("/")[-1]
+        if name and "generateContent" in (m.get("supportedGenerationMethods") or []):
+            names.append(name)
+    return names
+
+
+def probe(chain=None, http_get=None, key=None, log=print):
+    """Print the ladder against the key's served list. Returns (served_rungs, missing_rungs).
+
+    Machine line: GEMINI_SERVED=<comma list of chain models the key is served> and
+    GEMINI_LADDER=ok|thin|empty — `empty` means no rung answers and tonight's plan will fall
+    back to the rotation; that is the one case worth an issue."""
+    chain = tuple(chain or models())
+    names = set(served_models(http_get=http_get, key=key))
+    served = [m for m in chain if m in names or m.endswith("-latest")]
+    missing = [m for m in chain if m not in served]
+    for m in chain:
+        log("  %s %s" % ("✅" if m in served else "—", m))
+    verdict = "empty" if not served else ("thin" if len(served) < 2 else "ok")
+    log("GEMINI_SERVED=%s" % ",".join(served))
+    log("GEMINI_LADDER=%s" % verdict)
+    return served, missing
+
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1 and sys.argv[1] == "probe":
+        try:
+            served, _missing = probe()
+        except GeminiError as exc:
+            print("GEMINI_LADDER=unknown")
+            print("::warning title=Gemini probe::%s" % exc)
+            sys.exit(0)
+        sys.exit(0 if served else 1)
+    print(__doc__)

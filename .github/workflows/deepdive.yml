@@ -467,6 +467,19 @@ jobs:
           VIDEO_ID: ${{ steps.upload.outputs.video_id }}
           COVER: ${{ steps.meta.outputs.cover_path }}
         run: python3 tools/yt_thumbnail.py --video-id "$VIDEO_ID" --image "$COVER"
+      # Closed captions from the episode's own Vosk word timings (tools/yt_captions.py): YouTube
+      # indexes caption text for search, phones watch muted, and the brand promises accessibility.
+      # 400 quota units once a week; youtube.force-ssl, which the uploader already holds. Never
+      # fails the publish — the video is up; a refusal is a warning with its reason.
+      - name: Upload captions (never fails the publish)
+        if: steps.upload.outputs.video_id != ''
+        continue-on-error: true
+        env:
+          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+          YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+          VIDEO_ID: ${{ steps.upload.outputs.video_id }}
+        run: python3 tools/yt_captions.py --video-id "$VIDEO_ID" --words "$BUILD_DIR/words.json" --srt "/tmp/$EPISODE.srt"
       - name: Record in the long-form ledger
         if: always() && steps.upload.outputs.video_id != ''
         env:

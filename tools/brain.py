@@ -61,6 +61,7 @@ import brain_drafts as drafts  # noqa: E402
 import gemini_text  # noqa: E402
 import law_index  # noqa: E402
 import newsdesk  # noqa: E402
+import listening  # noqa: E402
 
 LAGOS = ZoneInfo("Africa/Lagos")
 BRAIN = ROOT / "brain"
@@ -230,7 +231,7 @@ def day_context(day, said=None):
                 short_day=day.weekday() in SHORT_DAYS, calendar=calendar_notes(day),
                 recent=recent, feedback=read(FEEDBACK).strip(),
                 strategy=read(STRATEGY).strip(), audience=read(AUDIENCE).strip(),
-                news=newsdesk.fresh_items(), search=search_demand(),
+                news=newsdesk.fresh_items(), search=search_demand(), asked=listening.fresh_items(),
                 hook=hook, hook_why=hook_why, hook_binding=hook_binding)
 
 
@@ -308,6 +309,11 @@ NEWSDESK — WHAT NIGERIA IS TALKING ABOUT THIS WEEK (headline — paper)
 A story may be the OPENING LINE only ("This week a Lagos landlord…"), named as "reported by <paper>".
 Never invent a detail that is not in the headline. The law still comes from the shelf below with a
 fact id. If no story fits today's lead and state, set news_hook to null — do not force it.
+
+WHAT NIGERIANS ASKED THIS WEEK (thread titles on Nairaland and r/Nigeria — real people, real trouble)
+{listening.prompt_block(ctx.get('asked') or [])}
+When one of these is today's lead, the FIRST LINE answers it in their words ("Your landlord gave you
+one month to leave after a year of rent?"). Answer the question; never quote the thread or name the poster.
 
 WHAT NIGERIANS TYPE INTO GOOGLE BEFORE THEY FIND US (Search Console, last 28 days, Nigeria)
 {search_block(ctx.get('search') or [])}
@@ -653,6 +659,7 @@ def approve(pack, ctx, model_note=""):
         "state": pack.get("state"), "claims": pack.get("claims") or [],
         "post": {"headline": pack["post"]["headline"].strip(),
                  "lines": [str(x).strip() for x in pack["post"]["lines"] if str(x).strip()],
+                 "cta": str(pack["post"].get("cta") or "").strip(),
                  "hashtags": list(pack["post"]["hashtags"])},
         "threads": {"text": pack["threads"]["text"].strip(),
                     "hashtags": list(pack["threads"].get("hashtags") or [])[:2],
@@ -661,6 +668,13 @@ def approve(pack, ctx, model_note=""):
                     "evening": str(pack["threads"].get("evening") or "").strip()[:280]},
         "visual": {k: str(pack["visual"].get(k) or "").strip() for k in ("kicker", "layout", "big", "plate")},
         "short": short, "why": str(pack.get("why") or "").strip(),
+        # The fields the lanes and the learning loop read back (17 Oct 2026: they were linted
+        # but not saved — so every link fell to the homepage, no Tuesday quiz ever reached
+        # Telegram and the reader-learning column stayed "unnamed").
+        "tool": (str(pack.get("tool") or "").strip().lower() or None),
+        "reader": str(pack.get("reader") or "").strip(),
+        "news_hook": (str(pack.get("news_hook") or "").strip() or None),
+        "quiz": pack.get("quiz") if isinstance(pack.get("quiz"), dict) else None,
         "gates": ["citation", "verification" if pack.get("claims") else "no-claims", "lint", "repetition", "shape"],
         "note": model_note,
     }

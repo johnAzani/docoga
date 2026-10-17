@@ -221,6 +221,63 @@ the `YT_REFRESH_TOKEN` secret. Next Monday 06:00 WAT the stats lane prints `SEAR
 | Pinned newsdesk | `brain/newsdesk_pinned.json`, `newsdesk.pinned_items` | hand-dated, sourced headlines merged ahead of the RSS pull; each expires 21 days after `published`; `_note` says what the brain may and may not claim | — |
 | Heartbeat fix | `automation-heartbeat.yml`, `linkedin_autopost.yml`, `test_workflow_contract` | the judge step ran under GitHub's default `bash -e`; the tool's deliberate exit 1 ended the step before `signature=` was written, so the filing step saw nothing and refused to file — four red nights, no issue. `set +e` around the pipeline; a contract test forbids reading `PIPESTATUS` with errexit on, in every workflow | — |
 
+## The seventh round (17 Oct 2026 — "every channel growing, the account getting fat, ₦0")
+
+**Listening (`tools/listening.py`).** The newsdesk hears the papers; this hears the
+people. Every night the brain GETs the thread titles on Nairaland's Properties,
+Family and Politics boards and r/Nigeria (no API, no login, no posting), scores
+them (problem words up, question words up, adverts down) and keeps the top 12 in
+`brain/listening.json`. The prompt carries them as **WHAT NIGERIANS ASKED THIS
+WEEK**, so a day's post opens by answering a real question in the reader's words.
+
+**The forum answer (Mondays).** `tools/listening.py answer` drafts ONE reply to the
+best open thread from the law shelf, gated exactly like a post (every legal
+sentence cites a shelf fact and appears verbatim; the DocOga link and the
+"not legal advice" line are mandatory), writes `brain/answers/YYYY-MM-DD.md`, and
+the Monday scorecard issue carries it under **✍️ Forum answer — paste this**. The
+owner pastes it by hand — Nairaland has no posting API and an automated account
+there is a ban, not a channel. One thread is never answered twice. Dispatch
+`forum_answer=true` to draft one on any day.
+
+**Guides (`tools/guides_build.py`).** Every approved pack dated today or earlier
+becomes a cited page at `docoga.com.ng/guides/<theme>-<state>.html` — headline,
+the post's lines, "The law behind it" (section + statute from the shelf), the
+Tuesday quiz as a FAQ with `FAQPage` schema, the tool link for the post's state
+(`?s=g` so the scorecard sees it), the standing footer — plus `guides/index.html`,
+`guides/guides.json` and new `<url>` entries in `sitemap.xml`. Nothing is generated
+here: a page is a faithful re-layout of a pack that already passed the gates; a
+pack with no cited law is not a page. The brain's own commit publishes it (the
+site is static files on Cloudflare — ₦0). The only part of the brain that touches
+the website: it writes under `site/guides/`, the sitemap and the IndexNow key
+file, never a tool page, never the payment flow. **Variable `BRAIN_GUIDES=off`
+turns it off.** Optional: set variable `INDEXNOW_KEY` (8–128 letters/digits) and
+the builder commits `site/<key>.txt` and pings IndexNow (Bing/Yandex/Naver, free)
+after each build; Google reads the sitemap.
+
+**Captions (`tools/yt_captions.py`).** After a Deep-Dive uploads, its own Vosk
+word timings (`words.json`) become an SRT (≤2 lines × 42 characters, 1–6 s cues,
+broken at sentences) and go up as the "English (DocOga)" track — `captions.insert`,
+400 quota units a week, `youtube.force-ssl` (already held). YouTube indexes caption
+text for search; phones watch muted. Never fails the publish. Synthetic timings
+are refused.
+
+**The description funnel.** YouTube's Shorts→long-form "Related video" is a Studio
+tap with no API (the Shorts run summary names the one tap). So the Deep-Dive
+description now ends with "60-second versions (Shorts)" and "Earlier Deep-Dives" —
+the latest *public* ones from the ledgers — and the viewer who finished one has the
+next in reach.
+
+**Instagram collaborators.** Variable `IG_COLLABORATORS` (up to 3 public usernames,
+comma-separated) is sent as `collaborators` on photo, carousel and Reel containers
+(never Stories, never carousel children). Each account gets an invite once; when
+they accept, the post sits on both profiles. Borrowed audience for ₦0. Blank = off.
+
+**approve() now saves what it linted.** `tool`, `reader`, `post.cta`, `quiz` and
+`news_hook` were checked by the gates but dropped from the saved pack — so every
+deep link fell to the homepage, no Tuesday quiz ever reached Telegram, the money
+line never rendered and the reader-learning column stayed "unnamed". Fixed and
+tested (`tools/tests/test_round7.py`).
+
 ## The gates (why a legal-documents brand can let a model write)
 1. **Citation** — every legal claim names a fact id on the shelf for the state
    the post names. The shelf is `tools/state_law_data.py`, the same verified,
@@ -249,8 +306,15 @@ Research of 16 Oct 2026: Google no longer publishes free-tier limits; projects
 have seen the Flash daily bucket at **20 requests** since December 2025, and the
 buckets are **per model**. The brain therefore spends **2–3 requests a night**
 (one plan, one verify, at most one retry per day planned) on a chain
-`gemini-2.5-flash → gemini-2.5-flash-lite → gemini-flash-lite-latest → gemini-2.0-flash`
-(`BRAIN_MODELS` variable overrides). A per-minute 429 is waited out once; a per-day
+`gemini-3.8-flash → gemini-2.5-flash → gemini-2.5-pro → gemini-3.5-flash → gemini-3.5-flash-lite → gemini-2.5-flash-lite → gemini-3.1-flash-lite → gemini-flash-lite-latest`
+(`BRAIN_MODELS` variable overrides; the replies lane runs the Lite rungs first — ~500/day each).
+**Why the ladder changed (17 Oct 2026):** since 18 Sep 2026 Google serves the 2.5
+text models only to projects that used them before that date and points new
+projects at 3.8 Flash / 3.5 Flash-Lite; 2.5 Pro joined the free tier; 2.0 Flash is
+retired. A rung the key is not served answers 403/404 and costs nothing — the chain
+steps down. Every brain run starts with `python3 tools/gemini_text.py probe`
+(ListModels, no quota): the summary lists ✅/— per rung and `GEMINI_LADDER=ok|thin|empty`;
+`empty` is the one case that is an error line. A per-minute 429 is waited out once; a per-day
 429 moves to the next model; when every model is spent the lane exits **6** — a
 pause, not a failure, no issue opened — and tries again the next night. Thinking
 is capped (`thinkingBudget`) so the JSON always fits the output ceiling. The

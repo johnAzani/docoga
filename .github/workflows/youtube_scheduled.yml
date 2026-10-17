@@ -458,6 +458,7 @@ jobs:
             echo "| Diagnosis | dispatch this workflow with \`probe_only=true\` to re-check credentials without uploading |"
             if [ -n "$PARENT_URL" ]; then
               echo "| Parent Deep-Dive | $PARENT_URL (linked in the description) |"
+              echo "| Related video (one Studio tap) | YouTube Studio app → this Short → Edit → **Related video** → pick the Deep-Dive above. No API can set it (Oct 2026); it is the button under the Short that sends a finished viewer to the long-form. |"
               echo
               echo "**Pin this comment from the YouTube app** (the uploader token cannot post comments):"
               echo
