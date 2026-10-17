@@ -29,6 +29,16 @@ passes five gates. The posting lanes read the pack at post time; when there is
 none they fall back to the hand-written rotation. On Sundays it also drafts the
 next Deep-Dive episode and queues it for the long-form lane. Nobody is pinged.
 
+
+## Night one (17 Oct 2026, 05:48 Lagos — the scheduler was 4 h late)
+`GEMINI_LADDER=ok`, all eight rungs served. Two of three days approved
+(`kwara-rent-book-rule`, `advance-rent-cap-lagos`); 17 Oct fell to rotation after one
+refusal for a 117-character line and one honest verifier refusal ("legal statement not
+on the shelf" — the gate doing its job). Three of five attempts that night were refused
+only for body lines of 115–125 characters, so the brain now carries **the editor's
+pencil**: `tidy()` re-breaks an over-long line at a sentence or clause boundary before the
+gates run — layout only, never a word. Guides showed `0 written` because pages are
+written on the day a pack posts, not the night it is planned.
 ## Files
 | Path | What |
 |---|---|
