@@ -144,6 +144,9 @@ waits on a scan. The page also polls every 60 s, paused while hidden.
 | `POST /admin/issue` | mint + email a pass by hand (the only admin write path that creates value) |
 | `POST /admin/revoke` / `/admin/extend` / `/admin/resend` | cancel · extend (+365 d, un-revokes from today) · re-send mail (502 `MAIL_NO_PROVIDER` rather than pretend) |
 | `GET /admin/sessions` / `POST /admin/session` | list devices · kill one (`{sid}`) or all others (`{all:true}`) |
+| `GET /admin/social` | **Social tab (17 Oct 2026).** Today's posting plan vs what GitHub Actions actually did, the last 7 days, and the clock's health — see §5a |
+| `POST /admin/social/run` | `{workflow, inputs?}` — "Run now / Retry" a lane this minute; allow-listed to the plan, one ask per lane per 10 min (429 with `retryInSeconds`) |
+| `GET /admin/site` | **Website tab.** Visits from Cloudflare Web Analytics: 7 + 28 days, by channel, country and page; cached 30 min |
 
 Every response: `Cache-Control: no-store`, `X-Frame-Options: DENY`,
 `Referrer-Policy: no-referrer`. Raw webhook bodies are never echoed. Exported CSV
@@ -153,6 +156,47 @@ turned into a formula.
 Hand-minting is capped at `ADMIN_ISSUE_CAP = 200/day` (`adm:issue:{date}`) — an
 owner with a leaked token should not be able to print inventory forever; the cap
 and the current count are both shown on the Sell tab.
+
+### 5a. The Social tab — plan vs reality, honestly
+
+The owner asked for it in one sentence: *"I want to see the social media upload plans
+for the day, the ones that were successful, the ones that failed."* Three design rules:
+
+1. **The plan shown is the plan that fires.** The worker reads the clock's own table
+   (`GET https://docoga-clock.johnazani.workers.dev/` → `entries_table`, cached 30 min),
+   not a copy. Every row is a cron the clock really rings, with the exact dispatch
+   inputs. If the lanes' crons change, the clock redeploys and the board follows.
+2. **Reality is GitHub's, not ours.** One `GET /actions/runs?created=<Lagos day>` with
+   the same fine-grained token the clock holds (`GH_DISPATCH_TOKEN`, forwarded into
+   the worker by `deploy-pass-now.yml`). Runs are matched to slots by workflow file
+   and nearest start (10 min early to 6 h late — GitHub's own `schedule:` has been
+   measured 4 h 32 min late at the median). A failed run's **reason** is the lane's own
+   error annotation (`IG_CAUSE=…`, `THREADS_…`), fetched once and cached per run.
+   Words on the board: **posted** (a reader-facing lane ran clean) · **done** (housekeeping
+   ran) · **failed** (+ reason) · **running** · **upcoming** · **due now** (≤ 20 min past) ·
+   **missed** (slot passed, nothing ran). Manual or re-runs that match no slot are listed
+   under *Machinery* so nothing that ran is hidden.
+3. **Retry is a request, not a bypass.** "Run now" is a `workflow_dispatch` with the
+   slot's own inputs; the lane's ledger still refuses a duplicate. One ask per lane per
+   10 minutes; every ask lands in the activity feed.
+
+Budget: today's board is cached 45 s in KV; finished days are digested once (by the
+first load after midnight or by the 8:00am cron) and kept 14 days as small records, so
+the 7-day view is seven KV reads, never seven GitHub pages. Times on the page are
+12-hour Lagos (`7:10pm`), per the owner's standing rule.
+
+Fail-closed, legibly: no `GH_DISPATCH_TOKEN` in the worker → `{connected:false, reason}`
+and the tab says exactly which deploy fixes it. Never a 500, never an empty table
+dressed up as a quiet day.
+
+### 5b. The Website tab
+
+`GET /admin/site` runs the same GraphQL the Monday scorecard uses
+(`rumPageloadEventsAdaptiveGroups`, see `tools/site_analytics.py`) with
+`CF_ANALYTICS_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` (both forwarded by the deploy). The
+site tag is read from the beacon the live page serves and cached a week; Nigeria is
+counted by the ISO code (`NG`) Cloudflare really returns. Cached 30 min; a Cloudflare
+hiccup shows the last good numbers with a "stale" note rather than a blank.
 
 ---
 

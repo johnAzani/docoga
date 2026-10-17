@@ -122,6 +122,11 @@ export default {
       entries: schedule.entries.length,
       due_this_tick: rows.map((r) => r.workflow),
       utc: new Date(now).toISOString(),
+      // The whole table, so the owner dashboard (docoga-pass /admin/social) shows the
+      // plan that actually rings the lanes — crons and dispatch inputs only, no secret.
+      tick_minutes: schedule.tick_minutes || 5,
+      ref: schedule.ref || "main",
+      entries_table: schedule.entries.map((e) => ({ workflow: e.workflow, name: e.name, cron: e.cron, inputs: e.inputs || {} })),
     };
     return new Response(JSON.stringify(body, null, 2), { headers: { "content-type": "application/json" } });
   },

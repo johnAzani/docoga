@@ -1692,6 +1692,9 @@ async function handleActivate(url, env, cors) {
  *   POST /admin/extend    push a pass's synced expiry
  *   GET  /admin/sessions  list live admin sessions
  *   POST /admin/session   {sid} drop one · {all:true} drop every other one
+ *   GET  /admin/social    today's posting plan vs what GitHub Actions did, last 7 days, clock health
+ *   POST /admin/social/run {workflow, inputs?} ask a lane to run now (one per lane per 10 min)
+ *   GET  /admin/site      website visits (Cloudflare Web Analytics, 7 + 28 days)
  * ========================================================================== */
 const ADMIN_SESSION_TTL = 43200;      // 12 h, slid forward while the owner keeps using it
 const ADMIN_SNAP_TTL = 6 * 3600;      // freshness target for the heavy rollup
@@ -2219,6 +2222,388 @@ async function handleAdminSessionKill(request, env, cors, sid) {
 }
 
 /* ---------- router ---------- */
+
+/* ==========================================================================
+ *  SOCIAL BOARD + WEBSITE VISITS (owner dashboard, 17 Oct 2026)
+ *
+ *  The owner asked: "In the admin dashboard I want to see the social media
+ *  upload plans for the day, the ones that were successful, the ones that
+ *  failed." Everything here is read-side glue over systems that already exist;
+ *  nothing touches payments, codes or the posting lanes themselves.
+ *
+ *  Plan   = the clock's own schedule (GET docoga-clock /, cached 30 min). The
+ *           table the dashboard shows is the table that actually rings the
+ *           lanes — it cannot disagree with reality by construction.
+ *  Truth  = GitHub Actions runs for the Lagos day (one API call, cached 45 s),
+ *           matched to slots by workflow + nearest time. Failed runs get their
+ *           reason from the job annotations (cached per run, 7 days).
+ *  Retry  = POST /admin/social/run → workflow_dispatch, allow-listed to the
+ *           lanes in the plan, one per lane per 10 minutes. The lane's own
+ *           duplicate guards decide whether anything is published.
+ *  Visits = Cloudflare Web Analytics GraphQL (7 + 28 days, cached 30 min);
+ *           the site tag is read from the beacon the site itself serves.
+ *
+ *  Fail-closed and honest: no GH_DISPATCH_TOKEN → {connected:false, reason},
+ *  never a 500 and never an empty table pretending to be a quiet day. CPU
+ *  budget (Workers Free: 10 ms) is respected by keeping every GitHub answer to
+ *  one page of one day and by digesting finished days into small KV records.
+ * ========================================================================== */
+const SOCIAL_REPO_DEFAULT = "johnAzani/docoga";
+const SOCIAL_CLOCK_URL = "https://docoga-clock.johnazani.workers.dev/";
+const SOCIAL_PLAN_TTL = 1800;           // clock schedule cache
+const SOCIAL_TODAY_TTL = 45;            // seconds before today's runs are re-read
+const SOCIAL_DAY_TTL = 14 * 86400;      // finished days keep their digest two weeks
+const SOCIAL_RUN_LOCK = 600;            // one manual dispatch per lane per 10 min
+const SOCIAL_FAIL_LOOKUPS = 3;          // failure reasons fetched per load (then cached)
+const SOCIAL_MATCH_BEFORE = 10 * 60e3;  // a run may start this early for its slot
+const SOCIAL_MATCH_AFTER = 6 * 3600e3;  // …or this late (GitHub's own schedule lag: median 4h32 measured 17 Oct 2026)
+const SOCIAL_DUE_GRACE = 20 * 60e3;     // "due" before it is called "missed"
+const SOCIAL_HISTORY_DAYS = 7;
+const SOCIAL_HISTORY_BUILDS = 2;        // finished days rebuilt per load when missing
+const WAT_MS = 3600e3;                  // Lagos is UTC+1 all year
+const SITE_TTL = 1800;
+const SITE_TAG_TTL = 7 * 86400;
+const SITE_GRAPHQL = "https://api.cloudflare.com/client/v4/graphql";
+
+/* workflow file → how the owner reads it. kind "post" = something a reader sees;
+ * "care" = housekeeping the owner should know ran, but is not a post. */
+const SOCIAL_LANES = {
+  "instagram_autopost.yml": { lane: "Instagram", what: "feed post + Story", kind: "post" },
+  "threads_autopost.yml": { lane: "Threads", what: "text + card", kind: "post" },
+  "facebook_autopost.yml": { lane: "Facebook", what: "Page post (Reel Mon + Thu)", kind: "post" },
+  "facebook_story_afternoon.yml": { lane: "Facebook", what: "Story", kind: "post" },
+  "telegram_autopost.yml": { lane: "Telegram", what: "channel post", kind: "post" },
+  "linkedin_autopost.yml": { lane: "LinkedIn", what: "post", kind: "post" },
+  "youtube_scheduled.yml": { lane: "YouTube", what: "Short — render + schedule", kind: "post" },
+  "deepdive.yml": { lane: "YouTube", what: "Deep-Dive episode", kind: "post" },
+  "youtube_boost.yml": { lane: "YouTube", what: "playlist + first comment", kind: "care" },
+  "brain.yml": { lane: "Brain", what: "plans tomorrow's content", kind: "care" },
+  "brain_replies.yml": { lane: "Brain", what: "answers comments", kind: "care" },
+  "brain_scorecard.yml": { lane: "Brain", what: "Monday scorecard", kind: "care" },
+  "automation-heartbeat.yml": { lane: "Heartbeat", what: "Telegram summary to you", kind: "care" },
+  "narrator_resume.yml": { lane: "Narrator", what: "resume paused voice work", kind: "care" },
+  "youtube_stats.yml": { lane: "YouTube", what: "weekly stats", kind: "care" },
+  "deploy-clock.yml": { lane: "Clock", what: "redeploy the clock", kind: "care" },
+};
+const SOCIAL_SLOT_WORDS = { morning: "morning", lunch: "lunch", evening: "evening" };
+
+function socialRepo(env) { return (env.GH_REPO || SOCIAL_REPO_DEFAULT).replace(/[^A-Za-z0-9_.\/-]/g, ""); }
+function socialReady(env) { return !!(env.GH_DISPATCH_TOKEN); }
+/* Lagos calendar day of an instant, as YYYY-MM-DD. */
+function watDay(ms) { return new Date(Number(ms) + WAT_MS).toISOString().slice(0, 10); }
+/* UTC window [start, end) of a Lagos day. */
+function watWindow(day) {
+  const start = Date.parse(day + "T00:00:00Z") - WAT_MS;
+  return { start, end: start + 864e5 };
+}
+/* Does a cron's day-of-week field admit this UTC date? Fields seen in this repo:
+ * "*", "1", "1-5", "1,3,5". 7 means Sunday as well. */
+function cronDowOk(field, dow) {
+  if (!field || field === "*") return true;
+  return String(field).split(",").some(part => {
+    const m = /^(\d)(?:-(\d))?$/.exec(part.trim());
+    if (!m) return false;
+    const a = Number(m[1]) % 7, b = m[2] == null ? a : Number(m[2]) % 7;
+    return a <= b ? (dow >= a && dow <= b) : (dow >= a || dow <= b);
+  });
+}
+/* Slots a schedule table produces for one Lagos day, in time order. */
+function socialSlotsFor(entries, day) {
+  const out = [];
+  const { start } = watWindow(day);
+  for (const e of entries || []) {
+    const parts = String(e.cron || "").trim().split(/\s+/);
+    if (parts.length !== 5) continue;
+    const min = Number(parts[0]), hour = Number(parts[1]);
+    if (!Number.isInteger(min) || !Number.isInteger(hour)) continue;   // the clock only rings fixed times
+    // Lagos day = UTC 23:00 of the previous date … 22:59 of this date.
+    const utcDate = hour === 23 ? start : start + WAT_MS;               // midnight UTC of the right UTC date
+    const at = Date.UTC(new Date(utcDate).getUTCFullYear(), new Date(utcDate).getUTCMonth(), new Date(utcDate).getUTCDate(), hour, min);
+    if (!cronDowOk(parts[4], new Date(at).getUTCDay())) continue;
+    const meta = SOCIAL_LANES[e.workflow] || { lane: e.name || e.workflow, what: "", kind: "care" };
+    const slotWord = e.inputs && e.inputs.slot ? SOCIAL_SLOT_WORDS[e.inputs.slot] || e.inputs.slot : "";
+    out.push({ at, workflow: e.workflow, name: e.name || e.workflow, inputs: e.inputs || {},
+               lane: meta.lane, what: slotWord ? meta.what + " · " + slotWord : meta.what, kind: meta.kind });
+  }
+  out.sort((a, b) => a.at - b.at || a.workflow.localeCompare(b.workflow));
+  return out;
+}
+async function socialGitHub(env, path, init) {
+  const headers = Object.assign({
+    "Authorization": "Bearer " + env.GH_DISPATCH_TOKEN,
+    "Accept": "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+    "User-Agent": "docoga-pass-admin",
+  }, (init && init.headers) || {});
+  const r = await fetch("https://api.github.com/repos/" + socialRepo(env) + path, Object.assign({}, init || {}, { headers }));
+  let body = null;
+  try { body = r.status === 204 ? {} : await r.json(); } catch (e) { body = null; }
+  return { status: r.status, body };
+}
+/* The clock's table, cached. {entries, utc, token, paused, from} */
+async function socialPlan(env) {
+  let cached = null;
+  try { cached = JSON.parse(await env.KV.get("adm:social:plan") || "null"); } catch (e) {}
+  if (cached && cached.at && Date.now() - cached.at < SOCIAL_PLAN_TTL * 1000) return cached;
+  let plan = { at: Date.now(), entries: [], clock: null };
+  try {
+    const r = await fetch(env.CLOCK_URL || SOCIAL_CLOCK_URL, { headers: { "User-Agent": "docoga-pass-admin" } });
+    const j = await r.json();
+    plan.clock = { ok: !!j.ok, token: j.token || "unknown", paused: !!j.paused, utc: j.utc || null, entries: Number(j.entries) || 0 };
+    if (Array.isArray(j.entries_table)) {
+      plan.entries = j.entries_table.filter(e => e && typeof e.workflow === "string" && typeof e.cron === "string")
+        .map(e => ({ workflow: e.workflow.replace(/[^A-Za-z0-9_.-]/g, ""), name: String(e.name || "").slice(0, 80), cron: e.cron.slice(0, 40), inputs: e.inputs && typeof e.inputs === "object" ? e.inputs : {} }));
+    }
+  } catch (e) {
+    plan.clock = { ok: false, error: String((e && e.message) || e).slice(0, 120) };
+  }
+  if (plan.entries.length || !cached) {
+    try { await env.KV.put("adm:social:plan", JSON.stringify(plan), { expirationTtl: SOCIAL_PLAN_TTL * 2 }); } catch (e) {}
+    return plan;
+  }
+  return cached;   // the clock did not answer: keep the last good table
+}
+function socialRunStatus(run) {
+  if (!run) return null;
+  if (run.status !== "completed") return "running";
+  if (run.conclusion === "success") return "done";
+  if (run.conclusion === "failure" || run.conclusion === "timed_out" || run.conclusion === "startup_failure") return "failed";
+  if (run.conclusion === "cancelled") return "cancelled";
+  return run.conclusion || "done";
+}
+function socialCompactRun(r) {
+  return { id: r.id, url: r.html_url, event: r.event, status: r.status, conclusion: r.conclusion,
+           started: Date.parse(r.run_started_at || r.created_at) || null, finished: r.status === "completed" ? (Date.parse(r.updated_at) || null) : null,
+           attempt: r.run_attempt || 1, actor: r.triggering_actor && r.triggering_actor.login ? String(r.triggering_actor.login).slice(0, 40) : "" };
+}
+/* Why did it fail? First failure/error annotation of the failed job, minus the generic
+ * "Process completed with exit code" line. Cached per run — a finished run never changes. */
+async function socialFailureCause(env, runId) {
+  const key = "adm:run:" + runId;
+  try { const c = await env.KV.get(key); if (c !== null) return c; } catch (e) {}
+  let cause = "";
+  try {
+    const jobs = await socialGitHub(env, "/actions/runs/" + runId + "/jobs?per_page=20");
+    const failed = ((jobs.body && jobs.body.jobs) || []).find(j => j.conclusion === "failure") || null;
+    if (failed) {
+      const ann = await fetch("https://api.github.com/repos/" + socialRepo(env) + "/check-runs/" + failed.id + "/annotations", {
+        headers: { "Authorization": "Bearer " + env.GH_DISPATCH_TOKEN, "Accept": "application/vnd.github+json", "User-Agent": "docoga-pass-admin", "X-GitHub-Api-Version": "2022-11-28" } });
+      const rows = ann.ok ? await ann.json() : [];
+      const pick = (Array.isArray(rows) ? rows : []).filter(a => (a.annotation_level === "failure" || a.annotation_level === "error") && !/^Process completed with exit code/.test(a.message || ""));
+      const first = pick[0] || (Array.isArray(rows) ? rows.find(a => a.annotation_level === "warning") : null);
+      cause = first ? ((first.title ? first.title + ": " : "") + String(first.message || "")).replace(/\s+/g, " ").slice(0, 240) : ("step “" + String(failed.name || "").slice(0, 60) + "” failed");
+    }
+  } catch (e) { cause = ""; }
+  try { await env.KV.put(key, cause, { expirationTtl: 7 * 86400 }); } catch (e) {}
+  return cause;
+}
+/* One Lagos day: slots vs runs. */
+async function socialDigest(env, plan, day, now, withCauses) {
+  const { start, end } = watWindow(day);
+  const slots = socialSlotsFor(plan.entries, day);
+  const q = "/actions/runs?created=" + new Date(start).toISOString().slice(0, 19) + "Z.." + new Date(end - 1000).toISOString().slice(0, 19) + "Z&per_page=100&exclude_pull_requests=true";
+  const r = await socialGitHub(env, q);
+  if (r.status !== 200 || !r.body || !Array.isArray(r.body.workflow_runs)) {
+    return { day, ok: false, error: "github " + r.status + (r.body && r.body.message ? " " + String(r.body.message).slice(0, 80) : ""), slots: slots.map(s => Object.assign({ status: "unknown" }, s)), extras: [], counts: {} };
+  }
+  const runs = r.body.workflow_runs
+    .filter(x => x && typeof x.path === "string" && (x.event === "workflow_dispatch" || x.event === "schedule"))
+    .map(x => Object.assign({ workflow: x.path.split("/").pop(), created: Date.parse(x.created_at) }, x))
+    .sort((a, b) => a.created - b.created);
+  const taken = new Set(), rows = slots.map(s => Object.assign({ status: null, run: null, cause: "" }, s));
+  const extras = [];
+  for (const run of runs) {
+    let best = -1, bestDist = Infinity;
+    rows.forEach((s, i) => {
+      if (s.workflow !== run.workflow || taken.has(i)) return;
+      const d = run.created - s.at;
+      if (d < -SOCIAL_MATCH_BEFORE || d > SOCIAL_MATCH_AFTER) return;
+      if (Math.abs(d) < bestDist) { bestDist = Math.abs(d); best = i; }
+    });
+    const compact = socialCompactRun(run);
+    if (best >= 0) { taken.add(best); rows[best].run = compact; rows[best].status = socialRunStatus(run); }
+    else extras.push(Object.assign({ workflow: run.workflow, lane: (SOCIAL_LANES[run.workflow] || {}).lane || run.name, name: run.name }, compact, { status: socialRunStatus(run) }));
+  }
+  for (const s of rows) {
+    if (s.status) continue;
+    s.status = s.at > now ? "upcoming" : (now - s.at < SOCIAL_DUE_GRACE ? "due" : "missed");
+  }
+  if (withCauses) {
+    let budget = SOCIAL_FAIL_LOOKUPS;
+    for (const s of rows.concat(extras)) {
+      if (s.status !== "failed" || budget <= 0) continue;
+      const id = s.run ? s.run.id : s.id;
+      if (!id) continue;
+      budget--;
+      s.cause = await socialFailureCause(env, id);
+    }
+  }
+  const counts = { posted: 0, done: 0, failed: 0, running: 0, upcoming: 0, missed: 0, due: 0, cancelled: 0 };
+  for (const s of rows) {
+    counts[s.status] = (counts[s.status] || 0) + 1;
+    if (s.status === "done" && s.kind === "post") counts.posted++;
+  }
+  return { day, ok: true, at: now, slots: rows, extras, counts, runs: runs.length };
+}
+async function socialDigestCached(env, plan, day, now, isToday) {
+  const key = isToday ? "adm:social:today" : "adm:social:" + day;
+  let cached = null;
+  try { cached = JSON.parse(await env.KV.get(key) || "null"); } catch (e) {}
+  if (cached && cached.ok && cached.day === day && (!isToday || now - cached.at < SOCIAL_TODAY_TTL * 1000)) return cached;
+  if (!isToday && cached && cached.ok && cached.day === day) return cached;
+  const d = await socialDigest(env, plan, day, now, true);
+  if (d.ok) {
+    try { await env.KV.put(key, JSON.stringify(d), { expirationTtl: isToday ? 300 : SOCIAL_DAY_TTL }); } catch (e) {}
+  }
+  return d;
+}
+async function handleAdminSocial(request, env, cors) {
+  const now = Date.now();
+  const day = watDay(now);
+  if (!socialReady(env)) {
+    return json({ ok: true, connected: false, day, now,
+      reason: "The worker has no GH_DISPATCH_TOKEN yet. The next deploy of docoga-pass forwards the repository secret of the same name (deploy-pass-now.yml) — nothing to mint." }, cors);
+  }
+  const plan = await socialPlan(env);
+  const today = await socialDigestCached(env, plan, day, now, true);
+  // History: finished days are digested once and kept; at most two are built per load.
+  const days = []; let builds = SOCIAL_HISTORY_BUILDS;
+  for (let i = 1; i <= SOCIAL_HISTORY_DAYS; i++) {
+    const d = watDay(now - i * 864e5);
+    let dig = null;
+    try { dig = JSON.parse(await env.KV.get("adm:social:" + d) || "null"); } catch (e) {}
+    if (!(dig && dig.ok) && builds > 0 && plan.entries.length) { builds--; dig = await socialDigestCached(env, plan, d, now, false); }
+    days.push(dig && dig.ok ? { day: d, counts: dig.counts, slots: dig.slots.map(s => ({ at: s.at, lane: s.lane, what: s.what, kind: s.kind, status: s.status, cause: s.cause || "", url: s.run ? s.run.url : null })) }
+                            : { day: d, pending: true });
+  }
+  return json({ ok: true, connected: true, repo: socialRepo(env), day, now,
+                clock: plan.clock, planFrom: plan.entries.length ? "clock" : null, planAt: plan.at,
+                today, days }, cors);
+}
+async function handleAdminSocialRun(request, env, cors) {
+  if (!socialReady(env)) return json({ ok: false, error: "not_connected" }, cors, 503);
+  let b = {}; try { b = await request.json(); } catch (e) { b = {}; }
+  const workflow = String(b.workflow || "").replace(/[^A-Za-z0-9_.-]/g, "").slice(0, 60);
+  const plan = await socialPlan(env);
+  const known = new Set(plan.entries.map(e => e.workflow).concat(Object.keys(SOCIAL_LANES)));
+  if (!workflow || !known.has(workflow)) return json({ ok: false, error: "unknown_workflow" }, cors, 400);
+  const inputs = {};
+  if (b.inputs && typeof b.inputs === "object") {
+    for (const k of Object.keys(b.inputs).slice(0, 4)) {
+      if (!/^[a-z_]{1,24}$/.test(k)) continue;
+      const v = String(b.inputs[k]);
+      if (!/^[A-Za-z0-9_:.-]{0,40}$/.test(v)) continue;
+      inputs[k] = v;
+    }
+  }
+  const lockKey = "adm:social:lock:" + workflow;
+  const held = await env.KV.get(lockKey);
+  if (held) {
+    const left = Math.max(1, Math.round((Number(held) + SOCIAL_RUN_LOCK * 1000 - Date.now()) / 1000));
+    return json({ ok: false, error: "already_asked", retryInSeconds: left }, cors, 429);
+  }
+  await env.KV.put(lockKey, String(Date.now()), { expirationTtl: SOCIAL_RUN_LOCK });
+  const r = await socialGitHub(env, "/actions/workflows/" + workflow + "/dispatches", {
+    method: "POST", body: JSON.stringify({ ref: "main", inputs }), headers: { "Content-Type": "application/json" } });
+  if (r.status !== 204) {
+    try { await env.KV.delete(lockKey); } catch (e) {}
+    return json({ ok: false, error: "github_" + r.status, detail: r.body && r.body.message ? String(r.body.message).slice(0, 160) : "" }, cors, 502);
+  }
+  await adminRecentPush(env, { kind: "dispatch", workflow, inputs });
+  try { await env.KV.delete("adm:social:today"); } catch (e) {}   // the next load should see the run appear
+  return json({ ok: true, workflow, inputs, startsWithinSeconds: 30 }, cors);
+}
+
+/* ---- Website visits: Cloudflare Web Analytics, read-only ---- */
+const SITE_CHANNELS = [
+  ["t.me", "telegram"], ["telegram.", "telegram"], ["facebook.com", "facebook"], ["fb.com", "facebook"], ["fb.me", "facebook"], ["messenger.com", "facebook"],
+  ["instagram.com", "instagram"], ["threads.", "threads"], ["linkedin.com", "linkedin"], ["lnkd.in", "linkedin"], ["youtube.com", "youtube"], ["youtu.be", "youtube"],
+  ["tiktok.com", "tiktok"], ["whatsapp.", "whatsapp"], ["wa.me", "whatsapp"], ["google.", "google"], ["bing.com", "search"], ["duckduckgo.com", "search"], ["yahoo.", "search"],
+  ["x.com", "x"], ["twitter.com", "x"], ["t.co", "x"], ["nairaland.com", "nairaland"],
+];
+function siteChannel(host, own) {
+  const h = String(host || "").toLowerCase();
+  if (!h) return "direct";
+  if (h === own || h.endsWith("." + own)) return "internal";
+  for (const [needle, name] of SITE_CHANNELS) if (h.indexOf(needle) >= 0) return name;
+  return "other";
+}
+const SITE_QUERY = `query Docoga($account: String!, $f7: AccountRumPageloadEventsAdaptiveGroupsFilter_InputObject!, $f28: AccountRumPageloadEventsAdaptiveGroupsFilter_InputObject!) {
+  viewer { accounts(filter: {accountTag: $account}) {
+    t7: rumPageloadEventsAdaptiveGroups(filter: $f7, limit: 1) { count sum { visits } }
+    t28: rumPageloadEventsAdaptiveGroups(filter: $f28, limit: 1) { count sum { visits } }
+    ref7: rumPageloadEventsAdaptiveGroups(filter: $f7, limit: 100, orderBy: [sum_visits_DESC]) { sum { visits } dimensions { refererHost } }
+    path7: rumPageloadEventsAdaptiveGroups(filter: $f7, limit: 60, orderBy: [sum_visits_DESC]) { count sum { visits } dimensions { requestPath } }
+    country7: rumPageloadEventsAdaptiveGroups(filter: $f7, limit: 12, orderBy: [sum_visits_DESC]) { sum { visits } dimensions { countryName } }
+    days28: rumPageloadEventsAdaptiveGroups(filter: $f28, limit: 40, orderBy: [date_ASC]) { count sum { visits } dimensions { date } }
+  } }
+}`;
+async function siteTag(env, host) {
+  try { const c = await env.KV.get("adm:site:tag"); if (c) return c; } catch (e) {}
+  let tag = "";
+  try {
+    const r = await fetch("https://" + host + "/", { headers: { "User-Agent": "docoga-pass-admin", "Accept": "text/html" } });
+    const html = (await r.text()).slice(0, 400000);
+    const m = /data-cf-beacon=['"]\{[^}]*?"token"\s*:\s*"([0-9a-f]{20,40})"/i.exec(html);
+    if (m) tag = m[1];
+  } catch (e) {}
+  if (tag) { try { await env.KV.put("adm:site:tag", tag, { expirationTtl: SITE_TAG_TTL }); } catch (e) {} }
+  return tag;
+}
+async function handleAdminSite(request, env, cors) {
+  const now = Date.now();
+  if (!(env.CF_ANALYTICS_TOKEN && env.CLOUDFLARE_ACCOUNT_ID)) {
+    return json({ ok: true, connected: false, reason: "The worker has no CF_ANALYTICS_TOKEN / CLOUDFLARE_ACCOUNT_ID yet. The next deploy of docoga-pass forwards both from the repository secrets — nothing to mint." }, cors);
+  }
+  let cached = null;
+  try { cached = JSON.parse(await env.KV.get("adm:site:v1") || "null"); } catch (e) {}
+  if (cached && cached.at && now - cached.at < SITE_TTL * 1000) return json(Object.assign({ ok: true, connected: true, cached: true }, cached), cors);
+  const host = (env.SITE_URL || "https://docoga.com.ng").replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+  const tag = await siteTag(env, host);
+  const iso = (ms) => new Date(ms).toISOString().slice(0, 19) + "Z";
+  const mk = (days) => { const f = { datetime_geq: iso(now - days * 864e5), datetime_leq: iso(now), requestHost: host }; if (tag) f.siteTag = tag; return f; };
+  let data = null, problem = "";
+  try {
+    const r = await fetch(SITE_GRAPHQL, { method: "POST", headers: { "Authorization": "Bearer " + env.CF_ANALYTICS_TOKEN, "Content-Type": "application/json", "User-Agent": "docoga-pass-admin" },
+      body: JSON.stringify({ query: SITE_QUERY, variables: { account: env.CLOUDFLARE_ACCOUNT_ID, f7: mk(7), f28: mk(28) } }) });
+    const j = await r.json();
+    const errs = (j && j.errors) || [];
+    if (r.status !== 200 || errs.length) problem = "Cloudflare refused: " + String((errs[0] && errs[0].message) || ("http " + r.status)).slice(0, 120);
+    else data = (((j.data || {}).viewer || {}).accounts || [])[0] || null;
+    if (!data && !problem) problem = "Cloudflare returned no account — check CLOUDFLARE_ACCOUNT_ID";
+  } catch (e) { problem = "Cloudflare unreachable: " + String((e && e.message) || e).slice(0, 100); }
+  if (!data) {
+    if (cached) return json(Object.assign({ ok: true, connected: true, cached: true, stale: problem }, cached), cors);
+    return json({ ok: true, connected: true, error: problem, siteTag: tag ? tag.slice(0, 6) + "…" : null }, cors);
+  }
+  const sum = (row) => Number(((row || {}).sum || {}).visits || 0);
+  const byChannel = {}, byHost = {};
+  for (const row of data.ref7 || []) {
+    const h = ((row.dimensions || {}).refererHost) || "";
+    const ch = siteChannel(h, host);
+    if (ch === "internal") continue;
+    byChannel[ch] = (byChannel[ch] || 0) + sum(row);
+    if (h) byHost[h] = (byHost[h] || 0) + sum(row);
+  }
+  const byPath = {};
+  for (const row of data.path7 || []) { const p = ((row.dimensions || {}).requestPath) || "/"; byPath[p] = (byPath[p] || 0) + sum(row); }
+  const byCountry = {};
+  for (const row of data.country7 || []) { const c = ((row.dimensions || {}).countryName) || "?"; byCountry[c] = (byCountry[c] || 0) + sum(row); }
+  const allC = Object.values(byCountry).reduce((a, b) => a + b, 0);
+  const ng = (byCountry.NG || 0) + (byCountry.Nigeria || 0);
+  const top = (o, n) => Object.entries(o).sort((a, b) => b[1] - a[1]).slice(0, n);
+  const out = {
+    at: now, host, siteTag: tag ? tag.slice(0, 6) + "…" : null,
+    visits7: sum((data.t7 || [])[0]), pageviews7: Number((((data.t7 || [])[0]) || {}).count || 0),
+    visits28: sum((data.t28 || [])[0]), pageviews28: Number((((data.t28 || [])[0]) || {}).count || 0),
+    nigeriaShare7: allC ? Math.round(ng / allC * 1000) / 1000 : null,
+    byChannel: top(byChannel, 12), byHost: top(byHost, 10), byPath: top(byPath, 15), byCountry: top(byCountry, 10),
+    days28: (data.days28 || []).map(r => ({ date: (r.dimensions || {}).date, visits: sum(r), pageviews: Number(r.count || 0) })),
+  };
+  try { await env.KV.put("adm:site:v1", JSON.stringify(out), { expirationTtl: SITE_TTL * 4 }); } catch (e) {}
+  return json(Object.assign({ ok: true, connected: true, cached: false }, out), cors);
+}
+
 export default {
   async fetch(request, env, ctx) {
     ctx = ctx || {};
@@ -2293,6 +2678,9 @@ export default {
         if (url.pathname === "/admin/extend" && request.method === "POST") return await handleAdminExtend(request, env, cors);
         if (url.pathname === "/admin/sessions" && request.method === "GET") return await handleAdminSessions(request, env, cors, a.sid);
         if (url.pathname === "/admin/session" && request.method === "POST") return await handleAdminSessionKill(request, env, cors, a.sid);
+        if (url.pathname === "/admin/social" && request.method === "GET") return await handleAdminSocial(request, env, cors);
+        if (url.pathname === "/admin/social/run" && request.method === "POST") return await handleAdminSocialRun(request, env, cors);
+        if (url.pathname === "/admin/site" && request.method === "GET") return await handleAdminSite(request, env, cors);
         return json({ ok: false, error: "not found" }, cors, 404);
       }
       return json({ ok: false, error: "not found" }, cors, 404);
@@ -2308,6 +2696,14 @@ export default {
       // Fail-closed by construction: with no admin secrets set this skips the
       // work entirely instead of writing a snapshot nobody may read.
       try { if (adminReady(env)) await buildAdminSnapshot(env); } catch (e) {}
+      // Yesterday's social board, digested once while it is one GitHub page — so the
+      // 7-day view is ready even on days the owner never opened the dashboard.
+      try {
+        if (adminReady(env) && socialReady(env)) {
+          const now = Date.now(), y = watDay(now - 864e5);
+          await socialDigestCached(env, await socialPlan(env), y, now, false);
+        }
+      } catch (e) {}
     })());
   },
 };
