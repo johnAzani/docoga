@@ -201,6 +201,27 @@ post ~0.80 %.
 (`threads.evening` in the pack, else headline + first line + send line) with the link in
 **our own reply** (`reply_to_id`). Reply refused → warning. `THREADS_REPLY=sent|failed`.
 
+**The picture matches the words (17 Oct 2026).** Owner: "You can use free images and video
+clips in video … behind the cards — make sure it matches what is being said."
+`tools/shot_match.py` is the one place every renderer asks what to show behind a line:
+the brain's hint (`beats[].shot`, 2–4 words, validated like `visual.plate`) → the glossary
+read of the words themselves (the THING said beats the place beats the role: "the landlord
+must give you a receipt" → `paper receipt`, "lock you out without a court order" →
+`padlocked door`) → the Nigerian street. Openverse CC0/public-domain only (₦0, no key, no
+attribution debt); every result is scored against the query (title + tags must share a
+word) and a pretty-but-wrong picture is refused; nothing matched → the renderer's old look
+(Deep-Dive named plate, Short navy, card navy). Wired into **Deep-Dive beats**
+(`deepdive.plate_for_beat`, brand duotone via `treat_plate`), **Short scenes**
+(`shorts_reel.attach_shots` → `scene._bg`; MotionStudio QA now measures content against
+the scene's own background), and **every card** (`social_card._brief(said=…)`, rotation
+cards included). Searches are paced (~20/min) and cached under `assets/plates/` with
+provenance. **Explicitly on**: each publishing workflow passes
+`DOCOGA_SHOTS: ${{ vars.DOCOGA_SHOTS || 'on' }}`; unset (tests, qa.py, laptops) = off, so
+nothing reaches Openverse by accident; repo variable `DOCOGA_SHOTS=off` is the kill switch.
+*Video clips*: Pexels has paused new keys, Openverse indexes no video and Pixabay's free
+video API needs a key — clips are the next step once a key exists; stills with camera drift
+carry the motion today.
+
 **Every Threads post carries a card (17 Oct 2026).** Owner: "the Thread is only text it
 uploads." The evening image used to borrow the Instagram lane's card, which exists only on
 days that lane rendered; Threads went out as words. Now the lane draws its **own** card each

@@ -98,6 +98,7 @@ jobs:
     timeout-minutes: 30
     env:
       TZ: Africa/Lagos
+      DOCOGA_SHOTS: ${{ vars.DOCOGA_SHOTS || 'on' }}   # CC0 photograph behind each Short scene, matched to the narration (tools/shot_match.py)
     steps:
       - name: Check out the default branch
         uses: actions/checkout@v5

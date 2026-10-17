@@ -906,8 +906,9 @@ OUTPUT — one JSON object:
   "theme": "kebab-case slug",
   "claims": [{{"text": "legal sentence as narrated", "fact_id": "shelf id"}}],
   "sections": [{{"n": 1, "title": "The Hook", "narration": "120-200 words"}}, "... exactly nine; the last is 'The Law, and DocOga'"],
-  "beats": [{{"sec": 1, "trig": null, "head": "<= 28 CHARACTERS", "sub": "<= 60 characters", "img": "plate name"}},
-            {{"sec": 1, "trig": ["two", "to", "four", "words"], "head": "...", "sub": "...", "img": "..."}}, "... 36 to 48 beats"],
+  "beats": [{{"sec": 1, "trig": null, "head": "<= 28 CHARACTERS", "sub": "<= 60 characters", "img": "plate name",
+             "shot": "2-4 plain words naming the photograph that shows what this beat SAYS (a thing or a place: 'paper receipt', 'padlocked door', 'naira banknotes'), no faces, no signs"}},
+            {{"sec": 1, "trig": ["two", "to", "four", "words"], "head": "...", "sub": "...", "img": "...", "shot": "..."}}, "... 36 to 48 beats"],
   "cover": {{"img": "plate", "kicker": "<= 24 chars", "line1": "<= 16 chars", "highlight": "one word", "label": "<= 14 chars",
             "line2": "<= 28 chars", "line3": "<= 32 chars", "sub": "<= 36 chars"}},
   "youtube": {{"title": "<= 95 characters ending with (Deep-Dive {number})", "description": "250-900 characters, plain text, ends with https://docoga.com.ng and the line General information, not legal advice.", "tags": ["8 to 15 tags"]}}
@@ -957,6 +958,9 @@ def deepdive_problems(ep, facts_by_id):
             p.append("beat %d: sub <= 60 characters" % i)
         if b.get("img") and b["img"] not in names:
             p.append("beat %d: unknown plate %r" % (i, b.get("img")))
+        shot = str(b.get("shot") or "").strip().lower()
+        if shot and (len(shot.split()) > 4 or any(w in shot.split() for w in PLATE_BANNED)):
+            p.append("beat %d: shot is 2-4 plain words, no people, no signs" % i)
         trig = b.get("trig")
         if sec not in first_seen:
             first_seen.add(sec)
@@ -1042,7 +1046,8 @@ def write_episode(ep, number, template):
                     "tags": list(ep["youtube"].get("tags") or [])},
         "cover": ep["cover"],
         "sections": [{"n": s["n"], "title": s["title"]} for s in ep["sections"]],
-        "beats": [{"sec": b["sec"], "trig": b.get("trig"), "head": b["head"], "sub": b.get("sub", ""), "img": b.get("img")}
+        "beats": [{"sec": b["sec"], "trig": b.get("trig"), "head": b["head"], "sub": b.get("sub", ""), "img": b.get("img"),
+                   "shot": (str(b.get("shot") or "").strip().lower() or None)}
                   for b in ep["beats"]],
         "brain": {"written": datetime.now(LAGOS).isoformat(timespec="seconds"), "theme": ep.get("theme"),
                   "claims": ep["claims"]},

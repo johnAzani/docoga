@@ -91,6 +91,7 @@ concurrency:
   cancel-in-progress: false   # a second post today is worse than a queued run
 
 env:
+  DOCOGA_SHOTS: ${{ vars.DOCOGA_SHOTS || 'on' }}   # CC0 photograph behind the card, matched to the copy (tools/shot_match.py)
   FB_PAGE_ACCESS_TOKEN: ${{ secrets.FB_PAGE_ACCESS_TOKEN }}
   FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
   # Optional. Only used to read the token's expiry and to refresh it; the post

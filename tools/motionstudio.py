@@ -667,6 +667,24 @@ RENDER = {'odometer': r_odometer, 'cascade': r_cascade, 'support': r_support,
           'kicker': r_kicker, 'badge': r_badge, 'wordpop': r_wordpop,
           'button': r_button, 'headline': r_headline, 'icons': r_icons, 'cycler': r_cycler}
 
+def scene_bg(sc):
+    """The scene's background: the matched photograph a lane attached as `_bg` (tools/shot_match.py,
+    treated to the brand duotone at W×H) or the navy BASE. The engine never fetches — a lane
+    decides what sits behind the words, and the engine draws on it."""
+    bg = sc.get('_bg')
+    return bg if bg is not None and getattr(bg, 'size', None) == (W, H) else BASE
+
+def scale_at(sc, lt, last):
+    """(zoom scale, exit fade) at local time `lt` — one definition for render and QA."""
+    s, fade_p = 1.0, 0.0
+    if lt < 0.5 and sc['punch'] > 0:
+        s = 1.0 + sc['punch'] * (1 - ease_cubic(lt / 0.5))
+    if not last and lt > sc['dur'] - EXIT:
+        p = (lt - (sc['dur'] - EXIT)) / EXIT
+        s = 1.0 + 0.06 * ease_cubic(p)
+        fade_p = ease_cubic(p)
+    return s, fade_p
+
 def zoom(img, s):
     if abs(s - 1.0) < 0.001: return img
     w2, h2 = int(W / s), int(H / s)
@@ -720,14 +738,8 @@ def render_reel(reel, tag):
             p = lt / 0.30
             r, g, bl, al = content.split()
             content = Image.merge('RGBA', (r, g, bl, al.point(lambda v: int(v * p))))
-        s, fade_p = 1.0, 0.0
-        if lt < 0.5 and sc['punch'] > 0:
-            s = 1.0 + sc['punch'] * (1 - ease_cubic(lt / 0.5))
-        if not last and lt > sc['dur'] - EXIT:
-            p = (lt - (sc['dur'] - EXIT)) / EXIT
-            s = 1.0 + 0.06 * ease_cubic(p)
-            fade_p = ease_cubic(p)
-        bg = zoom(BASE, 1.0 + 0.35 * (s - 1.0))
+        s, fade_p = scale_at(sc, lt, last)
+        bg = zoom(scene_bg(sc), 1.0 + 0.35 * (s - 1.0))
         cz = zoom(content, s)
         img = bg.copy()
         img.paste(cz, (0, 0), cz)
@@ -779,7 +791,7 @@ def qa_reel(reel, fd, n):
     # TYPOGRAPHY
     frames_seen = set()
     off = 0.0
-    for sc in scenes:
+    for si, sc in enumerate(scenes):
         for b in sc['beats']:
             if b['kind'] in SETTLE_KINDS:
                 s = off + max(b['t0'] + entrance_dur(b), TRANS_DUR[sc['trans']]) + 0.08
@@ -787,7 +799,11 @@ def qa_reel(reel, fd, n):
                 if idx not in frames_seen and 0 <= idx < n:
                     frames_seen.add(idx)
                     arr = np.asarray(Image.open(f'{fd}/f_{idx:04d}.png').convert('RGB')).astype(int)
-                    mask = np.abs(arr - NAVY).sum(axis=2) > 60
+                    # Content is whatever differs from the scene's own background at this frame —
+                    # a photograph behind the words is not "content outside the safe zone".
+                    zs, _ = scale_at(sc, idx / FPS - off, si == len(scenes) - 1)
+                    bg_arr = np.asarray(zoom(scene_bg(sc), 1.0 + 0.35 * (zs - 1.0)).convert('RGB')).astype(int)
+                    mask = np.abs(arr - bg_arr).sum(axis=2) > 60
                     ys, xs = np.nonzero(mask)
                     if len(ys) == 0:
                         V.append(('typography', f"scene {sc['id']}: NO content at settle"))
