@@ -367,7 +367,7 @@ def _encode(image, quality):
 
 # The card, its Story frame and its carousel slides (17 Oct 2026) — one day's renders share one
 # date, and `prune` keeps the newest `keep` DAYS, so a carousel day does not cost six days of window.
-DATED_RENDER = re.compile(r"^(\d{4}-\d{2}-\d{2})-instagram(?:-story|-slide-\d+)?\.jpg$")
+DATED_RENDER = re.compile(r"^(\d{4}-\d{2}-\d{2})-(?:instagram(?:-story|-slide-\d+)?|threads(?:-evening)?)\.jpg$")
 
 
 def prune(directory, keep=60):

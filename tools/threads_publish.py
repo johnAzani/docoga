@@ -292,10 +292,13 @@ def create_text_container_with_fallbacks(token, user_id, text, link_attachment=N
     raise last
 
 
-def create_image_container(token, user_id, text, image_url, reply_control=None, topic_tag=None, share_to_ig=False):
-    """An IMAGE post (17 Oct 2026, the evening slot): Threads fetches `image_url` itself, so the
-    card must already be public — the Instagram lane's `site/social/<day>-instagram.jpg`."""
+def create_image_container(token, user_id, text, image_url, reply_control=None, topic_tag=None, share_to_ig=False,
+                           alt_text=None):
+    """An IMAGE post: Threads fetches `image_url` itself, so the card must already be public —
+    this lane's own `site/social/<day>-threads[-evening].jpg` (17 Oct 2026: every slot carries one)."""
     params = {"media_type": "IMAGE", "image_url": image_url, "text": text}
+    if alt_text:
+        params["alt_text"] = alt_text[:1000]
     if reply_control:
         params["reply_control"] = reply_control
     if topic_tag:
@@ -303,6 +306,48 @@ def create_image_container(token, user_id, text, image_url, reply_control=None, 
     if share_to_ig:
         params["crossreshare_to_ig"] = "true"
     return api("POST", "/%s/threads" % user_id, token, params)["id"]
+
+
+def wait_until_live(url, deadline_seconds=600, delay=15, sleeper=time.sleep, opener=None):
+    """Poll the card's URL until it answers 200: git knows the file before the web does, and a
+    container created against a 404 dies with a generic 'Unsupported URL' — a race we caused."""
+    def _open(target):
+        req = urllib.request.Request(target, method="HEAD", headers={"User-Agent": USER_AGENT})
+        try:
+            with urllib.request.urlopen(req, timeout=20) as r:
+                return r.status
+        except urllib.error.HTTPError as exc:
+            return exc.code
+        except (urllib.error.URLError, OSError) as exc:
+            return "error %s" % str(exc)[:60]
+    opener = opener or _open
+    waited = 0
+    while True:
+        status = opener(url)
+        if status == 200:
+            if waited:
+                print("card became reachable after %ds" % waited)
+            return True, waited
+        if waited >= deadline_seconds:
+            return False, waited
+        print("card not live yet (status %s) — retrying in %ds" % (status, delay))
+        sleeper(delay)
+        waited += delay
+
+
+def post_poll_reply(token, user_id, poll, reply_to_id):
+    """On a poll day the card wins the post and the poll is asked in our own reply (a poll beside
+    an image is refused). → (ok, id_or_reason)."""
+    try:
+        params = {"media_type": "TEXT", "text": "Your vote 👇", "reply_to_id": reply_to_id,
+                  "poll_attachment": json.dumps(poll, ensure_ascii=False)}
+        cid = api("POST", "/%s/threads" % user_id, token, params)["id"]
+        ok, state = wait_container(token, cid, tries=6, delay=5)
+        if not ok:
+            return False, "poll reply container %s" % state
+        return True, publish_container(token, user_id, cid)
+    except ApiError as exc:
+        return False, exc.blurb[:120]
 
 
 def post_reply(token, user_id, text, reply_to_id, sleeper=None):
@@ -429,6 +474,8 @@ def main(argv=None):
     parser.add_argument("--force", action="store_true", help="publish even if it is a duplicate")
     parser.add_argument("--token-file", help="0600 file holding the token (preferred over env)")
     parser.add_argument("--skip-pages", type=int, default=25, help="recent posts to compare")
+    parser.add_argument("--image-wait", type=int, default=600,
+                        help="seconds to wait for the card's URL to answer 200 before posting the words alone")
     args = parser.parse_args(argv if argv is not None else sys.argv[1:])
 
     token, user_id, code = load_config(args)
@@ -489,10 +536,11 @@ def main(argv=None):
             print("content was trimmed: %s" % "; ".join(blob["trimmed"]))
         topic_tag = blob.get("topic_tag") or None
         poll = blob.get("poll") if isinstance(blob.get("poll"), dict) and len(blob.get("poll")) >= 2 else None
-        image_url = str(blob.get("image_url") or "").strip() or None      # evening slot: the day's card
+        image_url = str(blob.get("image_url") or "").strip() or None      # the slot's card (every slot, 17 Oct 2026)
         reply_text = str(blob.get("reply_text") or "").strip() or None    # evening slot: the link, one tap under
+        alt_text = str(blob.get("alt_text") or "").strip() or None
     else:
-        topic_tag, poll, image_url, reply_text = None, None, None, None
+        topic_tag, poll, image_url, reply_text, alt_text = None, None, None, None, None
     share_to_ig = (os.environ.get("THREADS_SHARE_TO_IG") or "on").strip().lower() in ("1", "true", "yes", "on")
     text = text.strip()
 
@@ -552,19 +600,27 @@ def main(argv=None):
             print("extras: topic=%r poll=%s share_to_ig=%s image=%s" % (topic_tag, "yes" if poll else "no", "yes" if share_to_ig else "no",
                                                                      "yes" if image_url else "no"))
         container_id, ready, state = None, False, None
-        if image_url and not poll:
-            # Image posts earn ~1.6× a text post's engagement (Buffer, 2026). The card is the lever,
-            # not the post: if Threads cannot fetch it or the container dies, the words go out plain.
-            try:
-                container_id = create_image_container(token, target, text, image_url, args.reply_control,
-                                                      topic_tag=topic_tag, share_to_ig=share_to_ig)
-                ready, state = wait_container(token, container_id, tries=10, delay=6)
-            except ApiError as exc:
-                if exc.cause in ("credentials", "quota"):
-                    raise
-                container_id, ready, state = None, False, "refused: %s" % exc.blurb[:120]
+        poll_in_reply = None
+        if image_url:
+            # Image posts earn ~1.6× a text post's engagement (Buffer, 2026) and the owner wants
+            # every post to carry the card (17 Oct 2026). A poll cannot sit beside an image, so
+            # the card wins and the poll is asked in our own reply. If the card is not live or the
+            # container dies, the words go out plain — with the poll back on the post.
+            live, waited = wait_until_live(image_url, args.image_wait)
+            if not live:
+                state = "not reachable after %ds" % waited
+            else:
+                try:
+                    container_id = create_image_container(token, target, text, image_url, args.reply_control,
+                                                          topic_tag=topic_tag, share_to_ig=share_to_ig, alt_text=alt_text)
+                    ready, state = wait_container(token, container_id, tries=10, delay=6)
+                except ApiError as exc:
+                    if exc.cause in ("credentials", "quota"):
+                        raise
+                    container_id, ready, state = None, False, "refused: %s" % exc.blurb[:120]
             if ready:
                 print("THREADS_IMAGE=sent")
+                poll_in_reply = poll
             else:
                 print("::warning title=Threads image dropped::the card at %s was not accepted (%s) — posting the words alone"
                       % (image_url, state))
@@ -600,6 +656,11 @@ def main(argv=None):
               % (post_id, permalink))
         print("THREADS_READBACK=differs")
     print("✅ published to @%s: %s" % (username, permalink))
+    if poll_in_reply:
+        ok_poll, detail = post_poll_reply(token, target, poll_in_reply, post_id)
+        print("THREADS_POLL_REPLY=%s" % ("sent" if ok_poll else "failed"))
+        if not ok_poll:
+            print("::warning title=Poll reply not posted::%s — the card post is live without it" % detail)
     if reply_text:
         ok_reply, detail = post_reply(token, target, reply_text, post_id)
         print("THREADS_REPLY=%s" % ("sent" if ok_reply else "failed"))

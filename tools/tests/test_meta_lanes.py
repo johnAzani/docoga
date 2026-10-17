@@ -239,7 +239,11 @@ class ThreadsPublisher(unittest.TestCase):
         if env_extra:
             env.update(env_extra)
         argv = argv if argv is not None else ["--text", self.TEXT, "--token-file", token_path]
-        with mock.patch.object(tp, "_request", fake):
+        # The card-liveness wait talks to docoga.com.ng, not the Graph API; tests say "live" unless
+        # they patch it themselves (`self.card_live`).
+        live = getattr(self, "card_live", (True, 0))
+        with mock.patch.object(tp, "_request", fake), \
+             mock.patch.object(tp, "wait_until_live", lambda url, *a, **k: live):
             code, out = run_publisher(tp, argv, env)
         return code, out, fake
 
@@ -1491,14 +1495,27 @@ class ThreadsEveningSlot(unittest.TestCase):
         self.assertEqual(content["slot"], "evening")
         self.assertNotIn("http", content["text"], "the body carries no link — Threads ranks it higher without one")
         self.assertNotIn("👉", content["text"].split("\n")[-1].strip() or "x", "no dangling arrow where the link was")
-        self.assertEqual(content["image_url"], "https://docoga.com.ng/social/2026-10-21-instagram.jpg")
+        self.assertEqual(content["image_url"], "https://docoga.com.ng/social/2026-10-21-threads-evening.jpg",
+                         "17 Oct 2026: the lane's OWN card, not the Instagram lane's (which exists only on "
+                         "days that lane rendered — the day Threads went out as words)")
+        self.assertEqual(content["card_path"], "site/social/2026-10-21-threads-evening.jpg")
         self.assertIn("https://docoga.com.ng", content["reply_text"])
         self.assertIn("?s=th", content["reply_text"], "the reply's link carries the Threads tag")
         self.assertIsNone(content["poll"], "a poll beside an image is refused by the API")
         lunch = gc.generate(datetime.date(2026, 10, 21), write=False)
         self.assertEqual(lunch.get("slot"), "lunch")
-        self.assertIsNone(lunch["image_url"])
+        self.assertEqual(lunch["image_url"], "https://docoga.com.ng/social/2026-10-21-threads.jpg",
+                         "owner, 17 Oct 2026: 'the Thread is only text it uploads' — every slot carries a card")
+        self.assertEqual(lunch["card_path"], "site/social/2026-10-21-threads.jpg")
         self.assertNotEqual(lunch["text"], content["text"], "two posts a day, not the same post twice")
+
+    def test_both_cards_are_dated_renders_the_pruner_recognises(self):
+        """`social_card.prune` keeps the newest 60 days of dated renders; a name it does not match
+        is kept forever, and site/social/ grows by two files a day until the deploy is slow."""
+        for name in ("2026-10-21-threads.jpg", "2026-10-21-threads-evening.jpg",
+                     "2026-10-21-instagram.jpg", "2026-10-21-instagram-story.jpg"):
+            self.assertTrue(social_card.DATED_RENDER.match(name), name)
+        self.assertFalse(social_card.DATED_RENDER.match("og-image.jpg"))
 
     def test_a_brain_pack_writes_the_evening_angle(self):
         pack = {"date": "2026-10-21", "theme": "x", "claims": [], "tool": "rent-receipt", "state": "lagos",
@@ -1519,9 +1536,89 @@ class ThreadsImageAndReply(ThreadsPublisher):
         path = os.path.join(self.tmp, "threads_content_latest.json")
         with open(path, "w", encoding="utf-8") as fh:
             json.dump({"text": self.TEXT, "slot": "evening", "topic_tag": "Tenant Rights Nigeria",
-                       "image_url": "https://docoga.com.ng/social/2026-10-21-instagram.jpg",
+                       "image_url": "https://docoga.com.ng/social/2026-10-21-threads-evening.jpg",
+                       "alt_text": "DocOga navy text card: rent receipt.",
                        "reply_text": "The page, free to start: https://docoga.com.ng/?s=th"}, fh)
         return path
+
+    def test_a_card_that_never_goes_live_posts_the_words_without_touching_the_image_endpoint(self):
+        """git knows the file before the web does. A container made against a 404 dies with a
+        generic 'Unsupported URL'; the publisher waits for 200 first and, past the deadline,
+        posts text — never a red run, never a silent no-post."""
+        seen = []
+
+        def container(method, url, query):
+            q = urllib.parse.parse_qs(query)
+            seen.append(q)
+            return ok({"id": "181" if "reply_to_id" not in q else "182"})
+        routes = self._routes(extra={"POST /42/threads": container, "GET /182": ok({"status": "FINISHED"})})
+        path = self._evening_content()
+        env, token_path = threads_env(self.tmp)
+        self.card_live = (False, 600)
+        code, out, _ = self._publish(routes, argv=["--from-json", path, "--token-file", token_path],
+                                     env_extra={"THREADS_SHARE_TO_IG": "off"})
+        self.assertEqual(code, 0, out)
+        self.assertEqual([q["media_type"][0] for q in seen], ["TEXT", "TEXT"], "no IMAGE attempt against a dead URL")
+        self.assertIn("THREADS_IMAGE=dropped", out)
+        self.assertIn("not reachable after 600s", out)
+        self.assertIn("THREADS_RESULT=sent", out)
+
+    def test_wait_until_live_polls_until_200_and_gives_up_at_the_deadline(self):
+        answers = iter([404, 404, 200])
+        slept = []
+        live, waited = tp.wait_until_live("https://docoga.com.ng/social/x.jpg", 600, 15,
+                                          sleeper=slept.append, opener=lambda u: next(answers))
+        self.assertEqual((live, waited), (True, 30))
+        self.assertEqual(slept, [15, 15])
+        slept = []
+        live, waited = tp.wait_until_live("https://docoga.com.ng/social/x.jpg", 45, 15,
+                                          sleeper=slept.append, opener=lambda u: "error timed out")
+        self.assertEqual((live, waited), (False, 45))
+        self.assertEqual(slept, [15, 15, 15])
+
+    def test_on_a_poll_day_the_card_wins_and_the_poll_is_asked_in_a_reply(self):
+        """A poll cannot sit beside an image; dropping the card for the poll is what left the
+        owner looking at text. The card posts, the poll follows as our own reply."""
+        seen = []
+
+        def container(method, url, query):
+            q = urllib.parse.parse_qs(query)
+            seen.append(q)
+            return ok({"id": "181" if "reply_to_id" not in q else "182"})
+        routes = self._routes(extra={"POST /42/threads": container, "GET /182": ok({"status": "FINISHED"}),
+                                     "POST /42/threads_publish": lambda m, u, q: ok({"id": "182" if "182" in q else "181"})})
+        path = os.path.join(self.tmp, "threads_content_latest.json")
+        with open(path, "w", encoding="utf-8") as fh:
+            json.dump({"text": self.TEXT, "slot": "lunch", "poll": {"option_a": "Yes", "option_b": "No"},
+                       "image_url": "https://docoga.com.ng/social/2026-10-21-threads.jpg"}, fh)
+        env, token_path = threads_env(self.tmp)
+        code, out, _ = self._publish(routes, argv=["--from-json", path, "--token-file", token_path],
+                                     env_extra={"THREADS_SHARE_TO_IG": "off"})
+        self.assertEqual(code, 0, out)
+        self.assertEqual(seen[0]["media_type"], ["IMAGE"])
+        self.assertNotIn("poll_attachment", seen[0])
+        self.assertEqual(seen[1]["reply_to_id"], ["181"])
+        self.assertEqual(json.loads(seen[1]["poll_attachment"][0]), {"option_a": "Yes", "option_b": "No"})
+        self.assertIn("THREADS_IMAGE=sent", out)
+        self.assertIn("THREADS_POLL_REPLY=sent", out)
+
+    def test_the_workflow_renders_and_pushes_its_own_card_before_the_ledger(self):
+        """The lane, not the generator, is what makes the URL real: render → commit → push to the
+        default branch (no `[skip ci]`, the push IS the deploy) → publisher waits for 200."""
+        workflow = (ROOT / ".github/workflows/threads_autopost.yml").read_text(encoding="utf-8")
+        steps = [line.strip()[len("- name: "):] for line in workflow.splitlines() if line.strip().startswith("- name: ")]
+        self.assertLess(steps.index("Generate today's copy"), steps.index("Render the card and publish it"))
+        self.assertLess(steps.index("Render the card and publish it"), steps.index("Ledger — has today already been posted?"))
+        render = workflow.split("- name: Render the card and publish it", 1)[1].split("- name: Ledger", 1)[0]
+        self.assertIn("tools/social_card.py --from-json", render)
+        self.assertIn("sed -n 's/^CARD_URL=//p' /tmp/threads_render.log | tail -1", render)
+        self.assertIn('git push origin "HEAD:${BRANCH}"', render)
+        commit_lines = [line for line in render.splitlines() if "git commit" in line]
+        self.assertEqual(len(commit_lines), 1, commit_lines)
+        self.assertNotIn("skip ci", commit_lines[0], "the card commit must deploy the site")
+        self.assertIn('blob["image_url"] = None', render, "a card that was not published must not be promised to Threads")
+        self.assertIn("bash tools/install_brand_fonts.sh", workflow, "Inter, or the card is off-brand")
+        self.assertIn("permissions:\n  contents: write", workflow)
 
     def test_the_card_rides_as_an_image_post_and_the_link_is_a_reply(self):
         seen = []
@@ -1538,7 +1635,8 @@ class ThreadsImageAndReply(ThreadsPublisher):
                                         env_extra={"THREADS_SHARE_TO_IG": "off"})
         self.assertEqual(code, 0, out)
         self.assertEqual(seen[0]["media_type"], ["IMAGE"])
-        self.assertEqual(seen[0]["image_url"], ["https://docoga.com.ng/social/2026-10-21-instagram.jpg"])
+        self.assertEqual(seen[0]["image_url"], ["https://docoga.com.ng/social/2026-10-21-threads-evening.jpg"])
+        self.assertEqual(seen[0]["alt_text"], ["DocOga navy text card: rent receipt."])
         self.assertEqual(seen[0]["topic_tag"], ["Tenant Rights Nigeria"])
         self.assertEqual(seen[1]["media_type"], ["TEXT"])
         self.assertEqual(seen[1]["reply_to_id"], ["181"])
