@@ -5,6 +5,19 @@ brain that can think like you, understands content creation and my business, so
 that it works autonomously — everything automated. It only handles the social
 media."*
 
+## 🔒 THE BRAIN IS LOCKED — Gemini only (owner, 17 Oct 2026)
+*"I don't want the gpt-oss. Use only Gemini and plan with it. Lock it in."*
+Every model the brain, the replies lane, the weekly forum answer and the Deep-Dive
+writer may call is a **Google Gemini model** (`gemini-*`, or Google's own `gemma-*`)
+on the one host `generativelanguage.googleapis.com` — the same key, the same free
+tier, the same quota ledger as the locked narrator voice. There is **no second
+provider and no fallback to one**: when every Gemini rung is spent the night ends
+with exit 6 (a pause, not a failure), the lanes post from the hand-written rotation,
+and the brain tries again the next night. `tools/gemini_text.assert_locked` refuses
+any other model name before a request leaves; `tools/qa.py` and
+`tools/tests/test_brain_lock.py` refuse any change that names another provider or
+hands the brain workflows another key. Never edit the lock; revert the change.
+
 ## What it is, in one paragraph
 Every night at **01:30 Lagos**, before any posting lane wakes, `tools/brain.py`
 reads the business memory, the editorial policy, the section-cited law shelf,
@@ -315,19 +328,7 @@ retired. A rung the key is not served answers 403/404 and costs nothing — the 
 steps down. Every brain run starts with `python3 tools/gemini_text.py probe`
 (ListModels, no quota): the summary lists ✅/— per rung and `GEMINI_LADDER=ok|thin|empty`;
 `empty` is the one case that is an error line.
-
-**The last door (17 Oct 2026).** When every Gemini rung refuses or fails, `gemini_text`
-tries **Cloudflare Workers AI** once — `@cf/openai/gpt-oss-120b`, then Llama 3.3 70B —
-through its OpenAI-compatible endpoint, with the same prompt, JSON mode, and the same
-gates judging the answer. 10,000 neurons a day on the Free plan (≈ 8 brain calls), ₦0,
-no new account: it uses `CLOUDFLARE_ACCOUNT_ID` and a token with the **Workers AI: Read**
-permission — secret `CF_AI_TOKEN` if set, else the deploy token `CLOUDFLARE_API_TOKEN`.
-A 401/403 means the token lacks that permission: the log says so once and the night
-ends exactly as it did before this door existed (exit 6, rotation posts). The research
-is unambiguous that this is a backstop, not a peer — gpt-oss-120b scores 11.6 on the
-Artificial Analysis index against 40.9 for Gemini 3.8 Flash, and Groq's free tier
-cannot even admit the brain's ~12K-token prompt (8,000 tokens/minute). Variable
-`CF_AI_FALLBACK=off` closes the door. A per-minute 429 is waited out once; a per-day
+ A per-minute 429 is waited out once; a per-day
 429 moves to the next model; when every model is spent the lane exits **6** — a
 pause, not a failure, no issue opened — and tries again the next night. Thinking
 is capped (`thinkingBudget`) so the JSON always fits the output ceiling. The
