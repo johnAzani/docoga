@@ -997,9 +997,9 @@ def main(argv=None):
                                             "Instagram-Login host run --probe-reels first)")
     parser.add_argument("--video-story", action="store_true",
                         help="with --video-file: publish it as a 24-hour video Story instead of a Reel")
-    parser.add_argument("--thumb-offset-ms", type=int, default=1500,
+    parser.add_argument("--thumb-offset-ms", type=int, default=0,
                         help="with --video-file and no --cover-url: the frame (ms) Instagram uses "
-                             "as the Reel cover; 1500 lands on the navy title card")
+                             "as the Reel cover; 0 = frame 0, the designed cover (tools/short_cover.py)")
     parser.add_argument("--trial", action="store_true",
                         help="publish the Reel as a Trial Reel: shown to non-followers first and graduated to "
                              "followers automatically when it performs (trial_params.graduation_strategy=SS_PERFORMANCE)")
@@ -1153,7 +1153,7 @@ def main(argv=None):
         if args.cover_url:
             media["cover_url"] = args.cover_url
         else:
-            media["thumb_offset"] = str(max(0, int(args.thumb_offset_ms)))  # the navy title card
+            media["thumb_offset"] = str(max(0, int(args.thumb_offset_ms)))  # frame 0 = the designed cover
     elif args.photo:
         print("::error title=photos need a public URL::--photo points at a file; Instagram's "
               "publishing API has no multipart upload. Publish the render and pass --image-url.")

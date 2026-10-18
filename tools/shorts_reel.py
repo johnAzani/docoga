@@ -192,11 +192,17 @@ def attach_shots(reel, topic):
     import brain_visual
     hits = 0
     for sc, text, chain in shots_for(reel, topic):
-        img, note = shot_match.photo_for(text, hint=sc.get("shot"), size=(ms.W, ms.H),
-                                         treat=lambda im, size: brain_visual.treat(im, size, darken=SHOT_DARKEN))
+        raw = {}
+
+        def _treat(im, size, raw=raw):
+            raw["img"] = im           # the untreated photograph — the cover treats it its own way
+            return brain_visual.treat(im, size, darken=SHOT_DARKEN)
+        img, note = shot_match.photo_for(text, hint=sc.get("shot"), size=(ms.W, ms.H), treat=_treat)
         sc["shot"] = chain[0]
         if img is not None:
             sc["_bg"] = img
+            if raw.get("img") is not None:
+                sc["_bg_raw"] = raw["img"]
             hits += 1
             print("  📷 scene %s ← %s (%s)" % (sc["id"], note.get("query"), note.get("license") or "cc0"))
         else:
@@ -263,6 +269,11 @@ def render_topic(topic, out_path, tag="short", platform="YouTube Shorts", sound=
     hits = attach_shots(reel, topic)
     wanted = sum(1 for sc in reel["scenes"] if sc["role"] in ("hook", "tip"))
     print("SHOTS_HITS=%d/%d" % (hits, wanted))   # machine line: the workflows surface it
+    # The cover (frame 0 + <master>.cover.jpg) is designed, not a paused frame: the verdict on
+    # yellow slabs inside the grid-safe band (tools/short_cover.py, docs/SHORT_COVER.md).
+    import short_cover
+    reel["cover_fn"] = lambda: short_cover.render(reel)
+    print("  " + short_cover.describe(reel))
     ok = ms.build(reel, tag)
     if not ok:
         raise RuntimeError("MotionStudio refused to encode '%s' — the video QA engine found "

@@ -281,5 +281,99 @@ class LaneWiringTests(unittest.TestCase):
         self.assertIn("[skip ci]", sh, "a review commit must not trigger the lanes")
 
 
+@unittest.skipUnless(PIL_OK, "Pillow/numpy are not installed")
+class DesignedCoverTests(unittest.TestCase):
+    """tools/short_cover.py — the verdict on yellow slabs, inside the grid-safe band (docs/SHORT_COVER.md)."""
+
+    def _reel(self, day=None):
+        import datetime
+        import shorts_reel
+        day = day or datetime.date(2026, 10, 20)   # "Pay without a receipt. Pay twice."
+        reel = shorts_reel.reel_from_topic(shorts_reel.topic_for(day), "/tmp/_cover_test.mp4")
+        ms.solve_sizes(reel)
+        ms.solve_layout(reel)
+        ms.schedule(reel)
+        return reel
+
+    def test_the_hero_is_the_consequence_and_the_setup_stays_smaller(self):
+        import short_cover
+        reel = self._reel()
+        kicker, setup, consequence, sub = short_cover.hook_parts(reel)
+        self.assertEqual(consequence, "PAY TWICE.")
+        self.assertEqual(setup, "PAY WITHOUT A RECEIPT.")
+        self.assertTrue(kicker)
+        L = short_cover.layout(reel)
+        self.assertLessEqual(len(" ".join(L["hero"][1]).split()), 5, "three to five words, huge")
+        self.assertGreaterEqual(L["hero"][0], short_cover.HERO_MIN)
+        self.assertLessEqual(L["setup"][0], int(L["hero"][0] / 1.35) + 4)
+
+    @unittest.skipUnless(FONTS_OK, "Inter is not installed — run tools/install_motionstudio_deps.sh")
+    def test_everything_that_matters_sits_inside_the_grid_safe_band(self):
+        """TikTok's grid keeps y 420–1500 of the cover: the yellow slabs and the white set-up must
+        be there, and nothing but the photograph outside it."""
+        import numpy as np
+        import short_cover
+        img = short_cover.render(self._reel())
+        self.assertEqual(img.size, (ms.W, ms.H))
+        a = np.asarray(img).astype(int)
+        yellow = (np.abs(a - np.array(ms.YELLOW)).sum(axis=2) < 40)
+        ys = np.nonzero(yellow.any(axis=1))[0]
+        self.assertGreater(len(ys), 100, "the yellow slabs are there")
+        self.assertGreaterEqual(int(ys.min()), 420)
+        self.assertLessEqual(int(ys.max()), 1500)
+        white = (a.min(axis=2) > 235)
+        wy = np.nonzero(white.sum(axis=1) > 20)[0]
+        self.assertGreater(len(wy), 50, "the white set-up is there")
+        self.assertGreaterEqual(int(wy.min()), 420)
+        self.assertLessEqual(int(wy.max()), 1500)
+        outside = yellow[:420].sum() + yellow[1500:].sum()
+        self.assertEqual(int(outside), 0, "no yellow outside the band — one device, in the crop")
+
+    @unittest.skipUnless(FONTS_OK, "Inter is not installed — run tools/install_motionstudio_deps.sh")
+    def test_the_cover_uses_only_brand_colours_and_clears_7_to_1(self):
+        import numpy as np
+        import short_cover
+        img = short_cover.render(self._reel())
+        a = np.asarray(img).astype(int)
+        # Navy on yellow (the verdict) and white on navy (the set-up): both far above 7:1.
+        self.assertGreater(ms.contrast_ratio(ms.YELLOW), 7.0)
+        self.assertGreater(ms.contrast_ratio(ms.WHITE), 7.0)
+        # No red, no green, no off-palette saturated colour anywhere on the piece.
+        red = (np.abs(a - np.array(ms.RED)).sum(axis=2) < 40).sum()
+        green = (np.abs(a - np.array(ms.GREEN)).sum(axis=2) < 40).sum()
+        self.assertEqual(int(red) + int(green), 0)
+
+    @unittest.skipUnless(FONTS_OK, "Inter is not installed — run tools/install_motionstudio_deps.sh")
+    def test_frame_zero_honours_the_lane_cover(self):
+        """motionstudio.poster_frame uses reel['cover_fn'] when the lane provides one."""
+        import numpy as np
+        import short_cover
+        reel = self._reel()
+        designed = short_cover.render(reel)
+        reel["cover_fn"] = lambda: designed
+        poster = ms.poster_frame(reel)
+        self.assertLess(int(np.abs(np.asarray(poster).astype(int) - np.asarray(designed).astype(int)).max()), 2)
+
+    def test_a_broken_cover_fn_falls_back_to_the_settled_card(self):
+        reel = {"scenes": [{"id": "A", "role": "hook", "dur": 1.0, "trans": "flash", "punch": 0,
+                            "beats": [{"kind": "kicker", "t0": 0.02, "text": "X", "size": 30, "y": 500, "color": ms.FAINT,
+                                       "exempt": False, "why": "", "lines": None, "role": "kicker"}]}],
+                "cover_fn": lambda: (_ for _ in ()).throw(RuntimeError("boom"))}
+        if not FONTS_OK:
+            self.skipTest("Inter is not installed")
+        img = ms.poster_frame(reel)
+        self.assertEqual(img.size, (ms.W, ms.H))
+
+    def test_the_bridge_installs_the_designed_cover_and_keeps_the_raw_photo(self):
+        src = (TOOLS / "shorts_reel.py").read_text(encoding="utf-8")
+        self.assertIn('reel["cover_fn"] = lambda: short_cover.render(reel)', src)
+        self.assertIn('sc["_bg_raw"]', src)
+
+    def test_reels_take_frame_zero_as_their_cover(self):
+        wf = (ROOT / ".github" / "workflows" / "facebook_autopost.yml").read_text(encoding="utf-8")
+        self.assertNotIn("--thumb-offset-ms 1500", wf)
+        self.assertIn("--thumb-offset-ms 0", wf)
+
+
 if __name__ == "__main__":
     unittest.main()

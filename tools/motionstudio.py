@@ -832,6 +832,17 @@ def poster_frame(reel):
     It is frame 0 of every master (TikTok, Telegram and Facebook take their default cover from
     the first frame) and the JPEG beside the master that YouTube gets as the custom thumbnail.
     A blank first frame was the owner's first complaint about the first TikTok draft (18 Oct 2026)."""
+    fn = reel.get('cover_fn')
+    if fn is not None:
+        # A lane may design the cover itself (tools/short_cover.py: the verdict on yellow slabs,
+        # inside the grid-safe band). It must be W×H; anything else falls back to the settled card.
+        try:
+            img = fn()
+            if img is not None and getattr(img, 'size', None) == (W, H):
+                return img.convert('RGB')
+            print('  ⚠️  cover_fn returned %s — using the settled opening card' % (getattr(img, 'size', None),))
+        except Exception as exc:  # the cover must never cost the video
+            print('  ⚠️  cover_fn failed (%s) — using the settled opening card' % exc)
     sc = reel['scenes'][0]
     events_of(reel)   # strike_at_local etc. — the poster must see the same registry as the render
     return compose_frame(sc, settle_time(sc), len(reel['scenes']) == 1, fx=False)
@@ -1061,7 +1072,7 @@ def build(reel, tag):
                 cover = cover_path_for(out)
                 poster_frame(reel).convert('RGB').save(cover, quality=92, optimize=True)
                 reel['cover'] = cover
-                print(f'  🖼  cover {cover} {os.path.getsize(cover)//1024} KB (frame 0 = the same settled card)')
+                print(f'  🖼  cover {cover} {os.path.getsize(cover)//1024} KB (frame 0 is the same picture)')
             return True
         applied = autofix(V, reel)
         if not applied:

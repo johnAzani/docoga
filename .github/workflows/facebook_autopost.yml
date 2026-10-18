@@ -716,14 +716,14 @@ jobs:
             HOW="fetched by Meta from a 48-hour unguessable URL on the worker (removed after the Story step)"
             set +e
             IG_API_PATH="$API_PATH" IG_ACCESS_TOKEN="$IG_TOKEN" IG_USER_ID="$IG_USER_ID" \
-              python3 tools/ig_publish.py --video-url "$MEDIA_URL" --caption "$CAPTION" --thumb-offset-ms 1500 --wait-url --wait-url-deadline 300 $TRIAL $FORCE \
+              python3 tools/ig_publish.py --video-url "$MEDIA_URL" --caption "$CAPTION" --thumb-offset-ms 0 --wait-url --wait-url-deadline 300 $TRIAL $FORCE \
               2>&1 | tee /tmp/ig_reel_post.log
             STATUS=${PIPESTATUS[0]}
             set -e
           else
             set +e
             IG_API_PATH="$API_PATH" IG_ACCESS_TOKEN="$IG_TOKEN" IG_USER_ID="$IG_USER_ID" \
-              python3 tools/ig_publish.py --video-file "$FILE" --caption "$CAPTION" --thumb-offset-ms 1500 $TRIAL $FORCE \
+              python3 tools/ig_publish.py --video-file "$FILE" --caption "$CAPTION" --thumb-offset-ms 0 $TRIAL $FORCE \
               2>&1 | tee /tmp/ig_reel_post.log
             STATUS=${PIPESTATUS[0]}
             set -e
