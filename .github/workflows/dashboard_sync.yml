@@ -47,7 +47,9 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          ref: main
+          # workflow_run checks out the default branch's *trigger* commit by default; we
+          # want the branch head, which carries the ledger the lane just committed.
+          ref: ${{ github.event.workflow_run.head_branch || github.ref }}
       - uses: actions/setup-python@v6
         with:
           python-version: '3.11'
