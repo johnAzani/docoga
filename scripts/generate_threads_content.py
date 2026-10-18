@@ -217,6 +217,11 @@ MORNING_QUESTIONS = (
     "What would you have done differently?",
     "What is the one thing you would tell a first-time tenant about this?",
     "Lagos, Abuja, Port Harcourt, Kano — where are you renting, and is it the same there?",
+    "Be honest: did you read your own agreement before you signed it?",
+    "What did your agent say when you asked for the paper?",
+    "Which line in your agreement would you rewrite today?",
+    "Did you know this before today? Yes or no — one word is fine.",
+    "Who taught you this the hard way — you, or someone you know?",
 )
 
 
@@ -315,8 +320,10 @@ def build(day, rng, slot="lunch"):
         extras = extras_for(pack)
         notes = ["brain: %s" % pack.get("theme")] + list(notes)
     else:
-        post_type = rng.choice(tg.WEEKLY_SCHEDULE.get(day.weekday(), ["promo"]))
-        template = rng.choice(tg.TEMPLATES[post_type])
+        # The same words the Facebook Page posts today (and never yesterday's): one copy, two
+        # channels, as the docstring promises — generate_facebook_content.pick() owns the choice.
+        import generate_facebook_content as fb
+        post_type, template = fb.pick(day)
         plain = to_plain(template).strip()
         if not plain:
             raise ValueError("template for %r de-escaped to nothing" % post_type)
@@ -328,6 +335,9 @@ def build(day, rng, slot="lunch"):
     # in its own reply underneath.
     extras["image_url"], extras["card_path"] = card_for(day, "lunch")
     return post_type, text, notes, extras
+
+
+IG_CLOSE = "Save this for the day you need it, and send it to one tenant or landlord who should read it today."
 
 
 def extras_for(pack):
@@ -350,6 +360,10 @@ def generate(day=None, write=True, slot="lunch"):
     ig_caption = text.replace("?s=th", "?s=ig")
     if seo.lower() not in ig_caption.lower():
         ig_caption = seo + "\n\n" + ig_caption
+    # Saves and sends are what Instagram's 2026 ranking weighs (Mosseri: watch time, likes per
+    # reach, sends per reach), so the caption ends by asking for exactly those two things.
+    if IG_CLOSE.lower() not in ig_caption.lower():
+        ig_caption = ig_caption.rstrip() + "\n\n" + IG_CLOSE
     if extras.get("ig_caption"):
         ig_caption = extras["ig_caption"]           # a Deep-Dive recap day: Instagram's own words
 

@@ -73,6 +73,10 @@ FONT_CANDIDATES = {
                  _USER_FONTS + "/Inter-SemiBold.otf", _USER_FONTS + "/Inter-SemiBold.ttf",
                  "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
                  "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"],
+    "Medium": ["/usr/share/fonts/opentype/inter/Inter-Medium.otf",
+               _USER_FONTS + "/Inter-Medium.otf", _USER_FONTS + "/Inter-Medium.ttf",
+               "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+               "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"],
     "Regular": ["/usr/share/fonts/opentype/inter/Inter-Regular.otf",
                 _USER_FONTS + "/Inter-Regular.otf", _USER_FONTS + "/Inter-Regular.ttf",
                 "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
@@ -181,7 +185,7 @@ BANNED_PHOTO_PREFIXES = ("brand/",)
 
 # What the kicker says for each rotation post type (the raw key is a variable name).
 KICKER_NAMES = {"promo": "free documents", "educational": "know your rights", "pidgin": "oya, make we talk",
-                "testimonial_style": "from our users", "state_spotlight": "state spotlight",
+                "testimonial_style": "picture this", "state_spotlight": "state spotlight",
                 "urgent": "don't wait", "engagement": "your turn", "tip": "tenant tip",
                 "guide": "guide", "manual": "", "morning": "morning question", "deepdive": "new deep-dive · 9 min"}
 
@@ -264,93 +268,365 @@ def _numbered(rest):
     return "\n".join(out)
 
 
+# ── The card's design system (18 Oct 2026, "make the design more beautiful") ──────────────
+# The same language as the Short cover (tools/short_cover.py, docs/SHORT_COVER.md), because a
+# feed that recognises the cover should recognise the card: the headline on stepped yellow
+# slabs in navy Inter Black, a flat royal block offset behind the stack for depth (no shadow,
+# no gradient — BRAND_STYLE §1/§4), a tracked small-caps kicker, body copy with the brand's
+# devices as bullets (green ✓ validation, red ✗ rejection, royal numerals), the outlined
+# "FREE · docoga.com.ng" chip, the giant tonal glyph when there is no photograph, film grain.
+# Hierarchy by size (slab ≥ 1.6× body), ≤ 3 slab lines, 60-30-10 colour (navy / yellow / white),
+# everything inside the 1:1 grid crop of a 4:5 post (Instagram's profile grid shows the centre
+# square; 135 px top and bottom are lost) — the "squint test" these cards must pass at 200 px.
+PANEL = (15, 61, 124)       # royal: the offset block, the numeral chips, the chip outline
+NAVY2 = (12, 38, 70)        # the tonal glyph
+FAINT = (96, 128, 170)
+SOFT = (226, 234, 246)      # body white — a notch under pure white so the slab stays brightest
+RED, GREEN = (255, 90, 95), (46, 204, 107)
+GRID_SAFE = 135             # a 4:5 card loses this much top and bottom in the 1:1 grid
+SLAB_PAD_X, SLAB_PAD_Y, SLAB_GAP, OFFSET = 28, 8, 6, 14
+SLAB_MAX_LINES = 3
+
+# Line markers the copy may carry. Detected on the raw text (before the emoji are stripped for
+# drawing) so a "✅ Rent amount" line becomes a green check beside white words, not a bare line.
+MARKERS = (
+    ("check", re.compile(r"^\s*(?:\u2705|\u2714\ufe0f?|\u2713|\u2611\ufe0f?)\s*")),
+    ("x", re.compile(r"^\s*(?:\u274c|\u2717|\u2718|\U0001f6ab)\s*")),
+    ("num", re.compile(r"^\s*(\d{1,2})[.)]\s+")),
+    ("option", re.compile(r"^\s*([A-D])[.)]\s+")),
+    ("bullet", re.compile(r"^\s*(?:\u2022|\U0001f539|\U0001f538|\u25aa\ufe0f?|\u25e6|-|\u2013|\u2014|\u2192|\U0001f449)\s+")),
+)
+COUNTER = re.compile(r"^\s*(\d+)\s+of\s+(\d+)\s*$", re.I)
+URL_IN_LINE = re.compile(r"\s*https?://\S+")
+
+
+def classify(line):
+    """(kind, label, words) for one body line: check / x / num / option / bullet / plain."""
+    for kind, pattern in MARKERS:
+        m = pattern.match(line)
+        if m:
+            label = m.group(1) if m.groups() else ""
+            return kind, label, line[m.end():].strip()
+    return "plain", "", line.strip()
+
+
+def structure(text, footer=True, layout="poster"):
+    """Headline + typed body lines from the lane's copy (plain or MarkdownV2 — both stripped).
+
+    The first paragraph is the headline; every later line is body, with its marker read before
+    the emoji are removed. Lines that only carried a link (or little more) are the caption's,
+    not the card's — the chip at the foot already says where to go."""
+    raw = _drop_hashtags((text or "").replace("**", "").replace("__", "").replace("~~", ""))
+    parts = [b for b in raw.split("\n\n") if b.strip()] or [raw]
+    headline = " ".join(plain_for_card(parts[0]).split())
+    rest = "\n\n".join(parts[1:])
+    if layout == "checklist" and rest:
+        rest = _numbered(rest)
+    body = []
+    for line in rest.split("\n"):
+        if not line.strip():
+            if body and body[-1][0] != "gap":
+                body.append(("gap", "", ""))
+            continue
+        had_url = bool(URL_IN_LINE.search(line))
+        if footer and had_url:
+            line = URL_IN_LINE.sub("", line)
+            if len(line.split()) <= 3:
+                continue
+        kind, label, words = classify(line)
+        words = " ".join(plain_for_card(words).split()).rstrip(":") if had_url else " ".join(plain_for_card(words).split())
+        if words:
+            body.append((kind, label, words))
+    while body and body[-1][0] == "gap":
+        body.pop()
+    return headline, body
+
+
+def _luma(region):
+    import numpy as np
+    a = np.asarray(region.convert("L"), dtype=np.float32)
+    return float(a.mean()) if a.size else 0.0
+
+
+def _band(image, y0, y1, alpha):
+    """A translucent navy band behind the type when a photograph sits under it (contrast ≥ 7:1
+    is what the yellow-on-navy thumbnail data rewards; the plate's own scrims are not enough on
+    a bright picture)."""
+    if alpha <= 0:
+        return image
+    band = Image.new("RGBA", image.size, (0, 0, 0, 0))
+    ImageDraw.Draw(band).rectangle([0, int(y0), image.width, int(y1)], fill=INK_BG + (int(alpha),))
+    return Image.alpha_composite(image.convert("RGBA"), band).convert("RGB")
+
+
+def _tracked(draw, xy, text, font, fill, tracking=6):
+    x, y = xy
+    for ch in text:
+        draw.text((x, y), ch, font=font, fill=fill)
+        x += draw.textlength(ch, font=font) + tracking
+    return x - tracking
+
+
+def _tracked_width(draw, text, font, tracking=6):
+    return sum(draw.textlength(ch, font=font) for ch in text) + tracking * max(0, len(text) - 1)
+
+
+def _badge(draw, cx, cy, r, color, shape):
+    """The brand's two marks (BRAND_STYLE §5): green check = validation, red ✗ = rejection."""
+    draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=color)
+    lw = max(4, int(r * 0.26))
+    if shape == "check":
+        draw.line([(cx - r * .45, cy + r * .02), (cx - r * .08, cy + r * .38), (cx + r * .5, cy - r * .32)],
+                  fill=WHITE, width=lw, joint="curve")
+    else:
+        draw.line([(cx - r * .38, cy - r * .38), (cx + r * .38, cy + r * .38)], fill=WHITE, width=lw)
+        draw.line([(cx + r * .38, cy - r * .38), (cx - r * .38, cy + r * .38)], fill=WHITE, width=lw)
+
+
+def _chip(draw, cx, cy, text, font, fill=WHITE, outline=PANEL, pad=(26, 14), width=3):
+    tw = draw.textlength(text, font=font)
+    asc, desc = font.getmetrics()
+    th = asc + desc
+    box = [cx - tw / 2 - pad[0], cy - th / 2 - pad[1], cx + tw / 2 + pad[0], cy + th / 2 + pad[1]]
+    draw.rounded_rectangle(box, radius=int((box[3] - box[1]) / 2), outline=outline, width=width)
+    draw.text((cx - tw / 2, cy - th / 2), text, font=font, fill=fill)
+    return box
+
+
+def tonal_glyph(image, letter, size, clip=None):
+    """BRAND_STYLE §4: the headline's first letter as a giant royal watermark bleeding off the
+    bottom-right — depth for a card with no photograph. `clip` = (y0, y1) keeps it out of a
+    Story's chrome bands (the platform's own UI sits there; the band stays pure ground)."""
+    if not letter:
+        return image
+    font, name = load_font("Black", size)
+    if name.startswith("PIL-default"):
+        return image
+    w, h = image.size
+    layer = image.copy()
+    ImageDraw.Draw(layer).text((w - int(size * 0.50), h - int(size * 0.70)), letter, font=font, fill=NAVY2)
+    if clip:
+        y0, y1 = int(clip[0]), int(clip[1])
+        image.paste(layer.crop((0, y0, w, y1)), (0, y0))
+        return image
+    return layer
+
+
+def plan(draw, headline, body, big, frame):
+    """Choose sizes so the whole piece fits the frame's safe box: slab headline when it can sit
+    on ≤ 3 slabs at a size that out-weighs the body, else a white headline; body shrinks before
+    it is cut. Returns a dict the drawing pass follows (also handy for tests)."""
+    W, H, top, ceiling, tall = frame["w"], frame["h"], frame["top"], frame["ceiling"], frame["tall"]
+    max_width = W - 2 * MARGIN
+    slab_width = max_width - 2 * SLAB_PAD_X
+    out = {"mode": "white", "max_width": max_width}
+    # The stat figure: one line on the slab, as large as the width allows.
+    if big:
+        font, size = _fit_line(draw, big, "Black", slab_width, 230 if tall else 200, floor=84)
+        out.update(big=big, big_font=font, big_size=size)
+    # Slab headline: the largest size at which ≤ 3 lines fit.
+    if headline:
+        lo, hi = (72, 150) if tall else (64, 136)
+        if big:
+            lo, hi = (52, 84) if tall else (48, 76)   # under a stat the headline is the second voice
+        for size in range(hi, lo - 1, -4):
+            font, _ = load_font("Black", size)
+            lines = wrap(draw, headline, font, slab_width)
+            if size > (128 if tall else 112) and len(lines) > 2:
+                continue        # three slabs of display type would be more yellow than card
+            if len(lines) <= SLAB_MAX_LINES and not big:
+                out.update(mode="slab", h_font=font, h_size=size, h_lines=lines)
+                break
+            if big and len(lines) <= 3:
+                out.update(mode="stat", h_font=font, h_size=size, h_lines=lines)
+                break
+        if "h_font" not in out:
+            start = (84 if tall else 72) if body else (112 if tall else 100)   # alone, the headline is the piece
+            font, size = fit_size(draw, headline, "Black", max_width, start, floor=44)
+            out.update(mode="stat" if big else "white", h_font=font, h_size=size,
+                       h_lines=wrap(draw, headline, font, max_width))
+    else:
+        out.update(h_font=None, h_size=0, h_lines=[])
+    # Body: shrink until the block fits, then (last resort) cut.
+    chars = sum(len(w) for _, _, w in body)
+    body_start = (60 if tall else 54) if chars < 220 else (52 if tall else 46) if chars < 400 else (44 if tall else 38)
+    body_floor = 30
+    if out["mode"] == "slab" and out["h_size"]:
+        body_start = min(body_start, int(out["h_size"] / 1.6))   # hierarchy: the slab out-weighs the body
+    body_start = max(body_start, body_floor)
+    for bsize in range(body_start, body_floor - 1, -2):
+        bfont, _ = load_font("Medium", bsize)
+        indent = int(bsize * 1.5)
+        blines = []
+        for kind, label, words in body:
+            if kind == "gap":
+                blines.append(("gap", "", "", 0))
+                continue
+            width = max_width - (indent if kind != "plain" else 0)
+            for i, ln in enumerate(wrap(draw, words, bfont, width)):
+                blines.append((kind if i == 0 else "cont", label if i == 0 else "", ln, indent if kind != "plain" else 0))
+        out.update(b_font=bfont, b_size=bsize, b_lines=blines, indent=indent)
+        if _height(out, tall) <= ceiling - top:
+            break
+    # Cut if even the floor overflows: keep whole lines, end with an ellipsis.
+    while out["b_lines"] and _height(out, tall) > ceiling - top:
+        out["b_lines"].pop()
+        if out["b_lines"]:
+            k, l, t, ind = out["b_lines"][-1]
+            out["b_lines"][-1] = (k, l, t.rstrip(" ,;:") + "\u2026", ind)
+    out["height"] = _height(out, tall)
+    return out
+
+
+def _height(p, tall):
+    h = 0
+    if p.get("big"):
+        h += int(p["big_size"] * 1.02) + 2 * SLAB_PAD_Y + 24
+    if p["h_lines"]:
+        lh = p["h_size"] * (1.0 if p["mode"] == "slab" else 1.06)
+        if p["mode"] == "slab":
+            h += len(p["h_lines"]) * (int(p["h_size"] * 1.0) + 2 * SLAB_PAD_Y + SLAB_GAP) - SLAB_GAP + OFFSET
+        else:
+            h += int(len(p["h_lines"]) * lh)
+    if p["b_lines"]:
+        h += (40 if tall else 34)
+        for kind, _, _, _ in p["b_lines"]:
+            h += int(p["b_size"] * 0.6) if kind == "gap" else int(p["b_size"] * 1.34)
+    return h
+
+
 def render(text, out_path, kicker="", quality=88, max_kb=900, footer=FOOTER, size=None, safe=(0, 0),
            background=None, layout="poster", big=""):
     """Draw `text` on a brand card (1080×1350 by default) and write a JPEG at `out_path`.
 
-    `size` = (w, h) for another frame; `safe` = (top, bottom) pixels the platform
-    covers with its own chrome (Stories), kept clear of type. `background` is a
-    treated plate (tools/brain_visual.py) the navy sits on; `layout` is poster /
-    stat (a `big` figure above the headline) / checklist (numbered body lines)."""
+    `size` = (w, h) for another frame; `safe` = (top, bottom) pixels the platform covers with
+    its own chrome (Stories), kept clear of type. `background` is a treated plate
+    (tools/brain_visual.py) the navy sits on; `layout` is poster / stat (a `big` figure on the
+    slab above the headline) / checklist (numbered body lines)."""
     out = Path(out_path)
     out.parent.mkdir(parents=True, exist_ok=True)
-    CARD_W, CARD_H = size or (globals()["CARD_W"], globals()["CARD_H"])
+    W, H = size or (globals()["CARD_W"], globals()["CARD_H"])
     safe_top, safe_bottom = safe
+    tall = H >= 1700
+    four_five = abs(W / H - 0.8) < 0.02
     if background is not None:
-        image = background.convert("RGB").resize((CARD_W, CARD_H))
+        image = background.convert("RGB").resize((W, H))
     else:
-        image = Image.new("RGB", (CARD_W, CARD_H), INK_BG)
+        image = Image.new("RGB", (W, H), INK_BG)
     draw = ImageDraw.Draw(image)
 
-    body = plain_for_card(_drop_hashtags(plain_for_card(text)))
-    if not body:
+    headline, body = structure(text, footer=bool(footer), layout=layout)
+    if not headline and not body:
         raise ValueError("nothing left to draw after stripping undrawable characters")
+    big = " ".join(plain_for_card(big).split()) if (layout == "stat" and big) else ""
 
-    max_width = CARD_W - 2 * MARGIN
-    top = 150 + safe_top
+    # The safe box: Stories lose their chrome bands; a 4:5 card loses 135 px top and bottom in
+    # the grid, so the piece lives in the centre square and breathes at the edges.
+    edge_top = max(safe_top, GRID_SAFE if four_five else 0)
+    edge_bottom = max(safe_bottom, GRID_SAFE if four_five else 0)
+    kicker_h = (30 if tall else 26) + 28
+    top = edge_top + (60 if four_five else 56) + (kicker_h if kicker else 0)
+    chip_h = 64 if tall else 58
+    ceiling = H - edge_bottom - (60 if four_five else 56) - (chip_h + 40 if footer else 0)
+    frame = {"w": W, "h": H, "top": top, "ceiling": ceiling, "tall": tall}
+    p = plan(draw, headline, body, big, frame)
 
-    # First line reads as the headline, the rest as body: a card is a poster, not a memo.
-    parts = [block for block in body.split("\n\n") if block.strip()] or [body]
-    headline, rest = parts[0], "\n\n".join(parts[1:]) if len(parts) > 1 else ""
-    if layout == "checklist" and rest:
-        rest = _numbered(rest)
-    # A standalone link line duplicates the footer on a card: the caption keeps it, the card does not.
-    if footer and rest:
-        rest = "\n".join(ln for ln in rest.split("\n") if not re.fullmatch(r"\s*https?://\S+\s*", ln))
-        rest = re.sub(r"\n{3,}", "\n\n", rest).strip()
-    big = " ".join(plain_for_card(big).split()) if layout == "stat" else ""
-    bfont_big, bsize_big = _fit_line(draw, big, "Black", max_width, 190, floor=72) if big else (None, 0)
+    # Optical placement: a touch above true centre of the safe box.
+    room = (ceiling - top) - p["height"]
+    y0 = top + max(0, int(room * 0.40))
 
-    tall = CARD_H >= 1700            # a Story frame carries bigger type: it is held closer, alone
-    hfont, hsize = fit_size(draw, headline, "Black", max_width,
-                            (92 if tall else 74) if len(headline) < 90 else (70 if tall else 58))
-    bfont, bsize = (None, 0)
-    if rest:
-        bfont, bsize = fit_size(draw, rest, "Regular", max_width,
-                                (50 if tall else 42) if len(rest) < 340 else (40 if tall else 34))
-    # An image that fills a phone screen and puts six lines of text in its upper third reads
-    # as a mistake, and on a feed nobody scrolls to the bottom to check. Measure the block
-    # first, then start it where it will look placed rather than dropped.
-    headline_lines = len(wrap(draw, headline, hfont, max_width))
-    body_lines = len(wrap(draw, rest, bfont, max_width)) if rest else 0
-    big_block = (int(bsize_big * 1.08) + 18) if big else 0
-    block = big_block + headline_lines * int(hsize * 1.18) + (26 + body_lines * int(bsize * 1.32) if rest else 0)
-    ceiling, floor_top = CARD_H - 200 - safe_bottom, 150 + safe_top
-    top = max(floor_top, min(ceiling - block, floor_top + (ceiling - floor_top - block) // 2))
+    if background is None:
+        glyph = next((c for c in (big or headline) if c.isalnum()), "")
+        image = tonal_glyph(image, glyph.upper(), int(H * 0.72),
+                            clip=(safe_top, H - safe_bottom) if (safe_top or safe_bottom) else None)
+    else:
+        band_top = min(y0, top) - kicker_h - 40
+        region = image.crop((0, band_top, W, min(H, y0 + p["height"] + 40)))
+        luma = _luma(region)
+        image = _band(image, band_top, y0 + p["height"] + 40, 188 if luma > 120 else 140 if luma > 70 else 92)
+    draw = ImageDraw.Draw(image)
+    max_width = p["max_width"]
 
-    # Kicker and rule travel with the headline — the rule is the brand's separator and
-    # sits above the headline, not under it.
+    # Kicker: tracked small caps, muted, pinned to the top of the safe box like a masthead (so a
+    # carousel's slides line up); a "2 of 6" label becomes a counter top-right and the kicker
+    # says DocOga.
     if kicker:
         kfont, _ = load_font("SemiBold", 30 if tall else 26)
-        draw.text((MARGIN, top - (52 if tall else 46)), kicker.upper()[:40], font=kfont, fill=BLUE)
-    draw.line([(MARGIN, top - 8), (MARGIN + 96, top - 8)], fill=ACCENT, width=4)
-    y = top
-    if big:
-        # The stat layout: one figure in the accent, the yellow underline sweep under it (§5).
-        draw.text((MARGIN, y), big, font=bfont_big, fill=WHITE)
-        width = draw.textlength(big, font=bfont_big)
-        draw.line([(MARGIN, y + int(bsize_big * 1.0)), (MARGIN + width, y + int(bsize_big * 1.0))],
-                  fill=ACCENT, width=10)
-        y += big_block
-    for line in wrap(draw, headline, hfont, max_width):
-        draw.text((MARGIN, y), line, font=hfont, fill=WHITE)
-        y += int(hsize * 1.18)
+        ky = top - kicker_h
+        label = kicker.strip()
+        counter = COUNTER.match(label)
+        if counter:
+            right = "%s / %s" % counter.groups()
+            draw.text((W - MARGIN - draw.textlength(right, font=kfont), ky), right, font=kfont, fill=MUTED)
+            label = "DocOga"
+        _tracked(draw, (MARGIN, ky), label.upper()[:40], kfont, MUTED, tracking=6)
 
-    if rest:
-        y += 26
-        for line in wrap(draw, rest, bfont, max_width):
-            if y > CARD_H - 200 - safe_bottom:
-                draw.text((MARGIN, y), "…", font=bfont, fill=MUTED)
-                break
-            draw.text((MARGIN, y), line, font=bfont, fill=MUTED if line else WHITE)
-            y += int(bsize * 1.32)
+    y = y0
+    # The stat figure on its slab (one line), the headline under it in white.
+    if big:
+        bw = draw.textlength(big, font=p["big_font"])
+        sh = int(p["big_size"] * 1.02) + 2 * SLAB_PAD_Y
+        draw.rectangle([MARGIN + OFFSET, y + OFFSET, MARGIN + bw + 2 * SLAB_PAD_X + OFFSET, y + sh + OFFSET], fill=PANEL)
+        draw.rectangle([MARGIN, y, MARGIN + bw + 2 * SLAB_PAD_X, y + sh], fill=ACCENT)
+        asc, _ = p["big_font"].getmetrics()
+        draw.text((MARGIN + SLAB_PAD_X, y + SLAB_PAD_Y + (sh - 2 * SLAB_PAD_Y - int(p["big_size"] * 1.02)) // 2 - int(p["big_size"] * 0.08)),
+                  big, font=p["big_font"], fill=INK_BG)
+        y += sh + 24
+    if p["h_lines"]:
+        if p["mode"] == "slab":
+            size_ = p["h_size"]
+            sh = int(size_ * 1.0) + 2 * SLAB_PAD_Y
+            widths = [draw.textlength(ln, font=p["h_font"]) + 2 * SLAB_PAD_X for ln in p["h_lines"]]
+            stack_h = len(widths) * (sh + SLAB_GAP) - SLAB_GAP
+            # One flat royal block offset behind the whole stack: depth with no shadow.
+            draw.rectangle([MARGIN + OFFSET, y + OFFSET, MARGIN + max(widths) + OFFSET, y + stack_h + OFFSET], fill=PANEL)
+            for ln, wd in zip(p["h_lines"], widths):
+                draw.rectangle([MARGIN, y, MARGIN + wd, y + sh], fill=ACCENT)
+                draw.text((MARGIN + SLAB_PAD_X, y + SLAB_PAD_Y - int(size_ * 0.1)), ln, font=p["h_font"], fill=INK_BG)
+                y += sh + SLAB_GAP
+            y += OFFSET - SLAB_GAP
+        else:
+            lh = int(p["h_size"] * 1.06)
+            for ln in p["h_lines"]:
+                draw.text((MARGIN, y), ln, font=p["h_font"], fill=WHITE)
+                y += lh
+
+    if p["b_lines"]:
+        y += (40 if tall else 34)
+        bsize, bfont, indent = p["b_size"], p["b_font"], p["indent"]
+        nfont, _ = load_font("Black", int(bsize * 0.78))
+        for kind, label, ln, ind in p["b_lines"]:
+            if kind == "gap":
+                y += int(bsize * 0.6)
+                continue
+            cy = y + int(bsize * 0.62)
+            r = int(bsize * 0.42)
+            if kind == "check":
+                _badge(draw, MARGIN + r, cy, r, GREEN, "check")
+            elif kind == "x":
+                _badge(draw, MARGIN + r, cy, r, RED, "x")
+            elif kind in ("num", "option"):
+                box = [MARGIN, cy - r, MARGIN + 2 * r, cy + r]
+                draw.rounded_rectangle(box, radius=int(r * 0.3), fill=PANEL)
+                tw = draw.textlength(label, font=nfont)
+                nasc, ndesc = nfont.getmetrics()
+                draw.text((MARGIN + r - tw / 2, cy - (nasc + ndesc) / 2 + int(bsize * 0.02)), label, font=nfont, fill=WHITE)
+            elif kind == "bullet":
+                d = max(5, int(bsize * 0.14))
+                draw.rectangle([MARGIN + r - d, cy - d, MARGIN + r + d, cy + d], fill=MUTED)
+            draw.text((MARGIN + ind, y), ln, font=bfont, fill=SOFT)
+            y += int(bsize * 1.34)
 
     if footer:
-        ffont, _ = load_font("SemiBold", 24)
-        width = draw.textlength(footer, font=ffont)
-        draw.text(((CARD_W - width) / 2, CARD_H - 116 - safe_bottom), footer, font=ffont, fill=ACCENT)
-        draw.line([(MARGIN, CARD_H - 150 - safe_bottom), (CARD_W - MARGIN, CARD_H - 150 - safe_bottom)],
-                  fill=INK_PANEL, width=2)
+        ffont, _ = load_font("SemiBold", 28 if tall else 26)
+        label = ("FREE \u00b7 %s" % footer) if footer == FOOTER else footer
+        _chip(draw, W / 2, H - edge_bottom - (60 if four_five else 56) - chip_h / 2, label, ffont)
+
+    try:
+        import blend_image
+        image = blend_image.photo_grain(image, sigma=2.2, seed=11)
+    except Exception:  # numpy missing on a thin runner: the card ships without grain
+        pass
 
     data = _encode(image, quality)
     while len(data) > max_kb * 1024 and quality > 45:
@@ -358,10 +634,11 @@ def render(text, out_path, kicker="", quality=88, max_kb=900, footer=FOOTER, siz
         data = _encode(image, quality)
     out.write_bytes(data)
     return {"path": str(out), "bytes": len(data), "quality": quality,
-            "width": CARD_W, "height": CARD_H, "ratio": CARD_W / CARD_H,
-            "font": load_font("Black", 60)[1], "headline_lines": len(wrap(draw, headline, hfont, max_width)),
+            "width": W, "height": H, "ratio": W / H,
+            "font": load_font("Black", 60)[1], "headline_lines": len(p["h_lines"]),
             "stripped": plain_for_card(text) != (text or "").strip(),
-            "layout": layout, "plate": background is not None}
+            "layout": layout, "plate": background is not None, "mode": p["mode"],
+            "headline_size": p["h_size"], "body_size": p["b_size"] if p["b_lines"] else 0}
 
 
 def _encode(image, quality):
