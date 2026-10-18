@@ -1253,7 +1253,7 @@ class InstagramReels(unittest.TestCase):
                                                                b"\x00\x00\x00\x18ftypmp42" + b"\x00" * 100))
         with head:
             code, out, fake = self.run_ig(routes, ["--video-url", url, "--caption", self.CAPTION,
-                                                   "--thumb-offset-ms", "1500", "--trial", "--wait-url"],
+                                                   "--thumb-offset-ms", "0", "--trial", "--wait-url"],
                                           {"IG_API_PATH": "instagram-login", "IG_USER_ID": "1784"})
         self.assertEqual(code, 0, out)
         self.assertIn("IG_RESULT=sent", out)
@@ -1265,7 +1265,7 @@ class InstagramReels(unittest.TestCase):
         self.assertEqual(query["media_type"], ["REELS"])
         self.assertEqual(query["video_url"], [url])
         self.assertEqual(query["share_to_feed"], ["true"])
-        self.assertEqual(query["thumb_offset"], ["1500"])
+        self.assertEqual(query["thumb_offset"], ["0"], "frame 0 is the designed cover")
         self.assertNotIn("upload_type", query)
         self.assertTrue(all("graph.instagram.com" in c[1] for c in container), container)
 
@@ -1323,7 +1323,7 @@ class InstagramReels(unittest.TestCase):
         self.assertEqual(query["upload_type"], ["resumable"])
         self.assertEqual(query["media_type"], ["REELS"])
         self.assertEqual(query["share_to_feed"], ["true"])
-        self.assertEqual(query["thumb_offset"], ["1500"], "the navy title card is the cover")
+        self.assertEqual(query["thumb_offset"], ["0"], "frame 0 is the designed cover (tools/short_cover.py)")
         self.assertEqual(query["caption"], [self.CAPTION])
         self.assertNotIn("video_url", query, "no public URL is involved anywhere")
         self.assertEqual(len(self.uploads), 1)
