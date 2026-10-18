@@ -60,6 +60,26 @@ by a human.
 From then on the lane runs on the sealed box; the refresh call rotates it and the lane reseals.
 `TIKTOK_REFRESH_TOKEN` as a repository secret is only a fallback and is not needed.
 
+## Testing it now, from the phone — "TikTok — send a test draft now"
+
+`.github/workflows/tiktok_test.yml` (18 Oct 2026) is the owner's "does it work?" button. On
+the phone: github.com → the repo → **Actions** → **TikTok — send a test draft now** → **Run
+workflow** → **Run workflow** (leave the two fields alone). About four minutes later the run
+summary shows the result and, on success, the exact caption to paste.
+
+What it does, in order: `tiktok_draft.py status` then `probe` (the token must mint *before*
+anything is rendered — a dead refresh token fails in 20 seconds, by name); renders the day's
+rotation Short with the real pipeline (locked narrator, MotionStudio, sounds; a different
+date via `for_date`); `tiktok_draft.py send`; commits `logs/tiktok_drafts.json` and the
+rotated `logs/tiktok_refresh_token.box` back to main **whatever happened after the probe**;
+keeps the MP4 as a 7-day artifact. It never touches YouTube, Telegram, or their ledgers, and
+it shares the Shorts run's concurrency group so it can never race the 6:00pm run.
+
+If the summary says the Short was not rendered because the narrator's bucket is empty, TikTok
+itself is fine (the token minted) — tap Run workflow again after the time the summary names.
+`duplicate` means those exact bytes were already sent (tick **force** to send anyway);
+`skipped` means five drafts are already waiting in the inbox — post or discard them first.
+
 ## Guard rails
 - Dormant (notice, exit 0) until the two app secrets and the sealed box (or the fallback secret)
   exist; never fails the YouTube publish it rides on (`continue-on-error`).

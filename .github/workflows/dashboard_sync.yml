@@ -23,6 +23,7 @@ on:
       - "Brain scorecard"
       - "YouTube stats — weekly snapshot"
       - "TikTok — connect (one time)"
+      - "TikTok — send a test draft now"
     types: [completed]
   workflow_dispatch:
   push:
