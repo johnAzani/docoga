@@ -1,0 +1,223 @@
+# TikTok — send a test draft now (18 Oct 2026)
+#
+# The TikTok lane normally rides the YouTube Shorts run (Mon–Fri 6:00pm WAT): the same
+# Short lands in the owner's TikTok inbox as a draft. This workflow is the owner's "does it
+# work?" button: it renders the rotation Short for a date (today by default), sends it to
+# the inbox, and prints the caption to paste — without touching YouTube, Telegram or any
+# ledger but TikTok's own. Dispatch only; no schedule (the clock does not know it, and
+# tools/tests/test_automation_heartbeat.py pins every scheduled lane by name).
+#
+# Order matters: the token is refreshed *before* the render, so a dead refresh token is a
+# 20-second named failure instead of a three-minute render followed by one. TikTok rotates
+# the refresh token on every refresh; the box is committed back whatever happens after it.
+name: TikTok — send a test draft now
+
+on:
+  workflow_dispatch:
+    inputs:
+      for_date:
+        description: "Render the rotation Short of this date (YYYY-MM-DD). Empty = today."
+        required: false
+        default: ''
+        type: string
+      force:
+        description: "Send even if these exact bytes already went to the inbox, or five drafts are already waiting"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write   # logs/tiktok_drafts.json and the rotated refresh-token box are committed back
+
+concurrency:
+  group: youtube-shorts-scheduled   # same ledger files as the Shorts run — never race it
+  cancel-in-progress: false
+
+jobs:
+  draft:
+    name: Render one Short and put it in the TikTok inbox
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      TZ: Africa/Lagos
+      DOCOGA_SHOTS: ${{ vars.DOCOGA_SHOTS || 'on' }}
+    steps:
+      - name: Check out the default branch
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install MotionStudio (ffmpeg + Inter) and the dependencies
+        run: |
+          bash tools/install_motionstudio_deps.sh
+          python -m pip install -r requirements-youtube.txt
+
+      # The cheap, decisive check first: is the lane connected and does the refresh token
+      # still mint? (`probe` rotates and re-seals the box; the commit step below keeps it.)
+      - name: Preflight — is TikTok connected and does the token still mint?
+        id: probe
+        env:
+          TIKTOK_CLIENT_KEY: ${{ secrets.TIKTOK_CLIENT_KEY }}
+          TIKTOK_CLIENT_SECRET: ${{ secrets.TIKTOK_CLIENT_SECRET }}
+          SOCIAL_TOKEN_KEY: ${{ secrets.SOCIAL_TOKEN_KEY }}
+        run: |
+          set -o pipefail
+          python3 tools/tiktok_draft.py status 2>&1 | tee /tmp/tiktok_status.log
+          if ! grep -q '^TIKTOK_CONNECTED=yes$' /tmp/tiktok_status.log; then
+            echo "::error title=TikTok is not connected::no sealed refresh token (logs/tiktok_refresh_token.box) or the TIKTOK_CLIENT_KEY / TIKTOK_CLIENT_SECRET secrets are missing — tap Connect once on https://docoga.com.ng/tiktok-connect.html (docs/TIKTOK_AUTOMATION.md). Nothing was rendered."
+            exit 3
+          fi
+          set +e
+          python3 tools/tiktok_draft.py probe 2>&1 | tee /tmp/tiktok_probe.log
+          code=${PIPESTATUS[0]}
+          set -e
+          if [ "$code" -ne 0 ]; then
+            echo "::error title=TikTok token did not mint::see the probe output above — if it says the refresh token is dead, tap Connect once more on https://docoga.com.ng/tiktok-connect.html. Nothing was rendered."
+            exit "$code"
+          fi
+          echo "The TikTok token mints. Rendering the Short next."
+
+      - name: Restore the narrator's cached clips
+        uses: actions/cache/restore@v5
+        with:
+          path: assets/shorts_voice
+          key: shorts-voice-v2-${{ github.run_id }}
+          restore-keys: shorts-voice-v2-
+
+      # The real Short, by the real pipeline (locked Orus narration, MotionStudio, sounds) —
+      # a test that sends anything else would prove nothing about Monday.
+      - name: Render the rotation Short
+        id: short
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_TTS_MODEL: ${{ vars.GEMINI_TTS_MODEL }}
+          SHORTS_VOICE: ${{ vars.SHORTS_VOICE || 'required' }}
+          NARRATOR_LANE: shorts
+          RUN_FOR_DATE: ${{ inputs.for_date }}
+        run: |
+          set +e
+          python3 scripts/youtube_short_daily.py
+          code=$?
+          set -e
+          if [ "$code" -eq 6 ]; then
+            echo "paused=yes" >> "$GITHUB_OUTPUT"
+            echo "::warning title=No Short to send yet::the narrator's free Gemini bucket is empty right now — tap Run workflow again after it refills (the line above says when). TikTok itself is fine: the token minted."
+            exit 0
+          fi
+          exit "$code"
+
+      - name: Save the narrator's cached clips and the quota ledger
+        if: always()
+        uses: actions/cache/save@v5
+        with:
+          path: assets/shorts_voice
+          key: shorts-voice-v2-${{ github.run_id }}
+
+      - name: Send it to the TikTok inbox
+        id: tiktok
+        if: steps.short.outputs.paused != 'yes'
+        env:
+          TIKTOK_CLIENT_KEY: ${{ secrets.TIKTOK_CLIENT_KEY }}
+          TIKTOK_CLIENT_SECRET: ${{ secrets.TIKTOK_CLIENT_SECRET }}
+          SOCIAL_TOKEN_KEY: ${{ secrets.SOCIAL_TOKEN_KEY }}
+          VIDEO_PATH: ${{ steps.short.outputs.video_path }}
+          VIDEO_TOPIC: ${{ steps.short.outputs.topic }}
+          IN_FORCE: ${{ inputs.force }}
+        run: |
+          set -o pipefail
+          CAPTION="$VIDEO_TOPIC #DocOga #Nigeria #TenantRights #Lagos"
+          FORCE=""
+          [ "$IN_FORCE" = "true" ] && FORCE="--force"
+          set +e
+          python3 tools/tiktok_draft.py send --video "$VIDEO_PATH" --caption "$CAPTION" $FORCE 2>&1 | tee /tmp/tiktok.log
+          code=${PIPESTATUS[0]}
+          set -e
+          RESULT=$(sed -n 's/^TIKTOK_RESULT=//p' /tmp/tiktok.log | tail -1)
+          echo "result=${RESULT:-unknown}" >> "$GITHUB_OUTPUT"
+          echo "publish_id=$(sed -n 's/^TIKTOK_PUBLISH_ID=//p' /tmp/tiktok.log | tail -1)" >> "$GITHUB_OUTPUT"
+          echo "caption=$CAPTION" >> "$GITHUB_OUTPUT"
+          exit "$code"
+
+      - name: Keep the rendered Short for review
+        if: always() && steps.short.outputs.video_path != ''
+        uses: actions/upload-artifact@v6
+        with:
+          name: tiktok-test-short
+          path: ${{ steps.short.outputs.video_path }}
+          if-no-files-found: ignore
+          retention-days: 7
+
+      # The refresh token rotated in the preflight; the drafts ledger grew if the send worked.
+      # Both go back to main whatever happened in between — a lost rotated token is the one
+      # way this test could hurt Monday's run.
+      - name: Commit the TikTok ledger and the rotated token box
+        if: always() && steps.probe.outcome == 'success'
+        continue-on-error: true
+        env:
+          BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if ! git pull --rebase --autostash origin "$BRANCH"; then
+            echo "::warning title=TikTok ledger not committed::could not rebase on $BRANCH — if the refresh token rotated, the next run will say so and ask for one Connect tap."
+            exit 1
+          fi
+          git add -f logs/tiktok_drafts.json logs/tiktok_refresh_token.box 2>/dev/null || true
+          if git diff --staged --quiet; then
+            echo "Nothing changed — nothing to commit."
+            exit 0
+          fi
+          git commit -m "Auto: TikTok test draft $(date +%F) [skip ci]"
+          git push origin "HEAD:$BRANCH" || { echo "::warning title=TikTok ledger not pushed::the draft is in the inbox; the ledger/box did not reach $BRANCH"; exit 1; }
+
+      - name: Write the run summary
+        if: always()
+        env:
+          PAUSED: ${{ steps.short.outputs.paused }}
+          RESUMES: ${{ steps.short.outputs.voice_resumes_at }}
+          TOPIC: ${{ steps.short.outputs.topic }}
+          VIDEO_PATH: ${{ steps.short.outputs.video_path }}
+          RESULT: ${{ steps.tiktok.outputs.result }}
+          PUBLISH_ID: ${{ steps.tiktok.outputs.publish_id }}
+          CAPTION: ${{ steps.tiktok.outputs.caption }}
+          PROBE: ${{ steps.probe.outcome }}
+        run: |
+          {
+            echo "## TikTok test draft — $(date '+%A %-d %B, %-I:%M%P WAT')"
+            echo
+            echo "| | |"
+            echo "|---|---|"
+            echo "| TikTok token | $( [ "$PROBE" = success ] && echo '✅ minted' || echo '❌ did not mint — see the preflight step' ) |"
+            if [ "$PAUSED" = "yes" ]; then
+              echo "| Short | ⏸ not rendered — the narrator's bucket refills at ${RESUMES:-the next reset}; tap Run workflow again then |"
+            elif [ -n "$VIDEO_PATH" ]; then
+              echo "| Short | 🎬 ${TOPIC} ($(stat -c%s "$VIDEO_PATH" 2>/dev/null || echo '?') bytes) |"
+            fi
+            case "$RESULT" in
+              inbox)
+                echo "| TikTok | 📥 **In your TikTok inbox** (draft \`$PUBLISH_ID\`) |"
+                echo
+                echo "### What to do on the phone"
+                echo
+                echo "1. Open TikTok → **Inbox** (bottom bar) → the notification from TikTok about your upload (it can take a minute or two to appear)."
+                echo "2. Tap it, then **Edit / Post**. The video opens in the composer."
+                echo "3. Paste this as the caption:"
+                echo
+                echo '```'
+                echo "$CAPTION"
+                echo '```'
+                echo
+                echo "4. Tap **Post**. (To only *test*, tap Discard instead — the draft counts against the five-per-day inbox limit until you do one or the other.)"
+                ;;
+              duplicate) echo "| TikTok | ⏭️ these exact bytes were already sent — run again with force ticked to send anyway |" ;;
+              skipped)   echo "| TikTok | ⏭️ five drafts are already waiting in the inbox from the last 24 hours — post or discard them in the app first |" ;;
+              dormant)   echo "| TikTok | 💤 not connected — tap Connect on https://docoga.com.ng/tiktok-connect.html |" ;;
+              "")        : ;;
+              *)         echo "| TikTok | ⚠️ \`$RESULT\` — see the send step |" ;;
+            esac
+            echo
+            echo "Nothing went to YouTube or Telegram; only the TikTok ledger (and the rotated token box) were committed."
+          } >> "$GITHUB_STEP_SUMMARY"
