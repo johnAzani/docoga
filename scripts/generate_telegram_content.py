@@ -40,72 +40,213 @@ import brain_drafts  # noqa: E402
 import deepdive_promo  # noqa: E402  — the Deep-Dive's week in this channel
 
 # ===== CONTENT TEMPLATES =====
+#
+# Rewritten 18 Oct 2026 ("improve the content … make the design more beautiful"), against what
+# the 2026 data says a post must do on every one of our channels:
+#
+#   * Facebook: the first 40–80 characters decide it (posts ≤ 80 chars earn ~66 % more
+#     engagement; the hook must land before "See more"); questions and polls are the
+#     highest-engagement format per effort; the link goes in the first comment.
+#   * Threads: under 200 characters reads best, replies are the ranking signal, so a
+#     question beats an announcement.
+#   * Instagram: the first line stands alone above "more"; saves and sends are what the
+#     2026 ranking weighs, so a post must be worth keeping (a checklist, a number, a rule).
+#   * Telegram: the channel reads the whole message, so structure (bold line, ✅/❌ lines,
+#     one link) matters more than brevity.
+#
+# So every template is built the same way, and the card renderer draws that shape:
+#   1. a HEADLINE under 48 characters that carries one specific tension (a number, a
+#      named law, a mistake the reader may be making right now) — it lands on the yellow
+#      slabs of the card and before Facebook's fold;
+#   2. a BODY of one to five short lines — ✅ for what to insist on, ❌ for what to refuse,
+#      numbers for a checklist, A)–D) for a poll — never a paragraph;
+#   3. a QUESTION or one clear next step, and the link on its own line (the Facebook
+#      poster moves a standalone link to the first comment; the card drops it — its chip
+#      already says where to go).
+#
+# Legal lines are limited to what this repo has verified (Lagos Tenancy Law 2011: s.4
+# advance rent, s.5 the receipt, s.13(1) notice periods). No invented statistics, and no
+# invented customers: the "testimonial_style" slot is now a PICTURE THIS scenario, plainly
+# framed as one — the brand never puts words in the mouth of a person who does not exist.
+#
+# `_tpl()` writes the MarkdownV2 for us (first line bold, everything escaped), which is
+# why no template below carries a hand-typed backslash — the 7 Oct 2026 outage was one
+# missed escape, and tools/tests/test_telegram_mdv2.py validates every template here.
+
+LINK = "https://docoga.com.ng"
+
+
+def _tpl(headline, body, link=LINK):
+    """One template: bold headline, escaped body, the link on its own last line."""
+    parts = ["*%s*" % escape(headline), escape(body)]
+    if link:
+        parts.append(escape(link))
+    return "\n\n".join(parts)
+
 
 TEMPLATES = {
     "promo": [
-        "🚀 *Get Clean Tenancy Agreements in Seconds\\!*\n\nDocOga helps Nigerian landlords and tenants create professional documents instantly\\. No lawyer fees\\!\n\n👉 Try it free: https://docoga\\.com\\.ng",
-        "📄 *Need a Rent Receipt?*\n\nGenerate legally valid rent receipts in minutes with DocOga\\. Perfect for Nigerian landlords and tenants\\.\n\n👉 https://docoga\\.com\\.ng",
-        "⚖️ *Avoid Tenancy Disputes\\!*\n\nUse DocOga's professionally drafted agreements to protect your rights\\. Nigerian law compliant\\.\n\n👉 https://docoga\\.com\\.ng",
-        "💰 *Save ₦50,000 on Legal Fees\\!*\n\nDocOga's Oga Pass gives you unlimited clean documents for just ₦2,000/30 days\\.\n\n👉 Get yours: https://docoga\\.com\\.ng",
-        "🏠 *Nigerian Landlords:*\n\nGenerate tenancy agreements, rent receipts, and invoices instantly\\. DocOga has you covered\\.\n\n👉 https://docoga\\.com\\.ng",
-        "📋 *9 Document Tools, 1 Platform*\n\nTenancy Agreement • Notice to Quit • Rent Receipt • Invoice • Employment Contract • Caution Fee Receipt • Letter of Demand and more\\.\n\nAll free at https://docoga\\.com\\.ng",
-        "🔑 *Moving into a new place?*\n\nBefore you pay that rent, make sure you have a proper tenancy agreement\\. DocOga generates one in 2 minutes — free\\.\n\n👉 https://docoga\\.com\\.ng",
+        _tpl("A tenancy agreement in 2 minutes. Free.",
+             "Names, address, rent, period, notice — filled in, laid out, ready to print.\n"
+             "No lawyer's fee. No template from 2009."),
+        _tpl("Your rent receipt, before the money moves.",
+             "Date. Amount. Period covered. Address. Who paid, who received.\n"
+             "Generate it free, and hand it over with the cash."),
+        _tpl("₦2,000 a month. Unlimited clean documents.",
+             "Oga Pass: tenancy agreements, receipts, notices and invoices for 30 days.\n"
+             "No watermark, no banner, no lawyer's queue."),
+        _tpl("9 documents. 1 page. ₦0 to start.",
+             "1. Tenancy Agreement\n2. Rent Receipt\n3. Notice to Quit\n4. Caution Fee Receipt\n"
+             "5. Letter of Demand\n6. Invoice\n7. Employment Contract\n8. Payslip\n9. Warning Letter"),
+        _tpl("Moving in this month? Do this first.",
+             "✅ A written tenancy agreement, signed by both sides\n"
+             "✅ A receipt for every naira you hand over\n"
+             "❌ \"We'll sort the paper later\""),
+        _tpl("Landlords: the receipt protects you too.",
+             "A dated receipt is your proof of what was paid, for which period, by whom.\n"
+             "It ends the \"I paid you already\" argument before it starts."),
+        _tpl("Stop paying ₦50,000 for one agreement.",
+             "A lawyer drafts one tenancy agreement for ₦30,000–₦50,000 in Lagos.\n"
+             "DocOga drafts it free — and the Oga Pass covers every document after it."),
     ],
     "educational": [
-        "📌 *Did You Know?*\n\nIn Nigeria, a tenancy agreement should include:\n✅ Landlord & tenant names\n✅ Property address\n✅ Rent amount & payment terms\n✅ Duration\n✅ Notice period\n\nGenerate yours instantly: https://docoga\\.com\\.ng",
-        "💡 *Tenancy Tip:*\n\nAlways get a written receipt for every rent payment\\. It's your proof of payment\\!\n\nDocOga makes it easy: https://docoga\\.com\\.ng",
-        "⚠️ *Important:*\n\nIn Lagos, a yearly tenant gets 6 months' notice to quit under s\\.13\\(1\\)\\(e\\) of the Tenancy Law 2011 \\(3 months is for quarterly and half\\-yearly tenants\\)\\. Know your rights\\!\n\nNeed a Notice to Quit? https://docoga\\.com\\.ng",
-        "📝 *Rent Receipt Must\\-Haves:*\n\n✔️ Date of payment\n✔️ Amount paid\n✔️ Property address\n✔️ Landlord/agent name\n✔️ Tenant name\n\nGenerate professional receipts: https://docoga\\.com\\.ng",
-        "🔍 *Caution Fee in Nigeria:*\n\nA caution fee is a refundable security deposit — typically 5\\-10% of rent\\. It MUST be refunded when you vacate if the property is in good condition\\.\n\nGet a Caution Fee Receipt: https://docoga\\.com\\.ng",
-        "📖 *Tenant Rights 101:*\n\nAs a Nigerian tenant, you have the right to:\n🔹 Peaceful enjoyment of the property\n🔹 A written rent receipt\n🔹 Proper notice before eviction\n🔹 Return of caution fee\n\nLearn more: https://docoga\\.com\\.ng/tenant\\-rights\\-nigeria\\.html",
-        "🏛️ *Stamp Duty on Tenancy Agreements:*\n\nIn Lagos, tenancy agreements are subject to stamp duty of approximately 0\\.78% of the rent\\. This is a government tax — separate from agent fees\\.\n\nGenerate your agreement: https://docoga\\.com\\.ng",
-        "📊 *Nigeria's Housing Crisis:*\n\nNigeria has a 14\\.9 million unit housing deficit\\. Lagos alone: 3\\.4 million units\\. With 15M\\+ renters in Lagos, the demand for proper documentation is massive\\.\n\nBe prepared: https://docoga\\.com\\.ng",
+        _tpl("5 lines every tenancy agreement must have.",
+             "1. Landlord and tenant, by full name\n2. The property address\n3. Rent, and the period it covers\n"
+             "4. How long the tenancy runs\n5. The notice that ends it\n\nMissing one? That is where the dispute starts."),
+        _tpl("No receipt is not a favour. It is a risk.",
+             "In Lagos, a landlord must issue a receipt for rent paid — Tenancy Law 2011, s.5.\n"
+             "Paid cash with no paper? Today you have a debt with no proof.\n\n"
+             "Has anyone ever asked you to pay \"without receipt\"?"),
+        _tpl("Lagos: 6 months' notice for a yearly tenant.",
+             "Lagos Tenancy Law 2011, s.13(1):\n"
+             "✅ Yearly tenant — 6 months\n✅ Quarterly or half-yearly — 3 months\n✅ Monthly — 1 month\n\n"
+             "A notice shorter than the law allows is not a notice."),
+        _tpl("Your rent receipt needs these 6 things.",
+             "✅ Date of payment\n✅ Amount, in figures and words\n✅ The period it covers\n"
+             "✅ Property address\n✅ Landlord or agent name\n✅ Tenant name\n\nAnything less is a note, not a receipt."),
+        _tpl("Caution fee is a deposit, not a gift.",
+             "It is refundable when you leave the place in good condition, less genuine damage.\n"
+             "Insist on a Caution Fee Receipt that names the amount and the condition agreed.\n\n"
+             "Did you get yours back the last time you moved?"),
+        _tpl("4 rights every Nigerian tenant has.",
+             "1. Peaceful enjoyment of the property you pay for\n2. A written receipt for rent\n"
+             "3. Proper notice before any eviction\n4. Your caution fee back, less real damage",
+             link="https://docoga.com.ng/tenant-rights-nigeria.html"),
+        _tpl("Stamp duty is a tax, not an agent's fee.",
+             "In Lagos a tenancy agreement attracts stamp duty of roughly 0.78% of the rent, paid to government.\n"
+             "An \"agreement fee\" of 10% is something else entirely — ask what it is for."),
+        _tpl("Lagos: a year's rent upfront is the legal limit.",
+             "Lagos Tenancy Law 2011, s.4: a landlord may not demand more than one year's rent in advance from a yearly tenant, "
+             "or more than six months from a monthly tenant.\n\nWhat were you asked to pay last time?"),
     ],
     "pidgin": [
-        "🎉 *Oya Check Am\\!*\n\nDocOga dey help you make tenancy agreement for free\\! No need pay lawyer ₦50k\\.\n\n👉 Try am: https://docoga\\.com\\.ng",
-        "💬 *Landlord wey sabi:*\n\nNo need stress for agreement\\. DocOga don do the work for you\\.\n\n👉 https://docoga\\.com\\.ng",
-        "⚡ *Quick quick\\!*\n\nYou fit generate rent receipt for your tenant in 2 minutes\\. DocOga na the plug\\!\n\n👉 https://docoga\\.com\\.ng",
-        "🤝 *No more palava\\!*\n\nDocOga documents na clean and legal\\. No lawyer, no problem\\.\n\n👉 https://docoga\\.com\\.ng",
-        "💰 *Save your money\\!*\n\nInstead of ₦50k for lawyer, pay just ₦2,000 for DocOga Oga Pass\\. Unlimited clean documents for 30 days\\.\n\n👉 https://docoga\\.com\\.ng",
-        "🏠 *You wan rent house?*\n\nBefore you sign anything, make sure you get proper agreement\\. DocOga go help you generate am sharp sharp\\.\n\n👉 https://docoga\\.com\\.ng",
-        "📢 *Make I tell you something:*\n\nYour landlord suppose give you receipt every time you pay rent\\. If e no dey give you, use DocOga generate your own\\!\n\n👉 https://docoga\\.com\\.ng",
+        _tpl("Oga, no pay rent without receipt.",
+             "Cash don enter hand, paper no follow? Tomorrow na your word against im own.\n"
+             "DocOga go make the receipt for you — free, sharp sharp."),
+        _tpl("Lawyer ₦50k for agreement? Abeg.",
+             "DocOga dey make tenancy agreement for you free. Oga Pass na ₦2,000 for 30 days, unlimited documents.\n"
+             "Keep your money for the actual rent."),
+        _tpl("Landlord wey sabi dey give receipt.",
+             "E protect you, e protect the tenant, e end \"I don pay you before\" argument one time.\n"
+             "Two minutes, free, print am."),
+        _tpl("You wan pack enter new house? Hold on.",
+             "✅ Agreement wey you and landlord sign\n✅ Receipt for every kobo wey you pay\n❌ \"We go write am later\"\n\n"
+             "Later na the day problem go start."),
+        _tpl("Lagos yearly tenant: 6 months' notice. Full stop.",
+             "Na Tenancy Law 2011, s.13(1) talk am — no be landlord mouth.\n"
+             "Monthly tenant na 1 month. Anything shorter no be notice."),
+        _tpl("Caution fee no be landlord own forever.",
+             "Na deposit. If you leave the house as you meet am, e suppose come back to you.\n"
+             "Collect Caution Fee Receipt before you pay — e go talk for you later.\n\nYou don collect your own back before?"),
+        _tpl("Agent don tell you \"pay first, see paper later\"?",
+             "Na the oldest line for Lagos. Agreement first, money second — if dem no gree, waka.\n\n"
+             "Wetin be the worst agent line you don hear?"),
     ],
     "testimonial_style": [
-        "🌟 *What Users Are Saying*\n\n\"DocOga saved me ₦50,000 on legal fees\\! The tenancy agreement was accepted by my lawyer\\.\" — Chidi, Lagos Landlord\n\nTry it: https://docoga\\.com\\.ng",
-        "💯 *Trusted by Nigerians*\n\n\"As a tenant, I use DocOga for all my rent receipts\\. Fast, easy, and professional\\.\" — Amina, Abuja\n\nGenerate yours: https://docoga\\.com\\.ng",
-        "✅ *Real Results*\n\n\"I've been using DocOga for my properties\\. The documents are clean and my tenants love it\\.\" — Tunde, Estate Agent\n\nJoin them: https://docoga\\.com\\.ng",
-        "🏆 *Why Nigerians Choose DocOga*\n\n\"I needed a notice to quit urgently\\. DocOga generated it in 2 minutes\\. My lawyer said it was perfect\\.\" — Ngozi, Port Harcourt\n\nTry it free: https://docoga\\.com\\.ng",
+        _tpl("Picture this: two years of rent, zero receipts.",
+             "The landlord sells the house. The new owner asks for proof you paid.\n"
+             "You have transfers to an agent's personal account, and nothing else.\n\n"
+             "What would you show him?"),
+        _tpl("Picture this: two weeks' notice, on a Friday.",
+             "A yearly tenant in Lagos, told to leave in two weeks.\n"
+             "The law says six months — s.13(1)(e), Tenancy Law 2011. The letter is worth nothing.\n\n"
+             "Would you have known to stand your ground?"),
+        _tpl("Picture this: the agent \"forgot\" the caution fee.",
+             "₦150,000 paid in cash at move-in. No receipt that names it a deposit.\n"
+             "Three years later it is \"part of the rent\".\n\nOne receipt would have ended that conversation."),
+        _tpl("Picture this: a tenancy that lived on WhatsApp.",
+             "Rent agreed in a voice note. Increase announced in a text. No signed agreement anywhere.\n"
+             "Who decides what was agreed?\n\nWrite it down — it takes two minutes."),
     ],
     "state_spotlight": [
-        "📍 *Lagos Tenancy Guide*\n\nLagos tenants: a yearly tenancy gets 6 months' notice to quit under s\\.13\\(1\\)\\(e\\) of the Lagos Tenancy Law 2011; monthly tenants get one month\\.\n\nGet your Notice to Quit: https://docoga\\.com\\.ng/notice\\-to\\-quit\\-lagos\\.html",
-        "📍 *Abuja Tenancy Guide*\n\nFCT tenants: always get a written tenancy agreement before moving in\\. DocOga generates one for Abuja properties in minutes\\.\n\n👉 https://docoga\\.com\\.ng/tenancy\\-agreement\\-abuja\\.html",
-        "📍 *Rivers State Guide*\n\nPort Harcourt landlords: proper rent receipts protect you AND your tenant\\. Generate professional receipts instantly\\.\n\n👉 https://docoga\\.com\\.ng/rent\\-receipt\\-rivers\\.html",
-        "📍 *Kano Tenancy Tips*\n\nIn Kano, tenancy agreements should clearly state the rent amount, duration, and renewal terms\\. DocOga covers all states\\.\n\n👉 https://docoga\\.com\\.ng/tenancy\\-agreement\\-kano\\.html",
-        "📍 *Oyo State Landlords*\n\nIbadan property owners: use DocOga to generate clean tenancy agreements, rent receipts, and invoices\\. Free and instant\\.\n\n👉 https://docoga\\.com\\.ng/tenancy\\-agreement\\-oyo\\.html",
-        "📍 *Enugu Property Guide*\n\nCoal City tenants and landlords: protect yourselves with proper documentation\\. DocOga works for all 36 states \\+ FCT\\.\n\n👉 https://docoga\\.com\\.ng/tenancy\\-agreement\\-enugu\\.html",
+        _tpl("Lagos tenants: your notice period, by law.",
+             "Tenancy Law 2011, s.13(1):\n✅ Yearly — 6 months\n✅ Quarterly or half-yearly — 3 months\n✅ Monthly — 1 month\n\n"
+             "Save this before you need it.",
+             link="https://docoga.com.ng/notice-to-quit-lagos.html"),
+        _tpl("Abuja: the agreement is your only map.",
+             "In the FCT, what the written agreement says about rent, period and notice is what a court will read first.\n"
+             "Get it signed before the first payment, not after.",
+             link="https://docoga.com.ng/tenancy-agreement-abuja.html"),
+        _tpl("Port Harcourt: receipts protect both sides.",
+             "A dated receipt settles \"how much, for which months, to whom\" without an argument.\n"
+             "Landlords and tenants in Rivers generate them free on DocOga.",
+             link="https://docoga.com.ng/rent-receipt-rivers.html"),
+        _tpl("Kano: 3 terms every agreement must state.",
+             "1. The rent, and what period it covers\n2. How long the tenancy runs\n3. How and when it renews\n\n"
+             "Unwritten terms are the ones people fight about.",
+             link="https://docoga.com.ng/tenancy-agreement-kano.html"),
+        _tpl("Ibadan landlords: one page ends most disputes.",
+             "A signed agreement, a receipt for every payment, a proper notice when it ends.\n"
+             "All three, free, in minutes.",
+             link="https://docoga.com.ng/tenancy-agreement-oyo.html"),
+        _tpl("Enugu: tenants and landlords, same paper.",
+             "The same agreement protects whoever kept a copy. Keep yours.\n"
+             "DocOga drafts it for every state and the FCT.",
+             link="https://docoga.com.ng/tenancy-agreement-enugu.html"),
     ],
     "urgent": [
-        "⏰ *Don't Wait Until There's a Problem\\!*\n\nMost landlord\\-tenant disputes happen because there was no written agreement\\. Get yours today — it takes 2 minutes\\.\n\n👉 https://docoga\\.com\\.ng",
-        "🔥 *Oga Pass — ₦2,000*\n\nUnlimited clean documents for 30 days\\. No watermark, no banner\\. Professional documents every time\\.\n\n👉 https://docoga\\.com\\.ng",
-        "🚨 *Rent Due Soon?*\n\nMake sure you have a proper rent receipt ready\\. Landlords: generate receipts for your tenants instantly\\.\n\n👉 https://docoga\\.com\\.ng",
+        _tpl("Rent due this week? Get the receipt ready.",
+             "Landlords: generate the receipt before the tenant arrives.\n"
+             "Tenants: do not leave without one. Two minutes, free."),
+        _tpl("Most disputes start the same way: no paper.",
+             "Not a bad landlord, not a bad tenant — an agreement that was never written down.\n"
+             "Fix it today, before there is anything to argue about."),
+        _tpl("Oga Pass — ₦2,000 for 30 days.",
+             "Unlimited agreements, receipts, notices, invoices. No watermark, no banner.\n"
+             "Less than one bottle of fuel; more than one lawyer's visit."),
+        _tpl("Signing this weekend? Read these 4 lines.",
+             "✅ Rent and the period it covers\n✅ The notice that ends the tenancy\n✅ Who holds the caution fee, and when it returns\n"
+             "❌ \"Cash only, no receipt\""),
     ],
     "engagement": [
-        "🤔 *Question of the Day:*\n\nWhat's the biggest challenge you face as a tenant or landlord in Nigeria?\n\nDrop your answer below 👇\n\nNeed documents? https://docoga\\.com\\.ng",
-        "📊 *Poll Time\\!*\n\nHow much did you pay for your last tenancy agreement?\n\nA\\) Free \\(DIY\\)\nB\\) ₦5,000 \\- ₦15,000\nC\\) ₦20,000 \\- ₦50,000\nD\\) I don't have one 😱\n\nDocOga gives you clean agreements for ₦2,000/30 days: https://docoga\\.com\\.ng",
-        "💭 *True or False?*\n\n\"A verbal agreement is just as good as a written one\\.\"\n\n*FALSE\\!* Always get it in writing\\. Verbal agreements are nearly impossible to enforce in Nigerian courts\\.\n\nGenerate your written agreement: https://docoga\\.com\\.ng",
-        "🎯 *This or That?*\n\nWould you rather:\nA\\) Pay ₦50,000 to a lawyer for ONE agreement\nB\\) Pay ₦2,000 for UNLIMITED documents for 30 days\n\nThe answer is obvious 👉 https://docoga\\.com\\.ng",
+        _tpl("How much did your last agreement cost?",
+             "A) Nothing — I wrote it myself\nB) ₦5,000 – ₦15,000\nC) ₦20,000 – ₦50,000\nD) I don't have one\n\n"
+             "Reply with your letter."),
+        _tpl("True or false: a verbal agreement is enough.",
+             "False. It can exist in law — and it is nearly impossible to prove when it matters.\n"
+             "Write it down, sign it, keep a copy.\n\nHave you ever had to prove a verbal deal?"),
+        _tpl("Tenants and landlords: one question each.",
+             "Tenants — what is the one line you wish your agreement had?\n"
+             "Landlords — what is the one clause you will never leave out again?"),
+        _tpl("Which one would you rather?",
+             "A) ₦50,000 to a lawyer, for one agreement\nB) ₦2,000 for every document you need, for 30 days\n\n"
+             "Tell us in one line."),
+        _tpl("What did your agent ask you to pay for?",
+             "Agency fee. Agreement fee. Caution. Service charge. Legal fee.\n"
+             "Which of these did you actually get paper for?"),
     ],
 }
 
-# Hashtags for different post types
+# Hashtags for different post types — a discovery tag or two, not a wall; the lanes trim to
+# what each platform rewards (Instagram ≤ 5, Threads one topic tag).
 HASHTAGS = {
-    "promo": "#DocOga #NigerianLandlords #TenancyAgreement #RentReceipt #NoLawyerNeeded",
-    "educational": "#PropertyTips #NigerianRealEstate #LandlordTips #TenantRights #DocOga",
-    "pidgin": "#DocOga #NaijaLandlord #Pidgin #NigerianProperty #EasyDocuments",
-    "testimonial_style": "#DocOga #UserTestimonial #HappyCustomers #NigerianRealEstate",
-    "state_spotlight": "#DocOga #Nigeria #PropertyGuide #TenancyLaws #RealEstate",
-    "urgent": "#DocOga #SpecialOffer #NigerianProperty #DocumentsNow",
-    "engagement": "#DocOga #NaijaProperty #LandlordLife #TenantLife #Nigeria",
+    "promo": "#DocOga #TenancyAgreement #RentReceipt #NigerianLandlords",
+    "educational": "#TenantRights #TenancyLaw #NigerianRealEstate #DocOga",
+    "pidgin": "#DocOga #NaijaLandlord #NaijaTenant #Lagos",
+    "testimonial_style": "#DocOga #TenantRights #NigerianRealEstate",
+    "state_spotlight": "#DocOga #TenancyLaw #Nigeria #PropertyGuide",
+    "urgent": "#DocOga #RentReceipt #TenancyAgreement",
+    "engagement": "#DocOga #NaijaProperty #TenantLife #LandlordLife",
 }
 
 # Weekly schedule with variety

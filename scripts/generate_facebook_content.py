@@ -84,9 +84,31 @@ def log(message):
         pass  # logging must never be the reason a day's post fails
 
 
-def build_message(post_type, rng):
+def raw_pick(day):
+    """(post_type, template) the date-seeded rotation lands on for `day`, before the repeat guard."""
+    rng = random.Random("docoga-facebook-%s" % day.isoformat())
+    post_type = rng.choice(tg.WEEKLY_SCHEDULE.get(day.weekday(), ["promo"]))
+    return post_type, rng.choice(tg.TEMPLATES[post_type])
+
+
+def pick(day):
+    """Today's rotation post, never the same words as yesterday's.
+
+    Two seeded days can land on the same template (19 and 20 Oct 2026 both drew the caution-fee
+    post), and a Page that says the same thing two days running reads as a bot. The guard is
+    deterministic — yesterday's pick is recomputed, not remembered — so a re-run still produces
+    the same post and the duplicate guard in post_facebook.py still has something to compare."""
+    post_type, template = raw_pick(day)
+    _, yesterday = raw_pick(day - timedelta(days=1))
+    if template == yesterday:
+        pool = tg.TEMPLATES[post_type]
+        template = pool[(pool.index(template) + 1) % len(pool)]
+    return post_type, template
+
+
+def build_message(post_type, rng, template=None):
     """One template for this type, de-escaped, with the hashtag block appended."""
-    template = rng.choice(tg.TEMPLATES[post_type])
+    template = template or rng.choice(tg.TEMPLATES[post_type])
     plain = to_plain(template).strip()
     if not plain:
         raise ValueError("template for %r de-escaped to nothing" % post_type)
@@ -136,8 +158,8 @@ def generate(day=None, write=True):
         message = "%s\n\n%s" % (brain_drafts.tag_links(brain_drafts.post_text(pack), "facebook"), brain_drafts.hashtags(pack, "facebook"))
         visual = brain_drafts.visual(pack)
     else:
-        post_type = rng.choice(tg.WEEKLY_SCHEDULE.get(day.weekday(), ["promo"]))
-        message = brain_drafts.tag_links(build_message(post_type, rng), "facebook")
+        post_type, template = pick(day)
+        message = brain_drafts.tag_links(build_message(post_type, rng, template), "facebook")
         visual = None
 
     photo = render_card(card_text or message, day, post_type, visual) if write else None
