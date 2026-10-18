@@ -108,7 +108,7 @@ def main():
         import gemini_quota
         when = gemini_quota.lagos(exc.resumes_at) if exc.resumes_at else "the next reset"
         write_outputs({"paused": "yes", "voice_reason": exc.reason, "voice_resumes_at": when,
-                       "topic": script["title"], "title": f"{script['title']} #Shorts"})
+                       "topic": script["title"], "title": shorts_reel.title_for(script)})
         print(f"⏸ no voice, no Short: {exc.reason}")
         print(f"::warning title=Short paused — narrator unavailable::{exc.reason}. "
               "The resumer (narrator_resume.yml) publishes it once the bucket refills.")
@@ -139,7 +139,7 @@ def main():
         # picture): YouTube's custom thumbnail, Telegram's cover, and what TikTok shows by default.
         "cover_path": str(shorts_reel.cover_for(video)) if shorts_reel.cover_for(video).is_file() else "",
         "soundtrack": shorts_sound.summary_line(video),
-        "title": f"{script['title']} #Shorts",
+        "title": shorts_reel.title_for(script),
         # The rotation topic without the #Shorts suffix — this is what the
         # publish ledger records, so the ledger reads as plain English.
         "topic": script["title"],

@@ -1759,6 +1759,45 @@ class ThreadsImageAndReply(ThreadsPublisher):
         self.assertIn("THREADS_REPLY=sent", out)
         self.assertIn("THREADS_RESULT=sent", out)
 
+    def test_when_threads_refuses_the_cross_share_the_card_still_posts_as_an_image(self):
+        """18 Oct 2026, every run since the 17th: `crossreshare_to_ig=true` refused with code 10 and
+        the WHOLE image dropped — Threads was text-only for two days. The image ladder retries
+        without the flag, and the publish forgives a 'media cannot be found' hiccup once."""
+        seen, publishes = [], []
+        refused = {"error": {"message": "Application does not have permission for this action", "type": "THApiException", "code": 10}}
+
+        def container(method, url, query):
+            q = urllib.parse.parse_qs(query)
+            seen.append(q)
+            if q.get("crossreshare_to_ig") == ["true"]:
+                return (400, json.dumps(refused))
+            return ok({"id": "181" if "reply_to_id" not in q else "182"})
+
+        def publish(method, url, query):
+            publishes.append(query)
+            if len(publishes) == 1:
+                return (400, json.dumps({"error": {"message": "The requested resource does not exist", "code": 24,
+                                                   "error_subcode": 4279009, "error_user_title": "Media Not Found"}}))
+            return ok({"id": "182" if "182" in query else "181"})
+        routes = self._routes(extra={"POST /42/threads": container, "GET /182": ok({"status": "FINISHED"}),
+                                     "POST /42/threads_publish": publish})
+        path = self._evening_content()
+        env, token_path = threads_env(self.tmp)
+        with mock.patch.object(tp.time, "sleep", lambda s: None):
+            code, out, fake = self._publish(routes, argv=["--from-json", path, "--token-file", token_path],
+                                            env_extra={"THREADS_SHARE_TO_IG": "on"})
+        self.assertEqual(code, 0, out)
+        self.assertEqual(seen[0]["media_type"], ["IMAGE"])
+        self.assertEqual(seen[0]["crossreshare_to_ig"], ["true"])
+        self.assertEqual(seen[1]["media_type"], ["IMAGE"], "the second ask is still the IMAGE, minus the flag")
+        self.assertNotIn("crossreshare_to_ig", seen[1])
+        self.assertEqual(seen[1]["image_url"], ["https://docoga.com.ng/social/2026-10-21-threads-evening.jpg"])
+        self.assertIn("THREADS_IMAGE=sent", out)
+        self.assertIn("THREADS_IMAGE_EXTRAS_DROPPED=share_to_ig", out)
+        self.assertNotIn("THREADS_IMAGE=dropped", out)
+        self.assertEqual(len(publishes), 3, "one forgiven 'media not found', then the post, then the reply")
+        self.assertIn("THREADS_RESULT=sent", out)
+
     def test_a_card_threads_cannot_fetch_falls_back_to_the_words(self):
         seen = []
 

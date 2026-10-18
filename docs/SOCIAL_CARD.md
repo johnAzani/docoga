@@ -66,6 +66,23 @@ Two lane fixes travelled with it: the Facebook rotation never repeats yesterday'
 that day. The Instagram caption now closes by asking for the two actions the ranking weighs — a
 save and a send.
 
+## 3b. Second pass (same evening) — what the first live card taught
+
+The 1:10pm Threads card of 18 Oct 2026 was the first one the public saw. Three things came back:
+
+* its kicker read **PIDGIN** — the workflow hands the raw post-type key to `--kicker`; the CLI
+  now maps a bare key to the phrase (`DocOga · oya, make we talk`);
+* greedy line breaks left one word alone on the third slab; slab headlines are now **balanced**
+  (the break that makes the lines most even wins, ties to a longer first line);
+* an en dash in a price range vanished (the drawable whitelist lacked `–`); `–`, `→`, `✓` draw.
+
+And three content levers, each from the research table above: the rotation's **A)–D) questions
+are real polls** now (a native Telegram poll under the post; the Threads poll in our reply under
+the card — Facebook's and Threads' cheapest engagement in 2026); **nine-line lists set in two
+columns** at a readable size instead of one tiny column; and Threads actually posts the card
+again — every run since 17 Oct had dropped the image because one optional flag was refused
+(`docs/INCIDENT_LOG.md`).
+
 ## 4. Checking it
 
 `tools/tests/test_social_card_design.py`: slab geometry inside the grid square, yellow in one

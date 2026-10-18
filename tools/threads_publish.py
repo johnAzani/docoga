@@ -308,6 +308,42 @@ def create_image_container(token, user_id, text, image_url, reply_control=None, 
     return api("POST", "/%s/threads" % user_id, token, params)["id"]
 
 
+def create_image_container_with_fallbacks(token, user_id, text, image_url, reply_control=None, topic_tag=None,
+                                          share_to_ig=False, alt_text=None, log=print):
+    """The image ladder (18 Oct 2026). Every Threads run since 17 Oct carried the warning
+    "image dropped — refused: code 10 (Application does not have permission for this action)" and
+    posted words alone: the IMAGE container was asked for with `crossreshare_to_ig=true`, Threads
+    refused that ONE flag (the Page↔Instagram link is blocked, so the scope is not granted), and
+    the card went with it. The text path already drops the extras one by one; the image path did
+    not. So: full ask → without the cross-share → without the topic tag → bare image. The card
+    is the post; the extras are reach."""
+    attempts = [dict(topic_tag=topic_tag, share_to_ig=share_to_ig, alt_text=alt_text)]
+    if share_to_ig:
+        attempts.append(dict(topic_tag=topic_tag, share_to_ig=False, alt_text=alt_text))
+    if topic_tag:
+        attempts.append(dict(topic_tag=None, share_to_ig=False, alt_text=alt_text))
+    if alt_text:
+        attempts.append(dict(topic_tag=None, share_to_ig=False, alt_text=None))
+    last = None
+    for i, extra in enumerate(attempts):
+        try:
+            cid = create_image_container(token, user_id, text, image_url, reply_control, **extra)
+            if i > 0:
+                dropped = [k for k in ("share_to_ig", "topic_tag", "alt_text") if attempts[0].get(k) and not extra.get(k)]
+                log("::warning title=Threads image extras dropped::%s refused by the API (%s) — the card posted without; "
+                    "if share_to_ig: it returns when the Page↔Instagram link is restored"
+                    % (", ".join(dropped), last.blurb if last else "?"))
+                print("THREADS_IMAGE_EXTRAS_DROPPED=%s" % ",".join(dropped))
+            return cid
+        except ApiError as exc:
+            last = exc
+            if exc.cause in ("credentials", "quota"):
+                raise
+            if "9004" in exc.body or "download" in exc.body.lower():
+                raise   # Threads could not FETCH the card — no extra is to blame, no rung below helps
+    raise last
+
+
 def wait_until_live(url, deadline_seconds=600, delay=15, sleeper=time.sleep, opener=None):
     """Poll the card's URL until it answers 200: git knows the file before the web does, and a
     container created against a 404 dies with a generic 'Unsupported URL' — a race we caused."""
@@ -388,8 +424,21 @@ def wait_container(token, container_id, tries=6, delay=5, sleeper=None):
     return False, state or "unknown"
 
 
-def publish_container(token, user_id, container_id):
-    data = api("POST", "/%s/threads_publish" % user_id, token, {"creation_id": container_id})
+def publish_container(token, user_id, container_id, sleeper=None):
+    """Publish, and forgive Threads a moment: the 18 Oct 2026 lunch post died with code 24 /
+    4279009 "The media with id … cannot be found" on a container whose status had just read
+    FINISHED — the publish side had not caught up. Three tries, ten seconds apart, only for that
+    error; anything else surfaces at once."""
+    sleeper = sleeper or time.sleep
+    for attempt in range(3):
+        try:
+            data = api("POST", "/%s/threads_publish" % user_id, token, {"creation_id": container_id})
+            break
+        except ApiError as exc:
+            if "4279009" not in exc.body and "cannot be found" not in exc.body.lower() or attempt == 2:
+                raise
+            print("publish: container %s not visible yet (%s) — waiting 10s" % (container_id, exc.blurb[:80]))
+            sleeper(10)
     status = data.get("crossreshare_to_ig_status")
     if status:
         print("THREADS_SHARE_TO_IG=%s" % str(status).lower())
@@ -611,8 +660,9 @@ def main(argv=None):
                 state = "not reachable after %ds" % waited
             else:
                 try:
-                    container_id = create_image_container(token, target, text, image_url, args.reply_control,
-                                                          topic_tag=topic_tag, share_to_ig=share_to_ig, alt_text=alt_text)
+                    container_id = create_image_container_with_fallbacks(token, target, text, image_url, args.reply_control,
+                                                                         topic_tag=topic_tag, share_to_ig=share_to_ig,
+                                                                         alt_text=alt_text)
                     ready, state = wait_container(token, container_id, tries=10, delay=6)
                 except ApiError as exc:
                     if exc.cause in ("credentials", "quota"):

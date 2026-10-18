@@ -279,7 +279,12 @@ class DailyShortOutputTests(unittest.TestCase):
         # The test name promises this; the original never actually checked it.
         self.assertNotIn("#Shorts", outputs["topic"])
         self.assertTrue(outputs["topic"].strip(), "topic must never be empty")
-        self.assertEqual(outputs["title"], "%s #Shorts" % outputs["topic"])
+        # 18 Oct 2026: the title leads with the searchable subject and keeps the hook after it
+        # ("Rent receipt in Nigeria: pay without a receipt, pay twice #Shorts"), so it is no
+        # longer the topic verbatim — but the topic's first sentence is always in it.
+        hook = outputs["topic"].split(". ")[0].rstrip(".").lower()
+        self.assertIn(hook, outputs["title"].lower())
+        self.assertLessEqual(len(outputs["title"]), 100)
 
     def test_description_points_at_docoga_and_disclaims_legal_advice(self):
         outputs = self._run_daily()

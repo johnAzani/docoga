@@ -98,6 +98,7 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 VIDEO_SCRIPTS = [
     {
         "title": "Pay without a receipt. Pay twice.",
+        "search": "Rent receipt in Nigeria",
         "parent": "dd3",
         "slides": [
             {"bg": NAVY, "text": "PAY WITHOUT A RECEIPT.\nPAY TWICE.", "say": "You pay rent in cash, the landlord says thank you, and nobody writes anything down. Months later someone asks for proof, and all you have is your word. Four habits fix that.", "sub": "cash leaves no trail — paper does", "color": SKY_BLUE, "duration": 3},
@@ -110,6 +111,7 @@ VIDEO_SCRIPTS = [
     },
     {
         "title": "Pay the wrong agent. Lose the flat.",
+        "search": "Renting through an agent in Nigeria",
         "parent": "dd3",
         "slides": [
             {"bg": NAVY, "text": "PAY THE WRONG AGENT.\nLOSE THE FLAT.", "say": "Someone shows you a flat, collects your money, and disappears. The real landlord has never heard of you. It happens every week, and these four rules cost nothing.", "sub": "verify before money moves", "color": SKY_BLUE, "duration": 3},
@@ -122,6 +124,7 @@ VIDEO_SCRIPTS = [
     },
     {
         "title": "Skip the photos. Pay for old damage.",
+        "search": "Moving into a rented flat in Nigeria",
         "parent": "dd2",
         "slides": [
             {"bg": NAVY, "text": "SKIP THE PHOTOS.\nPAY FOR OLD DAMAGE.", "say": "You move in and the wall is already cracked. You move out, and the landlord deducts repairs from your caution fee for damage you met there. Ten minutes on day one prevents it.", "sub": "moving in — make a simple record", "color": SKY_BLUE, "duration": 3},
@@ -134,6 +137,7 @@ VIDEO_SCRIPTS = [
     },
     {
         "title": "Sign without asking. Fund the repaint.",
+        "search": "Caution fee refund in Nigeria",
         "parent": "dd2",
         "slides": [
             {"bg": NAVY, "text": "SIGN WITHOUT ASKING.\nFUND THE REPAINT.", "say": "A caution fee is meant to be refundable. But if nobody wrote down what it covers, the landlord decides at the end, and your deposit becomes his repainting budget. Ask four things first.", "sub": "caution fee — get the details first", "color": SKY_BLUE, "duration": 3},
@@ -146,6 +150,7 @@ VIDEO_SCRIPTS = [
     },
     {
         "title": "Sign it unread. Live by it anyway.",
+        "search": "Tenancy agreement in Nigeria",
         "parent": "yt:08wCJ0EmTkU",
         "slides": [
             {"bg": NAVY, "text": "SIGN IT UNREAD.\nLIVE BY IT ANYWAY.", "say": "Most people sign a tenancy agreement in the agent's office in under a minute, then live under it for a year. Read it slowly before you sign. These four parts matter most.", "sub": "tenancy agreement — check the key details", "color": SKY_BLUE, "duration": 3},
@@ -158,6 +163,7 @@ VIDEO_SCRIPTS = [
     },
     {
         "title": "Report it by mouth. Own the repair bill.",
+        "search": "Repairs in a rented flat in Nigeria",
         "parent": "dd2",
         "slides": [
             {"bg": NAVY, "text": "REPORT IT BY MOUTH.\nOWN THE REPAIR BILL.", "say": "The roof leaks, you mention it to the caretaker, and months later the ceiling comes down. Now the landlord says you never told him. A written request changes who pays.", "sub": "need a repair — make the request clear", "color": SKY_BLUE, "duration": 3},
@@ -169,6 +175,25 @@ VIDEO_SCRIPTS = [
         ],
     },
 ]
+
+
+def yt_title(script, limit=100):
+    """The YouTube title: the searchable subject first, the hook after — "Rent receipt in Nigeria:
+    pay without a receipt, pay twice #Shorts" (18 Oct 2026). Shorts search and suggested rank on
+    the title's words; the cover already shouts the stakes, so a title that repeats the cover
+    wastes the one field that could say WHAT the Short is about (thumbnail/title
+    complementarity — the words on the picture should add to the title, not echo it)."""
+    hook = str(script.get("title") or "").strip().rstrip(".")
+    search = str(script.get("search") or "").strip()
+    if search:
+        words = hook.split(". ")
+        hook = ", ".join(w[0].lower() + w[1:] if w[:1].isupper() and not w[:2].isupper() else w for w in words)
+        title = "%s: %s #Shorts" % (search, hook)
+    else:
+        title = "%s #Shorts" % hook
+    if len(title) > limit:
+        title = "%s #Shorts" % str(script.get("title") or "").strip()
+    return title[:limit]
 
 
 def script_for_date(run_date: date):

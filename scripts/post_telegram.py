@@ -350,6 +350,29 @@ def send_photo_message(photo_path, caption=None, parse_mode="MarkdownV2", button
         return False
 
 
+def send_poll(poll):
+    """One native opinion poll under the day's post (Bot API sendPoll, type=regular) when the
+    rotation's copy asked an A)–D) question. Anonymous, one answer. Never fatal."""
+    if not poll or len(poll.get("options") or []) < 2:
+        return None
+    url = f"{TELEGRAM_API}/bot{TELEGRAM_BOT_TOKEN}/sendPoll"
+    payload = {"chat_id": TELEGRAM_CHAT_ID, "question": _clamp(poll["question"], 300, "poll question"),
+               "options": json.dumps([_clamp(o, 100, "poll option") for o in poll["options"][:10]]),
+               "type": "regular", "is_anonymous": True}
+    try:
+        r = requests.post(url, data=payload, timeout=30)
+        if r.status_code == 200 and r.json().get("ok"):
+            mid = r.json().get("result", {}).get("message_id")
+            log("   \U0001f4ca poll posted (%d options) %s" % (len(poll["options"]), channel_link(mid) or ""))
+            print("TELEGRAM_POLL=sent")
+            return mid
+        log("   \u26a0\ufe0f poll not posted: %s" % _describe(r))
+    except Exception as exc:  # noqa: BLE001 — the post is out; the poll is a bonus
+        log("   \u26a0\ufe0f poll not posted: %s" % exc)
+    print("TELEGRAM_POLL=failed")
+    return None
+
+
 def send_quiz(quiz):
     """One native quiz under the day's post (Bot API sendPoll, type=quiz). The explanation —
     the section — shows when a reader answers wrong or taps the lamp. Plain text, no parse mode.
@@ -499,6 +522,8 @@ def post_to_telegram():
             message_id = ok if isinstance(ok, int) else None
             if post.get("quiz"):
                 send_quiz(post["quiz"])
+            elif post.get("poll"):
+                send_poll(post["poll"])
             # Re-read before writing: a second lane sharing this file (or a re-run that
             # got as far as recording) must not have its entries dropped by a stale list.
             entries = ledger.load(str(LEDGER_FILE))

@@ -330,6 +330,11 @@ def build(day, rng, slot="lunch"):
         hashtags = tg.HASHTAGS.get(post_type, "#DocOga")
         text, notes = fit(brain_drafts.tag_links(plain, "threads"), hashtags)
         extras = extras_for(None)
+        rotation_poll = tg.poll_from_text(plain)
+        if rotation_poll:
+            # The rotation's A)–D) question as a Threads poll (the brain's days already do this);
+            # the publisher asks it in our reply under the card, since a poll cannot sit beside an image.
+            extras["poll"] = {k: v for k, v in zip(("option_a", "option_b", "option_c", "option_d"), rotation_poll["options"])}
     # The lunch post carries the day's card too (image posts earn ~1.6× a text post). A poll
     # cannot sit beside an image, so on poll days the publisher posts the card and asks the poll
     # in its own reply underneath.
