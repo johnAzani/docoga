@@ -1,0 +1,68 @@
+name: Dashboard feed — the repo's records into the owner dashboard
+
+# The owner dashboard reads Cloudflare KV. What the lanes publish, what the brain approved
+# for the next days, the weekly scorecard and the YouTube snapshot all live in this repo —
+# so after any of those workflows finishes, this one rebuilds a compact feed
+# (tools/dashboard_feed.py) and PUTs it into the worker's KV with the Cloudflare token the
+# deploys already hold. ₦0, no new secret, read-only against the repo.
+#
+# workflow_run fires on the default branch's latest commit, which is exactly where the
+# lane just committed its ledger. [skip ci] on those commits does not suppress it.
+
+on:
+  workflow_run:
+    workflows:
+      - "DocOga Brain — the standing editor"
+      - "DocOga Instagram Auto-Post"
+      - "DocOga Threads Auto-Post"
+      - "Facebook Page Autopost"
+      - "DocOga Telegram Auto-Post"
+      - "DocOga LinkedIn Auto-Post"
+      - "YouTube Shorts Auto-Generate and Publish"
+      - "Deep-Dive — produce and publish one long-form episode"
+      - "Brain scorecard"
+      - "YouTube stats — weekly snapshot"
+    types: [completed]
+  workflow_dispatch:
+  push:
+    paths:
+      - 'tools/dashboard_feed.py'
+      - '.github/workflows/dashboard_sync.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dashboard-sync
+  cancel-in-progress: true
+
+env:
+  TZ: Africa/Lagos
+
+jobs:
+  sync:
+    name: Build and push the feed
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - name: Build the feed from the repo's own records
+        run: |
+          python3 tools/dashboard_feed.py build --out "$RUNNER_TEMP/feed.json" 2> "$RUNNER_TEMP/feed.lines"
+          cat "$RUNNER_TEMP/feed.lines"
+          {
+            echo "## Dashboard feed"
+            echo
+            cat "$RUNNER_TEMP/feed.lines"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Push it into the worker's KV (one key)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          python3 tools/dashboard_feed.py push --in "$RUNNER_TEMP/feed.json" | tee -a "$GITHUB_STEP_SUMMARY"

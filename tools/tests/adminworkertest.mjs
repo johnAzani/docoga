@@ -548,6 +548,22 @@ console.log('— website visits: Cloudflare Web Analytics, read-only, cached —
   } finally { globalThis.fetch = realFetch; }
 }
 
+console.log('— /admin/feed: the repo\'s records, as pushed by dashboard_sync.yml —');
+{
+  const bare = makeEnv(); const tokB = await authed(bare);
+  const off = await hit(bare, '/admin/feed', get(tokB));
+  ok('no feed pushed yet → 200 {connected:false, reason}', off.status === 200 && off.j.connected === false && /Dashboard feed/.test(off.j.reason), off.text.slice(0, 160));
+  const feed = { version: 1, generated_at: new Date(Date.now() - 600e3).toISOString(), plan: [{ date: '2026-10-18', approved: false }], posted: [{ at: '2026-10-17T19:12:14Z', platform: 'threads', kind: 'post', title: 'Caution Fee', url: 'https://www.threads.com/@docoga.ng/post/x' }], growth: { rows: [] }, youtube: { snapshot: null, scheduled: [] } };
+  const env = makeEnv({ 'adm:feed': JSON.stringify(feed) }); const tok = await authed(env);
+  const r = await hit(env, '/admin/feed', get(tok));
+  ok('the feed comes back whole with its age in seconds', r.status === 200 && r.j.connected === true && r.j.feed.posted[0].platform === 'threads' && r.j.ageSeconds >= 590 && r.j.ageSeconds <= 620, r.text.slice(0, 160));
+  const anon = await hit(env, '/admin/feed');
+  ok('without a session it is 401', anon.status === 401, String(anon.status));
+  const broken = makeEnv({ 'adm:feed': '{not json' }); const tok2 = await authed(broken);
+  const b = await hit(broken, '/admin/feed', get(tok2));
+  ok('a corrupt key reads as not connected, never a 500', b.status === 200 && b.j.connected === false, b.text.slice(0, 100));
+}
+
 console.log('');
 console.log(fails ? `❌ ADMIN SUITE: ${fails} failure(s)` : '🏆 admin suite green');
 process.exit(fails ? 1 : 0);

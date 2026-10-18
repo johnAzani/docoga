@@ -1695,6 +1695,7 @@ async function handleActivate(url, env, cors) {
  *   GET  /admin/social    today's posting plan vs what GitHub Actions did, last 7 days, clock health
  *   POST /admin/social/run {workflow, inputs?} ask a lane to run now (one per lane per 10 min)
  *   GET  /admin/site      website visits (Cloudflare Web Analytics, 7 + 28 days)
+ *   GET  /admin/feed      the repo's records (brain plan, posted, growth) as pushed by dashboard_sync.yml
  * ========================================================================== */
 const ADMIN_SESSION_TTL = 43200;      // 12 h, slid forward while the owner keeps using it
 const ADMIN_SNAP_TTL = 6 * 3600;      // freshness target for the heavy rollup
@@ -2514,6 +2515,19 @@ async function handleAdminSocialRun(request, env, cors) {
   return json({ ok: true, workflow, inputs, startsWithinSeconds: 30 }, cors);
 }
 
+/* ---- The repo's own records (brain plan, what was posted, growth), pushed by
+ * .github/workflows/dashboard_sync.yml via tools/dashboard_feed.py into one KV key.
+ * The worker only reads it back; its age is the honesty signal. ---- */
+async function handleAdminFeed(request, env, cors) {
+  let feed = null;
+  try { feed = JSON.parse(await env.KV.get("adm:feed") || "null"); } catch (e) { feed = null; }
+  if (!feed || typeof feed !== "object") {
+    return json({ ok: true, connected: false, reason: "No feed has been pushed yet. The 'Dashboard feed' workflow runs after every lane and after the brain; it also runs on demand (Actions → Dashboard feed → Run workflow)." }, cors);
+  }
+  const at = Date.parse(feed.generated_at || "") || null;
+  return json({ ok: true, connected: true, ageSeconds: at ? Math.max(0, Math.round((Date.now() - at) / 1000)) : null, feed }, cors);
+}
+
 /* ---- Website visits: Cloudflare Web Analytics, read-only ---- */
 const SITE_CHANNELS = [
   ["t.me", "telegram"], ["telegram.", "telegram"], ["facebook.com", "facebook"], ["fb.com", "facebook"], ["fb.me", "facebook"], ["messenger.com", "facebook"],
@@ -2681,6 +2695,7 @@ export default {
         if (url.pathname === "/admin/social" && request.method === "GET") return await handleAdminSocial(request, env, cors);
         if (url.pathname === "/admin/social/run" && request.method === "POST") return await handleAdminSocialRun(request, env, cors);
         if (url.pathname === "/admin/site" && request.method === "GET") return await handleAdminSite(request, env, cors);
+        if (url.pathname === "/admin/feed" && request.method === "GET") return await handleAdminFeed(request, env, cors);
         return json({ ok: false, error: "not found" }, cors, 404);
       }
       return json({ ok: false, error: "not found" }, cors, 404);
