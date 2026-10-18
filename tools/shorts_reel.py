@@ -40,6 +40,11 @@ import motionstudio as ms  # noqa: E402
 # Shorts and Reels tolerate longer than the 15.6 s brand Reels cap; reading time
 # governs, not the cap. Six scenes with four tips sit at ~20 s.
 SHORTS_CAP = 24.0
+# How much of the matched photograph survives behind the words (brain_visual.treat `darken`).
+# 0.36 shipped on 17 Oct and read as plain navy on a phone (brightest pixel ≈ 86/255) — the
+# owner's second complaint about the first TikTok draft, 18 Oct 2026. 0.68 keeps the duotone
+# photograph plainly visible while white and yellow type still clear 4.5:1 over the scrimmed band.
+SHOT_DARKEN = 0.68
 HANDLE = "@docoga.ng"
 CTA_URL = "docoga.com.ng"
 SERIES_KICKER = "DOCOGA · TENANT TIPS"
@@ -188,7 +193,7 @@ def attach_shots(reel, topic):
     hits = 0
     for sc, text, chain in shots_for(reel, topic):
         img, note = shot_match.photo_for(text, hint=sc.get("shot"), size=(ms.W, ms.H),
-                                         treat=lambda im, size: brain_visual.treat(im, size, darken=0.36))
+                                         treat=lambda im, size: brain_visual.treat(im, size, darken=SHOT_DARKEN))
         sc["shot"] = chain[0]
         if img is not None:
             sc["_bg"] = img
@@ -255,7 +260,9 @@ def render_topic(topic, out_path, tag="short", platform="YouTube Shorts", sound=
                 print("  detailed read: %d caption sentence(s) follow the narrator" % captions)
         else:
             print("  ⚠️  " + dropped)
-    attach_shots(reel, topic)
+    hits = attach_shots(reel, topic)
+    wanted = sum(1 for sc in reel["scenes"] if sc["role"] in ("hook", "tip"))
+    print("SHOTS_HITS=%d/%d" % (hits, wanted))   # machine line: the workflows surface it
     ok = ms.build(reel, tag)
     if not ok:
         raise RuntimeError("MotionStudio refused to encode '%s' — the video QA engine found "
@@ -265,7 +272,16 @@ def render_topic(topic, out_path, tag="short", platform="YouTube Shorts", sound=
     if sound:
         print("── 7. SOUNDTRACK ──")
         shorts_sound.score(reel, clips, out_path, dropped_reason=dropped)
+    cover = cover_for(out_path)
+    if cover.is_file():
+        print("COVER=%s" % cover)   # machine line: the settled hook card, the custom thumbnail
     return out_path
+
+
+def cover_for(out_path):
+    """The cover JPEG MotionStudio writes beside a master (`<name>.cover.jpg`): the opening card
+    drawn settled, identical to frame 0 of the video."""
+    return Path(ms.cover_path_for(str(out_path)))
 
 
 def main(argv=None):

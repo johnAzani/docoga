@@ -98,16 +98,44 @@ jobs:
           NARRATOR_LANE: shorts
           RUN_FOR_DATE: ${{ inputs.for_date }}
         run: |
+          set -o pipefail
           set +e
-          python3 scripts/youtube_short_daily.py
-          code=$?
+          python3 scripts/youtube_short_daily.py 2>&1 | tee /tmp/short.log
+          code=${PIPESTATUS[0]}
           set -e
           if [ "$code" -eq 6 ]; then
             echo "paused=yes" >> "$GITHUB_OUTPUT"
             echo "::warning title=No Short to send yet::the narrator's free Gemini bucket is empty right now — tap Run workflow again after it refills (the line above says when). TikTok itself is fine: the token minted."
             exit 0
           fi
+          # Photographs behind the cards (owner, 18 Oct 2026: "no images behind the cards"):
+          # SHOTS_HITS=<matched>/<scenes> is printed by tools/shorts_reel.py; a miss names its
+          # reason in the lines above it ("stays navy (…)").
+          SHOTS=$(sed -n 's/^SHOTS_HITS=//p' /tmp/short.log | tail -1)
+          echo "shots=${SHOTS:-?}" >> "$GITHUB_OUTPUT"
+          echo "::notice title=Photographs behind the cards::SHOTS_HITS=${SHOTS:-none reported} — $(grep -c 'stays navy' /tmp/short.log || true) scene(s) stayed navy"
           exit "$code"
+
+      # What the video actually looks like, without downloading it: a labelled contact sheet
+      # (frame 0 = the cover TikTok shows, then frames across the Short) plus the cover JPEG,
+      # pushed to the `review` branch (tools/review_push.sh) where the contents API can read it.
+      - name: Picture the render for review
+        id: sheet
+        if: always() && steps.short.outputs.video_path != ''
+        continue-on-error: true
+        env:
+          VIDEO_PATH: ${{ steps.short.outputs.video_path }}
+          COVER_PATH: ${{ steps.short.outputs.cover_path }}
+        run: |
+          set -o pipefail
+          mkdir -p /tmp/review
+          LABEL="$(date -u +%F)_tiktok-test_${GITHUB_RUN_ID}"
+          python3 tools/contact_sheet.py --video "$VIDEO_PATH" --out /tmp/review/sheet.jpg --cover "$COVER_PATH" 2>&1 | tee /tmp/sheet.log
+          grep -E '^(SHOTS_HITS|SHEET_|COVER=|📷|·)' /tmp/short.log /tmp/sheet.log > /tmp/review/render_report.txt || true
+          [ -f "$COVER_PATH" ] && cp "$COVER_PATH" /tmp/review/cover.jpg || true
+          REVIEW_LABEL="$LABEL" bash tools/review_push.sh /tmp/review/sheet.jpg /tmp/review/cover.jpg /tmp/review/render_report.txt | tee /tmp/review_push.log
+          echo "url=$(sed -n 's/^REVIEW_URL=//p' /tmp/review_push.log | tail -1)" >> "$GITHUB_OUTPUT"
+          echo "photo_frames=$(sed -n 's/^SHEET_PHOTO_FRAMES=//p' /tmp/sheet.log | tail -1)" >> "$GITHUB_OUTPUT"
 
       - name: Save the narrator's cached clips and the quota ledger
         if: always()
@@ -141,6 +169,23 @@ jobs:
           echo "caption=$CAPTION" >> "$GITHUB_OUTPUT"
           exit "$code"
 
+      # TikTok's inbox API carries no caption (only the audited Direct Post API does), so the
+      # caption goes to the owner's phone instead: a Telegram DM from the channel bot with a
+      # tap-to-copy block (tools/owner_dm.py). One-time setup: send the word "owner" to
+      # @docoga_daily_bot. Never fails the run — the draft is already in the inbox.
+      - name: Text the caption to the owner's phone
+        id: dm
+        if: steps.tiktok.outputs.result == 'inbox'
+        continue-on-error: true
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          CAPTION: ${{ steps.tiktok.outputs.caption }}
+          VIDEO_TOPIC: ${{ steps.short.outputs.topic }}
+        run: |
+          set -o pipefail
+          python3 tools/owner_dm.py tiktok --caption "$CAPTION" --title "$VIDEO_TOPIC" 2>&1 | tee /tmp/owner_dm.log
+          echo "result=$(sed -n 's/^OWNER_DM=//p' /tmp/owner_dm.log | tail -1)" >> "$GITHUB_OUTPUT"
+
       - name: Keep the rendered Short for review
         if: always() && steps.short.outputs.video_path != ''
         uses: actions/upload-artifact@v6
@@ -165,7 +210,7 @@ jobs:
             echo "::warning title=TikTok ledger not committed::could not rebase on $BRANCH — if the refresh token rotated, the next run will say so and ask for one Connect tap."
             exit 1
           fi
-          git add -f logs/tiktok_drafts.json logs/tiktok_refresh_token.box 2>/dev/null || true
+          git add -f logs/tiktok_drafts.json logs/tiktok_refresh_token.box logs/telegram_owner.json 2>/dev/null || true
           if git diff --staged --quiet; then
             echo "Nothing changed — nothing to commit."
             exit 0
@@ -184,6 +229,11 @@ jobs:
           PUBLISH_ID: ${{ steps.tiktok.outputs.publish_id }}
           CAPTION: ${{ steps.tiktok.outputs.caption }}
           PROBE: ${{ steps.probe.outcome }}
+          SHOTS: ${{ steps.short.outputs.shots }}
+          COVER_PATH: ${{ steps.short.outputs.cover_path }}
+          REVIEW_URL: ${{ steps.sheet.outputs.url }}
+          PHOTO_FRAMES: ${{ steps.sheet.outputs.photo_frames }}
+          DM: ${{ steps.dm.outputs.result }}
         run: |
           {
             echo "## TikTok test draft — $(date '+%A %-d %B, %-I:%M%P WAT')"
@@ -195,6 +245,9 @@ jobs:
               echo "| Short | ⏸ not rendered — the narrator's bucket refills at ${RESUMES:-the next reset}; tap Run workflow again then |"
             elif [ -n "$VIDEO_PATH" ]; then
               echo "| Short | 🎬 ${TOPIC} ($(stat -c%s "$VIDEO_PATH" 2>/dev/null || echo '?') bytes) |"
+              echo "| Cover | $( [ -n "$COVER_PATH" ] && echo '🖼 frame 0 is the settled title card (what TikTok shows before play)' || echo '⚠️ no cover file was written' ) |"
+              echo "| Photos behind the cards | 📷 ${SHOTS:-?} scenes matched a CC0 photograph; ${PHOTO_FRAMES:-?} sampled frames read as photographed |"
+              [ -n "$REVIEW_URL" ] && echo "| Review | [contact sheet + cover]($REVIEW_URL) on the review branch |"
             fi
             case "$RESULT" in
               inbox)
@@ -211,6 +264,12 @@ jobs:
                 echo '```'
                 echo
                 echo "4. Tap **Post**. (To only *test*, tap Discard instead — the draft counts against the five-per-day inbox limit until you do one or the other.)"
+                echo
+                case "$DM" in
+                  sent)    echo "📲 The caption was also sent to your Telegram as a tap-to-copy message (from @docoga_daily_bot)." ;;
+                  unknown) echo "📲 Want the caption on your phone next time? One-time: open Telegram → **@docoga_daily_bot** → Start → send the word **owner**. Every draft after that comes with its caption as a DM." ;;
+                  *)       : ;;
+                esac
                 ;;
               duplicate) echo "| TikTok | ⏭️ these exact bytes were already sent — run again with force ticked to send anyway |" ;;
               skipped)   echo "| TikTok | ⏭️ five drafts are already waiting in the inbox from the last 24 hours — post or discard them in the app first |" ;;

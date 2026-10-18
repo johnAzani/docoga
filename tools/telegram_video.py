@@ -41,17 +41,42 @@ def caption_for(title, url, parent_url="", parent_title=""):
     return "\n\n".join(lines)[:1024]          # Telegram's caption limit
 
 
-def send(token, chat_id, video, title, url, post=None, parent_url="", parent_title=""):
+def thumbnail_bytes(cover):
+    """Telegram's `thumbnail` rules: JPEG, longest side ≤ 320 px, ≤ 200 KB. The Short's cover
+    (the settled hook card MotionStudio writes beside the master) shrunk to fit, or None."""
+    if not cover:
+        return None
+    path = Path(cover)
+    if not path.is_file():
+        return None
+    try:
+        import io
+        from PIL import Image
+        im = Image.open(path).convert("RGB")
+        im.thumbnail((320, 320))
+        buf = io.BytesIO()
+        im.save(buf, "JPEG", quality=82, optimize=True)
+        data = buf.getvalue()
+        return data if len(data) <= 200 * 1024 else None
+    except Exception:   # the cover is a nicety; the video is the post
+        return None
+
+
+def send(token, chat_id, video, title, url, post=None, parent_url="", parent_title="", cover=""):
     """→ (state, detail). state ∈ sent | link | failed."""
     post = post or requests.post
     caption = caption_for(title, url, parent_url, parent_title)
     path = Path(video) if video else None
     if path and path.is_file() and path.stat().st_size <= MAX_BYTES:
         try:
+            thumb = thumbnail_bytes(cover)
             with path.open("rb") as fh:
+                files = {"video": (path.name, fh, "video/mp4")}
+                if thumb:
+                    files["thumbnail"] = ("cover.jpg", thumb, "image/jpeg")
                 r = post(API % (token, "sendVideo"),
                          data={"chat_id": chat_id, "caption": caption, "supports_streaming": "true"},
-                         files={"video": (path.name, fh, "video/mp4")}, timeout=TIMEOUT)
+                         files=files, timeout=TIMEOUT)
             body = r.json() if r.content else {}
             if r.status_code == 200 and body.get("ok"):
                 return "sent", "message %s" % (body.get("result") or {}).get("message_id")
@@ -81,6 +106,7 @@ def main(argv=None):
     ap.add_argument("--url", default="", help="the YouTube URL (fallback text and the caption's last line)")
     ap.add_argument("--parent-url", default="", help="the Deep-Dive this Short trails (its link rides in the caption)")
     ap.add_argument("--parent-title", default="")
+    ap.add_argument("--cover", default="", help="the Short's cover JPEG (its Telegram thumbnail)")
     a = ap.parse_args(argv)
     token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
     chat_id = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
@@ -88,7 +114,7 @@ def main(argv=None):
         print("TELEGRAM_VIDEO=skipped")
         print("Telegram secrets not present in this job — the Short stays on YouTube only.")
         return 0
-    state, detail = send(token, chat_id, a.video, a.title, a.url, parent_url=a.parent_url, parent_title=a.parent_title)
+    state, detail = send(token, chat_id, a.video, a.title, a.url, parent_url=a.parent_url, parent_title=a.parent_title, cover=a.cover)
     detail = detail.replace(token, "<token>")
     if state == "failed":
         print("::warning title=Telegram video not posted::%s" % detail)

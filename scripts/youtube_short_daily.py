@@ -135,6 +135,9 @@ def main():
 
     outputs = {
         "video_path": str(video),
+        # The settled hook card beside the master (MotionStudio writes it; frame 0 is the same
+        # picture): YouTube's custom thumbnail, Telegram's cover, and what TikTok shows by default.
+        "cover_path": str(shorts_reel.cover_for(video)) if shorts_reel.cover_for(video).is_file() else "",
         "soundtrack": shorts_sound.summary_line(video),
         "title": f"{script['title']} #Shorts",
         # The rotation topic without the #Shorts suffix — this is what the

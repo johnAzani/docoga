@@ -80,6 +80,40 @@ itself is fine (the token minted) — tap Run workflow again after the time the 
 `duplicate` means those exact bytes were already sent (tick **force** to send anyway);
 `skipped` means five drafts are already waiting in the inbox — post or discard them first.
 
+## After the first draft — the three corrections (18 Oct 2026)
+The first draft posted. The owner saw three things; here is what each was and what changed.
+
+**1. "No thumbnail."** TikTok's inbox upload has no cover field (only the audited Direct Post
+API has `video_cover_timestamp_ms`), so TikTok shows **frame 0**. MotionStudio's frame 0 was the
+empty navy an instant before the words animate in. Now `tools/motionstudio.py` draws the opening
+card *settled* as frame 0 (`poster_frame`) — the scene then opens with its flash and build as
+before — and writes the same picture as `<master>.cover.jpg`. That file is also the Short's
+**YouTube custom thumbnail** (`tools/yt_thumbnail.py`, new step in `youtube_scheduled.yml`) and
+the **Telegram** video thumbnail (`telegram_video.py --cover`).
+
+**2. "No images behind the cards."** The photographs were there but treated at `darken=0.36`:
+the brightest pixel was ≈ 86/255 and a phone showed navy. `tools/shorts_reel.py` now passes
+`SHOT_DARKEN = 0.68` (cards: `brain_visual.treat` default 0.58). Each render prints
+`SHOTS_HITS=<matched>/<scenes>` (`::notice` + summary row), and the lane pushes a labelled
+**contact sheet + cover** to the `review` branch (`tools/contact_sheet.py`,
+`tools/review_push.sh`; folder `<date>_tiktok-test_<run id>` / `<date>_short_<run id>`) —
+readable through the contents API even where run artifacts cannot be downloaded. A frame whose
+margins average ≥ 35 luminance is photographed; navy is ≈ 22.
+
+**3. "I had to paste the caption."** That one is TikTok's rule, not ours: the inbox API carries
+no caption; the only caption-bearing API is Direct Post, which an **unaudited** app may use on
+**private** accounts only. Until the audit, the caption comes to the phone instead: when a draft
+lands, `tools/owner_dm.py` DMs it from **@docoga_daily_bot** as a tap-to-copy block with the
+taps that follow. One-time setup — open Telegram → **@docoga_daily_bot** → **Start** → send the
+word **owner**. The next run adopts that chat (`logs/telegram_owner.json`, committed with the
+ledger) and texts every caption after that. The run summary says `📲 sent` or shows the setup
+line. Removing the paste itself needs the **Content Posting API audit** (free): in the TikTok
+developer portal, the app's Content Posting API product → *Apply for audit* → Terms of Service
+URL `https://docoga.com.ng/terms.html`, Privacy Policy URL `https://docoga.com.ng/privacy.html`,
+and a short screen recording of the posting flow (creator-info call, privacy picker with no
+default, the commercial-content toggle, a preview). After approval `tiktok_draft.py` can switch to
+Direct Post with `post_info.title` + `video_cover_timestamp_ms`, and the tap disappears.
+
 ## Guard rails
 - Dormant (notice, exit 0) until the two app secrets and the sealed box (or the fallback secret)
   exist; never fails the YouTube publish it rides on (`continue-on-error`).
@@ -93,7 +127,9 @@ itself is fine (the token minted) — tap Run workflow again after the time the 
 
 ## Machine lines
 `TIKTOK_RESULT=inbox|duplicate|skipped|dormant|dry-run|probed|failed`, `TIKTOK_CAUSE=…`,
-`TIKTOK_PUBLISH_ID=…`, `TIKTOK_STATUS=…`, `TIKTOK_VAULT=sealed`; from `connect`:
+`TIKTOK_PUBLISH_ID=…`, `TIKTOK_STATUS=…`, `TIKTOK_VAULT=sealed`; render: `SHOTS_HITS=n/m`,
+`COVER=<path>`; review: `SHEET=…`, `SHEET_BRIGHTNESS=…`, `SHEET_PHOTO_FRAMES=n/m`, `REVIEW_URL=…`;
+owner DM: `OWNER_DM=sent|unknown|skipped|failed`, `OWNER_CHAT=…`; from `connect`:
 `TIKTOK_CONNECT=ok|refused|failed`, `TIKTOK_OPEN_ID=…`, `TIKTOK_SCOPES=…`, `TIKTOK_USER=@…`;
 from `status`: `TIKTOK_CONNECTED=yes|no`, `TIKTOK_BOX=sealed <date>|absent`.
 
