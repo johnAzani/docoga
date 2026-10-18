@@ -1,0 +1,9 @@
+{
+  "v": 1,
+  "alg": "A256GCM",
+  "name": "TIKTOK_REFRESH_TOKEN",
+  "nonce": "ZA8NbbkUu0bsbaWr",
+  "ciphertext": "FSivcLlu/qqXPtRDnTTxNdflXzfxF84zuFUIZM4/6VeFLw/LPGuV76H424uJrkloQYDpywnp8tzd9m9i60jppgKlsEQAy6lQ3oTdbYw+jPlRrCzJLnnPsA==",
+  "minted_at": "2026-10-18T04:15:16+00:00",
+  "expires_at": "2027-10-18"
+}
