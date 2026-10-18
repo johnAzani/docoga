@@ -10,6 +10,7 @@ Photo posts use brand images from the brand/ folder.
 
 import json
 import random
+import re
 import os
 import sys
 from datetime import datetime
@@ -229,7 +230,7 @@ TEMPLATES = {
              "Tenants — what is the one line you wish your agreement had?\n"
              "Landlords — what is the one clause you will never leave out again?"),
         _tpl("Which one would you rather?",
-             "A) ₦50,000 to a lawyer, for one agreement\nB) ₦2,000 for every document you need, for 30 days\n\n"
+             "A) ₦50,000, one agreement\nB) ₦2,000, every document — for 30 days\n\n"
              "Tell us in one line."),
         _tpl("What did your agent ask you to pay for?",
              "Agency fee. Agreement fee. Caution. Service charge. Legal fee.\n"
@@ -248,6 +249,31 @@ HASHTAGS = {
     "urgent": "#DocOga #RentReceipt #TenancyAgreement",
     "engagement": "#DocOga #NaijaProperty #TenantLife #LandlordLife",
 }
+
+POLL_OPTION = re.compile(r"^\s*([A-D])\)\s+(.+?)\s*$")
+
+
+def poll_from_text(plain):
+    """{"question", "options"} when the copy carries A)–D) lines, else None.
+
+    An opinion poll is the one tap a reader gives who would never type (Facebook's
+    highest-engagement format per effort in 2026; a Telegram poll is native; Threads ranks by
+    replies and counts a vote as one). The rotation's engagement days already ask the question
+    in A)–D) shape, so the poll is read from the words rather than written twice. Options are
+    clipped to Threads' 25 characters so one poll serves every channel."""
+    lines = [ln for ln in (plain or "").split("\n")]
+    options = [m.group(2) for m in (POLL_OPTION.match(ln) for ln in lines) if m]
+    if not 2 <= len(options) <= 4:
+        return None
+    question = plain.split("\n\n")[0].strip()
+    if not question.endswith("?"):
+        return None
+    options = [re.sub(r"\s+", " ", o) for o in options]
+    options = [o if len(o) <= 25 else re.sub(r"\s*\u2014.*$", "", o)[:25].rstrip(" ,;:") for o in options]
+    if len(set(options)) < len(options):
+        return None
+    return {"question": question[:300], "options": options}
+
 
 # Weekly schedule with variety
 WEEKLY_SCHEDULE = {
@@ -372,6 +398,7 @@ def generate_daily_content():
         "generated_at": today.isoformat(),
         "brain": pack.get("theme") if pack else None,
         "quiz": brain_drafts.quiz(pack) if pack else None,
+        "poll": None if pack else poll_from_text(to_plain(template)),
     }
 
     # Save to files

@@ -225,6 +225,13 @@ def topic_for(day):
     return words.script_for_date(day)
 
 
+def title_for(script):
+    """The YouTube title for a rotation script — the searchable subject first, the hook after
+    (generate_short_video.yt_title). Words only, through the bridge, like topic_for."""
+    import generate_short_video as words
+    return words.yt_title(script)
+
+
 def default_output_path(day, prefix="docoga_short"):
     return DEFAULT_OUTPUT_DIR / ("%s_%s.mp4" % (prefix, day.strftime("%Y%m%d")))
 

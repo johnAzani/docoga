@@ -88,7 +88,7 @@ FONT_CANDIDATES = {
 # (visible in the render, easy to fix here) rather than by shipping tofu to 4,000 readers.
 DRAWABLE = re.compile(
     "[^\\x09\\x0a\\x20-\\x7e\\xa0-\\xff"
-    " —‘’“”…•·₦ºª×÷−⁄]"
+    " —–‘’“”…•·₦ºª×÷−⁄→✓]"
 )
 WHITESPACE = re.compile(r"[ \t]+\n|\n[ \t]+")
 
@@ -412,6 +412,32 @@ def tonal_glyph(image, letter, size, clip=None):
     return layer
 
 
+def balanced(draw, text, font, max_width, lines):
+    """Break `text` into exactly `lines` lines, each within `max_width`, with the most even
+    widths — a stepped slab stack reads as designed when its steps are deliberate, not when a
+    greedy wrap leaves "receipt." alone under two full lines. None if no such break exists."""
+    words = text.split()
+    if lines <= 1:
+        return [text] if draw.textlength(text, font=font) <= max_width else None
+    if len(words) < lines:
+        return None
+    best, best_score = None, None
+    from itertools import combinations
+    for cuts in combinations(range(1, len(words)), lines - 1):
+        parts, prev = [], 0
+        for c in list(cuts) + [len(words)]:
+            parts.append(" ".join(words[prev:c]))
+            prev = c
+        widths = [draw.textlength(part, font=font) for part in parts]
+        if max(widths) > max_width:
+            continue
+        # Even widths first; among ties prefer a longer first line (the eye enters at the top).
+        score = (max(widths) - min(widths), -widths[0])
+        if best_score is None or score < best_score:
+            best, best_score = parts, score
+    return best
+
+
 def plan(draw, headline, body, big, frame):
     """Choose sizes so the whole piece fits the frame's safe box: slab headline when it can sit
     on ≤ 3 slabs at a size that out-weighs the body, else a white headline; body shrinks before
@@ -435,6 +461,8 @@ def plan(draw, headline, body, big, frame):
             if size > (128 if tall else 112) and len(lines) > 2:
                 continue        # three slabs of display type would be more yellow than card
             if len(lines) <= SLAB_MAX_LINES and not big:
+                if len(lines) > 1 and len(headline.split()) <= 14:
+                    lines = balanced(draw, headline, font, slab_width, len(lines)) or lines
                 out.update(mode="slab", h_font=font, h_size=size, h_lines=lines)
                 break
             if big and len(lines) <= 3:
@@ -454,22 +482,41 @@ def plan(draw, headline, body, big, frame):
     if out["mode"] == "slab" and out["h_size"]:
         body_start = min(body_start, int(out["h_size"] / 1.6))   # hierarchy: the slab out-weighs the body
     body_start = max(body_start, body_floor)
+    # Seven or more short marked lines (a document list, a long checklist) read as two columns
+    # at a readable size rather than one column at a tiny one.
+    marked = [w for k, _, w in body if k in ("num", "check", "bullet", "x", "option")]
+    two_col = len(marked) >= 7 and len(marked) == len([1 for k, _, _ in body if k != "gap"]) \
+        and max(len(w) for w in marked) <= 26 and not frame.get("no_columns")
+    out["columns"] = 2 if two_col else 1
     for bsize in range(body_start, body_floor - 1, -2):
         bfont, _ = load_font("Medium", bsize)
         indent = int(bsize * 1.5)
         blines = []
-        for kind, label, words in body:
-            if kind == "gap":
-                blines.append(("gap", "", "", 0))
-                continue
-            width = max_width - (indent if kind != "plain" else 0)
-            for i, ln in enumerate(wrap(draw, words, bfont, width)):
-                blines.append((kind if i == 0 else "cont", label if i == 0 else "", ln, indent if kind != "plain" else 0))
+        if two_col:
+            col_w = (max_width - 32) // 2
+            indent = int(bsize * 1.25)
+            if any(draw.textlength(w, font=bfont) > col_w - indent for w in marked):
+                continue    # too wide for a column at this size: smaller, not wrapped
+            rows = (len(marked) + 1) // 2
+            for i, (kind, label, words) in enumerate([b for b in body if b[0] != "gap"]):
+                col, row = (0, i) if i < rows else (1, i - rows)
+                blines.append((kind, label, words, indent, col, row))
+        else:
+            for kind, label, words in body:
+                if kind == "gap":
+                    blines.append(("gap", "", "", 0))
+                    continue
+                width = max_width - (indent if kind != "plain" else 0)
+                for i, ln in enumerate(wrap(draw, words, bfont, width)):
+                    blines.append((kind if i == 0 else "cont", label if i == 0 else "", ln, indent if kind != "plain" else 0))
         out.update(b_font=bfont, b_size=bsize, b_lines=blines, indent=indent)
         if _height(out, tall) <= ceiling - top:
             break
+    if two_col and "b_lines" not in out:
+        out["columns"] = 1
+        return plan(draw, headline, [b for b in body], big, dict(frame, no_columns=True)) if not frame.get("no_columns") else out
     # Cut if even the floor overflows: keep whole lines, end with an ellipsis.
-    while out["b_lines"] and _height(out, tall) > ceiling - top:
+    while out["b_lines"] and _height(out, tall) > ceiling - top and out["columns"] == 1:
         out["b_lines"].pop()
         if out["b_lines"]:
             k, l, t, ind = out["b_lines"][-1]
@@ -490,8 +537,11 @@ def _height(p, tall):
             h += int(len(p["h_lines"]) * lh)
     if p["b_lines"]:
         h += (40 if tall else 34)
-        for kind, _, _, _ in p["b_lines"]:
-            h += int(p["b_size"] * 0.6) if kind == "gap" else int(p["b_size"] * 1.34)
+        if p.get("columns", 1) == 2:
+            h += ((len(p["b_lines"]) + 1) // 2) * int(p["b_size"] * 1.34)
+        else:
+            for line in p["b_lines"]:
+                h += int(p["b_size"] * 0.6) if line[0] == "gap" else int(p["b_size"] * 1.34)
     return h
 
 
@@ -595,27 +645,36 @@ def render(text, out_path, kicker="", quality=88, max_kb=900, footer=FOOTER, siz
         y += (40 if tall else 34)
         bsize, bfont, indent = p["b_size"], p["b_font"], p["indent"]
         nfont, _ = load_font("Black", int(bsize * 0.78))
-        for kind, label, ln, ind in p["b_lines"]:
+        y_body, lh = y, int(bsize * 1.34)
+        col_x = MARGIN + (max_width + 40) // 2
+        for line in p["b_lines"]:
+            kind, label, ln, ind = line[:4]
             if kind == "gap":
                 y += int(bsize * 0.6)
                 continue
+            x = MARGIN
+            if len(line) == 6:                      # two-column list: (…, column, row)
+                x = MARGIN if line[4] == 0 else col_x
+                y = y_body + line[5] * lh
             cy = y + int(bsize * 0.62)
             r = int(bsize * 0.42)
             if kind == "check":
-                _badge(draw, MARGIN + r, cy, r, GREEN, "check")
+                _badge(draw, x + r, cy, r, GREEN, "check")
             elif kind == "x":
-                _badge(draw, MARGIN + r, cy, r, RED, "x")
+                _badge(draw, x + r, cy, r, RED, "x")
             elif kind in ("num", "option"):
-                box = [MARGIN, cy - r, MARGIN + 2 * r, cy + r]
+                box = [x, cy - r, x + 2 * r, cy + r]
                 draw.rounded_rectangle(box, radius=int(r * 0.3), fill=PANEL)
                 tw = draw.textlength(label, font=nfont)
                 nasc, ndesc = nfont.getmetrics()
-                draw.text((MARGIN + r - tw / 2, cy - (nasc + ndesc) / 2 + int(bsize * 0.02)), label, font=nfont, fill=WHITE)
+                draw.text((x + r - tw / 2, cy - (nasc + ndesc) / 2 + int(bsize * 0.02)), label, font=nfont, fill=WHITE)
             elif kind == "bullet":
                 d = max(5, int(bsize * 0.14))
-                draw.rectangle([MARGIN + r - d, cy - d, MARGIN + r + d, cy + d], fill=MUTED)
-            draw.text((MARGIN + ind, y), ln, font=bfont, fill=SOFT)
-            y += int(bsize * 1.34)
+                draw.rectangle([x + r - d, cy - d, x + r + d, cy + d], fill=MUTED)
+            draw.text((x + ind, y), ln, font=bfont, fill=SOFT)
+            y += lh if len(line) != 6 else 0
+        if p.get("columns") == 2:
+            y = y_body + ((len(p["b_lines"]) + 1) // 2) * lh
 
     if footer:
         ffont, _ = load_font("SemiBold", 28 if tall else 26)
@@ -772,6 +831,12 @@ def main(argv=None):
         return render_slides(args)
 
     text = args.text or ""
+    if args.kicker and re.fullmatch(r"[a-z_]+", args.kicker.strip()):
+        # The lanes pass the raw post-type key (`pidgin`, `state_spotlight`); the live card of
+        # 18 Oct 2026 read "PIDGIN". The key becomes the phrase a reader is meant to see.
+        key = args.kicker.strip()
+        args.kicker = "DocOga · " + KICKER_NAMES.get(key, key.replace("_", " ")) if key not in ("manual", "deepdive") \
+            else ("DocOga · new deep-dive · 9 min" if key == "deepdive" else "DocOga")
     if args.from_json:
         blob = json.loads(Path(args.from_json).read_text(encoding="utf-8"))
         text = blob.get("card_text") or blob.get("text") or ""   # card_text: a promo day's tighter card copy

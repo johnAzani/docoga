@@ -87,6 +87,16 @@ Pro thumbnail designers' published rules, checked one by one against the piece:
 | Test at 1/4 size / squint test | ✅ automated: `test_the_squint_test_at_grid_tile_size` (200 px 1:1 tile; slabs ≥ 8 % of it, cap height ≥ 20 px) |
 | Rule-of-thirds subject placement | ✗ centred on purpose: the 1:1 grid crop punishes anything off-centre vertically |
 
+### Third pass: the title the cover sits under
+A week of covers rendered side by side (19–25 Oct) showed the system holding: hero 130–178 px,
+set-up ≤ hero/1.35, the ✗ on the last set-up line, the glyph where no photo is. The one thing
+that echoed was the **YouTube title** — "Pay without a receipt. Pay twice. #Shorts" repeated the
+cover word for word. Shorts search and suggested read the title; the cover already says the
+stakes. So the title now leads with the searchable subject and keeps the hook after it:
+`Rent receipt in Nigeria: pay without a receipt, pay twice #Shorts`
+(`generate_short_video.yt_title`, each rotation topic carries a `search` phrase; brain Shorts
+without one keep the hook-only title). Cover = stakes, title = subject: complementarity.
+
 ## 4. Measuring it
 YouTube Studio reports thumbnail impressions and CTR for Shorts since 2026; the Monday
 `youtube_stats` lane pulls the channel numbers. Read the Shorts-tab/search CTR across weeks

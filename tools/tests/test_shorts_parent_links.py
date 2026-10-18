@@ -159,7 +159,8 @@ class DailyOutputTests(unittest.TestCase):
         self.assertIn("Practical document-keeping", outputs["description"])
         self.assertEqual(outputs["pinned_comment"], "")
         self.assertEqual(outputs["parent_url"], "")
-        self.assertEqual(outputs["title"], topic["title"] + " #Shorts")
+        self.assertEqual(outputs["title"], words.yt_title(topic))
+        self.assertTrue(outputs["title"].endswith(" #Shorts"))
 
 
 if __name__ == "__main__":
