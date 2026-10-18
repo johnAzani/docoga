@@ -39,6 +39,9 @@ def make_root(tmp, approved_today=True):
     (root / "logs" / "youtube_published.json").write_text(json.dumps([
         {"recorded_at": "2026-10-14T04:54:00+01:00", "title": "Keep a Rent Paper Trail #Shorts", "topic": "Keep a Rent Paper Trail", "url": "https://www.youtube.com/watch?v=SgkOucdmHYM", "privacy": "public", "state": "published", "date": "2026-10-14"},
         {"recorded_at": "2026-10-17T18:02:00+01:00", "title": "Sign without asking #Shorts", "topic": "Sign without asking", "url": "https://www.youtube.com/watch?v=abc", "privacy": "private", "publish_at": "2026-10-19T18:00:00Z", "state": "scheduled", "date": "2026-10-17"}]))
+    (root / "logs" / "tiktok_drafts.json").write_text(json.dumps({"entries": [
+        {"recorded_at": "2026-10-16T17:05:00+00:00", "key": "abc", "publish_id": "v_inbox_file~v2.1", "status": "SEND_TO_USER_INBOX",
+         "caption": "Sign without asking #DocOga #Nigeria", "video": "short.mp4"}]}))
     (root / "logs" / "youtube_stats.json").write_text(json.dumps([{"taken_at": "2026-10-14T18:07:26+01:00", "channel": {"subscribers": 49, "views": 142, "videos": 13},
                                                                    "videos": [{"id": "a", "title": "A", "views": 5, "kind": "short"}, {"id": "b", "title": "B", "views": 40, "kind": "longform"}]}]))
     (root / "logs" / "scorecard.json").write_text(json.dumps([
@@ -70,7 +73,9 @@ class Build(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             feed = df.build(NOW, make_root(tmp))
         posted = feed["posted"]
-        self.assertEqual([r["platform"] for r in posted], ["youtube", "instagram", "facebook", "youtube"])
+        self.assertEqual([r["platform"] for r in posted], ["youtube", "tiktok", "instagram", "facebook", "youtube"])
+        tk = posted[1]
+        self.assertEqual((tk["kind"], tk["title"], tk["url"]), ("inbox draft", "Sign without asking #DocOga #Nigeria", ""))
         self.assertEqual(posted[0]["at"], "2026-10-17T17:02:00Z", "Lagos stamps are normalised to UTC")
         fb = [r for r in posted if r["platform"] == "facebook"][0]
         self.assertEqual(fb["url"], "https://www.facebook.com/reel/1086374460872192/")
@@ -99,6 +104,16 @@ class Build(unittest.TestCase):
         self.assertEqual(rows["youtube.subscribers"]["source"], "youtube_stats")
         self.assertIsNone(rows["instagram.followers"]["value"], "not measured is null, never 0")
         self.assertEqual(feed["growth"]["orders"], ["post the Reel at 7pm"])
+
+    def test_tiktok_connection_is_read_from_the_box_header_only(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = make_root(tmp)
+            self.assertEqual(df.build(NOW, root)["tiktok"], {"connected": False, "since": None, "expires": None})
+            (root / "logs" / "tiktok_refresh_token.box").write_text(json.dumps(
+                {"v": 1, "alg": "A256GCM", "name": "TIKTOK_REFRESH_TOKEN", "nonce": "n", "ciphertext": "SECRET-CT", "minted_at": "2026-10-18T09:00:00+00:00", "expires_at": "2027-10-18"}))
+            feed = df.build(NOW, root)
+        self.assertEqual(feed["tiktok"], {"connected": True, "since": "2026-10-18T09:00:00+00:00", "expires": "2027-10-18"})
+        self.assertNotIn("SECRET-CT", json.dumps(feed), "ciphertext never travels to the dashboard")
 
     def test_the_live_repo_builds_without_error(self):
         feed = df.build(NOW)

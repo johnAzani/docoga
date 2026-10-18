@@ -147,6 +147,7 @@ waits on a scan. The page also polls every 60 s, paused while hidden.
 | `GET /admin/social` | **Social tab (17 Oct 2026).** Today's posting plan vs what GitHub Actions actually did, the last 7 days, and the clock's health — see §5a |
 | `POST /admin/social/run` | `{workflow, inputs?}` — "Run now / Retry" a lane this minute; allow-listed to the plan, one ask per lane per 10 min (429 with `retryInSeconds`) |
 | `GET /admin/site` | **Website tab.** Visits from Cloudflare Web Analytics: 7 + 28 days, by channel, country and page; cached 30 min |
+| `POST /admin/tiktok/connect` | `{code}` from `site/tiktok-connect.html` (TikTok's Login Kit redirect) → dispatches `tiktok_connect.yml`; the code is validated by shape, never stored, never logged; 429 inside 45 s |
 | `GET /admin/feed` | **Content tab.** The repo's own records — brain plan for 3 days, last 40 posts with links, growth vs milestones, YouTube snapshot + scheduled queue — as pushed into KV by `dashboard_sync.yml`; one KV read, age in seconds |
 
 Every response: `Cache-Control: no-store`, `X-Frame-Options: DENY`,

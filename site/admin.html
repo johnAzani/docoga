@@ -698,7 +698,9 @@ function renderSocial(){
   const clockChip=ck.ok===false?chip('clock unreachable','bad'):ck.paused?chip('paused (CLOCK=off)','warn'):ck.token==='present'?chip('on duty · '+(ck.entries||0)+' slots','ok'):chip('idle — no token','bad');
   const fp=FEED&&FEED.feed&&FEED.feed.plan?FEED.feed.plan[0]:null;
   const brainChip=fp?(fp.approved?chip('approved pack for today','ok'):chip('no pack — posting from the rotation','warn')):chip('see the Content tab','');
-  const rows=[['Clock (rings the lanes every 5 min)',clockChip],['Brain (writes the day’s content)',brainChip],['Plan source',chip(S.planFrom==='clock'?'the clock’s own table':'not available','')],['Board refreshed',chip(t.at?ago(t.at):'—','ok')]];
+  const tk=FEED&&FEED.feed&&FEED.feed.tiktok?FEED.feed.tiktok:null;
+  const tiktokChip=tk?(tk.connected?chip('connected'+(tk.since?' · since '+lagosDay(String(tk.since).slice(0,10)):''),'ok'):chip('not connected — tap Connect on /tiktok-connect.html','warn')):chip('see the Content tab','');
+  const rows=[['Clock (rings the lanes every 5 min)',clockChip],['Brain (writes the day’s content)',brainChip],['TikTok (every Short to your inbox as a draft)',tiktokChip],['Plan source',chip(S.planFrom==='clock'?'the clock’s own table':'not available','')],['Board refreshed',chip(t.at?ago(t.at):'—','ok')]];
   $('social-health').innerHTML='<table><tbody>'+rows.map(r=>'<tr><td style="width:46%">'+r[0]+'</td><td>'+r[1]+'</td></tr>').join('')+'</tbody></table>';
   const ex=t.extras||[];
   $('social-extras').innerHTML=ex.length?'<p class="hint" style="margin:0 0 4px">Runs outside the plan today (manual or re-runs):</p><table><tbody>'+ex.map(x=>'<tr><td>'+esc(lagos(x.started))+'</td><td><b>'+esc(x.lane||x.name)+'</b></td><td>'+statusChip(x.status,'care')+(x.cause?'<br><span class="hint" style="color:#991B1B">'+esc(x.cause)+'</span>':'')+'</td><td><a class="mini" style="text-decoration:none" href="'+esc(x.url)+'" target="_blank" rel="noopener">log</a></td></tr>').join('')+'</tbody></table>':'';
@@ -734,7 +736,7 @@ function renderChannels(){
 
 /* ---------------- content: the repo's records, via the feed ---------------- */
 let FEED=null;
-const PLATFORM_WORD={instagram:'Instagram',threads:'Threads',telegram:'Telegram',facebook:'Facebook',linkedin:'LinkedIn',youtube:'YouTube'};
+const PLATFORM_WORD={instagram:'Instagram',threads:'Threads',telegram:'Telegram',facebook:'Facebook',linkedin:'LinkedIn',youtube:'YouTube',tiktok:'TikTok'};
 async function loadFeed(){
   try{FEED=await api('/admin/feed');renderFeed();}
   catch(e){if(e.status!==401)$('content-msg').innerHTML='<div class="msg err">'+esc('could not read the feed: '+e.message)+'</div>';}
@@ -773,7 +775,7 @@ function renderFeed(){
     (f.deepdive_next?'<p class="hint" style="margin:8px 0 0">Next Deep-Dive in the queue: <b>'+esc(f.deepdive_next)+'</b></p>':'');
   // posted
   const posted=f.posted||[];
-  $('posted').innerHTML=posted.length?'<thead><tr><th>When</th><th>Where</th><th>What</th></tr></thead><tbody>'+posted.map(r=>'<tr><td style="white-space:nowrap">'+esc(lagosWhen(Date.parse(r.at)))+'</td><td><b>'+esc(PLATFORM_WORD[r.platform]||r.platform)+'</b><br><span class="hint">'+esc(r.kind)+(r.privacy&&r.privacy!=='public'&&r.privacy!=='channel'?' · '+esc(r.privacy):'')+'</span></td><td>'+(r.url?'<a href="'+esc(r.url)+'" target="_blank" rel="noopener">'+esc(r.title||r.url)+'</a>':esc(r.title))+'</td></tr>').join('')+'</tbody>':'<tbody><tr><td class="hint">nothing recorded yet</td></tr></tbody>';
+  $('posted').innerHTML=posted.length?'<thead><tr><th>When</th><th>Where</th><th>What</th></tr></thead><tbody>'+posted.map(r=>'<tr><td style="white-space:nowrap">'+esc(lagosWhen(Date.parse(r.at)))+'</td><td><b>'+esc(PLATFORM_WORD[r.platform]||r.platform)+'</b><br><span class="hint">'+esc(r.kind)+(r.privacy&&r.privacy!=='public'&&r.privacy!=='channel'?' · '+esc(r.privacy):'')+'</span></td><td>'+(r.url?'<a href="'+esc(r.url)+'" target="_blank" rel="noopener">'+esc(r.title||r.url)+'</a>':esc(r.title))+(r.platform==='tiktok'?' <span class="hint">— waiting in your TikTok inbox: open the app, add the caption, tap Post</span>':'')+'</td></tr>').join('')+'</tbody>':'<tbody><tr><td class="hint">nothing recorded yet</td></tr></tbody>';
 }
 
 /* ---------------- website: Cloudflare Web Analytics ---------------- */

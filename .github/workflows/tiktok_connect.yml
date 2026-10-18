@@ -1,0 +1,90 @@
+name: TikTok — connect (one time)
+
+# The owner taps "Connect TikTok" on https://docoga.com.ng/tiktok-connect.html, TikTok sends
+# them back with a single-use code, and that page hands the code to this workflow through the
+# worker (POST /admin/tiktok/connect). Here the code becomes a refresh token, sealed into
+# logs/tiktok_refresh_token.box with the vault key the Meta lanes already use. No token is
+# ever printed; the code is masked, is single-use, and dies in minutes anyway.
+#
+# Manual fallback: Actions → this workflow → Run workflow → paste the code the page shows.
+
+on:
+  workflow_dispatch:
+    inputs:
+      code:
+        description: "The code TikTok sent back (the landing page shows it if it could not send it itself)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tiktok-connect
+  cancel-in-progress: false
+
+env:
+  TZ: Africa/Lagos
+  REDIRECT_URI: https://docoga.com.ng/tiktok-connect.html
+
+jobs:
+  connect:
+    name: Exchange the code and seal the token
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - name: Exchange the code and seal the refresh token
+        id: connect
+        env:
+          TIKTOK_CLIENT_KEY: ${{ secrets.TIKTOK_CLIENT_KEY }}
+          TIKTOK_CLIENT_SECRET: ${{ secrets.TIKTOK_CLIENT_SECRET }}
+          SOCIAL_TOKEN_KEY: ${{ secrets.SOCIAL_TOKEN_KEY }}
+          CODE: ${{ inputs.code }}
+        run: |
+          echo "::add-mask::$CODE"
+          if [ -z "$TIKTOK_CLIENT_KEY" ] || [ -z "$TIKTOK_CLIENT_SECRET" ]; then
+            echo "::error title=TikTok app keys missing::add the repository secrets TIKTOK_CLIENT_KEY and TIKTOK_CLIENT_SECRET (Client key / Client secret from developers.tiktok.com → Manage apps → DocOga), then tap Connect again"
+            exit 3
+          fi
+          python3 -m pip install --quiet cryptography >/dev/null 2>&1 || true
+          set +e
+          python3 tools/tiktok_draft.py connect --code "$CODE" --redirect-uri "$REDIRECT_URI" 2>&1 | tee /tmp/tiktok_connect.log
+          RC=${PIPESTATUS[0]}
+          set -e
+          {
+            echo "## TikTok connect"
+            echo
+            grep -E '^(connected as|TIKTOK_)' /tmp/tiktok_connect.log || true
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "result=$(sed -n 's/^TIKTOK_CONNECT=//p' /tmp/tiktok_connect.log | tail -1)" >> "$GITHUB_OUTPUT"
+          exit "$RC"
+      - name: Keep the sealed box
+        if: always() && steps.connect.outputs.result == 'ok'
+        env:
+          BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f logs/tiktok_refresh_token.box
+          if git diff --staged --quiet; then
+            echo "Sealed box unchanged."
+            exit 0
+          fi
+          git commit -q -m "Auto: connect TikTok $(date -u +%F) [skip ci]"
+          PUSHED=no
+          for attempt in 1 2 3; do
+            git pull --rebase --autostash origin "$BRANCH" >/dev/null 2>&1 || true
+            if git push origin "HEAD:${BRANCH}"; then PUSHED=yes; break; fi
+            sleep $((attempt * 5))
+          done
+          if [ "$PUSHED" != "yes" ]; then
+            echo "::error title=Sealed TikTok token not pushed::the connect worked but the box did not reach $BRANCH — tap Connect once more"
+            exit 1
+          fi
+          python3 tools/token_vault.py status --name TIKTOK_REFRESH_TOKEN | tee -a "$GITHUB_STEP_SUMMARY"

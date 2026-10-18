@@ -297,7 +297,7 @@ console.log('  ✓ stored choices expire, rejection persists, previews are inert
 // excluded from both the manager and page-view tracking: the success/payment
 // page, and the owner dashboard (admin.html — noindex, Disallow: /admin; the
 // owner's own revenue screen is never measured by a third party).
-const UNTAGGED_PAGES = new Set(['success.html', 'admin.html']);
+const UNTAGGED_PAGES = new Set(['success.html', 'admin.html', 'tiktok-connect.html']);
 const htmlFiles = fs.readdirSync(SITE).filter((name) => name.endsWith('.html')).sort();
 assert.ok(htmlFiles.length > 0);
 for (const name of htmlFiles) {

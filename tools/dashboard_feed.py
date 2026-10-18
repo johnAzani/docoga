@@ -144,8 +144,29 @@ def posted(root=ROOT, cap=POSTED_CAP):
                 "url": url, "privacy": e.get("privacy") or "", "state": e.get("state") or "",
                 "publish_at": e.get("publish_at") or e.get("publishAt") or None,
             })
+    # TikTok keeps a dict ledger ({"entries": [...]}) and no public URL: the Short sits in the
+    # owner's inbox until they post it from the app, so the row says "inbox draft".
+    tk = _load_from(root, "logs/tiktok_drafts.json")
+    for e in (tk.get("entries") if isinstance(tk, dict) else []) or []:
+        if not isinstance(e, dict):
+            continue
+        at = _stamp(e.get("recorded_at"))
+        if at is None:
+            continue
+        rows.append({"at": at.isoformat().replace("+00:00", "Z"), "platform": "tiktok", "kind": "inbox draft",
+                     "title": _first_line(e.get("caption"), 120) or "Short", "url": "",
+                     "privacy": "", "state": str(e.get("status") or ""), "publish_at": None})
     rows.sort(key=lambda r: r["at"], reverse=True)
     return rows[:cap]
+
+
+def tiktok(root=ROOT):
+    """Is the TikTok lane connected? Read from the sealed box's header — never its contents."""
+    try:
+        payload = json.loads((root / "logs" / "tiktok_refresh_token.box").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {"connected": False, "since": None, "expires": None}
+    return {"connected": bool(payload.get("ciphertext")), "since": payload.get("minted_at"), "expires": payload.get("expires_at")}
 
 
 def youtube(root=ROOT):
@@ -211,6 +232,7 @@ def build(now=None, root=ROOT):
         "youtube": youtube(root),
         "growth": growth(root),
         "deepdive_next": deepdive_next(root),
+        "tiktok": tiktok(root),
     }
     feed["brain_note"] = ("the brain has an approved pack for today" if feed["plan"] and feed["plan"][0]["approved"]
                           else "no approved pack for today — the lanes post from the rotation (the brain had no quota, or every draft failed a gate)")

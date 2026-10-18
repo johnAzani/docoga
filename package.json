@@ -5,7 +5,7 @@
   "description": "DocOga \u2014 free Nigerian document tools (static site + Cloudflare Worker). This root package only pins the QA gate's test dependencies; the site itself has no build step and the Worker has its own package.json.",
   "scripts": {
     "qa": "python3 tools/qa.py",
-    "test": "node tools/tests/workertest.mjs && node tools/tests/adminworkertest.mjs && node tools/tests/emailworkertest.mjs && node tools/tests/domtest.mjs && node tools/tests/admindomtest.mjs && node tools/tests/analytics_consent.test.mjs",
+    "test": "node tools/tests/workertest.mjs && node tools/tests/adminworkertest.mjs && node tools/tests/emailworkertest.mjs && node tools/tests/domtest.mjs && node tools/tests/admindomtest.mjs && node tools/tests/tiktokconnectdomtest.mjs && node tools/tests/analytics_consent.test.mjs",
     "test:worker": "node tools/tests/workertest.mjs",
     "test:email-worker": "node tools/tests/emailworkertest.mjs",
     "test:dom": "node tools/tests/domtest.mjs",

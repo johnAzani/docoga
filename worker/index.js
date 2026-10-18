@@ -1696,6 +1696,7 @@ async function handleActivate(url, env, cors) {
  *   POST /admin/social/run {workflow, inputs?} ask a lane to run now (one per lane per 10 min)
  *   GET  /admin/site      website visits (Cloudflare Web Analytics, 7 + 28 days)
  *   GET  /admin/feed      the repo's records (brain plan, posted, growth) as pushed by dashboard_sync.yml
+ *   POST /admin/tiktok/connect  {code} → dispatches tiktok_connect.yml (the landing page's door)
  * ========================================================================== */
 const ADMIN_SESSION_TTL = 43200;      // 12 h, slid forward while the owner keeps using it
 const ADMIN_SNAP_TTL = 6 * 3600;      // freshness target for the heavy rollup
@@ -2515,6 +2516,30 @@ async function handleAdminSocialRun(request, env, cors) {
   return json({ ok: true, workflow, inputs, startsWithinSeconds: 30 }, cors);
 }
 
+/* ---- TikTok connect: the landing page (same origin as the dashboard, so it holds the
+ * owner's session) hands TikTok's single-use code to the connect workflow. The code is
+ * never stored here and never written to the recent log; the workflow masks it too.
+ * TikTok codes are long and carry '*' and '!' — a looser shape than lane inputs. ---- */
+const TIKTOK_CONNECT_WORKFLOW = "tiktok_connect.yml";
+const TIKTOK_CONNECT_LOCK = 45;     // seconds between two sends; a code is single-use anyway
+async function handleAdminTikTokConnect(request, env, cors) {
+  if (!socialReady(env)) return json({ ok: false, error: "not_connected", reason: "GH_DISPATCH_TOKEN is not on the worker" }, cors, 503);
+  let b = {}; try { b = await request.json(); } catch (e) { b = {}; }
+  const code = String(b.code || "").trim();
+  if (code.length < 16 || code.length > 1024 || !/^[A-Za-z0-9*!._~%-]+$/.test(code)) return json({ ok: false, error: "bad_code" }, cors, 400);
+  const lockKey = "adm:tiktok:connect:lock";
+  if (await env.KV.get(lockKey)) return json({ ok: false, error: "already_asked", retryInSeconds: TIKTOK_CONNECT_LOCK }, cors, 429);
+  await env.KV.put(lockKey, String(Date.now()), { expirationTtl: Math.max(60, TIKTOK_CONNECT_LOCK) });
+  const r = await socialGitHub(env, "/actions/workflows/" + TIKTOK_CONNECT_WORKFLOW + "/dispatches", {
+    method: "POST", body: JSON.stringify({ ref: "main", inputs: { code } }), headers: { "Content-Type": "application/json" } });
+  if (r.status !== 204) {
+    try { await env.KV.delete(lockKey); } catch (e) {}
+    return json({ ok: false, error: "github_" + r.status, detail: r.body && r.body.message ? String(r.body.message).slice(0, 160) : "" }, cors, 502);
+  }
+  await adminRecentPush(env, { kind: "dispatch", workflow: TIKTOK_CONNECT_WORKFLOW, inputs: { code: "(masked)" } });
+  return json({ ok: true, workflow: TIKTOK_CONNECT_WORKFLOW, startsWithinSeconds: 30 }, cors);
+}
+
 /* ---- The repo's own records (brain plan, what was posted, growth), pushed by
  * .github/workflows/dashboard_sync.yml via tools/dashboard_feed.py into one KV key.
  * The worker only reads it back; its age is the honesty signal. ---- */
@@ -2696,6 +2721,7 @@ export default {
         if (url.pathname === "/admin/social/run" && request.method === "POST") return await handleAdminSocialRun(request, env, cors);
         if (url.pathname === "/admin/site" && request.method === "GET") return await handleAdminSite(request, env, cors);
         if (url.pathname === "/admin/feed" && request.method === "GET") return await handleAdminFeed(request, env, cors);
+        if (url.pathname === "/admin/tiktok/connect" && request.method === "POST") return await handleAdminTikTokConnect(request, env, cors);
         return json({ ok: false, error: "not found" }, cors, 404);
       }
       return json({ ok: false, error: "not found" }, cors, 404);

@@ -17,10 +17,14 @@ What TikTok's Content Posting API allows an *unaudited* app (the honest version)
     when `SOCIAL_TOKEN_KEY` is set (same box the Threads and Instagram lanes use).
 
 Usage
-    python3 tools/tiktok_draft.py auth --code <code> --redirect-uri <uri>   # once, prints the refresh token
+    python3 tools/tiktok_draft.py connect --code <code> --redirect-uri <uri>   # once, from CI: seals the refresh token
+    python3 tools/tiktok_draft.py auth --code <code> --redirect-uri <uri>      # fallback: prints the refresh token
     python3 tools/tiktok_draft.py probe
+    python3 tools/tiktok_draft.py status                                        # connected? (no network)
     python3 tools/tiktok_draft.py send --video out/short.mp4 --caption "…" [--dry-run]
-Secrets: TIKTOK_CLIENT_KEY, TIKTOK_CLIENT_SECRET, TIKTOK_REFRESH_TOKEN (bootstrap).
+Secrets: TIKTOK_CLIENT_KEY, TIKTOK_CLIENT_SECRET and either the sealed box
+`logs/tiktok_refresh_token.box` (written by `connect`, opened with SOCIAL_TOKEN_KEY) or the
+bootstrap secret TIKTOK_REFRESH_TOKEN.
 Exit 0 inbox/dormant/duplicate, 3 credentials, 4 file, 6 API.
 """
 from __future__ import annotations
@@ -48,6 +52,13 @@ SINGLE_MAX = 64 * 1024 * 1024
 PENDING_PER_DAY = 5
 TERMINAL = ("SEND_TO_USER_INBOX", "PUBLISH_COMPLETE", "FAILED")
 KEEP = 200
+BOX_PATH = ROOT / "logs" / "tiktok_refresh_token.box"
+# Everything the app can ask for, in one consent — the owner's rule: never re-mint for a
+# scope we could have asked for the first time. user.info.* + video.list feed the Monday
+# scorecard (followers, likes, views); video.upload is the inbox lane; video.publish is the
+# Direct Post door that opens the day TikTok audits the app, with no new consent.
+SCOPES = ("user.info.basic", "user.info.profile", "user.info.stats", "video.list", "video.upload", "video.publish")
+NEEDED = "video.upload"
 
 
 class ApiError(Exception):
@@ -249,12 +260,88 @@ def wait_for(token, publish_id, attempts=8, pause=5):
 
 
 # ───────────────────────────── main ─────────────────────────────
+def box_status(path=None):
+    """What the sealed box says about itself without opening it: {present, minted_at, expires_at}."""
+    path = Path(path or BOX_PATH)
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {"present": False, "minted_at": None, "expires_at": None}
+    return {"present": bool(payload.get("ciphertext")), "minted_at": payload.get("minted_at"), "expires_at": payload.get("expires_at")}
+
+
+def user_info(token):
+    """Display name + username of the account that authorised us (user.info.basic/.profile)."""
+    data = _json_call("GET", API + "/v2/user/info/?fields=open_id,display_name,username,follower_count", token)
+    return data.get("user") or {}
+
+
+def connect(code, redirect_uri):
+    """One-time, from CI: exchange the code, seal the refresh token into the vault, say who we are.
+
+    Never prints a token. Exit 0 connected, 2 vault key missing, 3 TikTok refused the code,
+    6 sealed but the who-am-I call failed (still connected)."""
+    code = (code or "").strip()
+    if "%" in code:
+        code = urllib.parse.unquote(code)   # pasted straight from an address bar
+    if not code:
+        print("::error title=No code::paste the code TikTok sent back to the landing page")
+        return 3
+    vault = _vault()
+    if not (vault and os.environ.get("SOCIAL_TOKEN_KEY")):
+        print("::error title=SOCIAL_TOKEN_KEY missing::the refresh token has nowhere safe to live; this secret already exists for the Meta lanes — forward it to this workflow")
+        return 2
+    try:
+        data = exchange("authorization_code", code=code, redirect_uri=redirect_uri)
+    except ApiError as exc:
+        print("::error title=TikTok refused the code::%s — codes are single-use and die in minutes; tap the Connect link again" % exc.blurb)
+        print("TIKTOK_CONNECT=refused")
+        return 3
+    scopes = [x for x in str(data.get("scope", "")).replace(" ", ",").split(",") if x]
+    refresh = (data.get("refresh_token") or "").strip()
+    if not refresh:
+        print("::error title=TikTok returned no refresh token::the app may be missing the Login Kit product")
+        print("TIKTOK_CONNECT=refused")
+        return 3
+    seconds = int(data.get("refresh_expires_in") or 0)
+    expires = (datetime.now(timezone.utc) + timedelta(seconds=seconds)).date().isoformat() if seconds else None
+    rc = vault.seal(BOX_NAME, refresh, expires_at=expires, out=sys.stderr)
+    if rc:
+        print("::error title=Refresh token not sealed::token_vault exit %s" % rc)
+        print("TIKTOK_CONNECT=failed")
+        return 2
+    print("TIKTOK_VAULT=sealed")
+    print("TIKTOK_OPEN_ID=%s" % (data.get("open_id") or "?"))
+    print("TIKTOK_SCOPES=%s" % ",".join(scopes))
+    missing = [x for x in SCOPES if x not in scopes]
+    if NEEDED not in scopes:
+        print("::error title=video.upload was not granted::the inbox lane cannot run; add Content Posting API to the app and connect again")
+    elif missing:
+        print("::warning title=Some scopes were not granted::%s — the lane runs; the scorecard will not see TikTok numbers until they are" % ", ".join(missing))
+    try:
+        who = user_info(data["access_token"])
+        name = who.get("display_name") or "?"
+        handle = ("@" + who["username"]) if who.get("username") else ""
+        print("connected as %s %s (followers: %s)" % (name, handle, who.get("follower_count", "?")))
+        print("TIKTOK_USER=%s" % (handle or name))
+    except ApiError as exc:
+        print("::warning title=Connected, but the who-am-I call failed::%s" % exc.blurb)
+        print("TIKTOK_CONNECT=ok")
+        return 0
+    print("TIKTOK_CONNECT=ok")
+    return 0 if NEEDED in scopes else 3
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description="TikTok inbox drafts for the day's Short")
     sub = ap.add_subparsers(dest="verb", required=True)
     au = sub.add_parser("auth", help="exchange the one-time code for tokens (prints the refresh token once)")
     au.add_argument("--code", required=True)
     au.add_argument("--redirect-uri", required=True)
+    co = sub.add_parser("connect", help="exchange the one-time code and seal the refresh token (CI; prints no token)")
+    co.add_argument("--code", required=True)
+    co.add_argument("--redirect-uri", required=True)
+    sub.add_parser("status", help="is the lane connected? (reads the box header, no network)")
     sub.add_parser("probe", help="refresh the token and stop")
     se = sub.add_parser("send")
     se.add_argument("--video", required=True)
@@ -273,9 +360,18 @@ def main(argv=None):
               % (data.get("open_id"), data.get("scope"), data.get("refresh_token")))
         return 0
 
+    if a.verb == "connect":
+        return connect(a.code, a.redirect_uri)
+    if a.verb == "status":
+        st = box_status()
+        keys = bool(os.environ.get("TIKTOK_CLIENT_KEY") and os.environ.get("TIKTOK_CLIENT_SECRET"))
+        print("TIKTOK_CONNECTED=%s" % ("yes" if st["present"] and keys else "no"))
+        print("TIKTOK_BOX=%s" % ("sealed %s" % (st["minted_at"] or "?")[:10] if st["present"] else "absent"))
+        return 0
+
     if not (os.environ.get("TIKTOK_CLIENT_KEY") and os.environ.get("TIKTOK_CLIENT_SECRET")) or not refresh_token_value()[0]:
-        print("::notice title=TikTok lane dormant::set TIKTOK_CLIENT_KEY, TIKTOK_CLIENT_SECRET and TIKTOK_REFRESH_TOKEN "
-              "(docs/TIKTOK_AUTOMATION.md) and every Short also lands in your TikTok inbox")
+        print("::notice title=TikTok lane dormant::add the TIKTOK_CLIENT_KEY and TIKTOK_CLIENT_SECRET secrets and tap Connect "
+              "on https://docoga.com.ng/tiktok-connect.html (docs/TIKTOK_AUTOMATION.md) — then every Short also lands in your TikTok inbox")
         print("TIKTOK_RESULT=dormant")
         return 0
 
@@ -283,8 +379,8 @@ def main(argv=None):
         token, open_id, _ = access_token()
     except ApiError as exc:
         if exc.cause == "credentials":
-            print("::error title=TikTok refresh token dead::%s — authorise once more (docs/TIKTOK_AUTOMATION.md) "
-                  "and paste the new refresh token into TIKTOK_REFRESH_TOKEN" % exc.blurb)
+            print("::error title=TikTok refresh token dead::%s — tap Connect once more on "
+                  "https://docoga.com.ng/tiktok-connect.html (docs/TIKTOK_AUTOMATION.md)" % exc.blurb)
         else:
             print("::error title=TikTok unreachable (%s)::%s" % (exc.cause, exc.blurb))
         print("TIKTOK_RESULT=failed")
