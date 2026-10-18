@@ -46,6 +46,9 @@ BAND = (460, 1480)
 SIDE = 72                      # left/right margin — grids never crop the sides
 TEXT_W = W - 2 * SIDE
 SLAB_PAD_X, SLAB_PAD_Y = 30, 10
+SLAB_GAP = 6                   # slabs sit as one stepped block, not loose stickers
+OFFSET = 16                    # the royal offset block behind the slabs — flat depth (BRAND §4)
+X_BADGE = True                 # red ✗ after the set-up: the brand's rejection mark ("₦50,000 ✗")
 HERO_MAX, HERO_MIN = 250, 118  # the verdict: as large as its words allow
 HERO_ONE_LINE = 150            # …and on one line whenever one line can be this big
 SETUP_MAX, SETUP_MIN = 150, 72 # the set-up: never more than 1/1.35 of the verdict
@@ -105,8 +108,20 @@ def fit_lines(text, weight, hi, lo, width, max_lines=2, one_line_floor=None):
     return lo, lines[:3]
 
 
+def tonal_glyph(img, letter):
+    """BRAND_STYLE §4 'giant tonal glyph bleeding off-canvas': the verdict's first letter, royal
+    watermark on the navy, when there is no photograph to give the frame depth."""
+    if not letter:
+        return img
+    d = ImageDraw.Draw(img)
+    f = ms.font("Black", 1500)
+    d.text((W - 760, 620), letter, font=f, fill=ms.NAVY2)
+    return img
+
+
 def background(reel):
-    """The matched photograph behind the cover (treated brighter than in the video), else navy."""
+    """The matched photograph behind the cover (treated brighter than in the video), else navy
+    with the tonal glyph."""
     sc = reel["scenes"][0]
     raw = sc.get("_bg_raw")
     if raw is not None:
@@ -118,7 +133,8 @@ def background(reel):
     bg = sc.get("_bg")
     if bg is not None and getattr(bg, "size", None) == (W, H):
         return bg.convert("RGB")
-    return ms.BASE.convert("RGB")
+    _, _, consequence, _ = hook_parts(reel)
+    return tonal_glyph(ms.BASE.convert("RGB").copy(), (consequence or "D")[:1])
 
 
 def layout(reel):
@@ -152,8 +168,8 @@ def stack_height(hero_size, hero_lines, setup_size, setup_lines, sub_size, sub_l
     if kicker:
         h += _line_h("SemiBold", 32) + 34
     if setup_lines:
-        h += len(setup_lines) * int(_line_h("Black", setup_size) * 0.92) + 40
-    h += len(hero_lines) * (int(_line_h("Black", hero_size) * 0.84) + 2 * SLAB_PAD_Y + 14) - 14
+        h += len(setup_lines) * int(_line_h("Black", setup_size) * 0.90) + 40
+    h += len(hero_lines) * (int(_line_h("Black", hero_size) * 0.84) + 2 * SLAB_PAD_Y + SLAB_GAP) - SLAB_GAP
     if sub_lines:
         h += 38 + _line_h("Medium", sub_size)
     return h
@@ -197,25 +213,43 @@ def render(reel):
 
     if kicker:
         f = ms.font("SemiBold", 32)
-        ms.ctracked(d, y, kicker, f, ms.FAINT, 6)
+        ms.ctracked(d, y, kicker, f, ms.MUTED, 8)
         y += _line_h("SemiBold", 32) + 34
     if setup_lines:
         f = ms.font("Black", setup_size)
-        lh = int(_line_h("Black", setup_size) * 0.92)
-        for line in setup_lines:
-            ms.ctext(d, y, line, f, ms.WHITE)
+        lh = int(_line_h("Black", setup_size) * 0.90)
+        for i, line in enumerate(setup_lines):
+            last = i == len(setup_lines) - 1
+            if last and X_BADGE:
+                # "PAY THE WRONG AGENT. ✗" — the rejection mark, inline, the line re-centred
+                # with it (BRAND_STYLE §5: red X badge = rejection; the one symbol on the piece).
+                r = int(setup_size * 0.30)
+                gap = int(setup_size * 0.22)
+                lw = ms.tw(line, "Black", setup_size)
+                x = CX - (lw + gap + 2 * r) // 2
+                d.text((x, y), line, font=f, fill=ms.WHITE)
+                asc_s, _ = f.getmetrics()
+                ms.badge(d, x + lw + gap + r, y + asc_s - int(setup_size * 0.34), r, ms.RED, "x")
+            else:
+                ms.ctext(d, y, line, f, ms.WHITE)
             y += lh
         y += 40
     f = ms.font("Black", hero_size)
     asc, desc = f.getmetrics()
     slab_h = int((asc + desc) * 0.84) + 2 * SLAB_PAD_Y
+    widths = [ms.tw(line, "Black", hero_size) for line in hero_lines]
+    block_h = len(hero_lines) * slab_h + (len(hero_lines) - 1) * SLAB_GAP
+    # Flat royal block offset behind the stack: depth without a shadow (the brand's offset pill).
+    bx0 = CX - max(widths) // 2 - SLAB_PAD_X
+    bx1 = CX + max(widths) // 2 + SLAB_PAD_X
+    d.rectangle([bx0 + OFFSET, y + OFFSET, bx1 + OFFSET, y + block_h + OFFSET], fill=ms.PANEL)
     for i, line in enumerate(hero_lines):
-        lw = ms.tw(line, "Black", hero_size)
+        lw = widths[i]
         x0, x1 = CX - lw // 2 - SLAB_PAD_X, CX + lw // 2 + SLAB_PAD_X
         d.rectangle([x0, y, x1, y + slab_h], fill=ms.YELLOW)
         # Cap height sits on the slab's optical centre: Inter's ascent carries headroom.
         d.text((CX - lw // 2, y + SLAB_PAD_Y - int(asc * 0.16)), line, font=f, fill=ms.NAVY)
-        y += slab_h + (14 if i < len(hero_lines) - 1 else 0)
+        y += slab_h + (SLAB_GAP if i < len(hero_lines) - 1 else 0)
     if sub_lines:
         y += 38
         ms.ctext(d, y, sub_lines[0], ms.font("Medium", sub_size), ms.MUTED)

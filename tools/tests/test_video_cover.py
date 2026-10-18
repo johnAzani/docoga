@@ -338,10 +338,43 @@ class DesignedCoverTests(unittest.TestCase):
         # Navy on yellow (the verdict) and white on navy (the set-up): both far above 7:1.
         self.assertGreater(ms.contrast_ratio(ms.YELLOW), 7.0)
         self.assertGreater(ms.contrast_ratio(ms.WHITE), 7.0)
-        # No red, no green, no off-palette saturated colour anywhere on the piece.
-        red = (np.abs(a - np.array(ms.RED)).sum(axis=2) < 40).sum()
+        # Red appears once, as the small rejection badge after the set-up (BRAND §5) — never as
+        # text or a block; no green, no off-palette saturated colour anywhere on the piece.
+        red = (np.abs(a - np.array(ms.RED)).sum(axis=2) < 40)
         green = (np.abs(a - np.array(ms.GREEN)).sum(axis=2) < 40).sum()
-        self.assertEqual(int(red) + int(green), 0)
+        self.assertEqual(int(green), 0)
+        self.assertGreater(int(red.sum()), 500, "the ✗ badge is there")
+        self.assertLess(int(red.sum()), int(0.004 * ms.W * ms.H), "…and it is a mark, not a colour field")
+        rys = np.nonzero(red.any(axis=1))[0]
+        self.assertGreaterEqual(int(rys.min()), 420)
+        self.assertLessEqual(int(rys.max()), 1500)
+
+    @unittest.skipUnless(FONTS_OK, "Inter is not installed — run tools/install_motionstudio_deps.sh")
+    def test_the_squint_test_at_grid_tile_size(self):
+        """Shrunk to a TikTok grid tile (the 1:1 crop at ~200 px), the verdict still dominates:
+        the yellow block covers a real share of the tile and its type is tall enough to read."""
+        import numpy as np
+        import short_cover
+        reel = self._reel()
+        img = short_cover.render(reel)
+        tile = img.crop((0, 420, ms.W, 1500)).resize((200, 200), Image.LANCZOS)
+        a = np.asarray(tile).astype(int)
+        yellow = (np.abs(a - np.array(ms.YELLOW)).sum(axis=2) < 60).mean()
+        self.assertGreater(float(yellow), 0.08, "the slabs are at least 8 %% of the grid tile (%.3f)" % float(yellow))
+        hero_px = short_cover.layout(reel)["hero"][0] * 200 / 1080
+        self.assertGreaterEqual(hero_px, 20, "verdict cap height ≥ 20 px on a 200 px tile")
+
+    @unittest.skipUnless(FONTS_OK, "Inter is not installed — run tools/install_motionstudio_deps.sh")
+    def test_depth_comes_from_the_flat_royal_offset_block_not_a_shadow(self):
+        import numpy as np
+        import short_cover
+        img = short_cover.render(self._reel())
+        a = np.asarray(img).astype(int)
+        royal = (np.abs(a - np.array(ms.PANEL)).sum(axis=2) < 30)
+        self.assertGreater(int(royal.sum()), 5000, "the offset block is there")
+        src = (TOOLS / "short_cover.py").read_text(encoding="utf-8")
+        for banned in ("GaussianBlur", "ImageFilter", "gradient", "rotate("):
+            self.assertNotIn(banned, src, "no soft shadows, gradients or tilt (BRAND_STYLE §1/§4)")
 
     @unittest.skipUnless(FONTS_OK, "Inter is not installed — run tools/install_motionstudio_deps.sh")
     def test_frame_zero_honours_the_lane_cover(self):
