@@ -406,7 +406,7 @@ def reels_readiness_instagram_login(token, user_id=""):
     that link ("temporarily restricted … to protect your profile").
     """
     report = {"ready": False, "linked": True, "ig_user_id": "", "ig_username": "",
-              "scopes": None, "missing": [], "why": [], "path": "instagram-login"}
+              "scopes": None, "missing": [], "why": [], "path": "instagram-login", "hosted": False}
     try:
         who = whoami(token, user_id)
     except ApiError as exc:
@@ -422,6 +422,12 @@ def reels_readiness_instagram_login(token, user_id=""):
         report["why"].append("@%s is a %s account; the publishing API needs Business or Creator"
                              % (report["ig_username"], account_type(who) or "personal"))
         return report
+    # The third door is open the moment the token reads a professional account: a Reel by
+    # `video_url` on graph.instagram.com needs no Page link and no resumable session — Meta
+    # fetches the file from a short-lived URL (tools/media_host.py). It is the documented
+    # standard path ("we cURL the video using the passed-in URL"); the resumable probe below
+    # only decides whether the lane may skip the hosting step.
+    report["hosted"] = bool(report["ig_user_id"])
     try:
         answer = call("POST", "/%s/media" % report["ig_user_id"], token,
                       {"media_type": "REELS", "upload_type": "resumable",
@@ -464,6 +470,11 @@ def print_readiness(report):
     elif report["ready"]:
         print("✅ Reels-ready: this Page token can publish Reels on @%s by resumable upload"
               % (report["ig_username"] or report["ig_user_id"]))
+    elif report.get("hosted"):
+        print("✅ Reels-ready by URL: the Instagram-Login token reads @%s as a professional account, "
+              "so a Reel goes out as `media_type=REELS` + `video_url` (the third door — "
+              "tools/media_host.py hosts the file for Meta to fetch; no Page link, no resumable session)"
+              % (report["ig_username"] or report["ig_user_id"]))
     else:
         fixes = []
         if any(m in ("page-link", "page-link-or-instagram_basic") for m in report["missing"]):
@@ -481,6 +492,7 @@ def print_readiness(report):
     machine("probed", None, IG_REELS_READY="yes" if report["ready"] else "no",
             IG_REELS_MISSING=",".join(report["missing"]),
             IG_REELS_PATH=report.get("path", "facebook-login"),
+            IG_REELS_HOSTED="yes" if report.get("hosted") else "no",
             IG_USER_ID=report["ig_user_id"], IG_USERNAME=report["ig_username"])
 
 
@@ -617,14 +629,16 @@ def wait_until_live(url, deadline_seconds=600, delay=15, sleeper=time.sleep, ope
     against a 404 and Meta's answer is a generic "Unsupported URL request", which reads
     like a permissions problem and is actually a race we caused.
     """
-    opener = opener or (lambda target: http("GET", target, None, timeout=20)[0])
+    # A ranged read: a 12 MB Reel on the worker (the third door) should not be downloaded
+    # whole just to learn it is there — 64 KB and a 200/206 say the same thing.
+    opener = opener or (lambda target: raw_head(target, timeout=20)[0])
     waited = 0
     while True:
         try:
             status = opener(url)
         except ApiError as exc:
             status = "error %s" % exc.blurb[:80]
-        if status == 200:
+        if status in (200, 206):
             if waited:
                 print("media became reachable after %ds" % waited)
             return True, waited
@@ -1001,6 +1015,9 @@ def main(argv=None):
                         help="facebook-login path: is this Page token ready to publish Reels on "
                              "the linked Instagram account? Reads only; prints IG_REELS_READY=")
     parser.add_argument("--dry-run", action="store_true", help="validate, guard, send nothing")
+    parser.add_argument("--story-video-url",
+                        help="public MP4 URL for a video Story (media_type=STORIES + video_url; the "
+                             "hosted twin of --video-file --video-story)")
     parser.add_argument("--wait-url", action="store_true",
                         help="poll the media URL until it is live (the site-deploy race)")
     parser.add_argument("--wait-url-deadline", type=int, default=600)
@@ -1121,8 +1138,13 @@ def main(argv=None):
             media["alt_text"] = args.alt_text[:1000]
     elif urls:
         kind, media = "carousel", {"media_type": "CAROUSEL", "caption": args.caption}
+    elif args.story_video_url:
+        # The Reel in the Story tray, by URL — same bytes Meta just fetched for the Reel.
+        kind, media = "story", {"media_type": "STORIES", "video_url": args.story_video_url}
     elif args.video_url:
-        # A hosted MP4 still works on either path; the lane itself uses --video-file.
+        # A hosted MP4 works on either path. The Facebook lane uses it on the Instagram-Login
+        # token when the Page link is missing (the third door): tools/media_host.py puts the
+        # render where Meta can fetch it, this call creates the container, Meta pulls the file.
         kind = "reel"
         media = {"media_type": "REELS", "video_url": args.video_url, "caption": args.caption,
                  "share_to_feed": "true"}
@@ -1130,6 +1152,8 @@ def main(argv=None):
             media["trial_params"] = json.dumps({"graduation_strategy": "SS_PERFORMANCE"})
         if args.cover_url:
             media["cover_url"] = args.cover_url
+        else:
+            media["thumb_offset"] = str(max(0, int(args.thumb_offset_ms)))  # the navy title card
     elif args.photo:
         print("::error title=photos need a public URL::--photo points at a file; Instagram's "
               "publishing API has no multipart upload. Publish the render and pass --image-url.")
@@ -1148,7 +1172,8 @@ def main(argv=None):
     # The media gate, before any container exists: cheap, and the only place a bad JPEG can
     # be fixed with a sentence instead of an opaque API error.
     check_targets = ([] if video_file else [args.image_url] if kind == "photo"
-                     else [args.story_url] if kind == "story" else (urls or [args.video_url]))
+                     else [args.story_video_url or args.story_url] if kind == "story"
+                     else (urls or [args.video_url]))
     for url in [u for u in check_targets if u]:
         if args.wait_url:
             live, waited = wait_until_live(url, args.wait_url_deadline)

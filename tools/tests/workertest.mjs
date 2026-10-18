@@ -636,5 +636,49 @@ ok('cron: retention ended → team/brand/seats deleted, INVOICES KEPT', !(await 
 
 globalThis.fetch = realFetch;
 
+/* ---- short-lived public media: GET|HEAD /m/<name>.<ext> (the Instagram Reels third door) ---- */
+console.log('— /m/ media host —');
+{
+  const name = 'Qx9rT2uV7wY0zA3bC5dE8fG1hJ4kL6mN';
+  const bytes = new Uint8Array(70000); for (let i = 0; i < bytes.length; i++) bytes[i] = i % 251;
+  const partSize = 30000;
+  const menv = makeEnv({});
+  await menv.KV.put('media:' + name, JSON.stringify({ size: bytes.length, parts: 3, part_size: partSize, type: 'video/mp4' }));
+  for (let i = 0; i < 3; i++) await menv.KV.put('media:' + name + ':' + i, bytes.slice(i * partSize, Math.min(bytes.length, (i + 1) * partSize)).buffer);
+  const raw = async (path, init = {}) => mod.fetch(new Request('https://w' + path, init), menv, { waitUntil: () => {} });
+  let mr = await raw('/m/' + name + '.mp4');
+  let got = new Uint8Array(await mr.arrayBuffer());
+  ok('full GET: 200, video/mp4, exact Content-Length, bytes re-assembled across parts',
+     mr.status === 200 && mr.headers.get('content-type') === 'video/mp4' && mr.headers.get('content-length') === String(bytes.length) &&
+     mr.headers.get('accept-ranges') === 'bytes' && got.length === bytes.length && got.every((b, i) => b === bytes[i]),
+     mr.status + ' ' + got.length);
+  mr = await raw('/m/' + name + '.mp4', { method: 'HEAD' });
+  ok('HEAD: 200 with the real length and no body', mr.status === 200 && mr.headers.get('content-length') === String(bytes.length) && (await mr.text()) === '');
+  mr = await raw('/m/' + name + '.mp4', { headers: { Range: 'bytes=0-65535' } });
+  got = new Uint8Array(await mr.arrayBuffer());
+  ok('Range 0-65535 (what ig_publish samples): 206, Content-Range, 65536 bytes spanning three parts',
+     mr.status === 206 && mr.headers.get('content-range') === 'bytes 0-65535/' + bytes.length && got.length === 65536 && got.every((b, i) => b === bytes[i]),
+     mr.status + ' ' + mr.headers.get('content-range') + ' ' + got.length);
+  mr = await raw('/m/' + name + '.mp4', { headers: { Range: 'bytes=29999-30000' } });
+  got = new Uint8Array(await mr.arrayBuffer());
+  ok('Range across a part boundary: the two bytes either side', mr.status === 206 && got.length === 2 && got[0] === bytes[29999] && got[1] === bytes[30000]);
+  mr = await raw('/m/' + name + '.mp4', { headers: { Range: 'bytes=-10' } });
+  got = new Uint8Array(await mr.arrayBuffer());
+  ok('suffix Range: the last 10 bytes', mr.status === 206 && got.length === 10 && got[9] === bytes[bytes.length - 1]);
+  mr = await raw('/m/' + name + '.mp4', { headers: { Range: 'bytes=99999-' } });
+  ok('Range past the end: 416 with bytes */size', mr.status === 416 && mr.headers.get('content-range') === 'bytes */' + bytes.length);
+  mr = await raw('/m/' + name + '.mp4', { method: 'POST' });
+  ok('POST /m/: 405', mr.status === 405);
+  mr = await raw('/m/' + 'nope-nope-nope-nope-nope' + '.mp4');
+  ok('unknown name: 404, no-store', mr.status === 404 && mr.headers.get('cache-control') === 'no-store');
+  mr = await raw('/m/short.mp4');
+  ok('a name under 16 chars never reaches KV (404 from the router)', mr.status === 404);
+  await menv.KV.delete('media:' + name);
+  mr = await raw('/m/' + name + '.mp4');
+  ok('after the manifest is deleted the URL stops answering, parts or not', mr.status === 404);
+  const listed = await menv.KV.list({ prefix: 'media:' });
+  ok('nothing in the worker lists media keys to the public (no /m/ index route)', (await raw('/m/')).status === 404 && listed.keys.length === 3);
+}
+
 console.log(fails === 0 ? '\n🏆 WORKER LOGIC UNIT-VERIFIED: expiry / fence / hostile records / top-up / redirect verify / signed webhook / underpayment gate / email hand-off / business waitlist / team core (magic-link auth, brand, seats, revoke)' : '\n💥 ' + fails + ' FAILED');
 process.exit(fails ? 1 : 0);
