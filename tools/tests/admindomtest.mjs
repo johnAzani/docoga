@@ -268,7 +268,8 @@ console.log('— Social tab: the day’s plan, in the owner’s clock —');
         { date: '2026-10-17', approved: true, theme: 'rent-receipt', headline: 'Pay rent without a receipt and you paid nothing — in court.', lines: ['Section 5, Lagos Tenancy Law 2011'], threads: 'Your landlord refuses a receipt. Next move?', short: 'No receipt, no proof.', reader: 'tenants paying cash', why: 'payday week', quiz: false },
         { date: '2026-10-18', approved: false }, { date: '2026-10-19', approved: false }],
       posted: [{ at: '2026-10-17T17:02:00Z', platform: 'youtube', kind: 'short', title: 'Sign without asking #Shorts', url: 'https://www.youtube.com/watch?v=abc', privacy: 'public' },
-               { at: '2026-10-16T06:37:20Z', platform: 'instagram', kind: 'post', title: 'Don’t wait until there’s a problem', url: 'https://www.instagram.com/p/x/', privacy: 'public' }],
+               { at: '2026-10-16T06:37:20Z', platform: 'instagram', kind: 'post', title: 'Don’t wait until there’s a problem', url: 'https://www.instagram.com/p/x/', privacy: 'public' },
+               { at: '2026-10-15T17:05:00Z', platform: 'tiktok', kind: 'inbox draft', title: 'Pay the wrong agent #DocOga', url: '', privacy: '', state: 'SEND_TO_USER_INBOX' }],
       growth: { taken_at: '2026-10-12T06:40:00+01:00', rows: [
         { key: 'facebook.followers', label: 'Facebook', unit: 'followers', value: 410, previous: 400, target: 500, due: '2027-01-31', unlocks: 'Facebook Stars' },
         { key: 'instagram.followers', label: 'Instagram', unit: 'followers', value: null, previous: null, target: 1000, due: '2027-04-30', unlocks: '' },
@@ -276,6 +277,7 @@ console.log('— Social tab: the day’s plan, in the owner’s clock —');
       youtube: { snapshot: { taken_at: '2026-10-14T18:07:26+01:00', subscribers: 49, views: 142, videos: 13, top: [{ id: 'b', title: 'Service charge explained', views: 40, kind: 'longform' }] },
                  scheduled: [{ title: 'Deep-Dive: notice to quit', url: 'https://www.youtube.com/watch?v=dd', publish_at: '2026-10-19T18:00:00Z', privacy: 'private' }] },
       deepdive_next: 'dd5 Service charge',
+      tiktok: { connected: true, since: '2026-10-18T09:00:00+00:00', expires: '2027-10-18' },
     }));
     click([...doc.querySelectorAll('.tab')].find(t => t.getAttribute('data-view') === 'content'));
     await until(() => /receipt/.test(txt('plan')), 80);
@@ -295,6 +297,8 @@ console.log('— Social tab: the day’s plan, in the owner’s clock —');
     click([...doc.querySelectorAll('.tab')].find(t => t.getAttribute('data-view') === 'social'));
     await until(() => /approved pack for today/.test(txt('social-health')), 60);
     check('the Social tab’s machinery row shows the brain approved today’s pack', /approved pack for today/.test(txt('social-health')), txt('social-health'));
+    check('…and that TikTok is connected, with the date', /TikTok/.test(txt('social-health')) && /connected · since Sun, 18 Oct/.test(txt('social-health')), txt('social-health'));
+    check('a TikTok inbox draft is listed as waiting in the app, not as a link', /TikTok/.test(posted) && /waiting in your TikTok inbox/.test(posted) && !doc.querySelector('#posted a[href=""]'), posted.slice(-200));
     check('no page error was thrown while painting the new tabs', pageErrors.length === 0, pageErrors.join(' | '));
   } finally { globalThis.fetch = realFetch; Date.now = realNow; }
 }

@@ -19,37 +19,52 @@ months-long audit.
 The one tap we could not remove is the one TikTok reserves for a human. The run summary
 prints the caption to paste.
 
-## Setting it up, from the phone (once)
-1. developers.tiktok.com → Log in with your TikTok → **Manage apps** → *Connect an app* →
-   name `DocOga`, category *Productivity*, description "Posts DocOga's legal-explainer
-   Shorts to the DocOga TikTok", icon `brand/favicon-512.png`, Terms
-   `https://docoga.com.ng/terms.html`, Privacy `https://docoga.com.ng/privacy.html`,
-   platform *Web* → URL `https://docoga.com.ng`.
-2. **Add products** → *Login Kit* and *Content Posting API*. In Login Kit → Redirect URI:
-   `https://docoga.com.ng/` (verify the domain when asked: TikTok gives a small file to
-   upload — put it in `site/` and push; Pages deploys it).
-3. Scopes: tick `user.info.basic` and **`video.upload`** (not `video.publish`).
-4. Leave the app in **Sandbox** and add **your own TikTok account as a target user**
-   (Sandbox → *Target users*). Sandbox needs no review for the target users; that is enough.
-5. Copy **Client key** and **Client secret** → GitHub secrets `TIKTOK_CLIENT_KEY`,
-   `TIKTOK_CLIENT_SECRET`.
-6. Authorise once: open in the phone browser
-   `https://www.tiktok.com/v2/auth/authorize/?client_key=<KEY>&scope=user.info.basic,video.upload&response_type=code&redirect_uri=https://docoga.com.ng/&state=docoga`
-   → Allow → you land on docoga.com.ng with `?code=…` in the address bar. Copy the `code`
-   (everything between `code=` and `&`, URL-decoded).
-7. Exchange it (from any machine with Python, or a Codespace):
-   `TIKTOK_CLIENT_KEY=… TIKTOK_CLIENT_SECRET=… python3 tools/tiktok_draft.py auth --code <code> --redirect-uri https://docoga.com.ng/`
-   → it prints the **refresh token** → GitHub secret `TIKTOK_REFRESH_TOKEN`.
-8. Done. The next Short (Tue/Fri) also appears in your TikTok inbox.
+## Setting it up, from the phone (once) — 18 Oct 2026
 
-Refresh tokens live 365 days; the refresh call may rotate them, and the rotated value is
-sealed into `logs/tiktok_refresh_token.box` with `tools/token_vault.py` (needs
-`SOCIAL_TOKEN_KEY`, already set). Without the vault key the lane warns and keeps using the
-bootstrap secret.
+Two halves: TikTok's developer portal (where the app lives) and one tap on
+`https://docoga.com.ng/tiktok-connect.html`. No laptop, no terminal, no token pasted anywhere
+by a human.
+
+**A. The app (developers.tiktok.com, phone browser, desktop-site mode helps)**
+1. Log in with your TikTok → **Manage apps** → **Connect an app** → name `DocOga`, category
+   *Productivity*, description "Posts DocOga's legal-explainer Shorts to the DocOga TikTok",
+   icon `brand/favicon-512.png`, Terms `https://docoga.com.ng/terms.html`, Privacy
+   `https://docoga.com.ng/privacy.html`, platform **Web** → URL `https://docoga.com.ng`.
+2. **Add products**: **Login Kit**, **Content Posting API**, **Display API** (the last one is
+   what lets the Monday scorecard read your follower/like/view counts).
+3. Login Kit → **Redirect URI (Web)**: `https://docoga.com.ng/tiktok-connect.html` — exactly.
+4. Scopes: tick everything the three products offer — `user.info.basic`, `user.info.profile`,
+   `user.info.stats`, `video.list`, `video.upload`, `video.publish`. One consent, never again.
+5. Do **not** submit for review. Open **Sandbox** → *Create sandbox* (clone the app's config)
+   → **Target users** → add your own TikTok username. Sandbox needs no review for target
+   users and no URL verification; the inbox upload works there. (If TikTok still asks you to
+   verify `docoga.com.ng`, pick **Domain → DNS record** and add the TXT it shows in
+   Cloudflare → DNS; the file route is unnecessary.)
+6. Copy the **sandbox's** Client key and Client secret (each sandbox has its own pair) →
+   GitHub → Settings → Secrets → Actions: `TIKTOK_CLIENT_KEY`, `TIKTOK_CLIENT_SECRET`.
+
+**B. The tap**
+7. Sign in to `https://docoga.com.ng/admin` on the phone (the connect page uses that session).
+8. Open `https://docoga.com.ng/tiktok-connect.html`, paste the Client key (public; it is
+   remembered on the phone), tap **Connect TikTok** → TikTok's consent screen → **Authorize**.
+9. You land back on the page. It sends the code to the worker (`POST /admin/tiktok/connect`),
+   which dispatches `.github/workflows/tiktok_connect.yml`; that job exchanges the code,
+   seals the refresh token into `logs/tiktok_refresh_token.box` (vault key `SOCIAL_TOKEN_KEY`,
+   same as Instagram/Threads) and commits the box. No token is printed anywhere; the code is
+   masked and single-use. The dashboard → Social → machinery row reads **TikTok: connected**
+   within two minutes (via the dashboard feed).
+10. Not signed in, or the session expired? The page shows the code with a **Copy** button and
+    a link to *Actions → TikTok — connect → Run workflow*: paste it there. Codes die in
+    minutes; just tap Connect again if one does.
+
+From then on the lane runs on the sealed box; the refresh call rotates it and the lane reseals.
+`TIKTOK_REFRESH_TOKEN` as a repository secret is only a fallback and is not needed.
 
 ## Guard rails
-- Dormant (notice, exit 0) until all three secrets exist; never fails the YouTube publish it
-  rides on (`continue-on-error`).
+- Dormant (notice, exit 0) until the two app secrets and the sealed box (or the fallback secret)
+  exist; never fails the YouTube publish it rides on (`continue-on-error`).
+- `python3 tools/tiktok_draft.py status` → `TIKTOK_CONNECTED=yes|no` from the box header, no
+  network; the dashboard feed carries the same fact (`feed.tiktok`).
 - Duplicate guard by file SHA in `logs/tiktok_drafts.json`.
 - Stops at five pending inbox uploads in 24 h (TikTok's wall) with a warning to post or
   discard them in the app.
@@ -58,7 +73,9 @@ bootstrap secret.
 
 ## Machine lines
 `TIKTOK_RESULT=inbox|duplicate|skipped|dormant|dry-run|probed|failed`, `TIKTOK_CAUSE=…`,
-`TIKTOK_PUBLISH_ID=…`, `TIKTOK_STATUS=…`, `TIKTOK_VAULT=sealed`.
+`TIKTOK_PUBLISH_ID=…`, `TIKTOK_STATUS=…`, `TIKTOK_VAULT=sealed`; from `connect`:
+`TIKTOK_CONNECT=ok|refused|failed`, `TIKTOK_OPEN_ID=…`, `TIKTOK_SCOPES=…`, `TIKTOK_USER=@…`;
+from `status`: `TIKTOK_CONNECTED=yes|no`, `TIKTOK_BOX=sealed <date>|absent`.
 
 ## Later, if wanted
 A Direct Post audit (so the tap disappears) needs a demo video of the app's UI showing the

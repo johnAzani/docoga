@@ -22,6 +22,7 @@ on:
       - "Deep-Dive — produce and publish one long-form episode"
       - "Brain scorecard"
       - "YouTube stats — weekly snapshot"
+      - "TikTok — connect (one time)"
     types: [completed]
   workflow_dispatch:
   push:

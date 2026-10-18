@@ -501,6 +501,23 @@ console.log('— social board: today\'s plan vs what GitHub Actions did (17 Oct 
     const recent = JSON.parse(await env.KV.get('adm:recent') || '[]');
     ok('the dispatch is written to the activity feed', recent.some(x => x.kind === 'dispatch' && x.workflow === 'threads_autopost.yml'), JSON.stringify(recent[0]));
 
+    // TikTok connect door: the landing page hands over TikTok's single-use code.
+    const code = 'q7Zr0Xk*1!Abcdefghijklmnopqrstuvwxyz0123456789-_~.%2A';
+    const b0 = calls.length;
+    const tkOff = await hit(bare, '/admin/tiktok/connect', post({ code }, tokB));
+    ok('tiktok connect without GH_DISPATCH_TOKEN is 503 not_connected', tkOff.status === 503 && tkOff.j.error === 'not_connected', tkOff.text.slice(0, 120));
+    const tkAnon = await hit(env, '/admin/tiktok/connect', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ code }) });
+    ok('tiktok connect needs a session', tkAnon.status === 401, tkAnon.status + '');
+    const tkBad = await hit(env, '/admin/tiktok/connect', post({ code: 'short' }, tok));
+    const tkBad2 = await hit(env, '/admin/tiktok/connect', post({ code: 'x'.repeat(20) + ' ;rm -rf /' }, tok));
+    ok('a code that is too short or carries shell characters is 400 bad_code', tkBad.status === 400 && tkBad2.status === 400 && tkBad.j.error === 'bad_code', tkBad.text + tkBad2.text);
+    const tkGo = await hit(env, '/admin/tiktok/connect', post({ code }, tok));
+    const tkDispatch = calls.slice(b0).find(x => x.startsWith('POST ') && x.includes('/actions/workflows/tiktok_connect.yml/dispatches')) || '';
+    ok('a real code dispatches tiktok_connect.yml on main with the code as its only input', tkGo.status === 200 && tkGo.j.ok && tkGo.j.workflow === 'tiktok_connect.yml' && !!tkDispatch, tkGo.text.slice(0, 160) + ' ' + tkDispatch);
+    ok('the answer and the activity feed never carry the code', !tkGo.text.includes('q7Zr0Xk') && !(await env.KV.get('adm:recent')).includes('q7Zr0Xk') && JSON.parse(await env.KV.get('adm:recent'))[0].workflow === 'tiktok_connect.yml', (await env.KV.get('adm:recent')).slice(0, 160));
+    const tkTwice = await hit(env, '/admin/tiktok/connect', post({ code }, tok));
+    ok('a second send inside 45 s is 429 already_asked', tkTwice.status === 429 && tkTwice.j.error === 'already_asked', tkTwice.text.slice(0, 120));
+
     // The daily cron digests yesterday once.
     let job; await mod.scheduled({ cron: '0 7 * * *' }, env, { waitUntil: (p) => { job = p; } }); await job;
     const yd = JSON.parse(await env.KV.get('adm:social:2026-10-16') || 'null');

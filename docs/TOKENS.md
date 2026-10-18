@@ -107,7 +107,7 @@ Products: **Sign In with LinkedIn using OpenID Connect** + **Share on LinkedIn**
 
 ## 6 · TikTok → secret `TIKTOK_REFRESH_TOKEN`
 
-Scopes on the app: `user.info.basic user.info.profile user.info.stats video.list video.upload video.publish`. Mint with `python3 tools/tiktok_draft.py auth --code … --redirect-uri https://docoga.com.ng/`.
+Scopes on the app: `user.info.basic user.info.profile user.info.stats video.list video.upload video.publish` (all three products: Login Kit, Content Posting API, Display API). Mint from the phone: sign in to the dashboard, open `https://docoga.com.ng/tiktok-connect.html`, tap **Connect TikTok** — the connect workflow seals the refresh token into `logs/tiktok_refresh_token.box`; no secret to paste (`docs/TIKTOK_AUTOMATION.md`). Fallback: `python3 tools/tiktok_draft.py auth --code … --redirect-uri https://docoga.com.ng/tiktok-connect.html`.
 
 ## 7 · Telegram — the bot's admin rights in @docogadaily (no token change)
 
