@@ -453,7 +453,9 @@ def plan(draw, headline, body, big, frame):
     # Slab headline: the largest size at which ≤ 3 lines fit.
     if headline:
         lo, hi = (72, 150) if tall else (64, 136)
-        if big:
+        if big and len(big) <= 2:
+            lo, hi = (60, 112) if tall else (56, 100)   # a counter ("3", "B"): the line is the point
+        elif big:
             lo, hi = (52, 84) if tall else (48, 76)   # under a stat the headline is the second voice
         for size in range(hi, lo - 1, -4):
             font, _ = load_font("Black", size)
@@ -546,7 +548,7 @@ def _height(p, tall):
 
 
 def render(text, out_path, kicker="", quality=88, max_kb=900, footer=FOOTER, size=None, safe=(0, 0),
-           background=None, layout="poster", big=""):
+           background=None, layout="poster", big="", progress=None):
     """Draw `text` on a brand card (1080×1350 by default) and write a JPEG at `out_path`.
 
     `size` = (w, h) for another frame; `safe` = (top, bottom) pixels the platform covers with
@@ -681,6 +683,20 @@ def render(text, out_path, kicker="", quality=88, max_kb=900, footer=FOOTER, siz
         label = ("FREE \u00b7 %s" % footer) if footer == FOOTER else footer
         _chip(draw, W / 2, H - edge_bottom - (60 if four_five else 56) - chip_h / 2, label, ffont)
 
+    if progress and progress[1] > 1:
+        # Carousel furniture (18 Oct 2026): a segmented progress bar under the safe box (this
+        # slide white, the rest royal) and, until the last slide, a swipe cue at the right edge —
+        # the two devices the 2026 carousel studies credit with higher swipe-through.
+        i, n = progress
+        bar_y = H - edge_bottom - 22
+        seg_w = (W - 2 * MARGIN - (n - 1) * 10) / n
+        for k in range(n):
+            x0 = MARGIN + k * (seg_w + 10)
+            draw.rounded_rectangle([x0, bar_y, x0 + seg_w, bar_y + 6], radius=3, fill=WHITE if k + 1 == i else PANEL)
+        if i < n:
+            cue_font, _ = load_font("Black", 44)
+            draw.text((W - MARGIN - draw.textlength("\u2192", font=cue_font), bar_y - 72), "\u2192", font=cue_font, fill=MUTED)
+
     try:
         import blend_image
         image = blend_image.photo_grain(image, sigma=2.2, seed=11)
@@ -757,6 +773,45 @@ def public_url(path, base_url):
     return "%s/%s" % (base_url.rstrip("/"), serving.lstrip("/"))
 
 
+def rotation_slides(text, max_points=7):
+    """The carousel for a rotation day (18 Oct 2026, evening): the copy's own structure, one slide
+    per line. Carousels are Instagram's highest-engagement, highest-save format in 2026 (0.50 %
+    vs 0.33 % for a single image; saves 3.2 % vs 0.6 %), and the brain's days already had one —
+    the rotation's days, most days while the brain is idle, posted a single card.
+
+    Returns [(label, text, big)], or [] when the copy has fewer than three body lines (the single
+    card is the right post then). Slide 1 is the headline; each ✅ / numbered / bullet line is a
+    slide with its number as the giant figure on the slab; a ❌ line is a "Never." slide with the
+    red mark; a closing question or sentence is the last slide, else the standing close."""
+    headline, body = structure(text, footer=True)
+    marked = [i for i, (k, _, _) in enumerate(body) if k in ("num", "check", "bullet", "option", "x")]
+    points = [body[i] for i in marked]
+    lead = [w for k, _, w in body[:marked[0]] if k == "plain"] if marked else []
+    plain = [w for k, _, w in body[marked[-1] + 1:] if k == "plain"] if marked else [w for k, _, w in body if k == "plain"]
+    if len(points) < 3:
+        if len(plain) >= 3 and headline:
+            points = [("plain", "", w) for w in plain[:max_points]]
+            plain = []
+        else:
+            return []
+    points = points[:max_points]
+    slides = [("swipe \u2192", headline + ("\n\n" + lead[0] if lead else ""), "")]
+    n = sum(1 for k, _, _ in points if k != "x")
+    i = 0
+    for kind, label, words in points:
+        if kind == "x":
+            slides.append(("never", "Never.\n\n\u274c " + words, ""))
+            continue
+        i += 1
+        big = label if kind == "option" and label else str(i)
+        slides.append(("%d of %d" % (i, n), words, big))
+    close = next((w for w in plain if w.rstrip().endswith("?")), None) or (plain[-1] if plain else "")
+    if not close or len(close) < 12:
+        close = "Save this. Send it to one tenant or landlord who needs it today."
+    slides.append(("free \u00b7 docoga.com.ng", close, ""))
+    return slides
+
+
 def render_slides(args):
     """`--slides`: the carousel for the brain pack of `--brief`, one JPEG per slide.
 
@@ -766,25 +821,40 @@ def render_slides(args):
     """
     import brain_drafts
     pack = brain_drafts.draft_for(args.brief) if args.brief else None
-    slides = brain_drafts.carousel_slides(pack) if pack else []
+    slides = [(label, text, "") for label, text in brain_drafts.carousel_slides(pack)] if pack else []
+    source = "brain"
+    if not slides and args.from_json:
+        # No pack: the rotation's copy has the structure (headline + marked lines) — its own carousel.
+        blob = json.loads(Path(args.from_json).read_text(encoding="utf-8"))
+        copy = blob.get("card_text") or blob.get("text") or ""
+        slides = rotation_slides(copy) if str(blob.get("post_type") or "") not in ("manual", "deepdive") else []
+        source = "rotation"
+        post_type = str(blob.get("post_type") or "")
     if not slides:
         print("CARD_SLIDES=0")
         print("CARD_URLS=")
         return 0
     size = (CARD_W, CARD_H)
-    kicker, background, layout, big = _brief(brain_drafts.visual(pack), brain_drafts.post_type(pack), size)
+    if pack:
+        kicker, background, layout, big = _brief(brain_drafts.visual(pack), brain_drafts.post_type(pack), size)
+    else:
+        kicker, background, layout, big = _brief({}, post_type, size, said=slides[0][1])
+    print("CARD_SLIDES_SOURCE=%s" % source)
     stem = re.sub(r"\.jpe?g$", "", args.out, flags=re.I)
     urls, total = [], 0
-    for index, (label, text) in enumerate(slides, 1):
+    for index, (label, text, slide_big) in enumerate(slides, 1):
         out = "%s-%d.jpg" % (stem, index)
-        # The hook and the close carry the brain's plate and kicker; the points sit on the
-        # plain navy so the words, not the picture, are what a thumb stops on.
+        # The hook and the close carry the plate and the kicker; the points sit on the plain
+        # navy so the words, not the picture, are what a thumb stops on. Every slide carries the
+        # progress bar and, until the last, the swipe cue at the right edge.
         first_or_last = index in (1, len(slides))
         result = render(text, out, kicker=(kicker or label) if index == 1 else label,
                         quality=args.quality, max_kb=args.max_kb,
                         footer="" if args.no_footer else FOOTER,
                         background=background if first_or_last else None,
-                        layout=layout if first_or_last else "poster", big=big if index == 1 else "")
+                        layout=(layout if first_or_last else "poster") if not slide_big else "stat",
+                        big=(big if index == 1 else "") if not slide_big else slide_big,
+                        progress=(index, len(slides)))
         urls.append(public_url(result["path"], args.base_url))
         total += result["bytes"]
         print("CARD_SLIDE=%d %s %dx%d %dKB" % (index, out, result["width"], result["height"], result["bytes"] // 1024))

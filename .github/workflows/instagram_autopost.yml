@@ -265,7 +265,7 @@ jobs:
         env:
           BRANCH: ${{ github.event.repository.default_branch }}
           IG_CAROUSEL: ${{ vars.IG_CAROUSEL }}             # on (default) · off
-          IG_CAROUSEL_DAYS: ${{ vars.IG_CAROUSEL_DAYS }}   # ISO weekdays, default 2,4 (Tue, Thu)
+          IG_CAROUSEL_DAYS: ${{ vars.IG_CAROUSEL_DAYS }}   # ISO weekdays, default 1-5 (every weekday, 18 Oct 2026)
         run: |
           set -o pipefail
           DAY=$(date -u +%F)
@@ -287,14 +287,15 @@ jobs:
           STORY_URL=$(sed -n 's/^CARD_URL=//p' /tmp/ig_story_render.log | tail -1)
           echo "IG_MEDIA_URL=${CARD_URL}" >> "$GITHUB_ENV"
           echo "IG_STORY_URL=${STORY_URL}" >> "$GITHUB_ENV"
-          # Carousel days (17 Oct 2026): on Tue + Thu (ISO weekdays in IG_CAROUSEL_DAYS, default 2,4)
-          # the brain pack's lines become one slide each — hook, points, close. Carousels carry
-          # 0.55% ER against 0.37% for a single image and nine times the saves (Socialinsider,
-          # Metricool 2026). CARD_SLIDES=0 means the pack had too few lines: the single card posts.
+          # Carousel days (17 Oct 2026; every weekday since 18 Oct): the day's lines become one
+          # slide each — hook, points, close — from the brain pack when there is one, else from the
+          # rotation copy's own structure (social_card.rotation_slides). Carousels carry 0.50% ER
+          # against 0.33% for a single image and five times the saves (Socialinsider 2026).
+          # CARD_SLIDES=0 means the copy had too few lines: the single card posts.
           SLIDE_URLS=""
           DOW=$(date -u +%u)
-          if [ "${IG_CAROUSEL:-on}" != "off" ] && printf ',%s,' "${IG_CAROUSEL_DAYS:-2,4}" | grep -q ",${DOW},"; then
-            python3 tools/social_card.py --slides --brief "$DAY" \
+          if [ "${IG_CAROUSEL:-on}" != "off" ] && printf ',%s,' "${IG_CAROUSEL_DAYS:-1,2,3,4,5}" | grep -q ",${DOW},"; then
+            python3 tools/social_card.py --slides --brief "$DAY" --from-json assets/threads/threads_content_latest.json \
               --out "site/social/${DAY}-instagram-slide.jpg" 2>&1 | tee /tmp/ig_slides.log || true
             SLIDE_URLS=$(sed -n 's/^CARD_URLS=//p' /tmp/ig_slides.log | tail -1)
             echo "carousel: $(sed -n 's/^CARD_SLIDES=//p' /tmp/ig_slides.log | tail -1) slide(s)"
