@@ -147,6 +147,7 @@ waits on a scan. The page also polls every 60 s, paused while hidden.
 | `GET /admin/social` | **Social tab (17 Oct 2026).** Today's posting plan vs what GitHub Actions actually did, the last 7 days, and the clock's health — see §5a |
 | `POST /admin/social/run` | `{workflow, inputs?}` — "Run now / Retry" a lane this minute; allow-listed to the plan, one ask per lane per 10 min (429 with `retryInSeconds`) |
 | `GET /admin/site` | **Website tab.** Visits from Cloudflare Web Analytics: 7 + 28 days, by channel, country and page; cached 30 min |
+| `GET /admin/feed` | **Content tab.** The repo's own records — brain plan for 3 days, last 40 posts with links, growth vs milestones, YouTube snapshot + scheduled queue — as pushed into KV by `dashboard_sync.yml`; one KV read, age in seconds |
 
 Every response: `Cache-Control: no-store`, `X-Frame-Options: DENY`,
 `Referrer-Policy: no-referrer`. Raw webhook bodies are never echoed. Exported CSV
@@ -197,6 +198,33 @@ dressed up as a quiet day.
 site tag is read from the beacon the live page serves and cached a week; Nigeria is
 counted by the ISO code (`NG`) Cloudflare really returns. Cached 30 min; a Cloudflare
 hiccup shows the last good numbers with a "stale" note rather than a blank.
+
+### 5c. The Content tab — what the brain planned, what went out, how the audience grows
+
+The worker cannot read the repository (the dispatch PAT is Actions-only, by design),
+and the records that answer "what did we post, what is planned, are we growing" live
+in the repo: `brain/drafts/<date>.json`, the lane ledgers under `logs/`, the Monday
+`logs/scorecard.json`, `logs/youtube_stats.json`, `brain/goals.json`. So the repo
+pushes to the dashboard, not the other way round:
+
+* `tools/dashboard_feed.py build` folds those files into one compact JSON (≈ 10 KB):
+  `plan[3]` (approved pack per day or an honest "no approved pack"), `posted[≤40]`
+  (newest first, UTC stamps, absolute links), `growth.rows` (value, previous week,
+  milestone target/due/unlocks — `null` means *not measured yet*, never 0),
+  `youtube.snapshot` + `youtube.scheduled`, `deepdive_next`, `brain_note`.
+* `tools/dashboard_feed.py push` PUTs it to KV key `adm:feed` with the
+  `CLOUDFLARE_API_TOKEN` the deploys already use (KV Storage Edit is part of the
+  Edit-Workers template). No new secret.
+* `.github/workflows/dashboard_sync.yml` runs it after every lane, the brain, the
+  scorecard and the YouTube snapshot finish (`workflow_run`, which `[skip ci]`
+  ledger commits cannot suppress), and on demand from the Actions tab.
+* `GET /admin/feed` returns `{connected, ageSeconds, feed}`. The page shows
+  "synced X ago" in the plan header and a warning when the feed is more than 36 hours
+  old — a stale feed is a signal, not a quiet day.
+
+Also on the Today tab: **Which channel brings the money** — the weekly
+`src:checkout|sale:<ISO week>` counters the site keeps from the `?s=` tag on every
+link the lanes post, five weeks, taps → sales → conversion per channel.
 
 ---
 

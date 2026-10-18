@@ -110,6 +110,7 @@ footer{font-size:11.5px;color:#94A3B8;text-align:center;padding:16px 0 4px}
   <nav class="tabs" role="tablist">
     <button class="tab" type="button" role="tab" data-view="ov" aria-selected="true">Today</button>
     <button class="tab" type="button" role="tab" data-view="social">Social</button>
+    <button class="tab" type="button" role="tab" data-view="content">Content</button>
     <button class="tab" type="button" role="tab" data-view="site">Website</button>
     <button class="tab" type="button" role="tab" data-view="passes">Passes</button>
     <button class="tab" type="button" role="tab" data-view="biz">Business</button>
@@ -149,6 +150,11 @@ footer{font-size:11.5px;color:#94A3B8;text-align:center;padding:16px 0 4px}
       <div class="scroll"><table id="expiring"></table></div>
       <p class="hint" id="expiring-note"></p>
     </div>
+    <div class="panel">
+      <h2>Which channel brings the money — last 5 weeks</h2>
+      <div class="scroll"><table id="channels"></table></div>
+      <p class="hint">Counted from the <code>?s=</code> tag on every link the lanes post: a <b>tap</b> is a reader reaching checkout from that channel; a <b>sale</b> is a verified payment whose first visit carried that tag. Counting started 17 Oct 2026, 5:40pm.</p>
+    </div>
   </section>
 
   <section id="v-social" class="hide">
@@ -170,6 +176,30 @@ footer{font-size:11.5px;color:#94A3B8;text-align:center;padding:16px 0 4px}
         <div id="social-health"></div>
         <div id="social-extras" style="margin-top:10px"></div>
       </div>
+    </div>
+  </section>
+
+  <section id="v-content" class="hide">
+    <div id="content-msg"></div>
+    <div class="panel">
+      <h2>What the brain has planned — <span id="plan-note" style="text-transform:none;letter-spacing:0;font-weight:400"></span></h2>
+      <div id="plan"></div>
+    </div>
+    <div class="grid2">
+      <div class="panel">
+        <h2>Audience — where each platform stands</h2>
+        <div id="growth"></div>
+        <p class="hint" id="growth-note"></p>
+      </div>
+      <div class="panel">
+        <h2>YouTube</h2>
+        <div id="yt"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Posted — the last 40, newest first</h2>
+      <div class="scroll"><table id="posted"></table></div>
+      <p class="hint">Tap a title to open the post. Facebook Page posts are counted on the Social tab (that lane keeps no link ledger yet).</p>
     </div>
   </section>
 
@@ -396,7 +426,7 @@ function renderAll(){
   ].join('');
   drawChart('chart-rev','chart-from','chart-to','chart-note',sn.series,'rev',ngn);
   drawChart('chart-passes','pchart-from','pchart-to','chart2-note',sn.series,'sold',n=>String(n));
-  renderHealth();renderRecent();renderExpiring();renderTeams();renderLeads();renderSellCap();renderExplainer();
+  renderHealth();renderRecent();renderExpiring();renderChannels();renderTeams();renderLeads();renderSellCap();renderExplainer();
   if(currentView==='sec')renderSessions();
   const warns=[];
   if(sn.drift&&sn.drift.suspect)warns.push('Ledger drift: '+sn.drift.newCodes+' new codes since '+sn.drift.since+' but only '+sn.drift.countedSince+' sales counted in that time. The counters are the dashboard’s source for money, so check the day they diverge before reporting figures to anyone.');
@@ -620,12 +650,13 @@ $('v-sec').addEventListener('click',async e=>{
 /* ---------------- social board: the day's plan vs what actually ran ---------------- */
 let SOCIAL=null,SOCIAL_BUSY=false;
 function lagos(ms){if(!ms)return '—';return new Date(Number(ms)).toLocaleTimeString('en-NG',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'Africa/Lagos'}).replace(/\s?([ap])\.?m\.?/i,(m,x)=>x.toLowerCase()+'m');}
+function lagosWhen(ms){if(!ms||isNaN(ms))return '—';return new Date(Number(ms)).toLocaleDateString('en-NG',{weekday:'short',day:'numeric',month:'short',timeZone:'Africa/Lagos'})+', '+lagos(ms);}
 function lagosDay(day){const d=new Date(day+'T12:00:00Z');return d.toLocaleDateString('en-NG',{weekday:'short',day:'numeric',month:'short',timeZone:'Africa/Lagos'});}
 const STATUS_WORD={done:['posted','ok'],failed:['failed','bad'],running:['running…','warn'],upcoming:['upcoming',''],due:['due now','warn'],missed:['missed','bad'],cancelled:['cancelled','warn'],skipped:['skipped',''],unknown:['unknown','warn']};
 function statusChip(s,kind){const w=STATUS_WORD[s]||[s,''];let word=w[0];if(s==='done'&&kind!=='post')word='done';return chip(word,w[1]);}
 async function loadSocial(){
   if(SOCIAL_BUSY)return;SOCIAL_BUSY=true;
-  try{SOCIAL=await api('/admin/social');renderSocial();}
+  try{if(!FEED){try{FEED=await api('/admin/feed');}catch(e){}}SOCIAL=await api('/admin/social');renderSocial();}
   catch(e){if(e.status!==401)$('social-msg').innerHTML='<div class="msg err">'+esc('could not read the board: '+e.message)+'</div>';}
   finally{SOCIAL_BUSY=false;}
 }
@@ -665,7 +696,9 @@ function renderSocial(){
   $('social-week-note').textContent=days.some(d=>d.pending)?'Days before the board existed fill in two at a time, each time this tab is opened.':'';
   const ck=S.clock||{};
   const clockChip=ck.ok===false?chip('clock unreachable','bad'):ck.paused?chip('paused (CLOCK=off)','warn'):ck.token==='present'?chip('on duty · '+(ck.entries||0)+' slots','ok'):chip('idle — no token','bad');
-  const rows=[['Clock (rings the lanes every 5 min)',clockChip],['Plan source',chip(S.planFrom==='clock'?'the clock’s own table':'not available','')],['Board refreshed',chip(t.at?ago(t.at):'—','ok')]];
+  const fp=FEED&&FEED.feed&&FEED.feed.plan?FEED.feed.plan[0]:null;
+  const brainChip=fp?(fp.approved?chip('approved pack for today','ok'):chip('no pack — posting from the rotation','warn')):chip('see the Content tab','');
+  const rows=[['Clock (rings the lanes every 5 min)',clockChip],['Brain (writes the day’s content)',brainChip],['Plan source',chip(S.planFrom==='clock'?'the clock’s own table':'not available','')],['Board refreshed',chip(t.at?ago(t.at):'—','ok')]];
   $('social-health').innerHTML='<table><tbody>'+rows.map(r=>'<tr><td style="width:46%">'+r[0]+'</td><td>'+r[1]+'</td></tr>').join('')+'</tbody></table>';
   const ex=t.extras||[];
   $('social-extras').innerHTML=ex.length?'<p class="hint" style="margin:0 0 4px">Runs outside the plan today (manual or re-runs):</p><table><tbody>'+ex.map(x=>'<tr><td>'+esc(lagos(x.started))+'</td><td><b>'+esc(x.lane||x.name)+'</b></td><td>'+statusChip(x.status,'care')+(x.cause?'<br><span class="hint" style="color:#991B1B">'+esc(x.cause)+'</span>':'')+'</td><td><a class="mini" style="text-decoration:none" href="'+esc(x.url)+'" target="_blank" rel="noopener">log</a></td></tr>').join('')+'</tbody></table>':'';
@@ -684,6 +717,64 @@ $('social-today').addEventListener('click',async e=>{
     $('social-msg').innerHTML='<div class="msg err">'+esc(m)+'</div>';
   }finally{b.disabled=false;}
 });
+
+/* ---------------- channels → money (snapshot.sources) ---------------- */
+function renderChannels(){
+  const sn=DATA.snapshot||{},src=sn.sources||null,el=$('channels');if(!el)return;
+  if(!src||!src.checkout){el.innerHTML='<tbody><tr><td class="hint">counts appear after the next rollup (8:00am daily, or tap Refresh)</td></tr></tbody>';return;}
+  const weeks=Object.keys(src.checkout).sort().reverse();
+  const chans={};weeks.forEach(w=>{Object.keys(src.checkout[w]||{}).forEach(c=>chans[c]=1);Object.keys((src.sale||{})[w]||{}).forEach(c=>chans[c]=1);});
+  const names=Object.keys(chans);
+  if(!names.length){el.innerHTML='<tbody><tr><td class="hint">no tagged tap yet — the first reader who reaches checkout from a post will appear here</td></tr></tbody>';return;}
+  const tot=c=>weeks.reduce((a,w)=>a+(((src.checkout[w]||{})[c])||0),0),sales=c=>weeks.reduce((a,w)=>a+((((src.sale||{})[w]||{})[c])||0),0);
+  names.sort((a,b)=>sales(b)-sales(a)||tot(b)-tot(a));
+  el.innerHTML='<thead><tr><th>Channel</th><th class="num">Taps this week</th><th class="num">Taps · 5 wk</th><th class="num">Sales · 5 wk</th><th class="num">Tap → sale</th></tr></thead><tbody>'+
+    names.map(c=>{const t=tot(c),sl=sales(c),tw=((src.checkout[weeks[0]]||{})[c])||0;return '<tr><td><b>'+esc(c)+'</b></td><td class="num">'+tw+'</td><td class="num">'+t+'</td><td class="num"'+(sl?' style="color:#166534;font-weight:700"':'')+'>'+sl+'</td><td class="num">'+(t?Math.round(sl/t*100)+'%':'—')+'</td></tr>';}).join('')+'</tbody>';
+}
+
+/* ---------------- content: the repo's records, via the feed ---------------- */
+let FEED=null;
+const PLATFORM_WORD={instagram:'Instagram',threads:'Threads',telegram:'Telegram',facebook:'Facebook',linkedin:'LinkedIn',youtube:'YouTube'};
+async function loadFeed(){
+  try{FEED=await api('/admin/feed');renderFeed();}
+  catch(e){if(e.status!==401)$('content-msg').innerHTML='<div class="msg err">'+esc('could not read the feed: '+e.message)+'</div>';}
+}
+function renderFeed(){
+  const F=FEED||{};
+  if(F.connected===false){$('content-msg').innerHTML='<div class="msg warn">'+esc(F.reason||'not connected')+'</div>';$('plan').innerHTML='';$('growth').innerHTML='';$('yt').innerHTML='';$('posted').innerHTML='';return;}
+  const f=F.feed||{};
+  const age=F.ageSeconds==null?'':(F.ageSeconds<120?'synced just now':'synced '+ago(Date.now()-F.ageSeconds*1000));
+  $('content-msg').innerHTML=F.ageSeconds>36*3600?'<div class="msg warn">'+esc('This feed is '+Math.round(F.ageSeconds/3600)+' hours old — the Dashboard feed workflow has not run; what you see below may be behind.')+'</div>':'';
+  // plan
+  const plan=f.plan||[];
+  $('plan-note').textContent=age;
+  $('plan').innerHTML=plan.length?'<div class="grid2">'+plan.map((d,i)=>{
+    const when=i===0?'Today · '+lagosDay(d.date):(i===1?'Tomorrow · '+lagosDay(d.date):lagosDay(d.date));
+    if(!d.approved)return '<div class="card"><div class="k">'+esc(when)+'</div><div class="v" style="font-size:15px;color:#92400E">no approved pack</div><div class="s">'+esc(i===0?'the lanes post from the rotation today — the brain had no Gemini quota, or every draft failed a gate. Tonight at 1:30am it tries again.':'the brain plans this day tonight at 1:30am')+'</div></div>';
+    return '<div class="card"><div class="k">'+esc(when)+(d.theme?' · '+esc(d.theme):'')+'</div>'+
+      '<div class="v" style="font-size:15px;line-height:1.3">'+esc(d.headline)+'</div>'+
+      (d.lines&&d.lines.length?'<div class="s">'+d.lines.map(esc).join('<br>')+'</div>':'')+
+      '<div class="s" style="margin-top:6px">'+(d.threads?'<b>Threads:</b> '+esc(d.threads)+'<br>':'')+(d.short?'<b>Short:</b> '+esc(d.short)+'<br>':'')+(d.reader?'<b>For:</b> '+esc(d.reader)+'<br>':'')+(d.why?'<b>Why today:</b> '+esc(d.why):'')+(d.quiz?'<br>'+chip('Tuesday quiz','ok'):'')+'</div></div>';}).join('')+'</div>'
+    :'<p class="hint">no plan in the feed</p>';
+  // growth
+  const g=f.growth||{},rows=g.rows||[];
+  $('growth').innerHTML='<table><thead><tr><th>Platform</th><th class="num">Now</th><th class="num">Week before</th><th>Milestone</th></tr></thead><tbody>'+rows.map(r=>{
+    const v=r.value,pv=r.previous,delta=(v!=null&&pv!=null)?v-pv:null;
+    const pct=(v!=null&&r.target)?Math.min(100,Math.round(v/r.target*100)):null;
+    const bar=pct==null?'':'<div style="height:6px;background:#E2E8F0;border-radius:3px;margin-top:4px"><div style="height:6px;width:'+pct+'%;background:'+(pct>=100?'#166534':'#0B1B3F')+';border-radius:3px"></div></div>';
+    return '<tr><td><b>'+esc(r.label)+'</b><br><span class="hint">'+esc(r.unit)+'</span></td><td class="num">'+(v==null?'<span class="hint">not measured yet</span>':v.toLocaleString('en-NG'))+'</td><td class="num">'+(delta==null?'—':(delta>=0?'+':'')+delta)+'</td><td>'+(r.target?esc(v!=null?v.toLocaleString('en-NG')+' / '+r.target.toLocaleString('en-NG'):'target '+r.target.toLocaleString('en-NG'))+' by '+esc(lagosDay(r.due))+(r.unlocks?'<br><span class="hint">unlocks '+esc(r.unlocks)+'</span>':'')+bar:'<span class="hint">no milestone set</span>')+'</td></tr>';}).join('')+'</tbody></table>';
+  $('growth-note').textContent=g.taken_at?'Measured by the Monday scorecard ('+String(g.taken_at).slice(0,10)+'). Platforms marked “not measured yet” fill in after the next Monday 6:40am run.':'Followers are measured by the Monday 6:40am scorecard — the first one has not run yet. YouTube comes from its own weekly snapshot.';
+  // youtube
+  const y=f.youtube||{},sn=y.snapshot;
+  $('yt').innerHTML=(sn?'<div class="cards" style="margin:0 0 8px">'+kpi('Subscribers',String(sn.subscribers==null?'—':sn.subscribers),'')+kpi('Views · 28 d',String(sn.views==null?'—':sn.views),'')+kpi('Videos',String(sn.videos==null?'—':sn.videos),'')+'</div>'+
+    (sn.top&&sn.top.length?'<p class="hint" style="margin:0 0 4px">Most-watched:</p><table><tbody>'+sn.top.map(v=>'<tr><td><a href="https://www.youtube.com/watch?v='+esc(v.id)+'" target="_blank" rel="noopener">'+esc(v.title)+'</a> <span class="hint">'+esc(v.kind||'')+'</span></td><td class="num">'+esc(String(v.views))+'</td></tr>').join('')+'</tbody></table>':'')+
+    '<p class="hint" style="margin:6px 0 0">snapshot '+esc(String(sn.taken_at||'').slice(0,10))+'</p>':'<p class="hint">no YouTube snapshot yet (Mondays 6:00am)</p>')+
+    (y.scheduled&&y.scheduled.length?'<p class="hint" style="margin:8px 0 4px">Scheduled to go public:</p><table><tbody>'+y.scheduled.map(v=>'<tr><td>'+(v.url?'<a href="'+esc(v.url)+'" target="_blank" rel="noopener">'+esc(v.title)+'</a>':esc(v.title))+'</td><td class="num">'+esc(v.publish_at?lagosWhen(Date.parse(v.publish_at)):(v.privacy||''))+'</td></tr>').join('')+'</tbody></table>':'')+
+    (f.deepdive_next?'<p class="hint" style="margin:8px 0 0">Next Deep-Dive in the queue: <b>'+esc(f.deepdive_next)+'</b></p>':'');
+  // posted
+  const posted=f.posted||[];
+  $('posted').innerHTML=posted.length?'<thead><tr><th>When</th><th>Where</th><th>What</th></tr></thead><tbody>'+posted.map(r=>'<tr><td style="white-space:nowrap">'+esc(lagosWhen(Date.parse(r.at)))+'</td><td><b>'+esc(PLATFORM_WORD[r.platform]||r.platform)+'</b><br><span class="hint">'+esc(r.kind)+(r.privacy&&r.privacy!=='public'&&r.privacy!=='channel'?' · '+esc(r.privacy):'')+'</span></td><td>'+(r.url?'<a href="'+esc(r.url)+'" target="_blank" rel="noopener">'+esc(r.title||r.url)+'</a>':esc(r.title))+'</td></tr>').join('')+'</tbody>':'<tbody><tr><td class="hint">nothing recorded yet</td></tr></tbody>';
+}
 
 /* ---------------- website: Cloudflare Web Analytics ---------------- */
 let SITE=null;
@@ -718,7 +809,7 @@ function renderSite(){
 function countryName(c){try{return new Intl.DisplayNames(['en'],{type:'region'}).of(String(c))||c;}catch(e){return c;}}
 
 /* ---------------- tabs ---------------- */
-const VIEWS={ov:'v-ov',social:'v-social',site:'v-site',passes:'v-passes',biz:'v-biz',leads:'v-leads',sell:'v-sell',sec:'v-sec'};
+const VIEWS={ov:'v-ov',social:'v-social',content:'v-content',site:'v-site',passes:'v-passes',biz:'v-biz',leads:'v-leads',sell:'v-sell',sec:'v-sec'};
 let currentView='ov';
 function showView(v){
   if(!VIEWS[v])return;
@@ -729,6 +820,7 @@ function showView(v){
   if(v==='sec')renderSessions();
   if(v==='social')loadSocial();
   if(v==='site')loadSite();
+  if(v==='content')loadFeed();
 }
 document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
   showView(t.getAttribute('data-view'));

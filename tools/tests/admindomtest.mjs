@@ -49,6 +49,7 @@ const PASS = 'owner passphrase for tests only';
 const SIGN = 'owner session signing secret for tests only';
 const NOW = Date.now();
 const DAY = new Date(NOW).toISOString().slice(0, 10);
+function isoWeekOf(ms) { const d = new Date(ms); d.setUTCHours(0, 0, 0, 0); d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7)); const y0 = new Date(Date.UTC(d.getUTCFullYear(), 0, 1)); return d.getUTCFullYear() + '-W' + String(Math.ceil(((d - y0) / 864e5 + 1) / 7)).padStart(2, '0'); }
 function makeRecords() {
   const t = DAY;
   const soonBucket = 'adm:exp:' + new Date(NOW + 3 * 864e5).toISOString().slice(0, 10);
@@ -56,6 +57,7 @@ function makeRecords() {
     ['stat:sold:' + t]: '4', ['stat:rev:' + t]: '8000', ['stat:offline:' + t]: '1', ['stat:manual:' + t]: '2',
     ['stat:wait:' + t]: '3', ['stat:bizcreate:' + t]: '2', ['stat:bizpaid:' + t]: '1', ['stat:bizrev:' + t]: '120000',
     ['stat:revoked:' + t]: '0',
+    ['src:checkout:' + isoWeekOf(NOW)]: JSON.stringify({ telegram: 7, facebook: 3 }), ['src:sale:' + isoWeekOf(NOW)]: JSON.stringify({ telegram: 2 }),
     [soonBucket]: JSON.stringify(['OGA-SELL-AAAA-BBBB']),
     'code:OGA-SELL-AAAA-BBBB': JSON.stringify({ code: 'OGA-SELL-AAAA-BBBB', email: 'chidi@one.ng', ref: 'FLW-77', issuedAt: NOW - 27 * 864e5, used: true, source: 'online', exp: NOW + 3 * 864e5, devices: ['d1', 'd2'], note: '=HYPERLINK("evil")' }),
     'adm:em:chidi@one.ng': JSON.stringify(['OGA-SELL-AAAA-BBBB']),
@@ -153,6 +155,7 @@ check('zero days are drawn as grey, not hidden', $('chart-rev').querySelectorAll
 check('webhook health says 9 min', /9 min/.test(txt('health')), txt('health').slice(0, 160));
 check('the buyer email from the raw webhook body never reaches the page', txt('health').indexOf('secret.buyer@one.ng') < 0 && doc.body.innerHTML.indexOf('secret.buyer@one.ng') < 0);
 check('no alert banner when the ledger cross-check is clean', $('banner').classList.contains('hide'), txt('banner').slice(0, 120));
+check('channels → money: Telegram first (2 sales from 7 taps = 29%), Facebook 3 taps and no sale', /telegram/.test(txt('channels')) && /29%/.test(txt('channels')) && txt('channels').indexOf('telegram') < txt('channels').indexOf('facebook'), txt('channels').slice(0, 200));
 check('the expiring table shows the re-read record, with its note', /OGA-SELL-AAAA-BBBB/.test(txt('expiring')) && /chidi@one\.ng/.test(txt('expiring')), txt('expiring').slice(0, 160));
 
 console.log('— search, then act on a pass —');
@@ -258,6 +261,40 @@ console.log('— Social tab: the day’s plan, in the owner’s clock —');
     const sv = [...doc.querySelectorAll('#site-kpis .v')].map(e => e.textContent);
     check('visits (7 + 28 days) and the Nigeria share are painted', sv[0] === '52' && sv[1] === '180' && sv[2] === '87%', sv.join(','));
     check('channels and countries tables are filled, country codes spelled out', /google/.test(txt('site-channels')) && /Nigeria/.test(txt('site-countries')) && /United States/.test(txt('site-countries')), txt('site-countries'));
+    console.log('— Content tab: the brain plan, posted, growth —');
+    env._store.set('adm:feed', JSON.stringify({
+      version: 1, generated_at: '2026-10-17T19:00:00Z',
+      plan: [
+        { date: '2026-10-17', approved: true, theme: 'rent-receipt', headline: 'Pay rent without a receipt and you paid nothing — in court.', lines: ['Section 5, Lagos Tenancy Law 2011'], threads: 'Your landlord refuses a receipt. Next move?', short: 'No receipt, no proof.', reader: 'tenants paying cash', why: 'payday week', quiz: false },
+        { date: '2026-10-18', approved: false }, { date: '2026-10-19', approved: false }],
+      posted: [{ at: '2026-10-17T17:02:00Z', platform: 'youtube', kind: 'short', title: 'Sign without asking #Shorts', url: 'https://www.youtube.com/watch?v=abc', privacy: 'public' },
+               { at: '2026-10-16T06:37:20Z', platform: 'instagram', kind: 'post', title: 'Don’t wait until there’s a problem', url: 'https://www.instagram.com/p/x/', privacy: 'public' }],
+      growth: { taken_at: '2026-10-12T06:40:00+01:00', rows: [
+        { key: 'facebook.followers', label: 'Facebook', unit: 'followers', value: 410, previous: 400, target: 500, due: '2027-01-31', unlocks: 'Facebook Stars' },
+        { key: 'instagram.followers', label: 'Instagram', unit: 'followers', value: null, previous: null, target: 1000, due: '2027-04-30', unlocks: '' },
+        { key: 'youtube.subscribers', label: 'YouTube', unit: 'subscribers', value: 49, previous: null, target: 500, due: '2027-03-31', unlocks: 'fan funding', source: 'youtube_stats' }] },
+      youtube: { snapshot: { taken_at: '2026-10-14T18:07:26+01:00', subscribers: 49, views: 142, videos: 13, top: [{ id: 'b', title: 'Service charge explained', views: 40, kind: 'longform' }] },
+                 scheduled: [{ title: 'Deep-Dive: notice to quit', url: 'https://www.youtube.com/watch?v=dd', publish_at: '2026-10-19T18:00:00Z', privacy: 'private' }] },
+      deepdive_next: 'dd5 Service charge',
+    }));
+    click([...doc.querySelectorAll('.tab')].find(t => t.getAttribute('data-view') === 'content'));
+    await until(() => /receipt/.test(txt('plan')), 80);
+    const plan = txt('plan');
+    check('today’s approved pack is painted: headline, Threads line, Short, reader', /paid nothing/.test(plan) && /Threads:/.test(plan) && /No receipt, no proof/.test(plan) && /tenants paying cash/.test(plan), plan.slice(0, 200));
+    check('days without a pack say so and when the brain will plan them (1:30am), not a blank', /Tomorrow · Sun, 18 Oct/.test(plan) && /no approved pack/.test(plan) && /tonight at 1:30am/.test(plan), plan.slice(-200));
+    check('the plan header says when the feed was synced (30 min ago)', /synced 30 min ago/.test(txt('plan-note')), txt('plan-note'));
+    const growth = txt('growth');
+    check('growth table: Facebook 410 of 500 with +10 since last week, Instagram “not measured yet”', /410/.test(growth) && /\+10/.test(growth) && /not measured yet/.test(growth) && /Facebook Stars/.test(growth), growth.slice(0, 300));
+    const bars = [...doc.querySelectorAll('#growth div[style*="width:"]')].map(e => e.getAttribute('style'));
+    check('milestone progress bars: Facebook 82%, YouTube 10%', bars.some(b => /width:82%/.test(b)) && bars.some(b => /width:10%/.test(b)), bars.join(' | '));
+    const yt = txt('yt');
+    check('YouTube: 49 subscribers, the most-watched video, the scheduled Deep-Dive at 7:00pm Monday, the queue', /49/.test(yt) && /Service charge explained/.test(yt) && /7:00pm/.test(yt) && /dd5 Service charge/.test(yt), yt.slice(0, 300));
+    const posted = txt('posted');
+    check('posted list: newest first, platform words, 12-hour Lagos time (6:02pm, 7:37am)', /YouTube/.test(posted) && /Instagram/.test(posted) && /6:02pm/.test(posted) && /7:37am/.test(posted) && posted.indexOf('YouTube') < posted.indexOf('Instagram'), posted.slice(0, 200));
+    check('post titles link to the post', !!doc.querySelector('#posted a[href="https://www.youtube.com/watch?v=abc"]'));
+    click([...doc.querySelectorAll('.tab')].find(t => t.getAttribute('data-view') === 'social'));
+    await until(() => /approved pack for today/.test(txt('social-health')), 60);
+    check('the Social tab’s machinery row shows the brain approved today’s pack', /approved pack for today/.test(txt('social-health')), txt('social-health'));
     check('no page error was thrown while painting the new tabs', pageErrors.length === 0, pageErrors.join(' | '));
   } finally { globalThis.fetch = realFetch; Date.now = realNow; }
 }
