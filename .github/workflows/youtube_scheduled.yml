@@ -204,15 +204,42 @@ jobs:
           NARRATOR_LANE: shorts
           RUN_FOR_DATE: ${{ inputs.for_date }}
         run: |
+          set -o pipefail
           set +e
-          python3 scripts/youtube_short_daily.py
-          code=$?
+          python3 scripts/youtube_short_daily.py 2>&1 | tee /tmp/short.log
+          code=${PIPESTATUS[0]}
           set -e
           if [ "$code" -eq 6 ]; then
             echo "paused=yes" >> "$GITHUB_OUTPUT"
             exit 0
           fi
+          # Photographs behind the cards (owner, 18 Oct 2026): SHOTS_HITS=<matched>/<scenes>
+          # from tools/shorts_reel.py; each miss names its reason above it ("stays navy (…)").
+          SHOTS=$(sed -n 's/^SHOTS_HITS=//p' /tmp/short.log | tail -1)
+          echo "shots=${SHOTS:-?}" >> "$GITHUB_OUTPUT"
+          echo "::notice title=Photographs behind the cards::SHOTS_HITS=${SHOTS:-none reported} — $(grep -c 'stays navy' /tmp/short.log || true) scene(s) stayed navy"
           exit "$code"
+
+      # What the Short looks like, without downloading it: a labelled contact sheet (frame 0 =
+      # the cover every platform shows, then frames across the Short) and the cover JPEG, on
+      # the `review` branch (tools/review_push.sh), readable through the contents API.
+      - name: Picture the render for review
+        id: sheet
+        if: always() && steps.short.outputs.video_path != ''
+        continue-on-error: true
+        env:
+          VIDEO_PATH: ${{ steps.short.outputs.video_path }}
+          COVER_PATH: ${{ steps.short.outputs.cover_path }}
+        run: |
+          set -o pipefail
+          mkdir -p /tmp/review
+          LABEL="$(date -u +%F)_short_${GITHUB_RUN_ID}"
+          python3 tools/contact_sheet.py --video "$VIDEO_PATH" --out /tmp/review/sheet.jpg --cover "$COVER_PATH" 2>&1 | tee /tmp/sheet.log
+          grep -E '^(SHOTS_HITS|SHEET_|COVER=|📷|·)' /tmp/short.log /tmp/sheet.log > /tmp/review/render_report.txt || true
+          [ -f "$COVER_PATH" ] && cp "$COVER_PATH" /tmp/review/cover.jpg || true
+          REVIEW_LABEL="$LABEL" bash tools/review_push.sh /tmp/review/sheet.jpg /tmp/review/cover.jpg /tmp/review/render_report.txt | tee /tmp/review_push.log
+          echo "url=$(sed -n 's/^REVIEW_URL=//p' /tmp/review_push.log | tail -1)" >> "$GITHUB_OUTPUT"
+          echo "photo_frames=$(sed -n 's/^SHEET_PHOTO_FRAMES=//p' /tmp/sheet.log | tail -1)" >> "$GITHUB_OUTPUT"
 
       - name: Save the narrator's cached clips and the quota ledger
         if: always()
@@ -369,6 +396,22 @@ jobs:
       # that is not forced-private — and the owner posts it from the app with the caption
       # printed in the summary. Dormant (a notice, not a red run) until the three TikTok
       # secrets exist; never allowed to fail the YouTube publish it rides on.
+      # The settled hook card as the Short's custom thumbnail (tools/yt_thumbnail.py, ~50 quota
+      # units) — the owner does not want "YouTube picks a frame" (and frame 0 is the same card
+      # now, so a refusal still leaves the right picture). Never fails the publish.
+      - name: Set the Short's thumbnail (never fails the publish)
+        id: thumb
+        if: always() && steps.upload.outputs.video_id != '' && steps.short.outputs.cover_path != ''
+        continue-on-error: true
+        env:
+          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+          SOCIAL_TOKEN_KEY: ${{ secrets.SOCIAL_TOKEN_KEY }}
+          YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+          VIDEO_ID: ${{ steps.upload.outputs.video_id }}
+          COVER: ${{ steps.short.outputs.cover_path }}
+        run: python3 tools/yt_thumbnail.py --video-id "$VIDEO_ID" --image "$COVER"
+
       - name: Send the Short to the TikTok inbox
         id: tiktok
         if: always() && steps.upload.outputs.video_id != '' && steps.short.outputs.paused != 'yes'
@@ -379,14 +422,32 @@ jobs:
           TIKTOK_REFRESH_TOKEN: ${{ secrets.TIKTOK_REFRESH_TOKEN }}
           SOCIAL_TOKEN_KEY: ${{ secrets.SOCIAL_TOKEN_KEY }}
           VIDEO_PATH: ${{ steps.short.outputs.video_path }}
-          VIDEO_TITLE: ${{ steps.short.outputs.title }}
+          VIDEO_TOPIC: ${{ steps.short.outputs.topic }}
         run: |
           set -o pipefail
           python3 -m pip install --quiet cryptography >/dev/null 2>&1 || true
-          python3 tools/tiktok_draft.py send --video "$VIDEO_PATH" --caption "$VIDEO_TITLE #DocOga #Nigeria" 2>&1 | tee /tmp/tiktok.log
+          CAPTION="$VIDEO_TOPIC #DocOga #Nigeria #TenantRights #Lagos"
+          python3 tools/tiktok_draft.py send --video "$VIDEO_PATH" --caption "$CAPTION" 2>&1 | tee /tmp/tiktok.log
           RESULT=$(sed -n 's/^TIKTOK_RESULT=//p' /tmp/tiktok.log | tail -1)
           echo "result=${RESULT:-unknown}" >> "$GITHUB_OUTPUT"
           echo "publish_id=$(sed -n 's/^TIKTOK_PUBLISH_ID=//p' /tmp/tiktok.log | tail -1)" >> "$GITHUB_OUTPUT"
+          echo "caption=$CAPTION" >> "$GITHUB_OUTPUT"
+
+      # TikTok's inbox API carries no caption (only the audited Direct Post API does), so the
+      # caption goes to the owner's phone: a Telegram DM from the channel bot with a tap-to-copy
+      # block (tools/owner_dm.py; one-time setup: send the word "owner" to @docoga_daily_bot).
+      - name: Text the TikTok caption to the owner's phone
+        id: dm
+        if: always() && steps.tiktok.outputs.result == 'inbox'
+        continue-on-error: true
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          CAPTION: ${{ steps.tiktok.outputs.caption }}
+          VIDEO_TOPIC: ${{ steps.short.outputs.topic }}
+        run: |
+          set -o pipefail
+          python3 tools/owner_dm.py tiktok --caption "$CAPTION" --title "$VIDEO_TOPIC" 2>&1 | tee /tmp/owner_dm.log
+          echo "result=$(sed -n 's/^OWNER_DM=//p' /tmp/owner_dm.log | tail -1)" >> "$GITHUB_OUTPUT"
 
       # The same Short goes into the Telegram channel as a native video (17 Oct 2026): Telegram
       # counts its own views, autoplays, and readers forward the file. Never fatal: a Telegram
@@ -403,10 +464,11 @@ jobs:
           VIDEO_URL: ${{ steps.upload.outputs.video_url }}
           PARENT_URL: ${{ steps.short.outputs.parent_url }}
           PARENT_TITLE: ${{ steps.short.outputs.parent_title }}
+          COVER_PATH: ${{ steps.short.outputs.cover_path }}
         run: |
           set -o pipefail
           python3 tools/telegram_video.py --video "$VIDEO_PATH" --title "$VIDEO_TITLE" --url "$VIDEO_URL" \
-            --parent-url "$PARENT_URL" --parent-title "$PARENT_TITLE" 2>&1 | tee /tmp/telegram_video.log
+            --parent-url "$PARENT_URL" --parent-title "$PARENT_TITLE" --cover "$COVER_PATH" 2>&1 | tee /tmp/telegram_video.log
           echo "result=$(sed -n 's/^TELEGRAM_VIDEO=//p' /tmp/telegram_video.log | tail -1)" >> "$GITHUB_OUTPUT"
 
       - name: Commit the publish ledger
@@ -423,7 +485,7 @@ jobs:
             exit 1
           fi
           git add logs/youtube_published.json
-          git add -f logs/youtube_boosts.json logs/tiktok_drafts.json logs/tiktok_refresh_token.box 2>/dev/null || true
+          git add -f logs/youtube_boosts.json logs/tiktok_drafts.json logs/tiktok_refresh_token.box logs/telegram_owner.json 2>/dev/null || true
           if git diff --staged --quiet; then
             echo "Ledger unchanged — nothing to commit."
             exit 0
@@ -459,6 +521,13 @@ jobs:
           NARRATOR: ${{ steps.short.outputs.narrator }}
           TIKTOK_RESULT: ${{ steps.tiktok.outputs.result }}
           TIKTOK_PUBLISH_ID: ${{ steps.tiktok.outputs.publish_id }}
+          TIKTOK_CAPTION: ${{ steps.tiktok.outputs.caption }}
+          DM: ${{ steps.dm.outputs.result }}
+          SHOTS: ${{ steps.short.outputs.shots }}
+          COVER_PATH: ${{ steps.short.outputs.cover_path }}
+          THUMB: ${{ steps.thumb.outcome }}
+          REVIEW_URL: ${{ steps.sheet.outputs.url }}
+          PHOTO_FRAMES: ${{ steps.sheet.outputs.photo_frames }}
         run: |
           RUN_DATE="${RUN_DATE:-$(date +%F)}"
           {
@@ -491,8 +560,19 @@ jobs:
             else
               echo "| Result | ❌ Failed — see the failing step above |"
             fi
+            if [ -n "$VIDEO_PATH" ]; then
+              echo "| Cover | $( [ -n "$COVER_PATH" ] && echo "🖼 the settled title card (frame 0 everywhere; YouTube thumbnail: ${THUMB:-not attempted})" || echo '⚠️ no cover file was written' ) |"
+              echo "| Photos behind the cards | 📷 ${SHOTS:-?} scenes matched a CC0 photograph; ${PHOTO_FRAMES:-?} sampled frames read as photographed |"
+              [ -n "$REVIEW_URL" ] && echo "| Review | [contact sheet + cover]($REVIEW_URL) |"
+            fi
             case "$TIKTOK_RESULT" in
-              inbox)     echo "| TikTok | 📥 In your TikTok inbox (draft \`$TIKTOK_PUBLISH_ID\`) — open TikTok → notification → paste the title as the caption → Post |" ;;
+              inbox)
+                echo "| TikTok | 📥 In your TikTok inbox (draft \`$TIKTOK_PUBLISH_ID\`) — open TikTok → Inbox → the upload notification → Post → paste the caption → Post |"
+                case "$DM" in
+                  sent)    echo "| TikTok caption | 📲 sent to your Telegram as a tap-to-copy message |" ;;
+                  unknown) echo "| TikTok caption | \`$TIKTOK_CAPTION\` — to get it as a Telegram DM next time: open Telegram → @docoga_daily_bot → Start → send the word **owner** |" ;;
+                  *)       echo "| TikTok caption | \`$TIKTOK_CAPTION\` |" ;;
+                esac ;;
               dormant)   echo "| TikTok | 💤 Not connected — three secrets (docs/TIKTOK_AUTOMATION.md) and every Short also lands in your TikTok inbox |" ;;
               duplicate|skipped) echo "| TikTok | ⏭️ $TIKTOK_RESULT — see the TikTok step |" ;;
               "") : ;;

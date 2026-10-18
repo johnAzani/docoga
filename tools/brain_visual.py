@@ -174,8 +174,12 @@ def fetch(query, http=None):
     return None, note
 
 
-def treat(img, size, darken=0.42, seed=7):
-    """Crop to `size`, brand duotone, darken for type, grain and a navy scrim top and bottom."""
+def treat(img, size, darken=0.58, seed=7):
+    """Crop to `size`, brand duotone, darken for type, grain and a navy scrim top and bottom.
+
+    `darken` is how much of the photograph survives: 0.42 (17 Oct) capped the brightest pixel
+    near 100/255 and the cards read as plain navy on a phone (owner, 18 Oct 2026). 0.58 keeps
+    the picture plainly visible under the scrims; the Shorts pass 0.68 (tools/shorts_reel.py)."""
     import numpy as np
     import blend_image
     w, h = size

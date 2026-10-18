@@ -776,6 +776,69 @@ def apply_shake(img, lt, impacts):
             return ImageChops.offset(img, int(6 * a * math.sin(46 * dt)), int(4 * a * math.cos(39 * dt)))
     return img
 
+def compose_frame(sc, lt, last, fx=True):
+    """One finished frame of scene `sc` at local time `lt` (RGB, W×H). `fx=False` draws the
+    scene settled: no whip/dissolve/flash, no punch-in, no shake, no exit fade — the poster."""
+    content = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+    d = ImageDraw.Draw(content)
+    impacts = [bb['strike_at_local'] for bb in sc['beats']
+               if bb['kind'] == 'odometer' and bb.get('strike') and 'strike_at_local' in bb]
+    for beat in sc['beats']:
+        beat['_dur'] = sc['dur']
+        beat['_scene'] = sc
+        if lt >= beat['t0']:
+            RENDER[beat['kind']](d, content, beat, lt)
+    if not fx:
+        img = scene_bg(sc).copy()
+        img.paste(content, (0, 0), content)
+        return img
+    content = apply_shake(content, lt, impacts)
+    if sc['trans'] == 'whip' and lt < 0.20:
+        p = ease_cubic(lt / 0.20)
+        dx = int(150 * (1 - p))
+        layer = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+        mask = content.split()[3]
+        layer.paste(content, (dx, 0), mask)
+        layer.paste(content, (int(dx * 0.6), 0), mask.point(lambda v: v * 110 // 255))
+        layer.paste(content, (int(dx * 0.3), 0), mask.point(lambda v: v * 70 // 255))
+        content = layer
+    if sc['trans'] == 'dissolve' and lt < 0.30:
+        p = lt / 0.30
+        r, g, bl, al = content.split()
+        content = Image.merge('RGBA', (r, g, bl, al.point(lambda v: int(v * p))))
+    s, fade_p = scale_at(sc, lt, last)
+    bg = zoom(scene_bg(sc), 1.0 + 0.35 * (s - 1.0))
+    cz = zoom(content, s)
+    img = bg.copy()
+    img.paste(cz, (0, 0), cz)
+    if fade_p > 0:
+        img = Image.blend(img, BASE, fade_p)
+    if sc['trans'] == 'flash' and lt < FLASH:
+        img = Image.blend(img, WHITE_IMG, 0.30 * (1 - lt / FLASH))
+    return img
+
+def settle_time(sc):
+    """The local time at which every beat of `sc` has finished arriving — the moment the scene
+    reads as a finished card. Clamped inside the scene so a stretched read never pushes it out."""
+    arrivals = [b['t0'] + entrance_dur(b) for b in sc['beats']] or [0.0]
+    t = max(arrivals) + 0.10
+    for b in sc['beats']:   # a struck price settles only after the slam and its recoil
+        if b['kind'] == 'odometer' and b.get('strike'):
+            t = max(t, b['t0'] + b['count_dur'] + b.get('strike_hold', 0.35) + 0.65)
+    return max(0.0, min(t, sc['dur'] - EXIT - 0.05))
+
+def poster_frame(reel):
+    """The cover: the opening scene drawn settled — every word in place, no motion, no fade.
+    It is frame 0 of every master (TikTok, Telegram and Facebook take their default cover from
+    the first frame) and the JPEG beside the master that YouTube gets as the custom thumbnail.
+    A blank first frame was the owner's first complaint about the first TikTok draft (18 Oct 2026)."""
+    sc = reel['scenes'][0]
+    events_of(reel)   # strike_at_local etc. — the poster must see the same registry as the render
+    return compose_frame(sc, settle_time(sc), len(reel['scenes']) == 1, fx=False)
+
+def cover_path_for(out):
+    return os.path.splitext(out)[0] + '.cover.jpg'
+
 def render_reel(reel, tag):
     scenes = reel['scenes']
     n = int(round(reel['total'] * FPS))
@@ -786,6 +849,7 @@ def render_reel(reel, tag):
     for sc in scenes:
         bounds.append((t0, t0 + sc['dur']))
         t0 += sc['dur']
+    poster = reel.get('poster', True)
     for i in range(n):
         t = i / FPS
         si = max(k for k, (a, b) in enumerate(bounds) if a <= t)
@@ -793,38 +857,13 @@ def render_reel(reel, tag):
         sc = scenes[si]
         last = si == len(scenes) - 1
         lt = min(t - a, sc['dur'])
-        content = Image.new('RGBA', (W, H), (0, 0, 0, 0))
-        d = ImageDraw.Draw(content)
-        impacts = [bb['strike_at_local'] for bb in sc['beats']
-                   if bb['kind'] == 'odometer' and bb.get('strike') and 'strike_at_local' in bb]
-        for beat in sc['beats']:
-            beat['_dur'] = sc['dur']
-            beat['_scene'] = sc
-            if lt >= beat['t0']:
-                RENDER[beat['kind']](d, content, beat, lt)
-        content = apply_shake(content, lt, impacts)
-        if sc['trans'] == 'whip' and lt < 0.20:
-            p = ease_cubic(lt / 0.20)
-            dx = int(150 * (1 - p))
-            layer = Image.new('RGBA', (W, H), (0, 0, 0, 0))
-            mask = content.split()[3]
-            layer.paste(content, (dx, 0), mask)
-            layer.paste(content, (int(dx * 0.6), 0), mask.point(lambda v: v * 110 // 255))
-            layer.paste(content, (int(dx * 0.3), 0), mask.point(lambda v: v * 70 // 255))
-            content = layer
-        if sc['trans'] == 'dissolve' and lt < 0.30:
-            p = lt / 0.30
-            r, g, bl, al = content.split()
-            content = Image.merge('RGBA', (r, g, bl, al.point(lambda v: int(v * p))))
-        s, fade_p = scale_at(sc, lt, last)
-        bg = zoom(scene_bg(sc), 1.0 + 0.35 * (s - 1.0))
-        cz = zoom(content, s)
-        img = bg.copy()
-        img.paste(cz, (0, 0), cz)
-        if fade_p > 0:
-            img = Image.blend(img, BASE, fade_p)
-        if sc['trans'] == 'flash' and lt < FLASH:
-            img = Image.blend(img, WHITE_IMG, 0.30 * (1 - lt / FLASH))
+        if i == 0 and poster:
+            # Frame 0 is the settled opening card, not the empty background the beats are about
+            # to animate onto: the platforms' default cover, and a one-frame title the eye reads
+            # as the cut/flash that opens the scene (QA: inside the opening transition event).
+            img = poster_frame(reel)
+        else:
+            img = compose_frame(sc, lt, last)
         img.save(f'{fd}/f_{i:04d}.png')
         if i % 120 == 0:
             print(f'  frame {i}/{n}', flush=True)
@@ -1016,7 +1055,13 @@ def build(reel, tag):
             for m in hits: print('      ' + m)
         if not V:
             print('  → 0 violations. Encoding master.')
-            encode(fd, os.path.join(OUT, reel['out']), reel['total'])
+            out = os.path.join(OUT, reel['out'])
+            encode(fd, out, reel['total'])
+            if reel.get('poster', True):
+                cover = cover_path_for(out)
+                poster_frame(reel).convert('RGB').save(cover, quality=92, optimize=True)
+                reel['cover'] = cover
+                print(f'  🖼  cover {cover} {os.path.getsize(cover)//1024} KB (frame 0 = the same settled card)')
             return True
         applied = autofix(V, reel)
         if not applied:
