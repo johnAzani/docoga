@@ -2553,6 +2553,75 @@ async function handleAdminFeed(request, env, cors) {
   return json({ ok: true, connected: true, ageSeconds: at ? Math.max(0, Math.round((Date.now() - at) / 1000)) : null, feed }, cors);
 }
 
+/* ---- Short-lived public media: GET|HEAD /m/<name>.<ext> ----
+ * Why this exists: Instagram's publishing API fetches a Reel from a public URL ("we cURL the
+ * video"), and the only Reels door that needs no Facebook-Page link is exactly that URL door
+ * on the Instagram-Login token. The site CDN has a 25 MiB static-asset ceiling and a deploy
+ * race; KV has neither problem for a file Meta reads once. Layout written by
+ * tools/media_host.py:  media:<name>       JSON {size, parts, part_size, type}
+ *                       media:<name>:<i>   raw bytes, i = 0..parts-1, each ≤ part_size
+ * All keys carry the same TTL, so nothing here needs sweeping. Range is honoured (single
+ * range) because tools/ig_publish.py samples the first 64 KB with `Range: bytes=0-65535`
+ * and Meta's fetcher may do the same; HEAD answers with the real Content-Length. */
+const MEDIA_PATH = /^\/m\/([A-Za-z0-9_-]{16,80})\.(mp4|jpg|jpeg|png)$/;
+const MEDIA_TYPES = { mp4: "video/mp4", jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png" };
+function mediaBytes(v) {
+  if (!v) return null;
+  if (v instanceof ArrayBuffer) return new Uint8Array(v);
+  if (ArrayBuffer.isView(v)) return new Uint8Array(v.buffer, v.byteOffset, v.byteLength);
+  if (typeof v === "string") return new TextEncoder().encode(v);
+  return null;
+}
+async function handleMedia(request, env, ctx, name, ext) {
+  const miss = () => new Response("not found", { status: 404, headers: { "Cache-Control": "no-store", "Content-Type": "text/plain" } });
+  let man = null;
+  try { man = JSON.parse(await env.KV.get("media:" + name) || "null"); } catch (e) { man = null; }
+  if (!man || typeof man !== "object") return miss();
+  const size = Number(man.size), parts = Number(man.parts), partSize = Number(man.part_size || man.size);
+  if (!(size > 0) || !(parts > 0) || !(partSize > 0)) return miss();
+  const headers = {
+    "Content-Type": MEDIA_TYPES[ext] || "application/octet-stream",
+    "Accept-Ranges": "bytes",
+    "Cache-Control": "public, max-age=3600",
+    "Access-Control-Allow-Origin": "*",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Disposition": "inline",
+  };
+  let start = 0, end = size - 1, status = 200;
+  const m = /^bytes=(\d*)-(\d*)$/.exec((request.headers.get("Range") || "").trim());
+  if (m && (m[1] !== "" || m[2] !== "")) {
+    if (m[1] === "") { start = Math.max(0, size - Number(m[2])); }
+    else { start = Number(m[1]); if (m[2] !== "") end = Math.min(end, Number(m[2])); }
+    if (!(start <= end) || start >= size) {
+      headers["Content-Range"] = "bytes */" + size;
+      return new Response(null, { status: 416, headers });
+    }
+    status = 206;
+    headers["Content-Range"] = "bytes " + start + "-" + end + "/" + size;
+  }
+  headers["Content-Length"] = String(end - start + 1);
+  if (request.method === "HEAD") return new Response(null, { status, headers });
+  const first = Math.floor(start / partSize), last = Math.floor(end / partSize);
+  const { readable, writable } = new TransformStream();
+  const pump = (async () => {
+    const w = writable.getWriter();
+    try {
+      for (let i = first; i <= last; i++) {
+        const bytes = mediaBytes(await env.KV.get("media:" + name + ":" + i, "arrayBuffer"));
+        if (!bytes) throw new Error("media part " + i + " missing");
+        const base = i * partSize;
+        const s = Math.max(0, start - base), e = Math.min(bytes.byteLength, end - base + 1);
+        if (e > s) await w.write(bytes.subarray(s, e));
+      }
+      await w.close();
+    } catch (e) {
+      try { await w.abort(e); } catch (_) {}
+    }
+  })();
+  if (ctx && typeof ctx.waitUntil === "function") ctx.waitUntil(pump);
+  return new Response(readable, { status, headers });
+}
+
 /* ---- Website visits: Cloudflare Web Analytics, read-only ---- */
 const SITE_CHANNELS = [
   ["t.me", "telegram"], ["telegram.", "telegram"], ["facebook.com", "facebook"], ["fb.com", "facebook"], ["fb.me", "facebook"], ["messenger.com", "facebook"],
@@ -2660,6 +2729,17 @@ export default {
       cors["Cache-Control"] = "no-store";
       cors["X-Frame-Options"] = "DENY";
       cors["Referrer-Policy"] = "no-referrer";
+    }
+
+    /* Short-lived public media — the Instagram Reels "third door" (docs/INSTAGRAM_THREADS_AUTOMATION.md).
+     * tools/media_host.py puts a rendered Reel into KV with a TTL; Meta cURLs it from here
+     * once; nothing is listed, nothing is authenticated, the name is 32 random characters. */
+    {
+      const mm = MEDIA_PATH.exec(url.pathname);
+      if (mm) {
+        if (request.method !== "GET" && request.method !== "HEAD") return new Response("method not allowed", { status: 405, headers: { "Allow": "GET, HEAD" } });
+        return await handleMedia(request, env, ctx, mm[1], mm[2]);
+      }
     }
 
     /* Public brand assets (served from KV — works even while the site CDN is behind) */

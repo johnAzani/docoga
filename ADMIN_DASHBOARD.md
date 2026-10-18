@@ -150,6 +150,12 @@ waits on a scan. The page also polls every 60 s, paused while hidden.
 | `POST /admin/tiktok/connect` | `{code}` from `site/tiktok-connect.html` (TikTok's Login Kit redirect) → dispatches `tiktok_connect.yml`; the code is validated by shape, never stored, never logged; 429 inside 45 s |
 | `GET /admin/feed` | **Content tab.** The repo's own records — brain plan for 3 days, last 40 posts with links, growth vs milestones, YouTube snapshot + scheduled queue — as pushed into KV by `dashboard_sync.yml`; one KV read, age in seconds |
 
+One public route lives next to these, outside `/admin/`: `GET|HEAD /m/<name>.<ext>` serves a
+short-lived file from KV (`media:<name>` manifest + `media:<name>:<i>` parts, TTL-expiring) so
+the Facebook lane can publish the Instagram Reel by `video_url` without a Page link —
+`tools/media_host.py`, docs/INSTAGRAM_THREADS_AUTOMATION.md "The third door". 32-character
+random names, no listing, no other verbs, 404 once expired.
+
 Every response: `Cache-Control: no-store`, `X-Frame-Options: DENY`,
 `Referrer-Policy: no-referrer`. Raw webhook bodies are never echoed. Exported CSV
 is built in the browser and prefixes `= + - @` with `'` so a spreadsheet cannot be

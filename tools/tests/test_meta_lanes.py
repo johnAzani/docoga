@@ -1207,6 +1207,92 @@ class InstagramReels(unittest.TestCase):
         self.assertIn("IG_REELS_PATH=instagram-login", out)
         self.assertIn("not supported for this login type", out)
 
+    def test_probe_on_the_instagram_login_path_opens_the_third_door_when_resumable_is_refused(self):
+        """18 Oct 2026: Facebook still refused the Page link (no date this time) and Meta still
+        refused a resumable session on the Instagram-Login token. The documented standard path —
+        `media_type=REELS` + `video_url` — needs neither, only a professional account the token
+        can read. The probe says so on its own line, and the lane picks the `hosted` door."""
+        refusal = (400, json.dumps({"error": {"message": "(#100) upload_type is not supported "
+                                                          "for this login type", "code": 100}}))
+        code, out, _ = self.run_ig(self.ig_login_routes(container=refusal), ["--probe-reels"],
+                                   {"IG_API_PATH": "instagram-login"})
+        self.assertEqual(code, 0, out)
+        self.assertIn("IG_REELS_READY=no", out)
+        self.assertIn("IG_REELS_HOSTED=yes", out)
+        self.assertIn("IG_USER_ID=1784", out)
+        self.assertIn("Reels-ready by URL", out)
+        self.assertIn("media_host.py", out)
+
+    def test_the_third_door_is_shut_for_a_personal_account_and_for_an_unreadable_token(self):
+        routes = self.ig_login_routes()
+        routes["GET /me"] = (200, json.dumps({"user_id": "1784", "username": "docoga.ng",
+                                              "account_type": "PERSONAL"}))
+        code, out, _ = self.run_ig(routes, ["--probe-reels"], {"IG_API_PATH": "instagram-login"})
+        self.assertEqual(code, 0, out)
+        self.assertIn("IG_REELS_HOSTED=no", out)
+        routes["GET /me"] = (400, json.dumps({"error": {"message": "Invalid OAuth access token",
+                                                        "code": 190}}))
+        code, out, _ = self.run_ig(routes, ["--probe-reels"], {"IG_API_PATH": "instagram-login"})
+        self.assertIn("IG_REELS_HOSTED=no", out)
+
+    def test_a_hosted_reel_goes_by_video_url_on_the_instagram_login_host(self):
+        """The third door end to end: no bytes to rupload, the container carries `video_url`
+        (the worker's /m/ URL), Meta polls to FINISHED, publish, read back."""
+        url = "https://docoga-pass.johnazani.workers.dev/m/Qx9rT2uV7wY0zA3bC5dE8fG1hJ4kL6mN.mp4"
+        routes = self.ig_login_routes(container=(200, json.dumps({"id": "CONT"})))
+        routes.update({
+            "GET /1784/content_publishing_limit": (200, json.dumps(
+                {"data": [{"quota_usage": 1, "config": {"quota_total": 100}}]})),
+            "GET /1784/media": (200, json.dumps({"data": []})),
+            "GET /CONT": (200, json.dumps({"status_code": "FINISHED"})),
+            "POST /1784/media_publish": (200, json.dumps({"id": "REEL9"})),
+            "GET /REEL9": (200, json.dumps({"permalink": "https://www.instagram.com/reel/REEL9/"})),
+        })
+        head = mock.patch.object(ig, "raw_head", return_value=(206, {"Content-Length": "65536",
+                                                                     "Content-Range": "bytes 0-65535/10390900"},
+                                                               b"\x00\x00\x00\x18ftypmp42" + b"\x00" * 100))
+        with head:
+            code, out, fake = self.run_ig(routes, ["--video-url", url, "--caption", self.CAPTION,
+                                                   "--thumb-offset-ms", "1500", "--trial", "--wait-url"],
+                                          {"IG_API_PATH": "instagram-login", "IG_USER_ID": "1784"})
+        self.assertEqual(code, 0, out)
+        self.assertIn("IG_RESULT=sent", out)
+        self.assertIn("instagram.com/reel/REEL9/", out)
+        self.assertEqual(self.uploads, [], "nothing goes to rupload through the third door")
+        container = [c for c in fake.posts if c[1].endswith("/1784/media")]
+        self.assertEqual(len(container), 1, fake.posts)
+        query = urllib.parse.parse_qs(container[0][2])
+        self.assertEqual(query["media_type"], ["REELS"])
+        self.assertEqual(query["video_url"], [url])
+        self.assertEqual(query["share_to_feed"], ["true"])
+        self.assertEqual(query["thumb_offset"], ["1500"])
+        self.assertNotIn("upload_type", query)
+        self.assertTrue(all("graph.instagram.com" in c[1] for c in container), container)
+
+    def test_a_video_story_by_url_is_media_type_stories_plus_video_url(self):
+        url = "https://docoga-pass.johnazani.workers.dev/m/Qx9rT2uV7wY0zA3bC5dE8fG1hJ4kL6mN.mp4"
+        routes = self.ig_login_routes(container=(200, json.dumps({"id": "SCONT"})))
+        routes.update({
+            "GET /1784/content_publishing_limit": (200, json.dumps(
+                {"data": [{"quota_usage": 1, "config": {"quota_total": 100}}]})),
+            "GET /SCONT": (200, json.dumps({"status_code": "FINISHED"})),
+            "POST /1784/media_publish": (200, json.dumps({"id": "STORY9"})),
+            "GET /STORY9": (200, json.dumps({"id": "STORY9", "media_product_type": "STORY"})),
+        })
+        with mock.patch.object(ig, "raw_head", return_value=(200, {"Content-Length": "10390900"},
+                                                             b"\x00\x00\x00\x18ftypmp42" + b"\x00" * 100)):
+            code, out, fake = self.run_ig(routes, ["--story-video-url", url],
+                                          {"IG_API_PATH": "instagram-login", "IG_USER_ID": "1784"})
+        self.assertEqual(code, 0, out)
+        self.assertIn("IG_RESULT=sent", out)
+        container = [c for c in fake.posts if c[1].endswith("/1784/media")]
+        self.assertEqual(len(container), 1, fake.posts)
+        query = urllib.parse.parse_qs(container[0][2])
+        self.assertEqual(query["media_type"], ["STORIES"])
+        self.assertEqual(query["video_url"], [url])
+        self.assertNotIn("caption", query, "a Story carries no caption")
+        self.assertEqual(self.uploads, [])
+
     def test_probe_on_the_instagram_login_path_needs_a_professional_account(self):
         routes = self.ig_login_routes()
         routes["GET /me"] = (200, json.dumps({"user_id": "1784", "username": "docoga.ng",

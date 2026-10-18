@@ -319,12 +319,63 @@ reports show the identical `upload_type=resumable` call working on `graph.instag
 Rather than argue, the lane asks every morning the first door is shut: `--probe-reels` on
 `IG_API_PATH=instagram-login` creates **one** resumable REELS container (never published,
 invisible, expires in 24 h) and reads whether Meta returned an upload `uri`. A "which door"
-step then picks `facebook-login`, `instagram-login`, or `none`, and the Reel/Story upload
-steps use that door's token. The run summary names the door.
+step then picks `facebook-login`, `instagram-login`, `hosted`, or `none`, and the Reel/Story
+upload steps use that door's token. The run summary names the door.
 
-### The one-time step, if the probe says "no"
+### The third door — a Reel by URL, no Page link at all (18 Oct 2026)
 
-The probe's own line tells you which of these two it is:
+On Sunday 18 Oct the owner tried the Page link again from the Page's own *Linked accounts*
+screen, once, 40 hours after the first refusal — and Facebook refused again, this time with no
+date. The 17 Oct probe had also shown that `graph.instagram.com` does **not** open a resumable
+session for the Instagram-Login token (`resumable-on-instagram-login`). Both of the doors
+above were therefore shut by Meta for an unknown time, and a Reel lane that waits on Meta's
+mood is not a lane. So the dependency was removed.
+
+Meta's own reference for `POST /<IG_ID>/media` says it plainly: *"`video_url` — required for
+videos and reels … We cURL the video using the passed-in URL, so it must be on a public
+server."* That is the **documented standard path** for Reels, it works on the Instagram-Login
+token (the content-publishing guide lists Reels under both login types with the same
+`media_type=REELS` + `video_url` call), and it needs nothing from Facebook: no Page, no link,
+no resumable session — only a professional account the token can read, which `--probe-reels`
+checks anyway and now reports as `IG_REELS_HOSTED=yes|no`.
+
+The only question was *where the file sits for the few minutes Meta needs it*, at ₦0 and with
+no new credential. The answer is the `docoga-pass` worker's KV namespace — the one the
+dashboard feed is already pushed into with the repository's `CLOUDFLARE_API_TOKEN` +
+`CLOUDFLARE_ACCOUNT_ID`:
+
+* `tools/media_host.py put <mp4>` writes the render as `media:<name>:<i>` parts of ≤ 20 MiB
+  (KV's ceiling is 25 MiB; a Reel is 10–14 MB) plus a `media:<name>` manifest, every key with
+  a 48-hour `expiration_ttl`, then polls `HEAD` until the worker answers 200 (KV propagates in
+  under a minute). `<name>` is 32 random URL-safe characters; nothing lists the namespace.
+* The worker serves `GET|HEAD /m/<name>.mp4` (`handleMedia` in `worker/index.js`): real
+  `Content-Length`, `Content-Type: video/mp4`, single-range `Range` support (the publisher
+  samples the first 64 KB; Meta's fetcher may do the same), `Cache-Control: public, max-age=3600`.
+  Unknown or expired names are a plain 404. No auth, no listing, no other verbs.
+* `tools/ig_publish.py --video-url <that URL> --caption … --thumb-offset-ms 1500 --trial`
+  on `IG_API_PATH=instagram-login` creates the container, Meta pulls the file, the lane polls to
+  `FINISHED`, publishes, reads the permalink back — the same spine as every other shape. The
+  Story step reuses the URL with `--story-video-url`, then `media_host.py delete` removes the
+  keys (they would expire on their own in 48 h regardless).
+
+Door order is unchanged — Page token first, resumable Instagram-Login second, `hosted` third —
+so the day Facebook does allow the link, the lane silently goes back to pushing bytes
+directly and the hosting step is simply not run. The dashboard and the run summary name the
+door each time (`IG_REELS_DOOR=hosted`).
+
+What this needs from the owner: nothing. What it costs: nothing (Workers Free: 100k requests a
+day; KV Free: 1,000 writes a day, 1 GB — a Reel is two writes and about 12 MB for a few
+minutes). Known Meta errors on this path and what they mean: `9004/2207052` "could not be
+fetched" = the URL did not answer the file (the lane waits for the HEAD first, so this would be
+a worker outage); `2207003` "takes too long to download" = slow origin (Cloudflare's edge is
+not); `2207026` "format not supported" = a render problem, not a hosting one (our renders are
+H.264/AAC, `+faststart`, 9:16).
+
+### The one-time step, if the probe says "no" to the Page door
+
+Not required any more for Reels (see the third door), but the Page link still helps — it is what
+lets Meta Business Suite show both accounts together and what Facebook's own tools expect.
+When the restriction has cleared, the probe's own line tells you which of these two it is:
 
 1. **`page-link`** — link the Instagram account to the Page: on the Page, facebook.com →
    DocOga Page → Settings → *Linked accounts* → Instagram → **Connect account**; or Instagram

@@ -1302,11 +1302,13 @@ class FacebookReelsContractTests(unittest.TestCase):
         self.assertIn("steps.ig_door.outputs.ready == 'yes'", reel_step["if"])
         self.assertFalse(reel_step.get("continue-on-error"), "a failed Instagram Reel is a red run and an issue")
         self.assertIn("--video-file", reel_step["run"])
-        self.assertIn('IG_API_PATH="$IG_DOOR"', reel_step["run"])
+        self.assertIn('IG_API_PATH="$API_PATH"', reel_step["run"])
+        self.assertIn("instagram-login|hosted)", reel_step["run"],
+                      "both Instagram-Login doors use the lane's own token on graph.instagram.com")
         self.assertIn("/tmp/ig_login_token", reel_step["run"])
         self.assertIn("--window-days 30", reel_step["run"])
         self.assertNotIn("site/social", reel_step["run"], "no render is committed for a Reel")
-        self.assertNotIn("video_url", reel_step["run"], "no public URL is involved")
+        self.assertNotIn("video_url", reel_step["run"], "nothing hard-codes a URL into the container call")
         self.assertIn("IG_REELS", self.text)
         self.assertIn("ig_reel_post.log", self.blob("Open a visible issue if the run failed"))
         self.assertIn("ig_reel_post.log", self.blob("Record what this run did"))
@@ -1316,6 +1318,43 @@ class FacebookReelsContractTests(unittest.TestCase):
         self.assertTrue(story_step.get("continue-on-error"), "a Story is a window, not the record")
         self.assertIn("steps.ig_reel.outcome == 'success'", story_step["if"])
         self.assertIn("--video-story", story_step["run"])
+
+    def test_the_third_door_hosts_the_reel_for_meta_when_neither_token_door_is_open(self):
+        """18 Oct 2026: Facebook refused the Page link a second time (no date) and Meta refuses
+        a resumable session on the Instagram-Login token — so the lane must not depend on either.
+        The `hosted` door: tools/media_host.py puts the render in the worker's KV with the same
+        two Cloudflare secrets the dashboard feed uses, Meta fetches it by `video_url`, the
+        Story reuses the URL, then the keys are removed. Door order is kept: it is the third."""
+        names = [s.get("name") for s in self.job["steps"]]
+        probe2 = self.job["steps"][names.index("Instagram Reels — second door, the Instagram-Login token (one unpublished container)")]
+        door = self.job["steps"][names.index("Instagram Reels — which door")]
+        reel = self.job["steps"][names.index("Instagram Reel — the same render (resumable upload, or by URL through the third door)")]
+        story = self.job["steps"][names.index("Instagram Story — the Reel in the tray too")]
+        self.assertIn("IG_REELS_HOSTED=", probe2["run"])
+        self.assertIn('echo "hosted=${HOSTED:-no}" >> "$GITHUB_OUTPUT"', probe2["run"])
+        self.assertIn("steps.ig_reels_probe2.outputs.hosted", str(door["env"]))
+        self.assertIn("secrets.CLOUDFLARE_API_TOKEN != ''", str(door["env"]),
+                      "the door is only offered when the hosting half can run")
+        run = door["run"]
+        self.assertLess(run.index("DOOR=facebook-login"), run.index("DOOR=instagram-login"))
+        self.assertLess(run.index("DOOR=instagram-login"), run.index("DOOR=hosted"),
+                        "the Page token and the resumable session stay ahead of hosting")
+        self.assertIn('[ "${P2_HOSTED:-no}" = "yes" ] && [ -n "${P2_ID:-}" ] && [ "${HAVE_CF:-false}" = "true" ]', run)
+        for step in (reel, story):
+            env = step.get("env") or {}
+            self.assertEqual(env.get("CLOUDFLARE_API_TOKEN"), "${{ secrets.CLOUDFLARE_API_TOKEN }}", step["name"])
+            self.assertEqual(env.get("CLOUDFLARE_ACCOUNT_ID"), "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}", step["name"])
+        self.assertIn('python3 tools/media_host.py put "$FILE" --ttl-hours 48 --verify-seconds 180', reel["run"])
+        self.assertIn('--video-url "$MEDIA_URL"', reel["run"])
+        self.assertIn("--wait-url", reel["run"], "KV propagates in under a minute; the publisher waits for the URL")
+        self.assertIn("/tmp/ig_media.env", reel["run"])
+        self.assertIn("IG_CAUSE=media-host", reel["run"], "a hosting failure is named, not a mystery")
+        self.assertIn('--story-video-url "$MEDIA_URL"', story["run"])
+        self.assertIn('python3 tools/media_host.py delete "$MEDIA_NAME"', story["run"])
+        self.assertLess(story["run"].index("--story-video-url"), story["run"].index("media_host.py delete"),
+                        "the file is removed only after both the Reel and the Story have it")
+        self.assertNotIn("secrets.CLOUDFLARE_API_TOKEN", str(reel["run"]) + str(story["run"]),
+                         "the secret arrives as env, never interpolated into a script")
 
     def test_the_reel_logs_reach_the_summary_and_the_issue(self):
         summary = self.blob("Record what this run did")

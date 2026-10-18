@@ -241,17 +241,22 @@ jobs:
           MISSING=$(sed -n 's/^IG_REELS_MISSING=//p' /tmp/ig_reels_probe2.log | tail -1)
           IG_ID=$(sed -n 's/^IG_USER_ID=//p' /tmp/ig_reels_probe2.log | tail -1)
           IG_NAME=$(sed -n 's/^IG_USERNAME=//p' /tmp/ig_reels_probe2.log | tail -1)
+          HOSTED=$(sed -n 's/^IG_REELS_HOSTED=//p' /tmp/ig_reels_probe2.log | tail -1)
           echo "ready=${READY:-no}" >> "$GITHUB_OUTPUT"
+          echo "hosted=${HOSTED:-no}" >> "$GITHUB_OUTPUT"
           echo "ig_user_id=${IG_ID}" >> "$GITHUB_OUTPUT"
           echo "ig_username=${IG_NAME}" >> "$GITHUB_OUTPUT"
           {
             echo "- Second door — the Instagram-Login token can open a resumable Reel session: **${READY:-no}**${IG_NAME:+ (@${IG_NAME})}${MISSING:+ — missing: \`${MISSING}\`}"
+            echo "- Third door — the same token publishes a Reel from a short-lived URL (no Page link needed): **${HOSTED:-no}**"
             echo '```'
             grep -v '^IG_' /tmp/ig_reels_probe2.log | tail -n 6
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
-          if [ "${READY:-no}" != "yes" ]; then
-            echo "::warning title=Instagram Reels not ready yet::neither door is open — first: ${P1_MISSING:-see above}; second: ${MISSING:-see the probe log}. The Facebook post and Reel are unaffected; the Instagram Reel is skipped. The Page-link door opens the day Facebook lets the Page connect to @docoga.ng (Page → Settings → Linked accounts → Instagram)."
+          if [ "${READY:-no}" != "yes" ] && [ "${HOSTED:-no}" != "yes" ]; then
+            echo "::warning title=Instagram Reels not ready yet::no door is open — first: ${P1_MISSING:-see above}; second: ${MISSING:-see the probe log}; third: the Instagram-Login token did not read a professional account. The Facebook post and Reel are unaffected; the Instagram Reel is skipped. The Page-link door opens the day Facebook lets the Page connect to @docoga.ng (Page → Settings → Linked accounts → Instagram)."
+          elif [ "${READY:-no}" != "yes" ]; then
+            echo "::notice title=Instagram Reel goes by URL today::Page link still missing (${P1_MISSING:-page-link}) and no resumable session on the Instagram-Login token (${MISSING:-resumable-on-instagram-login}) — the Reel is published by the third door: tools/media_host.py hosts the render for a few minutes and Meta fetches it."
           fi
 
       # One answer for the upload steps below: which door, which account.
@@ -263,13 +268,23 @@ jobs:
           P1_ID: ${{ steps.ig_reels_probe.outputs.ig_user_id }}
           P1_NAME: ${{ steps.ig_reels_probe.outputs.ig_username }}
           P2_READY: ${{ steps.ig_reels_probe2.outputs.ready }}
+          P2_HOSTED: ${{ steps.ig_reels_probe2.outputs.hosted }}
           P2_ID: ${{ steps.ig_reels_probe2.outputs.ig_user_id }}
           P2_NAME: ${{ steps.ig_reels_probe2.outputs.ig_username }}
+          HAVE_CF: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
         run: |
+          # Three doors, in order of preference: the Page token (resumable upload), the
+          # Instagram-Login token with a resumable session, and the Instagram-Login token
+          # with a hosted URL (`hosted`) — the one that needs no Page link at all.
           if [ "${P1_READY:-no}" = "yes" ]; then
             DOOR=facebook-login; ID="$P1_ID"; NAME="$P1_NAME"
           elif [ "${P2_READY:-no}" = "yes" ]; then
             DOOR=instagram-login; ID="$P2_ID"; NAME="$P2_NAME"
+          elif [ "${P2_HOSTED:-no}" = "yes" ] && [ -n "${P2_ID:-}" ] && [ "${HAVE_CF:-false}" = "true" ]; then
+            DOOR=hosted; ID="$P2_ID"; NAME="$P2_NAME"
+          elif [ "${P2_HOSTED:-no}" = "yes" ] && [ -n "${P2_ID:-}" ]; then
+            DOOR=none; ID=""; NAME=""
+            echo "::warning title=Third door needs the Cloudflare secrets::CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID are not set, so the Reel cannot be hosted for Meta to fetch (the dashboard feed uses the same two secrets)."
           else
             DOOR=none; ID=""; NAME=""
           fi
@@ -608,7 +623,7 @@ jobs:
       # result are read from the logs those paths share. Caption = the day's copy,
       # the same words the Facebook Reel carries as its description. The cover is the
       # frame at 1.5 s — the navy title card — so no second render or hosted image.
-      - name: Instagram Reel — the same render, by resumable upload
+      - name: Instagram Reel — the same render (resumable upload, or by URL through the third door)
         id: ig_reel
         if: ${{ steps.ig_door.outputs.ready == 'yes' && (steps.reel_publish.outcome == 'success' || (!inputs.dry_run && inputs.mode == 'reel')) }}
         env:
@@ -621,6 +636,9 @@ jobs:
           IN_FORCE: ${{ inputs.force }}
           LEDGER_LABEL: Instagram publish ledger
           BRANCH: ${{ github.event.repository.default_branch }}
+          # Third door only (tools/media_host.py): the same two secrets the dashboard feed uses.
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           set -o pipefail
           FILE="${VIDEO_PATH:-$(sed -n 's/^video_path=//p' /tmp/fb_reel_render.log 2>/dev/null | tail -1)}"
@@ -668,18 +686,48 @@ jobs:
             echo "::notice title=Instagram Reel already out::\"$TITLE\" is inside the 30-day window on Instagram — nothing uploaded"
             exit 0
           fi
-          # The door the probes opened: the Page token, or the Instagram lane's own token.
-          if [ "$IG_DOOR" = "instagram-login" ]; then IG_TOKEN="$(cat /tmp/ig_login_token)"; else IG_TOKEN="$FB_PAGE_ACCESS_TOKEN"; fi
-          set +e
+          # The door the probes opened: the Page token, or the Instagram lane's own token
+          # (resumable, or — `hosted` — by a short-lived URL Meta fetches).
+          case "$IG_DOOR" in
+            instagram-login|hosted) IG_TOKEN="$(cat /tmp/ig_login_token)"; API_PATH=instagram-login ;;
+            *) IG_TOKEN="$FB_PAGE_ACCESS_TOKEN"; API_PATH="$IG_DOOR" ;;
+          esac
           TRIAL=""
           case "$(printf '%s' "${IG_TRIAL_REELS:-on}" | tr '[:upper:]' '[:lower:]')" in
             1|true|yes|on) TRIAL="--trial" ;;
           esac
-          IG_API_PATH="$IG_DOOR" IG_ACCESS_TOKEN="$IG_TOKEN" IG_USER_ID="$IG_USER_ID" \
-            python3 tools/ig_publish.py --video-file "$FILE" --caption "$CAPTION" --thumb-offset-ms 1500 $TRIAL $FORCE \
-            2>&1 | tee /tmp/ig_reel_post.log
-          STATUS=${PIPESTATUS[0]}
-          set -e
+          HOW="uploaded to Meta directly; no public URL, nothing committed"
+          if [ "$IG_DOOR" = "hosted" ]; then
+            # Third door: put the render where Meta can cURL it (worker KV, 32-char random
+            # name, 48 h TTL), publish by URL, remove it after the Story step. ₦0: the same
+            # two Cloudflare secrets the dashboard feed already uses.
+            set +e
+            python3 tools/media_host.py put "$FILE" --ttl-hours 48 --verify-seconds 180 2>&1 | tee /tmp/ig_media_put.log
+            PUT_STATUS=${PIPESTATUS[0]}
+            set -e
+            MEDIA_URL=$(sed -n 's/^MEDIA_URL=//p' /tmp/ig_media_put.log | tail -1)
+            MEDIA_NAME=$(sed -n 's/^MEDIA_NAME=//p' /tmp/ig_media_put.log | tail -1)
+            if [ "$PUT_STATUS" -ne 0 ] || [ -z "$MEDIA_URL" ]; then
+              echo "::error title=Instagram Reel not hosted::tools/media_host.py exited $PUT_STATUS — the Reel cannot be offered to Meta by URL today; Facebook's own Reel is unaffected"
+              printf 'IG_RESULT=failed\nIG_CAUSE=media-host\n' > /tmp/ig_reel_post.log
+              exit 6
+            fi
+            printf 'MEDIA_NAME=%s\nMEDIA_URL=%s\n' "$MEDIA_NAME" "$MEDIA_URL" > /tmp/ig_media.env
+            HOW="fetched by Meta from a 48-hour unguessable URL on the worker (removed after the Story step)"
+            set +e
+            IG_API_PATH="$API_PATH" IG_ACCESS_TOKEN="$IG_TOKEN" IG_USER_ID="$IG_USER_ID" \
+              python3 tools/ig_publish.py --video-url "$MEDIA_URL" --caption "$CAPTION" --thumb-offset-ms 1500 --wait-url --wait-url-deadline 300 $TRIAL $FORCE \
+              2>&1 | tee /tmp/ig_reel_post.log
+            STATUS=${PIPESTATUS[0]}
+            set -e
+          else
+            set +e
+            IG_API_PATH="$API_PATH" IG_ACCESS_TOKEN="$IG_TOKEN" IG_USER_ID="$IG_USER_ID" \
+              python3 tools/ig_publish.py --video-file "$FILE" --caption "$CAPTION" --thumb-offset-ms 1500 $TRIAL $FORCE \
+              2>&1 | tee /tmp/ig_reel_post.log
+            STATUS=${PIPESTATUS[0]}
+            set -e
+          fi
           RESULT=$(sed -n 's/^IG_RESULT=//p' /tmp/ig_reel_post.log | tail -1)
           CAUSE=$(sed -n 's/^IG_CAUSE=//p' /tmp/ig_reel_post.log | tail -1)
           PERMALINK=$(sed -n 's/^IG_PERMALINK=//p' /tmp/ig_reel_post.log | tail -1)
@@ -689,7 +737,8 @@ jobs:
             echo
             echo "- result: \`${RESULT:-?}${CAUSE:+ · cause \`${CAUSE}\`}\` on @${IG_USERNAME:-docoga.ng}"
             echo "- permalink: ${PERMALINK:-not reported}"
-            echo "- file: $(basename "$FILE") ($(stat -c%s "$FILE" 2>/dev/null || echo 0) bytes) — uploaded to Meta directly; no public URL, nothing committed"
+            echo "- door: \`${IG_DOOR}\`"
+            echo "- file: $(basename "$FILE") ($(stat -c%s "$FILE" 2>/dev/null || echo 0) bytes) — $HOW"
           } >> "$GITHUB_STEP_SUMMARY"
           if [ "$RESULT" = "sent" ]; then
             # Bookkeeping cannot turn a live Reel red — warnings, with the honest consequence.
@@ -728,6 +777,8 @@ jobs:
           REEL_DATE: ${{ steps.reel_plan.outputs.run_date }}
           LEDGER_LABEL: Instagram publish ledger
           BRANCH: ${{ github.event.repository.default_branch }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           set -o pipefail
           FILE="${VIDEO_PATH:-$(sed -n 's/^video_path=//p' /tmp/fb_reel_render.log 2>/dev/null | tail -1)}"
@@ -737,11 +788,24 @@ jobs:
           fi
           TITLE="${REEL_TITLE:-$(sed -n 's/^title=//p' /tmp/fb_reel_render.log | tail -1)}"
           RUN_DATE="${REEL_DATE:-$(date +%F)}"
-          if [ "$IG_DOOR" = "instagram-login" ]; then IG_TOKEN="$(cat /tmp/ig_login_token)"; else IG_TOKEN="$FB_PAGE_ACCESS_TOKEN"; fi
+          case "$IG_DOOR" in
+            instagram-login|hosted) IG_TOKEN="$(cat /tmp/ig_login_token)"; API_PATH=instagram-login ;;
+            *) IG_TOKEN="$FB_PAGE_ACCESS_TOKEN"; API_PATH="$IG_DOOR" ;;
+          esac
+          MEDIA_URL=""; MEDIA_NAME=""
+          [ -f /tmp/ig_media.env ] && MEDIA_URL=$(sed -n 's/^MEDIA_URL=//p' /tmp/ig_media.env | tail -1) && MEDIA_NAME=$(sed -n 's/^MEDIA_NAME=//p' /tmp/ig_media.env | tail -1)
           set +e
-          IG_API_PATH="$IG_DOOR" IG_ACCESS_TOKEN="$IG_TOKEN" IG_USER_ID="$IG_USER_ID" \
-            python3 tools/ig_publish.py --video-file "$FILE" --video-story 2>&1 | tee /tmp/ig_reel_story.log
-          STATUS=${PIPESTATUS[0]}
+          if [ "$IG_DOOR" = "hosted" ] && [ -n "$MEDIA_URL" ]; then
+            IG_API_PATH="$API_PATH" IG_ACCESS_TOKEN="$IG_TOKEN" IG_USER_ID="$IG_USER_ID" \
+              python3 tools/ig_publish.py --story-video-url "$MEDIA_URL" 2>&1 | tee /tmp/ig_reel_story.log
+            STATUS=${PIPESTATUS[0]}
+            # Meta has both copies now — the hosted file goes (it would expire in 48 h anyway).
+            [ -n "$MEDIA_NAME" ] && python3 tools/media_host.py delete "$MEDIA_NAME" 2>&1 | tail -n 1
+          else
+            IG_API_PATH="$API_PATH" IG_ACCESS_TOKEN="$IG_TOKEN" IG_USER_ID="$IG_USER_ID" \
+              python3 tools/ig_publish.py --video-file "$FILE" --video-story 2>&1 | tee /tmp/ig_reel_story.log
+            STATUS=${PIPESTATUS[0]}
+          fi
           set -e
           RESULT=$(sed -n 's/^IG_RESULT=//p' /tmp/ig_reel_story.log | tail -1)
           CAUSE=$(sed -n 's/^IG_CAUSE=//p' /tmp/ig_reel_story.log | tail -1)
