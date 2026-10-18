@@ -26,6 +26,7 @@ Run:  python3 tools/shorts_reel.py [--date YYYY-MM-DD] [--out PATH] [--dry-run]
 """
 
 import argparse
+import json
 import os
 import sys
 from datetime import date, datetime
@@ -48,6 +49,28 @@ SHOT_DARKEN = 0.68
 HANDLE = "@docoga.ng"
 CTA_URL = "docoga.com.ng"
 SERIES_KICKER = "DOCOGA · TENANT TIPS"
+SHORTS_LEDGER = Path(__file__).resolve().parents[1] / "logs" / "youtube_published.json"
+
+
+def series_kicker(ledger=SHORTS_LEDGER, env=None):
+    """`DOCOGA · TENANT TIPS · No. 7` — the episode number as a returning-viewer cue on the cover
+    (18 Oct 2026, fourth pass). Numbered series read as a show, not a one-off, and the number is
+    the one thumbnail element that changes every day without touching the system. Counted from
+    the YouTube ledger: distinct published / scheduled Shorts + 1. `SHORTS_SERIES_NO` overrides;
+    `SHORTS_SERIES_NO=off` keeps the plain kicker. No ledger → plain kicker."""
+    env = os.environ if env is None else env
+    raw = str(env.get("SHORTS_SERIES_NO", "")).strip().lower()
+    if raw == "off":
+        return SERIES_KICKER
+    if raw.isdigit():
+        return "%s · No. %d" % (SERIES_KICKER, int(raw))
+    try:
+        rows = json.loads(Path(ledger).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return SERIES_KICKER
+    seen = {r.get("video_id") for r in rows if isinstance(r, dict)
+            and r.get("video_id") and str(r.get("state", "")).lower() in ("published", "scheduled", "listed")}
+    return "%s · No. %d" % (SERIES_KICKER, len(seen) + 1) if seen else SERIES_KICKER
 CTA_SUPPORT = "Free tenant documents. No signup."
 DISCLAIMER_KICKER = "GENERAL INFO · RULES VARY BY STATE"
 FOLLOW_KICKER = "FOLLOW " + HANDLE.upper()
@@ -103,7 +126,7 @@ def reel_from_topic(topic, out_path, platform="YouTube Shorts"):
     scenes = []
 
     setup, consequence = split_hook(hook["text"])
-    hook_beats = [ms.Beat("kicker", "kicker", SERIES_KICKER, size=30, y=470, color=ms.FAINT)]
+    hook_beats = [ms.Beat("kicker", "kicker", series_kicker(), size=30, y=470, color=ms.FAINT)]
     if consequence:
         # STAKES hook (the pattern the channel's numbers reward — see
         # generate_short_video.py): the careless act lands first in white, the

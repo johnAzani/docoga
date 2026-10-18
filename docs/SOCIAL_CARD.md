@@ -83,6 +83,34 @@ columns** at a readable size instead of one tiny column; and Threads actually po
 again — every run since 17 Oct had dropped the image because one optional flag was refused
 (`docs/INCIDENT_LOG.md`).
 
+## 3c. Third pass (18 Oct 2026, evening) — the rotation's carousel
+
+The one format the research table rates above everything else — the **carousel** (0.50 % ER
+against 0.33 % for a single image; saves 3.2 % against 0.6 %; saves are 2026's heaviest ranking
+signal) — only existed on brain days (Tue/Thu packs). The brain has been idle since the 18th
+(`brain/drafts/` empty), so Instagram got a single card every day. Now the rotation copy's own
+structure is the carousel (`social_card.rotation_slides`, `--slides … --from-json`):
+
+* **slide 1** — the headline on the slabs, plus the lead-in sentence if the copy has one (a
+  promise, in the top 40 %);
+* **one slide per ✅ / numbered / bullet / A)–D) line** — the number (or letter) as the giant
+  figure on a yellow slab, the line below it at 60–112 px (`plan` lets a one-or-two-character
+  counter carry a larger line than a brain stat like `₦150,000`);
+* **❌ lines** become a `Never.` slide with the red mark;
+* **last slide** — the copy's closing question or sentence on the slabs, else the standing
+  close *Save this. Send it to one tenant or landlord who needs it today.* (saves + sends are
+  what the format is for);
+* every slide carries a **segmented progress bar** (current segment white, the rest royal) and,
+  until the last, a muted **→** swipe cue at the right edge — the two devices the carousel
+  studies credit with swipe-through; the `1/6` counter stays top-right.
+
+Copy with fewer than three marked lines (or ≥ 3 plain sentences under a headline) stays a single
+card: `CARD_SLIDES=0`, the workflow posts the card as before. `manual` and `deepdive` days are
+never carousels. Nineteen of the 41 rotation templates qualify; at most ten slides (Instagram's
+limit) and seven points. `CARD_SLIDES_SOURCE=brain|rotation` says which path drew the day.
+`IG_CAROUSEL_DAYS` now defaults to **every weekday** (`1,2,3,4,5`); set it back to `2,4` to
+return to Tue/Thu, or `IG_CAROUSEL=off`.
+
 ## 4. Checking it
 
 `tools/tests/test_social_card_design.py`: slab geometry inside the grid square, yellow in one

@@ -97,9 +97,23 @@ stakes. So the title now leads with the searchable subject and keeps the hook af
 (`generate_short_video.yt_title`, each rotation topic carries a `search` phrase; brain Shorts
 without one keep the hook-only title). Cover = stakes, title = subject: complementarity.
 
+### Fourth pass: the episode number
+Asked a fourth time for a cover "no one can resist", the honest answer is that the system is
+now judged stable — hero, set-up, ✗, chip, band, photo rule, title complementarity — and that
+changing the composition again without a measurement would be churn, not improvement. The one
+addition with evidence behind it is the **series number**: the kicker reads
+`DOCOGA · TENANT TIPS · No. 5` (`shorts_reel.series_kicker`, counted from the YouTube ledger's
+distinct published/scheduled Shorts + 1). Numbered episodes read as a show, not a one-off —
+the returning-viewer cue the Shorts-feed studies credit for repeat taps — and the number is the
+one element that is new every day without touching the hero. `SHORTS_SERIES_NO=<n>` overrides,
+`SHORTS_SERIES_NO=off` restores the plain kicker. The cover is still frame 0 of the video, so
+the video's opening carries the same number.
+
 ## 4. Measuring it
-YouTube Studio reports thumbnail impressions and CTR for Shorts since 2026; the Monday
-`youtube_stats` lane pulls the channel numbers. Read the Shorts-tab/search CTR across weeks
+YouTube Studio reports thumbnail impressions and CTR for Shorts since 2026 — **in Studio only**;
+the YouTube Analytics API still exposes no impressions or CTR, so no lane can A/B covers
+automatically. The Monday `youtube_stats` lane pulls the channel numbers it can (views, watch
+time, subscribers). Read the Shorts-tab/search CTR across weeks
 (≥ 5,000 impressions before believing a difference). TikTok: profile views → follows ratio.
 
 ## 5. What is deliberately not done
