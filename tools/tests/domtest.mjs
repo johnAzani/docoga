@@ -749,6 +749,27 @@ section('Receipt ledger — verification code and QR on the printed receipt');
   check('the register call sends only the index fields (no name, address or phone can ever leave the page)',
         (() => { const s = lex(rdom, 'registerReceipt.toString()'); const m = /body:JSON\.stringify\(\{([^}]*)\}\)/.exec(s); return !!m && m[1].split(',').map(x => x.split(':')[0].trim()).sort().join(',') === 'amount,date,fp,from,kind,state,to'; })());
   check('no script error while printing the ledger strip', (rw.__errors || []).length === 0, (rw.__errors || []).join(' | '));
+
+  section('Issuer’s book — the codes this phone printed, local only');
+  rd.getElementById('r_from').value = 'Ada Obi';
+  rw.eval('bookAdd("DR-7K3M-Q2XA", collectReceipt()); bookAdd("DR-7K3M-Q2XA", collectReceipt()); bookAdd("DR-AAAA-2222", Object.assign(collectReceipt(), {r_amt: "250000", r_from: "Chidi <b>x</b>", r_date: "2026-09-01"}));');
+  const book = JSON.parse(rw.localStorage.getItem('docoga_book') || '[]');
+  check('two codes are kept once each, newest first, with date, amount and payer only (no address, no phone)',
+        book.length === 2 && book[0].c === 'DR-AAAA-2222' && book[1].c === 'DR-7K3M-Q2XA' && book[1].a === 850000 && book[1].p === 'Ada Obi' && Object.keys(book[0]).sort().join(',') === 'a,c,d,p', JSON.stringify(book));
+  check('the summary badge shows the count before the list is opened', rd.getElementById('book-n').textContent === '(2)' && rd.getElementById('book').innerHTML === '');
+  rd.getElementById('book-wrap').open = true; rw.eval('renderBook()');
+  const bookEl = rd.getElementById('book');
+  check('opened: each row shows the code, a Check link to docoga.com.ng/v/… and a WhatsApp “Send link”',
+        /DR-AAAA-2222/.test(bookEl.textContent) && /₦250,000/.test(bookEl.textContent) && !!bookEl.querySelector('a[href="https://docoga.com.ng/v/DR-AAAA-2222"]') && !!bookEl.querySelector('a[href^="https://wa.me/?text="]'), bookEl.textContent.slice(0, 160));
+  check('the payer name is escaped, never executed', bookEl.querySelectorAll('b').length === 2 && /Chidi &lt;b&gt;x&lt;\/b&gt;/.test(bookEl.innerHTML));
+  const wa = decodeURIComponent(bookEl.querySelector('a[href^="https://wa.me/?text="]').getAttribute('href'));
+  check('the WhatsApp text carries the check link only — no amount, no name, no address', /docoga\.com\.ng\/v\/DR-AAAA-2222/.test(wa) && !/250|Chidi|Ada/.test(wa), wa);
+  const callsBefore = (rw.__calls || []).length;
+  rw.eval('renderBook(); bookRead();');
+  check('the book never touches the network', (rw.__calls || []).length === callsBefore);
+  rw.confirm = () => true; rw.eval('bookClear()');
+  check('Clear book empties the phone (confirm() was asked) and the codes still verify online — nothing to delete server-side', !rw.localStorage.getItem('docoga_book') && /No codes yet/.test(rd.getElementById('book').textContent));
+  check('no script error in the book', (rw.__errors || []).length === 0, (rw.__errors || []).join(' | '));
 }
 
 /* ============================ RESULT ===================================== */

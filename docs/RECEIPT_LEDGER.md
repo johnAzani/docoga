@@ -120,8 +120,13 @@ changes the hash.
   beside the code. `GET /qr/<code>.svg` serves the same image at 240 px for the check page and
   anything that comes later (issuer's book, WhatsApp share). Page weight +≈320 B gzipped.
 - ~~`docoga.com.ng/v/*` route~~ — **done 19 Oct 2026, 2:50pm (step 3, owner's tap)**; see §3.
-- Landlord/agent "book": the issuer keeps a list of their own codes in local storage; the step
-  before the B2B seat.
+- ~~Landlord/agent "book"~~ — **done 19 Oct 2026 (step 4)**: "📒 My receipt codes" under the
+  receipt form lists every code this phone has printed (date · payer · amount · code), newest
+  first, capped at 200, in `localStorage` only (`docoga_book`). Each row links to the check page
+  and offers a WhatsApp "Send link" whose text is the check URL only (no amount, no names). "Clear
+  book" removes the list from the phone; the codes keep verifying because the ledger never knew
+  who printed them. Nothing new is sent anywhere. This is the shape of the Business seat's
+  "firm book" (synced, multi-device) — that one comes with the seat, not before.
 - The index page and the first "DocOga Rent Monitor" post.
 
 Sources read 19 Oct 2026: Lagos Tenancy Law 2011 gazette (lagosministryofjustice.org); Lagos

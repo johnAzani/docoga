@@ -183,8 +183,8 @@ month the site sells 25 passes; everything the lanes do is aimed at that number 
 ### Decision log entry
 - **19 Oct 2026, 2:50pm** — Owner said "one after the other": dashboard ledger panel (#105,
   2:17pm), QR on the receipt (#106, 2:29pm), then he added the `docoga.com.ng/v/*` route himself
-  (ten taps, 2:35–2:50pm). Receipts now print the short address. Next announced: the issuer's
-  book (local-only list of a landlord's own codes).
+  (ten taps, 2:35–2:50pm). Receipts now print the short address. Then the issuer's book
+  (local-only list of a landlord's own codes) — step 4, same afternoon.
 - **19 Oct 2026, 2:30pm** — **Receipt ledger built** (`docs/RECEIPT_LEDGER.md`), announced in
   the 1:45pm Founder's brief: a free `DR-XXXX-XXXX` verification code on every receipt, its own
   Worker on the shared KV namespace, no personal data stored, ₦0. Index publication rules fixed

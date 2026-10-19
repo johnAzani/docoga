@@ -137,5 +137,24 @@ class TheShortAddress(unittest.TestCase):
         self.assertIn("LEDGER_ROUTE=", DEPLOY)
 
 
+class IssuersBook(unittest.TestCase):
+    """Step 4: the codes a phone printed, kept in localStorage only. Nothing new reaches any server."""
+
+    def test_the_book_is_local_only_and_minimal(self):
+        block = SITE[SITE.index("function bookRead("):SITE.index("function renderReceipt(")]
+        self.assertNotIn("fetch(", block)
+        self.assertNotIn("LEDGER_URL", block, "the book reads nothing from the ledger; it only links to the check page")
+        self.assertIn("localStorage.getItem('docoga_book')", block)
+        self.assertIn("{c:code,d:d.r_date,a:Math.round(Number(d.r_amt)||0),p:String(d.r_from||'').slice(0,40)}", block,
+                      "code, date, amount, payer — no address, no phone, no issuer")
+        self.assertIn("b.slice(0,200)", block)
+        self.assertIn("encodeURIComponent('Verify this DocOga receipt: https://'+LEDGER_CHECK+x.c)", block,
+                      "the WhatsApp text is static plus the code — no form values in a destination URL")
+
+    def test_every_minted_or_recalled_code_lands_in_the_book(self):
+        self.assertIn("receiptVerify={fp,code:c.code,qr:c.qr||''}; bookAdd(c.code,d);", SITE)
+        self.assertIn("receiptVerify={fp,code:j.code,qr}; bookAdd(j.code,d);", SITE)
+
+
 if __name__ == "__main__":
     unittest.main()
