@@ -11,5 +11,5 @@ binding = "KV"
 id = "f3a5afebe7d04bb0a6018c0d7d355253"
 
 [vars]
-PUBLIC_URL = "https://docoga-ledger.johnazani.workers.dev"
+PUBLIC_URL = "https://docoga.com.ng"   # Workers Route docoga.com.ng/v/* → docoga-ledger (owner, 19 Oct 2026 2:50pm); workers.dev still answers
 ALLOWED_ORIGINS = "https://docoga.com.ng,https://www.docoga.com.ng"

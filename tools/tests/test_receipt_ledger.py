@@ -121,5 +121,21 @@ class QrOnThePaper(unittest.TestCase):
         self.assertIn("receiptVerify.qr?'<span style=\"flex:0 0 auto;line-height:0\">'+receiptVerify.qr+'</span>'", SITE)
 
 
+class TheShortAddress(unittest.TestCase):
+    """Step 3 (owner's tap, 19 Oct 2026 2:50pm): docoga.com.ng/v/* → docoga-ledger. Paper, QR and worker agree."""
+
+    def test_public_url_is_the_site_and_the_paper_prints_the_same_path(self):
+        m = re.search(r'PUBLIC_URL = "([^"]+)"', LEDGER_TOML)
+        self.assertEqual(m.group(1), "https://docoga.com.ng")
+        c = re.search(r'const LEDGER_CHECK="([^"]+)"', SITE)
+        self.assertEqual("https://" + c.group(1), m.group(1) + "/v/")
+        self.assertIn("esc(LEDGER_CHECK)+esc(receiptVerify.code)", SITE)
+        self.assertNotIn("LEDGER_URL.replace('https://','')", SITE, "the workers.dev address must no longer be printed")
+
+    def test_the_deploy_probes_the_route_from_outside(self):
+        self.assertIn("https://docoga.com.ng/v/DR-0000-0000", DEPLOY)
+        self.assertIn("LEDGER_ROUTE=", DEPLOY)
+
+
 if __name__ == "__main__":
     unittest.main()
