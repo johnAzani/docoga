@@ -825,7 +825,7 @@ async function renderLedger(){
     :'<p class="hint">No receipt has been registered yet. The first one that prints with the box ticked appears here within the hour.</p>';
   const states=Object.entries(L.by_state||{}).sort((a,b)=>b[1]-a[1]);
   $('ledger-states').innerHTML='<thead><tr><th>State</th><th class="num">Receipts</th><th class="num">Share</th></tr></thead><tbody>'+(states.length?states.map(r=>'<tr><td>'+esc(r[0])+'</td><td class="num">'+r[1]+'</td><td class="num">'+(L.total?Math.round(r[1]/L.total*100)+'%':'—')+'</td></tr>').join(''):'<tr><td class="hint" colspan="3">nothing yet</td></tr>')+'</tbody>';
-  $('ledger-note').textContent='Counts only — the ledger holds no names, addresses or phones. Amount medians for a cell are published only once it reaches '+need+' receipts (docs/RECEIPT_LEDGER.md). Numbers refresh every hour; check any code at '+LEDGER_URL.replace('https://','')+'/v/DR-…';
+  $('ledger-note').textContent='Counts only — the ledger holds no names, addresses or phones. Amount medians for a cell are published only once it reaches '+need+' receipts (docs/RECEIPT_LEDGER.md). Numbers refresh every hour; check any code at docoga.com.ng/v/DR-…';
 }
 
 /* ---------------- website: Cloudflare Web Analytics ---------------- */

@@ -1756,6 +1756,7 @@ if(p.r_verify!=null) $('r_verify').checked=!!p.r_verify;
 }
 /* Receipt ledger (docs/RECEIPT_LEDGER.md): SHA-256 of the words, computed here; the server keeps hash + amount/state/period/date only. receiptCanonical() is byte-identical to workers/ledger/index.js (tested). */
 const LEDGER_URL="https://docoga-ledger.johnazani.workers.dev";
+const LEDGER_CHECK="docoga.com.ng/v/"; // the route the owner added 19 Oct 2026; must equal the worker's PUBLIC_URL + /v/ (tested)
 function receiptCanonical(f){
   var n=function(s){return String(s==null?'':s).replace(/\s+/g,' ').trim().toLowerCase();};
   var amt=String(Math.round(Number(String(f.amount==null?'':f.amount).replace(/[^0-9.]/g,''))||0));
@@ -1792,7 +1793,7 @@ function receiptVerifyLine(d){
   if(!d.r_verify||!receiptVerify.code) return '';
   return '<div style="margin-top:10px;padding:8px 10px;border:1px dashed #333;font-size:11.5px;color:#222;display:flex;justify-content:space-between;gap:12px;align-items:center">'+
     (receiptVerify.qr?'<span style="flex:0 0 auto;line-height:0">'+receiptVerify.qr+'</span>':'')+
-    '<span style="flex:1 1 auto">Verification code <b style="font-family:ui-monospace,Menlo,monospace;letter-spacing:.06em">'+esc(receiptVerify.code)+'</b>'+(receiptVerify.qr?'<br><span style="color:#555">Scan the square, or type the code at</span>':'<br><span style="color:#555">Check it free:</span>')+' '+esc(LEDGER_URL.replace('https://',''))+'/v/'+esc(receiptVerify.code)+'</span></div>';
+    '<span style="flex:1 1 auto">Verification code <b style="font-family:ui-monospace,Menlo,monospace;letter-spacing:.06em">'+esc(receiptVerify.code)+'</b>'+(receiptVerify.qr?'<br><span style="color:#555">Scan the square, or type the code at</span>':'<br><span style="color:#555">Check it free:</span>')+' '+esc(LEDGER_CHECK)+esc(receiptVerify.code)+'</span></div>';
 }
 function renderReceipt(){
 const d=collectReceipt();

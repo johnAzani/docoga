@@ -275,7 +275,7 @@ console.log('— Social tab: the day’s plan, in the owner’s clock —');
     check('progress bars: Lagos rent at 93%, listed first', lbars.length >= 4 && /width:93%/.test(lbars[0]), lbars.join(' | '));
     check('cells read in plain words (caution fee, Oct 2026), never as raw keys', /Lagos · caution fee · Oct 2026/.test(txt('ledger-cells')) && !/\|/.test(txt('ledger-cells')), txt('ledger-cells').slice(0, 160));
     check('states table: Lagos 33 = 80% first', /Lagos\s*33\s*80%/.test(txt('ledger-states')) && txt('ledger-states').indexOf('Lagos') < txt('ledger-states').indexOf('Rivers'), txt('ledger-states').slice(0, 120));
-    check('the note says counts only, no names/addresses/phones, and where to check a code', /no names, addresses or phones/.test(txt('ledger-note')) && /docoga-ledger\.johnazani\.workers\.dev\/v\/DR-/.test(txt('ledger-note')), txt('ledger-note'));
+    check('the note says counts only, no names/addresses/phones, and where to check a code', /no names, addresses or phones/.test(txt('ledger-note')) && /docoga\.com\.ng\/v\/DR-/.test(txt('ledger-note')), txt('ledger-note'));
     check('the ledger was read once at boot and not again within 10 minutes', ledgerCalls === 1, 'calls=' + ledgerCalls);
     click([...doc.querySelectorAll('.tab')].find(t => t.getAttribute('data-view') === 'ov'));
     await until(() => /Receipts verified/.test(txt('kpis')), 40);

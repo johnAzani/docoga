@@ -76,9 +76,11 @@ collapsed, trimmed, lower-cased; amount as an integer. Changing one character on
 changes the hash.
 
 ## 3. What the owner may be asked for (not blocking)
-- **A route** `docoga.com.ng/v/*` → `docoga-ledger` in the Cloudflare dashboard (Workers Routes),
-  so the printed line can read `docoga.com.ng/v/DR-…` instead of the workers.dev address. Until
-  then the workers.dev URL is printed and works.
+- ~~A route `docoga.com.ng/v/*` → `docoga-ledger`~~ — **added by the owner 19 Oct 2026, 2:50pm**
+  (ten taps, one per message). `PUBLIC_URL` is now `https://docoga.com.ng`; the paper, the QR
+  and the check page all say `docoga.com.ng/v/DR-…`. The workers.dev address keeps answering, so
+  receipts printed before 2:50pm still verify. The deploy probes the route from outside
+  (`LEDGER_ROUTE=`).
 
 ## 4. What it costs and what it can break
 - ₦0. Two KV writes per new receipt; reads on the verify page; `/api/stats` is cached an hour.
@@ -117,10 +119,7 @@ changes the hash.
   allow-list regex (`QR_SAFE`) before inlining it, and the receipt prints an 18 mm square
   beside the code. `GET /qr/<code>.svg` serves the same image at 240 px for the check page and
   anything that comes later (issuer's book, WhatsApp share). Page weight +≈320 B gzipped.
-- `docoga.com.ng/v/*` route — **waiting on the owner's one tap** (Cloudflare → Workers Routes →
-  `docoga.com.ng/v/*` → `docoga-ledger`). The day it exists, set `PUBLIC_URL =
-  "https://docoga.com.ng"` in `workers/ledger/wrangler.toml` and every new receipt prints the
-  short address; old codes keep working at both addresses.
+- ~~`docoga.com.ng/v/*` route~~ — **done 19 Oct 2026, 2:50pm (step 3, owner's tap)**; see §3.
 - Landlord/agent "book": the issuer keeps a list of their own codes in local storage; the step
   before the B2B seat.
 - The index page and the first "DocOga Rent Monitor" post.

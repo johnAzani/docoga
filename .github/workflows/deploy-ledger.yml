@@ -89,6 +89,9 @@ jobs:
           echo
           curl -sS --max-time 20 https://docoga-ledger.johnazani.workers.dev/api/stats | tee /tmp/ledger_stats.json
           echo
+          # the short address on the paper: Workers Route docoga.com.ng/v/* → docoga-ledger (owner, 19 Oct 2026)
+          ROUTE=$(curl -sS --max-time 20 -o /tmp/ledger_route.html -w '%{http_code}' https://docoga.com.ng/v/DR-0000-0000 || echo 000)
+          if [ "$ROUTE" = 200 ] && grep -q "receipt check" /tmp/ledger_route.html; then echo "LEDGER_ROUTE=ok"; else echo "LEDGER_ROUTE=down (http $ROUTE)"; fi
           python3 - <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
           import json
           h = json.load(open("/tmp/ledger.json"))

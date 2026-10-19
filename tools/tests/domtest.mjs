@@ -740,7 +740,7 @@ section('Receipt ledger — verification code and QR on the printed receipt');
   rw.eval('receiptVerify={fp:"abc",code:"DR-7K3M-Q2XA",qr:' + JSON.stringify(QR) + '}; renderReceipt();');
   const prev = rd.getElementById('preview-receipt');
   check('the receipt prints the code, the QR and the check address under the signature line',
-        /DR-7K3M-Q2XA/.test(prev.textContent) && !!prev.querySelector('svg path[fill="#0B1B3F"]') && /docoga-ledger\.johnazani\.workers\.dev\/v\/DR-7K3M-Q2XA/.test(prev.textContent) && /Scan the square/.test(prev.textContent),
+        /DR-7K3M-Q2XA/.test(prev.textContent) && !!prev.querySelector('svg path[fill="#0B1B3F"]') && /docoga\.com\.ng\/v\/DR-7K3M-Q2XA/.test(prev.textContent) && /Scan the square/.test(prev.textContent),
         prev.textContent.slice(-200));
   rw.eval('receiptVerify={fp:"abc",code:"DR-7K3M-Q2XA",qr:""}; renderReceipt();');
   check('without a QR the strip still prints the code and “Check it free”', /Check it free/.test(prev.textContent) && !prev.querySelector('svg') && /DR-7K3M-Q2XA/.test(prev.textContent));
