@@ -160,5 +160,72 @@
   ],
   "traffic": {},
   "analytics_note": "analytics: the token lacks https://www.googleapis.com/auth/yt-analytics.readonly — the Data API numbers above are complete; re-consent with that scope to add watch time, retention and impressions"
+ },
+ {
+  "taken_at": "2026-10-19T06:00:43+01:00",
+  "window_days": 28,
+  "channel": {
+   "id": "UCte72R8JGa9ij0zoE_bMJ1Q",
+   "title": "Millionaire_money1",
+   "subscribers": 0,
+   "views": 0,
+   "videos": 0
+  },
+  "videos": [
+   {
+    "id": "DqRFj696f80",
+    "title": "Skip the photos. Pay for old damage. #Shorts",
+    "published_at": "2026-10-16T19:55:20Z",
+    "privacy": "public",
+    "seconds": 33,
+    "kind": "short",
+    "views": 97,
+    "likes": 0,
+    "comments": 0,
+    "lane": "short",
+    "topic": "Skip the photos. Pay for old damage."
+   },
+   {
+    "id": "JJhRcCgAxyQ",
+    "title": "Rent Receipt in Nigeria: The 7 Lines That Win Every Rent Dispute (Deep-Dive 3)",
+    "published_at": "2026-10-15T07:29:32Z",
+    "privacy": "unlisted",
+    "seconds": 453,
+    "kind": "longform",
+    "views": 1,
+    "likes": 0,
+    "comments": 0,
+    "lane": "longform",
+    "topic": "The Rent Receipt: The ₦50 Paper That Wins Cases"
+   },
+   {
+    "id": "pl5Z8ueg1ZI",
+    "title": "Caution Fee in Nigeria: The Only 4 Deductions a Landlord Can Make (Deep-Dive 2)",
+    "published_at": "2026-10-14T17:00:06Z",
+    "privacy": "public",
+    "seconds": 504,
+    "kind": "longform",
+    "views": 0,
+    "likes": 0,
+    "comments": 0,
+    "lane": "longform",
+    "topic": "Caution Fee: The Refund War"
+   },
+   {
+    "id": "x5W0568lJbc",
+    "title": "Keep a Rent Paper Trail #Shorts",
+    "published_at": "2026-10-14T05:26:45Z",
+    "privacy": "public",
+    "seconds": 24,
+    "kind": "short",
+    "views": 57,
+    "likes": 1,
+    "comments": 0,
+    "lane": "short",
+    "topic": "Keep a Rent Paper Trail"
+   }
+  ],
+  "traffic": {},
+  "analytics_note": null
  }
 ]
