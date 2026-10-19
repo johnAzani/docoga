@@ -55,6 +55,31 @@ class ExchangeTests(unittest.TestCase):
         self.box = os.path.join(tempfile.mkdtemp(), "yt.box")
         self.env = {"YT_CLIENT_ID": "c", "YT_CLIENT_SECRET": "s"}
 
+    def test_a_token_for_the_wrong_channel_is_refused_and_the_old_one_stays(self):
+        # 19 Oct 2026: the 17 Oct mint picked the personal channel on Google's second chooser.
+        def chan(method, url, data=None, params=None):
+            if url == gc.CHANNELS_URL:
+                return 200, {"items": [{"id": "UC-personal", "snippet": {"title": "Millionaire_money1"}}]}
+            return fake()(method, url, data, params)
+        out = []
+        env = dict(self.env, YT_CHANNEL_ID="UC-docoga")
+        with patch.dict(os.environ, {"SOCIAL_TOKEN_KEY": KEY}):
+            rc = gc.run_exchange("4/0Aabc", env=env, http=chan, log=out.append, vault_path=self.box)
+        self.assertEqual(rc, 6)
+        self.assertIn("GOOGLE_CONSENT=wrong_channel", out)
+        self.assertIn("GOOGLE_CHANNEL=UC-personal Millionaire_money1", out)
+        self.assertFalse(os.path.exists(self.box))
+        # The right channel seals.
+        def ok(method, url, data=None, params=None):
+            if url == gc.CHANNELS_URL:
+                return 200, {"items": [{"id": "UC-docoga", "snippet": {"title": "DocOga"}}]}
+            return fake()(method, url, data, params)
+        out = []
+        with patch.dict(os.environ, {"SOCIAL_TOKEN_KEY": KEY}):
+            rc = gc.run_exchange("4/0Aabc", env=env, http=ok, log=out.append, vault_path=self.box)
+        self.assertEqual(rc, 0)
+        self.assertIn("GOOGLE_CONSENT=ok", out)
+
     def test_a_complete_token_is_sealed_and_never_printed(self):
         out = []
         with patch.dict(os.environ, {"SOCIAL_TOKEN_KEY": KEY}):

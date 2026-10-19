@@ -2,6 +2,7 @@
 
 import datetime as dt
 import json
+import os
 import sys
 import unittest
 from pathlib import Path
@@ -72,6 +73,16 @@ class SnapshotTests(unittest.TestCase):
         with patch.object(yt_publish, "authorize", return_value=(http, {})), \
              patch.object(yt_stats, "ledger_ids", return_value={"LONG1": {"lane": "longform", "title": "x", "published": "2026-10-14", "topic": "Caution"}}):
             return yt_stats.snapshot(days=28, now=self.NOW)
+
+    def test_a_token_for_another_channel_is_refused_not_recorded(self):
+        # 19 Oct 2026: the re-minted token authorised the account's personal channel (0 videos)
+        # and the Monday snapshot wrote its zeros over DocOga's numbers.
+        with patch.dict(os.environ, {"YT_CHANNEL_ID": "UC-docoga"}):
+            with self.assertRaises(yt_publish.Problem) as cm:
+                self.snap(FakeHttp("forbidden"))
+        self.assertEqual(cm.exception.reason, "wrong_channel")
+        with patch.dict(os.environ, {"YT_CHANNEL_ID": "UC1"}):
+            self.assertEqual(self.snap(FakeHttp("forbidden"))["channel"]["id"], "UC1")
 
     def test_data_api_numbers_land_even_without_the_analytics_scope(self):
         http = FakeHttp("forbidden")
