@@ -1,0 +1,4 @@
+/tmp/short.log:SHOTS_HITS=0/5
+/tmp/short.log:COVER=/home/runner/work/docoga/docoga/assets/videos/docoga_short_20261019.cover.jpg
+/tmp/sheet.log:SHEET_BRIGHTNESS=29.1,22.1,22.0,22.0,22.0,22.0,24.2,22.0
+/tmp/sheet.log:SHEET_PHOTO_FRAMES=0/8
