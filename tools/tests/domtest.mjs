@@ -722,6 +722,35 @@ check('legacy GA loader removed; dedicated tag is consent/release-gated',
       ANALYTICS_MANAGER.includes("var GA4_ID = 'G-BQ1YTR0ZZJ'") &&
       ANALYTICS_MANAGER.includes('var ANALYTICS_RELEASE_ENABLED = false;'));
 
+/* ============================ Receipt ledger: code + QR on the paper ===== */
+section('Receipt ledger — verification code and QR on the printed receipt');
+{
+  const QR = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 37 37" width="68" height="68" shape-rendering="crispEdges" role="img" aria-label="QR code: https://docoga-ledger.johnazani.workers.dev/v/DR-7K3M-Q2XA"><rect width="37" height="37" fill="#fff"/><path d="M4 4h7v1h-7zM12 4h1v1h-1z" fill="#0B1B3F"/></svg>';
+  const rdom = boot();
+  await new Promise(res => setTimeout(res, 60));
+  const rw = rdom.window, rd = rw.document;
+  rw.openDoc('receipt');
+  rd.getElementById('r_amt').value = '850000'; rd.getElementById('r_date').value = '2026-10-19'; rd.getElementById('r_state').value = 'Lagos';
+  check('the verification box is ticked by default (opt-out) and the state select lists the 36 states + FCT',
+        rd.getElementById('r_verify').checked && rd.getElementById('r_state').querySelectorAll('option').length >= 37);
+  check('a bad SVG from the network is refused before it can reach the page (allow-list, not a blocklist)',
+        lex(rdom, 'QR_SAFE.test(' + JSON.stringify(QR) + ')') === true &&
+        lex(rdom, 'QR_SAFE.test(' + JSON.stringify(QR.replace('<path', '<script>1</script><path')) + ')') === false &&
+        lex(rdom, 'QR_SAFE.test(' + JSON.stringify(QR.replace('role="img"', 'role="img" onload="x()"')) + ')') === false);
+  rw.eval('receiptVerify={fp:"abc",code:"DR-7K3M-Q2XA",qr:' + JSON.stringify(QR) + '}; renderReceipt();');
+  const prev = rd.getElementById('preview-receipt');
+  check('the receipt prints the code, the QR and the check address under the signature line',
+        /DR-7K3M-Q2XA/.test(prev.textContent) && !!prev.querySelector('svg path[fill="#0B1B3F"]') && /docoga-ledger\.johnazani\.workers\.dev\/v\/DR-7K3M-Q2XA/.test(prev.textContent) && /Scan the square/.test(prev.textContent),
+        prev.textContent.slice(-200));
+  rw.eval('receiptVerify={fp:"abc",code:"DR-7K3M-Q2XA",qr:""}; renderReceipt();');
+  check('without a QR the strip still prints the code and “Check it free”', /Check it free/.test(prev.textContent) && !prev.querySelector('svg') && /DR-7K3M-Q2XA/.test(prev.textContent));
+  rd.getElementById('r_verify').checked = false; rw.eval('renderReceipt()');
+  check('untick the box → no code, no QR, nothing registered on the paper', !/DR-7K3M/.test(prev.textContent) && !prev.querySelector('svg'));
+  check('the register call sends only the index fields (no name, address or phone can ever leave the page)',
+        (() => { const s = lex(rdom, 'registerReceipt.toString()'); const m = /body:JSON\.stringify\(\{([^}]*)\}\)/.exec(s); return !!m && m[1].split(',').map(x => x.split(':')[0].trim()).sort().join(',') === 'amount,date,fp,from,kind,state,to'; })());
+  check('no script error while printing the ledger strip', (rw.__errors || []).length === 0, (rw.__errors || []).join(' | '));
+}
+
 /* ============================ RESULT ===================================== */
 console.log('\n' + '═'.repeat(78));
 if (fail === 0) console.log(`🏆 DOM SUITE GREEN — ${pass} checks passed, 0 failed.`);

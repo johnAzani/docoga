@@ -99,5 +99,27 @@ class DashboardReadsTheLedger(unittest.TestCase):
             self.assertIn('id="%s"' % el, ADMIN)
 
 
+class QrOnThePaper(unittest.TestCase):
+    """Step 2: the QR is drawn by the worker (no page weight) and allow-listed by the page before it is inlined."""
+
+    def test_the_encoder_is_ours_and_pinned_to_the_python_reference(self):
+        qr = (ROOT / "workers/ledger/qr.js").read_text(encoding="utf-8")
+        self.assertIn("export function svg(", qr)
+        self.assertIn("0x11D", qr, "GF(256) with the QR polynomial")
+        fixtures = json.loads((ROOT / "workers/ledger/qr_fixtures.json").read_text(encoding="utf-8"))
+        self.assertGreaterEqual(len(fixtures), 50)
+        self.assertEqual(sorted({f["version"] for f in fixtures}), [1, 2, 3, 4, 5, 6])
+        self.assertEqual(sorted({f["mask"] for f in fixtures}), list(range(8)))
+        self.assertIn('import { svg as qrSvg } from "./qr.js"', WORKER)
+        self.assertIn('qr: qrSvg(verifyUrl(env, code), QR_PX)', WORKER)
+
+    def test_the_page_allow_lists_the_svg_and_never_trusts_the_network(self):
+        self.assertIn("const QR_SAFE=/^<svg xmlns=", SITE)
+        self.assertIn("QR_SAFE.test(j.qr||'')?j.qr:''", SITE)
+        self.assertNotIn("innerHTML=j.qr", SITE)
+        # nothing in the QR strip is user text; the only dynamic parts are the code and the SVG
+        self.assertIn("receiptVerify.qr?'<span style=\"flex:0 0 auto;line-height:0\">'+receiptVerify.qr+'</span>'", SITE)
+
+
 if __name__ == "__main__":
     unittest.main()
