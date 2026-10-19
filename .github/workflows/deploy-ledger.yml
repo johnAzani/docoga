@@ -1,0 +1,100 @@
+name: Deploy the receipt ledger (Cloudflare Worker)
+
+# The receipt ledger puts a free verification code on every receipt printed at docoga.com.ng
+# and keeps the five index fields (state, amount, kind, period, date) behind a live rent index —
+# docs/RECEIPT_LEDGER.md. It is its own Worker (docoga-ledger) so the payment Worker
+# (docoga-pass) is never redeployed for it; it binds the same KV namespace under its own
+# `ledger:` prefix, so no new Cloudflare resource has to be created by hand.
+#
+# Redeploys whenever workers/ledger changes. The dry-run input builds without deploying.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "workers/ledger/**"
+      - ".github/workflows/deploy-ledger.yml"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Build only — no deploy'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-ledger
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Test and deploy docoga-ledger
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Unit tests (fake KV, no network)
+        run: |
+          set -euo pipefail
+          cd workers/ledger
+          node --test test.mjs
+
+      - name: Dry-run build
+        if: ${{ inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          cd workers/ledger
+          npx --yes wrangler@latest deploy --config wrangler.toml --dry-run --outdir "$RUNNER_TEMP/ledger-dry-run"
+
+      - name: Deploy
+        if: ${{ !inputs.dry_run }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          if [ -z "${CLOUDFLARE_API_TOKEN:-}" ] || [ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]; then
+            echo "::error title=Cloudflare secrets missing::CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID are not set — the ledger cannot be deployed"
+            exit 1
+          fi
+          cd workers/ledger
+          RAW="$RUNNER_TEMP/wrangler-ledger.raw.log"
+          trap 'rm -f "$RAW"' EXIT
+          set +e
+          npx --yes wrangler@latest deploy --config wrangler.toml --keep-vars >"$RAW" 2>&1
+          CODE=$?
+          set -e
+          python3 ../../tools/redact_deploy_log.py "$RAW" || cat "$RAW" | sed -E 's/[A-Za-z0-9_-]{30,}/<redacted>/g'
+          echo "LEDGER_DEPLOY=$([ "$CODE" = 0 ] && echo ok || echo failed)"
+          exit "$CODE"
+
+      - name: Probe the live ledger
+        if: ${{ !inputs.dry_run }}
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          curl -sS --max-time 20 https://docoga-ledger.johnazani.workers.dev/health | tee /tmp/ledger.json
+          echo
+          curl -sS --max-time 20 https://docoga-ledger.johnazani.workers.dev/api/stats | tee /tmp/ledger_stats.json
+          echo
+          python3 - <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
+          import json
+          h = json.load(open("/tmp/ledger.json"))
+          s = json.load(open("/tmp/ledger_stats.json"))
+          print("### Receipt ledger")
+          print()
+          print("- health: **%s** · receipts registered: **%s** · states: %s" % ("ok" if h.get("ok") else "down", s.get("total"), len(s.get("by_state") or {})))
+          print("LEDGER_LIVE=%s" % ("ok" if h.get("ok") else "down"))
+          PY

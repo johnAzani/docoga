@@ -1,0 +1,9 @@
+{
+  "name": "docoga-ledger",
+  "private": true,
+  "type": "module",
+  "description": "DocOga receipt ledger — verification codes on free receipts; the data behind a live rent index.",
+  "scripts": {
+    "test": "node --test test.mjs"
+  }
+}
