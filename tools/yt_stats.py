@@ -158,6 +158,13 @@ def snapshot(http=None, days=28, now=None):
     ch, err = channel_snapshot(http)
     if err:
         raise yt_publish.Problem("forbidden", "channel", err, "Check the YouTube secrets / channel.", 2)
+    want = os.environ.get("YT_CHANNEL_ID", "").strip()
+    if want and ch["id"] != want:
+        # 19 Oct 2026: the re-minted token authorised the account's personal channel; the snapshot
+        # recorded a stranger's zeros over DocOga's numbers. Refuse rather than record.
+        raise yt_publish.Problem("credentials", "wrong_channel",
+                                 "YT_CHANNEL_ID is %s but the token authorises %s (%s)." % (want, ch["id"], ch["title"]),
+                                 "Re-consent (Actions → Google consent) and pick the DocOga channel on the second chooser.", 2)
     ledger = ledger_ids()
     ids = list(ledger) + recent_upload_ids(http, ch.get("uploads_playlist"))
     rows = video_rows(http, ids)

@@ -23,7 +23,7 @@ A partial token (an unticked box) is REFUSED and the old one stays — the owner
 Nothing here prints a token, a code or a secret.
 
 Machine lines: GOOGLE_CONSENT=ok|partial|refused|failed  GOOGLE_SCOPES_MISSING=<space list>
-Exit: 0 sealed · 2 missing env · 3 Google refused the code · 4 partial and not accepted ·
+Exit: 0 sealed · 2 missing env · 3 Google refused the code · 4 partial and not accepted · 6 wrong channel ·
 5 vault error
 """
 from __future__ import annotations
@@ -41,6 +41,7 @@ import token_vault  # noqa: E402
 
 AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 TOKEN_URL = "https://oauth2.googleapis.com/token"
+CHANNELS_URL = "https://www.googleapis.com/youtube/v3/channels"
 TOKENINFO_URL = "https://oauth2.googleapis.com/tokeninfo"
 REDIRECT_URI = "https://developers.google.com/oauthplayground"
 VAULT_NAME = "YT_REFRESH_TOKEN"
@@ -121,6 +122,23 @@ def run_exchange(code, env=None, http=_http, accept_partial=False, log=print, va
             "Refused; the old token stays. Open the link again and tick every box." % len(missing))
         log("GOOGLE_CONSENT=refused")
         return 4
+    # Which channel did the owner pick? (19 Oct 2026: the 17 Oct mint picked the account's
+    # personal channel, not the DocOga brand channel — every YouTube lane then talked to an empty
+    # channel. Google shows a second chooser after the account: the brand channel must be picked
+    # there.) With YT_CHANNEL_ID set, a mismatch is refused and the old token stays.
+    want = str(env.get("YT_CHANNEL_ID", "")).strip()
+    st, chan = http("GET", CHANNELS_URL, params={"part": "snippet", "mine": "true",
+                                                 "access_token": body.get("access_token", "")})
+    items = (chan or {}).get("items") or [] if st == 200 else []
+    got_id = str(items[0].get("id", "")) if items else ""
+    got_title = str(((items[0].get("snippet") or {}).get("title", "")) if items else "")
+    log("GOOGLE_CHANNEL=%s %s" % (got_id or "unknown", got_title))
+    if want and got_id and got_id != want:
+        log("google consent: this token is for the channel '%s' (%s), not DocOga (%s). Refused; the old "
+            "token stays. Open the link again, pick the Google account, and on the SECOND chooser "
+            "pick the DocOga channel, not the personal one." % (got_title, got_id, want))
+        log("GOOGLE_CONSENT=wrong_channel")
+        return 6
     rc = token_vault.seal(VAULT_NAME, refresh, path=vault_path, out=sys.stdout)
     if rc:
         log("GOOGLE_CONSENT=failed")

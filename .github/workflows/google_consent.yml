@@ -39,6 +39,7 @@ jobs:
       YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
       SOCIAL_TOKEN_KEY: ${{ secrets.SOCIAL_TOKEN_KEY }}
       GOOGLE_AUTH_CODE: ${{ inputs.code }}
+      YT_CHANNEL_ID: ${{ vars.YT_CHANNEL_ID }}
       ACCEPT_PARTIAL: ${{ inputs.accept_partial }}
     steps:
       - uses: actions/checkout@v5
@@ -79,6 +80,7 @@ jobs:
               0) echo "✅ Sealed. Every YouTube, Analytics and Search Console lane now uses this token — nothing to paste anywhere." ;;
               3) echo "❌ Google refused the code (used twice, or older than ~10 minutes). Open the link in step 1 again and paste the new address." ;;
               4) echo "⏸ A box was left unticked — refused, the old token stays. Open the link again and tick every box." ;;
+              6) echo "❌ Wrong channel — refused, the old token stays. Open the link again; after the Google account, Google shows a SECOND list of channels: pick **DocOga**, not the personal one." ;;
               *) echo "❌ Exit $code — read the lines above." ;;
             esac
           } >> "$GITHUB_STEP_SUMMARY"
