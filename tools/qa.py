@@ -139,10 +139,15 @@ for f, html in [("index.html", idx), ("success.html", suc)]:
 # the current 37.3KB for several more tools. Keep a generous RAW ceiling as a pure
 # corruption tripwire (a duplicated or concatenated file blows past it immediately).
 # Revisit the 48KB gzip ceiling if we ever add images or a second script bundle.
+#
+# Revisited 19 Oct 2026: the page stood at 47.4KB gzipped before the receipt ledger (the
+# verification code + fingerprint, ~1.6KB gzipped) — the ceiling was going to be met by the
+# next feature whatever it was. Ceiling 52KB: still ~10% of the 500KB Nigerian-mobile
+# guidance, still one file, no build step. Next revisit at 52KB means splitting a bundle.
 import gzip as _gzip
 _idx_gz = len(_gzip.compress(idx.encode(), 9))
-check("index.html gzipped payload under 48 KB (real page weight)",
-      _idx_gz <= 48 * 1024, f"{_idx_gz} bytes gzipped")
+check("index.html gzipped payload under 52 KB (real page weight)",
+      _idx_gz <= 52 * 1024, f"{_idx_gz} bytes gzipped")
 check("index.html raw size sane (corruption tripwire, 40–200 KB)",
       40000 <= len(idx.encode()) <= 200000, f"{len(idx.encode())} bytes raw")
 

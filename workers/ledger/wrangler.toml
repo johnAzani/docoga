@@ -1,0 +1,15 @@
+# DocOga receipt ledger — see index.js and docs/RECEIPT_LEDGER.md.
+# Deployed by .github/workflows/deploy-ledger.yml (never by hand on a phone).
+name = "docoga-ledger"
+main = "index.js"
+compatibility_date = "2026-09-18"
+
+# The same namespace docoga-pass uses, under the `ledger:` prefix only (every list there is
+# prefixed, so the two never see each other's keys). No new Cloudflare resource is needed.
+[[kv_namespaces]]
+binding = "KV"
+id = "f3a5afebe7d04bb0a6018c0d7d355253"
+
+[vars]
+PUBLIC_URL = "https://docoga-ledger.johnazani.workers.dev"
+ALLOWED_ORIGINS = "https://docoga.com.ng,https://www.docoga.com.ng"

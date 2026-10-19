@@ -143,6 +143,8 @@ Kept short and specific; nothing here blocks posting.
   (today it says "sales: not measured"). Optional, five taps.
 - Read GA once a month and tell me sessions + top landing pages until the Cloudflare RUM
   site tag is set — conversion rate is the one number I still cannot read from here.
+- Cloudflare dashboard → Workers Routes: `docoga.com.ng/v/*` → `docoga-ledger`, so receipts
+  can print `docoga.com.ng/v/DR-…` (optional; the workers.dev address already works).
 - Nothing else. Tokens are complete (`docs/TOKENS.md`); TikTok, Google, Meta, Threads,
   Telegram all connected.
 
@@ -181,6 +183,11 @@ above, 100 % of that is the owner's; the fund balance is ₦0. The first real pa
 month the site sells 25 passes; everything the lanes do is aimed at that number first.
 
 ### Decision log entry
+- **19 Oct 2026, 2:30pm** — **Receipt ledger built** (`docs/RECEIPT_LEDGER.md`), announced in
+  the 1:45pm Founder's brief: a free `DR-XXXX-XXXX` verification code on every receipt, its own
+  Worker on the shared KV namespace, no personal data stored, ₦0. Index publication rules fixed
+  in advance (≥ 30 receipts per cell, medians, annualised). New standing ask: the
+  `docoga.com.ng/v/*` route (one dashboard tap, optional).
 - **19 Oct 2026** — Standing orders 1–6 adopted. Direction (north star §3), spending triggers
   (§5) and the founder's split (§6) are my decisions under the 8 Oct handover; the owner asked
   for them in writing and for them never to be forgotten. Changes to §5/§6 need a dated entry here.

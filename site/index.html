@@ -605,6 +605,8 @@ body.has-pass .buy-only{display:none !important}
           <div><label>Balance outstanding (₦, optional)</label><input id="r_bal" type="number" inputmode="numeric" min="0" placeholder="0"></div>
           <div class="full"><label>Issued by (landlord / business)</label><input id="r_issuer" placeholder="Name as it should appear"></div>
           <div><label>Phone</label><input id="r_phone" placeholder="080..."></div>
+          <div><label>State (for the verification code)</label><select id="r_state"></select></div>
+          <div class="full"><label style="display:flex;gap:10px;align-items:flex-start;cursor:pointer;font-weight:500"><input type="checkbox" id="r_verify" checked style="margin-top:3px;flex:none"><span>Print a free <b>verification code</b> anyone can check online. Only amount, state, period, date and a fingerprint of the words are kept — never names, addresses or phones.</span></label></div>
         </div>
         <div class="actions">
           <button type="button" class="btn green" onclick="printCurrent('receipt')"><svg class="bi" aria-hidden="true"><use href="#i-print"/></svg>Print / Save PDF</button>
@@ -1744,11 +1746,52 @@ return html;
 function collectReceipt(){
 return { r_no:$('r_no').value, r_date:$('r_date').value, r_from:$('r_from').value, r_amt:$('r_amt').value,
 r_method:$('r_method').value, r_purpose:$('r_purpose').value, r_prop:$('r_prop').value, r_period:$('r_period').value,
-r_bal:$('r_bal').value, r_issuer:$('r_issuer').value, r_phone:$('r_phone').value };
+r_bal:$('r_bal').value, r_issuer:$('r_issuer').value, r_phone:$('r_phone').value, r_state:$('r_state').value, r_verify:$('r_verify').checked };
 }
 function applyReceipt(p){
 [['r_no','r_no'],['r_date','r_date'],['r_from','r_from'],['r_amt','r_amt'],['r_purpose','r_purpose'],['r_prop','r_prop'],['r_period','r_period'],['r_bal','r_bal'],['r_issuer','r_issuer'],['r_phone','r_phone']].forEach(([k,id])=>{ $(id).value=p[k]||''; });
 if(p.r_method) $('r_method').value=p.r_method;
+if(p.r_state!=null) $('r_state').value=p.r_state;
+if(p.r_verify!=null) $('r_verify').checked=!!p.r_verify;
+}
+/* Receipt ledger (docs/RECEIPT_LEDGER.md): SHA-256 of the words, computed here; the server keeps hash + amount/state/period/date only. receiptCanonical() is byte-identical to workers/ledger/index.js (tested). */
+const LEDGER_URL="https://docoga-ledger.johnazani.workers.dev";
+function receiptCanonical(f){
+  var n=function(s){return String(s==null?'':s).replace(/\s+/g,' ').trim().toLowerCase();};
+  var amt=String(Math.round(Number(String(f.amount==null?'':f.amount).replace(/[^0-9.]/g,''))||0));
+  return ['v1',n(f.date),amt,n(f.from),n(f.issuer),n(f.property),n(f.period)].join('|');
+}
+let receiptVerify={fp:'',code:''};
+function receiptFields(d){ return {date:d.r_date,amount:d.r_amt,from:d.r_from,issuer:d.r_issuer,property:d.r_prop,period:d.r_period}; }
+function receiptKind(purpose){ const p=String(purpose||'').toLowerCase(); if(/caution|security|deposit/.test(p)) return 'caution'; if(/service/.test(p)) return 'service'; if(/agen|legal|commission/.test(p)) return 'agency'; if(/rent|tenan|lease/.test(p)||!p) return 'rent'; return 'other'; }
+function receiptMonths(period){
+  const M={jan:'01',feb:'02',mar:'03',apr:'04',may:'05',jun:'06',jul:'07',aug:'08',sep:'09',sept:'09',oct:'10',nov:'11',dec:'12'};
+  const hits=[]; String(period||'').replace(/([A-Za-z]{3,9})\.?\s*,?\s*(20\d{2})/g,(m,mo,y)=>{ const k=M[mo.slice(0,4).toLowerCase()]||M[mo.slice(0,3).toLowerCase()]; if(k) hits.push(y+'-'+k); return m; });
+  return {from:hits[0]||'', to:hits[1]||hits[0]||''};
+}
+async function sha256Hex(str){ const buf=new TextEncoder().encode(str); const h=await crypto.subtle.digest('SHA-256',buf); return Array.from(new Uint8Array(h)).map(b=>b.toString(16).padStart(2,'0')).join(''); }
+async function registerReceipt(){
+  const d=collectReceipt();
+  const amt=Math.round(Number(d.r_amt)||0);
+  if(!receiptWantsCode()) return;
+  const fp=await sha256Hex(receiptCanonical(receiptFields(d)));
+  if(receiptVerify.fp===fp&&receiptVerify.code) return;
+  try{ const cached=sessionStorage.getItem('docoga_rcpt_'+fp); if(cached){ receiptVerify={fp,code:cached}; return; } }catch(e){}
+  const months=receiptMonths(d.r_period);
+  const ctl=new AbortController(); const t=setTimeout(()=>ctl.abort(),3500);
+  try{
+    const r=await fetch(LEDGER_URL+'/api/register',{method:'POST',headers:{'Content-Type':'application/json'},signal:ctl.signal,
+      body:JSON.stringify({fp,state:d.r_state,amount:amt,kind:receiptKind(d.r_purpose),from:months.from,to:months.to,date:d.r_date})});
+    const j=await r.json();
+    if(r.ok&&j.code){ receiptVerify={fp,code:j.code}; try{ sessionStorage.setItem('docoga_rcpt_'+fp,j.code); }catch(e){} }
+  }catch(e){}
+  finally{ clearTimeout(t); }
+}
+function receiptVerifyLine(d){
+  if(!d.r_verify||!receiptVerify.code) return '';
+  return '<div style="margin-top:10px;padding:8px 10px;border:1px dashed #333;font-size:11.5px;color:#222;display:flex;justify-content:space-between;gap:12px;align-items:center">'+
+    '<span>Verification code <b style="font-family:ui-monospace,Menlo,monospace;letter-spacing:.06em">'+esc(receiptVerify.code)+'</b></span>'+
+    '<span style="text-align:right">Check it free: '+esc(LEDGER_URL.replace('https://',''))+'/v/'+esc(receiptVerify.code)+'</span></div>';
 }
 function renderReceipt(){
 const d=collectReceipt();
@@ -1767,6 +1810,7 @@ const html =
 '<div><div style="border-bottom:1px solid #333;width:200px;height:34px"></div><b>'+(esc(d.r_issuer)||'________________')+'</b><div style="font-size:12px;color:#444">'+(d.r_phone?'Tel: '+esc(d.r_phone):'')+'</div></div>'+
 '<div style="font-size:11.5px;color:#444;text-align:right">Keep this receipt safe.<br>It is your proof of payment.</div>'+
 '</div>'+
+receiptVerifyLine(d)+
 '</div>'+
 freeBanner()+
 '</div>';
@@ -1929,7 +1973,13 @@ return html;
 }
 
 /* ================= print / share / save ================= */
+function receiptWantsCode(){ const d=collectReceipt(); return !!(d.r_verify&&d.r_state&&Math.round(Number(d.r_amt)||0)>=1000&&d.r_date&&window.crypto&&crypto.subtle); }
 function printCurrent(type){
+if(type==='receipt'&&!printCurrent._ready&&receiptWantsCode()){
+  printCurrent._ready=true; // mint the code first (≤3.5 s, never blocks printing), then print
+  Promise.resolve().then(registerReceipt).catch(function(){}).then(function(){ try{ printCurrent(type); } finally{ printCurrent._ready=false; } });
+  return;
+}
 const html=RENDERERS[type](); // single source of truth — do not re-list renderers here
 const pr=$('print-root');
 pr.innerHTML=html;
@@ -2197,6 +2247,8 @@ function renderAll(){ renderAgreement(); renderNotice(); renderReceipt(); render
 (function init(){
   // states select
   $('prop_state').innerHTML='<option value="">Select state…</option>'+STATES.map(s=>'<option>'+s+'</option>').join('');
+  $('r_state').innerHTML='<option value="">Select state…</option>'+STATES.map(s=>'<option>'+s+'</option>').join('');
+  $('form-receipt').addEventListener('input',function(){ receiptVerify={fp:'',code:''}; });
   // defaults
   if(!$('r_date').value) $('r_date').value=todayISO();
   if(!$('r_no').value) $('r_no').value='RCP-'+String(Math.floor(100+Math.random()*900));
