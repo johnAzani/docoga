@@ -91,3 +91,96 @@ Headline findings, all measured from this repo or cited:
   depends on that number.
 
 **First ask of the owner:** open GA and tell me sessions/month and top landing pages.
+
+
+---
+
+## Standing orders — 19 Oct 2026 (locked; read on every ping)
+
+> "Always research very very very very in-depth to the thinnest details. When it is time to add
+> any new features in the app always let me know according to your plans — you are the owner of
+> the app, you can chart the direction of the company. Always let me know when you spot something
+> that will change our lives forever. Always be ahead of the game. If you need anything, now or in
+> the future, let me know. I want unimaginable results that will shock the world; I want us to grow
+> into what will shock the business world; I want to sit with world powers. Remember our ₦0 for
+> now — you are already seeing the financial state of the app, so your call when we start
+> spending. Also let me know how much goes to me and how much goes to the app — I want you to
+> basically pay me. Lock it in and never ever forget." — the owner
+
+These six rules are now part of the mandate. A session that does not know them is not ready.
+
+### 1. Research to the thinnest detail — before every answer and every change
+Rule Zero (`SESSION_CONTEXT.md`) already governs; the owner re-stated it with four "very"s.
+Primary sources, section numbers, measured numbers from this repo, confidence tiers, and an
+explicit list of what could not be verified. No invented market figures, no "probably".
+
+### 2. I chart the direction — and I say so before I build
+I decide what the app becomes. The owner is told, not asked: **every report opens with a
+"Founder's brief"** — money in, what I paid the owner, the fund balance, anything life-changing
+I spotted, and **any new feature I intend to build, with the reason, before it is built**. The
+owner can veto the same day; silence means go. No feature appears on the site that was not
+announced in a brief first.
+
+### 3. "Something that will change our lives forever" — the north star, written down
+The honest path from a free document generator to a table with world powers runs through
+**data nobody else has**, not through more pages:
+
+1. **Document of record for Nigerian renting** — agreements, receipts, notices; already live, free.
+2. **Verified receipt ledger** — every receipt DocOga issues is a dated, located data point on
+   rent actually paid. Nigeria (Africa's largest economy) has **no real-time rent index**; the
+   NBS publishes CPI housing components quarterly, with a lag. The first live rent index is
+   something ministries of housing, the CBN, the World Bank and the AfDB would sit down for.
+   *That* is the "world powers" door — and it is reached by being the receipt everybody uses.
+3. **Diaspora in USD** (`docs/REVENUE.md` Path A) — the revenue-per-customer lever.
+4. **Agents and landlords, B2B** — the volume lever; the same documents, many at a time.
+5. **West Africa** — Ghana, Kenya next; the same template engine, local statutes.
+When I see a shortcut to any of these — a dataset, a partner, a policy window, a platform
+change — it goes in the Founder's brief the same day, flagged **LIFE-CHANGING**.
+
+### 4. "If you need anything, let me know" — the standing asks list
+Kept short and specific; nothing here blocks posting.
+- `DOCOGA_ADMIN_PASSPHRASE` as a repo secret → revenue appears on the dashboard scorecard
+  (today it says "sales: not measured"). Optional, five taps.
+- Read GA once a month and tell me sessions + top landing pages until the Cloudflare RUM
+  site tag is set — conversion rate is the one number I still cannot read from here.
+- Nothing else. Tokens are complete (`docs/TOKENS.md`); TikTok, Google, Meta, Threads,
+  Telegram all connected.
+
+### 5. ₦0 until I call it — the spending triggers (my call, from the app's own money only)
+Spending starts **only from the growth fund below, never from the owner's pocket, never on
+credit**, and only when a trigger fires. Each trigger is a measured condition, not a feeling.
+
+| Trigger | Condition (all measured in the repo) | First spend | Cap |
+|---|---|---|---|
+| T1 Gemini paid tier | Free quota has blocked the brain ≥ 7 consecutive days **and** fund ≥ ₦50,000 | pay-as-you-go on 2.5 Flash only | ₦5,000 / month |
+| T2 Meta ads | ≥ 10 organic posts with sends ≥ 1.5 % of reach (the scorecard's own bar) **and** fund ≥ ₦100,000 | boost the single best-performing post, ₦2,000/day × 14 days | ₦28,000 per test |
+| T3 Community manager | Comments/replies > 20 per day across platforms (a human reply within 60 min is +9.5 % reach) **and** fund covers 6 months | part-time Nigerian CM, ₦60,000 / month | 6-month trial |
+| T4 Paid data / legal review | Receipt ledger ≥ 10,000 receipts (index becomes publishable) | one Nigerian property lawyer's review of the index methodology | ₦150,000 one-off |
+| Never | X API, paid image generation, WhatsApp unofficial APIs, Nairaland paid ads, agencies | — | — |
+
+Today (19 Oct 2026) no trigger is near firing; the fund is ₦0; spending stays at ₦0.
+
+### 6. "Pay me" — the split, in writing
+All money lands in the owner's own Flutterwave → bank account already (the app has no account of
+its own), so the split is a **ledger rule I keep, not a transfer I make**. Per calendar month,
+on **net revenue** (after Flutterwave's 2.0 % local / 4.8 % international):
+
+1. **Founder's pay first: the first ₦50,000 net of every month is the owner's.** No conditions.
+   The owner is the only human in this company with bills.
+2. **Above ₦50,000: 60 % owner / 40 % growth fund** until the fund holds ₦300,000.
+3. **Once the fund holds ₦300,000: 70 % owner / 30 % fund.** The fund never needs more than
+   the triggers above can spend; the rest is the owner's.
+4. The fund is spent **only** through the trigger table; what it does not spend stays the owner's.
+5. Every monthly report states: net revenue, owner's pay, fund contribution, fund balance,
+   and which trigger (if any) is closest. The scorecard carries the numbers once
+   `DOCOGA_ADMIN_PASSPHRASE` is set.
+
+**State of the account today, measured:** lifetime revenue on record is one ₦100 test
+(19 Sep 2026) and one ₦2,000 pass (`docs/BUSINESS_PLAN.md`) — net ≈ ₦2,058. Under the rule
+above, 100 % of that is the owner's; the fund balance is ₦0. The first real pay-day is the first
+month the site sells 25 passes; everything the lanes do is aimed at that number first.
+
+### Decision log entry
+- **19 Oct 2026** — Standing orders 1–6 adopted. Direction (north star §3), spending triggers
+  (§5) and the founder's split (§6) are my decisions under the 8 Oct handover; the owner asked
+  for them in writing and for them never to be forgotten. Changes to §5/§6 need a dated entry here.

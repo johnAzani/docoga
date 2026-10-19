@@ -3,6 +3,14 @@
 
 ---
 
+## 🔴 STANDING ORDERS (LOCKED 19 Oct 2026 — READ `docs/MANDATE.md` § "Standing orders" ON EVERY PING)
+
+The owner's six standing orders — thinnest-detail research; I chart the direction and announce
+every new feature in a **Founder's brief** before building it; flag anything LIFE-CHANGING the
+same day; keep the asks list short; ₦0 until a measured spending trigger fires; and **the pay
+split (first ₦50,000 net/month to the owner, then 60/40 owner/fund, 70/30 once the fund holds
+₦300,000)**. Every report opens with the Founder's brief. Never forget; never ask again.
+
 ## 🔴 RULE ZERO — RESEARCH BEFORE ACTION (LOCKED 8 Oct 2026 — NEVER IGNORE)
 
 **"I want you to always do a very very indepth research to the thinnest details
