@@ -116,6 +116,9 @@ test("stats count by state, month and kind from key metadata — never from valu
   const j = await r.json();
   assert.equal(j.total, 2);
   assert.deepEqual(j.by_state, { Lagos: 1, Rivers: 1 });
+  assert.deepEqual(j.cells, { "Lagos|rent|2026-10": 1, "Rivers|caution|2026-09": 1 }, "one index cell per state × kind × month");
+  assert.equal(j.latest_receipt_date, "2026-10-19");
+  assert.equal(j.publish_at, 30);
   assert.deepEqual(j.by_month, { "2026-10": 1, "2026-09": 1 });
   assert.deepEqual(j.by_kind, { rent: 1, caution: 1 });
   assert.ok(j.note.includes("30 or more"));

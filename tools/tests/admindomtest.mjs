@@ -108,8 +108,13 @@ const RealBlob = win.Blob;
 win.Blob = class extends RealBlob {
   constructor(parts, opts) { super(parts, opts); blobText = String(parts && parts[0] || ''); win.__blobType = opts && opts.type; }
 };
+// The receipt ledger is its own Worker (workers/ledger); the page reads its public counts directly.
+const LEDGER_STATS = { total: 41, by_state: { Lagos: 33, Rivers: 5, 'FCT (Abuja)': 3 }, by_month: { '2026-10': 41 }, by_kind: { rent: 36, caution: 5 },
+  cells: { 'Lagos|rent|2026-10': 28, 'Rivers|rent|2026-10': 5, 'Lagos|caution|2026-10': 5, 'FCT (Abuja)|rent|2026-10': 3 }, latest_receipt_date: '2026-10-19', publish_at: 30, generated_at: '2026-10-19T13:00:00Z' };
+let ledgerCalls = 0;
 win.fetch = async (input, init) => {
   const url = String(input);
+  if (url.startsWith('https://docoga-ledger.')) { ledgerCalls++; return { ok: true, status: 200, headers: new Headers(), text: async () => JSON.stringify(LEDGER_STATS), json: async () => LEDGER_STATS }; }
   const r = await mod.fetch(new Request(url, init || {}), env, {});
   const text = await r.text();
   return { ok: r.ok, status: r.status, headers: r.headers, text: async () => text, json: async () => JSON.parse(text) };
@@ -261,6 +266,21 @@ console.log('— Social tab: the day’s plan, in the owner’s clock —');
     const sv = [...doc.querySelectorAll('#site-kpis .v')].map(e => e.textContent);
     check('visits (7 + 28 days) and the Nigeria share are painted', sv[0] === '52' && sv[1] === '180' && sv[2] === '87%', sv.join(','));
     check('channels and countries tables are filled, country codes spelled out', /google/.test(txt('site-channels')) && /Nigeria/.test(txt('site-countries')) && /United States/.test(txt('site-countries')), txt('site-countries'));
+    console.log('— Website tab: the receipt ledger (public counts, nothing personal) —');
+    await until(() => /41/.test(txt('ledger-kpis')), 80);
+    const lk = [...doc.querySelectorAll('#ledger-kpis .v')].map(e => e.textContent);
+    check('receipts verified, this month, states of 37, cells ready are painted', lk[0] === '41' && lk[1] === '41' && lk[2] === '3 of 37' && lk[3] === '0', lk.join(','));
+    check('the closest cell to publication is named with its count toward 30', /closest: Lagos · rent — 28 of 30/.test(txt('ledger-kpis')), txt('ledger-kpis'));
+    const lbars = [...doc.querySelectorAll('#ledger-cells div[style*="width:"]')].map(e => e.getAttribute('style'));
+    check('progress bars: Lagos rent at 93%, listed first', lbars.length >= 4 && /width:93%/.test(lbars[0]), lbars.join(' | '));
+    check('cells read in plain words (caution fee, Oct 2026), never as raw keys', /Lagos · caution fee · Oct 2026/.test(txt('ledger-cells')) && !/\|/.test(txt('ledger-cells')), txt('ledger-cells').slice(0, 160));
+    check('states table: Lagos 33 = 80% first', /Lagos\s*33\s*80%/.test(txt('ledger-states')) && txt('ledger-states').indexOf('Lagos') < txt('ledger-states').indexOf('Rivers'), txt('ledger-states').slice(0, 120));
+    check('the note says counts only, no names/addresses/phones, and where to check a code', /no names, addresses or phones/.test(txt('ledger-note')) && /docoga-ledger\.johnazani\.workers\.dev\/v\/DR-/.test(txt('ledger-note')), txt('ledger-note'));
+    check('the ledger was read once at boot and not again within 10 minutes', ledgerCalls === 1, 'calls=' + ledgerCalls);
+    click([...doc.querySelectorAll('.tab')].find(t => t.getAttribute('data-view') === 'ov'));
+    await until(() => /Receipts verified/.test(txt('kpis')), 40);
+    const rcard = [...$('kpis').children].find(c => /Receipts verified/.test(c.textContent));
+    check('Today tab carries a “Receipts verified” card: 41 · 41 this month · 3 states', !!rcard && /41/.test(rcard.textContent) && /41 this month · 3 states/.test(rcard.textContent), rcard ? rcard.textContent : 'no card');
     console.log('— Content tab: the brain plan, posted, growth —');
     env._store.set('adm:feed', JSON.stringify({
       version: 1, generated_at: '2026-10-17T19:00:00Z',

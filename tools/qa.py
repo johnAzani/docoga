@@ -310,6 +310,9 @@ if os.path.exists(admp):
     check("admin.html WORKER_URL == index.html", cfg(adm, "WORKER_URL") == cfg(idx, "WORKER_URL"),
           f"{cfg(adm, 'WORKER_URL')} vs {cfg(idx, 'WORKER_URL')}")
     check("admin.html is noindexed in the document too", 'name="robots" content="noindex' in adm)
+    _lu = lambda src: (re.search(r'const LEDGER_URL\s*=\s*"([^"]*)"', src) or [None, None])[1]
+    check("admin.html LEDGER_URL == index.html (the dashboard reads the same ledger the receipts write to)",
+          _lu(adm) is not None and _lu(adm) == _lu(idx), f"{_lu(adm)} vs {_lu(idx)}")
     au = set(re.findall(r"\$\('([A-Za-z0-9_-]+)'\)", adm))
     ad = set(re.findall(r'id="([^"]+)"', adm))
     check(f"all {len(au)} admin JS-referenced ids exist", not (au - ad), f"missing: {sorted(au - ad)[:6]}")
