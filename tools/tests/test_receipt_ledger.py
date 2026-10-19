@@ -15,6 +15,7 @@ WORKER = (ROOT / "workers/ledger/index.js").read_text(encoding="utf-8")
 PASS_TOML = (ROOT / "worker/wrangler.toml").read_text(encoding="utf-8")
 LEDGER_TOML = (ROOT / "workers/ledger/wrangler.toml").read_text(encoding="utf-8")
 DEPLOY = (ROOT / ".github/workflows/deploy-ledger.yml").read_text(encoding="utf-8")
+ADMIN = (ROOT / "site/admin.html").read_text(encoding="utf-8")
 
 
 class SiteSendsOnlyTheIndexFields(unittest.TestCase):
@@ -75,6 +76,27 @@ class DeployMirrorsTheClock(unittest.TestCase):
     def test_the_package_test_runs_the_ledger_suite(self):
         pkg = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))
         self.assertIn("node --test workers/ledger/test.mjs", pkg["scripts"]["test"])
+
+
+class DashboardReadsTheLedger(unittest.TestCase):
+    """The owner sees registrations on his dashboard without the payments worker learning anything."""
+
+    def test_admin_reads_the_same_ledger_url_the_receipts_write_to(self):
+        a = re.search(r'const LEDGER_URL\s*=\s*"([^"]+)"', ADMIN)
+        b = re.search(r'const LEDGER_URL\s*=\s*"([^"]+)"', SITE)
+        self.assertTrue(a and b and a.group(1) == b.group(1), (a and a.group(1), b and b.group(1)))
+        self.assertIn("LEDGER_URL+'/api/stats'", ADMIN)
+
+    def test_the_payment_worker_is_not_involved(self):
+        pass_worker = (ROOT / "worker/index.js").read_text(encoding="utf-8")
+        for needle in ("docoga-ledger", "ledger:r:", "ledger:fp:", "/api/stats"):
+            self.assertNotIn(needle, pass_worker, "the dashboard must read docoga-ledger directly; worker/index.js stays out of it")
+
+    def test_stats_expose_index_cells_and_the_publication_threshold(self):
+        self.assertIn('cells[cell] = (cells[cell] || 0) + 1', WORKER)
+        self.assertIn("publish_at: 30", WORKER)
+        for el in ("ledger-kpis", "ledger-cells", "ledger-states", "ledger-note"):
+            self.assertIn('id="%s"' % el, ADMIN)
 
 
 if __name__ == "__main__":

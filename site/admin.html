@@ -204,6 +204,16 @@ footer{font-size:11.5px;color:#94A3B8;text-align:center;padding:16px 0 4px}
   </section>
 
   <section id="v-site" class="hide">
+    <div class="panel" id="ledger-panel">
+      <h2>Receipt ledger — the seed of the rent index</h2>
+      <div id="ledger-msg"></div>
+      <div class="cards" id="ledger-kpis"></div>
+      <div class="grid2">
+        <div><h2>Closest to publishing</h2><div id="ledger-cells"></div></div>
+        <div><h2>By state</h2><div class="scroll"><table id="ledger-states"></table></div></div>
+      </div>
+      <p class="hint" id="ledger-note"></p>
+    </div>
     <div id="site-msg"></div>
     <div class="cards" id="site-kpis"></div>
     <div class="panel">
@@ -303,6 +313,7 @@ footer{font-size:11.5px;color:#94A3B8;text-align:center;padding:16px 0 4px}
 <script>
 /* ================= CONFIG — mirrors the CONFIG block in index.html ================= */
 const WORKER_URL = "https://docoga-pass.johnazani.workers.dev"; // must equal index.html's (tools/qa.py enforces it)
+const LEDGER_URL = "https://docoga-ledger.johnazani.workers.dev"; // must equal index.html's (tools/qa.py enforces it)
 const SITE_URL = "https://docoga.com.ng";
 const SUPPORT_WHATSAPP = "2349021852845";
 const TOKEN_KEY = "docoga.admin.token";
@@ -423,6 +434,7 @@ function renderAll(){
     kpi('Expiring ≤14d',(p.expiring||[]).length,'verified against each record'+(p.indexOnly?' · '+p.indexOnly+' index rows dropped':'')),
     kpi('Leads waiting',(sn.leads&&sn.leads.total)||0,'Business waitlist'),
     kpi('Offline / WhatsApp',(t.offline||0)+' today',(tt.offline||0)+' in 31 days'),
+    kpi('Receipts verified',LEDGER?String(LEDGER.total||0):'…',LEDGER?(ledgerThisMonth()+' this month · '+Object.keys(LEDGER.by_state||{}).length+' states'):'reading the ledger'),
   ].join('');
   drawChart('chart-rev','chart-from','chart-to','chart-note',sn.series,'rev',ngn);
   drawChart('chart-passes','pchart-from','pchart-to','chart2-note',sn.series,'sold',n=>String(n));
@@ -778,6 +790,44 @@ function renderFeed(){
   $('posted').innerHTML=posted.length?'<thead><tr><th>When</th><th>Where</th><th>What</th></tr></thead><tbody>'+posted.map(r=>'<tr><td style="white-space:nowrap">'+esc(lagosWhen(Date.parse(r.at)))+'</td><td><b>'+esc(PLATFORM_WORD[r.platform]||r.platform)+'</b><br><span class="hint">'+esc(r.kind)+(r.privacy&&r.privacy!=='public'&&r.privacy!=='channel'?' · '+esc(r.privacy):'')+'</span></td><td>'+(r.url?'<a href="'+esc(r.url)+'" target="_blank" rel="noopener">'+esc(r.title||r.url)+'</a>':esc(r.title))+(r.platform==='tiktok'?' <span class="hint">— waiting in your TikTok inbox: open the app, add the caption, tap Post</span>':'')+'</td></tr>').join('')+'</tbody>':'<tbody><tr><td class="hint">nothing recorded yet</td></tr></tbody>';
 }
 
+/* ---------------- receipt ledger: docoga-ledger /api/stats (public counts, no personal data) ---------------- */
+let LEDGER=null,LEDGER_AT=0,LEDGER_ERR='';
+function ledgerMonthKey(){const d=new Date(Date.now()+60*60*1000);return d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0');}
+function ledgerThisMonth(){return (LEDGER&&LEDGER.by_month&&LEDGER.by_month[ledgerMonthKey()])||0;}
+async function loadLedger(force){
+  if(!force&&LEDGER&&Date.now()-LEDGER_AT<10*60*1000)return LEDGER;
+  try{
+    const ctl=typeof AbortController==='function'?new AbortController():null;const tm=ctl?setTimeout(()=>ctl.abort(),6000):0;
+    const r=await fetch(LEDGER_URL+'/api/stats',ctl?{signal:ctl.signal}:{});clearTimeout(tm);
+    if(!r.ok)throw new Error('ledger answered '+r.status);
+    LEDGER=await r.json();LEDGER_AT=Date.now();LEDGER_ERR='';
+  }catch(e){LEDGER_ERR=e&&e.message||'unreachable';}
+  if(DATA&&DATA.snapshot)renderAll();
+  return LEDGER;
+}
+function kindWord(k){return {rent:'rent',caution:'caution fee',service:'service charge',agency:'agency fee',other:'other'}[k]||k;}
+function monthWord(ym){const m=/^(\d{4})-(\d{2})$/.exec(ym||'');if(!m)return ym||'';return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][Number(m[2])-1]+' '+m[1];}
+async function renderLedger(){
+  await loadLedger(false);
+  const L=LEDGER;
+  if(!L){$('ledger-msg').innerHTML='<div class="msg warn">'+esc('the ledger did not answer ('+(LEDGER_ERR||'no reply')+') — the receipts still print; only this view is blind')+'</div>';$('ledger-kpis').innerHTML='';$('ledger-cells').innerHTML='';$('ledger-states').innerHTML='';$('ledger-note').textContent='';return;}
+  $('ledger-msg').innerHTML='';
+  const need=L.publish_at||30,cells=Object.entries(L.cells||{}).map(([k,n])=>{const [st,kind,m]=k.split('|');return {st,kind,m,n};}).sort((a,b)=>b.n-a.n||a.st.localeCompare(b.st));
+  const ready=cells.filter(c=>c.n>=need).length,top=cells[0];
+  $('ledger-kpis').innerHTML=
+    kpi('Receipts verified',String(L.total||0),L.latest_receipt_date?'latest dated '+lagosDay(L.latest_receipt_date):'none yet')+
+    kpi('This month',String(ledgerThisMonth()),monthWord(ledgerMonthKey()))+
+    kpi('States covered',String(Object.keys(L.by_state||{}).length)+' of 37',Object.keys(L.by_state||{}).length?'':'the first receipt names the first state')+
+    kpi('Cells ready to publish',String(ready),top?(ready?'medians can go live':'closest: '+top.st+' · '+kindWord(top.kind)+' — '+top.n+' of '+need):'a cell is one state × kind × month',ready?'#166534':null);
+  $('ledger-cells').innerHTML=cells.length?cells.slice(0,6).map(c=>{const pct=Math.min(100,Math.round(c.n/need*100));
+    return '<div style="margin:0 0 8px"><div style="display:flex;justify-content:space-between;gap:8px;font-size:13px"><span>'+esc(c.st+' · '+kindWord(c.kind)+' · '+monthWord(c.m))+'</span><span class="num">'+c.n+' / '+need+'</span></div>'+
+      '<div style="height:6px;background:#E2E8F0;border-radius:3px;margin-top:4px"><div style="height:6px;width:'+pct+'%;background:'+(pct>=100?'#166534':'#0B1B3F')+';border-radius:3px"></div></div></div>';}).join('')
+    :'<p class="hint">No receipt has been registered yet. The first one that prints with the box ticked appears here within the hour.</p>';
+  const states=Object.entries(L.by_state||{}).sort((a,b)=>b[1]-a[1]);
+  $('ledger-states').innerHTML='<thead><tr><th>State</th><th class="num">Receipts</th><th class="num">Share</th></tr></thead><tbody>'+(states.length?states.map(r=>'<tr><td>'+esc(r[0])+'</td><td class="num">'+r[1]+'</td><td class="num">'+(L.total?Math.round(r[1]/L.total*100)+'%':'—')+'</td></tr>').join(''):'<tr><td class="hint" colspan="3">nothing yet</td></tr>')+'</tbody>';
+  $('ledger-note').textContent='Counts only — the ledger holds no names, addresses or phones. Amount medians for a cell are published only once it reaches '+need+' receipts (docs/RECEIPT_LEDGER.md). Numbers refresh every hour; check any code at '+LEDGER_URL.replace('https://','')+'/v/DR-…';
+}
+
 /* ---------------- website: Cloudflare Web Analytics ---------------- */
 let SITE=null;
 async function loadSite(){
@@ -821,7 +871,7 @@ function showView(v){
   if(v==='biz')renderInvoices();
   if(v==='sec')renderSessions();
   if(v==='social')loadSocial();
-  if(v==='site')loadSite();
+  if(v==='site'){loadSite();renderLedger();}
   if(v==='content')loadFeed();
 }
 document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
@@ -837,6 +887,7 @@ document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
     DATA={today:{},snapshot:{},limits:{},health:{}};
     $('login').classList.add('hide');$('app').classList.remove('hide');
     await load();
+    loadLedger(false);
     setInterval(async()=>{if(document.hidden||!token)return;await load();if(currentView==='social')loadSocial();ME=await api('/admin/me').catch(()=>ME);},REFRESH_MS);
   }catch(e){signedOut();}
 })();

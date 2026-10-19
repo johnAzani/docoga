@@ -102,7 +102,13 @@ changes the hash.
 6. Nothing in the index can be traced to a person; the fingerprint is never published.
 
 ## 6. Roadmap from here (each step announced in a Founder's brief before it is built)
-- Daily registration count on the owner dashboard feed (watch for the D1 trigger).
+- ~~Registration count on the owner dashboard~~ — **done 19 Oct 2026 (step 1 of "one after the
+  other")**: the Today tab carries a "Receipts verified" card and the Website tab a "Receipt
+  ledger" panel (total, this month, states of 37, cells ready to publish, the six cells closest
+  to 30 with progress bars, by-state table). The page reads `/api/stats` straight from
+  `docoga-ledger` (public counts, CORS `*`, cached an hour); the payments worker is not involved.
+  `/api/stats` now also returns `cells` (`state|kind|month` → count), `latest_receipt_date` and
+  `publish_at`. The D1 trigger (300 registrations/day) is what the "This month" card is for.
 - `docoga.com.ng/v/*` route (owner, one tap) and a QR of the check URL on the paper (pure-JS,
   no library — only once the gzip budget allows).
 - Landlord/agent "book": the issuer keeps a list of their own codes in local storage; the step

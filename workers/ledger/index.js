@@ -25,7 +25,7 @@
  * Routes
  *   POST /api/register       {fp, state, amount, kind?, from?, to?, date}  → {code, url}
  *   GET  /api/verify?code=   → the record (or 404)
- *   GET  /api/stats          → registrations by state and month (cached 1 h)
+ *   GET  /api/stats          → registrations by state, month, kind and index cell (cached 1 h)
  *   GET  /v/<code>           → the human verification page
  *   GET  /                   → what this is
  */
@@ -133,8 +133,8 @@ async function stats(env, ctx, request) {
   const key = new Request(new URL("/api/stats", request.url).toString(), { method: "GET" });
   const hit = await cache.match(key);
   if (hit) return hit;
-  const byState = {}, byMonth = {}, byKind = {};
-  let total = 0, cursor, pages = 0;
+  const byState = {}, byMonth = {}, byKind = {}, cells = {};
+  let total = 0, latest = "", cursor, pages = 0;
   do {
     const page = await env.KV.list({ prefix: "ledger:r:", cursor, limit: 1000 });
     for (const k of page.keys) {
@@ -143,11 +143,17 @@ async function stats(env, ctx, request) {
       byState[m.st || "?"] = (byState[m.st || "?"] || 0) + 1;
       byMonth[m.m || "?"] = (byMonth[m.m || "?"] || 0) + 1;
       byKind[m.kind || "?"] = (byKind[m.kind || "?"] || 0) + 1;
+      // One index cell = state × kind × month of the receipt date. A cell publishes amount
+      // statistics only at 30 receipts (docs/RECEIPT_LEDGER.md §5); counts are public before that.
+      const cell = (m.st || "?") + "|" + (m.kind || "?") + "|" + (m.m || "?");
+      cells[cell] = (cells[cell] || 0) + 1;
+      if (m.d && m.d > latest) latest = m.d;
     }
     cursor = page.list_complete ? undefined : page.cursor;
     pages += 1;
   } while (cursor && pages < 20);     // 20 list ops ≈ 20,000 receipts; the D1 trigger fires long before
-  const body = { total, by_state: byState, by_month: byMonth, by_kind: byKind, generated_at: new Date().toISOString(),
+  const body = { total, by_state: byState, by_month: byMonth, by_kind: byKind, cells, latest_receipt_date: latest || null,
+    publish_at: 30, generated_at: new Date().toISOString(),
     note: "Counts of receipts registered on docoga.com.ng. Amount statistics are published only for cells with 30 or more receipts (docs/RECEIPT_LEDGER.md §5)." };
   const res = json(body, 200, { "cache-control": "public, max-age=3600", "access-control-allow-origin": "*" });
   ctx.waitUntil(cache.put(key, res.clone()));
