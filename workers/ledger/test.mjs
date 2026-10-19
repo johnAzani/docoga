@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import worker, { makeCode, normaliseCode, validate, CANONICAL_JS } from "./index.js";
+import * as qr from "./qr.js";
 
 class FakeKV {
   constructor() { this.map = new Map(); this.writes = 0; }
@@ -133,4 +134,41 @@ test("the canonical function in the worker is byte-for-byte the one the site pri
   const fn = new Function(CANONICAL_JS + "; return receiptCanonical;")();
   assert.equal(fn({ date: "2026-10-19", amount: "850,000", from: "  Ada   Obi ", issuer: "Mr K. Bello", property: "12 Allen Avenue, Ikeja", period: "Oct 2026 – Sep 2027" }),
     "v1|2026-10-19|850000|ada obi|mr k. bello|12 allen avenue, ikeja|oct 2026 – sep 2027");
+});
+
+test("QR: bit-for-bit the Python qrcode library for every mask, versions 1–6 (fixtures), and the auto mask is one of them", () => {
+  const fx = JSON.parse(readFileSync(new URL("./qr_fixtures.json", import.meta.url), "utf8"));
+  assert.ok(fx.length >= 50);
+  const versions = new Set();
+  for (const f of fx) {
+    const q = qr.encode(f.text, f.mask);
+    versions.add(q.version);
+    assert.equal(q.version, f.version, f.text + " mask " + f.mask);
+    assert.equal(q.modules.map((r) => r.join("")).join("\n"), f.rows.join("\n"), "matrix differs: " + f.text + " mask " + f.mask);
+  }
+  assert.deepEqual([...versions].sort(), [1, 2, 3, 4, 5, 6]);
+  const auto = qr.encode("https://docoga-ledger.johnazani.workers.dev/v/DR-7K3M-Q2XA");
+  const forced = qr.encode("https://docoga-ledger.johnazani.workers.dev/v/DR-7K3M-Q2XA", auto.mask);
+  assert.deepEqual(auto.modules, forced.modules);
+  assert.ok([0, 1, 2, 3, 4, 5, 6, 7].map((m) => qr.penalty(qr.encode("docoga.com.ng/v/DR-0000-0000", m).modules)).every((s) => s >= qr.penalty(qr.encode("docoga.com.ng/v/DR-0000-0000").modules)), "auto picks the lowest penalty");
+  assert.throws(() => qr.encode("x".repeat(107)), /too long/);
+});
+
+test("QR: the receipt gets an inline SVG of its check URL; /qr/<code>.svg serves the same code; nothing else is encoded", async () => {
+  const e = env();
+  const r = await post(e, good());
+  const j = await r.json();
+  assert.match(j.qr, /^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg" viewBox="0 0 \d+ \d+" width="68" height="68"/);
+  assert.ok(j.qr.includes('aria-label="QR code: ' + j.url + '"'));
+  assert.ok(!/<script|on[a-z]+=|href/.test(j.qr));
+  const again = await (await post(e, good())).json();
+  assert.equal(again.qr, j.qr, "a re-print carries the same QR");
+  const img = await worker.fetch(new Request("https://ledger.test/qr/" + j.code.toLowerCase() + ".svg"), e, ctx);
+  assert.equal(img.status, 200);
+  assert.equal(img.headers.get("content-type"), "image/svg+xml; charset=utf-8");
+  const body = await img.text();
+  assert.ok(body.includes('aria-label="QR code: ' + j.url + '"') && body.includes('width="240"'));
+  assert.equal((await worker.fetch(new Request("https://ledger.test/qr/short.svg"), e, ctx)).status, 404);
+  const page = await (await worker.fetch(new Request("https://ledger.test/v/" + j.code), e, ctx)).text();
+  assert.ok(page.includes("<svg ") && page.includes("This QR opens this page"));
 });

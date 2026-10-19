@@ -109,8 +109,18 @@ changes the hash.
   `docoga-ledger` (public counts, CORS `*`, cached an hour); the payments worker is not involved.
   `/api/stats` now also returns `cells` (`state|kind|month` → count), `latest_receipt_date` and
   `publish_at`. The D1 trigger (300 registrations/day) is what the "This month" card is for.
-- `docoga.com.ng/v/*` route (owner, one tap) and a QR of the check URL on the paper (pure-JS,
-  no library — only once the gzip budget allows).
+- ~~QR of the check URL on the paper~~ — **done 19 Oct 2026 (step 2)**. The encoder lives in
+  the worker (`workers/ledger/qr.js`: byte mode, level M, versions 1–6, all eight masks with the
+  penalty rules, Reed-Solomon over GF(256)) and is pinned bit-for-bit to the Python `qrcode`
+  library through 59 committed fixtures (`qr_fixtures.json`), so the page carries no QR code
+  at all: `/api/register` returns the SVG (`qr`), the page checks it against a strict
+  allow-list regex (`QR_SAFE`) before inlining it, and the receipt prints an 18 mm square
+  beside the code. `GET /qr/<code>.svg` serves the same image at 240 px for the check page and
+  anything that comes later (issuer's book, WhatsApp share). Page weight +≈320 B gzipped.
+- `docoga.com.ng/v/*` route — **waiting on the owner's one tap** (Cloudflare → Workers Routes →
+  `docoga.com.ng/v/*` → `docoga-ledger`). The day it exists, set `PUBLIC_URL =
+  "https://docoga.com.ng"` in `workers/ledger/wrangler.toml` and every new receipt prints the
+  short address; old codes keep working at both addresses.
 - Landlord/agent "book": the issuer keeps a list of their own codes in local storage; the step
   before the B2B seat.
 - The index page and the first "DocOga Rent Monitor" post.

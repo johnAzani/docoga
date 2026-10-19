@@ -23,12 +23,15 @@
  * listings (1,000 keys per list op) and never the values.
  *
  * Routes
- *   POST /api/register       {fp, state, amount, kind?, from?, to?, date}  → {code, url}
+ *   POST /api/register       {fp, state, amount, kind?, from?, to?, date}  → {code, url, qr}
+ *   GET  /qr/<code>.svg      → the QR of the check URL (image/svg+xml, no lookup)
  *   GET  /api/verify?code=   → the record (or 404)
  *   GET  /api/stats          → registrations by state, month, kind and index cell (cached 1 h)
  *   GET  /v/<code>           → the human verification page
  *   GET  /                   → what this is
  */
+
+import { svg as qrSvg } from "./qr.js";
 
 const STATES = ["Abia", "Adamawa", "Akwa Ibom", "Anambra", "Bauchi", "Bayelsa", "Benue", "Borno", "Cross River",
   "Delta", "Ebonyi", "Edo", "Ekiti", "Enugu", "FCT (Abuja)", "Gombe", "Imo", "Jigawa", "Kaduna", "Kano", "Katsina",
@@ -103,7 +106,7 @@ async function register(request, env) {
   if (!v.ok) return json({ error: "invalid", fields: v.errors }, 422, cors.headers);
   // Same words, same code: a re-print must not spend a second write or mint a second code.
   const byFp = await env.KV.get("ledger:fp:" + v.record.fp);
-  if (byFp) return json({ code: byFp, url: verifyUrl(env, byFp), existing: true }, 200, cors.headers);
+  if (byFp) return json({ code: byFp, url: verifyUrl(env, byFp), qr: qrSvg(verifyUrl(env, byFp), QR_PX), existing: true }, 200, cors.headers);
   let code = "";
   for (let i = 0; i < 4 && !code; i++) {
     const c = makeCode();
@@ -114,8 +117,10 @@ async function register(request, env) {
   const metadata = { st: record.st, amt: record.amt, kind: record.kind, d: record.d, m: record.d.slice(0, 7) };
   await env.KV.put("ledger:r:" + code, JSON.stringify(record), { metadata });
   await env.KV.put("ledger:fp:" + record.fp, code);
-  return json({ code, url: verifyUrl(env, code) }, 201, cors.headers);
+  return json({ code, url: verifyUrl(env, code), qr: qrSvg(verifyUrl(env, code), QR_PX) }, 201, cors.headers);
 }
+
+const QR_PX = 68;   // ≈18 mm on A4 — 0.4–0.5 mm per module for a version 3–5 code, comfortably scannable
 
 function verifyUrl(env, code) {
   return (env.PUBLIC_URL || "https://docoga-ledger.johnazani.workers.dev").replace(/\/$/, "") + "/v/" + code;
@@ -204,7 +209,7 @@ function page(title, inner) {
 </main></body></html>`, { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
 }
 
-function verifyPage(code, record) {
+function verifyPage(code, record, env) {
   if (!record) {
     return page("Receipt not found \u2014 DocOga", `<div class="kicker">DocOga \u00b7 receipt check</div>
 <h1><span class="slab">Not found.</span></h1>
@@ -225,6 +230,7 @@ ${period ? `<div class="row"><span>Period</span><b>${esc(period)}</b></div>` : "
 <div class="row"><span>Receipt date</span><b>${esc(fmtDate(record.d))}</b></div>
 <div class="row"><span>Registered</span><b>${esc(record.t.replace("T", " ").replace("Z", " UTC"))}</b></div>
 </div>
+<p class="note" style="display:flex;gap:14px;align-items:center;margin-top:10px">${qrSvg(verifyUrl(env, code), 84)}<span>This QR opens this page. It is printed on the receipt beside the code.</span></p>
 <h2 style="font-size:20px;margin:26px 0 4px">Check the paper</h2>
 <p class="note">Type what the receipt says. Nothing you type leaves your phone \u2014 the fingerprint is computed here and compared with the one on file.</p>
 <form id="f" onsubmit="return check(event)">
@@ -271,15 +277,21 @@ export default {
         return json(record ? { code, ...record, fp: undefined, fingerprint: record.fp } : { error: "not_found", code }, record ? 200 : 404, { "access-control-allow-origin": "*" });
       }
       if (path === "/api/stats" && request.method === "GET") return await stats(env, ctx, request);
+      if (path.startsWith("/qr/") && request.method === "GET") {
+        const code = normaliseCode(path.slice(4).replace(/\.svg$/i, ""));
+        if (!code) return json({ error: "not_found" }, 404);
+        return new Response(qrSvg(verifyUrl(env, code), 240), { headers: { "content-type": "image/svg+xml; charset=utf-8",
+          "cache-control": "public, max-age=31536000, immutable", "access-control-allow-origin": "*" } });
+      }
       if (path === "/v" && request.method === "GET") {
         const raw = url.searchParams.get("c") || "";
         const code = normaliseCode(raw);
         if (code) return Response.redirect(new URL("/v/" + code, request.url).toString(), 302);
-        return verifyPage(raw, null);
+        return verifyPage(raw, null, env);
       }
       if (path.startsWith("/v/") && request.method === "GET") {
         const { code, record } = await lookup(env, decodeURIComponent(path.slice(3)));
-        return verifyPage(code || decodeURIComponent(path.slice(3)), record);
+        return verifyPage(code || decodeURIComponent(path.slice(3)), record, env);
       }
       if (path === "/" && request.method === "GET") return home();
       if (path === "/health") return json({ ok: true, service: "docoga-ledger" });

@@ -1761,7 +1761,8 @@ function receiptCanonical(f){
   var amt=String(Math.round(Number(String(f.amount==null?'':f.amount).replace(/[^0-9.]/g,''))||0));
   return ['v1',n(f.date),amt,n(f.from),n(f.issuer),n(f.property),n(f.period)].join('|');
 }
-let receiptVerify={fp:'',code:''};
+let receiptVerify={fp:'',code:'',qr:''};
+const QR_SAFE=/^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg" viewBox="0 0 \d+ \d+" width="\d+" height="\d+" shape-rendering="crispEdges" role="img" aria-label="[^"<>&]*"><rect width="\d+" height="\d+" fill="#fff"\/><path d="[Mhvz0-9 -]*" fill="#[0-9A-Fa-f]{6}"\/><\/svg>$/;
 function receiptFields(d){ return {date:d.r_date,amount:d.r_amt,from:d.r_from,issuer:d.r_issuer,property:d.r_prop,period:d.r_period}; }
 function receiptKind(purpose){ const p=String(purpose||'').toLowerCase(); if(/caution|security|deposit/.test(p)) return 'caution'; if(/service/.test(p)) return 'service'; if(/agen|legal|commission/.test(p)) return 'agency'; if(/rent|tenan|lease/.test(p)||!p) return 'rent'; return 'other'; }
 function receiptMonths(period){
@@ -1776,22 +1777,22 @@ async function registerReceipt(){
   if(!receiptWantsCode()) return;
   const fp=await sha256Hex(receiptCanonical(receiptFields(d)));
   if(receiptVerify.fp===fp&&receiptVerify.code) return;
-  try{ const cached=sessionStorage.getItem('docoga_rcpt_'+fp); if(cached){ receiptVerify={fp,code:cached}; return; } }catch(e){}
+  try{ const cached=sessionStorage.getItem('docoga_rcpt_'+fp); if(cached){ const c=cached.charAt(0)==='{'?JSON.parse(cached):{code:cached}; receiptVerify={fp,code:c.code,qr:c.qr||''}; return; } }catch(e){}
   const months=receiptMonths(d.r_period);
   const ctl=new AbortController(); const t=setTimeout(()=>ctl.abort(),3500);
   try{
     const r=await fetch(LEDGER_URL+'/api/register',{method:'POST',headers:{'Content-Type':'application/json'},signal:ctl.signal,
       body:JSON.stringify({fp,state:d.r_state,amount:amt,kind:receiptKind(d.r_purpose),from:months.from,to:months.to,date:d.r_date})});
     const j=await r.json();
-    if(r.ok&&j.code){ receiptVerify={fp,code:j.code}; try{ sessionStorage.setItem('docoga_rcpt_'+fp,j.code); }catch(e){} }
+    if(r.ok&&j.code){ const qr=QR_SAFE.test(j.qr||'')?j.qr:''; receiptVerify={fp,code:j.code,qr}; try{ sessionStorage.setItem('docoga_rcpt_'+fp,JSON.stringify({code:j.code,qr})); }catch(e){} }
   }catch(e){}
   finally{ clearTimeout(t); }
 }
 function receiptVerifyLine(d){
   if(!d.r_verify||!receiptVerify.code) return '';
   return '<div style="margin-top:10px;padding:8px 10px;border:1px dashed #333;font-size:11.5px;color:#222;display:flex;justify-content:space-between;gap:12px;align-items:center">'+
-    '<span>Verification code <b style="font-family:ui-monospace,Menlo,monospace;letter-spacing:.06em">'+esc(receiptVerify.code)+'</b></span>'+
-    '<span style="text-align:right">Check it free: '+esc(LEDGER_URL.replace('https://',''))+'/v/'+esc(receiptVerify.code)+'</span></div>';
+    (receiptVerify.qr?'<span style="flex:0 0 auto;line-height:0">'+receiptVerify.qr+'</span>':'')+
+    '<span style="flex:1 1 auto">Verification code <b style="font-family:ui-monospace,Menlo,monospace;letter-spacing:.06em">'+esc(receiptVerify.code)+'</b>'+(receiptVerify.qr?'<br><span style="color:#555">Scan the square, or type the code at</span>':'<br><span style="color:#555">Check it free:</span>')+' '+esc(LEDGER_URL.replace('https://',''))+'/v/'+esc(receiptVerify.code)+'</span></div>';
 }
 function renderReceipt(){
 const d=collectReceipt();
