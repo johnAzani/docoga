@@ -2,7 +2,7 @@
   "v": 1,
   "alg": "A256GCM",
   "name": "YT_REFRESH_TOKEN",
-  "nonce": "zaocbomFhFRz2dMt",
-  "ciphertext": "3TdgD4YDzYm9O6mAZYJ0sRZ7rjqmdQW+H1ui5J6hbMoPqvN6YcEw1s/Jqb7rs28gewLackplYbu1gLtHMLcb0bt2cO76mKPhsgxT129cGB6oCrYZveCqtOZidYdgBvFDMVXH+ZUIhtD99QidDRgl2INk31L8ZzM=",
-  "minted_at": "2026-10-17T09:06:02+00:00"
+  "nonce": "QA4g6LFVdfyaqktk",
+  "ciphertext": "0nS8blEEz9htCUMHZGpKyQiNkt0MJtqDZUe9cCoXsmEOFItp5WeSYAUzMM6hwuU3c6/Fxe/ifWg9/j2ZdFwtFNMRYWxfAf01IKg/mw3s7T4D//tRPREO452CkB2f9FDQsZ3eNKmWQ1DN5zcwrih8VLMGcVLg93c=",
+  "minted_at": "2026-10-19T11:07:13+00:00"
 }
