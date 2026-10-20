@@ -139,7 +139,7 @@ Why: since 20 Oct 2026 every spoken sentence of a Short gets a free video clip (
 behind it (`docs/SHORTS_MOTION.md` §5b). Two doors are keyless (Wikimedia Commons, Openverse) and
 work today; each key below opens a bigger catalogue. All free, all one-time, none expire.
 
-**Pixabay** (the big clip library — do this one first): `pixabay.com` → Join → confirm the email →
+**Pixabay** ✅ *secret `PIXABAY_API_KEY` added by the owner 20 Oct 2026, 5:08pm — door open.* (the big clip library — do this one first): `pixabay.com` → Join → confirm the email →
 sign in → open `https://pixabay.com/api/docs/` → scroll to **Parameters → key** — your key is
 printed there in green → copy → `github.com/johnAzani/docoga/settings/secrets/actions/new` →
 Name **PIXABAY_API_KEY** → paste → Add secret.
