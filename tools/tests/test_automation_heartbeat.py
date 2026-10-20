@@ -187,6 +187,23 @@ class VerdictTests(unittest.TestCase):
         self.assertIn("not one successful", verdict["reason"])
         self.assertIn("README", verdict["reason"])
 
+    def test_the_monitor_does_not_fail_itself_for_having_reported_a_failure(self):
+        """17–19 Oct 2026 (issue #88): one bad night → the heartbeat's own history held a
+        `failure` → it listed itself as never-succeeded → exit 1 → another failure, forever.
+        Its exit code is a verdict on the other lanes; a completed run of itself is the beat."""
+        me = lane(file=hb.SELF_FILE, name="Automation Heartbeat", crons=("0 20 * * *",))
+        verdict = judge(one_lane=me, runs=[run(hours_ago=4, conclusion="failure"),
+                                            run(hours_ago=28, conclusion="failure"),
+                                            run(hours_ago=52, conclusion="failure")])
+        self.assertEqual(verdict["status"], "ok", verdict["reason"])
+        self.assertEqual(verdict["streak"], 0)
+        # ...but a monitor that stopped running is still caught.
+        silent = judge(one_lane=me, runs=[run(hours_ago=80, conclusion="failure")])
+        self.assertEqual(silent["status"], "fail", silent["reason"])
+        # and the special case is the monitor's file only — every other lane keeps the strict rule.
+        other = judge(runs=[run(hours_ago=4, conclusion="failure"), run(hours_ago=28, conclusion="failure")])
+        self.assertEqual(other["kind"], "never-succeeded")
+
     def test_the_scheduler_slack_never_buys_more_than_one_cycle(self):
         """12 h of slack is right for a daily lane and absurd for a 30-minute one: it
         would mean the monitor can only notice that a fast lane is *gone*, never that
