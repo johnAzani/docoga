@@ -181,6 +181,12 @@ above, 100 % of that is the owner's; the fund balance is ₦0. The first real pa
 month the site sells 25 passes; everything the lanes do is aimed at that number first.
 
 ### Decision log entry
+- **20 Oct 2026, 9:40am** — **Housekeeping split shipped** (announced in the 8:40am brief; no
+  veto): the Business tier (waitlist, sign-in, configurator, checkout, renewal, team portal) moved
+  from `site/index.html` into `site/business.js`, loaded only when a team signs in or a Business
+  control is tapped. Retail page 51.2 KB → 45.4 KB gzipped; nothing visible changed; ₦0. Room is
+  now there for the rent-index page (step 5 of `docs/RECEIPT_LEDGER.md`), which waits for the
+  first 30-receipt cell.
 - **19 Oct 2026, 2:50pm** — Owner said "one after the other": dashboard ledger panel (#105,
   2:17pm), QR on the receipt (#106, 2:29pm), then he added the `docoga.com.ng/v/*` route himself
   (ten taps, 2:35–2:50pm). Receipts now print the short address. Then the issuer's book
