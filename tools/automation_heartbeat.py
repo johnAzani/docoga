@@ -688,6 +688,9 @@ def apply_publish_evidence(verdict, ledgers, now):
     return verdict
 
 
+SELF_FILE = "automation-heartbeat.yml"   # the monitor's own workflow file
+
+
 def judge(lane, info, runs, lane_since, now, grace=DEFAULT_LANE_GRACE,
           jitter=SCHEDULE_JITTER, misses=MISSES_BEFORE_SILENT):
     """One lane → one verdict. Returns a dict; `status` ∈ ok|warn|fail|manual|unknown."""
@@ -762,6 +765,13 @@ def judge(lane, info, runs, lane_since, now, grace=DEFAULT_LANE_GRACE,
         return verdict
 
     completed = [run for run in runs if run.get("status") == "completed"]
+    if lane.get("file") == SELF_FILE:
+        # The monitor's own exit code is its verdict on the OTHER lanes (1 = "I found
+        # something"), not a sign of its own health. Judged like a publisher, one bad
+        # night would make it report itself forever: it fails because it failed
+        # (17–19 Oct 2026, issue #88). For itself, a completed run IS the heartbeat.
+        completed = [dict(run, conclusion="success") if run.get("conclusion") in ("success", "failure") else run
+                     for run in completed]
     for run in completed:
         if run.get("conclusion") != "success":
             verdict["streak"] += 1
