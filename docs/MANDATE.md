@@ -181,6 +181,11 @@ above, 100 % of that is the owner's; the fund balance is ₦0. The first real pa
 month the site sells 25 passes; everything the lanes do is aimed at that number first.
 
 ### Decision log entry
+- **20 Oct 2026, 3:30pm** — **MotionStudio v5** on the owner's words ("text motion graphics as the
+  voice-over speaks, smooth camera movements, images that explain what is said per time, watch to
+  the end"): one photograph per spoken sentence with a slow smoother-step camera and cross-dissolves;
+  kinetic captions lit word by word (Vosk word times on the lanes, estimate as fallback); `TIP n OF 4`
+  counters. `docs/SHORTS_MOTION.md`. ₦0 — Openverse, Vosk (offline), Gemini free tier unchanged.
 - **20 Oct 2026, 9:40am** — **Housekeeping split shipped** (announced in the 8:40am brief; no
   veto): the Business tier (waitlist, sign-in, configurator, checkout, renewal, team portal) moved
   from `site/index.html` into `site/business.js`, loaded only when a team signs in or a Business

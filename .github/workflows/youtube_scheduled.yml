@@ -119,6 +119,7 @@ jobs:
       - name: Install MotionStudio (ffmpeg + Inter) and the upload dependencies
         run: |
           bash tools/install_motionstudio_deps.sh
+          bash tools/install_wordsync_deps.sh   # Vosk word times for kinetic captions (best effort)
           python -m pip install -r requirements-youtube.txt
 
       - name: Resolve the settings for this run
@@ -218,6 +219,11 @@ jobs:
           SHOTS=$(sed -n 's/^SHOTS_HITS=//p' /tmp/short.log | tail -1)
           echo "shots=${SHOTS:-?}" >> "$GITHUB_OUTPUT"
           echo "::notice title=Photographs behind the cards::SHOTS_HITS=${SHOTS:-none reported} — $(grep -c 'stays navy' /tmp/short.log || true) scene(s) stayed navy"
+          # v5 (20 Oct 2026): one photograph per spoken sentence with a camera move, and captions lit
+          # word by word. WORDSYNC=vosk is the aligned read; estimate means the model was not there.
+          TOTAL=$(sed -n 's/^SHOTS_TOTAL=//p' /tmp/short.log | tail -1)
+          WS=$(sed -n 's/^WORDSYNC=//p' /tmp/short.log | tail -1)
+          echo "::notice title=Camera + word-sync::SHOTS_TOTAL=${TOTAL:-?} photographs · WORDSYNC=${WS:-none reported}"
           exit "$code"
 
       # What the Short looks like, without downloading it: a labelled contact sheet (frame 0 =
@@ -235,7 +241,7 @@ jobs:
           mkdir -p /tmp/review
           LABEL="$(date -u +%F)_short_${GITHUB_RUN_ID}"
           python3 tools/contact_sheet.py --video "$VIDEO_PATH" --out /tmp/review/sheet.jpg --cover "$COVER_PATH" 2>&1 | tee /tmp/sheet.log
-          grep -E '^(SHOTS_HITS|SHEET_|COVER=|📷|·)' /tmp/short.log /tmp/sheet.log > /tmp/review/render_report.txt || true
+          grep -E '^(SHOTS_HITS|SHOTS_TOTAL|WORDSYNC|SHEET_|COVER=|📷|·)' /tmp/short.log /tmp/sheet.log > /tmp/review/render_report.txt || true
           [ -f "$COVER_PATH" ] && cp "$COVER_PATH" /tmp/review/cover.jpg || true
           REVIEW_LABEL="$LABEL" bash tools/review_push.sh /tmp/review/sheet.jpg /tmp/review/cover.jpg /tmp/review/render_report.txt | tee /tmp/review_push.log
           echo "url=$(sed -n 's/^REVIEW_URL=//p' /tmp/review_push.log | tail -1)" >> "$GITHUB_OUTPUT"

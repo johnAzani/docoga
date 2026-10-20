@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-MOTIONSTUDIO v4 — DocOga typography motion-design system (After-Effects-grade)
+MOTIONSTUDIO v5 — DocOga typography motion-design system (After-Effects-grade)
 ═══════════════════════════════════════════════════════════════════════════════
  1. CONTENT ANALYSIS    purpose/audience/tone/peaks/hierarchy declared first
  2. TYPOGRAPHY SOLVER   font-metric sizing, safe-width rejection, same-role
@@ -19,6 +19,13 @@ MOTIONSTUDIO v4 — DocOga typography motion-design system (After-Effects-grade)
                         ghost trails on every fast element, impact recoil +
                         shake, rolling odometer, breathing CTA. 30fps film
                         feel. Safe-zone locked.
+                        v5 (20 Oct 2026): a CAMERA on every photograph — one
+                        shot per spoken sentence, a slow push / pull / pan /
+                        tilt on a smoother-step curve with sub-pixel sampling,
+                        0.4 s cross-dissolves between shots; and KINETIC
+                        CAPTIONS — the narrator's words in 3–4-word phrases,
+                        the word being said lit in brand yellow with a spring
+                        pop, 80 ms ahead of the ear (tools/wordsync.py).
  6. VIDEO QA ENGINE     typography (cut-off/size/contrast) · animation
                         (unscheduled motion, frame-diff vs event registry) ·
                         timing (pre-exit presence) · composition (safe areas,
@@ -39,6 +46,12 @@ SAFE = dict(top=300, bottom=1240, left=80, right=1000)
 SAFE_W = SAFE['right'] - SAFE['left']
 EXIT, FLASH = 0.22, 0.09
 CAPTION_FADE, CAPTION_Y = 0.20, 980   # subtitle sentences (kind 'caption'): fade length, highest band top
+# v5 camera: how far a shot travels over its sentence, the cross-dissolve between shots, and
+# the moves in the order shots take them (a lane may name one per shot; the engine alternates).
+CAM_TRAVEL, XFADE = 0.10, 0.40
+CAM_MOVES = ('push', 'pan-right', 'pull', 'tilt-up', 'pan-left', 'push')
+# v5 kinetic captions: the lit word leads the voice by this much; the pop lasts this long.
+WORD_LEAD, WORD_POP = 0.08, 0.18
 TRANS_DUR = {'flash': FLASH, 'whip': 0.20, 'dissolve': 0.30}
 REEL_CAP = 15.6
 DISPLAY_FLOOR = 96   # smallest size a multi-word cascade may shrink to before it wraps
@@ -394,6 +407,10 @@ def events_of(reel):
             ev.append((off, off + 0.52, 'punch-in'))
         if not last:
             ev.append((off + sc['dur'] - EXIT, off + sc['dur'] + 0.03, 'accelerate-out'))
+        for sh in scene_shots(sc)[1:]:
+            # v5: a new photograph cross-dissolves in — the one moment the world behind the type
+            # changes faster than the type's own soft edges can hide
+            ev.append((off + sh['t0'] - 0.02, off + sh['t0'] + XFADE + 0.05, 'shot dissolve'))
         for b in sc['beats']:
             t0, ent = off + b['t0'], entrance_dur(b)
             k = b['kind']
@@ -410,6 +427,15 @@ def events_of(reel):
                 ev.append((t0, t0 + 0.05 * (len(b['text']) - 1) + 0.56, 'cascade (springs)'))
             elif k in ('support', 'kicker', 'badge'):
                 ev.append((t0, t0 + ent + 0.12, f'{k} in'))
+            elif k == 'caption' and b.get('words'):
+                # A kinetic caption: each phrase snaps in, each word lights as it is said (a
+                # spring pop, WORD_POP long). Between words the card is as still as the headline.
+                for ch in caption_chunks(b):
+                    ev.append((off + ch['t0'] - 0.02, off + ch['t0'] + 0.20, 'caption phrase'))
+                    for wd in ch['words']:
+                        tw = off + wd['t0'] - WORD_LEAD
+                        ev.append((tw - 0.02, tw + WORD_POP + 0.06, 'caption word'))
+                ev.append((off + b['t1'] - 0.14, off + b['t1'] + 0.06, 'caption out'))
             elif k == 'caption':
                 # A subtitle sentence: fades in at t0, holds still, fades out into t1. The two
                 # fades are the only motion it owns; the hold is as still as the headline.
@@ -429,6 +455,11 @@ def events_of(reel):
 
 # ═══════════════════════ 5. RENDER ENGINE ═══════════════════════
 def ease_cubic(p): return 1 - (1 - p) ** 3
+def smoother(p):
+    """Smoother-step (Perlin): zero velocity AND zero acceleration at both ends — the camera
+    never starts with a jolt or stops with a bump."""
+    p = 0.0 if p < 0 else 1.0 if p > 1 else p
+    return p * p * p * (p * (p * 6 - 15) + 10)
 def lerp_c(c1, c2, t): return tuple(int(a + (b - a) * t) for a, b in zip(c1, c2))
 
 def spring(t, k=180.0, z=0.68):
@@ -436,6 +467,11 @@ def spring(t, k=180.0, z=0.68):
     w = math.sqrt(k)
     wd = w * math.sqrt(max(1e-6, 1 - z * z))
     e = math.exp(-z * w * t)
+    if e < 0.01:
+        # Settled. The decaying tail (0.99999 → 1.00001 → 0.99999 …) is invisible as motion but
+        # int() turns it into a radius or a font size flickering by one pixel for the rest of the
+        # scene — a green badge breathing every 0.3 s under a photograph. Snap to rest.
+        return 1.0
     return 1 - e * (math.cos(wd * t) + (z * w / wd) * math.sin(wd * t))
 
 def build_base():
@@ -468,7 +504,7 @@ def ctracked(d, y, text, f, fill, tr=6):
         x += _scratch.textlength(ch, font=f) + tr
 
 def badge(d, cx, cy, r, color, shape, pop=1.0):
-    r = int(r * max(0.05, pop))
+    r = int(round(r * max(0.05, pop)))
     if r < 4: return
     d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=color)
     lw = max(8, int(r * 0.26))
@@ -615,6 +651,8 @@ def r_caption(d, img, b, lt):
     t1 = b.get('t1')
     if lt < b['t0'] or (t1 is not None and lt >= t1):
         return
+    if b.get('words'):
+        return r_kinetic(d, img, b, lt)
     a = min(1.0, (lt - b['t0']) / CAPTION_FADE)
     if t1 is not None:
         a = min(a, max(0.0, (t1 - lt) / CAPTION_FADE))
@@ -635,6 +673,103 @@ def r_caption(d, img, b, lt):
     for i, ln in enumerate(lines):
         w = _scratch.textbbox((0, 0), ln, font=f)[2]
         gd.text((CX - w // 2, y + 12 + i * lh), ln, font=f, fill=b.get('color', WHITE) + (int(255 * a),))
+    img.alpha_composite(glass)
+
+def caption_chunks(b):
+    """The phrases of a kinetic caption, each {t0, t1, words}: t0 is when the phrase takes the
+    card (its first word's time minus WORD_LEAD; the sentence's own t0 for the first), t1 when
+    the next phrase takes over (the sentence's t1 for the last). Cached on the beat."""
+    if b.get('_chunks') is not None:
+        return b['_chunks']
+    import wordsync
+    groups = wordsync.chunk(b['words'])
+    out = []
+    for i, g in enumerate(groups):
+        t0 = b['t0'] if i == 0 else max(b['t0'], g[0]['t0'] - WORD_LEAD)
+        out.append({'t0': round(t0, 3), 'words': g})
+    for a, nxt in zip(out, out[1:]):
+        a['t1'] = nxt['t0']
+    if out:
+        out[-1]['t1'] = b['t1']
+    b['_chunks'] = out
+    return out
+
+def kinetic_layout(sc, b):
+    """(y, size) for the kinetic caption card: under the scene's other type like caption_layout,
+    one line, Black, the largest size at which the widest phrase fits the safe width."""
+    if b.get('_kin'):
+        return b['_kin']
+    floor = CAPTION_Y
+    for o in sc['beats']:
+        if o is b or o['kind'] == 'caption':
+            continue
+        if o['kind'] in BOX_KINDS:
+            floor = max(floor, beat_box(o)[1] + 28)
+    widest = max((' '.join(w['d'] for w in ch['words']) for ch in caption_chunks(b)), key=len, default='')
+    size = 40
+    for cand in (62, 56, 50, 44, 40):
+        f = font('Black', cand)
+        asc, desc = f.getmetrics()
+        if _scratch.textbbox((0, 0), widest, font=f)[2] <= SAFE_W - 64 and floor + asc + desc + 28 <= SAFE['bottom']:
+            size = cand
+            break
+    b['_kin'] = (floor, size)
+    return b['_kin']
+
+def r_kinetic(d, img, b, lt):
+    """The phrase being said, one line on a navy glass card; the word being said in brand
+    yellow with a spring pop that leads the ear by WORD_LEAD. Said words stay white, words
+    still to come wait at 55% — the eye always knows where the voice is."""
+    sc = b.get('_scene')
+    chunks = caption_chunks(b)
+    cur = None
+    for ch in chunks:
+        if ch['t0'] <= lt < ch['t1']:
+            cur = ch
+    if cur is None:
+        return
+    y, size = kinetic_layout(sc, b) if sc else (CAPTION_Y, 50)
+    f = font('Black', size)
+    asc, desc = f.getmetrics()
+    gap = _scratch.textlength(' ', font=f)
+    widths = [_scratch.textlength(w['d'], font=f) for w in cur['words']]
+    line_w = sum(widths) + gap * (len(widths) - 1)
+    enter = min(1.0, (lt - cur['t0']) / 0.10)             # the phrase snaps in: 100 ms rise
+    a_card = ease_cubic(enter)
+    out_p = max(0.0, (lt - (b['t1'] - 0.14)) / 0.14) if lt > b['t1'] - 0.14 else 0.0
+    a_card *= (1.0 - ease_cubic(out_p))
+    if a_card <= 0.01:
+        return
+    yy = y + int(10 * (1 - a_card))
+    glass = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+    gd = ImageDraw.Draw(glass)
+    x0, x1 = CX - line_w / 2 - 28, CX + line_w / 2 + 28
+    gd.rounded_rectangle([x0, yy, x1, yy + asc + desc + 24], radius=16, fill=NAVY + (int(205 * a_card),))
+    x = CX - line_w / 2
+    # the word being said = the latest word whose (led) time has come; it stays lit until the
+    # next word takes over, so the only colour changes are at word times — all scheduled events
+    now_i = -1
+    for k, wd in enumerate(cur['words']):
+        if lt >= wd['t0'] - WORD_LEAD:
+            now_i = k
+    for k, (wd, ww) in enumerate(zip(cur['words'], widths)):
+        if k > now_i:
+            col, alpha, scale = WHITE, 0.55, 1.0
+        elif k < now_i:
+            col, alpha, scale = WHITE, 1.0, 1.0
+        else:
+            dt = lt - (wd['t0'] - WORD_LEAD)
+            col, alpha = YELLOW, 1.0
+            scale = 1.0 + 0.10 * (1 - spring(min(dt, WORD_POP) / WORD_POP, 120, 0.55)) if dt < WORD_POP else 1.0
+            scale = max(1.0, min(1.12, scale))
+        if scale > 1.001:
+            fz = font('Black', int(round(size * scale)))
+            wz = _scratch.textlength(wd['d'], font=fz)
+            asc_z = fz.getmetrics()[0]
+            gd.text((x + (ww - wz) / 2, yy + 12 + (asc - asc_z)), wd['d'], font=fz, fill=col + (int(255 * alpha * a_card),))
+        else:
+            gd.text((x, yy + 12), wd['d'], font=f, fill=col + (int(255 * alpha * a_card),))
+        x += ww + gap
     img.alpha_composite(glass)
 
 def r_kicker(d, img, b, lt):
@@ -751,6 +886,79 @@ def scene_bg(sc):
     bg = sc.get('_bg')
     return bg if bg is not None and getattr(bg, 'size', None) == (W, H) else BASE
 
+def scene_shots(sc):
+    """The scene's shots in order, each {t0, t1, img, move} in scene-local seconds: `_shots` as a
+    lane attached them (one per spoken sentence), else the single `_bg` for the whole scene,
+    else nothing (the navy BASE). The first shot starts at 0 and the last runs to the cut."""
+    shots = sc.get('_shots')
+    if not shots:
+        bg = sc.get('_bg')
+        shots = [dict(t0=0.0, t1=float(sc['dur']), img=bg, move='push')] if bg is not None else []
+    shots = [s for s in shots if getattr(s.get('img'), 'size', None) == (W, H)]
+    if not shots:
+        return []
+    out = [dict(s) for s in shots]
+    out[0]['t0'] = 0.0
+    out[-1]['t1'] = max(float(sc['dur']), out[-1]['t1'])
+    for i, s in enumerate(out):
+        s.setdefault('move', CAM_MOVES[i % len(CAM_MOVES)])
+        if not s.get('move'):
+            s['move'] = CAM_MOVES[i % len(CAM_MOVES)]
+    return out
+
+def camera_box(move, p, travel=CAM_TRAVEL):
+    """The source rectangle (floats) the camera sees at progress p∈[0,1] of a shot: a slow push,
+    pull, pan or tilt of `travel` (10%) across the whole sentence, on the smoother-step curve."""
+    q = smoother(p)
+    s_in, s_out = 1.0, 1.0 + travel
+    px = py = 0.0
+    if move == 'push':
+        s = s_in + (s_out - s_in) * q
+    elif move == 'pull':
+        s = s_out - (s_out - s_in) * q
+    elif move == 'pan-right':
+        s, px = s_out, -1.0 + 2.0 * q
+    elif move == 'pan-left':
+        s, px = s_out, 1.0 - 2.0 * q
+    elif move == 'tilt-up':
+        s, py = s_out, 1.0 - 2.0 * q
+    elif move == 'tilt-down':
+        s, py = s_out, -1.0 + 2.0 * q
+    else:
+        s = s_in + (s_out - s_in) * q
+    w2, h2 = W / s, H / s
+    cx = W / 2 + px * (W - w2) / 2
+    cy = H / 2 + py * (H - h2) / 2
+    return (cx - w2 / 2, cy - h2 / 2, cx + w2 / 2, cy + h2 / 2)
+
+def shot_frame(shot, p):
+    """The shot's photograph as the camera sees it at progress p — EXTENT transform on float
+    coordinates, so the move is sub-pixel smooth (an integer crop would step and judder)."""
+    box = camera_box(shot['move'], p)
+    return shot['img'].transform((W, H), Image.EXTENT, box, Image.BILINEAR)   # ≤10% rescale: bilinear is 2.5× faster than bicubic and indistinguishable on the duotone grain
+
+def camera_bg(sc, lt, last):
+    """The finished background of scene `sc` at local time `lt`: the current shot on its camera
+    path, cross-dissolved (XFADE) from the shot before it, then the scene's punch/exit zoom on
+    top — exactly what compose_frame lays the type on, and what QA subtracts to find the type."""
+    shots = scene_shots(sc)
+    s, _ = scale_at(sc, lt, last)
+    if not shots:
+        return zoom(BASE, 1.0 + 0.35 * (s - 1.0))
+    i = 0
+    for k, sh in enumerate(shots):
+        if sh['t0'] <= lt:
+            i = k
+    cur = shots[i]
+    span = max(0.3, cur['t1'] - cur['t0'])
+    img = shot_frame(cur, (lt - cur['t0']) / span)
+    if i > 0 and lt < cur['t0'] + XFADE:
+        prev = shots[i - 1]
+        pspan = max(0.3, prev['t1'] - prev['t0'])
+        before = shot_frame(prev, (lt - prev['t0']) / pspan)
+        img = Image.blend(before, img, smoother((lt - cur['t0']) / XFADE))
+    return zoom(img, 1.0 + 0.35 * (s - 1.0))
+
 def scale_at(sc, lt, last):
     """(zoom scale, exit fade) at local time `lt` — one definition for render and QA."""
     s, fade_p = 1.0, 0.0
@@ -764,9 +972,10 @@ def scale_at(sc, lt, last):
 
 def zoom(img, s):
     if abs(s - 1.0) < 0.001: return img
-    w2, h2 = int(W / s), int(H / s)
-    x0, y0 = (W - w2) // 2, (H - h2) // 2
-    return img.crop((x0, y0, x0 + w2, y0 + h2)).resize((W, H), Image.BICUBIC)
+    w, h = img.size
+    w2, h2 = int(w / s), int(h / s)
+    x0, y0 = (w - w2) // 2, (h - h2) // 2
+    return img.crop((x0, y0, x0 + w2, y0 + h2)).resize((w, h), Image.BICUBIC)
 
 def apply_shake(img, lt, impacts):
     for ti in impacts:
@@ -807,7 +1016,7 @@ def compose_frame(sc, lt, last, fx=True):
         r, g, bl, al = content.split()
         content = Image.merge('RGBA', (r, g, bl, al.point(lambda v: int(v * p))))
     s, fade_p = scale_at(sc, lt, last)
-    bg = zoom(scene_bg(sc), 1.0 + 0.35 * (s - 1.0))
+    bg = camera_bg(sc, lt, last)
     cz = zoom(content, s)
     img = bg.copy()
     img.paste(cz, (0, 0), cz)
@@ -875,7 +1084,10 @@ def render_reel(reel, tag):
             img = poster_frame(reel)
         else:
             img = compose_frame(sc, lt, last)
-        img.save(f'{fd}/f_{i:04d}.png')
+        # Scratch frames for ffmpeg and QA, not deliverables: compress_level=1 writes a photo
+        # frame in 0.12 s where the default level takes 0.52 s — the difference between a six-
+        # minute render and a twenty-minute one at 2,000 frames (v5, 20 Oct 2026).
+        img.save(f'{fd}/f_{i:04d}.png', compress_level=1)
         if i % 120 == 0:
             print(f'  frame {i}/{n}', flush=True)
     return fd, n
@@ -929,8 +1141,7 @@ def qa_reel(reel, fd, n):
                     arr = np.asarray(Image.open(f'{fd}/f_{idx:04d}.png').convert('RGB')).astype(int)
                     # Content is whatever differs from the scene's own background at this frame —
                     # a photograph behind the words is not "content outside the safe zone".
-                    zs, _ = scale_at(sc, idx / FPS - off, si == len(scenes) - 1)
-                    bg_arr = np.asarray(zoom(scene_bg(sc), 1.0 + 0.35 * (zs - 1.0)).convert('RGB')).astype(int)
+                    bg_arr = np.asarray(camera_bg(sc, idx / FPS - off, si == len(scenes) - 1).convert('RGB')).astype(int)
                     mask = np.abs(arr - bg_arr).sum(axis=2) > 60
                     ys, xs = np.nonzero(mask)
                     if len(ys) == 0:
@@ -966,15 +1177,34 @@ def qa_reel(reel, fd, n):
                 V.append(('timing', f"scene {sc['id']}: '{b['text'][:18]}' missing at pre-exit"))
         off += sc['dur']
 
-    # ANIMATION
-    prev = None
+    # ANIMATION — motion of the CONTENT only. The camera moves the photograph on every frame
+    # by design (v5); what must never move outside an event is the type: pixels that are pure
+    # background in both frames are the camera's and are ignored, the rest is judged as before.
+    # Judged at half resolution (frame and expected background both box-reduced the same way;
+    # 900 full-size pixels = 225 here) with hysteresis: a pixel has
+    # to go from plainly type (>40 from the background) to plainly not (≤12), or change by >40
+    # while plainly type, to count — the soft edge of a letter and the 20% of photograph that
+    # shows through a caption card drift by a few levels as the camera moves, and that is the
+    # camera, not the type.
+    prev = prev_strong = prev_none = None
+    bounds, t_acc = [], 0.0
+    for sc in scenes:
+        bounds.append((t_acc, t_acc + sc['dur']))
+        t_acc += sc['dur']
     for i in range(n):
-        cur = np.asarray(Image.open(f'{fd}/f_{i:04d}.png').convert('RGB')).astype(np.int16)
+        t = i / FPS
+        si = max(k for k, (a, _) in enumerate(bounds) if a <= t)
+        sc = scenes[si]
+        cur = np.asarray(Image.open(f'{fd}/f_{i:04d}.png').convert('RGB').reduce(2)).astype(np.int16)
+        bg = np.asarray(camera_bg(sc, min(t - bounds[si][0], sc['dur']), si == len(scenes) - 1).convert('RGB').reduce(2)).astype(np.int16)
+        dist = np.abs(cur - bg).max(axis=2)
+        strong, none = dist > 40, dist <= 12
         if prev is not None:
-            changed = int((np.abs(cur - prev).max(axis=2) > 12).sum())
-            if changed > 900 and not in_event(i / FPS):
-                V.append(('animation', f'unscheduled motion at t={i / FPS:.2f}s'))
-        prev = cur
+            moved = (strong & prev_none) | (prev_strong & none) | (strong & prev_strong & (np.abs(cur - prev).max(axis=2) > 40))
+            changed = int(moved.sum()) * 4
+            if changed > 900 and not in_event(t):
+                V.append(('animation', f'unscheduled motion at t={t:.2f}s'))
+        prev, prev_strong, prev_none = cur, strong, none
 
     # COMPOSITION
     for sc in scenes:
@@ -1036,7 +1266,7 @@ def autofix(violations, reel):
 # ═══════════════════════ PIPELINE ═══════════════════════
 def build(reel, tag):
     bar = '=' * 62
-    print(f'\n{bar}\nMOTIONSTUDIO v4 — {reel["name"]}  ({tag})\n{bar}')
+    print(f'\n{bar}\nMOTIONSTUDIO v5 — {reel["name"]}  ({tag})\n{bar}')
     print('── 1. CONTENT ANALYSIS ──')
     for k in ('purpose', 'audience', 'platform', 'tone', 'peak', 'hierarchy'):
         print(f'  {k:11s} {reel[k]}')
