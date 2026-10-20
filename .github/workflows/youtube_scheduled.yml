@@ -103,6 +103,12 @@ jobs:
     env:
       TZ: Africa/Lagos
       DOCOGA_SHOTS: ${{ vars.DOCOGA_SHOTS || 'on' }}   # CC0 photograph behind each Short scene, matched to the narration (tools/shot_match.py)
+      # v6 footage doors (tools/stock_media.py) — all free, all optional: an empty secret closes that door
+      # and the keyless ones (Wikimedia Commons, Openverse) carry the Short. Pexels pauses new keys (Sep 2026).
+      PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
+      PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+      FLICKR_API_KEY: ${{ secrets.FLICKR_API_KEY }}
+      UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
     steps:
       - name: Check out the default branch
         uses: actions/checkout@v5
@@ -223,7 +229,11 @@ jobs:
           # word by word. WORDSYNC=vosk is the aligned read; estimate means the model was not there.
           TOTAL=$(sed -n 's/^SHOTS_TOTAL=//p' /tmp/short.log | tail -1)
           WS=$(sed -n 's/^WORDSYNC=//p' /tmp/short.log | tail -1)
-          echo "::notice title=Camera + word-sync::SHOTS_TOTAL=${TOTAL:-?} photographs · WORDSYNC=${WS:-none reported}"
+          # v6: clips first, photographs where no clip exists; SHOTS_DOORS names the doors that were open
+          NV=$(sed -n 's/^SHOTS_VIDEO=//p' /tmp/short.log | tail -1)
+          NP=$(sed -n 's/^SHOTS_PHOTO=//p' /tmp/short.log | tail -1)
+          DOORS=$(sed -n 's/^SHOTS_DOORS=//p' /tmp/short.log | tail -1)
+          echo "::notice title=Footage + word-sync::SHOTS_TOTAL=${TOTAL:-?} shots (${NV:-0} clips, ${NP:-0} photographs) · doors ${DOORS:-?} · WORDSYNC=${WS:-none reported}"
           exit "$code"
 
       # What the Short looks like, without downloading it: a labelled contact sheet (frame 0 =
@@ -241,7 +251,7 @@ jobs:
           mkdir -p /tmp/review
           LABEL="$(date -u +%F)_short_${GITHUB_RUN_ID}"
           python3 tools/contact_sheet.py --video "$VIDEO_PATH" --out /tmp/review/sheet.jpg --cover "$COVER_PATH" 2>&1 | tee /tmp/sheet.log
-          grep -E '^(SHOTS_HITS|SHOTS_TOTAL|WORDSYNC|SHEET_|COVER=|📷|·)' /tmp/short.log /tmp/sheet.log > /tmp/review/render_report.txt || true
+          grep -E '^(SHOTS_HITS|SHOTS_TOTAL|SHOTS_VIDEO|SHOTS_PHOTO|SHOTS_DOORS|WORDSYNC|SHEET_|COVER=|📷|🎬|·)' /tmp/short.log /tmp/sheet.log > /tmp/review/render_report.txt || true
           [ -f "$COVER_PATH" ] && cp "$COVER_PATH" /tmp/review/cover.jpg || true
           REVIEW_LABEL="$LABEL" bash tools/review_push.sh /tmp/review/sheet.jpg /tmp/review/cover.jpg /tmp/review/render_report.txt | tee /tmp/review_push.log
           echo "url=$(sed -n 's/^REVIEW_URL=//p' /tmp/review_push.log | tail -1)" >> "$GITHUB_OUTPUT"

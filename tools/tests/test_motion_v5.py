@@ -289,16 +289,32 @@ class Camera(unittest.TestCase):
         fd, n = ms.render_reel(reel, "v5qa")
         anim = [m for cat, m in ms.qa_reel(reel, fd, n) if cat == "animation"]
         self.assertEqual(anim, [])
-        # nudge the type on one late frame and the engine must notice
+        # a renderer that nudges the type on one late frame (a bug, not a schedule) must be caught:
+        # the first look (frame vs camera background) flags it, the second look (the same type on
+        # the plain navy, v6) confirms it — because the type itself moved
         i = n - 3
-        fr = Image.open(f"{fd}/f_{i:04d}.png").convert("RGB")
-        bg = ms.camera_bg(sc, i / ms.FPS, True)
-        moved = bg.copy()
-        from PIL import ImageChops
-        moved.paste(ImageChops.offset(fr, 0, 40))
-        moved.save(f"{fd}/f_{i:04d}.png")
-        anim = [m for cat, m in ms.qa_reel(reel, fd, n) if cat == "animation"]
+        real = ms.r_kicker
+
+        def jumpy(d, img, b, lt):
+            if abs(lt - i / ms.FPS) < 1e-6:
+                b = dict(b, y=b["y"] + 40)
+            return real(d, img, b, lt)
+        with mock.patch.object(ms, "r_kicker", jumpy), mock.patch.dict(ms.RENDER, {"kicker": jumpy}):
+            fd, n = ms.render_reel(reel, "v5qa")
+            anim = [m for cat, m in ms.qa_reel(reel, fd, n) if cat == "animation"]
         self.assertTrue(anim, "type that moves outside an event is still a violation")
+        # and a picture that cuts hard under the type is the camera's business, not the type's
+        import numpy as np
+        flashing = [dict(t0=0.0, t1=0.6, img=_photo(), move="pan-right"),
+                    dict(t0=0.6, t1=1.2, img=Image.fromarray(np.full((ms.H, ms.W, 3), 200, np.uint8)), move="push")]
+        sc["_shots"] = flashing
+        ms.XFADE, xf = 0.0, ms.XFADE
+        try:
+            fd, n = ms.render_reel(reel, "v5qa2")
+            anim = [m for cat, m in ms.qa_reel(reel, fd, n) if cat == "animation"]
+        finally:
+            ms.XFADE = xf
+        self.assertEqual(anim, [], "a hard cut in the footage under a still kicker is forgiven")
 
 
 @unittest.skipUnless(IMPORT_OK, "video modules not importable (PIL/numpy)")
@@ -354,9 +370,9 @@ class Bridge(unittest.TestCase):
             calls.append(text)
             if len(calls) == 2:
                 return None, "nothing matched"
-            return frame, {"query": "q%d" % len(calls), "license": "cc0"}
+            return frame.copy(), {"query": "q%d" % len(calls), "license": "cc0", "id": "ov%d" % len(calls)}   # a different picture each time
         out = io.StringIO()
-        with mock.patch.dict(os.environ, {"DOCOGA_SHOTS": "on"}), \
+        with mock.patch.dict(os.environ, {"DOCOGA_SHOTS": "on", "STOCK_MEDIA": "off"}), \
              mock.patch.object(shot_match, "photo_for", side_effect=fake_photo), \
              mock.patch.object(shot_match, "query_chain", side_effect=lambda t, hint=None: [t[:12], "lagos street nigeria"]), \
              redirect_stdout(out):
@@ -375,14 +391,16 @@ class Bridge(unittest.TestCase):
         self.assertNotEqual(moves[0], moves[1], "the camera changes its move from shot to shot")
         self.assertIs(ms.scene_bg(reel["scenes"][-1]), ms.BASE, "the conclusion is never photographed")
 
-    def test_the_same_subject_twice_running_keeps_one_picture_and_lets_the_camera_run(self):
+    def test_the_same_picture_twice_running_keeps_one_shot_and_lets_the_camera_run(self):
+        """v6: every sentence asks for its own footage; only when the last door hands back the very
+        same photograph does the shot before it simply run on (a dissolve to itself would jump)."""
         topic = shorts_reel.topic_for(datetime.date(2026, 10, 20))
         reel = shorts_reel.reel_from_topic(topic, "/tmp/_v5.mp4")
         sc = reel["scenes"][1]
         sc["beats"] += [ms.Beat("caption", "caption", "Keep the receipt.", t0=0.3, t1=2.0, exempt=True, color=ms.WHITE),
                         ms.Beat("caption", "caption", "The receipt again.", t0=2.0, t1=4.0, exempt=True, color=ms.WHITE)]
         frame = Image.new("RGB", (ms.W, ms.H), (20, 30, 40))
-        with mock.patch.dict(os.environ, {"DOCOGA_SHOTS": "on"}), \
+        with mock.patch.dict(os.environ, {"DOCOGA_SHOTS": "on", "STOCK_MEDIA": "off"}), \
              mock.patch.object(shot_match, "photo_for", return_value=(frame, {"query": "paper receipt"})), \
              mock.patch.object(shot_match, "query_chain", return_value=["paper receipt", "lagos street nigeria"]), \
              redirect_stdout(io.StringIO()):

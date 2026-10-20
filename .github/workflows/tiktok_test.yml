@@ -41,6 +41,12 @@ jobs:
     env:
       TZ: Africa/Lagos
       DOCOGA_SHOTS: ${{ vars.DOCOGA_SHOTS || 'on' }}
+      # v6 footage doors (tools/stock_media.py) — all free, all optional: an empty secret closes that door
+      # and the keyless ones (Wikimedia Commons, Openverse) carry the Short. Pexels pauses new keys (Sep 2026).
+      PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
+      PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+      FLICKR_API_KEY: ${{ secrets.FLICKR_API_KEY }}
+      UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
     steps:
       - name: Check out the default branch
         uses: actions/checkout@v5
@@ -132,7 +138,7 @@ jobs:
           mkdir -p /tmp/review
           LABEL="$(date -u +%F)_tiktok-test_${GITHUB_RUN_ID}"
           python3 tools/contact_sheet.py --video "$VIDEO_PATH" --out /tmp/review/sheet.jpg --cover "$COVER_PATH" 2>&1 | tee /tmp/sheet.log
-          grep -E '^(SHOTS_HITS|SHEET_|COVER=|📷|·)' /tmp/short.log /tmp/sheet.log > /tmp/review/render_report.txt || true
+          grep -E '^(SHOTS_HITS|SHOTS_TOTAL|SHOTS_VIDEO|SHOTS_PHOTO|SHOTS_DOORS|WORDSYNC|SHEET_|COVER=|📷|🎬|·)' /tmp/short.log /tmp/sheet.log > /tmp/review/render_report.txt || true
           [ -f "$COVER_PATH" ] && cp "$COVER_PATH" /tmp/review/cover.jpg || true
           REVIEW_LABEL="$LABEL" bash tools/review_push.sh /tmp/review/sheet.jpg /tmp/review/cover.jpg /tmp/review/render_report.txt | tee /tmp/review_push.log
           echo "url=$(sed -n 's/^REVIEW_URL=//p' /tmp/review_push.log | tail -1)" >> "$GITHUB_OUTPUT"

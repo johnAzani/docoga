@@ -100,6 +100,10 @@
 spoken sentence, a slow 10% push/pull/pan/tilt, 0.4 s cross-dissolve) and the captions are
 kinetic — the word being said lit in **yellow**, the rest white. Yellow on a caption means
 exactly one thing: *this is the word the voice is on now.* Full grammar: `docs/SHORTS_MOTION.md`.
+**Footage (v6 — 20 Oct 2026, evening):** behind every spoken sentence a free **video clip** (a
+photograph only where no clip exists), chosen for the words and for Nigeria, and always passed
+through the same brand duotone × 0.68, grain and navy scrims as a photograph — a clip is never
+shown in its own colours. No close faces. (`tools/stock_media.py`)
 
 ---
 
