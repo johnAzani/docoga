@@ -181,6 +181,14 @@ above, 100 % of that is the owner's; the fund balance is ₦0. The first real pa
 month the site sells 25 passes; everything the lanes do is aimed at that number first.
 
 ### Decision log entry
+- **20 Oct 2026, 5:30pm** — **MotionStudio v6 — footage** on the owner's words ("free video clip per
+  spoken sentence; where there is no video clip use image per spoken sentence; as many free platforms
+  as possible; match what is being said; the Nigerian feel"): `tools/stock_media.py` asks Pixabay,
+  Pexels and Wikimedia Commons for a clip, then Pixabay/Pexels/Flickr-in-Nigeria/Unsplash/Commons/
+  Openverse for a photograph; Nigeria-first queries and a scored Nigerian bonus; public-domain-only
+  on Commons (no credits printed); no close faces; clips baked by ffmpeg into brand-duotone frames
+  the same camera rides. Keyless doors work today; the owner was asked for the free Pixabay,
+  Unsplash and Flickr keys (`docs/TOKENS.md` §9). ₦0 throughout. `docs/SHORTS_MOTION.md` §5b.
 - **20 Oct 2026, 3:30pm** — **MotionStudio v5** on the owner's words ("text motion graphics as the
   voice-over speaks, smooth camera movements, images that explain what is said per time, watch to
   the end"): one photograph per spoken sentence with a slow smoother-step camera and cross-dissolves;

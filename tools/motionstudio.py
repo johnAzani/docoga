@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-MOTIONSTUDIO v5 — DocOga typography motion-design system (After-Effects-grade)
+MOTIONSTUDIO v6 — DocOga typography motion-design system (After-Effects-grade)
 ═══════════════════════════════════════════════════════════════════════════════
  1. CONTENT ANALYSIS    purpose/audience/tone/peaks/hierarchy declared first
  2. TYPOGRAPHY SOLVER   font-metric sizing, safe-width rejection, same-role
@@ -26,6 +26,12 @@ MOTIONSTUDIO v5 — DocOga typography motion-design system (After-Effects-grade)
                         CAPTIONS — the narrator's words in 3–4-word phrases,
                         the word being said lit in brand yellow with a spring
                         pop, 80 ms ahead of the ear (tools/wordsync.py).
+                        v6 (20 Oct 2026, evening): FOOTAGE — a free video
+                        clip behind every spoken sentence (Pixabay, Pexels,
+                        Wikimedia Commons), a photograph where no clip exists
+                        (+ Flickr-in-Nigeria, Unsplash, Openverse), baked by
+                        ffmpeg into brand-duotone frames the same camera
+                        rides (tools/stock_media.py).
  6. VIDEO QA ENGINE     typography (cut-off/size/contrast) · animation
                         (unscheduled motion, frame-diff vs event registry) ·
                         timing (pre-exit presence) · composition (safe areas,
@@ -887,9 +893,10 @@ def scene_bg(sc):
     return bg if bg is not None and getattr(bg, 'size', None) == (W, H) else BASE
 
 def scene_shots(sc):
-    """The scene's shots in order, each {t0, t1, img, move} in scene-local seconds: `_shots` as a
-    lane attached them (one per spoken sentence), else the single `_bg` for the whole scene,
-    else nothing (the navy BASE). The first shot starts at 0 and the last runs to the cut."""
+    """The scene's shots in order, each {t0, t1, img, move[, frames, n]} in scene-local seconds:
+    `_shots` as a lane attached them (one per spoken sentence; a video shot carries its baked
+    frames dir and count), else the single `_bg` for the whole scene, else nothing (the navy
+    BASE). The first shot starts at 0 and the last runs to the cut."""
     shots = sc.get('_shots')
     if not shots:
         bg = sc.get('_bg')
@@ -931,11 +938,37 @@ def camera_box(move, p, travel=CAM_TRAVEL):
     cy = H / 2 + py * (H - h2) / 2
     return (cx - w2 / 2, cy - h2 / 2, cx + w2 / 2, cy + h2 / 2)
 
-def shot_frame(shot, p):
-    """The shot's photograph as the camera sees it at progress p — EXTENT transform on float
-    coordinates, so the move is sub-pixel smooth (an integer crop would step and judder)."""
+_FRAMES = {}
+def clip_frame(shot, tl):
+    """v6: the baked clip frame of a video shot at `tl` seconds into the shot (held on its last
+    frame past the end), or the shot's still. Frames are the JPEGs stock_media.bake_clip wrote —
+    read, never recomputed, so render and QA see the same pixels. A small cache keeps the two or
+    three frames a dissolve needs."""
+    fd, n = shot.get('frames'), int(shot.get('n') or 0)
+    if not fd or n <= 0:
+        return shot['img']
+    idx = min(n - 1, max(0, int(round(tl * FPS))))
+    key = (fd, idx)
+    img = _FRAMES.get(key)
+    if img is None:
+        try:
+            img = Image.open('%s/f_%04d.jpg' % (fd, idx + 1)).convert('RGB')
+            if img.size != (W, H):
+                img = img.resize((W, H), Image.BILINEAR)
+        except OSError:
+            return shot['img']
+        if len(_FRAMES) > 12:
+            _FRAMES.clear()
+        _FRAMES[key] = img
+    return img
+
+def shot_frame(shot, p, tl=None):
+    """The shot's picture as the camera sees it at progress p — EXTENT transform on float
+    coordinates, so the move is sub-pixel smooth (an integer crop would step and judder). For a
+    video shot `tl` (seconds into the shot) picks the clip frame under the camera."""
     box = camera_box(shot['move'], p)
-    return shot['img'].transform((W, H), Image.EXTENT, box, Image.BILINEAR)   # ≤10% rescale: bilinear is 2.5× faster than bicubic and indistinguishable on the duotone grain
+    src = clip_frame(shot, tl) if (shot.get('frames') and tl is not None) else shot['img']
+    return src.transform((W, H), Image.EXTENT, box, Image.BILINEAR)   # ≤10% rescale: bilinear is 2.5× faster than bicubic and indistinguishable on the duotone grain
 
 def camera_bg(sc, lt, last):
     """The finished background of scene `sc` at local time `lt`: the current shot on its camera
@@ -951,11 +984,11 @@ def camera_bg(sc, lt, last):
             i = k
     cur = shots[i]
     span = max(0.3, cur['t1'] - cur['t0'])
-    img = shot_frame(cur, (lt - cur['t0']) / span)
+    img = shot_frame(cur, (lt - cur['t0']) / span, lt - cur['t0'])
     if i > 0 and lt < cur['t0'] + XFADE:
         prev = shots[i - 1]
         pspan = max(0.3, prev['t1'] - prev['t0'])
-        before = shot_frame(prev, (lt - prev['t0']) / pspan)
+        before = shot_frame(prev, (lt - prev['t0']) / pspan, lt - prev['t0'])
         img = Image.blend(before, img, smoother((lt - cur['t0']) / XFADE))
     return zoom(img, 1.0 + 0.35 * (s - 1.0))
 
@@ -985,9 +1018,11 @@ def apply_shake(img, lt, impacts):
             return ImageChops.offset(img, int(6 * a * math.sin(46 * dt)), int(4 * a * math.cos(39 * dt)))
     return img
 
-def compose_frame(sc, lt, last, fx=True):
+def compose_frame(sc, lt, last, fx=True, flat=False):
     """One finished frame of scene `sc` at local time `lt` (RGB, W×H). `fx=False` draws the
-    scene settled: no whip/dissolve/flash, no punch-in, no shake, no exit fade — the poster."""
+    scene settled: no whip/dissolve/flash, no punch-in, no shake, no exit fade — the poster.
+    `flat=True` lays the same type on the plain navy instead of the camera's picture — QA's
+    second look, where only the type can move."""
     content = Image.new('RGBA', (W, H), (0, 0, 0, 0))
     d = ImageDraw.Draw(content)
     impacts = [bb['strike_at_local'] for bb in sc['beats']
@@ -1016,7 +1051,7 @@ def compose_frame(sc, lt, last, fx=True):
         r, g, bl, al = content.split()
         content = Image.merge('RGBA', (r, g, bl, al.point(lambda v: int(v * p))))
     s, fade_p = scale_at(sc, lt, last)
-    bg = camera_bg(sc, lt, last)
+    bg = BASE if flat else camera_bg(sc, lt, last)
     cz = zoom(content, s)
     img = bg.copy()
     img.paste(cz, (0, 0), cz)
@@ -1180,6 +1215,17 @@ def qa_reel(reel, fd, n):
     # ANIMATION — motion of the CONTENT only. The camera moves the photograph on every frame
     # by design (v5); what must never move outside an event is the type: pixels that are pure
     # background in both frames are the camera's and are ignored, the rest is judged as before.
+    def type_moved(sc, lt, last):
+        """The second look at a flagged frame: the same type laid on the plain navy for this
+        frame and the one before (compose_frame flat=True) — the v4 rule, where nothing but the
+        type can move. A picture flashing or cutting under a caption card's 20% glass trips the
+        first look (v6: footage can do that); it never trips this one."""
+        if lt - 1.0 / FPS < 0:
+            return True
+        a = np.asarray(compose_frame(sc, lt - 1.0 / FPS, last, flat=True)).astype(np.int16)
+        b = np.asarray(compose_frame(sc, lt, last, flat=True)).astype(np.int16)
+        return int((np.abs(b - a).max(axis=2) > 12).sum()) > 900
+
     # Judged at half resolution (frame and expected background both box-reduced the same way;
     # 900 full-size pixels = 225 here) with hysteresis: a pixel has
     # to go from plainly type (>40 from the background) to plainly not (≤12), or change by >40
@@ -1202,7 +1248,7 @@ def qa_reel(reel, fd, n):
         if prev is not None:
             moved = (strong & prev_none) | (prev_strong & none) | (strong & prev_strong & (np.abs(cur - prev).max(axis=2) > 40))
             changed = int(moved.sum()) * 4
-            if changed > 900 and not in_event(t):
+            if changed > 900 and not in_event(t) and type_moved(sc, t - bounds[si][0], si == len(scenes) - 1):
                 V.append(('animation', f'unscheduled motion at t={t:.2f}s'))
         prev, prev_strong, prev_none = cur, strong, none
 
@@ -1266,7 +1312,7 @@ def autofix(violations, reel):
 # ═══════════════════════ PIPELINE ═══════════════════════
 def build(reel, tag):
     bar = '=' * 62
-    print(f'\n{bar}\nMOTIONSTUDIO v5 — {reel["name"]}  ({tag})\n{bar}')
+    print(f'\n{bar}\nMOTIONSTUDIO v6 — {reel["name"]}  ({tag})\n{bar}')
     print('── 1. CONTENT ANALYSIS ──')
     for k in ('purpose', 'audience', 'platform', 'tone', 'peak', 'hierarchy'):
         print(f'  {k:11s} {reel[k]}')

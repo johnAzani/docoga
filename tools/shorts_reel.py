@@ -23,6 +23,13 @@ movements, images that explain what is being said per time"): once the narrator 
 every sentence gets its own photograph (shot_plan → `_shots`, a camera move each, cross-
 dissolved) and its words (shorts_sound.sync_words) so the captions light word by word.
 
+v6 (20 Oct 2026, evening; owner: "free video clip per spoken sentence, where there is no video
+clip use image per spoken sentence … as many free platforms as possible … Nigerian feel"): each
+sentence first asks tools/stock_media.py for a CLIP (Pixabay, Pexels, Wikimedia Commons), then a
+photograph (Pixabay, Pexels, Flickr-in-Nigeria, Unsplash, Commons, Openverse). A clip is baked by
+ffmpeg into brand frames the same camera rides. Machine lines: SHOTS_VIDEO, SHOTS_PHOTO,
+SHOTS_DOORS, SHOTS_TOTAL.
+
 No icon grid, no name cycler (those need social/assets/icon-*.png), no strike
 (nothing here is an external price). Palette and typeface come from the engine
 constants — there is deliberately no colour or font literal in this file.
@@ -237,41 +244,81 @@ def shot_plan(reel, topic):
 
 
 def attach_shots(reel, topic):
-    """Put matched CC0 photographs behind each hook/tip scene — one per spoken sentence (`_shots`,
+    """Put matched footage behind each hook/tip scene — one shot per spoken sentence (`_shots`,
     each W×H brand duotone with its own camera move; `_bg`/`_bg_raw` stay the scene's first shot
     for the cover) — owner, 17 Oct 2026: free images behind the cards, matching what is being
-    said; 20 Oct 2026: per sentence, with a camera. A sentence whose picture cannot be found
-    keeps the shot before it (or the navy); the Short is never late because of a photo. Returns
-    the number of scenes that got at least one photograph (SHOTS_HITS)."""
+    said; 20 Oct 2026: per sentence, with a camera; 20 Oct evening: a free VIDEO CLIP first, a
+    photograph where no clip exists, as many free platforms as possible, the Nigerian feel.
+    A sentence with nothing found keeps the shot before it (or the navy); the Short is never late
+    because of a picture. Returns the number of scenes that got at least one shot (SHOTS_HITS)."""
     import shot_match
     if not shot_match.enabled():
         return 0
     import brain_visual
-    hits, k, n_shots = 0, 0, 0
+    import stock_media
+    from PIL import Image
+    hits, k, n_shots, n_video, n_photo = 0, 0, 0, 0, 0
+    used = set()
+    bake_root = Path(os.environ.get("STOCK_BAKE_DIR") or "/tmp/docoga_bake") / ("%s" % os.getpid())
     for sc, spans in shot_plan(reel, topic):
-        shots, last_query = [], None
+        shots = []
         for t0, t1, text in spans:
             raw = {}
 
             def _treat(im, size, raw=raw):
                 raw["img"] = im           # the untreated photograph — the cover treats it its own way
                 return brain_visual.treat(im, size, darken=SHOT_DARKEN)
-            chain = shot_match.query_chain(text, hint=sc.get("shot"))
-            if shots and chain[0] == last_query:
-                shots[-1]["t1"] = t1       # same subject, same picture: let the camera keep moving
-                continue
-            img, note = shot_match.photo_for(text, hint=sc.get("shot"), size=(ms.W, ms.H), treat=_treat)
-            if img is None:
+            need_s = (t1 - t0) + ms.XFADE + 0.6
+            cand, note = stock_media.media_for(text, hint=sc.get("shot"), need_s=need_s, used=used)
+            shot = None
+            if cand is not None and cand.get("kind") == "video":
+                baked = stock_media.bake_clip(cand["path"], need_s, bake_root / ("%s_%02d" % (sc["id"], len(shots))),
+                                              darken=SHOT_DARKEN, duration=cand.get("duration"))
+                if baked:
+                    try:
+                        first = Image.open("%s/f_0001.jpg" % baked["frames"]).convert("RGB")
+                    except OSError:
+                        baked = None
+                if baked:
+                    shot = dict(t0=t0, t1=t1, img=first, raw=None, frames=baked["frames"], n=baked["n"],
+                                kind="video", source=cand.get("door"), query=cand.get("query"), credit=cand.get("credit"))
+                    n_video += 1
+                else:
+                    cand, note = stock_media.media_for(text, hint=sc.get("shot"), need_s=need_s, used=used, kinds=("photo",))
+            if shot is None and cand is not None and cand.get("kind") == "photo":
+                try:
+                    im = Image.open(cand["path"]).convert("RGB")
+                    img = _treat(im, (ms.W, ms.H))
+                    shot = dict(t0=t0, t1=t1, img=img, raw=raw.get("img"), kind="photo", source=cand.get("door"),
+                                query=cand.get("query"), credit=cand.get("credit"))
+                    n_photo += 1
+                except OSError:
+                    shot = None
+            if shot is None:
+                # the 17 Oct door, last: Openverse CC0 through shot_match (its own chain + cache)
+                img, pnote = shot_match.photo_for(text, hint=sc.get("shot"), size=(ms.W, ms.H), treat=_treat)
+                pid = pnote.get("id") if isinstance(pnote, dict) else None
+                if img is not None and shots and shots[-1].get("kind") == "photo" and (
+                        img is shots[-1]["img"] or (pid is not None and pid == shots[-1].get("pid"))):
+                    shots[-1]["t1"] = t1       # the same picture twice running: one shot, the camera keeps moving
+                    continue
+                if img is not None:
+                    shot = dict(t0=t0, t1=t1, img=img, raw=raw.get("img"), kind="photo", source="openverse", pid=pid,
+                                query=(pnote or {}).get("query") if isinstance(pnote, dict) else None)
+                    n_photo += 1
+                else:
+                    note = "%s; %s" % (note, pnote)
+            if shot is None:
                 if shots:
                     shots[-1]["t1"] = t1
                 print("  · scene %s %.1f–%.1fs keeps the shot before it (%s)" % (sc["id"], t0, t1, note))
                 continue
-            last_query = chain[0]
-            shots.append(dict(t0=t0, t1=t1, img=img, raw=raw.get("img"), move=ms.CAM_MOVES[k % len(ms.CAM_MOVES)],
-                              query=note.get("query")))
+            shot["move"] = ms.CAM_MOVES[k % len(ms.CAM_MOVES)]
+            shots.append(shot)
             k += 1
-            print("  📷 scene %s %.1f–%.1fs ← %s (%s) · camera %s" % (sc["id"], t0, t1, note.get("query"),
-                                                                   note.get("license") or "cc0", shots[-1]["move"]))
+            print("  %s scene %s %.1f–%.1fs ← %s (%s %s) · camera %s" % (
+                "🎬" if shot["kind"] == "video" else "📷", sc["id"], t0, t1, shot.get("query"),
+                shot.get("source"), shot["kind"], shot["move"]))
         sc["shot"] = shot_match.query_chain(spans[0][2], hint=sc.get("shot"))[0]
         if shots:
             shots[0]["t0"] = 0.0           # the first picture is there from the cut, before the voice
@@ -283,7 +330,10 @@ def attach_shots(reel, topic):
             n_shots += len(shots)
         else:
             print("  · scene %s stays navy" % sc["id"])
-    print("SHOTS_TOTAL=%d" % n_shots)   # machine line: photographs across the Short
+    print("SHOTS_VIDEO=%d" % n_video)     # machine lines: clips, photographs, which doors were open
+    print("SHOTS_PHOTO=%d" % n_photo)
+    print("SHOTS_DOORS=%s" % stock_media.door_status())
+    print("SHOTS_TOTAL=%d" % n_shots)     # shots across the Short
     return hits
 
 

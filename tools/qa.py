@@ -656,9 +656,10 @@ check("the bridge has its own tests",
 # lane installs the word-sync engine best-effort (a model mirror that blinks never costs a Short).
 _eng = open(engine_path, encoding="utf-8").read()
 check("MotionStudio v5: render and QA share camera_bg (one background for both)",
-      "bg = camera_bg(sc, lt, last)" in _eng and _eng.count("camera_bg(") >= 4 and "def smoother" in _eng)
-check("MotionStudio v5: the QA animation rule judges the type, not the camera",
-      "moved = (strong & prev_none)" in _eng)
+      "bg = BASE if flat else camera_bg(sc, lt, last)" in _eng and _eng.count("camera_bg(") >= 4 and "def smoother" in _eng)
+check("MotionStudio v5/v6: the QA animation rule judges the type, not the camera (two looks)",
+      "moved = (strong & prev_none)" in _eng and "def type_moved" in _eng
+      and "compose_frame(sc, lt, last, flat=True)" in _eng and "bg = BASE if flat else camera_bg(sc, lt, last)" in _eng)
 _br = open(bridge_path, encoding="utf-8").read()
 check("the bridge syncs words after the voice fit and before the captions",
       0 < _br.find("shorts_sound.fit_scenes(") < _br.find("shorts_sound.sync_words(") < _br.find("shorts_sound.caption_beats("))
@@ -674,6 +675,30 @@ check("the word-sync installer never fails the lane",
 check("the v5 motion grammar is documented and tested",
       os.path.exists(os.path.join(ROOT, "docs", "SHORTS_MOTION.md"))
       and os.path.exists(os.path.join(ROOT, "tools", "tests", "test_motion_v5.py")))
+# v6 footage (owner, 20 Oct 2026 evening): a clip per spoken sentence, a photograph where no clip
+# exists, as many free doors as possible, public-domain-only where we print no credits, and the
+# clip always passes through the brand duotone before the camera touches it.
+_sm_path = os.path.join(ROOT, "tools", "stock_media.py")
+_sm = open(_sm_path, encoding="utf-8").read() if os.path.exists(_sm_path) else ""
+check("v6 footage: the bridge asks for a clip first and a photograph where none exists",
+      'stock_media.media_for(text, hint=sc.get("shot"), need_s=need_s, used=used)' in _br
+      and 'kinds=("photo",)' in _br and "SHOTS_VIDEO=" in _br and "SHOTS_DOORS=" in _br)
+check("v6 footage: every door is free and optional; Commons is public-domain-only; no close faces",
+      all(k in _sm for k in ("PIXABAY_API_KEY", "PEXELS_API_KEY", "FLICKR_API_KEY", "UNSPLASH_ACCESS_KEY"))
+      and 'COMMONS_FREE = ("public domain", "pd", "cc0", "cc-zero", "no restrictions")' in _sm
+      and '"portrait", "selfie", "headshot", "face"' in _sm and "NIGERIA_BBOX" in _sm)
+check("v6 footage: a clip is baked through the brand duotone (lut1d) before the camera rides it",
+      "lut1d=file=" in _sm and "blend_image.STOPS" in _sm and "def clip_frame" in _eng
+      and "shot_frame(cur, (lt - cur['t0']) / span, lt - cur['t0'])" in _eng)
+for wf_name in ("youtube_scheduled.yml", "facebook_autopost.yml", "tiktok_test.yml"):
+    wfp = os.path.join(ROOT, ".github", "workflows", wf_name)
+    if os.path.exists(wfp):
+        check("%s passes the footage keys (empty = door closed, never a failure)" % wf_name,
+              "PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}" in open(wfp, encoding="utf-8").read())
+check("v6 footage is documented and tested",
+      "## 5b. Footage" in open(os.path.join(ROOT, "docs", "SHORTS_MOTION.md"), encoding="utf-8").read()
+      and os.path.exists(os.path.join(ROOT, "tools", "tests", "test_stock_media.py"))
+      and "PIXABAY_API_KEY" in open(os.path.join(ROOT, "docs", "TOKENS.md"), encoding="utf-8").read())
 
 # ── the heartbeat (one cron that judges every other cron) ───────────────────
 # The lanes publish; nothing else asks "did they". These checks are the pre-push

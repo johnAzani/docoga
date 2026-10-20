@@ -133,5 +133,30 @@ rotate their own keys; Plan read lets the heartbeat read the Actions-minutes bud
 
 ---
 
+## 9 · Footage doors (Shorts/Reels b-roll) → secrets `PIXABAY_API_KEY`, `UNSPLASH_ACCESS_KEY`, `FLICKR_API_KEY`, `PEXELS_API_KEY`
+
+Why: since 20 Oct 2026 every spoken sentence of a Short gets a free video clip (or a photograph)
+behind it (`docs/SHORTS_MOTION.md` §5b). Two doors are keyless (Wikimedia Commons, Openverse) and
+work today; each key below opens a bigger catalogue. All free, all one-time, none expire.
+
+**Pixabay** (the big clip library — do this one first): `pixabay.com` → Join → confirm the email →
+sign in → open `https://pixabay.com/api/docs/` → scroll to **Parameters → key** — your key is
+printed there in green → copy → `github.com/johnAzani/docoga/settings/secrets/actions/new` →
+Name **PIXABAY_API_KEY** → paste → Add secret.
+
+**Unsplash** (photographs): `unsplash.com/developers` → Register as a developer → **New
+Application** → tick the guidelines → Application name **DocOga** · Description **Free tenant
+documents for Nigeria — b-roll behind educational Shorts** → Create → copy **Access Key** →
+secret **UNSPLASH_ACCESS_KEY**.
+
+**Flickr** (photographs taken *in Nigeria* — the door is geofenced): `flickr.com/services/apps/create/apply`
+→ **Apply for a non-commercial key** → App name **DocOga Shorts** · What are you building **Public-domain
+b-roll behind free tenant-rights videos** → tick both → Submit → copy **Key** → secret **FLICKR_API_KEY**.
+
+**Pexels**: new API keys are **paused** (pexels.com/api, since 30 Sep 2026). Nothing to do; when
+they reopen, `pexels.com/api/new` → secret **PEXELS_API_KEY**.
+
+---
+
 ## How you know it is done
 Monday's "📊 Weekly scorecard" issue carries a block **"Token permissions — minted once, complete?"** with one line per token. ✅ on every line = this page is finished forever. ⚠️ names the exact permissions and the lane each one starves — mint that one token once with its full list above.

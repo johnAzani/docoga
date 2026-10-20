@@ -116,7 +116,7 @@ class Fetching(unittest.TestCase):
         results = [{"id": "s", "url": "https://x/s.jpg", "title": "Lagos street market", "width": 2000, "height": 1500,
                     "tags": [{"name": "nigeria"}]}]
         http = fake_http(results)
-        with mock.patch.dict(os.environ, {"BRAIN_PLATES": "on", "DOCOGA_SHOTS": "on", "BRAIN_PLATE_CACHE": self.tmp}):
+        with mock.patch.dict(os.environ, {"BRAIN_PLATES": "on", "DOCOGA_SHOTS": "on", "STOCK_MEDIA": "off", "BRAIN_PLATE_CACHE": self.tmp}):
             img, prov = shot_match.photo_for("Keep your receipt", size=(1080, 1350), http=http, sleeper=lambda: None)
             self.assertIsNotNone(img)
             self.assertEqual(img.size, (1080, 1350))
@@ -133,7 +133,7 @@ class Fetching(unittest.TestCase):
     def test_errors_never_escape(self):
         def http(url, accept=None):
             raise RuntimeError("boom")
-        with mock.patch.dict(os.environ, {"BRAIN_PLATES": "on", "DOCOGA_SHOTS": "on", "BRAIN_PLATE_CACHE": self.tmp}):
+        with mock.patch.dict(os.environ, {"BRAIN_PLATES": "on", "DOCOGA_SHOTS": "on", "STOCK_MEDIA": "off", "BRAIN_PLATE_CACHE": self.tmp}):
             img, note = shot_match.photo_for("Keep your receipt", http=http, sleeper=lambda: None)
         self.assertIsNone(img)
 
@@ -143,7 +143,7 @@ class DeepDiveBeats(unittest.TestCase):
         import deepdive
         beat = {"head": "KEEP THE RECEIPT", "sub": "Section 5 says so", "img": "pen", "shot": None}
         fake = Image.new("RGB", (1600, 1200), (90, 120, 150))
-        with mock.patch.dict(os.environ, {"DOCOGA_SHOTS": "on"}), \
+        with mock.patch.dict(os.environ, {"DOCOGA_SHOTS": "on", "STOCK_MEDIA": "off"}), \
              mock.patch.object(shot_match, "photo_for", return_value=(fake, {"query": "paper receipt", "license": "cc0"})) as pf:
             im = deepdive.plate_for_beat(beat)
             self.assertEqual(im.size, (2400, 1350))
@@ -151,7 +151,7 @@ class DeepDiveBeats(unittest.TestCase):
             self.assertIn("RECEIPT", pf.call_args.args[0])
             self.assertIs(deepdive.plate_for_beat(beat), im, "cached per beat — a 30 fps scene asks once")
         beat2 = {"head": "KEEP THE RECEIPT", "sub": "", "img": "pen", "shot": "handwritten receipt"}
-        with mock.patch.dict(os.environ, {"DOCOGA_SHOTS": "on"}), \
+        with mock.patch.dict(os.environ, {"DOCOGA_SHOTS": "on", "STOCK_MEDIA": "off"}), \
              mock.patch.object(shot_match, "photo_for", return_value=(None, "nothing matched")) as pf, \
              mock.patch.object(deepdive, "plate", return_value="PLATE") as named:
             self.assertEqual(deepdive.plate_for_beat(beat2), "PLATE")
@@ -194,7 +194,7 @@ class ShortScenes(unittest.TestCase):
         reel = shorts_reel.reel_from_topic(topic, "/tmp/x.mp4")
         frame = Image.new("RGB", (ms.W, ms.H), (20, 30, 40))
         answers = iter([(frame, {"query": "paper receipt", "license": "cc0"}), (None, "nothing matched")] + [(frame, {"query": "x"})] * 9)
-        with mock.patch.dict(os.environ, {"DOCOGA_SHOTS": "on"}), \
+        with mock.patch.dict(os.environ, {"DOCOGA_SHOTS": "on", "STOCK_MEDIA": "off"}), \
              mock.patch.object(shot_match, "photo_for", side_effect=lambda *a, **k: next(answers)):
             hits = shorts_reel.attach_shots(reel, topic)
         self.assertEqual(hits, 4)
@@ -220,7 +220,7 @@ class ShortScenes(unittest.TestCase):
         self.assertIn("mask = np.abs(arr - bg_arr).sum(axis=2) > 60", src)
         self.assertNotIn("mask = np.abs(arr - NAVY).sum(axis=2) > 60", src)
         # v5: render and QA share camera_bg (the shot on its camera path + the scene zoom)
-        self.assertIn("bg = camera_bg(sc, lt, last)", src)
+        self.assertIn("bg = BASE if flat else camera_bg(sc, lt, last)", src)   # v6: QA's second look lays the type on the plain navy
         self.assertIn("bg_arr = np.asarray(camera_bg(sc, idx / FPS - off, si == len(scenes) - 1)", src)
         sc = {"punch": 0.05, "dur": 3.2}
         self.assertEqual(ms.scale_at(sc, 1.0, False), (1.0, 0.0))
