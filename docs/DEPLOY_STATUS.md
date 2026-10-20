@@ -660,3 +660,10 @@ Brevo-log Resend, no repeat attempt; no code/recipient/reference stored. The NEW
 Brevo event was not separately inspected; receipt was the decisive proof. Flag
 stays enabled; endpoint limit is 60s spacing/3 attempts per UTC day per pass,
 not globally atomic. Old Brevo failure is historical.
+
+**Business tier split out of the page — 20 Oct 2026, 9:40am:** `site/business.js` is a new
+static asset (served by `docoga-git` like `analytics-consent.js`; no `_headers` rule needed).
+`index.html` fetches it as `/business.js?v=<sha256[:8]>` only for signed-in teams or a Business
+tap, so a stale CDN copy can never pair with a new page. Retail readers: 45.4 KB gzipped (was
+51.2 KB). Check after deploy: open docoga.com.ng#team — the sign-in card paints from the page;
+a signed-in team sees "loading your team…" for one network round-trip, then the portal.

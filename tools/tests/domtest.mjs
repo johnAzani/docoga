@@ -31,17 +31,17 @@ function jsdomDirCandidates() {
     '/home/user/node_modules/jsdom',
   ].filter(Boolean);
 }
-let JSDOM = null, VirtualConsole = null;
+let JSDOM = null, VirtualConsole = null, requestInterceptor = null;
 for (const dir of jsdomDirCandidates()) {
   try {
     const api = await import('file://' + path.join(dir, 'lib', 'api.js'));
     const vc = await import('file://' + path.join(dir, 'lib', 'jsdom', 'virtual-console.js'));
-    JSDOM = api.JSDOM; VirtualConsole = vc.VirtualConsole;
+    JSDOM = api.JSDOM; VirtualConsole = vc.VirtualConsole; requestInterceptor = api.requestInterceptor;
     break;
   } catch (e) { /* try next */ }
 }
 if (!JSDOM) {
-  try { const m = await import('jsdom'); JSDOM = m.JSDOM; } catch (e) {}
+  try { const m = await import('jsdom'); JSDOM = m.JSDOM; requestInterceptor = m.requestInterceptor; } catch (e) {}
 }
 if (!JSDOM) {
   console.log('⚠️  jsdom not installed — skipping DOM suite.');
@@ -59,12 +59,16 @@ function check(name, cond, detail = '') {
 function section(t) { console.log('\n— ' + t + ' —'); }
 
 const HTML = fs.readFileSync(INDEX, 'utf8');
+/* business.js is loaded on demand by the page (bizLoad). For the suite it is inlined right
+   after the main script so every Business check sees the real functions; the lazy path itself
+   is proven separately with a ResourceLoader (see "Business tools load on demand"). */
+const BIZ_JS = fs.readFileSync(path.join(ROOT, 'site', 'business.js'), 'utf8');
 const ANALYTICS_MANAGER = fs.readFileSync(path.join(ROOT, 'site', 'analytics-consent.js'), 'utf8');
 const DAY = 864e5;
 
 /* Boot a fresh DOM of the real page.
    The bootstrap script is injected FIRST so the app sees our stubs. */
-function boot({ url = 'http://localhost/index.html', worker = null, storage = null } = {}) {
+function boot({ url = 'http://localhost/index.html', worker = null, storage = null, inlineBiz = true, resources = null } = {}) {
   const errors = [];
   const bootstrap = `<script>
     window.__errors = [];
@@ -93,7 +97,8 @@ function boot({ url = 'http://localhost/index.html', worker = null, storage = nu
     window.scrollTo = function () {};
     ${storage ? `try{ ${storage} }catch(e){}` : ''}
   </script>`;
-  const html = HTML.replace('<head>', '<head>\n' + bootstrap);
+  let html = HTML.replace('<head>', '<head>\n' + bootstrap);
+  if (inlineBiz) html = html.replace('<script src="/analytics-consent.js"', '<script>\n' + BIZ_JS + '\n</script>\n<script src="/analytics-consent.js"');
 
   const virtualConsole = VirtualConsole ? new VirtualConsole() : undefined;
   if (virtualConsole) {
@@ -107,6 +112,7 @@ function boot({ url = 'http://localhost/index.html', worker = null, storage = nu
     url,
     runScripts: 'dangerously',
     pretendToBeVisual: true,
+    ...(resources ? { resources } : {}),
     ...(virtualConsole ? { virtualConsole } : {}),
   });
   // surface real page errors to the checks (window.onerror + jsdom internal errors)
@@ -673,7 +679,7 @@ check('renewal posts to /business/team/renew (owner; server owns window + price)
 check('usage beacon: best-effort, non-blocking, throttled (C8 honesty)',
       (() => { const s = lex(dom, 'usageBeacon.toString()'); return /\/business\/team\/usage/.test(s) && s.includes('keepalive:true') && /10\*60\*1000/.test(s) && /teamActive/.test(s); })());
 check('revenue funnel events wired for BOTH funnels (retail pass + business) with gtag guard',
-      (() => { const s = HTML; const g = lex(dom, 'trackEvent.toString()');
+      (() => { const s = HTML + BIZ_JS; const g = lex(dom, 'trackEvent.toString()');
         return ['pass_checkout_opened','pass_activated','pass_topup','business_team_created','business_charge_started','business_team_activated','business_renewal_started'].every(n => s.includes(n)) && /window\.gtag/.test(g); })());
 const p4Team = (over) => `
   window.fetch = function (u, opt) {
@@ -721,6 +727,41 @@ check('legacy GA loader removed; dedicated tag is consent/release-gated',
       !HTML.includes('G-GO8VZB3R28') && !/googletagmanager\.com\/gtag\/js/.test(HTML) &&
       ANALYTICS_MANAGER.includes("var GA4_ID = 'G-BQ1YTR0ZZJ'") &&
       ANALYTICS_MANAGER.includes('var ANALYTICS_RELEASE_ENABLED = false;'));
+
+/* ============================ business.js loads on demand ================= */
+section('Business tools load on demand — retail readers never download them');
+{
+  /* jsdom ≥30: subresources go through undici; requestInterceptor() lets the suite serve
+     /business.js straight from disk and record every fetch the page makes. */
+  check('jsdom exposes requestInterceptor (jsdom ≥ 30, as package.json pins)', typeof requestInterceptor === 'function');
+  const served = [];
+  const Disk = () => ({ interceptors: [requestInterceptor((request) => {
+    const u = new URL(request.url); served.push(u.pathname + u.search);
+    const body = u.pathname === '/business.js' ? BIZ_JS : '';
+    return new Response(body, { headers: { 'Content-Type': 'application/javascript' } });
+  })] });
+  const retail = boot({ inlineBiz: false, resources: Disk() });
+  await wait(120);
+  check('a retail visit (no team) does not fetch business.js at all', !served.some(u => u.startsWith('/business.js')), served.join(','));
+  check('…yet the Business card still shows the team sign-in form, painted by the page itself',
+        /Already part of a DocOga team\?/.test($(retail, 'biz-team-box').textContent) && !!$(retail, 'biz-team-box').querySelector('form[onsubmit*="bizLoginSubmit"]'));
+  check('…and the team page shows its sign-in form too', /Sign in to your team dashboard/.test($(retail, 'team-portal').textContent));
+  check('the page carries no Business function bodies (they moved out)', !/function teamPortalRender\(|function bizRenew\(|function bizCharge\(/.test(HTML));
+  retail.window.eval("bizCall('bizSetSegment','landlord')");
+  await wait(160);
+  check('tapping a Business control fetches business.js once, versioned, and runs the call', served.filter(u => u.startsWith('/business.js?v=')).length === 1 && $(retail, 'biz-cfg-seats').value === '3' && /Total \/ year/.test($(retail, 'biz-cfg-quote').textContent), served.join(',') + ' | ' + $(retail, 'biz-cfg-quote').textContent.slice(0, 60));
+  retail.window.eval("bizCall('bizSetSegment','property-manager')");
+  await wait(60);
+  check('a second call reuses the loaded module (no second fetch)', served.filter(u => u.startsWith('/business.js')).length === 1 && $(retail, 'biz-cfg-seats').value === '8');
+  const v = /const BIZ_V='([0-9a-f]{8})'/.exec(HTML);
+  check('the version stamp in the page is the first 8 hex of sha256(business.js) — a stale cache is impossible',
+        !!v && served.some(u => u === '/business.js?v=' + v[1]), served.join(','));
+  const teamed = boot({ inlineBiz: false, resources: Disk(), storage: p4Team({ team: { id: 'tp4', slug: 'p4', name: 'P4 Firm', status: 'active', expiry: '2027-10-10', plan: 'starter' } }) });
+  await wait(200);
+  check('a signed-in team fetches business.js at boot and the portal renders through the lazy path',
+        /P4 Firm/.test($(teamed, 'team-portal').textContent) && /ACTIVE/.test($(teamed, 'team-portal').textContent), $(teamed, 'team-portal').textContent.slice(0, 120));
+  check('no script error on either lazy boot', retail.__errs().length === 0 && teamed.__errs().length === 0, retail.__errs().concat(teamed.__errs()).join(' | '));
+}
 
 /* ============================ Receipt ledger: code + QR on the paper ===== */
 section('Receipt ledger — verification code and QR on the printed receipt');

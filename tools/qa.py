@@ -151,6 +151,37 @@ check("index.html gzipped payload under 52 KB (real page weight)",
 check("index.html raw size sane (corruption tripwire, 40–200 KB)",
       40000 <= len(idx.encode()) <= 200000, f"{len(idx.encode())} bytes raw")
 
+# 20 Oct 2026 — the split happened: the Business tier (waitlist, sign-in, configurator,
+# checkout, renewal, team portal) lives in site/business.js and index.html's bizLoad()
+# fetches it only when a team is signed in or a Business control is used. Retail readers
+# (99% of visits) stopped downloading it: 51.2KB -> 45.4KB gzipped. The stamp BIZ_V in
+# index.html is sha256(business.js)[:8] so a new business.js can never be served from a
+# stale cache (the URL changes). These checks keep the two files honest with each other.
+import hashlib as _hl, subprocess as _sp
+_biz_path = f"{SITE}/business.js"
+check("site/business.js exists (Business tier split out of index.html)", os.path.exists(_biz_path))
+if os.path.exists(_biz_path):
+    _biz = open(_biz_path, "rb").read()
+    _biz_gz = len(_gzip.compress(_biz, 9))
+    check("business.js gzipped under 16 KB (one Business module, not a second app)",
+          _biz_gz <= 16 * 1024, f"{_biz_gz} bytes gzipped")
+    _bv = re.search(r"const BIZ_V='([0-9a-f]{8})'", idx)
+    check("index.html BIZ_V == sha256(business.js)[:8] (cache-busting stamp current)",
+          bool(_bv) and _bv.group(1) == _hl.sha256(_biz).hexdigest()[:8],
+          f"stamp={_bv.group(1) if _bv else None} actual={_hl.sha256(_biz).hexdigest()[:8]}")
+    check("index.html no longer carries Business function bodies",
+          not re.search(r"function (teamPortalRender|bizCharge|bizRenew|bizQuote|bizWaitlistSubmit)\(", idx))
+    for fn in ("bizWaitlistSubmit", "bizLoginSubmit", "teamUIRender", "bizSetSegment", "bizUpdateQuote",
+               "bizCreateTeam", "bizRenew", "bizPollActivation", "teamPortalRender"):
+        check(f"business.js defines {fn}() that index.html calls through bizCall/bizLoad",
+              re.search(r"function " + fn + r"\(", _biz.decode("utf-8")) is not None)
+    try:
+        _r = _sp.run(["node", "-e", "new Function(require('fs').readFileSync(process.argv[1],'utf8'))", _biz_path],
+                     capture_output=True, text=True, timeout=30)
+        check("business.js parses as a classic script (node)", _r.returncode == 0, _r.stderr.strip()[:200])
+    except FileNotFoundError:
+        print("   (node not found — business.js parse check skipped here; CI runs it)")
+
 import json as _json
 ld_blocks = re.findall(r'<script type="application/ld\+json">(.*?)</script>', idx, re.DOTALL)
 ld_ok = True; ld_detail = ""
