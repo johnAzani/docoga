@@ -376,6 +376,7 @@ jobs:
           # Same renderer as the YouTube Short: MotionStudio (Inter + ffmpeg). The
           # script ends with `motionstudio.py --check` and fails by name if either is absent.
           bash tools/install_motionstudio_deps.sh
+          bash tools/install_wordsync_deps.sh   # Vosk word times for kinetic captions (best effort)
           python3 -m pip install --quiet -r requirements-youtube.txt
 
       # The grant question, answered daily without publishing anything: `start`

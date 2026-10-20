@@ -219,7 +219,9 @@ class ShortScenes(unittest.TestCase):
         src = (ROOT / "tools/motionstudio.py").read_text(encoding="utf-8")
         self.assertIn("mask = np.abs(arr - bg_arr).sum(axis=2) > 60", src)
         self.assertNotIn("mask = np.abs(arr - NAVY).sum(axis=2) > 60", src)
-        self.assertIn("bg = zoom(scene_bg(sc), 1.0 + 0.35 * (s - 1.0))", src)
+        # v5: render and QA share camera_bg (the shot on its camera path + the scene zoom)
+        self.assertIn("bg = camera_bg(sc, lt, last)", src)
+        self.assertIn("bg_arr = np.asarray(camera_bg(sc, idx / FPS - off, si == len(scenes) - 1)", src)
         sc = {"punch": 0.05, "dur": 3.2}
         self.assertEqual(ms.scale_at(sc, 1.0, False), (1.0, 0.0))
         s, fade = ms.scale_at(sc, 3.2 - 0.01, False)

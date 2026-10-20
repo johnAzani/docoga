@@ -15,8 +15,13 @@ MotionStudio.
 
 Grammar used (and nothing else):
     hook        kicker + cascade + support          flash
-    tip × 4     green check badge + cascade + support   whip / flash alternating
+    tip × 4     "TIP n OF 4" kicker + green check badge + cascade + support   whip / flash alternating
     conclusion  wordpop "FREE." + button + support + disclaimer kicker   dissolve
+
+v5 (20 Oct 2026, owner: "text motion graphics as the voice-over speaks, smooth camera
+movements, images that explain what is being said per time"): once the narrator has read,
+every sentence gets its own photograph (shot_plan → `_shots`, a camera move each, cross-
+dissolved) and its words (shorts_sound.sync_words) so the captions light word by word.
 
 No icon grid, no name cycler (those need social/assets/icon-*.png), no strike
 (nothing here is an external price). Palette and typeface come from the engine
@@ -76,6 +81,11 @@ DISCLAIMER_KICKER = "GENERAL INFO · RULES VARY BY STATE"
 FOLLOW_KICKER = "FOLLOW " + HANDLE.upper()
 
 DEFAULT_OUTPUT_DIR = ROOT / "assets" / "videos"
+
+
+def tip_counter(i, n):
+    """`TIP 2 OF 4`; the last one says so — the payoff is announced, not discovered."""
+    return ("LAST TIP · %d OF %d" if i == n - 1 else "TIP %d OF %d") % (i + 1, n)
 
 
 def _up(text):
@@ -156,6 +166,11 @@ def reel_from_topic(topic, out_path, platform="YouTube Shorts"):
                         color=ms.WHITE),
                 ms.Beat("support", "support", _clean(tip.get("sub")), size=52, y=930,
                         color=ms.MUTED),
+                # The step counter is the retention cue: a viewer who knows there are four, and
+                # that this is the second, stays for the other two (20 Oct 2026). Listed last with
+                # its own t0 so the badge → cascade chain, and the scene's length, are untouched.
+                ms.Beat("kicker", "kicker", tip_counter(i, len(tips)), size=28, y=392, color=ms.FAINT,
+                        t0=0.02, exempt=True, why="a glance label, not a line to read"),
             ]))
 
     disclaimer_text = DISCLAIMER_KICKER
@@ -205,31 +220,70 @@ def shots_for(reel, topic):
     return out
 
 
+def shot_plan(reel, topic):
+    """[(scene, [(t0, t1, text), …])] — one shot per spoken sentence of each hook/tip scene,
+    from the caption beats the voice timed (shorts_sound.caption_beats); a scene with no
+    captions (no voice, or a one-line read) is one shot for the whole scene, asked for in the
+    narrator's words. The picture changes when the sentence does — "images that explain what
+    the voice-over is saying per time" (owner, 20 Oct 2026)."""
+    plan = []
+    for sc, text, chain in shots_for(reel, topic):
+        caps = sorted((b for b in sc["beats"] if b["kind"] == "caption"), key=lambda b: b["t0"])
+        if caps:
+            plan.append((sc, [(float(b["t0"]), float(b["t1"]), b["text"]) for b in caps]))
+        else:
+            plan.append((sc, [(0.0, float(sc["dur"]), text)]))
+    return plan
+
+
 def attach_shots(reel, topic):
-    """Put a matched CC0 photograph behind each hook/tip scene (`_bg`, W×H, brand duotone) — owner,
-    17 Oct 2026: free images behind the cards, matching what is being said. A scene whose picture
-    cannot be found or fetched keeps the navy; the Short is never late because of a photo."""
+    """Put matched CC0 photographs behind each hook/tip scene — one per spoken sentence (`_shots`,
+    each W×H brand duotone with its own camera move; `_bg`/`_bg_raw` stay the scene's first shot
+    for the cover) — owner, 17 Oct 2026: free images behind the cards, matching what is being
+    said; 20 Oct 2026: per sentence, with a camera. A sentence whose picture cannot be found
+    keeps the shot before it (or the navy); the Short is never late because of a photo. Returns
+    the number of scenes that got at least one photograph (SHOTS_HITS)."""
     import shot_match
     if not shot_match.enabled():
         return 0
     import brain_visual
-    hits = 0
-    for sc, text, chain in shots_for(reel, topic):
-        raw = {}
+    hits, k, n_shots = 0, 0, 0
+    for sc, spans in shot_plan(reel, topic):
+        shots, last_query = [], None
+        for t0, t1, text in spans:
+            raw = {}
 
-        def _treat(im, size, raw=raw):
-            raw["img"] = im           # the untreated photograph — the cover treats it its own way
-            return brain_visual.treat(im, size, darken=SHOT_DARKEN)
-        img, note = shot_match.photo_for(text, hint=sc.get("shot"), size=(ms.W, ms.H), treat=_treat)
-        sc["shot"] = chain[0]
-        if img is not None:
-            sc["_bg"] = img
-            if raw.get("img") is not None:
-                sc["_bg_raw"] = raw["img"]
+            def _treat(im, size, raw=raw):
+                raw["img"] = im           # the untreated photograph — the cover treats it its own way
+                return brain_visual.treat(im, size, darken=SHOT_DARKEN)
+            chain = shot_match.query_chain(text, hint=sc.get("shot"))
+            if shots and chain[0] == last_query:
+                shots[-1]["t1"] = t1       # same subject, same picture: let the camera keep moving
+                continue
+            img, note = shot_match.photo_for(text, hint=sc.get("shot"), size=(ms.W, ms.H), treat=_treat)
+            if img is None:
+                if shots:
+                    shots[-1]["t1"] = t1
+                print("  · scene %s %.1f–%.1fs keeps the shot before it (%s)" % (sc["id"], t0, t1, note))
+                continue
+            last_query = chain[0]
+            shots.append(dict(t0=t0, t1=t1, img=img, raw=raw.get("img"), move=ms.CAM_MOVES[k % len(ms.CAM_MOVES)],
+                              query=note.get("query")))
+            k += 1
+            print("  📷 scene %s %.1f–%.1fs ← %s (%s) · camera %s" % (sc["id"], t0, t1, note.get("query"),
+                                                                   note.get("license") or "cc0", shots[-1]["move"]))
+        sc["shot"] = shot_match.query_chain(spans[0][2], hint=sc.get("shot"))[0]
+        if shots:
+            shots[0]["t0"] = 0.0           # the first picture is there from the cut, before the voice
+            sc["_shots"] = shots
+            sc["_bg"] = shots[0]["img"]
+            if shots[0].get("raw") is not None:
+                sc["_bg_raw"] = shots[0]["raw"]
             hits += 1
-            print("  📷 scene %s ← %s (%s)" % (sc["id"], note.get("query"), note.get("license") or "cc0"))
+            n_shots += len(shots)
         else:
-            print("  · scene %s stays navy (%s)" % (sc["id"], note))
+            print("  · scene %s stays navy" % sc["id"])
+    print("SHOTS_TOTAL=%d" % n_shots)   # machine line: photographs across the Short
     return hits
 
 
@@ -291,6 +345,7 @@ def render_topic(topic, out_path, tag="short", platform="YouTube Shorts", sound=
         if clips:
             total = shorts_sound.fit_scenes(reel, clips)
             print("  scenes stretched to the read: %.1fs" % total)
+            shorts_sound.sync_words(clips)             # WORDSYNC=vosk|estimate — when each word is said
             captions = shorts_sound.caption_beats(reel, clips, ms=ms)
             if captions:
                 print("  detailed read: %d caption sentence(s) follow the narrator" % captions)

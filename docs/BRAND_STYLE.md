@@ -96,6 +96,11 @@
 
 **LOCKED:** Strike own price = violation = auto-unstrike. QA enforces.
 
+**Motion (Shorts/Reels, v5 — 20 Oct 2026):** the camera moves on every photograph (one shot per
+spoken sentence, a slow 10% push/pull/pan/tilt, 0.4 s cross-dissolve) and the captions are
+kinetic — the word being said lit in **yellow**, the rest white. Yellow on a caption means
+exactly one thing: *this is the word the voice is on now.* Full grammar: `docs/SHORTS_MOTION.md`.
+
 ---
 
 ## 6. IMAGE DISCIPLINE (the AI detection kill chain)

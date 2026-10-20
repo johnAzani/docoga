@@ -74,6 +74,7 @@ jobs:
         if: steps.reset.outputs.go == 'yes'
         run: |
           bash tools/install_motionstudio_deps.sh
+          bash tools/install_wordsync_deps.sh   # Vosk word times for kinetic captions (best effort)
           python3 -m pip install --quiet -r requirements-youtube.txt
 
       - name: Restore the narrator's cached clips and the quota ledger

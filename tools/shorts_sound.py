@@ -219,11 +219,62 @@ def narration_for(reel, topic):
     return lines
 
 
+def sync_words(clips, log=print):
+    """When each word of each clip is said (tools/wordsync.py): Vosk on the publish lanes, the
+    letter-weighted estimate elsewhere. Sets clip["words"] (clip seconds) and clip["wordsync"];
+    returns the engine the run used ("vosk" when every clip aligned, else "estimate"). Prints
+    the machine line WORDSYNC=<engine> the lane summaries read."""
+    import wordsync
+    engines = set()
+    for c in clips:
+        if not c.get("seconds"):
+            continue
+        words, engine = wordsync.words_for(c.get("path"), c["text"], float(c["seconds"]))
+        c["words"], c["wordsync"] = words, engine
+        engines.add(engine)
+    engine = "vosk" if engines == {"vosk"} else ("estimate" if engines else "none")
+    log("WORDSYNC=%s" % engine)
+    return engine
+
+
+def _sentence_times(c, sents, dur):
+    """[(t0, t1, words)] per sentence in scene-local seconds. With word times the sentence
+    starts where its first word is heard (VOICE_LEAD_S for the first) and hands over at the
+    midpoint of the pause before the next; without them, by the sentence's share of the clip's
+    characters (the proxy tools/deepdive.py uses before alignment)."""
+    import wordsync
+    seconds = float(c["seconds"])
+    words = c.get("words") or []
+    if words and len(words) == len(wordsync.display_words(" ".join(sents))):
+        spans = wordsync.sentence_spans(words, sents)
+        if all(spans) and len(spans) == len(sents):
+            out, t = [], VOICE_LEAD_S
+            for i, sp in enumerate(spans):
+                if i + 1 < len(spans):
+                    t1 = VOICE_LEAD_S + (sp[-1]["t1"] + spans[i + 1][0]["t0"]) / 2
+                else:
+                    t1 = VOICE_LEAD_S + seconds
+                t0, t1 = round(t, 2), round(min(t1, dur - 0.05), 2)
+                local = [{"d": w["d"], "t0": round(w["t0"] + VOICE_LEAD_S, 3), "t1": round(w["t1"] + VOICE_LEAD_S, 3)} for w in sp]
+                out.append((t0, t1, local))
+                t = t1
+            return out
+    total_chars = sum(len(x) for x in sents) or 1
+    out, t = [], VOICE_LEAD_S
+    for sent in sents:
+        share = len(sent) / total_chars * seconds
+        t0, t1 = round(t, 2), round(min(t + share, dur - 0.05), 2)
+        out.append((t0, t1, None))
+        t += share
+    return out
+
+
 def caption_beats(reel, clips, ms=None):
     """Caption every detailed scene like a Deep-Dive: one MotionStudio 'caption' beat per
-    sentence, timed by the sentence's share of the clip (characters, the same proxy
-    tools/deepdive.py uses before alignment). The scene's sub-line beat makes way — the
-    captions ARE the explanation. Returns the number of captions added. Pure: no rendering."""
+    sentence. With word times (sync_words) the beat carries `words` in scene seconds and the
+    engine draws it kinetically — phrase by phrase, the word being said lit; without them it is
+    the plain timed sentence. The scene's sub-line beat makes way — the captions ARE the
+    explanation. Returns the number of captions added. Pure: no rendering."""
     ms = ms or _motionstudio()
     by_scene = {c["scene"]: c for c in clips}
     added = 0
@@ -232,16 +283,14 @@ def caption_beats(reel, clips, ms=None):
         if not c or not c.get("detailed") or not c.get("sentences") or not c.get("seconds"):
             continue
         sents = list(c["sentences"])
-        total_chars = sum(len(x) for x in sents) or 1
         sc["beats"] = [b for b in sc["beats"] if b["kind"] != "support"]
-        t = VOICE_LEAD_S
-        for sent in sents:
-            share = len(sent) / total_chars * float(c["seconds"])
-            t0, t1 = round(t, 2), round(min(t + share, sc["dur"] - 0.05), 2)
+        for sent, (t0, t1, words) in zip(sents, _sentence_times(c, sents, float(sc["dur"]))):
             if t1 - t0 >= 0.6:
-                sc["beats"].append(ms.Beat("caption", "caption", sent, t0=t0, t1=t1, exempt=True, color=ms.WHITE))
+                b = ms.Beat("caption", "caption", sent, t0=t0, t1=t1, exempt=True, color=ms.WHITE)
+                if words:
+                    b["words"] = [w for w in words if w["t0"] < t1]
+                sc["beats"].append(b)
                 added += 1
-            t += share
     return added
 
 

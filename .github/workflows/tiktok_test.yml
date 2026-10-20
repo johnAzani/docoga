@@ -53,6 +53,7 @@ jobs:
       - name: Install MotionStudio (ffmpeg + Inter) and the dependencies
         run: |
           bash tools/install_motionstudio_deps.sh
+          bash tools/install_wordsync_deps.sh   # Vosk word times for kinetic captions (best effort)
           python -m pip install -r requirements-youtube.txt
 
       # The cheap, decisive check first: is the lane connected and does the refresh token

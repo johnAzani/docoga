@@ -651,6 +651,29 @@ check("the installer proves the environment before any render",
       os.path.exists(inst) and 'motionstudio.py" --check' in open(inst, encoding="utf-8").read())
 check("the bridge has its own tests",
       os.path.exists(os.path.join(ROOT, "tools", "tests", "test_shorts_reel.py")))
+# v5 (20 Oct 2026): camera + word-sync. Render and QA must share one background function, the
+# captions must get their words between the voice fit and the caption beats, and every render
+# lane installs the word-sync engine best-effort (a model mirror that blinks never costs a Short).
+_eng = open(engine_path, encoding="utf-8").read()
+check("MotionStudio v5: render and QA share camera_bg (one background for both)",
+      "bg = camera_bg(sc, lt, last)" in _eng and _eng.count("camera_bg(") >= 4 and "def smoother" in _eng)
+check("MotionStudio v5: the QA animation rule judges the type, not the camera",
+      "moved = (strong & prev_none)" in _eng)
+_br = open(bridge_path, encoding="utf-8").read()
+check("the bridge syncs words after the voice fit and before the captions",
+      0 < _br.find("shorts_sound.fit_scenes(") < _br.find("shorts_sound.sync_words(") < _br.find("shorts_sound.caption_beats("))
+for wf_name in ("youtube_scheduled.yml", "facebook_autopost.yml", "narrator_resume.yml", "tiktok_test.yml"):
+    wfp = os.path.join(ROOT, ".github", "workflows", wf_name)
+    if os.path.exists(wfp):
+        check("%s installs the word-sync engine (best effort)" % wf_name,
+              "tools/install_wordsync_deps.sh" in open(wfp, encoding="utf-8").read())
+_ws = os.path.join(ROOT, "tools", "install_wordsync_deps.sh")
+check("the word-sync installer never fails the lane",
+      os.path.exists(_ws) and "set -e" not in open(_ws, encoding="utf-8").read()
+      and open(_ws, encoding="utf-8").read().rstrip().endswith("exit 0"))
+check("the v5 motion grammar is documented and tested",
+      os.path.exists(os.path.join(ROOT, "docs", "SHORTS_MOTION.md"))
+      and os.path.exists(os.path.join(ROOT, "tools", "tests", "test_motion_v5.py")))
 
 # ── the heartbeat (one cron that judges every other cron) ───────────────────
 # The lanes publish; nothing else asks "did they". These checks are the pre-push

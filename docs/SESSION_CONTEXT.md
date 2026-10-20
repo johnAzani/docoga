@@ -384,7 +384,8 @@ All in `tools/`. Key tools:
 | `gemini_tts.py` | Gemini TTS (voiceover) |
 | `motionstudio.py` | MotionStudio v4 |
 | `dd2_shorts.py` | DD2 Shorts A/B/C |
-| `shorts_reel.py` | Shorts/Reels bridge (14 Oct 2026): rotation words → MotionStudio spec → `motionstudio.build` — the only renderer the YouTube/Facebook/Telegram video lanes may use (qa.py §15) |
+| `wordsync.py` | v5 (20 Oct 2026): when each word of a narration clip is said — Vosk alignment on the lanes (`install_wordsync_deps.sh`), letter-weighted estimate elsewhere; phrase chunking for the kinetic captions (`docs/SHORTS_MOTION.md`) |
+| `shorts_reel.py` | Shorts/Reels bridge (14 Oct 2026; v5 20 Oct: one shot per sentence + camera, `TIP n OF 4`): rotation words → MotionStudio spec → `motionstudio.build` — the only renderer the YouTube/Facebook/Telegram video lanes may use (qa.py §15) |
 | `generate_short_video.py` | WORDS only (`VIDEO_SCRIPTS`, `script_for_date`); its static-card renderer is retired from every lane |
 | `lead_magnets.py` | Lead magnets |
 | `auto_caption.py` | Auto-caption |
