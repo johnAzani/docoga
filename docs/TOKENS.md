@@ -144,7 +144,7 @@ sign in → open `https://pixabay.com/api/docs/` → scroll to **Parameters → 
 printed there in green → copy → `github.com/johnAzani/docoga/settings/secrets/actions/new` →
 Name **PIXABAY_API_KEY** → paste → Add secret.
 
-**Unsplash** (photographs): `unsplash.com/developers` → Register as a developer → **New
+**Unsplash** ✅ *secret `UNSPLASH_ACCESS_KEY` added by the owner 20 Oct 2026, 5:33pm — door open (app "Docoga", Demo tier 50 req/h, Public access only; do NOT apply for production — it needs attribution screenshots and we print no credits).* (photographs): `unsplash.com/developers` → Register as a developer → **New
 Application** → tick the guidelines → Application name **DocOga** · Description **Free tenant
 documents for Nigeria — b-roll behind educational Shorts** → Create → copy **Access Key** →
 secret **UNSPLASH_ACCESS_KEY**.
