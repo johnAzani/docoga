@@ -149,7 +149,7 @@ Application** → tick the guidelines → Application name **DocOga** · Descrip
 documents for Nigeria — b-roll behind educational Shorts** → Create → copy **Access Key** →
 secret **UNSPLASH_ACCESS_KEY**.
 
-**Flickr** (photographs taken *in Nigeria* — the door is geofenced): `flickr.com/services/apps/create/apply`
+**Flickr** ⏸ *PAID-ONLY since 2026 — do not ask the owner again.* On 20 Oct 2026, 5:50pm the App Garden said "API key creation is currently disabled for free accounts … available to all Flickr PRO subscribers". PRO costs money → ₦0 rule → skipped; the door stays `nokey` and the pipeline is unaffected (Pixabay + Unsplash + Commons + Openverse cover every sentence). If Flickr ever reopens free keys: (photographs taken *in Nigeria* — the door is geofenced) `flickr.com/services/apps/create/apply`
 → **Apply for a non-commercial key** → App name **DocOga Shorts** · What are you building **Public-domain
 b-roll behind free tenant-rights videos** → tick both → Submit → copy **Key** → secret **FLICKR_API_KEY**.
 
