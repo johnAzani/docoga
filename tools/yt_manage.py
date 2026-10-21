@@ -55,6 +55,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import yt_publish  # noqa: E402  — the OAuth refresh, the transport, the error classifier
+import publish_calendar  # noqa: E402  — the 12-hour wording of a publish instant
 
 API_URL = yt_publish.API_URL
 TOKENINFO_URL = "https://oauth2.googleapis.com/tokeninfo"
@@ -66,9 +67,14 @@ RECONSENT = ("Re-mint YT_REFRESH_TOKEN once with the single scope "
              "YOUTUBE_AUTOMATION.md). It is a superset of upload+readonly, so the Shorts and "
              "Deep-Dive lanes keep working; only the one secret changes.")
 
-ACTIONS = ("delete", "unlist", "public", "private")
+ACTIONS = ("delete", "unlist", "public", "private", "schedule")
 PRIVACY_FOR = {"unlist": "unlisted", "public": "public", "private": "private"}
 VIDEO_ID = re.compile(r"^[A-Za-z0-9_-]{11}$")
+# `schedule 2026-10-24T19:00 <ids>` — Lagos time, naive ISO (what yt_publish.parse_publish_at
+# reads as WAT). Owner, 21 Oct 2026: the unlisted Deep-Dives must go public on a scheduled
+# date like everything else. YouTube's contract: privacyStatus=private + status.publishAt;
+# the video flips public by itself at that instant and subscribers are notified then.
+WHEN = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$")
 
 EXIT_OK, EXIT_SETUP, EXIT_REFUSED, EXIT_PLAN = 0, 2, 3, 4
 
@@ -98,6 +104,12 @@ def _parse_words(words, raw, comment):
     action, ids = words[0].lower(), words[1:]
     if action not in ACTIONS:
         raise PlanError("unknown action %r in %r — use one of %s" % (action, raw.strip(), ", ".join(ACTIONS)))
+    when = ""
+    if action == "schedule":
+        if not ids or not WHEN.match(ids[0]):
+            raise PlanError("schedule needs a Lagos time first, e.g. `schedule 2026-10-24T19:00 <video id>` — got %r" % raw.strip())
+        when, ids = ids[0], ids[1:]
+        action = "schedule %s" % when   # the time is part of the act: a new time is a new line
     if not ids:
         raise PlanError("no video id after %r" % action)
     for vid in ids:
@@ -182,11 +194,15 @@ MUTABLE_STATUS = ("privacyStatus", "embeddable", "license", "publicStatsViewable
                   "selfDeclaredMadeForKids", "publishAt", "containsSyntheticMedia")
 
 
-def set_privacy(http, video_id, status, privacy):
+def set_privacy(http, video_id, status, privacy, publish_at=None):
     body = {"id": video_id, "status": {k: v for k, v in status.items() if k in MUTABLE_STATUS}}
     body["status"]["privacyStatus"] = privacy
     if privacy != "private":
         body["status"].pop("publishAt", None)  # a schedule only means something on a private video
+    elif publish_at is not None:
+        body["status"]["publishAt"] = yt_publish.rfc3339_utc(publish_at)
+    else:
+        body["status"].pop("publishAt", None)  # plain `private` means private, not "still scheduled"
     r = http.request("PUT", "%s/videos" % API_URL, params={"part": "status"},
                      headers={"Content-Type": "application/json"}, data=json.dumps(body))
     if r.status_code != 200:
@@ -212,6 +228,22 @@ def apply_line(http, action, video_id, dry_run=False, log=print):
                                  "%s: YouTube has no such video on this channel" % video_id,
                                  "Check the id; a video on another channel cannot be changed from here.")
     current = (status or {}).get("privacyStatus", "?")
+    if action.startswith("schedule "):
+        when = yt_publish.parse_publish_at(action.split(" ", 1)[1])
+        want_at = yt_publish.rfc3339_utc(when)
+        if current == "private" and (status or {}).get("publishAt", "").startswith(want_at[:16]):
+            log("  %s: already scheduled for %s — %r" % (video_id, publish_calendar.human(when), title))
+            return "already-scheduled", title
+        if current == "public":
+            raise yt_publish.Problem("forbidden", "already_public",
+                                     "%s is already public — a schedule would hide a live video" % video_id,
+                                     "Leave it, or write `private` first if hiding it is really the intent.")
+        if dry_run:
+            log("  would schedule %s (%s) → public at %s — %r" % (video_id, current, publish_calendar.human(when), title))
+            return "dry-run", title
+        set_privacy(http, video_id, status, "private", publish_at=when)
+        log("  🗓 %s %s → private, public at %s — %r" % (video_id, current, publish_calendar.human(when), title))
+        return "scheduled %s" % want_at, title
     if action == "delete":
         if dry_run:
             log("  would delete %s — %r (currently %s)" % (video_id, title, current))

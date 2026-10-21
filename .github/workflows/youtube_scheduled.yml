@@ -487,6 +487,28 @@ jobs:
             --parent-url "$PARENT_URL" --parent-title "$PARENT_TITLE" --cover "$COVER_PATH" 2>&1 | tee /tmp/telegram_video.log
           echo "result=$(sed -n 's/^TELEGRAM_VIDEO=//p' /tmp/telegram_video.log | tail -1)" >> "$GITHUB_OUTPUT"
 
+      # Owner, 21 Oct 2026: "Threads has never posted videos." Threads fetches video by public
+      # URL, and the Short only ever lived inside this run. tools/shorts_handoff.py parks the
+      # file in the docoga-pass KV namespace for 30 hours (the Instagram third door, ₦0, ~4 KV
+      # writes) and writes the URL to logs/shorts_media.json; the 8:10pm Threads slot posts it
+      # as a VIDEO. THREADS_VIDEO=off (repo variable) skips the handoff. Never fails the publish.
+      - name: Hand the Short to the Threads evening slot
+        id: handoff
+        if: always() && steps.upload.outputs.video_id != '' && steps.short.outputs.paused != 'yes' && (vars.THREADS_VIDEO || 'on') != 'off'
+        continue-on-error: true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          VIDEO_PATH: ${{ steps.short.outputs.video_path }}
+          VIDEO_TITLE: ${{ steps.short.outputs.title }}
+          VIDEO_ID: ${{ steps.upload.outputs.video_id }}
+          RUN_DATE: ${{ steps.settings.outputs.run_date }}
+        run: |
+          set -o pipefail
+          python3 tools/shorts_handoff.py host --video "$VIDEO_PATH" --video-id "$VIDEO_ID" \
+            --title "$VIDEO_TITLE" --date "$RUN_DATE" --ttl-hours 30 2>&1 | tee /tmp/handoff.log
+          echo "url=$(sed -n 's/^HANDOFF_URL=//p' /tmp/handoff.log | tail -1)" >> "$GITHUB_OUTPUT"
+
       - name: Commit the publish ledger
         if: steps.guard.outputs.skip != 'yes' && steps.short.outputs.paused != 'yes'
         continue-on-error: true
@@ -501,7 +523,7 @@ jobs:
             exit 1
           fi
           git add logs/youtube_published.json
-          git add -f logs/youtube_boosts.json logs/tiktok_drafts.json logs/tiktok_refresh_token.box logs/telegram_owner.json 2>/dev/null || true
+          git add -f logs/youtube_boosts.json logs/tiktok_drafts.json logs/tiktok_refresh_token.box logs/telegram_owner.json logs/shorts_media.json 2>/dev/null || true
           if git diff --staged --quiet; then
             echo "Ledger unchanged — nothing to commit."
             exit 0

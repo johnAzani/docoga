@@ -339,6 +339,24 @@ jobs:
             echo "THREADS_LEDGER=unreadable"
           fi
 
+      # Owner, 21 Oct 2026: "Threads has never posted videos." On a Shorts day the 6:00pm lane
+      # parks the Short at a public URL for 30 hours (tools/shorts_handoff.py → logs/shorts_media.json);
+      # the evening slot carries it as a VIDEO post — the words are still the day's copy, the
+      # link still goes in our reply. No Short today (weekend, paused, hosting failed) = the card,
+      # exactly as before. THREADS_VIDEO=off (repo variable) turns the video off.
+      - name: Is there a Short to carry tonight?
+        if: ${{ !inputs.probe_only && !inputs.dry_run }}
+        env:
+          THREADS_VIDEO: ${{ vars.THREADS_VIDEO || 'on' }}
+        run: |
+          set -o pipefail
+          if [ "${THREADS_SLOT:-lunch}" != "evening" ] || [ "$THREADS_VIDEO" = "off" ]; then
+            echo "video: not this slot (slot=${THREADS_SLOT:-lunch}, THREADS_VIDEO=$THREADS_VIDEO)"
+            exit 0
+          fi
+          python3 tools/shorts_handoff.py today 2>&1 | tee /tmp/handoff_today.log
+          grep -E '^THREADS_VIDEO_(URL|TITLE|ID)=' /tmp/handoff_today.log >> "$GITHUB_ENV" || true
+
       - name: Publish to Threads
         if: ${{ !inputs.probe_only && !inputs.dry_run }}
         env:
@@ -348,6 +366,9 @@ jobs:
         run: |
           set -o pipefail
           ARGS=(--from-json assets/threads/threads_content_latest.json --token-file /tmp/threads_token)
+          if [ -n "${THREADS_VIDEO_URL:-}" ]; then
+            ARGS+=(--video-url "$THREADS_VIDEO_URL" --video-alt "DocOga Short: ${THREADS_VIDEO_TITLE:-the day in 60 seconds}")
+          fi
           [ -n "${THREADS_USER_ID:-}" ] || unset THREADS_USER_ID
           # Actions hands a boolean input to the shell as the *string* "true" or "false", so
           # `-n "$FORCE"` is true for `false` and a lane that means "no override" posts anyway.
@@ -365,12 +386,14 @@ jobs:
           CAUSE=$(sed -n 's/^THREADS_CAUSE=//p' /tmp/threads_post.log | tail -1)
           PERMALINK=$(sed -n 's/^THREADS_PERMALINK=//p' /tmp/threads_post.log | tail -1)
           IMAGE=$(sed -n 's/^THREADS_IMAGE=//p' /tmp/threads_post.log | tail -1)
+          VIDEO=$(sed -n 's/^THREADS_VIDEO=//p' /tmp/threads_post.log | tail -1)
           REPLY=$(sed -n 's/^THREADS_REPLY=//p' /tmp/threads_post.log | tail -1)
           {
             echo "### Threads post (${THREADS_SLOT:-lunch} slot)"
             echo
             echo "- result: \`${RESULT:-?}${CAUSE:+ \`${CAUSE}\`}\`"
             echo "- permalink: ${PERMALINK:-not reported}"
+            [ -n "$VIDEO" ] && echo "- video: \`$VIDEO\` (today's Short, ${THREADS_VIDEO_ID:-?}; dropped = the card posted instead)"
             [ -n "$IMAGE" ] && echo "- image: \`$IMAGE\` (this slot's own card; dropped = posted as text)"
             [ -n "$REPLY" ] && echo "- link reply: \`$REPLY\`"
             echo "- duplicate guard: read from the profile, not from a local counter"

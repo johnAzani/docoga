@@ -1832,6 +1832,123 @@ class ThreadsImageAndReply(ThreadsPublisher):
         self.assertIn("THREADS_REPLY=failed", out)
         self.assertIn("THREADS_RESULT=sent", out)
 
+class ThreadsVideo(ThreadsImageAndReply):
+    """Owner, 21 Oct 2026: "Threads has never posted videos, why." Because the publisher only knew
+    TEXT and IMAGE. Now the evening slot on a Shorts day offers the Short as a VIDEO container,
+    with the card, then the words, behind it."""
+
+    VIDEO = "https://docoga-pass.johnazani.workers.dev/m/abcdefghijklmnopqrstuvwxyz012345.mp4"
+
+    def test_the_video_container_is_asked_for_polled_and_published(self):
+        seen, polls = [], []
+
+        def container(method, url, query):
+            q = urllib.parse.parse_qs(query)
+            seen.append(q)
+            return ok({"id": "181" if "reply_to_id" not in q else "182"})
+
+        def status(method, url, query):
+            polls.append(1)
+            return ok({"status": "IN_PROGRESS" if len(polls) < 3 else "FINISHED", "permalink": "https://x/1",
+                       "text": self.TEXT})
+        routes = self._routes(extra={"POST /42/threads": container, "GET /181": status,
+                                     "GET /182": ok({"status": "FINISHED"})})
+        path = self._evening_content()
+        env, token_path = threads_env(self.tmp)
+        with mock.patch.object(tp.time, "sleep", lambda s: None):
+            code, out, _ = self._publish(routes, argv=["--from-json", path, "--token-file", token_path,
+                                                       "--video-url", self.VIDEO],
+                                         env_extra={"THREADS_SHARE_TO_IG": "on"})
+        self.assertEqual(code, 0, out)
+        first = seen[0]
+        self.assertEqual(first["media_type"], ["VIDEO"])
+        self.assertEqual(first["video_url"], [self.VIDEO])
+        self.assertEqual(first["text"], [self.TEXT])
+        self.assertEqual(first["topic_tag"], ["Tenant Rights Nigeria"])
+        self.assertNotIn("crossreshare_to_ig", first, "the flag Threads refuses on media (code 10) is never sent with a video")
+        self.assertNotIn("image_url", first)
+        self.assertEqual([q["media_type"][0] for q in seen], ["VIDEO", "TEXT"], "video post, then the link reply — no card")
+        self.assertGreaterEqual(len(polls), 3, "a video is transcoded after the fetch; the status is polled until FINISHED")
+        self.assertIn("THREADS_VIDEO=sent", out)
+        self.assertNotIn("THREADS_IMAGE=", out)
+        self.assertIn("THREADS_RESULT=sent", out)
+
+    def test_a_video_threads_will_not_take_falls_back_to_the_card(self):
+        seen = []
+
+        def container(method, url, query):
+            q = urllib.parse.parse_qs(query)
+            seen.append(q)
+            if q.get("media_type") == ["VIDEO"]:
+                return (400, json.dumps({"error": {"message": "Media download failed", "code": 9004}}))
+            return ok({"id": "181" if "reply_to_id" not in q else "182"})
+        routes = self._routes(extra={"POST /42/threads": container, "GET /182": ok({"status": "FINISHED"})})
+        path = self._evening_content()
+        env, token_path = threads_env(self.tmp)
+        code, out, _ = self._publish(routes, argv=["--from-json", path, "--token-file", token_path,
+                                                   "--video-url", self.VIDEO],
+                                     env_extra={"THREADS_SHARE_TO_IG": "off"})
+        self.assertEqual(code, 0, out)
+        self.assertEqual([q["media_type"][0] for q in seen], ["VIDEO", "IMAGE", "TEXT"], "video refused → card → link reply")
+        self.assertIn("THREADS_VIDEO=dropped", out)
+        self.assertIn("THREADS_IMAGE=sent", out)
+        self.assertIn("THREADS_RESULT=sent", out)
+
+    def test_a_video_whose_container_errors_falls_back_too(self):
+        seen = []
+
+        def container(method, url, query):
+            q = urllib.parse.parse_qs(query)
+            seen.append(q)
+            return ok({"id": {"VIDEO": "180", "IMAGE": "181"}.get(q["media_type"][0], "182" if "reply_to_id" in q else "181")})
+        routes = self._routes(extra={"POST /42/threads": container, "GET /180": ok({"status": "ERROR"}),
+                                     "GET /182": ok({"status": "FINISHED"})})
+        path = self._evening_content()
+        env, token_path = threads_env(self.tmp)
+        code, out, _ = self._publish(routes, argv=["--from-json", path, "--token-file", token_path,
+                                                   "--video-url", self.VIDEO],
+                                     env_extra={"THREADS_SHARE_TO_IG": "off"})
+        self.assertEqual(code, 0, out)
+        self.assertEqual([q["media_type"][0] for q in seen], ["VIDEO", "IMAGE", "TEXT"])
+        self.assertIn("THREADS_VIDEO=dropped", out)
+        self.assertIn("(ERROR)", out)
+
+    def test_a_dead_video_url_never_reaches_the_api(self):
+        seen = []
+
+        def container(method, url, query):
+            q = urllib.parse.parse_qs(query)
+            seen.append(q)
+            return ok({"id": "181" if "reply_to_id" not in q else "182"})
+        routes = self._routes(extra={"POST /42/threads": container, "GET /182": ok({"status": "FINISHED"})})
+        path = self._evening_content()
+        env, token_path = threads_env(self.tmp)
+        self.card_live = (False, 120)
+        code, out, _ = self._publish(routes, argv=["--from-json", path, "--token-file", token_path,
+                                                   "--video-url", self.VIDEO],
+                                     env_extra={"THREADS_SHARE_TO_IG": "off"})
+        self.assertEqual(code, 0, out)
+        self.assertNotIn("VIDEO", [q["media_type"][0] for q in seen])
+        self.assertIn("THREADS_VIDEO=dropped", out)
+        self.assertIn("not reachable after 120s", out)
+
+    def test_without_a_video_url_nothing_changes(self):
+        seen = []
+
+        def container(method, url, query):
+            q = urllib.parse.parse_qs(query)
+            seen.append(q)
+            return ok({"id": "181" if "reply_to_id" not in q else "182"})
+        routes = self._routes(extra={"POST /42/threads": container, "GET /182": ok({"status": "FINISHED"})})
+        path = self._evening_content()
+        env, token_path = threads_env(self.tmp)
+        code, out, _ = self._publish(routes, argv=["--from-json", path, "--token-file", token_path],
+                                     env_extra={"THREADS_SHARE_TO_IG": "off"})
+        self.assertEqual(code, 0, out)
+        self.assertEqual([q["media_type"][0] for q in seen], ["IMAGE", "TEXT"])
+        self.assertNotIn("THREADS_VIDEO=", out)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
 

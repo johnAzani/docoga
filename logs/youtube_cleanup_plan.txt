@@ -1,6 +1,7 @@
 # DocOga YouTube clean-up plan — run by .github/workflows/youtube_manage.yml whenever this
 # file changes on main (or on dispatch), through tools/yt_manage.py.
-# One action per line: delete | unlist | public | private, then one or more video ids.
+# One action per line: delete | unlist | public | private, then one or more video ids —
+# or `schedule YYYY-MM-DDTHH:MM <ids>` (Lagos time): private now, public by itself at that minute.
 # Every finished line is recorded in logs/youtube_manage.json and never applied twice,
 # so adding a line is the whole act; nothing here needs removing afterwards.
 
@@ -9,3 +10,9 @@ delete n45ufAFv5OM
 unlist 2ruPSaR8-M0 oBsWKR4AUNA
 
 # 16 Oct 2026 15:05 WAT: YT_REFRESH_TOKEN re-minted with youtube.force-ssl — run the lines above.
+
+# Owner, 21 Oct 2026: "I want the Shorts and Deep-Dive to go out scheduled to the time and date
+# it will be public." The two Deep-Dives uploaded before the 17 Oct scheduling fix sat unlisted.
+# Publishing calendar (tools/publish_calendar.py): Deep-Dives on Saturdays at 7:00pm.
+schedule 2026-10-24T19:00 JJhRcCgAxyQ   # dd3 — Rent Receipt in Nigeria: the 7 lines (Sat 24 Oct, 7:00pm)
+schedule 2026-10-31T19:00 pl5Z8ueg1ZI   # dd2 — Caution fee (Sat 31 Oct, 7:00pm)

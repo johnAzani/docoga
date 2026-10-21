@@ -1210,8 +1210,26 @@ if os.path.isfile(dd_wf) and os.path.isfile(dd_tool):
     check("youtube: a public upload is SCHEDULED for the intended moment (private + publishAt), never dumped live",
           '"publishAt": rfc3339_utc(publish_at)' in _ytp and "def publish_slot" in _ytp and "SCHEDULE_HOUR_WAT = 19" in _ytp
           and 'state["result"] = "scheduled"' in _ytp and "--publish-at" in dd_wf_text
-          and '"publish_at": str(yt.get("publish_at") or "")' in dd_tool_text,
+          and '"publish_at": str(yt.get("publish_at") or default_publish_at())' in dd_tool_text,
           "owner instruction 17 Oct 2026 — Shorts at the 19:00 WAT slot, Deep-Dives on their intended date")
+    _cal = open(os.path.join(ROOT, "tools", "publish_calendar.py"), encoding="utf-8").read()
+    _plan = open(os.path.join(ROOT, "logs", "youtube_cleanup_plan.txt"), encoding="utf-8").read()
+    _ytm = open(os.path.join(ROOT, "tools", "yt_manage.py"), encoding="utf-8").read()
+    check("youtube: the publishing calendar — Shorts weekdays 7:00pm, Deep-Dives Saturday 7:00pm — and the "
+          "unlisted backlog scheduled by the plan file",
+          "SLOT_HOUR = 19" in _cal and "SATURDAY = 5" in _cal and 'next_slot("deepdive")' in dd_tool_text
+          and '"schedule"' in _ytm and 'body["status"]["publishAt"] = yt_publish.rfc3339_utc(publish_at)' in _ytm
+          and "schedule 2026-10-24T19:00 JJhRcCgAxyQ" in _plan and "schedule 2026-10-31T19:00 pl5Z8ueg1ZI" in _plan,
+          "owner instruction 21 Oct 2026 — Shorts and Deep-Dives go out scheduled to the date and time they are public")
+    _thp = open(os.path.join(ROOT, "tools", "threads_publish.py"), encoding="utf-8").read()
+    _thw = open(os.path.join(ROOT, ".github", "workflows", "threads_autopost.yml"), encoding="utf-8").read()
+    _ysw = open(os.path.join(ROOT, ".github", "workflows", "youtube_scheduled.yml"), encoding="utf-8").read()
+    check("threads: the evening slot carries the day's Short as a VIDEO post (hosted by the Shorts lane, ₦0)",
+          '"media_type": "VIDEO", "video_url": video_url' in _thp and "THREADS_VIDEO=sent" in _thp
+          and "tools/shorts_handoff.py host" in _ysw and "logs/shorts_media.json" in _ysw
+          and "tools/shorts_handoff.py today" in _thw and "--video-url \"$THREADS_VIDEO_URL\"" in _thw
+          and os.path.isfile(os.path.join(ROOT, "tools", "shorts_handoff.py")),
+          "owner, 21 Oct 2026: Threads had never posted a video — TEXT/IMAGE containers only, and no public copy of the Short")
     check("deepdive: the publish is never public by default — the owner's YT_PRIVACY variable is the switch",
           'PRIVACY="${IN_PRIVACY:-${IN_YT_PRIVACY:-unlisted}}"' in dd_wf_text
           and "IN_YT_PRIVACY: ${{ vars.YT_PRIVACY }}" in dd_wf_text and "default: public" not in dd_wf_text)

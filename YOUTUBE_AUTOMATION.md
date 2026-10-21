@@ -213,6 +213,32 @@ stops at exit 2 with the re-consent line above, the plan stays pending, and the 
 push or dispatch applies it. Manual: Actions → **DocOga YouTube Manage** → Run
 workflow, with an inline plan or `dry_run`.
 
+## The publishing calendar — Shorts and Deep-Dives go public on a date (21 Oct 2026)
+
+Owner: "I want the Shorts and Deep-Dive to go out scheduled to the time and date it will be
+public." Both lanes upload **private + `status.publishAt`** (`tools/yt_publish.py`); YouTube
+flips the video public by itself at that minute and notifies subscribers then. The instant
+comes from `tools/publish_calendar.py` (Lagos time):
+
+| Lane | Goes public | Where the instant is decided |
+|---|---|---|
+| Shorts | weekdays, **7:00pm** (render 6:00pm) | `yt_publish.publish_slot` (`YT_PUBLISH_HOUR_WAT`) |
+| Deep-Dive | **Saturday, 7:00pm** — the week's close | `episodes/<id>/episode.json → youtube.publish_at` when set, else `publish_calendar.next_slot("deepdive")` via `tools/deepdive.py … meta` |
+
+`YT_SCHEDULE=off` publishes at once; `YT_PRIVACY` other than `public` ignores the calendar.
+The two episodes uploaded before the 17 Oct scheduling fix (dd3 `JJhRcCgAxyQ`, dd2
+`pl5Z8ueg1ZI`) sat unlisted; the plan file now carries
+`schedule 2026-10-24T19:00 JJhRcCgAxyQ` and `schedule 2026-10-31T19:00 pl5Z8ueg1ZI` — the
+`schedule <Lagos time> <ids>` action sets private + `publishAt` (a public video is refused:
+scheduling it would hide it; the time is part of the ledger key, so a new time is a new act).
+
+**Premieres are not automatable.** YouTube Data API v3 has no Premiere field on
+`videos.insert`/`videos.update` and `liveBroadcasts` creates live events, not Premieres; the
+feature request has sat open on Google's issue tracker since 2019. A scheduled publish is the
+closest the API offers. If a flagship episode should premiere with the countdown and live chat,
+it is two taps in YouTube Studio on the already-scheduled video (Visibility → Set as Premiere);
+Shorts cannot premiere at all.
+
 ## Content safeguards
 
 The automatic content is deliberately limited to general document-keeping

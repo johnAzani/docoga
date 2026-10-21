@@ -392,6 +392,27 @@ Nothing else: no bucket, no domain, no card, no new secret.
 
 ---
 
+## Threads video — the day's Short as a native VIDEO post (21 Oct 2026)
+
+Owner: "I noticed Threads has never posted videos, why." Two reasons, both ours: the
+publisher only knew TEXT and IMAGE containers, and the Short's MP4 never left the 6:00pm
+Shorts run (YouTube, TikTok inbox and Telegram take an upload; Threads takes a **public
+URL** — `POST /{user}/threads?media_type=VIDEO&video_url=…`, poll the container until
+`FINISHED` (Threads transcodes after the fetch, so a minute or more of `IN_PROGRESS` is
+normal), then `threads_publish`). Media spec: MP4/MOV, H.264 + AAC, ≤5 minutes, ≤1 GB,
+23–60 fps, width ≤1920 — the Short (1080×1920, ~60 s) fits every line.
+
+The handoff: after a successful upload the Shorts lane runs `tools/shorts_handoff.py host`
+— `tools/media_host.py` parks the file in the `docoga-pass` KV namespace for 30 hours (the
+Instagram third door; ₦0; ~4 KV writes of the 1,000/day) and `logs/shorts_media.json`
+remembers the URL. At 8:10pm the Threads lane runs `shorts_handoff.py today`; a Short from
+today whose hosting outlives the next 20 minutes becomes `--video-url` on
+`tools/threads_publish.py`, which asks for the VIDEO container first (topic tag, alt text =
+the Short's title, never `crossreshare_to_ig` — code 10), polls up to five minutes, and falls
+back to the card, then to the words, printing `THREADS_VIDEO=sent|dropped`. No Short today
+(weekend, paused lane, hosting failed) = the card, exactly as before. `THREADS_VIDEO=off`
+(repo variable) turns it off at both ends.
+
 ## What is still not possible, stated rather than quietly dropped
 
 * ~~Instagram Reels~~ — **wired 16 Oct 2026, ₦0, no host.** See the "Reels" section below for
