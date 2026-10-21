@@ -182,6 +182,25 @@ class RotationCopyTests(unittest.TestCase):
         self.assertEqual(post_type, fb.pick(day)[0])
         self.assertTrue(text.startswith(to_plain(fb.pick(day)[1]).split("\n\n")[0]))
 
+    def test_a_template_does_not_come_round_again_until_its_pool_is_spent(self):
+        """21 Oct 2026: Instagram refuses an exact repeat of a caption already on the profile, so
+        the rotation's fortnightly repeats left the feed silent behind green runs. Replaying the
+        picks from the epoch, a template waits until every other one of its type has had a turn."""
+        import generate_telegram_content as tg
+        start = date(2026, 10, 1)
+        last_seen = {}
+        for n in range(120):
+            day = start + timedelta(days=n)
+            post_type, template = fb.pick(day)
+            pool = tg.TEMPLATES[post_type]
+            key = (post_type, template)
+            if key in last_seen:
+                picks_between = sum(1 for m in range(last_seen[key] + 1, n) if fb.pick(start + timedelta(days=m))[0] == post_type)
+                self.assertGreaterEqual(picks_between, len(pool) - 1, (day, post_type))
+            last_seen[key] = n
+        # deterministic: the same day always gives the same words
+        self.assertEqual(fb.pick(date(2026, 10, 27)), fb.pick(date(2026, 10, 27)))
+
     def test_the_instagram_caption_closes_by_asking_for_a_save_and_a_send(self):
         import generate_threads_content as th
         with redirect_stdout(io.StringIO()):
