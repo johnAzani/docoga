@@ -122,6 +122,112 @@ class Build(unittest.TestCase):
         self.assertLess(len(json.dumps(feed)), 400_000)
 
 
+class Watch(unittest.TestCase):
+    """The owner's watch list (21 Oct 2026): what each slot is meant to produce and what the ledgers say came out."""
+    WED = datetime(2026, 10, 21, 13, 0, tzinfo=timezone.utc)   # 2:00pm Lagos, Wednesday — the evening still ahead
+
+    def root(self, tmp, **files):
+        root = make_root(tmp, approved_today=False)
+        (root / "brain" / "slots.json").write_text(json.dumps({"lanes": {"instagram": {"hour_wat": 19}}}))
+        (root / "logs" / "threads_sent.json").write_text(json.dumps([
+            {"recorded_at": "2026-10-21T13:10:40+01:00", "title": "₦2,000 a month. Unlimited clean documents.", "url": "https://www.threads.com/@docoga.ng/post/Dew", "date": "2026-10-21"},
+            {"recorded_at": "2026-10-21T07:21:02+01:00", "title": "Someone shows you a flat, collects your money, and disappears.", "url": "https://www.threads.com/@docoga.ng/post/Dev", "date": "2026-10-21"}]))
+        (root / "logs" / "telegram_sent.json").write_text(json.dumps([
+            {"recorded_at": "2026-10-21T09:01:22+01:00", "title": "telegram promo 5e53e35a19", "topic": "promo", "url": "https://t.me/docogadaily/45", "date": "2026-10-21"}]))
+        (root / "logs" / "youtube_longform.json").write_text(json.dumps([
+            {"recorded_at": "2026-10-15T05:12:00+01:00", "title": "Rent Receipt in Nigeria: The 7 Lines (Deep-Dive 3)", "video_id": "JJhRcCgAxyQ", "url": "https://www.youtube.com/watch?v=JJhRcCgAxyQ", "privacy": "private", "publish_at": "2026-10-24T18:00:00Z", "date": "2026-10-15"}]))
+        for name, body in files.items():
+            (root / "logs" / name).write_text(json.dumps(body))
+        return root
+
+    def test_the_evening_is_laid_out_in_order_with_what_each_slot_must_produce(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            items = df.watch(self.WED, self.root(tmp))
+        by = {(i["at"], i["lane"]): i for i in items}
+        self.assertEqual(items, sorted(items, key=lambda i: i["at"]))
+        short = by[("2026-10-21T17:00:00Z", "YouTube Short")]            # 6:00pm Lagos
+        self.assertEqual(short["status"], "due")
+        self.assertTrue(any("scheduled to go public at 7:00pm" in e for e in short["expect"]))
+        self.assertTrue(any("Threads" in e and "8:10pm" in e for e in short["expect"]))
+        self.assertEqual(by[("2026-10-21T18:00:00Z", "YouTube")]["title"], "The Short goes public (YouTube flips it itself)")
+        insta = by[("2026-10-21T18:10:00Z", "Instagram")]                # 7:10pm — the hour slots.json chose
+        self.assertEqual(insta["status"], "due")
+        self.assertIn("7:10 slot posts", insta["expect"][0])
+        evening = by[("2026-10-21T19:10:00Z", "Threads")]                # 8:10pm
+        self.assertIn("native VIDEO", evening["expect"][0])
+        brain = by[("2026-10-22T00:30:00Z", "Brain")]                    # tonight 1:30am
+        self.assertEqual(brain["status"], "due")
+        self.assertTrue(any("next Deep-Dive" in e or "already holds" in e for e in brain["expect"]))
+        self.assertIn(("2026-10-22T03:00:00Z", "Deep-Dive"), by)         # tomorrow 4:00am
+        self.assertIn(("2026-10-21T07:30:00Z", "LinkedIn"), by)
+
+    def test_passed_slots_carry_the_ledgers_verdict_and_the_link(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            items = df.watch(self.WED, self.root(tmp))
+        by = {(i["at"], i["lane"]): i for i in items}
+        morning = by[("2026-10-21T06:20:00Z", "Threads")]
+        self.assertEqual(morning["status"], "done")
+        self.assertEqual(morning["evidence"][0]["url"], "https://www.threads.com/@docoga.ng/post/Dev")
+        self.assertEqual(by[("2026-10-21T08:00:00Z", "Telegram")]["status"], "done")
+        brain = by[("2026-10-21T00:30:00Z", "Brain")]
+        self.assertEqual(brain["status"], "missing", "no pack and no Deep-Dive attempt recorded for a run that is hours behind us")
+        self.assertEqual(by[("2026-10-21T08:30:00Z", "Facebook")]["status"], "ran", "the Page post keeps no ledger in the repo — say so, do not call it missing")
+        dd = by[("2026-10-21T03:00:00Z", "Deep-Dive")]
+        self.assertEqual(dd["status"], "missing", "the fixture's queue holds dd5 and nothing reached the long-form ledger by 4:00am")
+        self.assertIn("dd5", dd["title"])
+
+    def test_the_short_lane_is_judged_on_all_four_of_its_outputs(self):
+        later = datetime(2026, 10, 21, 17, 30, tzinfo=timezone.utc)      # 6:30pm Lagos — the Short lane has run
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self.root(tmp,
+                **{"youtube_published.json": [{"recorded_at": "2026-10-21T18:06:00+01:00", "topic": "Caution fee", "url": "https://www.youtube.com/watch?v=xyz", "privacy": "private", "publish_at": "2026-10-21T18:00:00Z", "date": "2026-10-21"}],
+                   "shorts_media.json": [{"date": "2026-10-21", "title": "Caution fee", "url": "https://files.catbox.moe/x.mp4", "hosted_at": "2026-10-21T18:07:00+01:00"}],
+                   "tiktok_drafts.json": {"entries": [{"recorded_at": "2026-10-21T17:07:00+00:00", "status": "SEND_TO_USER_INBOX", "video": "docoga_short_20261021.mp4"}]}})
+            items = df.watch(later, root)
+        by = {(i["at"], i["lane"]): i for i in items}
+        short = by[("2026-10-21T17:00:00Z", "YouTube Short")]
+        self.assertEqual(short["status"], "done", short["evidence"])
+        self.assertEqual([e["ok"] for e in short["evidence"]], [True, True, True, True])
+        self.assertIn("Wed 21 Oct, 7:00pm", short["evidence"][1]["detail"])
+        self.assertEqual(by[("2026-10-21T18:00:00Z", "YouTube")]["evidence"][0]["url"], "https://www.youtube.com/watch?v=xyz")
+        self.assertEqual(by[("2026-10-21T19:10:00Z", "Threads")]["evidence"][1]["ok"], None, "before 6:40pm the hand-over is not yet judged")
+
+    def test_a_short_that_never_came_is_partly_then_not_recorded(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self.root(tmp, **{"tiktok_drafts.json": {"entries": [{"recorded_at": "2026-10-21T17:07:00+00:00", "status": "SEND_TO_USER_INBOX", "video": "docoga_short_20261021.mp4"}]}})
+            partly = df.watch(datetime(2026, 10, 21, 17, 30, tzinfo=timezone.utc), root)
+            root2 = self.root(tempfile.mkdtemp(dir=tmp))
+            gone = df.watch(datetime(2026, 10, 21, 18, 30, tzinfo=timezone.utc), root2)
+        self.assertEqual(next(i for i in partly if i["lane"] == "YouTube Short")["status"], "partial")
+        self.assertEqual(next(i for i in gone if i["lane"] == "YouTube Short")["status"], "missing")
+        self.assertEqual(next(i for i in gone if i["lane"] == "YouTube" and i["at"].endswith("T18:00:00Z"))["evidence"][0]["ok"], False)
+
+    def test_the_brains_deep_dive_attempt_is_reported_from_its_ledger(self):
+        thu = datetime(2026, 10, 22, 5, 0, tzinfo=timezone.utc)           # 6:00am Thursday
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self.root(tmp, **{"brain_deepdive.json": [
+                {"at": "2026-10-22T01:31:00+01:00", "episode": "dd4", "outcome": "written", "title": "Service charge: what the law lets a landlord bill", "attempts": 2}]})
+            items = df.watch(thu, root)
+        brain = next(i for i in items if i["lane"] == "Brain" and i["at"] == "2026-10-22T00:30:00Z")
+        self.assertEqual(brain["status"], "partial", "the pack is missing, the Deep-Dive was written")
+        self.assertEqual(brain["evidence"][1]["label"], "Deep-Dive dd4")
+        self.assertIn("written — Service charge", brain["evidence"][1]["detail"])
+        sat = next(i for i in items if i["title"].startswith("Deep-Dive goes public"))
+        self.assertEqual(sat["at"], "2026-10-24T18:00:00Z")
+
+    def test_the_watch_rides_in_the_feed_and_the_dashboard_renders_it(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            feed = df.build(self.WED, self.root(tmp))
+        self.assertTrue(feed["watch"])
+        html = (Path(__file__).resolve().parents[2] / "site" / "admin.html").read_text(encoding="utf-8")
+        self.assertIn('id="watch"', html)
+        self.assertIn("function renderWatch", html)
+        for word in ("not recorded", "partly", "skips today"):
+            self.assertIn(word, html)
+        self.assertIn("f.watch", html)
+        self.assertNotIn("toLocaleTimeString('en-NG',{hour:'2-digit',hour12:false", html, "Lagos 12-hour clock only")
+
+
 class Push(unittest.TestCase):
     def test_push_puts_one_key_into_the_workers_namespace(self):
         seen = {}

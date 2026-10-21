@@ -222,6 +222,254 @@ def deepdive_next(root=ROOT):
         return None
 
 
+# ───────────────────────────── the watch list ─────────────────────────────
+# Owner, 21 Oct 2026: "I want to see this plan on my admin dashboard" — the evening's list
+# ("6:00pm Short renders, uploads scheduled for 7:00pm, hands its video to Threads; 7:10pm
+# Instagram; 8:10pm Threads' first video; 1:30am the Brain writes Deep-Dive 4"). The clock's
+# board already shows which lane RAN; this says in plain words what each slot is MEANT to
+# produce and, once the time has passed, what the repo's ledgers say came out, with the link.
+# Times are the lanes' own crons (Lagos). Evidence is read from the same ledgers `posted()` reads.
+
+WATCH_GRACE_MIN = 75          # a slot is "not recorded" only this long after its time
+
+
+def _rows(root, rel):
+    data = _load_from(root, rel)
+    if isinstance(data, dict):
+        data = data.get("entries") or data.get("history") or data.get("done") or []
+    return [r for r in (data or []) if isinstance(r, dict)]
+
+
+def _between(rows, start, end, key="recorded_at"):
+    out = []
+    for r in rows:
+        at = _stamp(r.get(key) or r.get("at") or r.get("hosted_at"))
+        if at and start <= at <= end:
+            out.append(r)
+    return out
+
+
+def _lagos_at(day, hour, minute=0):
+    return datetime(day.year, day.month, day.day, hour, minute, tzinfo=LAGOS).astimezone(timezone.utc)
+
+
+def _ig_hour(root):
+    slots = _load_from(root, "brain/slots.json") or {}
+    try:
+        return int(((slots.get("lanes") or {}).get("instagram") or {}).get("hour_wat") or 19)
+    except (TypeError, ValueError):
+        return 19
+
+
+def _ev(label, ok, url=None, detail=None):
+    row = {"label": label, "ok": ok}
+    if url:
+        row["url"] = url
+    if detail:
+        row["detail"] = _first_line(detail, 120)
+    return row
+
+
+def _settle(item, now):
+    """status from the clock and the evidence: due · done · partial · missing · skipped."""
+    at = _stamp(item["at"])
+    if item.get("status") == "skipped":
+        return item
+    if now < at:
+        item["status"] = "due"
+        return item
+    ev = item.get("evidence") or []
+    hits = [e for e in ev if e.get("ok") is True]
+    checks = [e for e in ev if e.get("ok") is not None]
+    if not checks:
+        item["status"] = "ran" if now >= at else "due"   # nothing in the repo can confirm it; the board row can
+    elif len(hits) == len(checks):
+        item["status"] = "done"
+    elif hits:
+        item["status"] = "partial"
+    else:
+        item["status"] = "missing" if now >= at + timedelta(minutes=WATCH_GRACE_MIN) else "running"
+    return item
+
+
+def watch(now=None, root=ROOT):
+    now = now or datetime.now(timezone.utc)
+    today = now.astimezone(LAGOS).date()
+    tomorrow = today + timedelta(days=1)
+    weekday = today.weekday()
+    items = []
+    grace = timedelta(hours=3)
+
+    threads = _rows(root, "logs/threads_sent.json")
+    insta = _rows(root, "logs/instagram_sent.json")
+    tele = _rows(root, "logs/telegram_sent.json")
+    shorts = _rows(root, "logs/youtube_published.json")
+    longform = _rows(root, "logs/youtube_longform.json")
+    media = _rows(root, "logs/shorts_media.json")
+    tiktok_rows = _rows(root, "logs/tiktok_drafts.json")
+    dd_attempts = _rows(root, "logs/brain_deepdive.json")
+    reels = _rows(root, "logs/facebook_reels.json")
+
+    def ledger_hit(rows, at, label, what="post"):
+        got = _between(rows, at - timedelta(minutes=20), at + grace)
+        if got:
+            r = got[0]
+            return _ev(label, True, r.get("url"), r.get("title") or r.get("topic"))
+        return _ev(label, False, None, "nothing in the ledger yet")
+
+    # 1:30am — the brain (today's run, already behind us; and tonight's, ahead)
+    def brain_item(day):
+        at = _lagos_at(day, 1, 30)
+        pack = _load_from(root, "brain/drafts/%s.json" % day.isoformat())
+        queued = deepdive_next(root)
+        ev = [_ev("approved pack for %s" % day.strftime("%a %d %b"), bool(pack) if now >= at else None,
+                  None, (pack or {}).get("theme") if pack else "no pack — the lanes post from the rotation")]
+        tries = [a for a in dd_attempts if str(a.get("at", ""))[:10] == day.isoformat()]
+        if tries:
+            last = tries[-1]
+            ok = last.get("outcome") == "written"
+            ev.append(_ev("Deep-Dive %s" % last.get("episode", ""), ok, None,
+                          ("written — %s" % last.get("title")) if ok else "%s: %s" % (last.get("outcome"), "; ".join(last.get("problems") or [])[:100])))
+        elif now >= at:
+            ev.append(_ev("Deep-Dive draft", None if queued else False, None,
+                          ("not needed — %s is queued" % queued) if queued else "no attempt recorded"))
+        expect = ["writes the day's content (Telegram/Facebook post, Threads and Instagram copy, the Short's topic)"]
+        expect.append("tries to write the next Deep-Dive episode (the queue is empty)" if not queued
+                      else "the Deep-Dive queue already holds %s — no new episode needed" % queued)
+        return {"at": at.isoformat().replace("+00:00", "Z"), "lane": "Brain", "title": "The Brain plans the day", "expect": expect, "evidence": ev}
+
+    items.append(brain_item(today))
+
+    # 4:00am — Deep-Dive lane
+    at = _lagos_at(today, 4, 0)
+    queued = deepdive_next(root)
+    got = _between(longform, at - timedelta(minutes=30), at + timedelta(hours=6))
+    if got:
+        r = got[0]
+        ev = [_ev("episode uploaded", True, r.get("url"), r.get("title")),
+              _ev("scheduled to go public", bool(r.get("publish_at")), None, r.get("publish_at") and ("public at " + _lagos_text(r["publish_at"])))]
+        items.append({"at": at.isoformat().replace("+00:00", "Z"), "lane": "Deep-Dive", "title": "Deep-Dive narrated, rendered, uploaded",
+                      "expect": ["narrates with the locked voice, renders, uploads private + scheduled for its Saturday 7:00pm"], "evidence": ev})
+    else:
+        items.append({"at": at.isoformat().replace("+00:00", "Z"), "lane": "Deep-Dive",
+                      "title": ("Deep-Dive lane produces %s" % queued) if queued else "Deep-Dive lane: nothing queued — skips",
+                      "expect": (["narrates, renders and uploads %s, scheduled for the next free Saturday 7:00pm" % queued] if queued
+                                 else ["the queue is empty; the Brain fills it at 1:30am when the last upload is 4+ days old"]),
+                      "evidence": [_ev("episode uploaded", False, None, "nothing in the long-form ledger")] if queued else [],
+                      "status": None if queued else "skipped"})
+
+    # Threads ×3
+    for hour, minute, name, extra in ((7, 20, "morning card", None), (13, 10, "lunch card (+ poll in our reply)", None),
+                                      (20, 10, "evening card", "video")):
+        at = _lagos_at(today, hour, minute)
+        expect = ["posts the %s" % name]
+        ev = [ledger_hit(threads, at, "Threads post")]
+        if extra == "video":
+            hosted = [m for m in media if m.get("date") == today.isoformat()]
+            if weekday < 5:
+                expect = ["posts today's Short as a native VIDEO (the first Threads videos began 21 Oct); falls back to the card if the video is not live"]
+                ev.append(_ev("Short handed over by the 6:00pm lane", bool(hosted) if now >= _lagos_at(today, 18, 40) else None, None,
+                              hosted[0].get("title") if hosted else "not yet"))
+        items.append({"at": at.isoformat().replace("+00:00", "Z"), "lane": "Threads", "title": "Threads — %s" % name.split(" (")[0], "expect": expect, "evidence": ev})
+
+    # Instagram — the one hour the numbers chose
+    ig_h = _ig_hour(root)
+    at = _lagos_at(today, ig_h, 10)
+    items.append({"at": at.isoformat().replace("+00:00", "Z"), "lane": "Instagram", "title": "Instagram feed post + Story",
+                  "expect": ["posts the day's card with the caption, then the same frame as a Story (the lane fires at 7:10am, 1:10pm and 7:10pm; only the %d:10 slot posts — chosen by the numbers)" % (ig_h if ig_h <= 12 else ig_h - 12)],
+                  "evidence": [ledger_hit(insta, at, "Instagram post")]})
+
+    # LinkedIn Mon/Wed/Fri 8:30am
+    if weekday in (0, 2, 4):
+        at = _lagos_at(today, 8, 30)
+        items.append({"at": at.isoformat().replace("+00:00", "Z"), "lane": "LinkedIn", "title": "LinkedIn post", "expect": ["the week's business-facing post"], "evidence": []})
+
+    # Telegram 9:00am, Facebook 9:30am
+    at = _lagos_at(today, 9, 0)
+    items.append({"at": at.isoformat().replace("+00:00", "Z"), "lane": "Telegram", "title": "Telegram channel post",
+                  "expect": ["the day's post to @docogadaily with the tap-through buttons"], "evidence": [ledger_hit(tele, at, "Telegram post")]})
+    at = _lagos_at(today, 9, 30)
+    ev = []
+    reel_hit = _between(reels, at - timedelta(minutes=20), at + grace)
+    if reel_hit:
+        ev.append(_ev("Reel published", True, reel_hit[0].get("url"), reel_hit[0].get("title") or reel_hit[0].get("topic")))
+    reel_day = weekday in (0, 3)          # scripts/facebook_reel_daily.py REEL_WEEKDAYS
+    if reel_day and not reel_hit:
+        ev.append(_ev("Reel published", False, None, "nothing in the Reels ledger yet"))
+    items.append({"at": at.isoformat().replace("+00:00", "Z"), "lane": "Facebook", "title": "Facebook Page post" + (" + Reel" if reel_day else ""),
+                  "expect": ["the day's card and copy on the Page"] + (["today is a Reel day (Mon/Thu): a voiced Reel on the Page, mirrored to Instagram Reels"] if reel_day else []), "evidence": ev})
+
+    # 6:00pm Short (weekdays)
+    if weekday < 5:
+        at = _lagos_at(today, 18, 0)
+        got = _between(shorts, at - timedelta(minutes=10), at + grace)
+        hosted = [m for m in media if m.get("date") == today.isoformat()]
+        tk = [t for t in tiktok_rows if str(t.get("recorded_at", ""))[:10] == now.astimezone(LAGOS).date().isoformat() or str(t.get("video", "")).endswith(today.strftime("%Y%m%d") + ".mp4")]
+        ev = []
+        if got:
+            r = got[0]
+            ev.append(_ev("Short uploaded", True, r.get("url"), r.get("topic") or r.get("title")))
+            ev.append(_ev("scheduled public at 7:00pm", bool(r.get("publish_at")), None, r.get("publish_at") and ("public at " + _lagos_text(r["publish_at"]))))
+        else:
+            ev.append(_ev("Short uploaded", False, None, "nothing in the Shorts ledger yet"))
+        ev.append(_ev("sent to the TikTok inbox", bool(tk), None, (tk[0].get("status") if tk else "not yet")))
+        ev.append(_ev("video handed to Threads for 8:10pm", bool(hosted), hosted[0].get("url") if hosted else None, hosted[0].get("title") if hosted else "not yet"))
+        items.append({"at": at.isoformat().replace("+00:00", "Z"), "lane": "YouTube Short", "title": "Short renders and uploads",
+                      "expect": ["renders today's Short (voice, synced captions, matched footage)", "uploads it private, scheduled to go public at 7:00pm",
+                                 "sends it to your TikTok inbox and the Telegram channel", "hands the video to Threads for the 8:10pm slot"], "evidence": ev})
+        at7 = _lagos_at(today, 19, 0)
+        pub = [r for r in got if r.get("publish_at")]
+        items.append({"at": at7.isoformat().replace("+00:00", "Z"), "lane": "YouTube", "title": "The Short goes public (YouTube flips it itself)",
+                      "expect": ["no run at this minute — YouTube publishes the scheduled Short and notifies subscribers"],
+                      "evidence": [_ev("scheduled by the 6:00pm upload", True, pub[0].get("url"), pub[0].get("topic")) if pub else _ev("scheduled by the 6:00pm upload", False if now >= at + timedelta(minutes=WATCH_GRACE_MIN) else None, None, "waiting for the upload")]})
+
+    # 7:40pm Facebook Story; 9:00pm heartbeat
+    at = _lagos_at(today, 19, 40)
+    items.append({"at": at.isoformat().replace("+00:00", "Z"), "lane": "Facebook", "title": "Facebook Story", "expect": ["the day's frame as a 24-hour Story"], "evidence": []})
+    at = _lagos_at(today, 21, 0)
+    items.append({"at": at.isoformat().replace("+00:00", "Z"), "lane": "Heartbeat", "title": "Evening report to your phone",
+                  "expect": ["the day's runs judged and texted to you on Telegram"], "evidence": []})
+
+    # tonight: 1:30am Brain, 4:00am Deep-Dive (tomorrow's date)
+    items.append(brain_item(tomorrow))
+    at = _lagos_at(tomorrow, 4, 0)
+    items.append({"at": at.isoformat().replace("+00:00", "Z"), "lane": "Deep-Dive",
+                  "title": ("Deep-Dive lane produces %s" % queued) if queued else "Deep-Dive lane produces whatever the Brain wrote at 1:30am",
+                  "expect": ["narrates, renders and uploads it, scheduled for the next free Saturday 7:00pm — or skips if the queue is still empty"], "evidence": []})
+
+    # the next Saturday with a Deep-Dive going public
+    try:
+        sys.path.insert(0, str(root / "tools"))
+        import publish_calendar
+        taken = sorted(d for d in publish_calendar.taken_deepdive_days(root) if d >= today.isoformat())
+    except Exception:  # pragma: no cover — the calendar is optional here
+        taken = []
+    for d in taken[:2]:
+        when = _lagos_at(date.fromisoformat(d), 19, 0)
+        title = ""
+        for r in longform:
+            if (r.get("publish_at") or "")[:10] and _stamp(r["publish_at"]) and _stamp(r["publish_at"]).astimezone(LAGOS).date().isoformat() == d:
+                title = r.get("title") or ""
+        if not title:
+            for r in _rows(root, "logs/youtube_manage.json"):
+                if str(r.get("result", "")).startswith("scheduled ") and _stamp(r["result"].split(" ", 1)[1]) and _stamp(r["result"].split(" ", 1)[1]).astimezone(LAGOS).date().isoformat() == d:
+                    title = r.get("title") or r.get("video_id") or ""
+        items.append({"at": when.isoformat().replace("+00:00", "Z"), "lane": "YouTube", "title": "Deep-Dive goes public" + (": " + _first_line(title, 80) if title else ""),
+                      "expect": ["YouTube flips the scheduled episode public at 7:00pm; Threads, Telegram and Facebook trail it over the following days"], "evidence": []})
+
+    items.sort(key=lambda i: i["at"])
+    return [_settle(i, now) for i in items]
+
+
+def _lagos_text(stamp):
+    at = _stamp(stamp)
+    if not at:
+        return str(stamp)
+    w = at.astimezone(LAGOS)
+    hour = w.hour % 12 or 12
+    return "%s %d %s, %d:%02d%s" % (w.strftime("%a"), w.day, w.strftime("%b"), hour, w.minute, "am" if w.hour < 12 else "pm")
+
+
 def build(now=None, root=ROOT):
     now = now or datetime.now(timezone.utc)
     feed = {
@@ -233,6 +481,7 @@ def build(now=None, root=ROOT):
         "growth": growth(root),
         "deepdive_next": deepdive_next(root),
         "tiktok": tiktok(root),
+        "watch": watch(now, root),
     }
     feed["brain_note"] = ("the brain has an approved pack for today" if feed["plan"] and feed["plan"][0]["approved"]
                           else "no approved pack for today — the lanes post from the rotation (the brain had no quota, or every draft failed a gate)")
