@@ -113,6 +113,19 @@ if git rev-parse --verify --quiet origin/main >/dev/null; then
     LOST=$(comm -13 \
         <(git ls-tree -r --name-only "$REF" | sort) \
         <(git ls-tree -r --name-only origin/main | sort))
+    # A deletion is allowed only when it is declared, path by path, in
+    # tools/intended_deletions.txt on the branch itself — an auditable manifest that a
+    # reviewer sees in the diff. Anything missing from the branch and not declared there
+    # is still treated as an accident.
+    if [ -n "$LOST" ] && git cat-file -e "$REF:tools/intended_deletions.txt" 2>/dev/null; then
+        DECLARED=$(git show "$REF:tools/intended_deletions.txt" | sed 's/#.*//' | sed 's/[[:space:]]*$//' | grep -v '^$' | sort -u)
+        ALLOWED=$(comm -12 <(echo "$LOST" | sort) <(echo "$DECLARED"))
+        if [ -n "$ALLOWED" ]; then
+            echo "  declared in tools/intended_deletions.txt (allowed):"
+            echo "$ALLOWED" | sed 's/^/    ~ /'
+            LOST=$(comm -23 <(echo "$LOST" | sort) <(echo "$ALLOWED"))
+        fi
+    fi
     if [ -n "$LOST" ]; then
         echo "$LOST" | sed 's/^/    - /'
         echo "  ❌ $REF would delete $(echo "$LOST" | wc -l | tr -d ' ') file(s) from main."

@@ -90,6 +90,7 @@ answers `503 admin_disabled` and the page is a locked door.
 → **`ADMIN_DASHBOARD.md`** (setup, what each number is worth, the sync law)
 
 ## Security — read this
+- **This repository is public (since 20 Oct 2026)** so GitHub Actions minutes are free and unlimited. Every credential lives in Actions secrets or the encrypted vault (`tools/token_vault.py`); `tools/secret_scan.py` runs in QA and CI and refuses any tracked file carrying a token/key shape. History and why: `docs/TOKENS.md` §10.
 - `unlock-codes.txt` is **gitignored** — it is paid-product inventory. NEVER commit it.
 - Payment-provider secret keys live ONLY in Cloudflare Worker secrets. Never in this repo.
 - The dashboard passphrase and its session HMAC key are the same rule:

@@ -1,0 +1,11 @@
+# Files deliberately removed from main. tools/pre_push_verify.sh refuses any deletion that is
+# not listed here, so an accidental wipe (bad rebase, force-push, unrelated history) still fails
+# the Repo-integrity check while a reviewed removal passes. One path per line; '#' comments.
+# Keep an entry until the removal has merged, then prune it.
+
+# 21 Oct 2026 — public-repo readiness (PR #116, docs/TOKENS.md §10)
+send_test_post.sh                                # carried a live Telegram bot token (revoked)
+logs/2026-09-19-first-real-payment-webhook.json  # the owner's own test payment record
+logs/ig_access_token.box                         # old vault key exposed; token invalidated, re-minted
+logs/threads_token.box                           # same
+logs/tiktok_refresh_token.box                    # same; reconnect via the one-tap page
