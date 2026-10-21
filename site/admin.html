@@ -161,7 +161,13 @@ footer{font-size:11.5px;color:#94A3B8;text-align:center;padding:16px 0 4px}
     <div id="social-msg"></div>
     <div class="cards" id="social-kpis"></div>
     <div class="panel">
-      <h2>Today’s plan — <span id="social-day"></span></h2>
+      <h2>The plan, in plain words — <span id="watch-day"></span></h2>
+      <p class="hint" style="margin:0 0 8px">What each slot is meant to produce today and tonight, and — once its time has passed — what the repo’s own records say came out, with the link. Rows refresh after every lane finishes. <b>Due</b> = still ahead; <b>done</b> = every expected record is there; <b>partly</b> = some are; <b>not recorded</b> = the slot passed and the ledger is empty (the row below under “Every slot the clock rings” shows whether the lane even ran); <b>ran</b> = this lane keeps no record in the repo, so look at the clock’s row.</p>
+      <div id="watch"></div>
+      <p class="hint" id="watch-note" style="margin:6px 0 0"></p>
+    </div>
+    <div class="panel">
+      <h2>Every slot the clock rings — <span id="social-day"></span></h2>
       <p class="hint" style="margin:0 0 8px">Every row is a slot the clock rings. <b>Posted</b> = the lane ran clean; <b>failed</b> shows the lane’s own reason; <b>missed</b> = the slot passed and nothing ran. “Run now” asks GitHub to start that lane this minute — the lane’s own ledger still refuses a duplicate, so it is safe to tap.</p>
       <div class="scroll"><table id="social-today"></table></div>
     </div>
@@ -672,6 +678,30 @@ async function loadSocial(){
   catch(e){if(e.status!==401)$('social-msg').innerHTML='<div class="msg err">'+esc('could not read the board: '+e.message)+'</div>';}
   finally{SOCIAL_BUSY=false;}
 }
+const WATCH_WORD={due:['due',''],running:['waiting for the record','warn'],done:['done','ok'],partial:['partly','warn'],missing:['not recorded','bad'],skipped:['skips today',''],ran:['ran — see the clock row','']};
+function renderWatch(){
+  const el=$('watch');if(!el)return;
+  const f=FEED&&FEED.feed?FEED.feed:null,items=f&&f.watch?f.watch:[];
+  if(!items.length){el.innerHTML='<p class="hint">'+esc(f?'the feed has no plan rows yet — the Dashboard feed workflow writes them after its next run':'the feed is not loaded yet — open the Content tab once, or wait for the next sync')+'</p>';$('watch-day').textContent='';return;}
+  const now=Date.now(),todayKey=new Date(now+3600000).toISOString().slice(0,10);
+  $('watch-day').textContent=lagosDay(todayKey);
+  let lastDay='';const nextIdx=items.findIndex(it=>it.status==='due');
+  el.innerHTML='<table><tbody>'+items.map((it,idx)=>{
+    const ms=Date.parse(it.at),dayKey=new Date(ms+3600000).toISOString().slice(0,10);
+    const head=dayKey!==lastDay?'<tr><td colspan="3" style="padding:10px 0 2px;font-weight:700;color:#0B1B3F;border-bottom:none">'+esc(dayKey===todayKey?'Today · '+lagosDay(dayKey):(dayKey===new Date(now+3600000+86400000).toISOString().slice(0,10)?'Tonight / tomorrow · '+lagosDay(dayKey):lagosDay(dayKey)))+'</td></tr>':'';
+    lastDay=dayKey;
+    const w=WATCH_WORD[it.status]||[it.status,''];
+    const next=idx===nextIdx;
+    const ev=(it.evidence||[]).map(e=>{
+      const mark=e.ok===true?'<span style="color:#166534;font-weight:700">✓</span>':(e.ok===false?'<span style="color:#B91C1C;font-weight:700">✗</span>':'<span style="color:#94A3B8">·</span>');
+      const body=(e.url?'<a href="'+esc(e.url)+'" target="_blank" rel="noopener">'+esc(e.label)+'</a>':esc(e.label))+(e.detail?' <span class="hint">— '+esc(e.detail)+'</span>':'');
+      return '<div style="margin-top:2px">'+mark+' '+body+'</div>';}).join('');
+    return head+'<tr'+(next?' style="background:#F8FAFC"':'')+'><td class="num" style="text-align:left;white-space:nowrap;vertical-align:top;width:76px"><b>'+esc(lagos(ms))+'</b><br><span class="hint">'+esc(it.lane)+'</span></td>'+
+      '<td style="vertical-align:top"><b>'+esc(it.title)+'</b>'+((it.expect||[]).length?'<div class="hint" style="margin-top:2px">'+it.expect.map(x=>'• '+esc(x)).join('<br>')+'</div>':'')+(ev?'<div style="margin-top:4px;font-size:13px">'+ev+'</div>':'')+'</td>'+
+      '<td style="vertical-align:top;white-space:nowrap">'+chip(w[0],w[1])+'</td></tr>';}).join('')+'</tbody></table>';
+  const age=FEED.ageSeconds==null?'':(FEED.ageSeconds<120?'records synced just now':'records synced '+ago(now-FEED.ageSeconds*1000));
+  $('watch-note').textContent=age+(age?' · ':'')+'times are Lagos time; the Instagram hour is the one the numbers chose this week.';
+}
 function renderSocial(){
   const S=SOCIAL||{};
   if(S.connected===false){
@@ -679,6 +709,7 @@ function renderSocial(){
     $('social-kpis').innerHTML='';$('social-today').innerHTML='';$('social-week').innerHTML='';$('social-health').innerHTML='';return;
   }
   $('social-msg').innerHTML='';
+  renderWatch();
   const t=S.today||{},c=t.counts||{},slots=t.slots||[];
   const posts=slots.filter(s=>s.kind==='post');
   const postsDone=posts.filter(s=>s.status==='done').length,postsFailed=posts.filter(s=>s.status==='failed').length,postsMissed=posts.filter(s=>s.status==='missed').length,postsLeft=posts.filter(s=>s.status==='upcoming'||s.status==='due'||s.status==='running').length;
@@ -757,6 +788,7 @@ function renderFeed(){
   const F=FEED||{};
   if(F.connected===false){$('content-msg').innerHTML='<div class="msg warn">'+esc(F.reason||'not connected')+'</div>';$('plan').innerHTML='';$('growth').innerHTML='';$('yt').innerHTML='';$('posted').innerHTML='';return;}
   const f=F.feed||{};
+  renderWatch();
   const age=F.ageSeconds==null?'':(F.ageSeconds<120?'synced just now':'synced '+ago(Date.now()-F.ageSeconds*1000));
   $('content-msg').innerHTML=F.ageSeconds>36*3600?'<div class="msg warn">'+esc('This feed is '+Math.round(F.ageSeconds/3600)+' hours old — the Dashboard feed workflow has not run; what you see below may be behind.')+'</div>':'';
   // plan

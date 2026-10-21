@@ -218,7 +218,8 @@ pushes to the dashboard, not the other way round:
   `plan[3]` (approved pack per day or an honest "no approved pack"), `posted[≤40]`
   (newest first, UTC stamps, absolute links), `growth.rows` (value, previous week,
   milestone target/due/unlocks — `null` means *not measured yet*, never 0),
-  `youtube.snapshot` + `youtube.scheduled`, `deepdive_next`, `brain_note`.
+  `youtube.snapshot` + `youtube.scheduled`, `deepdive_next`, `brain_note`,
+  `watch[]` (below).
 * `tools/dashboard_feed.py push` PUTs it to KV key `adm:feed` with the
   `CLOUDFLARE_API_TOKEN` the deploys already use (KV Storage Edit is part of the
   Edit-Workers template). No new secret.
@@ -228,6 +229,37 @@ pushes to the dashboard, not the other way round:
 * `GET /admin/feed` returns `{connected, ageSeconds, feed}`. The page shows
   "synced X ago" in the plan header and a warning when the feed is more than 36 hours
   old — a stale feed is a signal, not a quiet day.
+
+#### The plan, in plain words (Social tab, top) — added 21 Oct 2026
+
+The owner asked to *see the plan* — "6:00pm the Short renders and is scheduled for
+7:00pm; 7:10pm Instagram; 8:10pm Threads' first video; 1:30am the Brain writes
+Deep-Dive 4" — on the dashboard rather than in a message. The clock's board below it
+already says which lane *ran*; this panel says what each slot is **meant to produce**
+and, once its time has passed, what the repo's ledgers say **came out**, with the link.
+
+* `tools/dashboard_feed.py watch(now)` builds `feed.watch[]`, one row per slot from
+  today's 1:30am Brain run to tomorrow's 4:00am Deep-Dive lane, plus the next
+  Saturday a Deep-Dive goes public. Times are the lanes' own crons in Lagos time;
+  the Instagram hour is read from `brain/slots.json` (the slot the numbers chose).
+  Each row: `at`, `lane`, `title`, `expect[]` (plain words), `evidence[]`
+  (`{label, ok, url, detail}` read from `logs/threads_sent.json`,
+  `instagram_sent.json`, `telegram_sent.json`, `youtube_published.json`,
+  `shorts_media.json`, `tiktok_drafts.json`, `facebook_reels.json`,
+  `youtube_longform.json`, `brain_deepdive.json`, `brain/drafts/<date>.json`) and
+  `status`: `due` (ahead) · `done` (every expected record is there) · `partial`
+  (some) · `running` (slot passed less than 75 minutes ago, nothing yet) ·
+  `missing` (slot passed, ledger empty) · `skipped` (nothing queued, lane skips by
+  design) · `ran` (the lane keeps no record in the repo — Facebook Page post, Story,
+  LinkedIn, heartbeat — so the clock's row is the witness).
+* The Short row is judged on all four outputs: uploaded, scheduled for 7:00pm, sent
+  to the TikTok inbox, video handed to Threads for 8:10pm. The 7:00pm "goes public"
+  row has no run behind it — YouTube flips the scheduled video itself — so its only
+  evidence is the 6:00pm upload's `publish_at`.
+* `site/admin.html` `renderWatch()` draws it (12-hour Lagos times, the next due row
+  tinted). The feed refreshes after every lane (`dashboard_sync.yml`), so the ✓/✗
+  marks fill in through the evening without anyone touching anything.
+* Tests: `tools/tests/test_dashboard_feed.py::Watch`.
 
 Also on the Today tab: **Which channel brings the money** — the weekly
 `src:checkout|sale:<ISO week>` counters the site keeps from the `?s=` tag on every
