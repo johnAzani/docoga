@@ -762,9 +762,9 @@ if hb_wf:
           "git push" not in hb_wf and "permissions:" in hb_wf and "contents: read" in hb_wf,
           "a monitor that can write to the repo is a monitor that can break it")
     readme_hb = open(os.path.join(ROOT, "README.md"), encoding="utf-8").read()
-    growth_hb = open(os.path.join(ROOT, "docs", "GROWTH_ENGINE.md"), encoding="utf-8").read()
+    clock_hb = open(os.path.join(ROOT, "docs", "CLOCK.md"), encoding="utf-8").read()
     check("the heartbeat is written down where the owner looks",
-          "automation-heartbeat" in readme_hb and "automation-heartbeat" in growth_hb,
+          "automation-heartbeat" in readme_hb and "automation-heartbeat" in clock_hb,
           "a monitor nobody can find is a monitor nobody re-runs")
 
 # ── the publish ledger: what counts as having published ────────────────────
