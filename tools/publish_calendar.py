@@ -16,16 +16,21 @@ The calendar (Lagos time, UTC+1, no DST):
                                      week's Shorts trail it, so the episode is the week's close
 
 `next_slot(kind, now)` returns the next calendar instant at least LEAD_MINUTES ahead (YouTube
-rejects a publishAt in the past and needs processing time). `episode.json → youtube.publish_at`
+rejects a publishAt in the past and needs processing time) — and, for Deep-Dives, not a
+Saturday that already has an episode scheduled (both YouTube ledgers are read), so two
+episodes written in one week take two Saturdays. `episode.json → youtube.publish_at`
 still wins when an episode names its own date; this is only the default.
 
 CLI:  python3 tools/publish_calendar.py deepdive        → 2026-10-25T19:00 (WAT, naive ISO)
       python3 tools/publish_calendar.py shorts
 Machine line on stdout only; nothing else is printed, so a workflow can `$(…)` it.
 """
+import json
 import sys
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
+ROOT = Path(__file__).resolve().parents[1]
 LAGOS = timezone(timedelta(hours=1))
 SLOT_HOUR = 19          # 7:00pm WAT — the hour both lanes publish
 LEAD_MINUTES = 10       # YouTube wants the instant in the future, with processing room
@@ -38,16 +43,56 @@ def _now(now=None):
     return (now or datetime.now(timezone.utc)).astimezone(LAGOS)
 
 
-def next_slot(kind, now=None):
-    """The next publish instant for `kind`, as a Lagos-aware datetime."""
+def taken_deepdive_days(root=None):
+    """Lagos dates ('YYYY-MM-DD') on which a Deep-Dive is already set to go public — read from
+    the long-form ledger (`publish_at` of a scheduled upload) and the manage ledger (`schedule`
+    lines applied by tools/yt_manage.py). Two episodes must never share a Saturday: the second
+    would bury the first, and the week after would be empty."""
+    root = Path(root) if root else ROOT
+    days = set()
+    try:
+        for row in json.loads((root / "logs" / "youtube_longform.json").read_text(encoding="utf-8")):
+            when = _parse(row.get("publish_at")) if isinstance(row, dict) else None
+            if when:
+                days.add(when.astimezone(LAGOS).strftime("%Y-%m-%d"))
+    except (OSError, ValueError):
+        pass
+    try:
+        for row in json.loads((root / "logs" / "youtube_manage.json").read_text(encoding="utf-8")).get("done", []):
+            result = str(row.get("result") or "")
+            when = _parse(result.split(" ", 1)[1]) if result.startswith("scheduled ") else None
+            if when:
+                days.add(when.astimezone(LAGOS).strftime("%Y-%m-%d"))
+    except (OSError, ValueError, AttributeError):
+        pass
+    return days
+
+
+def _parse(text):
+    text = str(text or "").strip()
+    if not text:
+        return None
+    try:
+        when = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return when if when.tzinfo else when.replace(tzinfo=LAGOS)
+
+
+def next_slot(kind, now=None, taken=None):
+    """The next publish instant for `kind`, as a Lagos-aware datetime. `taken` = Lagos dates
+    already holding a video of this kind (default for Deep-Dives: both ledgers); those days
+    are skipped, so a second episode in one week takes the Saturday after."""
     if kind not in KINDS:
         raise ValueError("kind must be one of %s, not %r" % (", ".join(KINDS), kind))
+    if taken is None:
+        taken = taken_deepdive_days() if kind == "deepdive" else set()
     now_l = _now(now)
     floor = now_l + timedelta(minutes=LEAD_MINUTES)
     day = now_l.replace(hour=SLOT_HOUR, minute=0, second=0, microsecond=0)
-    for _ in range(0, 15):  # at most two weeks of looking — the calendar always has a day
+    for _ in range(0, 7 + 7 * (len(taken) + 1)):  # a free day always exists within that many
         ok_day = (day.weekday() < 5) if kind == "shorts" else (day.weekday() == SATURDAY)
-        if ok_day and day >= floor:
+        if ok_day and day >= floor and day.strftime("%Y-%m-%d") not in taken:
             return day
         day += timedelta(days=1)
     raise RuntimeError("no slot found — the calendar is broken")
