@@ -235,9 +235,15 @@ def apply_line(http, action, video_id, dry_run=False, log=print):
             log("  %s: already scheduled for %s — %r" % (video_id, publish_calendar.human(when), title))
             return "already-scheduled", title
         if current == "public":
-            raise yt_publish.Problem("forbidden", "already_public",
-                                     "%s is already public — a schedule would hide a live video" % video_id,
-                                     "Leave it, or write `private` first if hiding it is really the intent.")
+            # 21 Oct 2026, first run: dd2 had been tapped public by the owner before the plan
+            # line landed. Scheduling it would have HIDDEN a live video, so the line is refused —
+            # but recorded, because a line that is refused forever keeps the lane red forever.
+            # Hiding a live video on purpose is `private` first, then `schedule`.
+            log("  %s: already public — left as it is (a schedule would hide a live video) — %r" % (video_id, title))
+            log("::warning title=YouTube schedule %s skipped::%s is already public; the schedule for %s was not "
+                "applied. To really hide and re-release it, write `private %s` on a line above the schedule."
+                % (video_id, video_id, publish_calendar.human(when), video_id))
+            return "already-public", title
         if dry_run:
             log("  would schedule %s (%s) → public at %s — %r" % (video_id, current, publish_calendar.human(when), title))
             return "dry-run", title

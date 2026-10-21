@@ -192,11 +192,21 @@ class Scheduling(Manager):
         self.assertEqual(len(self.fake.of("update")), 2)
 
     def test_a_public_video_is_never_hidden_by_a_schedule(self):
-        self.fake.queue("status", [video("JJhRcCgAxyQ", "public")])
-        code, out = self.run_main(["--plan-text", "schedule 2026-10-24T19:00 JJhRcCgAxyQ"])
-        self.assertEqual(code, 3, out)
+        """21 Oct 2026, first live run: dd2 was already public (the owner had tapped it) and the
+        refusal left the lane red with an issue. Not touching it is right; it is recorded so the
+        line is never retried and the run is green with a named warning."""
+        self.fake.queue("status", [video("pl5Z8ueg1ZI", "public")])
+        code, out = self.run_main(["--plan-text", "schedule 2026-10-31T19:00 pl5Z8ueg1ZI"])
+        self.assertEqual(code, 0, out)
         self.assertEqual(self.fake.of("update"), [])
         self.assertIn("already public", out)
+        self.assertIn("::warning", out)
+        self.assertIn("Sat 31 Oct 2026, 7:00pm", out)
+        ledger = json.loads(Path(self.ledger).read_text())
+        self.assertEqual(ledger["done"][0]["result"], "already-public")
+        before = len(self.fake.calls)
+        self.run_main(["--plan-text", "schedule 2026-10-31T19:00 pl5Z8ueg1ZI"])
+        self.assertEqual(len(self.fake.calls), before, "recorded, so never asked again")
 
     def test_already_scheduled_for_that_minute_is_a_success(self):
         resp = video("JJhRcCgAxyQ", "private")
