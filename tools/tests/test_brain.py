@@ -659,6 +659,100 @@ class DeepDiveWriterTests(Sandbox):
         self.assertIn("THE EPISODE NARRATION", fake.prompts[1])
 
 
+class DeepDiveHealerTests(DeepDiveWriterTests):
+    """21 Oct 2026: the Deep-Dive lane sat idle for six days — the writer's small slips (a
+    trigger not quite spoken, a plate name invented, a sub a few characters long) refused whole
+    episodes. The healer fixes what cannot change a legal meaning and drops the rest; the
+    narration and the claims are never touched."""
+
+    def test_unspoken_triggers_and_invented_plates_are_healed_not_refused(self):
+        facts_by_id = law_index.by_id(law_index.facts_for("lagos"))
+        ep = self.episode()
+        ep["beats"][1]["trig"] = ["words", "nobody", "said"]          # not in the narration → dropped
+        ep["beats"][2]["img"] = "lagos-skyline-drone"                  # not a plate → fallback
+        ep["beats"][3]["sub"] = "a subtitle that runs on far longer than the sixty characters the panel can show"
+        ep["beats"][3]["shot"] = "smiling woman with keys"             # a person → shot dropped
+        ep["beats"][4]["trig"] = ["Six,", "MONTHS", "notice"]          # first beat of section 2 → cleared
+        ep["youtube"]["tags"] = "DocOga, notice to quit, Lagos, tenancy, tenant rights, landlord, Nigeria, rent"
+        ep["youtube"]["description"] = ep["youtube"]["description"].replace("https://docoga.com.ng", "our site")
+        before = len(ep["beats"])
+        notes = brain.heal_deepdive(ep, log=lambda *a: None)
+        self.assertEqual(len(ep["beats"]), before - 1, "exactly the unspoken beat is gone")
+        self.assertEqual(ep["beats"][1]["img"], brain.DD_FALLBACK_PLATE)
+        self.assertLessEqual(len(ep["beats"][2]["sub"]), 60)
+        self.assertIsNone(ep["beats"][2]["shot"])
+        self.assertIsNone(ep["beats"][3]["trig"])
+        self.assertEqual(ep["youtube"]["tags"][0], "DocOga")
+        self.assertIn("docoga.com.ng", ep["youtube"]["description"])
+        self.assertEqual(brain.deepdive_problems(ep, facts_by_id), [], "healed, the episode passes the gates")
+        self.assertTrue(any("not spoken" in n for n in notes), notes)
+        self.assertTrue(any("→ letter" in n for n in notes), notes)
+
+    def test_the_healer_never_touches_narration_or_claims(self):
+        ep = self.episode()
+        narration = [s["narration"] for s in ep["sections"]]
+        claims = json.dumps(ep["claims"])
+        ep["sections"][0]["narration"] = "far too short"
+        brain.heal_deepdive(ep, log=lambda *a: None)
+        self.assertEqual(ep["sections"][0]["narration"], "far too short")
+        self.assertEqual([s["narration"] for s in ep["sections"]][1:], narration[1:])
+        self.assertEqual(json.dumps(ep["claims"]), claims)
+        facts_by_id = law_index.by_id(law_index.facts_for("lagos"))
+        self.assertTrue(any("section 1" in p and "words" in p for p in brain.deepdive_problems(ep, facts_by_id)))
+
+    def test_every_attempt_is_written_to_the_ledger_with_its_reasons(self):
+        import shutil
+        episodes = Path(self.tmp.name) / "episodes"
+        (episodes / "assets").mkdir(parents=True)
+        for name in ("letter", "calendar", "court", "door"):
+            shutil.copy(ROOT / "episodes" / "assets" / (name + ".jpg"), episodes / "assets" / (name + ".jpg"))
+        shutil.copytree(ROOT / "episodes" / "dd3", episodes / "dd3")
+        (episodes / "queue.json").write_text(json.dumps({"queue": ["dd3"]}))
+        ledger = Path(self.tmp.name) / "brain_deepdive.json"
+        bad = self.episode()
+        bad["sections"] = bad["sections"][:8]                            # eight sections: refused, not healable
+        good = self.episode()
+        verdict = {"verdicts": [{"fact_id": good["claims"][0]["fact_id"], "supported": True}], "unsupported_statements": []}
+        fake = FakeGemini([bad, good, verdict])
+        with patch.object(brain, "EPISODES", episodes), patch.object(brain, "engine_check", return_value=[]), \
+             patch.object(brain, "DD_LEDGER", ledger):
+            with redirect_stdout(self.out):
+                out, problems = brain.deepdive_draft(http=fake, sleep=lambda s: None, log=print, states=["lagos"])
+        self.assertEqual(problems, [])
+        rows = json.loads(ledger.read_text())["attempts"]
+        self.assertEqual([(r["attempt"], r["outcome"]) for r in rows], [(1, "refused"), (2, "written")])
+        self.assertTrue(any("nine sections" in p for p in rows[0]["problems"]), rows[0])
+        self.assertIn("BRAIN_DEEPDIVE=written", self.out.getvalue())
+        self.assertIn("YOUR PREVIOUS DRAFT WAS REFUSED", fake.prompts[1], "the second ask carries the first refusal")
+
+    def test_three_refusals_end_in_a_why_line_and_quota_is_recorded(self):
+        ledger = Path(self.tmp.name) / "brain_deepdive.json"
+        bad = self.episode()
+        bad["claims"] = []
+        fake = FakeGemini([bad, bad, bad])
+        with patch.object(brain, "DD_LEDGER", ledger), redirect_stdout(self.out):
+            out, problems = brain.deepdive_draft(http=fake, sleep=lambda s: None, log=print, states=["lagos"], dry_run=True)
+        self.assertIsNone(out)
+        self.assertEqual(len(json.loads(ledger.read_text())["attempts"]), 3, "three attempts, not two")
+        self.assertIn("BRAIN_DEEPDIVE=refused", self.out.getvalue())
+        self.assertIn("BRAIN_DEEPDIVE_WHY=", self.out.getvalue())
+        fake = FakeGemini([refusal("day", "gemini-a"), refusal("day", "gemini-b")])
+        with patch.object(brain, "DD_LEDGER", ledger), redirect_stdout(self.out), \
+             patch.dict(os.environ, {"BRAIN_MODELS": "gemini-a,gemini-b"}):
+            with self.assertRaises(gemini_text.Exhausted):
+                brain.deepdive_draft(http=fake, sleep=lambda s: None, log=print, states=["lagos"], dry_run=True)
+        self.assertEqual(json.loads(ledger.read_text())["attempts"][-1]["outcome"], "quota")
+
+    def test_the_workflow_drafts_on_any_empty_night_and_announces_the_outcome(self):
+        wf = (ROOT / ".github" / "workflows" / "brain.yml").read_text(encoding="utf-8")
+        self.assertNotIn('date +%u)" != "7"', wf, "Sunday-only is gone")
+        self.assertIn("tools/deepdive_queue.py next", wf)
+        self.assertIn('"${DAYS_SINCE:-99}" -lt 4', wf, "one a week is still the cadence")
+        self.assertIn("::warning title=Deep-Dive not written tonight::", wf)
+        self.assertIn("::notice title=Deep-Dive written::", wf)
+        self.assertIn("logs/brain_deepdive.json", wf)
+
+
 class WorkflowContractTests(unittest.TestCase):
     def setUp(self):
         self.wf = (ROOT / ".github" / "workflows" / "brain.yml").read_text(encoding="utf-8")
@@ -668,7 +762,7 @@ class WorkflowContractTests(unittest.TestCase):
         self.assertIn("contents: write", self.wf)
         self.assertIn("issues: write", self.wf)
         self.assertIn("cancel-in-progress: false", self.wf)
-        self.assertIn("git add -A brain/drafts brain/feedback.md brain/newsdesk.json brain/listening.json brain/answers logs/brain_said.json episodes site/guides site/sitemap.xml", self.wf)
+        self.assertIn("git add -A brain/drafts brain/feedback.md brain/newsdesk.json brain/listening.json brain/answers logs/brain_said.json logs/brain_deepdive.json episodes site/guides site/sitemap.xml", self.wf)
         self.assertIn("gh issue create", self.wf)
         self.assertIn("brain-automation", self.wf)
 

@@ -939,6 +939,143 @@ DocOga, the two-minute document, free to start, and the Oga Pass at 2,000 naira 
 Write amounts in words or digits as a presenter would say them.{retry}"""
 
 
+DD_ATTEMPTS = 3
+DD_LEDGER = Path(os.environ.get("DOCOGA_BRAIN_DD_LEDGER") or (ROOT / "logs" / "brain_deepdive.json"))
+DD_FALLBACK_PLATE = "letter"
+
+
+def heal_deepdive(ep, log=print):
+    """Deterministic repairs before the gates — the writer's small slips are not reasons to
+    refuse a whole episode (21 Oct 2026: the Deep-Dive lane had been idle since 15 Oct; the
+    Sunday writer existed but a 36-48-beat JSON with exact spoken triggers rarely survives
+    `deepdive_problems` untouched, and two attempts a week is no cadence). Only things that
+    cannot change a legal meaning are healed: a beat whose trigger words are not spoken is
+    dropped (beats are overlays; the narration is untouched), an unknown plate falls back to
+    a real one, an over-long sub is cut at a word, a shot that names people is dropped, tags
+    and the description are brought to shape. Narration, claims and section count are never
+    touched — those are the writer's to get right and the verifier's to judge."""
+    notes = []
+    if not isinstance(ep, dict):
+        return notes
+    names = set(plates())
+    secs = ep.get("sections") if isinstance(ep.get("sections"), list) else []
+    words_by_sec = {}
+    for s in secs:
+        if isinstance(s, dict):
+            try:
+                words_by_sec[int(s.get("n") or 0)] = _norm_tokens(str(s.get("narration") or ""))
+            except (TypeError, ValueError):
+                pass
+    beats = ep.get("beats") if isinstance(ep.get("beats"), list) else []
+    kept, seen, cursor = [], set(), {}
+    for i, b in enumerate(beats, 1):
+        if not isinstance(b, dict):
+            notes.append("beat %d dropped: not an object" % i)
+            continue
+        try:
+            sec = int(b.get("sec") or 0)
+        except (TypeError, ValueError):
+            sec = 0
+        if sec not in words_by_sec:
+            notes.append("beat %d dropped: section %r unknown" % (i, b.get("sec")))
+            continue
+        head = " ".join(str(b.get("head") or "").split())
+        if not head or len(head) > 30:
+            notes.append("beat %d dropped: head %r is not 1-28 characters" % (i, head[:40]))
+            continue
+        b["head"] = head
+        sub = " ".join(str(b.get("sub") or "").split())
+        if len(sub) > 64:
+            cut = sub[:60].rsplit(" ", 1)[0].rstrip(" ,;:—-")
+            notes.append("beat %d sub cut at a word: %r" % (i, cut))
+            sub = cut
+        b["sub"] = sub
+        if b.get("img") and b["img"] not in names:
+            notes.append("beat %d plate %r → %s" % (i, b["img"], DD_FALLBACK_PLATE))
+            b["img"] = DD_FALLBACK_PLATE
+        shot = " ".join(str(b.get("shot") or "").split()).lower()
+        if shot and (len(shot.split()) > 4 or any(w in shot.split() for w in PLATE_BANNED)):
+            notes.append("beat %d shot %r dropped" % (i, shot))
+            shot = ""
+        b["shot"] = shot or None
+        if sec not in seen:
+            seen.add(sec)
+            cursor[sec] = 0
+            if b.get("trig"):
+                notes.append("beat %d: first beat of section %d — trig cleared" % (i, sec))
+                b["trig"] = None
+            kept.append(b)
+            continue
+        trig = b.get("trig")
+        if not isinstance(trig, list) or not (2 <= len(trig) <= 4):
+            notes.append("beat %d dropped: trig %r is not 2-4 words" % (i, trig))
+            continue
+        trig = [re.sub(r"[^a-z0-9']", "", str(w).lower()) for w in trig]
+        trig = [w for w in trig if w]
+        at = _find(words_by_sec[sec], trig, cursor.get(sec, 0)) if 2 <= len(trig) <= 4 else None
+        if at is None:
+            notes.append("beat %d dropped: trigger %r not spoken in section %d after word %d"
+                         % (i, " ".join(trig), sec, cursor.get(sec, 0)))
+            continue
+        b["trig"] = trig
+        cursor[sec] = at
+        kept.append(b)
+    if len(kept) != len(beats):
+        ep["beats"] = kept
+    cover = ep.get("cover") if isinstance(ep.get("cover"), dict) else None
+    if cover and cover.get("img") and cover["img"] not in names:
+        notes.append("cover plate %r → %s" % (cover["img"], DD_FALLBACK_PLATE))
+        cover["img"] = DD_FALLBACK_PLATE
+    yt = ep.get("youtube") if isinstance(ep.get("youtube"), dict) else None
+    if yt:
+        tags = yt.get("tags")
+        if isinstance(tags, str):
+            tags = [t.strip() for t in tags.split(",") if t.strip()]
+            notes.append("tags split from a string")
+        tags = [str(t).strip() for t in (tags or []) if str(t).strip()]
+        if len(tags) > 20:
+            notes.append("tags cut from %d to 15" % len(tags))
+            tags = tags[:15]
+        yt["tags"] = tags
+        desc = " ".join(str(yt.get("description") or "").split("\r"))
+        if desc and "docoga.com.ng" not in desc:
+            desc = desc.rstrip() + "\n\nMake yours in two minutes: https://docoga.com.ng"
+            notes.append("description: tool link appended")
+        if len(desc) > 1200:
+            desc = desc[:1150].rsplit(" ", 1)[0].rstrip() + "\n\nhttps://docoga.com.ng"
+            notes.append("description cut to shape")
+        yt["description"] = desc
+        title = " ".join(str(yt.get("title") or "").split())
+        if len(title) > 100:
+            yt["title"] = title[:100].rsplit(" ", 1)[0].rstrip(" :,-—(")
+            notes.append("youtube.title cut to 100")
+    for n in notes:
+        log("brain: healed — %s" % n)
+    return notes
+
+
+def record_deepdive_attempt(number, attempt, outcome, title="", problems=None, healed=None, ledger=None):
+    """logs/brain_deepdive.json — every attempt, with its reasons, so a quiet week can be read
+    from the repo (run logs are not reachable from everywhere; this file is)."""
+    path = Path(ledger or DD_LEDGER)
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        data = {"attempts": []}
+    rows = data.setdefault("attempts", [])
+    rows.append({"at": datetime.now(LAGOS).isoformat(timespec="seconds"), "episode": "dd%d" % number,
+                 "attempt": attempt, "outcome": outcome, "title": (title or "")[:120],
+                 "problems": [str(p)[:200] for p in (problems or [])][:12],
+                 "healed": [str(h)[:160] for h in (healed or [])][:12],
+                 "run_id": os.environ.get("GITHUB_RUN_ID", "")})
+    data["attempts"] = rows[-60:]
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(data, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+    except OSError:
+        pass
+
+
 def deepdive_problems(ep, facts_by_id):
     p = []
     secs = ep.get("sections") if isinstance(ep.get("sections"), list) else []
@@ -1111,13 +1248,22 @@ def deepdive_draft(http=None, sleep=None, log=print, dry_run=False, states=None)
     facts_by_id = {f["id"]: f for f in facts}
     template = existing_episodes()[-1] if existing_episodes() else {}
     problems = []
-    for attempt in range(1, MAX_ATTEMPTS + 1):
-        ep = gemini_text.generate_json(deepdive_prompt(number, states, facts, previous, problems or None),
-                                       system=DD_SYSTEM, http=http, sleep=sleep, log=log,
-                                       max_output_tokens=24576, temperature=0.9, thinking_budget=2048)
+    for attempt in range(1, DD_ATTEMPTS + 1):
+        try:
+            ep = gemini_text.generate_json(deepdive_prompt(number, states, facts, previous, problems or None),
+                                           system=DD_SYSTEM, http=http, sleep=sleep, log=log,
+                                           max_output_tokens=24576, temperature=0.9, thinking_budget=2048)
+        except gemini_text.Exhausted as exc:
+            record_deepdive_attempt(number, attempt, "quota", problems=[str(exc)])
+            raise
+        healed = heal_deepdive(ep, log=log)
         problems = deepdive_problems(ep, facts_by_id)
         if not problems:
-            problems = deepdive_verify(ep, facts_by_id, http=http, sleep=sleep, log=log)
+            try:
+                problems = deepdive_verify(ep, facts_by_id, http=http, sleep=sleep, log=log)
+            except gemini_text.Exhausted as exc:
+                record_deepdive_attempt(number, attempt, "quota", title=ep.get("title", ""), problems=[str(exc)], healed=healed)
+                raise
         if not problems:
             if dry_run:
                 log("brain: dd%d would be written — %s" % (number, ep["title"]))
@@ -1133,11 +1279,19 @@ def deepdive_draft(http=None, sleep=None, log=print, dry_run=False, states=None)
                 queue["queue"] = [q for q in queue.get("queue", []) if q != "dd%d" % number]
                 queue_path.write_text(json.dumps(queue, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
                 problems = engine
+                record_deepdive_attempt(number, attempt, "engine-refused", title=ep.get("title", ""), problems=engine, healed=healed)
                 log("brain: dd%d attempt %d refused by the engine: %s" % (number, attempt, "; ".join(engine)[:400]))
                 continue
+            record_deepdive_attempt(number, attempt, "written", title=ep.get("title", ""), healed=healed)
             log("brain: dd%d written and queued — %s" % (number, ep["title"]))
+            log("BRAIN_DEEPDIVE=written")
+            log("BRAIN_DEEPDIVE_TITLE=%s" % ep["title"])
             return ep, []
+        record_deepdive_attempt(number, attempt, "refused", title=(ep.get("title", "") if isinstance(ep, dict) else ""),
+                                problems=problems, healed=healed)
         log("brain: dd%d attempt %d refused: %s" % (number, attempt, "; ".join(problems)[:600]))
+    log("BRAIN_DEEPDIVE=refused")
+    log("BRAIN_DEEPDIVE_WHY=%s" % "; ".join(problems)[:400].replace("\n", " "))
     return None, problems
 
 
@@ -1198,6 +1352,7 @@ def main(argv=None):
                                           states=args.states.split(",") if args.states else None)
         except gemini_text.Exhausted as exc:
             print("brain: quota — %s" % exc)
+            print("BRAIN_DEEPDIVE=quota")
             return 6
         if not ep:
             print("brain: no episode approved — " + "; ".join(problems))

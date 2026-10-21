@@ -14,7 +14,7 @@ name: DocOga Brain — the standing editor
 #      Approved packs land in brain/drafts/YYYY-MM-DD.json; the Telegram, Facebook,
 #      Threads/Instagram and Short/Reel lanes read them at post time and fall back
 #      to the hand-written rotation when there is none.
-#   3. `deepdive` (Sundays, or on demand) — drafts the next Deep-Dive episode into
+#   3. `deepdive` (when the queue is empty and the last upload is 4+ days old, or on demand) — drafts the next Deep-Dive episode into
 #      episodes/ddN/ (nine sections, beats, cover, YouTube meta), checked by the
 #      engine's own trigger check, and queues it. The nightly Deep-Dive lane then
 #      narrates, renders and uploads it as it does today.
@@ -180,19 +180,36 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
           if [ "$CODE" != "0" ] && [ "$CODE" != "3" ] && [ "$CODE" != "6" ]; then exit "$CODE"; fi
 
-      - name: Draft the next Deep-Dive (Sundays, or on demand)
+      # Owner, 21 Oct 2026: the Deep-Dive lane had been idle since 15 Oct — the writer ran on
+      # Sundays only, two attempts, and nothing it refused left a trace in the repo. Now: any
+      # night the queue holds nothing unpublished and the last long-form upload is four or
+      # more days old (one episode a week is still the cadence; the publishing calendar gives
+      # each its own Saturday 7:00pm), three attempts with self-healing, and every attempt is
+      # written to logs/brain_deepdive.json and announced as an annotation — readable without
+      # the run log. `deepdive: true` on dispatch forces a try tonight.
+      - name: Draft the next Deep-Dive (when the queue is empty, or on demand)
         id: deepdive
         if: ${{ env.BRAIN_DRY_RUN != 'true' && steps.plan.outputs.code != '6' }}
         run: |
           set -o pipefail
-          if [ "$(date +%u)" != "7" ] && [ "$BRAIN_DEEPDIVE" != "true" ]; then
-            echo "not Sunday and not asked — no episode tonight"
-            echo "code=skip" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
           # Only when the queue has nothing unpublished: one episode a week is the cadence.
           if python3 tools/deepdive_queue.py next >/tmp/dd_next 2>/dev/null && [ -s /tmp/dd_next ]; then
             echo "queue still holds $(cat /tmp/dd_next) — not drafting another"
+            echo "code=skip" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          DAYS_SINCE=$(python3 - <<'PY'
+          import json, datetime
+          try:
+              rows = json.loads(open("logs/youtube_longform.json", encoding="utf-8").read())
+              last = max(str(r.get("date") or "") for r in rows if isinstance(r, dict)) or "2000-01-01"
+          except (OSError, ValueError):
+              last = "2000-01-01"
+          print((datetime.date.today() - datetime.date.fromisoformat(last[:10])).days)
+          PY
+          )
+          if [ "${DAYS_SINCE:-99}" -lt 4 ] && [ "$BRAIN_DEEPDIVE" != "true" ]; then
+            echo "last long-form upload was $DAYS_SINCE day(s) ago — one a week is the cadence; not drafting tonight"
             echo "code=skip" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -201,15 +218,23 @@ jobs:
           CODE=${PIPESTATUS[0]}
           set -e
           echo "code=$CODE" >> "$GITHUB_OUTPUT"
+          WHY=$(sed -n 's/^BRAIN_DEEPDIVE_WHY=//p' /tmp/brain_deepdive.log | tail -1)
+          TITLE=$(sed -n 's/^BRAIN_DEEPDIVE_TITLE=//p' /tmp/brain_deepdive.log | tail -1)
+          case "$CODE" in
+            0) echo "::notice title=Deep-Dive written::${TITLE:-a new episode} is queued; the 4:00am lane narrates it and schedules it for the next free Saturday 7:00pm" ;;
+            3) echo "::warning title=Deep-Dive not written tonight::every draft was refused — ${WHY:-see logs/brain_deepdive.json}" ;;
+            6) echo "::warning title=Deep-Dive writer paused::Gemini free tier spent — tries again tomorrow night" ;;
+          esac
           {
             echo "### Brain — Deep-Dive draft"
             echo
             case "$CODE" in
-              0) echo "- ✅ a new episode is written and queued; the Deep-Dive lane will narrate it tonight" ;;
-              3) echo "- ⚠️ no episode approved — the gates or the engine refused every draft" ;;
-              6) echo "- ⏸ Gemini quota spent — next Sunday" ;;
+              0) echo "- ✅ a new episode is written and queued (${TITLE:-?}); the Deep-Dive lane will narrate it tonight" ;;
+              3) echo "- ⚠️ no episode approved — the gates or the engine refused every draft: ${WHY:-see logs/brain_deepdive.json}" ;;
+              6) echo "- ⏸ Gemini quota spent — tomorrow night" ;;
               *) echo "- ❌ the writer failed (exit $CODE)" ;;
             esac
+            echo "- every attempt and its reasons: \`logs/brain_deepdive.json\`"
             echo
             echo '```'
             tail -n 20 /tmp/brain_deepdive.log
@@ -274,7 +299,7 @@ jobs:
           BRANCH: ${{ github.event.repository.default_branch }}
           INDEXNOW_KEY: ${{ vars.INDEXNOW_KEY }}
         run: |
-          git add -A brain/drafts brain/feedback.md brain/newsdesk.json brain/listening.json brain/answers logs/brain_said.json episodes site/guides site/sitemap.xml 2>/dev/null || true
+          git add -A brain/drafts brain/feedback.md brain/newsdesk.json brain/listening.json brain/answers logs/brain_said.json logs/brain_deepdive.json episodes site/guides site/sitemap.xml 2>/dev/null || true
           if [ -n "${INDEXNOW_KEY:-}" ] && [ -f "site/${INDEXNOW_KEY}.txt" ]; then git add "site/${INDEXNOW_KEY}.txt"; fi
           if git diff --staged --quiet; then
             echo "nothing new to commit"

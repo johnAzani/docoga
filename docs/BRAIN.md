@@ -405,14 +405,30 @@ Instagram lane passes `--brief "$DAY"` to `tools/social_card.py` so its card and
 Story carry the same brief.
 
 ## Deep-Dive writer
-Sundays (or `workflow_dispatch` with `deepdive=true`), only when
-`episodes/queue.json` has nothing unpublished: one call writes title, nine
+Any night (since 21 Oct 2026; Sundays only before that) when `episodes/queue.json` has
+nothing unpublished **and** the last long-form upload is four or more days old — one
+episode a week is the cadence, the publishing calendar gives each its own Saturday — or
+`workflow_dispatch` with `deepdive=true`: one call writes title, nine
 sections, beats, cover brief and YouTube meta; the gates and a verification call
 run; `episodes/ddN/` is written with the **locked voice block copied byte for
 byte** from the previous episode and the sound plan; the id is appended to the
 queue; `deepdive.py ddN check` runs. The nightly Deep-Dive lane then narrates,
 renders and uploads it exactly as it does today. YouTube privacy stays whatever
 `YT_PRIVACY` says — that is the owner's one look before the public sees it.
+
+### Why the lane was idle 15–21 Oct 2026, and what changed
+The writer existed but produced nothing on Sunday 18 Oct, and nothing it refused left a
+trace in the repo (run logs are not reachable from everywhere). Three fixes:
+- **Self-healing before the gates** (`brain.heal_deepdive`): a beat whose trigger words are
+  not spoken is dropped (beats are overlays), an invented plate falls back to `letter`, an
+  over-long sub is cut at a word, a shot naming people is dropped, tags/description/title are
+  brought to shape. Narration, claims and the section count are never touched — those stay
+  the writer's to get right and the verifier's to judge.
+- **Three attempts** (`DD_ATTEMPTS`), each retry carrying the previous refusal.
+- **A ledger of every attempt** — `logs/brain_deepdive.json` (`written` / `refused` /
+  `engine-refused` / `quota`, with the reasons and what was healed) — plus a run annotation
+  (`Deep-Dive written` / `Deep-Dive not written tonight: <why>` / `writer paused`) and the
+  machine lines `BRAIN_DEEPDIVE=`, `BRAIN_DEEPDIVE_TITLE=`, `BRAIN_DEEPDIVE_WHY=`.
 
 ### 🗓 Scheduled, not dumped (owner, 17 Oct 2026: "scheduled in YouTube for the date intended to go public")
 With `YT_PRIVACY=public`, no upload goes live the second it lands. `tools/yt_publish.py` sends
@@ -422,8 +438,9 @@ at that instant, and Studio shows it as *Scheduled* until then. The intended mom
   default **19:00 WAT** (the measured Nigerian prime window 19:00–20:30). A late run (scheduler
   lag) schedules the next 5-minute mark at least 10 minutes out, never the past.
 - **Deep-Dive** (produced 03:00 WAT): `episodes/<id>/episode.json → youtube.publish_at`
-  (`YYYY-MM-DD` = that day at the slot hour, or an ISO instant, WAT) when set; else today at the
-  slot hour — the evening, not 3 a.m. to an empty room.
+  (`YYYY-MM-DD` = that day at the slot hour, or an ISO instant, WAT) when set; else (21 Oct
+  2026) the **next free Saturday at 7:00pm** from `tools/publish_calendar.py` — "free" read
+  from both YouTube ledgers, so two episodes in one week take two Saturdays.
 - **Queue** (`youtube_queue.json`): an item's `publish_at`, same formats.
 `unlisted`/`private` are never scheduled. `YT_SCHEDULE=off` (repository variable) restores
 publish-at-once. Read-back reports `YT_UPLOAD_RESULT=scheduled`, `YT_PUBLISH_AT=<UTC>`,
