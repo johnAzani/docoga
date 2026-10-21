@@ -143,7 +143,7 @@ class ConnectTests(unittest.TestCase):
         self.tmp = tempfile.mkdtemp()
         self._orig = (tt.http, tt.BOX_PATH)
         os.environ.update({"TIKTOK_CLIENT_KEY": "ck", "TIKTOK_CLIENT_SECRET": "cs",
-                           "SOCIAL_TOKEN_KEY": "a3f9c2e17b84d6052f1e9c4ab07d3e68c5f2a1947be06d3c8e1f5a2b9c7d4e06"})
+                           "SOCIAL_TOKEN_KEY": "0f" * 32})
         os.environ.pop("TIKTOK_REFRESH_TOKEN", None)
         self.cwd = os.getcwd()
         os.chdir(self.tmp)                      # token_vault writes logs/<name>.box under the cwd

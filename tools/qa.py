@@ -1297,6 +1297,15 @@ check("brain: the brain workflows carry no second provider's secret",
       not any(k in _wf_brain for k in ("CF_AI_", "GROQ_", "OPENROUTER_", "OPENAI_API_KEY", "MISTRAL_", "NVIDIA_")),
       "the only key the brain holds is GEMINI_API_KEY")
 
+print("\n── 17. Public-repo gate — no credential shape in any tracked file (20 Oct 2026) ──")
+_ss = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "secret_scan.py")],
+                     capture_output=True, text=True, cwd=ROOT, timeout=120)
+check("secret_scan: tracked files carry no token/key shape (the repo is public — Actions minutes are free only there)",
+      _ss.returncode == 0, (_ss.stdout.strip().splitlines() or [""])[0][:160] if _ss.returncode else "")
+check("secret_scan: the stray scripts that once held live values are gone",
+      not any(os.path.exists(os.path.join(ROOT, f)) for f in ("send_test_post.sh", "logs/2026-09-19-first-real-payment-webhook.json")),
+      "send_test_post.sh carried a bot token; the webhook log carried the owner's own payment record")
+
 # The unittest files are the real gate; run them when their deps are present.
 import importlib.util as _ilu
 missing_mods = [m for m in ("requests", "yaml") if _ilu.find_spec(m) is None]

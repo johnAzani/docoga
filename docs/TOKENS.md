@@ -158,5 +158,62 @@ they reopen, `pexels.com/api/new` → secret **PEXELS_API_KEY**.
 
 ---
 
+## 10 · The repository is PUBLIC (20 Oct 2026) — what was rotated and why
+
+**What happened, 7:05pm:** GitHub stopped every lane — *"The job was not started because recent
+account payments have failed or your spending limit needs to be increased."* The billing page
+showed the cause: a **private** repo gets 2,000 free Actions minutes a month and October's were
+gone on the 20th ($15.99 of $15.99; docoga ≈ 1,410 min, three older repos of the owner's ≈ 590 min).
+The ₦0 fix is a **public** repository — unlimited free minutes, forever. The owner chose it at
+9:45pm ("Let's start it now").
+
+**What a public history exposes (audited that night, all 529 commits):** two things, nothing else.
+
+| Found in history | Risk once public | Closed by |
+|---|---|---|
+| `send_test_post.sh` carried a live Telegram **bot token** | anyone could post to @docogadaily | owner revokes it in @BotFather and pastes the new one into `TELEGRAM_BOT_TOKEN` |
+| `tools/tests/test_tiktok_draft.py` carried the **real `SOCIAL_TOKEN_KEY`**, and the four `logs/*.box` files it opens | the YouTube, Instagram, Threads and TikTok tokens become readable | **vault key rotated** (new 32 random bytes; the owner pastes it into `SOCIAL_TOKEN_KEY`); the YouTube and TikTok boxes were **re-sealed under the new key with the same tokens** (those are useless to a stranger once the *client secrets* rotate — see below); the Instagram and Threads boxes were **deleted** (bare tokens, so they are re-minted) |
+
+No Google/Meta/Cloudflare/payment key, no customer record and no passphrase was ever committed.
+History rewriting was **not** used: on GitHub, old commits stay reachable through pull-request refs,
+so rotation is the only honest fix — and it is what GitHub's own guidance says.
+
+**The owner's taps, in order (the flip to Public is last — irreversible, so nothing leaks before
+the old values are dead):**
+
+1. **Telegram** — @BotFather → `/mybots` → @docoga_daily_bot → API Token → **Revoke current token**
+   → copy the new one → secret `TELEGRAM_BOT_TOKEN` (update, not new).
+2. **Google client secret** — `console.cloud.google.com/apis/credentials` → the DocOga OAuth client →
+   Client secrets → **Add secret** → copy → **Disable** (then delete) the old one → secret
+   `YT_CLIENT_SECRET` (update). The sealed refresh token stays valid for *this* client; a stranger
+   holding the old box cannot refresh without the new client secret. **No 7-scope re-consent.**
+3. **TikTok client secret** — developers.tiktok.com → the app → Credentials → **regenerate** the
+   client secret → secret `TIKTOK_CLIENT_SECRET` (update). Same logic: the sealed refresh token is
+   useless without it. No re-connect.
+4. **Instagram** — instagram.com → Settings → **Apps and websites** → Active → the DocOga app →
+   **Remove** (kills the old token). Then §2 above: **Generate token** → secret `IG_ACCESS_TOKEN`
+   (update). The lane seals it under the new key on its next run.
+5. **Threads** — Threads → Settings → Account → **Apps and websites** → the DocOga app → Remove.
+   Then §3 above: **Generate token** → secret `THREADS_ACCESS_TOKEN` (update).
+6. **Vault key** — secret `SOCIAL_TOKEN_KEY` (update) with the new value the agent handed over in
+   the private chat. Never into a file, never into a test.
+7. **Flip** — `github.com/johnAzani/docoga/settings` → Danger Zone → **Change visibility → Make
+   public** → type the repository name → confirm. Actions resume within the minute.
+8. The hygiene PR merges (its CI can only run after the flip), then the first lane proves each
+   credential on its own run summary.
+
+**The guard that makes this the last time:** `tools/secret_scan.py` runs inside `tools/qa.py` and
+in CI; it refuses any tracked file carrying a token/key *shape* (BotFather, Google, Meta, GitHub,
+TikTok, Flutterwave/Paystack, private-key blocks, a 64-hex vault key outside an obvious fake).
+Test fixtures use `"0f" * 32`. Ciphertext boxes are skipped by design — the vault's threat model
+(`tools/token_vault.py`) always assumed the box could be read; only the key was ever the secret.
+
+**Free extra, any day:** the three older repos (`YouTube-automation`, `Vertualworld`,
+`Autonomous_youtube_automation`) still run scheduled workflows. Settings → Actions → **Disable
+actions** on each returns ~590 min/month to the account. Irrelevant once docoga is public, but
+free.
+
+---
+
 ## How you know it is done
 Monday's "📊 Weekly scorecard" issue carries a block **"Token permissions — minted once, complete?"** with one line per token. ✅ on every line = this page is finished forever. ⚠️ names the exact permissions and the lane each one starves — mint that one token once with its full list above.

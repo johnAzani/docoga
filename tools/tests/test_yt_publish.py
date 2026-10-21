@@ -579,8 +579,15 @@ class CommandLineTests(TransportTestCase):
         self.fake.queue("status", [Resp(200, {"items": [{"status": {"uploadStatus": "processed",
                                                                    "privacyStatus": "private",
                                                                    "publishAt": "2026-10-20T18:00:00Z"}}]})])
-        code, out, _err = self.run_main(["--video", str(self.video), "--title", "T",
-                                         "--publish-at", "2026-10-20T19:00"])
+        # The slot is a fixed instant; pin "now" before it so the test does not start failing
+        # the moment the real clock passes 7:00pm on 20 Oct 2026 (it did — 20 Oct, 10:15pm).
+        import datetime as _dt
+        pinned = _dt.datetime(2026, 10, 20, 12, 0, tzinfo=_dt.timezone.utc)
+        orig = yt_publish.parse_publish_at
+        with patch.object(yt_publish, "parse_publish_at",
+                          lambda text, now=None: orig(text, now=now or pinned)):
+            code, out, _err = self.run_main(["--video", str(self.video), "--title", "T",
+                                             "--publish-at", "2026-10-20T19:00"])
         self.assertEqual(yt_publish.EXIT_OK, code, out)
         sent = json.loads(self.fake.of("init")[0]["data"])
         self.assertEqual("private", sent["status"]["privacyStatus"])
