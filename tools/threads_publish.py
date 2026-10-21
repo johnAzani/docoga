@@ -308,6 +308,51 @@ def create_image_container(token, user_id, text, image_url, reply_control=None, 
     return api("POST", "/%s/threads" % user_id, token, params)["id"]
 
 
+def create_video_container(token, user_id, text, video_url, reply_control=None, topic_tag=None, alt_text=None):
+    """A VIDEO post (owner, 21 Oct 2026: "Threads has never posted videos, why"). Threads fetches
+    `video_url` itself — a public MP4/MOV, H.264 + AAC, ≤5 minutes, ≤1 GB, 23–60 fps, width ≤1920
+    (Threads API media specs) — then transcodes; the container reads IN_PROGRESS for a minute or
+    more before FINISHED, which is why `wait_container` gets a longer leash for video. The day's
+    Short (1080×1920, ~60 s, H.264/AAC) fits every line of that spec. Never `crossreshare_to_ig`
+    here: Threads refuses that flag on media for this app (code 10, 17 Oct) and takes the post
+    with it."""
+    params = {"media_type": "VIDEO", "video_url": video_url, "text": text}
+    if alt_text:
+        params["alt_text"] = alt_text[:1000]
+    if reply_control:
+        params["reply_control"] = reply_control
+    if topic_tag:
+        params["topic_tag"] = topic_tag
+    return api("POST", "/%s/threads" % user_id, token, params)["id"]
+
+
+def create_video_container_with_fallbacks(token, user_id, text, video_url, reply_control=None, topic_tag=None,
+                                          alt_text=None, log=print):
+    """The video ladder: full ask → without the topic tag → bare video. Same shape as the image
+    ladder — the video is the post, the extras are reach."""
+    attempts = [dict(topic_tag=topic_tag, alt_text=alt_text)]
+    if topic_tag:
+        attempts.append(dict(topic_tag=None, alt_text=alt_text))
+    if alt_text:
+        attempts.append(dict(topic_tag=None, alt_text=None))
+    last = None
+    for i, extra in enumerate(attempts):
+        try:
+            cid = create_video_container(token, user_id, text, video_url, reply_control, **extra)
+            if i > 0:
+                dropped = [k for k in ("topic_tag", "alt_text") if attempts[0].get(k) and not extra.get(k)]
+                log("::warning title=Threads video extras dropped::%s refused by the API (%s) — the video posted without"
+                    % (", ".join(dropped), last.blurb if last else "?"))
+            return cid
+        except ApiError as exc:
+            last = exc
+            if exc.cause in ("credentials", "quota"):
+                raise
+            if "9004" in exc.body or "download" in exc.body.lower():
+                raise   # Threads could not FETCH the video — no extra is to blame, no rung below helps
+    raise last
+
+
 def create_image_container_with_fallbacks(token, user_id, text, image_url, reply_control=None, topic_tag=None,
                                           share_to_ig=False, alt_text=None, log=print):
     """The image ladder (18 Oct 2026). Every Threads run since 17 Oct carried the warning
@@ -525,6 +570,12 @@ def main(argv=None):
     parser.add_argument("--skip-pages", type=int, default=25, help="recent posts to compare")
     parser.add_argument("--image-wait", type=int, default=600,
                         help="seconds to wait for the card's URL to answer 200 before posting the words alone")
+    parser.add_argument("--video-url", dest="video_url",
+                        help="public MP4 to post as a VIDEO (the day's Short, hosted by tools/media_host.py); "
+                             "falls back to the card, then the words, if Threads will not take it")
+    parser.add_argument("--video-alt", dest="video_alt", help="alt text for the video (the Short's title)")
+    parser.add_argument("--video-wait", type=int, default=120,
+                        help="seconds to wait for the video URL to answer 200 before falling back to the card")
     args = parser.parse_args(argv if argv is not None else sys.argv[1:])
 
     token, user_id, code = load_config(args)
@@ -650,7 +701,35 @@ def main(argv=None):
                                                                      "yes" if image_url else "no"))
         container_id, ready, state = None, False, None
         poll_in_reply = None
-        if image_url:
+        video_url = (args.video_url or "").strip() or None
+        if video_url:
+            # The evening slot on a Shorts day carries the Short itself (21 Oct 2026). Threads
+            # transcodes after fetching, so the container is polled for up to ~5 minutes; a
+            # dead URL or a refused container falls through to the card, then to the words.
+            print("extras: video=%s" % video_url)
+            live, waited = wait_until_live(video_url, args.video_wait)
+            if not live:
+                state = "not reachable after %ds" % waited
+            else:
+                try:
+                    # the card's alt text describes a card; a video gets its own (the Short's title) or none
+                    container_id = create_video_container_with_fallbacks(token, target, text, video_url, args.reply_control,
+                                                                         topic_tag=topic_tag,
+                                                                         alt_text=(args.video_alt or "").strip() or None)
+                    ready, state = wait_container(token, container_id, tries=30, delay=10)
+                except ApiError as exc:
+                    if exc.cause in ("credentials", "quota"):
+                        raise
+                    container_id, ready, state = None, False, "refused: %s" % exc.blurb[:120]
+            if ready:
+                print("THREADS_VIDEO=sent")
+                poll_in_reply = poll
+            else:
+                print("::warning title=Threads video dropped::the video at %s was not accepted (%s) — posting the card instead"
+                      % (video_url, state))
+                print("THREADS_VIDEO=dropped")
+                container_id = None
+        if image_url and not ready:
             # Image posts earn ~1.6× a text post's engagement (Buffer, 2026) and the owner wants
             # every post to carry the card (17 Oct 2026). A poll cannot sit beside an image, so
             # the card wins and the poll is asked in our own reply. If the card is not live or the

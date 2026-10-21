@@ -50,7 +50,19 @@ class WiringTests(unittest.TestCase):
         sys.path.insert(0, str(ROOT / "tools"))
         import deepdive
         src = Path(deepdive.__file__).read_text(encoding="utf-8")
-        self.assertIn('"publish_at": str(yt.get("publish_at") or "")', src)
+        # episode.json's own date wins; without one, the publishing calendar's Deep-Dive slot
+        # (Saturday 7:00pm Lagos) — never "today", which is the Shorts' slot (owner, 21 Oct 2026).
+        self.assertIn('"publish_at": str(yt.get("publish_at") or default_publish_at())', src)
+        import publish_calendar
+        from datetime import datetime, timezone
+        tue = datetime(2026, 10, 20, 2, 0, tzinfo=timezone.utc)                    # Tue 3:00am Lagos
+        self.assertEqual(publish_calendar.iso_wat(publish_calendar.next_slot("deepdive", tue)), "2026-10-24T19:00")
+        self.assertEqual(deepdive.default_publish_at()[11:], "19:00")
+        sat_late = datetime(2026, 10, 24, 17, 55, tzinfo=timezone.utc)             # Sat 6:55pm Lagos — too close
+        self.assertEqual(publish_calendar.iso_wat(publish_calendar.next_slot("deepdive", sat_late)), "2026-10-31T19:00")
+        fri_night = datetime(2026, 10, 23, 19, 0, tzinfo=timezone.utc)             # Fri 8:00pm Lagos
+        self.assertEqual(publish_calendar.iso_wat(publish_calendar.next_slot("shorts", fri_night)), "2026-10-26T19:00")
+        self.assertEqual(publish_calendar.human(publish_calendar.next_slot("deepdive", tue)), "Sat 24 Oct 2026, 7:00pm")
 
 
 if __name__ == "__main__":

@@ -447,7 +447,8 @@ jobs:
           CATEGORY: ${{ steps.meta.outputs.category }}
           PRIVACY: ${{ needs.pick.outputs.privacy }}
           # Owner, 17 Oct 2026: a public episode is SCHEDULED for the date it is meant to go public —
-          # episode.json youtube.publish_at when set, else today at the slot hour (19:00 WAT).
+          # episode.json youtube.publish_at when set, else (21 Oct 2026) the next Deep-Dive slot on the
+          # publishing calendar: Saturday 7:00pm Lagos (tools/publish_calendar.py). Never "today".
           PUBLISH_AT: ${{ steps.meta.outputs.publish_at }}
           YT_PUBLISH_HOUR_WAT: ${{ vars.YT_PUBLISH_HOUR_WAT }}
           YT_SCHEDULE: ${{ vars.YT_SCHEDULE }}

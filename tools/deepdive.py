@@ -1242,8 +1242,10 @@ def stage_meta(ep, args):
            "tags": yt.get("tags", "docoga,nigeria,tenant,landlord,tenancy"),
            "category": str(yt.get("category", 27)),
            # the date the episode is meant to go public (episodes/<id>/episode.json → youtube.publish_at,
-           # 'YYYY-MM-DD' or an ISO instant, WAT); empty = the slot hour on the day it is published
-           "publish_at": str(yt.get("publish_at") or "")}
+           # 'YYYY-MM-DD' or an ISO instant, WAT). Owner, 21 Oct 2026: never "whenever the lane ran" —
+           # an episode without its own date takes the next Deep-Dive slot on the publishing calendar
+           # (Saturday 7:00pm, tools/publish_calendar.py), so a Tuesday upload waits for Saturday.
+           "publish_at": str(yt.get("publish_at") or default_publish_at())}
     gh = os.environ.get("GITHUB_OUTPUT")
     if gh:
         with open(gh, "a", encoding="utf-8") as fh:
@@ -1254,6 +1256,12 @@ def stage_meta(ep, args):
                     fh.write("%s=%s\n" % (k, v))
     for k, v in out.items():
         print("%s=%s" % (k, v.replace("\n", " / ") if k == "description" else v))
+
+
+def default_publish_at():
+    """Next Saturday 7:00pm Lagos as 'YYYY-MM-DDTHH:MM' — the Deep-Dive slot (tools/publish_calendar.py)."""
+    import publish_calendar
+    return publish_calendar.iso_wat(publish_calendar.next_slot("deepdive"))
 
 
 def crosslinks_text(limit=3, root=None):

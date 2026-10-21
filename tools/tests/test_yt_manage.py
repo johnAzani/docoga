@@ -166,11 +166,71 @@ class Manager(unittest.TestCase):
         self.assertEqual(self.fake.calls, [])
 
 
+class Scheduling(Manager):
+    """`schedule <Lagos time> <ids>` — owner, 21 Oct 2026: Deep-Dives go public on a date, not by a tap."""
+
+    def test_an_unlisted_video_becomes_private_with_publish_at_in_utc(self):
+        self.fake.queue("status", [video("JJhRcCgAxyQ", "unlisted", "Rent Receipt in Nigeria")])
+        self.fake.queue("update", [Resp(200, {"status": {"privacyStatus": "private", "publishAt": "2026-10-24T18:00:00Z"}})])
+        code, out = self.run_main(["--plan-text", "schedule 2026-10-24T19:00 JJhRcCgAxyQ"])
+        self.assertEqual(code, 0, out)
+        body = json.loads(self.fake.of("update")[0]["data"])
+        self.assertEqual(body["status"]["privacyStatus"], "private", "YouTube schedules private videos only")
+        self.assertEqual(body["status"]["publishAt"], "2026-10-24T18:00:00Z", "7:00pm Lagos is 18:00 UTC")
+        self.assertTrue(body["status"]["embeddable"])
+        self.assertIn("7:00pm", out, "the owner reads 12-hour clocks")
+        ledger = json.loads(Path(self.ledger).read_text())
+        self.assertEqual(ledger["done"][0]["action"], "schedule 2026-10-24T19:00")
+        self.assertEqual(ledger["done"][0]["result"], "scheduled 2026-10-24T18:00:00Z")
+        # The same line again is not repeated; a NEW time for the same video is a new act.
+        before = len(self.fake.calls)
+        code, out = self.run_main(["--plan-text", "schedule 2026-10-24T19:00 JJhRcCgAxyQ"])
+        self.assertEqual(len(self.fake.calls), before)
+        self.fake.queue("status", [video("JJhRcCgAxyQ", "private")])
+        code, out = self.run_main(["--plan-text", "schedule 2026-10-31T19:00 JJhRcCgAxyQ"])
+        self.assertEqual(code, 0, out)
+        self.assertEqual(len(self.fake.of("update")), 2)
+
+    def test_a_public_video_is_never_hidden_by_a_schedule(self):
+        self.fake.queue("status", [video("JJhRcCgAxyQ", "public")])
+        code, out = self.run_main(["--plan-text", "schedule 2026-10-24T19:00 JJhRcCgAxyQ"])
+        self.assertEqual(code, 3, out)
+        self.assertEqual(self.fake.of("update"), [])
+        self.assertIn("already public", out)
+
+    def test_already_scheduled_for_that_minute_is_a_success(self):
+        resp = video("JJhRcCgAxyQ", "private")
+        resp._body["items"][0]["status"]["publishAt"] = "2026-10-24T18:00:00Z"
+        self.fake.queue("status", [resp])
+        code, out = self.run_main(["--plan-text", "schedule 2026-10-24T19:00 JJhRcCgAxyQ"])
+        self.assertEqual(code, 0, out)
+        self.assertEqual(self.fake.of("update"), [])
+        self.assertIn("already scheduled", out)
+
+    def test_plain_private_drops_an_old_schedule(self):
+        resp = video("JJhRcCgAxyQ", "unlisted")
+        resp._body["items"][0]["status"]["publishAt"] = "2026-10-24T18:00:00Z"
+        self.fake.queue("status", [resp])
+        self.fake.queue("update", [Resp(200, {"status": {"privacyStatus": "private"}})])
+        code, out = self.run_main(["private", "JJhRcCgAxyQ"])
+        self.assertEqual(code, 0, out)
+        self.assertNotIn("publishAt", json.loads(self.fake.of("update")[0]["data"])["status"])
+
+    def test_schedule_without_a_time_is_a_named_plan_error(self):
+        code, out = self.run_main(["--plan-text", "schedule JJhRcCgAxyQ"])
+        self.assertEqual(code, 4, out)
+        self.assertIn("Lagos time", out)
+        self.assertEqual(self.fake.calls, [])
+
+
 class RepoPlan(unittest.TestCase):
     def test_the_committed_plan_parses(self):
         text = (ROOT / "logs" / "youtube_cleanup_plan.txt").read_text(encoding="utf-8")
         plan = yt_manage.parse_plan(text)
         self.assertTrue(plan, "the plan file exists to be run; an empty one is a mistake")
+        scheduled = {v: a for a, v, _c in plan if a.startswith("schedule ")}
+        self.assertEqual(scheduled.get("JJhRcCgAxyQ"), "schedule 2026-10-24T19:00", "dd3 goes public Sat 24 Oct 7:00pm")
+        self.assertEqual(scheduled.get("pl5Z8ueg1ZI"), "schedule 2026-10-31T19:00", "dd2 goes public Sat 31 Oct 7:00pm")
 
 
 if __name__ == "__main__":
