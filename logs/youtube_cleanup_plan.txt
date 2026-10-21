@@ -15,4 +15,4 @@ unlist 2ruPSaR8-M0 oBsWKR4AUNA
 # it will be public." The two Deep-Dives uploaded before the 17 Oct scheduling fix sat unlisted.
 # Publishing calendar (tools/publish_calendar.py): Deep-Dives on Saturdays at 7:00pm.
 schedule 2026-10-24T19:00 JJhRcCgAxyQ   # dd3 — Rent Receipt in Nigeria: the 7 lines (Sat 24 Oct, 7:00pm)
-schedule 2026-10-31T19:00 pl5Z8ueg1ZI   # dd2 — Caution fee (Sat 31 Oct, 7:00pm)
+schedule 2026-10-31T19:00 pl5Z8ueg1ZI   # dd2 — Caution fee: found ALREADY PUBLIC on 21 Oct (the owner had tapped it) — left live, recorded
