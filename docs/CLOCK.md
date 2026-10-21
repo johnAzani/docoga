@@ -53,7 +53,7 @@ ledger commit.
    stands the cron down if so (a skipped job, a green run). If the clock is idle or
    GitHub cannot be asked, the cron posts as before. **A monitor is never the reason a
    post was missed.**
-4. **The heartbeat** (`tools/automation_heartbeat.py`) counts `workflow_dispatch`
+4. **The heartbeat** (`automation-heartbeat.yml` → `tools/automation_heartbeat.py`, 9:00pm WAT daily) counts `workflow_dispatch`
    runs as the cadence being kept and prints one `CLOCK=on-duty|idle` line.
 5. **Minutes budget**: `Verify` runs on pull requests and on pushes to `main` that
    are not the lanes' own bookkeeping (`logs/**`, `assets/**`, `site/social/**`,

@@ -60,7 +60,7 @@ done
 # -------------------------------------------------------------------- docs
 echo ""
 echo "📄 Checking docs/"
-check_file "docs/SESSION_CONTEXT.md"
+check_file "docs/PRIVATE_DOCS.md"   # the strategy docs moved to the private companion repo (21 Oct 2026)
 
 # ------------------------------------------------------------------- queue
 echo ""
