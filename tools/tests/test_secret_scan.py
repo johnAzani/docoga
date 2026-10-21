@@ -16,10 +16,11 @@ class ShapesAreCaught(unittest.TestCase):
 
     def test_the_two_shapes_that_actually_leaked_are_caught(self):
         # 20 Oct 2026: a BotFather token in a stray script and a 64-hex vault key in a fixture.
-        self.assertEqual(self._hits('BOT_TOKEN="8852331279:AAHU8f5hfM0GfkU5K0O5y1ZJ4UCahpbqBSI"'),
-                         ["telegram bot token"])
-        self.assertEqual(self._hits('"SOCIAL_TOKEN_KEY": "a3f9c2e17b84d6052f1e9c4ab07d3e68c5f2a1947be06d3c8e1f5a2b9c7d4e06"'),
-                         ["64-hex vault key"])
+        # Built at runtime so this file never carries the shape itself (the scan reads tests too).
+        bot = "8852331279" + ":AA" + "HU8f5hfM0GfkU5K0O5y1ZJ4UCahpbqBS1"[:33]
+        key = "a3f9c2e17b84d605" + "2f1e9c4ab07d3e68" + "c5f2a1947be06d3c" + "8e1f5a2b9c7d4e07"
+        self.assertEqual(self._hits('BOT_TOKEN="%s"' % bot), ["telegram bot token"])
+        self.assertEqual(self._hits('"SOCIAL_TOKEN_KEY": "%s"' % key), ["64-hex vault key"])
 
     def test_the_other_shapes(self):
         samples = {
@@ -29,7 +30,7 @@ class ShapesAreCaught(unittest.TestCase):
             "github token": "ghp_" + "c" * 36,
             "tiktok token": "act." + "d" * 40,
             "payment key": "FLWSECK-" + "e" * 24,
-            "private key block": "-----BEGIN RSA PRIVATE KEY-----",
+            "private key block": "-----BEGIN RSA " + "PRIVATE KEY-----",
         }
         for label, text in samples.items():
             self.assertIn(label, self._hits(text), label)
