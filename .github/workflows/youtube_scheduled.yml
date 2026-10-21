@@ -509,6 +509,137 @@ jobs:
             --title "$VIDEO_TITLE" --date "$RUN_DATE" --ttl-hours 30 2>&1 | tee /tmp/handoff.log
           echo "url=$(sed -n 's/^HANDOFF_URL=//p' /tmp/handoff.log | tail -1)" >> "$GITHUB_OUTPUT"
 
+      # ── The same Short as a Reel, everywhere Reels are the growth surface (21 Oct 2026) ──
+      # Owner: "improve more on all my social media … beat the algorithm". What the platforms
+      # say on the record (research, 21 Oct 2026): Facebook prefers ORIGINAL Reels in Feed and
+      # Reels and saw time spent on them double in H2 2025 (about.fb.com, 13 Mar 2026);
+      # Instagram ranks Reels on watch time, likes per reach and SENDS per reach (Mosseri,
+      # 22 Jan 2025) and recommends small accounts' originals to non-followers. Our Short is
+      # original (our words, our voice, our motion), already Reel-spec (9:16, ≤ 90 s), and
+      # until today it travelled only to YouTube, TikTok's inbox, Telegram and Threads. So
+      # every weekday Short now also goes out as a Facebook Reel and an Instagram Reel — five
+      # extra Reels a week on each, at ₦0, from a file that already exists. Mon/Thu keep their
+      # morning Reel (facebook_autopost.yml); the 30-day title ledgers stop a topic going out
+      # twice. SHORT_REELS=off (repo variable) switches both steps off. Never fails the publish.
+      - name: Facebook Reel — the same Short on the Page
+        id: fb_reel
+        if: always() && steps.upload.outputs.video_id != '' && steps.short.outputs.paused != 'yes' && (vars.SHORT_REELS || 'on') != 'off'
+        continue-on-error: true
+        env:
+          FB_PAGE_ACCESS_TOKEN: ${{ secrets.FB_PAGE_ACCESS_TOKEN }}
+          FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
+          VIDEO_PATH: ${{ steps.short.outputs.video_path }}
+          VIDEO_TOPIC: ${{ steps.short.outputs.topic }}
+          VIDEO_DESCRIPTION: ${{ steps.short.outputs.description }}
+          RUN_DATE: ${{ steps.settings.outputs.run_date }}
+          LEDGER_LABEL: Facebook reel ledger
+        run: |
+          set -o pipefail
+          if [ -z "$FB_PAGE_ACCESS_TOKEN" ] || [ -z "$FB_PAGE_ID" ]; then
+            echo "::notice title=Facebook Reel skipped::FB_PAGE_ACCESS_TOKEN / FB_PAGE_ID are not set in this repository"
+            echo "result=dormant" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          # The frame law: this topic must not be on the Page as a Reel inside 30 days (the
+          # Mon/Thu morning Reel may already have carried it).
+          set +e
+          python3 tools/youtube_ledger.py --ledger logs/facebook_reels.json check --title "$VIDEO_TOPIC" --date "$RUN_DATE" --window-days 30
+          code=$?
+          set -e
+          if [ "$code" -eq 3 ]; then
+            echo "::notice title=Facebook Reel already out::\"$VIDEO_TOPIC\" went out as a Reel inside the last 30 days — nothing uploaded"
+            echo "result=duplicate" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          printf '%s' "$VIDEO_DESCRIPTION" > /tmp/short_description.txt
+          CAPTION=$(python3 tools/reel_caption.py --platform facebook --topic "$VIDEO_TOPIC" --description-file /tmp/short_description.txt --date "$RUN_DATE")
+          set +e
+          python3 scripts/post_facebook.py --reel="$VIDEO_PATH" --title="$VIDEO_TOPIC" --description="$CAPTION" 2>&1 | tee /tmp/fb_short_reel.log
+          STATUS=${PIPESTATUS[0]}
+          set -e
+          VIDEO_ID=$(sed -n 's/^REEL_VIDEO_ID=//p' /tmp/fb_short_reel.log | tail -1)
+          REEL_URL=$(sed -n 's/^REEL_URL=//p' /tmp/fb_short_reel.log | tail -1)
+          if [ -z "$VIDEO_ID" ]; then
+            if grep -q 'already on the Page today' /tmp/fb_short_reel.log; then
+              echo "result=duplicate" >> "$GITHUB_OUTPUT"; exit 0
+            fi
+            echo "::warning title=Facebook Reel not published::scripts/post_facebook.py exited $STATUS — see the lines above; the YouTube publish is unaffected"
+            echo "result=failed" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          python3 tools/youtube_ledger.py --ledger logs/facebook_reels.json record \
+            --title "$VIDEO_TOPIC" --topic "$VIDEO_TOPIC" --video-id "$VIDEO_ID" --url "$REEL_URL" \
+            --date "$RUN_DATE" --run-id "$GITHUB_RUN_ID" --size-bytes "$(stat -c%s "$VIDEO_PATH" 2>/dev/null || echo 0)" \
+            || echo "::warning title=Facebook Reel not recorded::the Reel is live but logs/facebook_reels.json was not updated — a re-run inside 30 days could upload it again"
+          echo "::notice title=Facebook Reel published::$VIDEO_TOPIC → https://www.facebook.com${REEL_URL}"
+          echo "result=sent" >> "$GITHUB_OUTPUT"
+          echo "url=https://www.facebook.com${REEL_URL}" >> "$GITHUB_OUTPUT"
+
+      # Instagram: the third door (tools/ig_publish.py --video-url) — Meta fetches the file from
+      # the 30-hour URL the Threads hand-over already parked on the worker, so nothing is
+      # uploaded twice. Trial Reel on (IG_TRIAL_REELS, default on): shown to non-followers first.
+      - name: Instagram Reel — the same Short on @docoga.ng
+        id: ig_reel
+        if: always() && steps.upload.outputs.video_id != '' && steps.short.outputs.paused != 'yes' && (vars.SHORT_REELS || 'on') != 'off'
+        continue-on-error: true
+        env:
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          SOCIAL_TOKEN_KEY: ${{ secrets.SOCIAL_TOKEN_KEY }}
+          IG_TRIAL_REELS: ${{ vars.IG_TRIAL_REELS }}
+          IG_COLLABORATORS: ${{ vars.IG_COLLABORATORS }}
+          HANDOFF_URL: ${{ steps.handoff.outputs.url }}
+          VIDEO_PATH: ${{ steps.short.outputs.video_path }}
+          VIDEO_TOPIC: ${{ steps.short.outputs.topic }}
+          VIDEO_DESCRIPTION: ${{ steps.short.outputs.description }}
+          RUN_DATE: ${{ steps.settings.outputs.run_date }}
+          LEDGER_LABEL: Instagram publish ledger
+        run: |
+          set -o pipefail
+          umask 077
+          if [ -z "$HANDOFF_URL" ]; then
+            echo "::notice title=Instagram Reel skipped::the Short was not parked on the worker (THREADS_VIDEO off or the hand-over failed), so Meta has no URL to fetch it from"
+            echo "result=skipped" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          python3 -m pip install --quiet cryptography >/dev/null 2>&1 || true
+          if [ -f logs/ig_access_token.box ] && python3 tools/token_vault.py open --name IG_ACCESS_TOKEN --out /tmp/ig_token; then
+            :
+          elif [ -n "$IG_ACCESS_TOKEN" ]; then
+            printf '%s' "$IG_ACCESS_TOKEN" > /tmp/ig_token
+          else
+            echo "::notice title=Instagram Reel skipped::no IG_ACCESS_TOKEN secret and no vault box"
+            echo "result=dormant" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          set +e
+          python3 tools/youtube_ledger.py --ledger logs/instagram_sent.json check --title "Reel · $VIDEO_TOPIC" --date "$RUN_DATE" --window-days 30
+          code=$?
+          set -e
+          if [ "$code" -eq 3 ]; then
+            echo "::notice title=Instagram Reel already out::\"$VIDEO_TOPIC\" went out as a Reel on Instagram inside the last 30 days — nothing published"
+            echo "result=duplicate" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          printf '%s' "$VIDEO_DESCRIPTION" > /tmp/short_description.txt
+          CAPTION=$(python3 tools/reel_caption.py --platform instagram --topic "$VIDEO_TOPIC" --description-file /tmp/short_description.txt --date "$RUN_DATE")
+          TRIAL="--trial"
+          case "$(printf '%s' "${IG_TRIAL_REELS:-on}" | tr '[:upper:]' '[:lower:]')" in 0|false|no|off) TRIAL="" ;; esac
+          set +e
+          IG_API_PATH=instagram-login IG_ACCESS_TOKEN="$(cat /tmp/ig_token)" \
+            python3 tools/ig_publish.py --video-url "$HANDOFF_URL" --caption "$CAPTION" --thumb-offset-ms 0 --wait-url --wait-url-deadline 300 $TRIAL \
+            2>&1 | tee /tmp/ig_short_reel.log
+          STATUS=${PIPESTATUS[0]}
+          set -e
+          RESULT=$(sed -n 's/^IG_RESULT=//p' /tmp/ig_short_reel.log | tail -1)
+          CAUSE=$(sed -n 's/^IG_CAUSE=//p' /tmp/ig_short_reel.log | tail -1)
+          PERMALINK=$(sed -n 's/^IG_PERMALINK=//p' /tmp/ig_short_reel.log | tail -1)
+          MEDIA_ID=$(sed -n 's/^IG_MEDIA_ID=//p' /tmp/ig_short_reel.log | tail -1)
+          echo "result=${RESULT:-failed}" >> "$GITHUB_OUTPUT"
+          echo "url=${PERMALINK}" >> "$GITHUB_OUTPUT"
+          if [ "$RESULT" != "sent" ]; then
+            echo "::warning title=Instagram Reel not published::IG_RESULT=${RESULT:-?}${CAUSE:+ · cause $CAUSE} (exit $STATUS) — see the lines above; the YouTube publish is unaffected"
+            exit 0
+          fi
+          python3 tools/youtube_ledger.py --ledger logs/instagram_sent.json record \
+            --title "Reel · $VIDEO_TOPIC" --topic "$VIDEO_TOPIC" --video-id "${MEDIA_ID:-unknown}" --url "$PERMALINK" \
+            --date "$RUN_DATE" --run-id "$GITHUB_RUN_ID" --size-bytes "$(stat -c%s "$VIDEO_PATH" 2>/dev/null || echo 0)" \
+            || echo "::warning title=Instagram Reel not recorded::the Reel is live but logs/instagram_sent.json was not updated — a re-run inside 30 days could publish it again"
+          echo "::notice title=Instagram Reel published::$VIDEO_TOPIC → ${PERMALINK:-(no permalink reported)}"
+
       - name: Commit the publish ledger
         if: steps.guard.outputs.skip != 'yes' && steps.short.outputs.paused != 'yes'
         continue-on-error: true
@@ -523,7 +654,7 @@ jobs:
             exit 1
           fi
           git add logs/youtube_published.json
-          git add -f logs/youtube_boosts.json logs/tiktok_drafts.json logs/tiktok_refresh_token.box logs/telegram_owner.json logs/shorts_media.json 2>/dev/null || true
+          git add -f logs/youtube_boosts.json logs/tiktok_drafts.json logs/tiktok_refresh_token.box logs/telegram_owner.json logs/shorts_media.json logs/facebook_reels.json logs/instagram_sent.json 2>/dev/null || true
           if git diff --staged --quiet; then
             echo "Ledger unchanged — nothing to commit."
             exit 0
@@ -558,6 +689,10 @@ jobs:
           SOUNDTRACK: ${{ steps.short.outputs.soundtrack }}
           NARRATOR: ${{ steps.short.outputs.narrator }}
           TIKTOK_RESULT: ${{ steps.tiktok.outputs.result }}
+          FB_REEL_RESULT: ${{ steps.fb_reel.outputs.result }}
+          FB_REEL_URL: ${{ steps.fb_reel.outputs.url }}
+          IG_REEL_RESULT: ${{ steps.ig_reel.outputs.result }}
+          IG_REEL_URL: ${{ steps.ig_reel.outputs.url }}
           TIKTOK_PUBLISH_ID: ${{ steps.tiktok.outputs.publish_id }}
           TIKTOK_CAPTION: ${{ steps.tiktok.outputs.caption }}
           DM: ${{ steps.dm.outputs.result }}
@@ -615,6 +750,21 @@ jobs:
               duplicate|skipped) echo "| TikTok | ⏭️ $TIKTOK_RESULT — see the TikTok step |" ;;
               "") : ;;
               *)         echo "| TikTok | ⚠️ $TIKTOK_RESULT — see the TikTok step; the YouTube publish is unaffected |" ;;
+            esac
+            case "$FB_REEL_RESULT" in
+              sent)      echo "| Facebook Reel | ✅ the same Short is on the Page — $FB_REEL_URL |" ;;
+              duplicate) echo "| Facebook Reel | ⏭️ this topic was a Reel on the Page inside 30 days — not repeated |" ;;
+              dormant)   echo "| Facebook Reel | 💤 Page secrets not set |" ;;
+              "") : ;;
+              *)         echo "| Facebook Reel | ⚠️ $FB_REEL_RESULT — see the Facebook Reel step; the YouTube publish is unaffected |" ;;
+            esac
+            case "$IG_REEL_RESULT" in
+              sent)      echo "| Instagram Reel | ✅ the same Short is on @docoga.ng — ${IG_REEL_URL:-permalink not reported} |" ;;
+              duplicate) echo "| Instagram Reel | ⏭️ this topic was a Reel on Instagram inside 30 days — not repeated |" ;;
+              skipped)   echo "| Instagram Reel | ⏭️ no hosted URL this run (see the Threads hand-over step) |" ;;
+              dormant)   echo "| Instagram Reel | 💤 Instagram token not set |" ;;
+              "") : ;;
+              *)         echo "| Instagram Reel | ⚠️ $IG_REEL_RESULT — see the Instagram Reel step; the YouTube publish is unaffected |" ;;
             esac
             [ -n "$SOUNDTRACK" ] && echo "| Soundtrack | $SOUNDTRACK |"
             [ -n "$NARRATOR" ] && echo "| Narrator | $NARRATOR |"
