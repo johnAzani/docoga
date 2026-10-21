@@ -91,19 +91,40 @@ def raw_pick(day):
     return post_type, rng.choice(tg.TEMPLATES[post_type])
 
 
+ROTATION_EPOCH = date(2026, 10, 1)   # the rotation's memory starts here; earlier days are not replayed
+ROTATION_HORIZON_DAYS = 120          # how far back the replay goes at most (speed, not meaning)
+
+
 def pick(day):
-    """Today's rotation post, never the same words as yesterday's.
+    """Today's rotation post — never the same words as any recent day's.
 
     Two seeded days can land on the same template (19 and 20 Oct 2026 both drew the caution-fee
-    post), and a Page that says the same thing two days running reads as a bot. The guard is
-    deterministic — yesterday's pick is recomputed, not remembered — so a re-run still produces
-    the same post and the duplicate guard in post_facebook.py still has something to compare."""
-    post_type, template = raw_pick(day)
-    _, yesterday = raw_pick(day - timedelta(days=1))
-    if template == yesterday:
+    post), and a Page that says the same thing twice reads as a bot. Worse (found 21 Oct 2026):
+    Instagram's duplicate guard compares the exact caption with the profile's recent posts, so a
+    template that came round again within a fortnight was *refused* there — the feed had been
+    silent since 16 Oct while every run was green. The guard is deterministic: the picks of the
+    previous days are REPLAYED from ROTATION_EPOCH, not remembered, so a re-run still produces
+    the same post and the duplicate guards still have something to compare. A template is not
+    used again until every other template of its type has had a turn (pool size − 1 picks)."""
+    start = max(ROTATION_EPOCH, day - timedelta(days=ROTATION_HORIZON_DAYS))
+    recent = {t: [] for t in tg.TEMPLATES}
+    d = start
+    chosen = None
+    while d <= day:
+        post_type, template = raw_pick(d)
         pool = tg.TEMPLATES[post_type]
-        template = pool[(pool.index(template) + 1) % len(pool)]
-    return post_type, template
+        window = recent[post_type][-(len(pool) - 1):] if len(pool) > 1 else []
+        if template in window:
+            i = pool.index(template)
+            for step in range(1, len(pool)):
+                candidate = pool[(i + step) % len(pool)]
+                if candidate not in window:
+                    template = candidate
+                    break
+        recent[post_type].append(template)
+        chosen = (post_type, template)
+        d += timedelta(days=1)
+    return chosen
 
 
 def build_message(post_type, rng, template=None):

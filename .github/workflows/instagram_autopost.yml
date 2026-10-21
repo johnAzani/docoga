@@ -431,8 +431,13 @@ jobs:
             echo "- ledger: \`logs/instagram_sent.json\`"
           } >> "$GITHUB_STEP_SUMMARY"
           # sent / refused-duplicate / probed are successes; a red publisher is a red run.
+          # A refused duplicate is announced (21 Oct 2026): the feed had been silent since 16 Oct
+          # behind green runs, because the rotation came round to a caption already on the profile.
           case "$RESULT" in
-            sent|refused-duplicate) exit 0 ;;
+            sent) exit 0 ;;
+            refused-duplicate)
+              echo "::warning title=Instagram posted nothing — caption already on the profile::${PERMALINK:-an earlier post} carries these exact words; nothing was sent this slot. The rotation guard (generate_facebook_content.pick) now avoids this; if it recurs, the brain had no pack and the template pool is short."
+              exit 0 ;;
             *) exit "${PIPE_STATUS:-6}" ;;
           esac
 
