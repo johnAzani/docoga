@@ -455,3 +455,12 @@ back to the card, then to the words, printing `THREADS_VIDEO=sent|dropped`. No S
 
 Slots moved on 17 Oct 2026 to the windows the 2026 Nigeria data names (`brain/strategy.md`);
 no two lanes share a minute, so a shared cause (a dead runner, a Meta outage) stays guessable.
+
+## The weekday Short as a Reel (21 Oct 2026)
+
+The 6:00pm Shorts lane (`youtube_scheduled.yml`) now publishes the same render as a
+Facebook Reel and an Instagram Trial Reel — see `docs/ALGORITHM_PLAYBOOK.md` §3. The
+Instagram step uses the Instagram-Login token from the vault (`logs/ig_access_token.box`,
+secret as bootstrap), the third door (`--video-url`) on the URL the Threads hand-over
+parked, and writes `Reel · <topic>` to `logs/instagram_sent.json`. Switch: repository
+variable `SHORT_REELS=off`.

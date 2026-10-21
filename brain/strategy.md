@@ -41,6 +41,11 @@ because they lead sales by two to four weeks.
 | **TikTok** (inbox drafts riding the Short) | completion and rewatch in the first hour; the caption and first frame; sounds | the same 22–45 s Short with the locked voice; the owner posts from the inbox with the caption the run prints |
 | **Deep-Dive (YouTube long-form)** | click-through on the cover + first 30 s retention; search traffic on state + topic | title names state + rule + number; Hook section names the loss in the first sentence |
 
+> 21 Oct 2026 — every weekday Short now also goes out as a Facebook Reel and an Instagram
+> Trial Reel from the 6:00pm lane (`docs/ALGORITHM_PLAYBOOK.md` §3): Reels are the
+> recommendation surface on both Meta apps and the file already exists. Captions come
+> from `tools/reel_caption.py` — hook sentence, tip keywords, one named-receiver send line.
+
 ## Posting windows — Nigeria (WAT), from the 2026 data
 Nigerians are online 5.84 days a week (highest of 54 countries) and ~3 h 20 m a
 day; traffic peaks **7–9 pm** when home Wi-Fi and night bundles take over, with

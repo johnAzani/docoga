@@ -414,9 +414,19 @@ def watch(now=None, root=ROOT):
             ev.append(_ev("Short uploaded", False, None, "nothing in the Shorts ledger yet"))
         ev.append(_ev("sent to the TikTok inbox", bool(tk), None, (tk[0].get("status") if tk else "not yet")))
         ev.append(_ev("video handed to Threads for 8:10pm", bool(hosted), hosted[0].get("url") if hosted else None, hosted[0].get("title") if hosted else "not yet"))
+        # 21 Oct 2026: the same Short also travels as a Facebook Reel and an Instagram Reel.
+        # Informational (ok=None when absent): a topic already out as a Reel inside 30 days is
+        # skipped by design, and that must not paint the Short red.
+        fb_reel = _between(reels, at - timedelta(minutes=10), at + grace)
+        ig_reel = [r for r in _between(insta, at - timedelta(minutes=10), at + grace) if str(r.get("title", "")).startswith("Reel ·")]
+        ev.append(_ev("the same Short as a Facebook Reel", True if fb_reel else None, ("https://www.facebook.com" + fb_reel[0]["url"]) if fb_reel and str(fb_reel[0].get("url", "")).startswith("/") else (fb_reel[0].get("url") if fb_reel else None),
+                      fb_reel[0].get("title") if fb_reel else "not recorded — not yet, or this topic was a Reel inside 30 days"))
+        ev.append(_ev("the same Short as an Instagram Reel", True if ig_reel else None, ig_reel[0].get("url") if ig_reel else None,
+                      ig_reel[0].get("topic") if ig_reel else "not recorded — not yet, or this topic was a Reel inside 30 days"))
         items.append({"at": at.isoformat().replace("+00:00", "Z"), "lane": "YouTube Short", "title": "Short renders and uploads",
                       "expect": ["renders today's Short (voice, synced captions, matched footage)", "uploads it private, scheduled to go public at 7:00pm",
-                                 "sends it to your TikTok inbox and the Telegram channel", "hands the video to Threads for the 8:10pm slot"], "evidence": ev})
+                                 "sends it to your TikTok inbox and the Telegram channel", "hands the video to Threads for the 8:10pm slot",
+                                 "publishes the same Short as a Facebook Reel and an Instagram Reel (Trial Reel: shown to non-followers first)"], "evidence": ev})
         at7 = _lagos_at(today, 19, 0)
         pub = [r for r in got if r.get("publish_at")]
         items.append({"at": at7.isoformat().replace("+00:00", "Z"), "lane": "YouTube", "title": "The Short goes public (YouTube flips it itself)",

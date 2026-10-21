@@ -187,7 +187,8 @@ class Watch(unittest.TestCase):
         by = {(i["at"], i["lane"]): i for i in items}
         short = by[("2026-10-21T17:00:00Z", "YouTube Short")]
         self.assertEqual(short["status"], "done", short["evidence"])
-        self.assertEqual([e["ok"] for e in short["evidence"]], [True, True, True, True])
+        self.assertEqual([e["ok"] for e in short["evidence"]][:4], [True, True, True, True])
+        self.assertEqual([e["ok"] for e in short["evidence"]][4:], [None, None], "the Reels are informational until recorded — a 30-day duplicate skip must not paint the Short red")
         self.assertIn("Wed 21 Oct, 7:00pm", short["evidence"][1]["detail"])
         self.assertEqual(by[("2026-10-21T18:00:00Z", "YouTube")]["evidence"][0]["url"], "https://www.youtube.com/watch?v=xyz")
         self.assertEqual(by[("2026-10-21T19:10:00Z", "Threads")]["evidence"][1]["ok"], None, "before 6:40pm the hand-over is not yet judged")

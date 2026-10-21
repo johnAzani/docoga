@@ -1,0 +1,100 @@
+# The algorithm playbook — what each platform ranks on in 2026, and what DocOga does about it
+
+Owner, 21 Oct 2026: *"Improve more on all my social media. I want you to be able to beat
+the algorithm — I want the platforms to think they have been hacked to get the amount of
+result."*
+
+Straight answer first. Nothing here hacks anything, and nothing here buys, fakes or
+pods engagement — every one of those gets an account demoted or removed, and the owner's
+accounts are the business. What *does* look like a hack from the outside is a small
+account whose every post hits the exact signals the ranking model is built to reward,
+on every surface, every day, without a miss. That is what this document specifies. The
+sources are the platforms' own statements, dated; where a number is a third party's
+estimate it says so.
+
+## 1. What the platforms have said, on the record
+
+| Platform | The ranking signals they named | Source |
+| --- | --- | --- |
+| **Instagram** (Feed, Reels, Explore) | **Watch time**, **likes per reach**, **sends per reach** — sends weigh more for reaching non-followers. Since 30 Apr 2026 accounts that mostly post unoriginal photos/carousels/Reels lose recommendations; eligibility returns when most posts in a rolling 30 days are original. Smaller accounts' originals are now tested on non-followers. | Mosseri, 22 Jan 2025; Instagram creators blog, 30 Apr 2026; Mosseri ranking videos, 24 Sep 2026 |
+| **Facebook** (Feed, Reels) | Original content preferred; Reels views and time spent on *original* Reels roughly doubled in H2 2025; duplicates and minor edits of others' posts deprioritised; low-effort reaction/stitch content demoted. | about.fb.com, 14 Jul 2025 and 13 Mar 2026 |
+| **YouTube Shorts** | The feed is a swipe test: **viewed vs. swiped away** is the first filter, then **average percentage viewed**, then genuine rewatches; a Short stops when its seed audience does not respond. A view counts from the first frame (31 Mar 2025); "engaged views" is the stricter metric. Mass-produced, templated content is "inauthentic" (15 Jul 2025) — AI narration itself is not disqualifying, a fixed formula is. | Todd Sherman / Creator Insider; YouTube Help, Shorts views; YouTube monetisation policies |
+| **Threads** | Replies are the currency: "the sum of your replies is about as valuable as the sum of your posts"; longer replies count more; one **topic tag** per post places it in a topic feed; connected reach (followers) was re-weighted up in Nov 2024; engagement bait is penalised; explicit topic preferences ("Dear Algo", Feb 2026; "Your Algo", Jun 2026) make niche consistency matter. | Mosseri (Platformer); Meta Transparency Center |
+| **TikTok** | Completion and rewatch, then shares; unaudited apps can only post to the owner's inbox as a draft, so the owner's one tap stays. | TikTok Content Posting API docs |
+| **Telegram** | No ranking model: forwards and the views-to-subscribers ratio. | — |
+
+Third-party estimates worth knowing but not citing as fact: a swipe-through above ~70 %
+is the top band for Shorts (Galloway, 3.3bn Shorts); sends "3–5× a like" is a guess no
+platform has confirmed.
+
+## 2. What DocOga already does for each signal
+
+* **Hook in the first two seconds** — the settled hook card is frame 0, the cover and the
+  first spoken line (`tools/shorts_reel.py`, `docs/SHORT_COVER.md`).
+* **Watch time / completion** — word-synced captions with the lit word, a clip or
+  photograph per sentence, a change every 2–4 s, ≤ 90 s (`docs/SHORTS_MOTION.md`).
+* **Sends per reach** — every brain post carries one send line that names a receiver
+  (`brain/strategy.md`, `tools/brain.py` `cta`).
+* **Originality** — our words, our voice, our motion, free footage transformed with
+  text, graphics and narration that add information; no watermarks, no reposts.
+* **Replies on Threads** — the replies lane answers three times a day
+  (`brain_replies.yml`); polls in our own reply; one topic tag per post.
+* **Timing** — Instagram posts at the hour the numbers chose (`brain/slots.json`);
+  Threads at 7:20am, 1:10pm, 8:10pm; Shorts go public at 7:00pm.
+* **Search text** — titles, descriptions and alt text carry the words ("rent receipt",
+  "agency fee", "notice to quit") that captions burned into pixels do not.
+* **First comment** on every Short with the parent Deep-Dive (`tools/yt_boost.py`).
+
+## 3. Shipped 21 Oct 2026 — the Short becomes a Reel everywhere
+
+The single largest unused lever was **distribution of a file that already exists**.
+Reels are the recommendation surface on both Meta apps; the Short is original, 9:16 and
+≤ 90 s (Reel-spec by construction, `tools/shorts_sound.py HARD_CAP_S`); yet it travelled
+only to YouTube, TikTok's inbox, Telegram and Threads. Now, in the 6:00pm lane
+(`.github/workflows/youtube_scheduled.yml`), after the hand-over to Threads:
+
+1. **Facebook Reel — the same Short on the Page**: `scripts/post_facebook.py --reel`
+   (three-phase `video_reels` upload) with a caption from `tools/reel_caption.py`; the
+   30-day title ledger `logs/facebook_reels.json` stops a topic repeating (Mon/Thu keep
+   their morning Reel — different title, so the Page's same-day guard lets both through).
+2. **Instagram Reel — the same Short on @docoga.ng**: the third door
+   (`tools/ig_publish.py --video-url`) fetching the **same 30-hour URL** the Threads
+   hand-over parked on the worker, as a **Trial Reel** (non-followers first; falls back to
+   an ordinary Reel where Meta refuses), recorded as `Reel · <topic>` in
+   `logs/instagram_sent.json` with the same 30-day window.
+
+Both steps are `continue-on-error`, switch off with the repository variable
+`SHORT_REELS=off`, and are reported in the run summary and on the admin dashboard's
+"plan in plain words" row for 6:00pm. Net effect: **five extra Reels a week on Facebook
+and five on Instagram, ₦0, no new render, no new token.**
+
+### The Reel caption (`tools/reel_caption.py`)
+
+Built from the Short's own words, deterministic per date: the spoken hook sentence first
+(≤ 125 characters — what shows before "more"; what search indexes), the tip headlines as
+plain lines, **one send line that names a receiver** (the brain's `post.cta` when the day
+has an approved pack, else a rotation of eight), the templates line (link on the Page,
+"link in bio" on Instagram), four on-topic hashtags. Tests: `tools/tests/test_reel_caption.py`.
+
+## 4. Next levers, in order of expected effect (Founder's brief items)
+
+1. **Measure the swipe test.** Pull `Viewed vs. swiped away` and average percentage
+   viewed per Short from YouTube Analytics into `logs/youtube_stats.json` and feed the
+   bottom quartile's hooks back to the brain as "do not open like this" (the hook ledger
+   exists: `docs/HOOK_LEDGER.md`).
+2. **Sends per reach on Instagram** — read `shares` per media from Insights into the
+   Monday scorecard and let the brain rank its send lines by what actually got sent.
+3. **Threads reply depth** — replies of eight-plus words with one fact and one question,
+   never "thanks!".
+4. **Carousels for the Instagram feed post** on Tuesdays/Thursdays (the second-chance
+   impression Instagram gives carousels) — the renderer already exists.
+5. **Series** — a numbered run ("Receipt law, 1 of 5") across a week so a profile visit
+   has somewhere to go.
+
+## 5. What we will not do, and why
+
+Engagement pods, bought followers/likes/views, comment bots, follow/unfollow, mass DMs,
+reposting other creators' videos, watermark-stripped reuploads, "like if you agree" bait.
+Each is named in the platforms' own policies above; each gets reach removed or the
+account closed, and the owner's accounts are the asset. The result that looks like a hack
+is built the slow, legal way: every signal, every post, every day.
