@@ -36,7 +36,7 @@ record were written on the runner and thrown away with it — which is also why 
 posted "from the rotation" and the Shorts rotation (six scripts) repeated a topic within a
 week (15 → 21 Oct).
 
-**Fix (PR #125):** every multi-path `git add` in every workflow is now a loop — `for path
+**Fix (PR #126):** every multi-path `git add` in every workflow is now a loop — `for path
 in …; do if [ -e "$path" ]; then git add "$path"; fi; done` — and
 `test_workflow_contract.test_no_git_add_names_two_paths_at_once` forbids the old shape.
 The Instagram Reel record was backfilled by hand. Two Deep-Dive gate slips from the same
