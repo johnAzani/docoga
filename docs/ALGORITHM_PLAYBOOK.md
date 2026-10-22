@@ -76,22 +76,43 @@ plain lines, **one send line that names a receiver** (the brain's `post.cta` whe
 has an approved pack, else a rotation of eight), the templates line (link on the Page,
 "link in bio" on Instagram), four on-topic hashtags. Tests: `tools/tests/test_reel_caption.py`.
 
-## 4. Next levers, in order of expected effect (Founder's brief items)
+## 4. Shipped 22 Oct 2026 — the first hour
 
-1. **Measure the swipe test.** Pull `Viewed vs. swiped away` and average percentage
-   viewed per Short from YouTube Analytics into `logs/youtube_stats.json` and feed the
-   bottom quartile's hooks back to the brain as "do not open like this" (the hook ledger
-   exists: `docs/HOOK_LEDGER.md`).
-2. **Sends per reach on Instagram** — read `shares` per media from Insights into the
-   Monday scorecard and let the brain rank its send lines by what actually got sent.
-3. **Threads reply depth** — replies of eight-plus words with one fact and one question,
-   never "thanks!".
-4. **Carousels for the Instagram feed post** on Tuesdays/Thursdays (the second-chance
+Every platform above weights what happens in a post's first hour: Instagram's ranked
+"two-way conversation" (Mar 2026), Threads' replies-count-as-posts, YouTube's seed test on
+the first few hundred views. Three changes, all ₦0, all on the account's own posts:
+
+1. **The account's own first comment** (`tools/reel_caption.py --first-comment`,
+   `tools/ig_publish.py --first-comment`). The moment the 7:10pm feed post or the 6:00pm
+   Reel is live, @docoga.ng leaves one answerable question under it ("Which state are you
+   renting in?") and the templates line. Eight questions rotate by day; the brain's `cta`
+   wins when it is a question. It never fails the publish; the run prints
+   `IG_FIRST_COMMENT=posted|refused`. No "like if", no "follow for" — bait is penalised.
+2. **The Short in both Stories trays** (`youtube_scheduled.yml` → `fb_story`, `ig_story`).
+   Stories sit at the top of the app through the 7–9pm peak and are the one surface where
+   a tap goes straight to the video. Same `SHORT_REELS` switch, warnings never red.
+3. **Replies within 30–45 minutes of every slot** (`brain_replies.yml`: 8:00am, 11:40am,
+   2:40pm, 7:40pm, 8:40pm WAT — was 3 runs, 90 minutes behind). Replies to the first
+   comments decide a post's second wave of distribution.
+
+Measurement for all three is already in place — `tools/yt_stats.py` pulls average
+percentage viewed and shares per Short; `tools/brain_scorecard.py` reads saves and shares
+per Instagram media and ranks hook types; both land in the Monday scorecard once the brain
+commits (fixed 22 Oct, PR #126).
+
+## 5. Next levers, in order of expected effect (Founder's brief items)
+
+1. **Carousels for the Instagram feed post** on Tuesdays/Thursdays (the second-chance
    impression Instagram gives carousels) — the renderer already exists.
-5. **Series** — a numbered run ("Receipt law, 1 of 5") across a week so a profile visit
+2. **Threads reply depth** — replies of eight-plus words with one fact and one question,
+   never "thanks!".
+3. **Series** — a numbered run ("Receipt law, 1 of 5") across a week so a profile visit
    has somewhere to go.
+4. **Hook bans from the swipe test** — once two Monday pulls have filled
+   `averageViewPercentage`, the bottom quartile's hook types go to the brain as "do not open
+   like this" (`docs/HOOK_LEDGER.md`).
 
-## 5. What we will not do, and why
+## 6. What we will not do, and why
 
 Engagement pods, bought followers/likes/views, comment bots, follow/unfollow, mass DMs,
 reposting other creators' videos, watermark-stripped reuploads, "like if you agree" bait.

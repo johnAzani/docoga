@@ -793,6 +793,29 @@ class InstagramPublisher(unittest.TestCase):
         self.assertIn("instagram.com/p/MEDIA9/", out)
         self.assertEqual(len(fake.posts), 2)
 
+    def test_the_first_comment_follows_a_live_post_and_never_fails_it(self):
+        """22 Oct 2026: a question under the post (two-way conversation is a ranked signal)."""
+        routes = self._base_routes({"POST /MEDIA9/comments": (200, json.dumps({"id": "C1"}))})
+        code, out, fake = self._publish(routes,
+                                       ["--image-url", "https://docoga.com.ng/social/x.jpg",
+                                        "--caption", self.CAPTION, "--allow-unknown-specs",
+                                        "--first-comment", "Which state are you renting in? Free templates: docoga.com.ng"])
+        self.assertEqual(code, 0, out)
+        self.assertIn("IG_FIRST_COMMENT=posted", out)
+        comment = [c for c in fake.posts if c[1].endswith("/MEDIA9/comments")]
+        self.assertEqual(len(comment), 1)
+        self.assertEqual(urllib.parse.parse_qs(comment[0][2])["message"], ["Which state are you renting in? Free templates: docoga.com.ng"])
+        self.assertTrue(out.index("IG_FIRST_COMMENT=posted") < out.index("IG_RESULT=sent"), "the machine verdict still closes the run")
+        refused = self._base_routes({"POST /MEDIA9/comments": (400, json.dumps({"error": {"message": "(#10) permission", "code": 10}}))})
+        code, out, _ = self._publish(refused, ["--image-url", "https://docoga.com.ng/social/x.jpg", "--caption", self.CAPTION,
+                                               "--allow-unknown-specs", "--first-comment", "Which state?"])
+        self.assertEqual(code, 0, "a refused comment never fails a live post")
+        self.assertIn("IG_FIRST_COMMENT=refused", out)
+        self.assertIn("IG_RESULT=sent", out)
+        code, out, fake = self._publish(self._base_routes(), ["--image-url", "https://docoga.com.ng/social/x.jpg", "--caption", self.CAPTION, "--allow-unknown-specs"])
+        self.assertEqual(code, 0)
+        self.assertFalse([c for c in fake.posts if c[1].endswith("/comments")], "no flag, no comment")
+
     def test_alt_text_rides_on_the_photo_container(self):
         """17 Oct 2026, Instagram SEO: the card's alt text goes to Meta with the container."""
         code, out, fake = self._publish(self._base_routes(),

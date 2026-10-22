@@ -87,8 +87,9 @@ engagement by hour, and Instagram's `online_followers` curve, so the slots are
 corrected from evidence.
 
 ## The community manager, the learning loop and the deep links (17 Oct 2026)
-**Replies.** `tools/brain_replies.py` + `.github/workflows/brain_replies.yml` (11:40 /
-14:40 / 20:40 WAT, ninety minutes after each posting slot). Lists our last three days of
+**Replies.** `tools/brain_replies.py` + `.github/workflows/brain_replies.yml` (8:00am,
+11:40am, 2:40pm, 7:40pm and 8:40pm WAT — within 30–45 minutes of every posting slot, since
+22 Oct 2026). Lists our last three days of
 posts on Threads (`/me/threads` → `/{id}/replies`), Instagram (`/me/media` →
 `/{id}/comments`) and the Facebook Page (`/{page}/posts` → `/{id}/comments?filter=toplevel`);
 drops our own comments, already-answered ones (ledger `logs/brain_replied.json` *and* the

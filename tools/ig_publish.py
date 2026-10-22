@@ -888,6 +888,27 @@ def refresh_token(token, app_id, app_secret):
     return parsed
 
 
+# The first comment under a post — set from `--first-comment`; `send()` posts it after a
+# successful publish and never lets it fail the publish. Why (research, 22 Oct 2026):
+# Instagram made two-way conversation a ranked signal (Mar 2026) and sends per reach the top
+# one for non-followers; a question under the post is the cheapest standing invitation to
+# reply, and the templates line lives there instead of cluttering the caption.
+FIRST_COMMENT = ""
+COMMENT_MAX = 2200
+
+
+def first_comment(token, media_id, text):
+    """POST /{media_id}/comments — the account's own first comment. Returns (ok, detail)."""
+    text = " ".join(str(text or "").split())[:COMMENT_MAX]
+    if not text:
+        return False, "empty"
+    try:
+        answer = call("POST", "/%s/comments" % media_id, token, {"message": text})
+    except ApiError as exc:
+        return False, "%s — %s" % (exc.cause, exc.blurb[:160])
+    return True, str((answer or {}).get("id") or "")
+
+
 def send(token, user_id, container_data, caption, kind, username="", upload=None):
     """container → (upload) → poll → publish → read back. The shared spine of every shape.
 
@@ -978,6 +999,15 @@ def send(token, user_id, container_data, caption, kind, username="", upload=None
         machine("mismatch", "verification", IG_MEDIA_ID=media_id)
         return 7
     print("✅ published %s %s — %s" % (kind, media_id, link or "(no permalink returned)"))
+    if FIRST_COMMENT:
+        ok, detail = first_comment(token, media_id, FIRST_COMMENT)
+        if ok:
+            print("  first comment posted (%s)" % (detail or "id not returned"))
+            print("IG_FIRST_COMMENT=posted")
+        else:
+            print("::warning title=first comment not posted::%s — the post itself is live; the comment "
+                  "needs instagram_business_manage_comments on this token" % detail)
+            print("IG_FIRST_COMMENT=refused")
     machine("sent", None, IG_MEDIA_ID=media_id, IG_PERMALINK=link or "")
     return 0
 
@@ -1021,6 +1051,9 @@ def main(argv=None):
     parser.add_argument("--wait-url", action="store_true",
                         help="poll the media URL until it is live (the site-deploy race)")
     parser.add_argument("--wait-url-deadline", type=int, default=600)
+    parser.add_argument("--first-comment", default="",
+                        help="post this as the account's own first comment once the media is live "
+                             "(a question + the templates line; never fails the publish)")
     parser.add_argument("--no-guard", action="store_true", help="skip the caption read-back check")
     parser.add_argument("--force", action="store_true", help="publish even if it is a duplicate")
     parser.add_argument("--allow-unknown-specs", action="store_true",
@@ -1028,6 +1061,8 @@ def main(argv=None):
     parser.add_argument("--refresh-token", action="store_true")
     parser.add_argument("--skip-pages", type=int, default=12)
     args = parser.parse_args(argv if argv is not None else sys.argv[1:])
+    global FIRST_COMMENT
+    FIRST_COMMENT = (args.first_comment or "").strip()
 
     token, user_id, app_id, app_secret = get_config()
 
