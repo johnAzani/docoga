@@ -439,15 +439,25 @@ jobs:
           SOCIAL_TOKEN_KEY: ${{ secrets.SOCIAL_TOKEN_KEY }}
           VIDEO_PATH: ${{ steps.short.outputs.video_path }}
           VIDEO_TOPIC: ${{ steps.short.outputs.topic }}
+          VIDEO_DESCRIPTION: ${{ steps.short.outputs.description }}
+          RUN_DATE: ${{ steps.settings.outputs.run_date }}
         run: |
           set -o pipefail
           python3 -m pip install --quiet cryptography >/dev/null 2>&1 || true
-          CAPTION="$VIDEO_TOPIC #DocOga #Nigeria #TenantRights #Lagos"
+          # TikTok's search caption (22 Oct 2026): search phrase first, the spoken hook, the
+          # tips, five tags — tools/reel_caption.py. It is recorded in full in
+          # logs/tiktok_drafts.json, which the admin dashboard shows with a Copy button.
+          printf '%s' "$VIDEO_DESCRIPTION" > /tmp/short_description.txt
+          CAPTION=$(python3 tools/reel_caption.py --platform tiktok --topic "$VIDEO_TOPIC" --description-file /tmp/short_description.txt --date "$RUN_DATE")
           python3 tools/tiktok_draft.py send --video "$VIDEO_PATH" --caption "$CAPTION" 2>&1 | tee /tmp/tiktok.log
           RESULT=$(sed -n 's/^TIKTOK_RESULT=//p' /tmp/tiktok.log | tail -1)
           echo "result=${RESULT:-unknown}" >> "$GITHUB_OUTPUT"
           echo "publish_id=$(sed -n 's/^TIKTOK_PUBLISH_ID=//p' /tmp/tiktok.log | tail -1)" >> "$GITHUB_OUTPUT"
-          echo "caption=$CAPTION" >> "$GITHUB_OUTPUT"
+          {
+            echo "caption<<DOCOGA_EOF"
+            printf '%s\n' "$CAPTION"
+            echo "DOCOGA_EOF"
+          } >> "$GITHUB_OUTPUT"
 
       # TikTok's inbox API carries no caption (only the audited Direct Post API does), so the
       # caption goes to the owner's phone: a Telegram DM from the channel bot with a tap-to-copy
@@ -463,7 +473,12 @@ jobs:
         run: |
           set -o pipefail
           python3 tools/owner_dm.py tiktok --caption "$CAPTION" --title "$VIDEO_TOPIC" 2>&1 | tee /tmp/owner_dm.log
-          echo "result=$(sed -n 's/^OWNER_DM=//p' /tmp/owner_dm.log | tail -1)" >> "$GITHUB_OUTPUT"
+          DM=$(sed -n 's/^OWNER_DM=//p' /tmp/owner_dm.log | tail -1)
+          echo "result=$DM" >> "$GITHUB_OUTPUT"
+          case "$DM" in
+            sent|linked|adopted) ;;
+            *) echo "::warning title=TikTok caption not texted::the owner has not sent the word 'owner' to @docoga_daily_bot yet — the caption is on the admin dashboard (Social → TikTok caption, Copy) and in logs/tiktok_drafts.json" ;;
+          esac
 
       # The same Short goes into the Telegram channel as a native video (17 Oct 2026): Telegram
       # counts its own views, autoplays, and readers forward the file. Never fatal: a Telegram
@@ -794,8 +809,8 @@ jobs:
                 echo "| TikTok | 📥 In your TikTok inbox (draft \`$TIKTOK_PUBLISH_ID\`) — open TikTok → Inbox → the upload notification → Post → paste the caption → Post |"
                 case "$DM" in
                   sent)    echo "| TikTok caption | 📲 sent to your Telegram as a tap-to-copy message |" ;;
-                  unknown) echo "| TikTok caption | \`$TIKTOK_CAPTION\` — to get it as a Telegram DM next time: open Telegram → @docoga_daily_bot → Start → send the word **owner** |" ;;
-                  *)       echo "| TikTok caption | \`$TIKTOK_CAPTION\` |" ;;
+                  unknown) echo "| TikTok caption | \`${TIKTOK_CAPTION//$'\n'/ ⏎ }\` — tap **Copy** on the admin dashboard (Social → TikTok caption); to get it as a Telegram DM next time: open Telegram → @docoga_daily_bot → Start → send the word **owner** |" ;;
+                  *)       echo "| TikTok caption | \`${TIKTOK_CAPTION//$'\n'/ ⏎ }\` — also on the admin dashboard with a Copy button |" ;;
                 esac ;;
               dormant)   echo "| TikTok | 💤 Not connected — three secrets (docs/TIKTOK_AUTOMATION.md) and every Short also lands in your TikTok inbox |" ;;
               duplicate|skipped) echo "| TikTok | ⏭️ $TIKTOK_RESULT — see the TikTok step |" ;;

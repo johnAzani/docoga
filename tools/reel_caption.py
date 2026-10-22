@@ -47,7 +47,23 @@ SITE = "https://docoga.com.ng"
 HASHTAGS = {
     "facebook": "#DocOga #NigeriaRent #TenantRights #LagosTenancy",
     "instagram": "#DocOga #NigeriaRent #TenantRights #LagosTenancy",
+    # TikTok (22 Oct 2026): five is the in-app ceiling since Aug 2025 — two broad, three niche.
+    "tiktok": "#DocOga #Nigeria #TenantRights #LagosRent #RentInNigeria",
 }
+# TikTok is a search engine first (2026): the caption's opening characters are weighted most
+# and are all a viewer sees before "more", so the search phrase leads. The brain's own SEO
+# line for the day wins; otherwise one of these, by day, so a week of drafts never repeats.
+TIKTOK_KEYWORDS = (
+    "Tenant rights Nigeria",
+    "Rent in Nigeria",
+    "Lagos tenancy law",
+    "Rent receipt Nigeria",
+    "Tenancy agreement Nigeria",
+    "Notice to quit Nigeria",
+    "House rent Nigeria",
+)
+TIKTOK_MAX = 2200       # TikTok's caption ceiling (raised from 2,000 late 2025)
+TIKTOK_TARGET = 360     # search-friendly (150–300 ideal, tips carry the indexed words); the feed shows ~100 before "more"
 HOOK_MAX = 125          # Instagram shows about this much before "more"
 TIPS_MAX = 3
 CAPTION_MAX = 2200      # Instagram's ceiling; Facebook's is far higher
@@ -143,10 +159,47 @@ def pack_for(day, root=ROOT):
     return pack if isinstance(pack, dict) and pack.get("status") == "approved" else None
 
 
+def tiktok_keyword(day, pack=None):
+    seo = ""
+    if pack:
+        try:
+            sys.path.insert(0, str(ROOT / "tools"))
+            from brain_drafts import seo_line  # noqa: WPS433 — optional, the pack may be absent
+            seo = _clean(seo_line(pack))
+        except Exception:  # noqa: BLE001 — the rotation is the fallback by design
+            seo = ""
+    if seo and 8 <= len(seo) <= 60:
+        return seo
+    return TIKTOK_KEYWORDS[day.timetuple().tm_yday % len(TIKTOK_KEYWORDS)]
+
+
+def tiktok_caption(topic, description, day, pack=None):
+    """Search phrase first, the spoken hook, two tips, a save line, bio pointer, five tags.
+    150–300 characters is the 2026 sweet spot for TikTok search; the ceiling is 2,200."""
+    hook = hook_from(description, topic)
+    keyword = tiktok_keyword(day, pack)
+    first = hook if hook.lower().startswith(keyword.lower()) else "%s: %s" % (keyword, hook)
+    tips = tips_from(description)[:2]
+    parts = [first]
+    if tips:
+        parts.append(" · ".join(tips))
+    parts.append("Save this for your next rent. " + send_line(day, pack))
+    parts.append("Free templates — link in bio (docoga.com.ng)")
+    parts.append(HASHTAGS["tiktok"])
+    text = "\n".join(parts)
+    while len(text) > TIKTOK_TARGET and tips:
+        tips = tips[:-1]
+        parts[1:2] = [" · ".join(tips)] if tips else []
+        text = "\n".join(parts)
+    return text[:TIKTOK_MAX]
+
+
 def caption(platform, topic, description, day, pack=None):
     platform = (platform or "facebook").strip().lower()
     if platform not in HASHTAGS:
-        raise ValueError("platform must be facebook or instagram, not %r" % platform)
+        raise ValueError("platform must be facebook, instagram or tiktok, not %r" % platform)
+    if platform == "tiktok":
+        return tiktok_caption(topic, description, day, pack)
     hook = hook_from(description, topic)
     tips = tips_from(description)
     parts = [hook]

@@ -59,6 +59,11 @@ THREADS = "https://graph.threads.net/v1.0"
 LOOKBACK_DAYS = 3
 MAX_PER_RUN = 12
 REPLY_MAX = 280
+# Reply depth (22 Oct 2026): Threads weighs replies of eight-plus words far more than a
+# "thanks!", and Facebook ranks on back-and-forth of five-plus words — so a reply that is
+# shorter than eight words, or is only thanks, is refused and the comment waits for a better one.
+REPLY_MIN_WORDS = 8
+THIN = re.compile(r"^(thank(s| you)|thanks? (so|very) much|appreciated?|welcome|noted|nice|true|exactly|yes|no|ok(ay)?)[\s!.,]*$", re.I)
 KEEP = 2000
 WAT = timezone(timedelta(hours=1))
 OUR_NAMES = {"docoga", "docoga.ng", "docoga_ng", "docogadaily"}
@@ -523,7 +528,8 @@ def prompt_for(pending, contexts):
     return """You are answering comments under DocOga's posts. For each comment write ONE reply, or skip it.
 
 HOUSE RULES
-- <= %d characters. Warm, direct, Nigerian English (pidgin if the comment is pidgin). No greeting padding, no emoji walls (one emoji at most), no hashtags.
+- <= %d characters and at least %d words. Warm, direct, Nigerian English (pidgin if the comment is pidgin). No greeting padding, no emoji walls (one emoji at most), no hashtags.
+- Every reply carries one fact or one question back — never "thanks!" alone. A reply of substance is counted like a post of ours; a one-word reply is not.
 - Facts: only the facts listed for that comment, and only for that state. Name the section when you state a rule. If the comment asks about another state, say the rule differs by state and ask which state. If you cannot answer from the facts, do not guess — say what document to make and where.
 - Never legal advice to their own case ("you should sue", "you will win"), never "stop paying rent", never a court outcome, never a price other than ₦2,000 / free to start. Never argue; if the comment is abuse or bait, skip.
 - A question deserves an answer first, then (optionally) the document and the link. Praise deserves one warm line and a question back. Someone sharing a story deserves acknowledgement and the one rule that protects them.
@@ -534,7 +540,7 @@ COMMENTS
 
 OUTPUT — one JSON object:
 {"replies": [{"n": 1, "comment_id": "…", "skip": false, "text": "the reply", "why": "one clause"}, …]}
-Include every comment once, in order; use "skip": true with an empty text for the ones not to answer.""" % (REPLY_MAX, "\n\n".join(blocks))
+Include every comment once, in order; use "skip": true with an empty text for the ones not to answer.""" % (REPLY_MAX, REPLY_MIN_WORDS, "\n\n".join(blocks))
 
 
 def lint_reply(text, ctx):
@@ -544,6 +550,11 @@ def lint_reply(text, ctx):
         return ["empty"]
     if len(t) > REPLY_MAX:
         p.append("%d characters; max %d" % (len(t), REPLY_MAX))
+    words = len(t.split())
+    if words < REPLY_MIN_WORDS:
+        p.append("thin reply: %d word(s); at least %d with one fact or one question back" % (words, REPLY_MIN_WORDS))
+    if THIN.match(t):
+        p.append("thanks-only reply")
     low = t.lower()
     for b in BANNED:
         if b in low:

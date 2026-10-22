@@ -422,7 +422,7 @@ def main(argv=None):
         print("TIKTOK_CAUSE=%s" % exc.cause)
         return {"credentials": 3, "permission": 3}.get(exc.cause, 6)
     ledger.setdefault("entries", []).append({"recorded_at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "key": key,
-                                             "publish_id": publish_id, "status": status, "caption": a.caption[:150],
+                                             "publish_id": publish_id, "status": status, "caption": a.caption[:2200],
                                              "video": os.path.basename(a.video), "run_id": os.environ.get("GITHUB_RUN_ID", "")})
     save_ledger(ledger)
     if status == "FAILED":
