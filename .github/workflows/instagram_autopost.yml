@@ -413,6 +413,10 @@ jobs:
             1|true|yes|on) FORCE_ON=1 ;;
           esac
           [ -n "$FORCE_ON" ] && ARGS+=(--force)
+          # The account's own first comment (22 Oct 2026): one answerable question + the templates
+          # line — two-way conversation is a ranked signal; never fails the post (tools/reel_caption.py).
+          FIRST_COMMENT=$(python3 tools/reel_caption.py --platform instagram --first-comment 2>/dev/null || true)
+          [ -n "$FIRST_COMMENT" ] && ARGS+=(--first-comment "$FIRST_COMMENT")
           # IG_ACCESS_TOKEN via env because argparse reads the environment; the value stays in
           # this step's process, never in the commit, the summary, or the issue body.
           set +e
@@ -428,6 +432,7 @@ jobs:
             echo
             echo "- result: \`${RESULT:-?}${CAUSE:+ · cause \`${CAUSE}\`}\`"
             echo "- permalink: ${PERMALINK:-not reported}"
+            echo "- first comment: $(sed -n 's/^IG_FIRST_COMMENT=//p' /tmp/ig_post.log | tail -1)"
             echo "- media: ${IG_SLIDE_URLS:-${IG_MEDIA_URL:-dispatch URL}} — served from the deployed site, which is why the wait exists"
             echo "- ledger: \`logs/instagram_sent.json\`"
           } >> "$GITHUB_STEP_SUMMARY"

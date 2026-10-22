@@ -18,9 +18,13 @@ name: Brain replies
 
 on:
   schedule:
-    - cron: '40 10 * * *'         # 11:40 WAT — after the Facebook morning post (09:30)
+    # 22 Oct 2026: five runs, each within 30–45 minutes of a posting slot — the first hour's
+    # replies decide a post's reach on Threads and Instagram (Mosseri; Meta, Mar 2026).
+    - cron: '0 7 * * *'           # 08:00 WAT — after the Threads morning card (07:20)
+    - cron: '40 10 * * *'         # 11:40 WAT — after Telegram (09:00) and the Facebook morning post (09:30)
     - cron: '40 13 * * *'         # 14:40 WAT — after Threads (13:10)
-    - cron: '40 19 * * *'         # 20:40 WAT — after Instagram (19:10) and the evening Story
+    - cron: '40 18 * * *'         # 19:40 WAT — after the Short went public (19:00) and Instagram (19:10)
+    - cron: '40 19 * * *'         # 20:40 WAT — after Threads' evening video (20:10) and the Story
   workflow_dispatch:
     inputs:
       dry_run:

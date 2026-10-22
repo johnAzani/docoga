@@ -6,6 +6,7 @@ import sys
 import tempfile
 import unittest
 from datetime import date
+import datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -143,6 +144,56 @@ class SixPmLane(unittest.TestCase):
         i_ig = self.WF.index("- name: Instagram Reel — the same Short on @docoga.ng")
         i_commit = self.WF.index("- name: Commit the publish ledger")
         self.assertTrue(i_hand < i_fb < i_ig < i_commit)
+
+    def test_the_short_also_lands_in_both_stories_trays_after_the_reels(self):
+        """22 Oct 2026: Stories sit at the top of the app through the 7–9pm peak."""
+        fb = self.step("Facebook Story — the Short in the tray")
+        ig = self.step("Instagram Story — the Short in the tray")
+        for body in (fb, ig):
+            self.assertIn("continue-on-error: true", body)
+            self.assertIn("::warning", body, "a missed Story is a warning, never a red publish")
+        self.assertIn("scripts/facebook_story_daily.py --slot video --video=", fb)
+        self.assertIn("steps.upload.outputs.video_id != ''", fb)
+        self.assertIn("--story-video-url \"$HANDOFF_URL\"", ig, "the hosted twin — Meta fetches the file already parked for Threads")
+        self.assertIn("steps.ig_reel.outputs.result == 'sent'", ig, "only after the Reel step opened the token box")
+        i_ig_reel = self.WF.index("- name: Instagram Reel — the same Short on @docoga.ng")
+        i_fb_story = self.WF.index("- name: Facebook Story — the Short in the tray")
+        i_ig_story = self.WF.index("- name: Instagram Story — the Short in the tray")
+        i_commit = self.WF.index("- name: Commit the publish ledger")
+        self.assertTrue(i_ig_reel < i_fb_story < i_ig_story < i_commit)
+        summary = self.step("Write the run summary")
+        self.assertIn("steps.fb_story.outputs.result", summary)
+        self.assertIn("steps.ig_story.outputs.result", summary)
+
+    def test_the_instagram_reel_and_the_feed_post_carry_a_first_comment(self):
+        ig = self.step("Instagram Reel — the same Short on @docoga.ng")
+        self.assertIn("--first-comment \"$FIRST_COMMENT\"", ig)
+        self.assertIn("reel_caption.py --platform instagram --first-comment --date", ig)
+        feed = (ROOT / ".github" / "workflows" / "instagram_autopost.yml").read_text(encoding="utf-8")
+        self.assertIn("reel_caption.py --platform instagram --first-comment", feed)
+        self.assertIn('ARGS+=(--first-comment "$FIRST_COMMENT")', feed)
+
+
+class FirstComment(unittest.TestCase):
+    def test_one_question_then_the_templates_line_and_the_brain_cta_wins_when_it_asks(self):
+        day = datetime.date(2026, 10, 22)
+        text = rc.first_comment(day, None)
+        question, blank, line = text.split("\n")
+        self.assertTrue(question.endswith("?") or question.endswith("."), question)
+        self.assertEqual(blank, "")
+        self.assertEqual(line, rc.TEMPLATES_LINE)
+        self.assertIn("docoga.com.ng", line)
+        seen = {rc.first_comment(day + datetime.timedelta(days=i), None).split("\n")[0] for i in range(8)}
+        self.assertEqual(len(seen), len(rc.QUESTIONS), "eight days, eight different questions")
+        for q in rc.QUESTIONS:
+            self.assertLessEqual(len(q), 140)
+            self.assertNotIn("follow", q.lower(), "no engagement bait — Threads and Instagram penalise it")
+            self.assertNotIn("like", q.lower().split())
+            self.assertNotIn("share", q.lower().split())
+        pack = {"post": {"cta": "Which clause caught you last time?"}}
+        self.assertTrue(rc.first_comment(day, pack).startswith("Which clause caught you last time?\n"))
+        pack = {"post": {"cta": "Download the free receipt at docoga.com.ng."}}
+        self.assertEqual(rc.first_comment(day, pack), text, "a CTA that is not a question is not the question")
 
 
 if __name__ == "__main__":

@@ -67,6 +67,29 @@ SEND_LINES = (
 )
 
 
+# The account's own first comment under an Instagram post or Reel (22 Oct 2026): ONE question
+# that a renter can answer in five words — Instagram ranks two-way conversation (Mar 2026) and
+# every reply is a second impression for the post — plus the templates line, which lives here
+# so the caption stays clean. The brain's `post.cta` wins when it is a question.
+QUESTIONS = (
+    "Which state are you renting in? Tell us below — the rules differ.",
+    "When is your rent next due? January renewals, this one is for you.",
+    "Did your last landlord give you a receipt without being asked? Yes or no.",
+    "Agent or landlord — who collected your last rent?",
+    "Has anyone ever kept your caution fee? What reason did they give?",
+    "How many months' notice did your last landlord give you?",
+    "Do you have your tenancy agreement on your phone right now?",
+    "What is the one clause you wish you had read before signing?",
+)
+TEMPLATES_LINE = "Free receipt, agreement and notice templates: docoga.com.ng"
+
+
+def first_comment(day, pack=None):
+    cta = _clean(((pack or {}).get("post") or {}).get("cta")) if pack else ""
+    question = cta if (cta.endswith("?") and len(cta) <= 140) else QUESTIONS[(day.timetuple().tm_yday + 3) % len(QUESTIONS)]
+    return question + "\n\n" + TEMPLATES_LINE
+
+
 def _clean(text):
     return " ".join(str(text or "").split())
 
@@ -148,6 +171,7 @@ def main(argv=None):
     parser.add_argument("--description-file", help="file holding the Short's YouTube description")
     parser.add_argument("--description", default="")
     parser.add_argument("--date", help="YYYY-MM-DD (default: today in Lagos)")
+    parser.add_argument("--first-comment", action="store_true", help="print the first comment instead of the caption")
     args = parser.parse_args(argv)
     description = args.description
     if args.description_file:
@@ -157,6 +181,9 @@ def main(argv=None):
     else:
         from datetime import datetime, timedelta, timezone
         day = datetime.now(timezone(timedelta(hours=1))).date()
+    if args.first_comment:
+        sys.stdout.write(first_comment(day, pack_for(day)) + "\n")
+        return 0
     sys.stdout.write(caption(args.platform, args.topic, description, day, pack_for(day)) + "\n")
     return 0
 

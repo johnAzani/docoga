@@ -616,11 +616,12 @@ jobs:
           fi
           printf '%s' "$VIDEO_DESCRIPTION" > /tmp/short_description.txt
           CAPTION=$(python3 tools/reel_caption.py --platform instagram --topic "$VIDEO_TOPIC" --description-file /tmp/short_description.txt --date "$RUN_DATE")
+          FIRST_COMMENT=$(python3 tools/reel_caption.py --platform instagram --first-comment --date "$RUN_DATE")
           TRIAL="--trial"
           case "$(printf '%s' "${IG_TRIAL_REELS:-on}" | tr '[:upper:]' '[:lower:]')" in 0|false|no|off) TRIAL="" ;; esac
           set +e
           IG_API_PATH=instagram-login IG_ACCESS_TOKEN="$(cat /tmp/ig_token)" \
-            python3 tools/ig_publish.py --video-url "$HANDOFF_URL" --caption "$CAPTION" --thumb-offset-ms 0 --wait-url --wait-url-deadline 300 $TRIAL \
+            python3 tools/ig_publish.py --video-url "$HANDOFF_URL" --caption "$CAPTION" --first-comment "$FIRST_COMMENT" --thumb-offset-ms 0 --wait-url --wait-url-deadline 300 $TRIAL \
             2>&1 | tee /tmp/ig_short_reel.log
           STATUS=${PIPESTATUS[0]}
           set -e
@@ -639,6 +640,48 @@ jobs:
             --date "$RUN_DATE" --run-id "$GITHUB_RUN_ID" --size-bytes "$(stat -c%s "$VIDEO_PATH" 2>/dev/null || echo 0)" \
             || echo "::warning title=Instagram Reel not recorded::the Reel is live but logs/instagram_sent.json was not updated — a re-run inside 30 days could publish it again"
           echo "::notice title=Instagram Reel published::$VIDEO_TOPIC → ${PERMALINK:-(no permalink reported)}"
+
+      # The same Short in both Stories trays (22 Oct 2026). Stories sit at the top of the app
+      # through the 7–9pm peak and are the one surface where a link sticker is tappable; the
+      # Mon/Thu morning Reel already does this on Facebook (facebook_autopost.yml). Never fails
+      # the publish; the same SHORT_REELS switch.
+      - name: Facebook Story — the Short in the tray
+        id: fb_story
+        if: always() && steps.upload.outputs.video_id != '' && steps.short.outputs.paused != 'yes' && (vars.SHORT_REELS || 'on') != 'off'
+        continue-on-error: true
+        env:
+          FB_PAGE_ACCESS_TOKEN: ${{ secrets.FB_PAGE_ACCESS_TOKEN }}
+          FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
+          VIDEO_PATH: ${{ steps.short.outputs.video_path }}
+        run: |
+          set -o pipefail
+          if [ -z "$FB_PAGE_ACCESS_TOKEN" ] || [ -z "$FB_PAGE_ID" ]; then
+            echo "result=dormant" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          set +e
+          python3 scripts/facebook_story_daily.py --slot video --video="$VIDEO_PATH" 2>&1 | tee /tmp/fb_short_story.log
+          STATUS=${PIPESTATUS[0]}
+          set -e
+          if [ "$STATUS" -eq 0 ]; then echo "result=sent" >> "$GITHUB_OUTPUT"; else
+            echo "::warning title=Facebook Story not posted::scripts/facebook_story_daily.py exited $STATUS — see the lines above; the publish is unaffected"
+            echo "result=failed" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Instagram Story — the Short in the tray
+        id: ig_story
+        if: always() && steps.ig_reel.outputs.result == 'sent'
+        continue-on-error: true
+        env:
+          HANDOFF_URL: ${{ steps.handoff.outputs.url }}
+        run: |
+          set -o pipefail
+          set +e
+          IG_API_PATH=instagram-login IG_ACCESS_TOKEN="$(cat /tmp/ig_token)" \
+            python3 tools/ig_publish.py --story-video-url "$HANDOFF_URL" --wait-url --wait-url-deadline 120 \
+            2>&1 | tee /tmp/ig_short_story.log
+          set -e
+          RESULT=$(sed -n 's/^IG_RESULT=//p' /tmp/ig_short_story.log | tail -1)
+          echo "result=${RESULT:-failed}" >> "$GITHUB_OUTPUT"
+          [ "$RESULT" = "sent" ] || echo "::warning title=Instagram Story not posted::IG_RESULT=${RESULT:-?} — see the lines above; the Reel and the publish are unaffected"
 
       - name: Commit the publish ledger
         if: steps.guard.outputs.skip != 'yes' && steps.short.outputs.paused != 'yes'
@@ -699,6 +742,8 @@ jobs:
           FB_REEL_URL: ${{ steps.fb_reel.outputs.url }}
           IG_REEL_RESULT: ${{ steps.ig_reel.outputs.result }}
           IG_REEL_URL: ${{ steps.ig_reel.outputs.url }}
+          FB_STORY_RESULT: ${{ steps.fb_story.outputs.result }}
+          IG_STORY_RESULT: ${{ steps.ig_story.outputs.result }}
           TIKTOK_PUBLISH_ID: ${{ steps.tiktok.outputs.publish_id }}
           TIKTOK_CAPTION: ${{ steps.tiktok.outputs.caption }}
           DM: ${{ steps.dm.outputs.result }}
@@ -772,6 +817,8 @@ jobs:
               "") : ;;
               *)         echo "| Instagram Reel | ⚠️ $IG_REEL_RESULT — see the Instagram Reel step; the YouTube publish is unaffected |" ;;
             esac
+            [ -n "$FB_STORY_RESULT" ] && echo "| Facebook Story | $([ "$FB_STORY_RESULT" = sent ] && echo '✅ the Short is in the Page tray for 24 hours' || echo "⚠️ $FB_STORY_RESULT — see the Facebook Story step") |"
+            [ -n "$IG_STORY_RESULT" ] && echo "| Instagram Story | $([ "$IG_STORY_RESULT" = sent ] && echo '✅ the Short is in the @docoga.ng tray for 24 hours' || echo "⚠️ $IG_STORY_RESULT — see the Instagram Story step") |"
             [ -n "$SOUNDTRACK" ] && echo "| Soundtrack | $SOUNDTRACK |"
             [ -n "$NARRATOR" ] && echo "| Narrator | $NARRATOR |"
             echo "| Ledger | \`logs/youtube_published.json\` |"
