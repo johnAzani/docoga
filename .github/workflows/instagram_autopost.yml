@@ -303,7 +303,8 @@ jobs:
           echo "IG_SLIDE_URLS=${SLIDE_URLS}" >> "$GITHUB_ENV"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -f "$OUT" "$STORY_OUT"
+          git add -f "$OUT"
+          if [ -n "$STORY_OUT" ] && [ -e "$STORY_OUT" ]; then git add -f "$STORY_OUT"; fi   # separately: a missing path voids a joint add
           [ -n "$SLIDE_URLS" ] && git add -f site/social/"${DAY}"-instagram-slide-*.jpg
           if git diff --staged --quiet; then
             echo "Render already committed on this branch — nothing to push."

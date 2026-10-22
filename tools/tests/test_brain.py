@@ -700,6 +700,30 @@ class DeepDiveHealerTests(DeepDiveWriterTests):
         facts_by_id = law_index.by_id(law_index.facts_for("lagos"))
         self.assertTrue(any("section 1" in p and "words" in p for p in brain.deepdive_problems(ep, facts_by_id)))
 
+    def test_a_style_word_is_rewritten_a_legal_overclaim_still_refuses(self):
+        """22 Oct 2026: two nights were refused for 'game-changer' and a 104-word section."""
+        facts_by_id = law_index.by_id(law_index.facts_for("lagos"))
+        ep = self.episode()
+        ep["sections"][2]["narration"] = ep["sections"][2]["narration"] + " For a tenant this is a game-changer."
+        notes = brain.heal_deepdive(ep, log=lambda *a: None)
+        self.assertNotIn("game-changer", ep["sections"][2]["narration"])
+        self.assertIn("big difference", ep["sections"][2]["narration"])
+        self.assertTrue(any("style word" in n for n in notes), notes)
+        self.assertFalse([p for p in brain.deepdive_problems(ep, facts_by_id) if "banned" in p])
+        ep["sections"][3]["narration"] = ep["sections"][3]["narration"] + " This receipt is court-proof."
+        brain.heal_deepdive(ep, log=lambda *a: None)
+        self.assertTrue(any("banned phrase" in p and "court-proof" in p for p in brain.deepdive_problems(ep, facts_by_id)),
+                        "a legal over-claim is the writer's error, never healed away")
+
+    def test_a_section_a_word_short_of_the_ask_is_not_refused(self):
+        facts_by_id = law_index.by_id(law_index.facts_for("lagos"))
+        ep = self.episode()
+        words = ep["sections"][7]["narration"].split()
+        ep["sections"][7]["narration"] = " ".join((words * 10)[:104]) + "."
+        self.assertFalse([p for p in brain.deepdive_problems(ep, facts_by_id) if "section 8" in p and "words" in p])
+        ep["sections"][7]["narration"] = " ".join(words[:80]) + "."
+        self.assertTrue([p for p in brain.deepdive_problems(ep, facts_by_id) if "section 8" in p and "words" in p])
+
     def test_every_attempt_is_written_to_the_ledger_with_its_reasons(self):
         import shutil
         episodes = Path(self.tmp.name) / "episodes"
@@ -762,7 +786,8 @@ class WorkflowContractTests(unittest.TestCase):
         self.assertIn("contents: write", self.wf)
         self.assertIn("issues: write", self.wf)
         self.assertIn("cancel-in-progress: false", self.wf)
-        self.assertIn("git add -A brain/drafts brain/feedback.md brain/newsdesk.json brain/listening.json brain/answers logs/brain_said.json logs/brain_deepdive.json episodes site/guides site/sitemap.xml", self.wf)
+        self.assertIn("for path in brain/drafts brain/feedback.md brain/newsdesk.json brain/listening.json brain/answers logs/brain_said.json logs/brain_deepdive.json episodes site/guides site/sitemap.xml; do", self.wf)
+        self.assertIn('if [ -e "$path" ]; then git add -A "$path"; fi', self.wf, "one path at a time — a joint add with one missing path adds nothing (22 Oct 2026)")
         self.assertIn("gh issue create", self.wf)
         self.assertIn("brain-automation", self.wf)
 

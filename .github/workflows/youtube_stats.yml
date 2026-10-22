@@ -76,6 +76,6 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git pull --rebase --autostash origin "$BRANCH" || { echo "::warning title=Stats not committed::could not rebase on $BRANCH"; exit 1; }
-          git add logs/youtube_stats.json docs/YOUTUBE_PERFORMANCE.md
+          for path in logs/youtube_stats.json docs/YOUTUBE_PERFORMANCE.md; do if [ -e "$path" ]; then git add "$path"; fi; done   # one at a time (22 Oct 2026)
           git add logs/search_console.json 2>/dev/null || true
           git diff --staged --quiet || { git commit -m "Auto: YouTube stats snapshot $(date +%F) [skip ci]" && git push origin "HEAD:$BRANCH"; }

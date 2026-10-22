@@ -909,6 +909,38 @@ class EveryWorkflowTests(unittest.TestCase):
                                          "%s / %s: run block is not valid bash\n%s"
                                          % (path.name, step.get("name"), check.stderr.strip()[:400]))
 
+    def test_no_git_add_names_two_paths_at_once(self):
+        """`git add a b c` adds NOTHING when one path matches no file ("fatal: pathspec did
+        not match") — and `2>/dev/null || true` hides it. 22 Oct 2026: that one line kept
+        every brain decision off main since 17 Oct (brain/answers exists on Mondays only)
+        and lost the TikTok drafts, the Threads hand-over record and an Instagram Reel from
+        the Shorts lane (logs/telegram_owner.json never existed). One path per `git add`,
+        each behind `[ -e "$path" ]`."""
+        import re
+        import shlex
+        for path, doc in self._workflows():
+            for job_name, job in (doc.get("jobs") or {}).items():
+                for step in job.get("steps") or []:
+                    script = step.get("run") or ""
+                    for line in script.splitlines():
+                        line = line.split("#", 1)[0].strip()
+                        if "git add" not in line:
+                            continue
+                        for cmd in re.split(r"&&|\|\||;", line):
+                            cmd = cmd.strip()
+                            if not cmd.startswith("git add"):
+                                continue
+                            try:
+                                words = shlex.split(cmd)
+                            except ValueError:
+                                words = cmd.split()
+                            paths = [w for w in words[2:] if not w.startswith("-") and not re.match(r"^\d*[<>]", w)
+                                     and not (words[words.index(w) - 1].endswith(">") or words[words.index(w) - 1] in ("2>", ">"))]
+                            with self.subTest(workflow=path.name, job=job_name, step=step.get("name"), line=line):
+                                self.assertLessEqual(len(paths), 1,
+                                                     "%s / %s: `%s` names %d paths in one `git add` — one missing path voids them all; loop with [ -e \"$path\" ]"
+                                                     % (path.name, step.get("name"), cmd, len(paths)))
+
     def test_no_dispatch_input_is_interpolated_into_a_shell_command(self):
         """`${{ inputs.x }}` inside `run:` is code execution, with secrets in scope.
 
