@@ -108,12 +108,33 @@ class Build(unittest.TestCase):
     def test_tiktok_connection_is_read_from_the_box_header_only(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = make_root(tmp)
-            self.assertEqual(df.build(NOW, root)["tiktok"], {"connected": False, "since": None, "expires": None})
+            tk = df.build(NOW, root)["tiktok"]
+            self.assertEqual({k: tk[k] for k in ("connected", "since", "expires")}, {"connected": False, "since": None, "expires": None})
             (root / "logs" / "tiktok_refresh_token.box").write_text(json.dumps(
                 {"v": 1, "alg": "A256GCM", "name": "TIKTOK_REFRESH_TOKEN", "nonce": "n", "ciphertext": "SECRET-CT", "minted_at": "2026-10-18T09:00:00+00:00", "expires_at": "2027-10-18"}))
             feed = df.build(NOW, root)
-        self.assertEqual(feed["tiktok"], {"connected": True, "since": "2026-10-18T09:00:00+00:00", "expires": "2027-10-18"})
+        self.assertEqual({k: feed["tiktok"][k] for k in ("connected", "since", "expires")},
+                         {"connected": True, "since": "2026-10-18T09:00:00+00:00", "expires": "2027-10-18"})
         self.assertNotIn("SECRET-CT", json.dumps(feed), "ciphertext never travels to the dashboard")
+
+    def test_the_latest_tiktok_draft_caption_rides_on_the_feed_for_the_copy_button(self):
+        """22 Oct 2026: the owner never got the caption — the inbox API carries none and the
+        Telegram DM waits for a handshake. The dashboard shows the full caption instead."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = make_root(tmp)
+            (root / "logs" / "tiktok_drafts.json").write_text(json.dumps({"entries": [
+                {"recorded_at": "2026-10-18T06:58:41+00:00", "status": "SEND_TO_USER_INBOX", "video": "docoga_short_20261018.mp4", "caption": "old"},
+                {"recorded_at": "2026-10-22T17:19:25+00:00", "status": "SEND_TO_USER_INBOX", "video": "docoga_short_20261022.mp4",
+                 "caption": "Rent in Nigeria: Skip the photos.\nSave this.\n#DocOga #Nigeria"}]}), encoding="utf-8")
+            tk = df.build(NOW, root)["tiktok"]
+            self.assertFalse(tk["owner_linked"])
+            self.assertEqual(tk["draft"]["video"], "docoga_short_20261022.mp4")
+            self.assertEqual(tk["draft"]["caption"], "Rent in Nigeria: Skip the photos.\nSave this.\n#DocOga #Nigeria")
+            self.assertEqual(tk["draft"]["at"], "2026-10-22T17:19:25Z")
+            (root / "logs" / "telegram_owner.json").write_text("{}", encoding="utf-8")
+            self.assertTrue(df.build(NOW, root)["tiktok"]["owner_linked"])
+            (root / "logs" / "tiktok_drafts.json").write_text("{}", encoding="utf-8")
+            self.assertIsNone(df.build(NOW, root)["tiktok"]["draft"])
 
     def test_the_live_repo_builds_without_error(self):
         feed = df.build(NOW)

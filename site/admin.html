@@ -183,6 +183,11 @@ footer{font-size:11.5px;color:#94A3B8;text-align:center;padding:16px 0 4px}
         <div id="social-extras" style="margin-top:10px"></div>
       </div>
     </div>
+    <div class="panel" id="tiktok-panel">
+      <h2>TikTok caption — paste this in the app</h2>
+      <p class="hint" style="margin:0 0 8px">TikTok’s inbox upload carries no caption (only audited apps may send one), so the Short waits in your TikTok inbox and the words wait here. Open TikTok → Inbox → the upload notification → Post → paste → Post.</p>
+      <div id="tiktok-caption"></div>
+    </div>
   </section>
 
   <section id="v-content" class="hide">
@@ -745,8 +750,25 @@ function renderSocial(){
   const tiktokChip=tk?(tk.connected?chip('connected'+(tk.since?' · since '+lagosDay(String(tk.since).slice(0,10)):''),'ok'):chip('not connected — tap Connect on /tiktok-connect.html','warn')):chip('see the Content tab','');
   const rows=[['Clock (rings the lanes every 5 min)',clockChip],['Brain (writes the day’s content)',brainChip],['TikTok (every Short to your inbox as a draft)',tiktokChip],['Plan source',chip(S.planFrom==='clock'?'the clock’s own table':'not available','')],['Board refreshed',chip(t.at?ago(t.at):'—','ok')]];
   $('social-health').innerHTML='<table><tbody>'+rows.map(r=>'<tr><td style="width:46%">'+r[0]+'</td><td>'+r[1]+'</td></tr>').join('')+'</tbody></table>';
+  renderTikTokCaption(tk);
   const ex=t.extras||[];
   $('social-extras').innerHTML=ex.length?'<p class="hint" style="margin:0 0 4px">Runs outside the plan today (manual or re-runs):</p><table><tbody>'+ex.map(x=>'<tr><td>'+esc(lagos(x.started))+'</td><td><b>'+esc(x.lane||x.name)+'</b></td><td>'+statusChip(x.status,'care')+(x.cause?'<br><span class="hint" style="color:#991B1B">'+esc(x.cause)+'</span>':'')+'</td><td><a class="mini" style="text-decoration:none" href="'+esc(x.url)+'" target="_blank" rel="noopener">log</a></td></tr>').join('')+'</tbody></table>':'';
+}
+function renderTikTokCaption(tk){
+  const box=$('tiktok-caption');if(!box)return;
+  const d=tk&&tk.draft;
+  if(!d||!d.caption){box.innerHTML='<p class="hint" style="margin:0">No draft recorded yet — the next weekday Short lands in your TikTok inbox at 6:00pm and its caption appears here.</p>';return;}
+  const when=d.at?lagosWhen(Date.parse(d.at)):'';
+  box.innerHTML='<p class="hint" style="margin:0 0 6px">Draft sent '+esc(when)+(d.video?' · '+esc(d.video):'')+(tk.owner_linked?' · also texted to your Telegram':' · <b>not texted</b>: open Telegram → @docoga_daily_bot → Start → send the word <b>owner</b> once, and every caption arrives as a DM')+'</p>'+
+    '<textarea id="tiktok-caption-text" readonly style="width:100%;min-height:150px;font:14px/1.45 system-ui,sans-serif;padding:10px;border:1px solid #CBD5E1;border-radius:10px;background:#F8FAFC;color:#0F172A;box-sizing:border-box"></textarea>'+
+    '<div style="display:flex;gap:8px;align-items:center;margin-top:8px"><button id="tiktok-copy" class="mini" type="button" style="padding:8px 14px;border-radius:999px;border:0;background:#0B2A4A;color:#fff;font-weight:600">Copy caption</button><span id="tiktok-copy-note" class="hint"></span></div>';
+  const ta=$('tiktok-caption-text');ta.value=d.caption;
+  $('tiktok-copy').addEventListener('click',async()=>{
+    const note=$('tiktok-copy-note');
+    try{if(navigator.clipboard&&navigator.clipboard.writeText){await navigator.clipboard.writeText(ta.value);}else{ta.focus();ta.select();document.execCommand('copy');}
+      note.textContent='Copied — now paste it in TikTok.';}
+    catch(err){ta.focus();ta.select();note.textContent='Hold the text above and tap Copy.';}
+  });
 }
 $('social-today').addEventListener('click',async e=>{
   const b=e.target.closest('button[data-run]');if(!b||!SOCIAL)return;

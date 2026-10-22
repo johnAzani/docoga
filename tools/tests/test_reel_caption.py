@@ -174,6 +174,53 @@ class SixPmLane(unittest.TestCase):
         self.assertIn('ARGS+=(--first-comment "$FIRST_COMMENT")', feed)
 
 
+class TikTokCaption(unittest.TestCase):
+    """22 Oct 2026: TikTok is a search engine — phrase first, five tags, 150–360 characters."""
+    DESC = ("Skip the photos. Pay for old damage.\n\nIn this Short:\n• Photograph every wall, tap and socket on day one\n"
+            "• Send the photos to the landlord the same day\n• Keep the inventory with the receipt\n\nWatch the full Deep-Dive: https://youtu.be/x")
+
+    def test_search_phrase_leads_then_hook_tips_save_line_bio_and_five_tags(self):
+        day = datetime.date(2026, 10, 22)
+        text = rc.caption("tiktok", "Moving in", self.DESC, day, None)
+        lines = text.split("\n")
+        self.assertEqual(lines[0], "Rent in Nigeria: Skip the photos. Pay for old damage.")
+        self.assertIn("Photograph every wall, tap and socket on day one · Send the photos to the landlord the same day", lines[1])
+        self.assertTrue(lines[2].startswith("Save this for your next rent. "), lines[2])
+        self.assertIn("link in bio (docoga.com.ng)", lines[3])
+        self.assertEqual(lines[-1], rc.HASHTAGS["tiktok"])
+        self.assertEqual(lines[-1].count("#"), 5, "TikTok's in-app ceiling since Aug 2025")
+        self.assertNotIn("http", text, "TikTok captions carry no tappable link — the bio does")
+        self.assertLessEqual(len(text), rc.TIKTOK_TARGET)
+        self.assertGreaterEqual(len(text), 150)
+
+    def test_the_keyword_rotates_by_day_and_the_brains_seo_line_wins(self):
+        day = datetime.date(2026, 10, 22)
+        seen = {rc.tiktok_keyword(day + datetime.timedelta(days=i), None) for i in range(7)}
+        self.assertEqual(seen, set(rc.TIKTOK_KEYWORDS))
+        pack = {"tool": "notice-to-quit", "state": "lagos", "post": {"headline": "Six months, in writing.", "lines": []}, "visual": {"kicker": "Notice to quit"}}
+        self.assertEqual(rc.tiktok_keyword(day, pack), "Notice to quit Nigeria (Lagos)")
+        self.assertTrue(rc.caption("tiktok", "x", self.DESC, day, pack).startswith("Notice to quit Nigeria (Lagos): Skip the photos."))
+
+    def test_a_long_description_drops_tips_before_it_breaks_the_target(self):
+        long_desc = "This is a very long spoken hook about rent in Nigeria that goes on and on for quite a while before it ever gets to a full stop, truly. More.\n\nIn this Short:\n• " + ("x" * 120) + "\n• " + ("y" * 120) + "\n"
+        text = rc.caption("tiktok", "x", long_desc, datetime.date(2026, 10, 23), None)
+        self.assertLessEqual(len(text), rc.TIKTOK_TARGET)
+        self.assertEqual(text.split("\n")[-1], rc.HASHTAGS["tiktok"])
+
+    def test_the_six_pm_lane_sends_this_caption_and_keeps_it_in_full(self):
+        wf = (ROOT / ".github" / "workflows" / "youtube_scheduled.yml").read_text(encoding="utf-8")
+        start = wf.index("- name: Send the Short to the TikTok inbox")
+        body = wf[start: wf.find("\n      - name: ", start + 1)]
+        self.assertIn("reel_caption.py --platform tiktok --topic", body)
+        self.assertIn('caption<<DOCOGA_EOF', body, "a multi-line caption needs a heredoc output")
+        draft = (ROOT / "tools" / "tiktok_draft.py").read_text(encoding="utf-8")
+        self.assertIn('"caption": a.caption[:2200]', draft, "the ledger keeps the whole caption — the dashboard shows it")
+        self.assertIn("TikTok caption not texted", wf, "no handshake yet → a warning that points at the dashboard")
+        admin = (ROOT / "site" / "admin.html").read_text(encoding="utf-8")
+        self.assertIn('id="tiktok-copy"', admin)
+        self.assertIn("tk.draft", admin)
+
+
 class FirstComment(unittest.TestCase):
     def test_one_question_then_the_templates_line_and_the_brain_cta_wins_when_it_asks(self):
         day = datetime.date(2026, 10, 22)

@@ -161,12 +161,24 @@ def posted(root=ROOT, cap=POSTED_CAP):
 
 
 def tiktok(root=ROOT):
-    """Is the TikTok lane connected? Read from the sealed box's header — never its contents."""
+    """Is the TikTok lane connected? Read from the sealed box's header — never its contents.
+
+    Since 22 Oct 2026 the dict also carries the latest inbox draft's full caption: TikTok's inbox
+    API accepts no caption and the Telegram DM needs a handshake the owner has not done, so the
+    dashboard is the place he copies it from (owner, 22 Oct: "I am not having the TikTok captions")."""
     try:
         payload = json.loads((root / "logs" / "tiktok_refresh_token.box").read_text(encoding="utf-8"))
+        out = {"connected": bool(payload.get("ciphertext")), "since": payload.get("minted_at"), "expires": payload.get("expires_at")}
     except (OSError, ValueError):
-        return {"connected": False, "since": None, "expires": None}
-    return {"connected": bool(payload.get("ciphertext")), "since": payload.get("minted_at"), "expires": payload.get("expires_at")}
+        out = {"connected": False, "since": None, "expires": None}
+    out["owner_linked"] = (root / "logs" / "telegram_owner.json").is_file()
+    tk = _load_from(root, "logs/tiktok_drafts.json")
+    entries = [e for e in ((tk.get("entries") if isinstance(tk, dict) else []) or []) if isinstance(e, dict) and _stamp(e.get("recorded_at"))]
+    latest = max(entries, key=lambda e: _stamp(e.get("recorded_at"))) if entries else None
+    out["draft"] = ({"at": _stamp(latest.get("recorded_at")).isoformat().replace("+00:00", "Z"), "video": str(latest.get("video") or ""),
+                     "caption": str(latest.get("caption") or "")[:2200], "status": str(latest.get("status") or "")}
+                    if latest else None)
+    return out
 
 
 def youtube(root=ROOT):

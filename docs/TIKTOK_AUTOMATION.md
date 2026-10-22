@@ -107,7 +107,12 @@ lands, `tools/owner_dm.py` DMs it from **@docoga_daily_bot** as a tap-to-copy bl
 taps that follow. One-time setup — open Telegram → **@docoga_daily_bot** → **Start** → send the
 word **owner**. The next run adopts that chat (`logs/telegram_owner.json`, committed with the
 ledger) and texts every caption after that. The run summary says `📲 sent` or shows the setup
-line. Removing the paste itself needs the **Content Posting API audit** (free): in the TikTok
+line. **Without the handshake (22 Oct 2026: "I am not having the TikTok captions")** the caption
+is still never lost: it is recorded in full in `logs/tiktok_drafts.json` and the admin dashboard
+(docoga.com.ng/admin.html → *Social* → **TikTok caption**) shows the latest one with a **Copy**
+button; the run prints a warning that says so. The caption itself is TikTok's search shape
+since 22 Oct — search phrase first, the spoken hook, two tips, a save line, "link in bio",
+five tags (`tools/reel_caption.py --platform tiktok`; docs/ALGORITHM_PLAYBOOK.md §5). Removing the paste itself needs the **Content Posting API audit** (free): in the TikTok
 developer portal, the app's Content Posting API product → *Apply for audit* → Terms of Service
 URL `https://docoga.com.ng/terms.html`, Privacy Policy URL `https://docoga.com.ng/privacy.html`,
 and a short screen recording of the posting flow (creator-info call, privacy picker with no

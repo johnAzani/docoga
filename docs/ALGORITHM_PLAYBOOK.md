@@ -100,19 +100,37 @@ percentage viewed and shares per Short; `tools/brain_scorecard.py` reads saves a
 per Instagram media and ranks hook types; both land in the Monday scorecard once the brain
 commits (fixed 22 Oct, PR #126).
 
-## 5. Next levers, in order of expected effect (Founder's brief items)
+## 5. Shipped 22 Oct 2026, night — TikTok search captions and reply depth
 
-1. **Carousels for the Instagram feed post** on Tuesdays/Thursdays (the second-chance
-   impression Instagram gives carousels) — the renderer already exists.
-2. **Threads reply depth** — replies of eight-plus words with one fact and one question,
-   never "thanks!".
-3. **Series** — a numbered run ("Receipt law, 1 of 5") across a week so a profile visit
+**TikTok is a search engine first.** TikTok indexes spoken words, on-screen text and the
+caption; the caption's opening characters are weighted most and are all a viewer sees
+before "more"; three to five hashtags, five being the in-app ceiling since Aug 2025; 150–300
+characters is the search sweet spot, 2,200 the limit (metricool Aug 2026, rapidtags Sep 2026,
+usefastlane Sep 2026). The old draft caption was the topic plus four tags. Now
+`tools/reel_caption.py --platform tiktok` writes: *search phrase* ("Rent in Nigeria",
+"Lagos tenancy law", … or the brain's SEO line for the day) → the spoken hook → two tips →
+a save line → "link in bio" → five tags. **Why the owner saw no captions:** TikTok's inbox
+API accepts none (only audited Direct Post does), and the Telegram DM that carries it waits
+for a one-time handshake he has not done. So the full caption is now recorded in
+`logs/tiktok_drafts.json` and shown on the admin dashboard (Social → *TikTok caption*) with
+a **Copy** button; the run warns when it could not text it.
+
+**Reply depth.** Threads weighs replies of eight-plus words; Facebook ranks on back-and-forth
+of five-plus words. `tools/brain_replies.py` now refuses any reply under eight words or that
+is only thanks (`REPLY_MIN_WORDS`, `THIN`), and the prompt asks for one fact or one question
+back in every reply.
+
+## 6. Next levers, in order of expected effect (Founder's brief items)
+
+1. **Series** — a numbered run ("Receipt law, 1 of 5") across a week so a profile visit
    has somewhere to go.
-4. **Hook bans from the swipe test** — once two Monday pulls have filled
+2. **TikTok on-screen keyword** — the search phrase as the first caption chunk of the Short
+   (TikTok reads burned-in text in the first three seconds).
+3. **Hook bans from the swipe test** — once two Monday pulls have filled
    `averageViewPercentage`, the bottom quartile's hook types go to the brain as "do not open
    like this" (`docs/HOOK_LEDGER.md`).
 
-## 6. What we will not do, and why
+## 7. What we will not do, and why
 
 Engagement pods, bought followers/likes/views, comment bots, follow/unfollow, mass DMs,
 reposting other creators' videos, watermark-stripped reuploads, "like if you agree" bait.

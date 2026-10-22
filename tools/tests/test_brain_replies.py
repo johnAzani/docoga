@@ -112,7 +112,13 @@ class LintTests(unittest.TestCase):
     def test_the_gates(self):
         self.assertTrue(any("not on the shelf" in p for p in br.lint_reply("Section 47 says six months.", self.ctx)))
         self.assertTrue(any("not ours" in p for p in br.lint_reply("It costs ₦5,000 at the court.", self.ctx)))
-        self.assertEqual(br.lint_reply("The Oga Pass is ₦2,000 a year.", self.ctx), [])
+        self.assertEqual(br.lint_reply("The Oga Pass is ₦2,000 a year — every document you need, unlimited.", self.ctx), [])
+        # Reply depth (22 Oct 2026): Threads weighs replies of eight-plus words; "thanks!" is not a reply.
+        self.assertTrue(any("thin reply" in p for p in br.lint_reply("The Oga Pass is ₦2,000 a year.", self.ctx)))
+        self.assertTrue(any("thanks-only" in p for p in br.lint_reply("Thank you!", self.ctx)))
+        self.assertTrue(any("thanks-only" in p for p in br.lint_reply("Thanks so much.", self.ctx)))
+        self.assertEqual(br.lint_reply("Thank you — which state are you renting in? The notice rule differs.", self.ctx), [])
+        self.assertIn("at least %d words" % br.REPLY_MIN_WORDS, br.prompt_for([], []))
         self.assertTrue(any("forbidden" in p for p in br.lint_reply("Stop paying rent until he fixes it.", self.ctx)))
         self.assertTrue(any("forbidden" in p for p in br.lint_reply("Take him to court, you will win.", self.ctx)))
         self.assertTrue(any("link" in p for p in br.lint_reply("See https://example.com/notice", self.ctx)))
@@ -160,16 +166,16 @@ class RunTests(unittest.TestCase):
         self.assertFalse(self.ledger.exists())
 
     def test_dry_run_publishes_nothing_and_writes_no_ledger(self):
-        net, _, result = self.run_threads([{"n": 1, "comment_id": "r1", "skip": False, "text": "Six months' notice — s.13(1)(e)."}], dry_run=True)
+        net, _, result = self.run_threads([{"n": 1, "comment_id": "r1", "skip": False, "text": "For a yearly tenancy in Lagos it is six months' written notice — s.13(1)(e)."}], dry_run=True)
         self.assertEqual(result["answered"], 1)
         self.assertFalse(net.posts)
         self.assertFalse(self.ledger.exists())
-        self.assertIn("Six months", br.summary_md(result))
+        self.assertIn("six months", br.summary_md(result))
 
     def test_missing_write_permission_is_reported_with_the_scope(self):
         routes = [r for r in threads_routes() if r[0] != ("POST", "/me/threads")]
         routes.append((("POST", "/me/threads"), (403, {"error": {"message": "(#200) Requires threads_content_publish permission", "code": 200}})))
-        _, _, result = self.run_threads([{"n": 1, "comment_id": "r1", "skip": False, "text": "Six months' notice — s.13(1)(e)."}], routes=routes)
+        _, _, result = self.run_threads([{"n": 1, "comment_id": "r1", "skip": False, "text": "For a yearly tenancy in Lagos it is six months' written notice — s.13(1)(e)."}], routes=routes)
         self.assertEqual(result["answered"], 0)
         self.assertEqual(result["capabilities"]["threads"], "missing: threads_content_publish")
         self.assertIn("mint that token ONCE with the full list in docs/TOKENS.md", br.summary_md(result))
@@ -291,7 +297,7 @@ class CommentToDmTests(unittest.TestCase):
 
     def test_without_the_messaging_scope_the_lane_parks_the_dm_and_names_the_scope(self):
         net = self._ig_net(dm_status=403)
-        result = br.run(http=net, gemini_http=gemini([{"n": 1, "comment_id": "ic1", "skip": False, "text": "Here: https://docoga.com.ng/notice-to-quit-lagos.html"},
+        result = br.run(http=net, gemini_http=gemini([{"n": 1, "comment_id": "ic1", "skip": False, "text": "The notice to quit for Lagos is free to start here: https://docoga.com.ng/notice-to-quit-lagos.html"},
                                                       {"n": 2, "comment_id": "ic2", "skip": True}]),
                         env=ENV, now=NOW, only="instagram", log=lambda *_: None, sleep=lambda *_: None, ledger=[], packs=PACKS)
         self.assertEqual(result["dms"], 0)
