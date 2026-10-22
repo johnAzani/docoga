@@ -217,7 +217,9 @@ jobs:
             echo "::warning title=TikTok ledger not committed::could not rebase on $BRANCH — if the refresh token rotated, the next run will say so and ask for one Connect tap."
             exit 1
           fi
-          git add -f logs/tiktok_drafts.json logs/tiktok_refresh_token.box logs/telegram_owner.json 2>/dev/null || true
+          for path in logs/tiktok_drafts.json logs/tiktok_refresh_token.box logs/telegram_owner.json; do
+            if [ -e "$path" ]; then git add -f "$path"; fi   # one at a time: a missing path must not void the others
+          done
           if git diff --staged --quiet; then
             echo "Nothing changed — nothing to commit."
             exit 0

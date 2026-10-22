@@ -16,3 +16,32 @@ closed issue is never a mystery. Newest first.
 | #26 | Deep-Dive dd2 · 14 Oct 2026 | A free-tier quota pause was treated as a failure | #37 — empty bucket is exit 5 (pause); Narrator warm-up resumes at the reset; episodes publish since | 17 Oct 2026 |
 | #16 | Telegram · 11 Oct 2026 | MarkdownV2 escaping swallowed the links | #54 — links tagged before `escape()`; lane green daily | 17 Oct 2026 |
 | #12 | YouTube Shorts · 9 Oct 2026 | Pre-MotionStudio renderer | #22 onward — MotionStudio + `SHORTS_VOICE=required`; Shorts publish Tue/Wed/Fri | 17 Oct 2026 |
+
+## 22 Oct 2026 — one `git add` line kept every brain decision off main for five nights
+
+**Seen:** the dashboard's new "plan in plain words" row showed the 1:30am Brain as *not
+recorded* two nights running, and Threads' 8:10pm slot carried a card, not the Short, on
+the first night Threads videos were live. `logs/shorts_media.json` and
+`logs/brain_deepdive.json` did not exist on `main`; no "Auto: brain …" commit had landed
+since 17 Oct; the TikTok drafts ledger stopped on 18 Oct; last night's Instagram Reel
+(`Dew7X5tlVdH`, published by the 6:00pm lane) was unrecorded.
+
+**Cause:** `git add path1 path2 path3 2>/dev/null || true`. When ONE pathspec matches no
+file, git prints `fatal: pathspec '…' did not match any files` and adds **nothing** — the
+other paths included. `brain/answers` exists on Mondays only; `logs/telegram_owner.json`
+has never existed (the owner has not sent the bot the word "owner"). The `|| true` kept the
+step green. Every pack the brain approved, the newsdesk, the feedback file, the Deep-Dive
+attempts ledger, the Threads hand-over record, the TikTok draft ids and the Instagram Reel
+record were written on the runner and thrown away with it — which is also why every lane
+posted "from the rotation" and the Shorts rotation (six scripts) repeated a topic within a
+week (15 → 21 Oct).
+
+**Fix (PR #126):** every multi-path `git add` in every workflow is now a loop — `for path
+in …; do if [ -e "$path" ]; then git add "$path"; fi; done` — and
+`test_workflow_contract.test_no_git_add_names_two_paths_at_once` forbids the old shape.
+The Instagram Reel record was backfilled by hand. Two Deep-Dive gate slips from the same
+nights (a 104-word section against a 105 floor; the style word "game-changer") are healed
+rather than refused.
+
+**Lesson:** a green step that commits is not a commit. The dashboard's evidence rows found
+in a day what three weeks of green runs hid — keep judging by ledgers, never by conclusions.

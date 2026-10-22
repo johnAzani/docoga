@@ -299,7 +299,15 @@ jobs:
           BRANCH: ${{ github.event.repository.default_branch }}
           INDEXNOW_KEY: ${{ vars.INDEXNOW_KEY }}
         run: |
-          git add -A brain/drafts brain/feedback.md brain/newsdesk.json brain/listening.json brain/answers logs/brain_said.json logs/brain_deepdive.json episodes site/guides site/sitemap.xml 2>/dev/null || true
+          # One path at a time, each only if it exists. `git add a b c` with ONE path that
+          # matches nothing adds NOTHING ("fatal: pathspec did not match") — and `|| true`
+          # hid it. 22 Oct 2026: that is why no brain decision had reached main since 17 Oct
+          # (brain/answers exists on Mondays only): every pack, the newsdesk, the Deep-Dive
+          # attempts — written on the runner, never committed, so the lanes posted from the
+          # rotation every day. tools/tests/test_workflow_contract.py now forbids the shape.
+          for path in brain/drafts brain/feedback.md brain/newsdesk.json brain/listening.json brain/answers logs/brain_said.json logs/brain_deepdive.json episodes site/guides site/sitemap.xml; do
+            if [ -e "$path" ]; then git add -A "$path"; fi
+          done
           if [ -n "${INDEXNOW_KEY:-}" ] && [ -f "site/${INDEXNOW_KEY}.txt" ]; then git add "site/${INDEXNOW_KEY}.txt"; fi
           if git diff --staged --quiet; then
             echo "nothing new to commit"

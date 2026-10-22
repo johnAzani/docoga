@@ -654,7 +654,13 @@ jobs:
             exit 1
           fi
           git add logs/youtube_published.json
-          git add -f logs/youtube_boosts.json logs/tiktok_drafts.json logs/tiktok_refresh_token.box logs/telegram_owner.json logs/shorts_media.json logs/facebook_reels.json logs/instagram_sent.json 2>/dev/null || true
+          # One path at a time, each only if it exists: `git add a b c` with one missing path adds
+          # nothing at all (22 Oct 2026 — logs/telegram_owner.json never existed, so the TikTok
+          # drafts, the Threads hand-over record and last night's Instagram Reel were never
+          # committed; Threads never found a Short to carry).
+          for path in logs/youtube_boosts.json logs/tiktok_drafts.json logs/tiktok_refresh_token.box logs/telegram_owner.json logs/shorts_media.json logs/facebook_reels.json logs/instagram_sent.json; do
+            if [ -e "$path" ]; then git add -f "$path"; fi
+          done
           if git diff --staged --quiet; then
             echo "Ledger unchanged — nothing to commit."
             exit 0

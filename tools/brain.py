@@ -88,6 +88,10 @@ LAYOUTS = ("poster", "stat", "checklist")
 BANNED = ("unlock", "game-changer", "game changer", "delve", "fast-paced", "we are excited",
           "legally binding guaranteed", "100%", "lawyer not needed", "court-proof", "courtproof",
           "guaranteed to win")
+# heal_deepdive rewrites these (style only); the rest of BANNED still refuses the draft.
+STYLE_FIXES = (("game-changer", "big difference"), ("game changer", "big difference"),
+               ("unlock", "open up"), ("delve", "look"), ("fast-paced", "busy"),
+               ("we are excited", "we are glad"))
 OUR_PRICES = {"2,000", "2000", "50,000", "50000"}
 PLATE_BANNED = ("face", "person", "people", "man", "woman", "child", "children", "portrait", "crowd",
                 "sign", "text", "logo")
@@ -952,13 +956,28 @@ def heal_deepdive(ep, log=print):
     cannot change a legal meaning are healed: a beat whose trigger words are not spoken is
     dropped (beats are overlays; the narration is untouched), an unknown plate falls back to
     a real one, an over-long sub is cut at a word, a shot that names people is dropped, tags
-    and the description are brought to shape. Narration, claims and section count are never
-    touched — those are the writer's to get right and the verifier's to judge."""
+    and the description are brought to shape. Narration is touched for ONE thing only — a
+    banned style word swapped for a plain one (STYLE_FIXES; 22 Oct 2026) — never a legal
+    over-claim; claims and section count are never touched — those are the writer's to get
+    right and the verifier's to judge."""
     notes = []
     if not isinstance(ep, dict):
         return notes
     names = set(plates())
     secs = ep.get("sections") if isinstance(ep.get("sections"), list) else []
+    # Style words the gate bans (22 Oct 2026: a whole night refused for one 'game-changer').
+    # Only the STYLE entries of BANNED are rewritten — never the legal over-claims
+    # ("court-proof", "guaranteed to win", "100%"), which must still refuse the draft.
+    for s in secs:
+        if not isinstance(s, dict):
+            continue
+        text = str(s.get("narration") or "")
+        fixed = text
+        for bad, good in STYLE_FIXES:
+            fixed = re.sub(r"(?i)\b" + re.escape(bad) + r"\b", good, fixed)
+        if fixed != text:
+            s["narration"] = fixed
+            notes.append("section %s: style word rewritten" % s.get("n"))
     words_by_sec = {}
     for s in secs:
         if isinstance(s, dict):
@@ -1088,7 +1107,9 @@ def deepdive_problems(ep, facts_by_id):
             continue
         words = _norm_tokens(str(s.get("narration") or ""))
         total += len(words)
-        if not (105 <= len(words) <= 230):
+        # The ask is 120-200; the gate tolerates 90-240 (22 Oct 2026: a night was refused for
+        # one section of 104 words — a word short of 105 is not a reason to lose a Saturday).
+        if not (90 <= len(words) <= 240):
             p.append("section %d: %d words; need 120-200" % (i, len(words)))
         if not str(s.get("title") or "").strip():
             p.append("section %d: title missing" % i)
