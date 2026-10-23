@@ -40,6 +40,7 @@ Run:  python3 tools/shorts_reel.py [--date YYYY-MM-DD] [--out PATH] [--dry-run]
 import argparse
 import json
 import os
+import re
 import sys
 from datetime import date, datetime
 from pathlib import Path
@@ -83,6 +84,45 @@ def series_kicker(ledger=SHORTS_LEDGER, env=None):
     seen = {r.get("video_id") for r in rows if isinstance(r, dict)
             and r.get("video_id") and str(r.get("state", "")).lower() in ("published", "scheduled", "listed")}
     return "%s · No. %d" % (SERIES_KICKER, len(seen) + 1) if seen else SERIES_KICKER
+KICKER_MAX = 30   # tracked small caps at size 30 across 1080 px; longer drops to size 26
+
+
+def search_kicker(env=None, day=None, ledger=SHORTS_LEDGER):
+    """The opening masthead as a *search phrase*: `RENT IN NIGERIA · No. 7` (23 Oct 2026).
+
+    TikTok and YouTube read burned-in text in the first three seconds and weight it close to
+    the spoken words (TikTok SEO 2026 — on-screen text "very high", caption "high"); the
+    cover is also the frame both platforms index as the thumbnail. The series number stays
+    (a returning-viewer cue); the brand lives in the CTA chip and the caption. The phrase is
+    the same one the TikTok caption leads with (tools/reel_caption.py tiktok_keyword), so
+    screen, caption and search query agree. `SHORTS_SEARCH_KICKER=off` → the DOCOGA kicker;
+    any other value → used verbatim (uppercased)."""
+    env = os.environ if env is None else env
+    raw = str(env.get("SHORTS_SEARCH_KICKER", "")).strip()
+    base = series_kicker(ledger=ledger, env=env)
+    if raw.lower() == "off":
+        return base
+    if raw:
+        return " ".join(raw.split()).upper()
+    number = base.split("No. ")[-1] if "No. " in base else ""
+    try:
+        import reel_caption
+        from datetime import date as _date, datetime as _dt, timedelta as _td, timezone as _tz
+        day = day or _dt.now(_tz(_td(hours=1))).date()
+        phrase = reel_caption.tiktok_keyword(day, reel_caption.pack_for(day))
+    except Exception:  # noqa: BLE001 — the kicker is decoration; the reel must render
+        phrase = "Rent in Nigeria"
+    phrase = re.sub(r"\s*\(.*?\)", "", phrase).strip()
+    if not (6 <= len(phrase) <= 26):
+        phrase = "Rent in Nigeria"
+    text = phrase.upper() + (" · No. %s" % number if number else "")
+    return text
+
+
+def kicker_size(text, base=30):
+    return base if len(text) <= KICKER_MAX else base - 4
+
+
 CTA_SUPPORT = "Free tenant documents. No signup."
 DISCLAIMER_KICKER = "GENERAL INFO · RULES VARY BY STATE"
 FOLLOW_KICKER = "FOLLOW " + HANDLE.upper()
@@ -143,7 +183,8 @@ def reel_from_topic(topic, out_path, platform="YouTube Shorts"):
     scenes = []
 
     setup, consequence = split_hook(hook["text"])
-    hook_beats = [ms.Beat("kicker", "kicker", series_kicker(), size=30, y=470, color=ms.FAINT)]
+    masthead = search_kicker()
+    hook_beats = [ms.Beat("kicker", "kicker", masthead, size=kicker_size(masthead), y=470, color=ms.FAINT)]
     if consequence:
         # STAKES hook (the pattern the channel's numbers reward — see
         # generate_short_video.py): the careless act lands first in white, the

@@ -212,9 +212,10 @@ def render(reel):
     d = ImageDraw.Draw(img)
 
     if kicker:
-        f = ms.font("SemiBold", 32)
+        ksize = 32 if len(kicker) <= 30 else 28   # a search-phrase masthead can run long
+        f = ms.font("SemiBold", ksize)
         ms.ctracked(d, y, kicker, f, ms.MUTED, 8)
-        y += _line_h("SemiBold", 32) + 34
+        y += _line_h("SemiBold", ksize) + 34
     if setup_lines:
         f = ms.font("Black", setup_size)
         lh = int(_line_h("Black", setup_size) * 0.90)

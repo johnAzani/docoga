@@ -177,3 +177,49 @@ class BrandGateTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SearchKickerTests(unittest.TestCase):
+    """23 Oct 2026: the opening masthead is a search phrase — TikTok and YouTube read burned-in
+    text in the first three seconds, and the cover is the frame they index."""
+
+    def test_the_masthead_is_the_days_search_phrase_plus_the_episode_number(self):
+        import shorts_reel
+        ledger = ROOT / "logs" / "youtube_published.json"
+        text = shorts_reel.search_kicker(env={}, day=date(2026, 10, 23), ledger=ledger)
+        self.assertRegex(text, r"^[A-Z ]+ · No\. \d+$", text)
+        self.assertNotIn("DOCOGA", text, "the brand lives in the CTA chip; the masthead is for search")
+        self.assertTrue("NIGERIA" in text or "LAGOS" in text, text)
+        seen = {shorts_reel.search_kicker(env={}, day=date(2026, 10, 23) + timedelta(days=i), ledger="/nonexistent").split(" · ")[0] for i in range(7)}
+        self.assertGreaterEqual(len(seen), 5, "a week of covers does not repeat one phrase")
+        for phrase in seen:
+            self.assertLessEqual(len(phrase), 26, phrase)
+        self.assertEqual(shorts_reel.search_kicker(env={"SHORTS_SEARCH_KICKER": "off"}, ledger="/nonexistent"), shorts_reel.SERIES_KICKER)
+        self.assertEqual(shorts_reel.search_kicker(env={"SHORTS_SEARCH_KICKER": "Lagos rent law"}, ledger="/nonexistent"), "LAGOS RENT LAW")
+        self.assertEqual(shorts_reel.kicker_size("RENT IN NIGERIA · No. 9"), 30)
+        self.assertEqual(shorts_reel.kicker_size("TENANCY AGREEMENT NIGERIA · No. 12"), 26)
+
+    def test_the_hook_scene_opens_with_it_and_the_caption_leads_with_the_same_phrase(self):
+        import shorts_reel
+        import reel_caption
+        sys.path.insert(0, str(ROOT / "scripts"))
+        import generate_short_video as g
+        import os
+        os.environ["STOCK_MEDIA"] = "off"
+        os.environ["SHORTS_SEARCH_KICKER"] = ""
+        try:
+            reel = shorts_reel.reel_from_topic(g.VIDEO_SCRIPTS[0], "/tmp/search_kicker_test.mp4")
+        finally:
+            os.environ.pop("SHORTS_SEARCH_KICKER", None)
+        hook = reel["scenes"][0]
+        kicker = next(b for b in hook["beats"] if b["kind"] == "kicker")
+        self.assertRegex(kicker["text"], r"^[A-Z ]+ · No\. \d+$")
+        phrase = kicker["text"].split(" · ")[0]
+        from datetime import datetime, timezone
+        today = datetime.now(timezone(timedelta(hours=1))).date()
+        self.assertEqual(phrase, re.sub(r"\s*\(.*?\)", "", reel_caption.tiktok_keyword(today, reel_caption.pack_for(today))).upper(),
+                         "screen and TikTok caption agree on the phrase")
+        src = (ROOT / "tools" / "shorts_reel.py").read_text(encoding="utf-8")
+        self.assertIn("masthead = search_kicker()", src)
+        cover = (ROOT / "tools" / "short_cover.py").read_text(encoding="utf-8")
+        self.assertIn("len(kicker) <= 30", cover, "a long search phrase steps the cover masthead down, never clips")
