@@ -22,7 +22,7 @@
 | Accent (blue) | `#4A8CFF` | Links, CTAs, progress bars, borders |
 | Accent (yellow) | `#FFC93C` | One per slide — underline sweep, price highlight, badges |
 | Accent (red) | `#FF5A5F` | Strike-through ONLY — never for anything else |
-| Nigerian flag green | `#008751` | Event frames only (Independence, Democracy Day) |
+| Nigerian flag green | `#008751` | Event frames only (Independence, Democracy Day) — the 12 px green-white-green ribbon above the masthead, drawn by `tools/social_card.py` from `tools/events_calendar.py`; greeting days (Christmas, Eid, Easter, New Year, Children's Day, Workers' Day) change the masthead words only (`docs/SPECIAL_DAYS.md`) |
 
 **LOCKED:** These 10 colors. No others. No mixing. No "close enough."
 

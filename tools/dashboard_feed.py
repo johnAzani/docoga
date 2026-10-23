@@ -492,6 +492,21 @@ def _lagos_text(stamp):
     return "%s %d %s, %d:%02d%s" % (w.strftime("%a"), w.day, w.strftime("%b"), hour, w.minute, "am" if w.hour < 12 else "pm")
 
 
+def events(now, within=45, cap=3):
+    """The special days coming up (tools/events_calendar.py) — the owner asked (23 Oct 2026) that
+    Christmas, Independence Day, Children's Day, Democracy Day, Eid … be in the content; this is
+    where he sees the machine already knows the dates and the angle it will take."""
+    try:
+        import events_calendar
+    except ImportError:
+        return []
+    today = now.astimezone(LAGOS).date()
+    rows = events_calendar.events_on(today)
+    rows = [dict(r, in_days=0) for r in rows] + events_calendar.upcoming(today, within)
+    return [{"name": r["name"], "date": r["date"], "in_days": r["in_days"], "approx": bool(r.get("approx")),
+             "greeting": r.get("greeting") or "", "frame": r.get("frame") or "", "angle": r["angle"]} for r in rows[:cap]]
+
+
 def build(now=None, root=ROOT):
     now = now or datetime.now(timezone.utc)
     feed = {
@@ -504,6 +519,7 @@ def build(now=None, root=ROOT):
         "deepdive_next": deepdive_next(root),
         "tiktok": tiktok(root),
         "watch": watch(now, root),
+        "events": events(now),
     }
     feed["brain_note"] = ("the brain has an approved pack for today" if feed["plan"] and feed["plan"][0]["approved"]
                           else "no approved pack for today — the lanes post from the rotation (the brain had no quota, or every draft failed a gate)")

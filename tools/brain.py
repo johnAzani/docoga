@@ -58,6 +58,7 @@ from zoneinfo import ZoneInfo
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 import brain_drafts as drafts  # noqa: E402
+import events_calendar  # noqa: E402
 import gemini_text  # noqa: E402
 import law_index  # noqa: E402
 import newsdesk  # noqa: E402
@@ -161,10 +162,10 @@ def calendar_notes(day):
         notes.append("January: rent-renewal season; new agreements; school-fees pressure.")
     if m in (11, 12):
         notes.append("Year end: 'landlord wants me out before Christmas'; advance-rent demands for next year.")
-    if (m, d) == (10, 1):
-        notes.append("Independence Day — flag-green frame allowed today.")
-    if (m, d) == (5, 29) or (m, d) == (6, 12):
-        notes.append("Democracy Day — flag-green frame allowed today.")
+    # Special days (23 Oct 2026, owner's ask): Christmas, Independence Day, Children's Day,
+    # Democracy Day, Eid, Easter, New Year … each with its tenancy angle, from the one calendar
+    # the card renderer and the dashboard also read (tools/events_calendar.py).
+    notes.extend(events_calendar.brain_notes(day))
     if m in (8, 9):
         notes.append("NYSC postings and students renting their first room.")
     if 4 <= m <= 10:
