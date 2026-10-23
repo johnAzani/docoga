@@ -168,7 +168,7 @@ class SixPmLane(unittest.TestCase):
     def test_the_instagram_reel_and_the_feed_post_carry_a_first_comment(self):
         ig = self.step("Instagram Reel — the same Short on @docoga.ng")
         self.assertIn("--first-comment \"$FIRST_COMMENT\"", ig)
-        self.assertIn("reel_caption.py --platform instagram --first-comment --date", ig)
+        self.assertIn("reel_caption.py --platform instagram --first-comment --description-file /tmp/short_description.txt --date", ig)
         feed = (ROOT / ".github" / "workflows" / "instagram_autopost.yml").read_text(encoding="utf-8")
         self.assertIn("reel_caption.py --platform instagram --first-comment", feed)
         self.assertIn('ARGS+=(--first-comment "$FIRST_COMMENT")', feed)

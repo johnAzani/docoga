@@ -27,7 +27,7 @@ TIMEOUT = (10, 180)
 SITE = "https://docoga.com.ng/?s=tg"
 
 
-def caption_for(title, url, parent_url="", parent_title=""):
+def caption_for(title, url, parent_url="", parent_title="", series_chain=""):
     """The Short's caption. `parent_url` (17 Oct 2026, owner: promote the Deep-Dives everywhere)
     names the nine-minute episode this Short trails, so the channel's video post is a trailer
     with its feature attached, not a dead end."""
@@ -35,6 +35,10 @@ def caption_for(title, url, parent_url="", parent_title=""):
     lines = [title] if title else []
     if parent_url:
         lines.append("▶ The full Deep-Dive (9 min)%s: %s" % ((" — " + parent_title.strip()) if parent_title.strip() else "", parent_url))
+    chain = str(series_chain or "").strip()
+    if chain:
+        # Series week (23 Oct 2026): which part this is, the earlier parts by link, tomorrow's hour.
+        lines.append(chain)
     lines.append("Free Nigerian tenancy documents: %s" % SITE)
     if url:
         lines.append("Watch on YouTube: %s" % url)
@@ -62,10 +66,10 @@ def thumbnail_bytes(cover):
         return None
 
 
-def send(token, chat_id, video, title, url, post=None, parent_url="", parent_title="", cover=""):
+def send(token, chat_id, video, title, url, post=None, parent_url="", parent_title="", cover="", series_chain=""):
     """→ (state, detail). state ∈ sent | link | failed."""
     post = post or requests.post
-    caption = caption_for(title, url, parent_url, parent_title)
+    caption = caption_for(title, url, parent_url, parent_title, series_chain=series_chain)
     path = Path(video) if video else None
     if path and path.is_file() and path.stat().st_size <= MAX_BYTES:
         try:
@@ -107,6 +111,7 @@ def main(argv=None):
     ap.add_argument("--parent-url", default="", help="the Deep-Dive this Short trails (its link rides in the caption)")
     ap.add_argument("--parent-title", default="")
     ap.add_argument("--cover", default="", help="the Short's cover JPEG (its Telegram thumbnail)")
+    ap.add_argument("--series-chain", default="", help="series week: 'Part 2 of 5 · …' + the earlier parts' links (one per line)")
     a = ap.parse_args(argv)
     token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
     chat_id = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
@@ -114,7 +119,8 @@ def main(argv=None):
         print("TELEGRAM_VIDEO=skipped")
         print("Telegram secrets not present in this job — the Short stays on YouTube only.")
         return 0
-    state, detail = send(token, chat_id, a.video, a.title, a.url, parent_url=a.parent_url, parent_title=a.parent_title, cover=a.cover)
+    state, detail = send(token, chat_id, a.video, a.title, a.url, parent_url=a.parent_url, parent_title=a.parent_title, cover=a.cover,
+                         series_chain=a.series_chain)
     detail = detail.replace(token, "<token>")
     if state == "failed":
         print("::warning title=Telegram video not posted::%s" % detail)

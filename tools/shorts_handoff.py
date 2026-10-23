@@ -59,7 +59,7 @@ def save(data, path=LEDGER):
 
 
 def host(video, video_id, title, date=None, ttl_hours=DEFAULT_TTL_HOURS, ledger=LEDGER, env=None,
-         http=None, sleeper=None, now=None, log=print):
+         http=None, sleeper=None, now=None, log=print, series="", series_topic=""):
     """Host the file and record it. Returns the record; raises media_host.HostError."""
     kwargs = {"env": env, "http": http}
     if sleeper is not None:
@@ -74,7 +74,10 @@ def host(video, video_id, title, date=None, ttl_hours=DEFAULT_TTL_HOURS, ledger=
               "url": put["url"], "name": put["name"], "bytes": put["bytes"],
               "hosted_at": now.isoformat(timespec="seconds"),
               "expires_at": (now + timedelta(seconds=put["ttl"])).isoformat(timespec="seconds"),
-              "run_id": os.environ.get("GITHUB_RUN_ID", "")}
+              "run_id": os.environ.get("GITHUB_RUN_ID", ""),
+              # the week's series frame (23 Oct 2026): "Part 2 of 5 · Rent receipt law" and the
+              # Threads topic tag the evening video post wears; empty on a plain day
+              "series": " ".join(str(series or "").split()), "series_topic": " ".join(str(series_topic or "").split())}
     data = load(ledger)
     data["latest"] = record
     data["history"] = ([r for r in data["history"] if r.get("date") != record["date"]] + [record])[-KEEP:]
@@ -113,6 +116,8 @@ def main(argv=None):
     h.add_argument("--title", default="")
     h.add_argument("--date")
     h.add_argument("--ttl-hours", type=float, default=DEFAULT_TTL_HOURS)
+    h.add_argument("--series", default="", help='"Part 2 of 5 · Rent receipt law" on a series day')
+    h.add_argument("--series-topic", default="", help="the Threads topic tag for the video post on a series day")
     h.add_argument("--ledger", default=str(LEDGER))
     t = sub.add_parser("today")
     t.add_argument("--date")
@@ -122,7 +127,7 @@ def main(argv=None):
     if args.cmd == "host":
         try:
             host(args.video, args.video_id, args.title, date=args.date, ttl_hours=args.ttl_hours,
-                 ledger=Path(args.ledger))
+                 ledger=Path(args.ledger), series=args.series, series_topic=args.series_topic)
         except media_host.HostError as exc:
             print("::warning title=Short not handed to Threads::%s — tonight's Threads post carries the card instead" % exc)
             print("HANDOFF_URL=")
@@ -133,6 +138,8 @@ def main(argv=None):
         print("THREADS_VIDEO_URL=%s" % row["url"])
         print("THREADS_VIDEO_TITLE=%s" % " ".join(str(row.get("title") or "").split()))
         print("THREADS_VIDEO_ID=%s" % row.get("video_id", ""))
+        print("THREADS_VIDEO_SERIES=%s" % " ".join(str(row.get("series") or "").split()))
+        print("THREADS_VIDEO_TOPIC=%s" % " ".join(str(row.get("series_topic") or "").split()))
     else:
         print("no Short hosted for %s (or its hosting ends within %d minutes) — the card posts as usual"
               % (args.date or lagos_today(), args.min_minutes))

@@ -8,6 +8,7 @@ underline, the grain. Nothing else may render a Short that this lane uploads
 (docs/BRAND_STYLE.md: "every piece of content follows this or it doesn't ship").
 """
 
+import json
 import os
 import re
 import sys
@@ -77,8 +78,33 @@ def describe(script, link=None):
         "https://docoga.com.ng"
     )
     body.append(FOLLOW)
-    body.append(HASHTAGS)
+    # The series hashtag first: YouTube shows the first three above the title, and the hashtag
+    # page is one more place the five parts sit together (23 Oct 2026).
+    body.append((series_week.hashtag(series) + " " + HASHTAGS) if series else HASHTAGS)
     return deepdive_links.description_block(link) + "\n\n".join(body)
+
+
+SHORTS_LEDGER = Path(__file__).resolve().parents[1] / "logs" / "youtube_published.json"
+
+
+def series_outputs(script, run_date, ledger=SHORTS_LEDGER):
+    """What the other lanes need to carry the chain (23 Oct 2026): the frame line for Threads and
+    Telegram, the Threads topic tag, the playlist plan for yt_boost, and the comment lines that
+    link this week's earlier parts (read from the publish ledger — only what really went out)."""
+    series = script.get("series") if isinstance(script.get("series"), dict) else None
+    if not series:
+        return {"series_json": "", "series_line": "", "series_topic": "", "series_chain": ""}
+    try:
+        rows = json.loads(Path(ledger).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        rows = []
+    previous = series_week.previous_parts(series, run_date, rows if isinstance(rows, list) else [])
+    return {
+        "series_json": json.dumps({k: series[k] for k in ("slug", "name", "part", "total", "week_start")}),
+        "series_line": series_week.line(series),
+        "series_topic": series_week.topic_tag(series),
+        "series_chain": "\n".join(series_week.chain_lines(series, previous)),
+    }
 
 
 def write_outputs(outputs):
@@ -139,7 +165,9 @@ def main():
               "description carries no episode link this time; it appears automatically once "
               "the Deep-Dive lane publishes it.")
 
+    chain = series_outputs(script, run_date)
     outputs = {
+        **chain,
         "video_path": str(video),
         # The settled hook card beside the master (MotionStudio writes it; frame 0 is the same
         # picture): YouTube's custom thumbnail, Telegram's cover, and what TikTok shows by default.
@@ -154,7 +182,7 @@ def main():
         # The channel's first comment under the Short (tools/yt_boost.py posts it once the
         # Short is public — the token holds youtube.force-ssl since 17 Oct 2026); the run
         # summary still shows the line so the owner can pin it from the app in one tap.
-        "pinned_comment": deepdive_links.pinned_comment(link),
+        "pinned_comment": "\n".join(x for x in (deepdive_links.pinned_comment(link), chain["series_chain"]) if x),
         "parent_url": link[1] if link else "",
         "parent_title": link[0] if link else "",
         "narrator": gemini_quota_status(),

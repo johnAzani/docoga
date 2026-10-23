@@ -160,11 +160,24 @@ weekday packs were being refused while weekend ones (no Short) passed. The promp
 20–28 + 4 × 25–32 with the budget spelled out, and every refusal is written to
 `logs/brain_refused.json` (newest first, last 40) so a rotation day can be explained afterwards.
 
+**The chain (same day, evening — fifth "beat the algorithm" pass).** A series only compounds
+when every part points at the others, on every platform, in text the platform can read:
+
+| Platform | What each part now carries |
+|---|---|
+| YouTube | its own **series playlist** per theme ("Rent receipt law in Nigeria — the 5-part series"), so "Up next" after part 1 is part 2 (`yt_boost.py plan --series`, one `playlists.insert` ever per theme, the Shorts playlist kept); the **series hashtag first** in the description (`#RentReceiptLaw` — YouTube shows the first three above the title and the hashtag page groups the five); the channel's **first comment** names the part and links this week's earlier parts by URL, read from the publish ledger so nothing unpublished is ever linked |
+| Telegram | the channel's video caption carries the same chain — part, earlier parts' links, "Part 4 tomorrow, 7:00pm" |
+| Threads | the 8:10pm **video** post ends "▶ Part 3 of 5 · Rent receipt law" and wears the **series name as its topic tag**, so the five evening videos sit under one topic; the card fallback stays plain (the card is not the part) |
+| Instagram | the Reel's first comment says which part it is, that the earlier parts are the Reels before it on the profile, and when the next lands |
+| Facebook | the Reel caption already carries the series sentence (§7 above) |
+
+All of it flows from one place — `youtube_short_daily.py series_outputs()` → workflow outputs
+`series_json`, `series_line`, `series_topic`, `series_chain` — and all of it is empty on a plain
+day, so nothing changes for a Short that does not belong to a series.
+
 ## 8. Next levers, in order of expected effect (Founder's brief items)
 
-1. **A playlist per series week** — `yt_boost.py` keeps one Shorts playlist; a playlist per
-   five-part run makes "Up next" play part 2 after part 1.
-2. **Hook bans from the swipe test** — once two Monday pulls have filled
+1. **Hook bans from the swipe test** — once two Monday pulls have filled
    `averageViewPercentage`, the bottom quartile's hook types go to the brain as "do not open
    like this" (`docs/HOOK_LEDGER.md`).
 

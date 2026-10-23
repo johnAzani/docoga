@@ -250,3 +250,137 @@ class BrainTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ChainTests(unittest.TestCase):
+    """The chain (23 Oct 2026, evening): every part points at the others on every platform —
+    YouTube playlist + hashtag + first comment, Telegram caption, Threads video post + topic,
+    Instagram first comment."""
+
+    ROWS = [{"date": "2026-10-26", "title": "Rent receipt in Nigeria: a (part 1 of 5) #Shorts", "video_id": "AAA", "state": "published"},
+            {"date": "2026-10-27", "title": "b (part 2 of 5) #Shorts", "video_id": "BBB", "state": "scheduled"},
+            {"date": "2026-10-20", "title": "last week (part 2 of 5) #Shorts", "video_id": "OLD", "state": "published"},
+            {"date": "2026-10-26", "title": "no number #Shorts", "video_id": "NON", "state": "published"}]
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        env = patch.dict(os.environ, {"DOCOGA_BRAIN_DRAFTS": str(Path(self.tmp.name) / "none"), "SHORTS_SEARCH_KICKER": ""})
+        env.start()
+        self.addCleanup(env.stop)
+
+    def test_previous_parts_come_only_from_this_week_and_only_numbered_titles(self):
+        wed = sw.series_for(date(2026, 10, 28))
+        self.assertEqual(sw.previous_parts(wed, date(2026, 10, 28), self.ROWS), [(1, "AAA"), (2, "BBB")])
+        self.assertEqual(sw.previous_parts(sw.series_for(MON), MON, self.ROWS), [], "Monday has nothing before it")
+        lines = sw.chain_lines(wed, [(1, "AAA"), (2, "BBB")])
+        self.assertEqual(lines, ["Part 3 of 5 · Rent receipt law.", "Part 1: https://youtube.com/shorts/AAA",
+                                 "Part 2: https://youtube.com/shorts/BBB", "Part 4 tomorrow, 7:00pm."])
+        self.assertNotIn("tomorrow", " ".join(sw.chain_lines(sw.series_for(FRI), [])))
+        self.assertEqual(sw.hashtag(wed), "#RentReceiptLaw")
+        self.assertEqual(sw.topic_tag(sw.series_for(MON2)), "Tenancy agreement")
+        self.assertEqual(sw.line(wed), "Part 3 of 5 · Rent receipt law")
+        pl = sw.playlist(wed)
+        self.assertEqual(pl["title"], "Rent receipt law in Nigeria — the 5-part series (DocOga Shorts)")
+        self.assertIn("docoga.com.ng", pl["description"])
+
+    def test_the_youtube_lane_hands_the_chain_to_every_other_lane(self):
+        import generate_short_video as words
+        import youtube_short_daily as lane
+        ledger = Path(self.tmp.name) / "published.json"
+        ledger.write_text(json.dumps(self.ROWS), encoding="utf-8")
+        topic = words.script_for_date(MON)
+        description = lane.describe(topic)
+        self.assertTrue(description.rstrip().endswith("#RentReceiptLaw #Shorts #TenantTips #NigeriaRent"),
+                        "the series hashtag first — YouTube shows the first three above the title")
+        out = lane.series_outputs(topic, MON, ledger=ledger)
+        self.assertEqual(json.loads(out["series_json"])["slug"], "rent-receipt-law")
+        self.assertEqual(out["series_line"], "Part 1 of 5 · Rent receipt law")
+        self.assertEqual(out["series_topic"], "Rent receipt law")
+        self.assertEqual(out["series_chain"], "Part 1 of 5 · Rent receipt law.\nPart 2 tomorrow, 7:00pm.")
+        # a Wednesday brain Short: the earlier parts by link
+        wed = dict(topic, series=sw.series_for(date(2026, 10, 28)))
+        out = lane.series_outputs(wed, date(2026, 10, 28), ledger=ledger)
+        self.assertIn("Part 1: https://youtube.com/shorts/AAA\nPart 2: https://youtube.com/shorts/BBB", out["series_chain"])
+        plain = lane.series_outputs(words.script_for_date(TUE), TUE, ledger=ledger)
+        self.assertEqual(plain, {"series_json": "", "series_line": "", "series_topic": "", "series_chain": ""})
+        wf = (ROOT / ".github" / "workflows" / "youtube_scheduled.yml").read_text(encoding="utf-8")
+        for needle in ('--series "$SERIES_JSON"', '--series-chain "$SERIES_CHAIN"', '--series "$SERIES_LINE" --series-topic "$SERIES_TOPIC"',
+                       "steps.short.outputs.series_json", "steps.short.outputs.series_chain", "steps.short.outputs.series_line",
+                       "--first-comment --description-file /tmp/short_description.txt"):
+            self.assertIn(needle, wf, needle)
+        th = (ROOT / ".github" / "workflows" / "threads_autopost.yml").read_text(encoding="utf-8")
+        self.assertIn('--video-series "$THREADS_VIDEO_SERIES"', th)
+        self.assertIn('--video-topic "$THREADS_VIDEO_TOPIC"', th)
+        self.assertIn("THREADS_VIDEO_(URL|TITLE|ID|SERIES|TOPIC)", th)
+
+    def test_telegram_caption_threads_video_text_and_instagram_comment_carry_the_part(self):
+        import reel_caption
+        import telegram_video
+        import threads_publish
+        chain = "Part 3 of 5 · Rent receipt law.\nPart 1: https://youtube.com/shorts/AAA\nPart 4 tomorrow, 7:00pm."
+        cap = telegram_video.caption_for("Six lines (part 3 of 5) #Shorts", "https://youtu.be/CCC", series_chain=chain)
+        self.assertIn(chain, cap)
+        self.assertLess(cap.index(chain), cap.index("Free Nigerian tenancy documents"))
+        self.assertNotIn("Part", telegram_video.caption_for("Plain #Shorts", "https://youtu.be/x"))
+        framed = threads_publish.series_video_text("The day's words.", "Part 3 of 5 · Rent receipt law")
+        self.assertEqual(framed, "The day's words.\n\n▶ Part 3 of 5 · Rent receipt law")
+        self.assertEqual(threads_publish.series_video_text("x" * 495, "Part 3 of 5 · Rent receipt law"), "x" * 495, "never over 500")
+        self.assertEqual(threads_publish.series_video_text("plain", ""), "plain")
+        d = "hook\n\nPart 3 of 5 in this week's series on the rent receipt law. Tomorrow: X.\n\nIn this Short:\n• a"
+        first = reel_caption.first_comment(date(2026, 10, 28), None, d)
+        self.assertTrue(first.startswith("Part 3 of 5 · Rent receipt law. The earlier parts are the Reels before this one on our profile. Part 4 lands tomorrow at 7:00pm."), first)
+        d1 = "hook\n\nPart 1 of 5 in this week's series on the rent receipt law. Tomorrow: X.\n\n"
+        self.assertNotIn("earlier parts", reel_caption.first_comment(MON, None, d1))
+        d5 = "hook\n\nPart 5 of 5 in this week's series on the rent receipt law. All five parts are on the channel.\n\n"
+        self.assertNotIn("tomorrow", reel_caption.first_comment(FRI, None, d5))
+        self.assertNotIn("Part", reel_caption.first_comment(MON, None, "hook\n\nIn this Short:\n• a"))
+
+    def test_shorts_handoff_records_the_frame_for_the_threads_evening_post(self):
+        import shorts_handoff
+        ledger = Path(self.tmp.name) / "media.json"
+        ledger.write_text(json.dumps({"latest": {}, "history": []}), encoding="utf-8")
+        from datetime import datetime as dt, timezone as tz
+        now = dt(2026, 10, 27, 17, 5, tzinfo=tz.utc)
+        with patch.object(shorts_handoff.media_host, "put", lambda *a, **k: {"url": "https://m/x.mp4", "name": "x.mp4", "bytes": 10, "ttl": 108000, "live": True}):
+            shorts_handoff.host("v.mp4", "BBB", "b (part 2 of 5) #Shorts", date="2026-10-27", ledger=ledger, now=now, log=lambda *a: None,
+                                series="Part 2 of 5 · Rent receipt law", series_topic="Rent receipt law")
+        out = io.StringIO()
+        with patch.object(shorts_handoff, "datetime") as fake:
+            fake.now.return_value = now.replace(hour=19)
+            fake.fromisoformat = dt.fromisoformat
+            with redirect_stdout(out):
+                shorts_handoff.main(["today", "--date", "2026-10-27", "--ledger", str(ledger)])
+        self.assertIn("THREADS_VIDEO_SERIES=Part 2 of 5 · Rent receipt law\n", out.getvalue())
+        self.assertIn("THREADS_VIDEO_TOPIC=Rent receipt law\n", out.getvalue())
+
+    def test_yt_boost_adds_the_series_playlist_once_and_keeps_the_shorts_one(self):
+        import yt_boost
+        from test_yt_boost import Google, run
+        ledger = Path(self.tmp.name) / "boosts.json"
+        with patch.object(yt_boost, "LEDGER", ledger):
+            g = Google()
+            series = json.dumps({"slug": "rent-receipt-law", "name": "Rent receipt law", "part": 1, "total": 5, "week_start": "2026-10-26"})
+            code, _ = run(["plan", "--video-id", "AAA", "--kind", "short", "--title", "Pay without a receipt", "--series", series], g, ledger)
+            self.assertEqual(code, 0)
+            code, out = run(["run", "--no-import"], g, ledger)
+            self.assertEqual(code, 0)
+            titles = {t: pid for t, pid in g.playlists.items()}
+            self.assertIn(yt_boost.PLAYLISTS["short"]["title"], titles)
+            self.assertIn("Rent receipt law in Nigeria — the 5-part series (DocOga Shorts)", titles)
+            self.assertEqual(g.items[titles["Rent receipt law in Nigeria — the 5-part series (DocOga Shorts)"]], {"AAA"})
+            self.assertIn("series playlist", out)
+            rows = yt_boost.load(ledger)
+            self.assertTrue(rows[0]["series_item_id"] and rows[0]["playlist_item_id"] and rows[0]["comment_id"])
+            self.assertEqual(yt_boost.pending(rows), [])
+            # part 2 joins the same playlist; nothing is created twice; a plain Short wants none
+            run(["plan", "--video-id", "BBB", "--kind", "short", "--title", "Part two", "--series", series.replace('"part": 1', '"part": 2')], g, ledger)
+            run(["plan", "--video-id", "PLAIN", "--kind", "short", "--title", "Plain day"], g, ledger)
+            run(["run", "--no-import"], g, ledger)
+            self.assertEqual(sum(1 for r, _, _ in g.calls if r == ("POST", "playlists")), 2)
+            self.assertEqual(g.items[titles["Rent receipt law in Nigeria — the 5-part series (DocOga Shorts)"]], {"AAA", "BBB"})
+            rows = {r["video_id"]: r for r in yt_boost.load(ledger)}
+            self.assertNotIn("series", rows["PLAIN"])
+            self.assertFalse(yt_boost.wants_series(rows["PLAIN"]))
+            code, out = run(["plan", "--video-id", "BAD", "--series", "{not json"], g, ledger)
+            self.assertEqual(code, 0)
