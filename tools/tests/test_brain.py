@@ -638,6 +638,15 @@ class DeepDiveWriterTests(Sandbox):
             import deepdive
             with patch.object(deepdive, "EPISODES", episodes):
                 self.assertEqual(deepdive.check_triggers(deepdive.Episode("dd4"), verbose=False), [])
+                # 23 Oct 2026: Gemini wrote dd4 without the closing card and main went red on
+                # test_deepdive — the writer appends the DOCOGA end card itself, on the last words.
+                written = deepdive.Episode("dd4").beats()
+                self.assertTrue(written[-1]["endcard"], "the last beat is the DOCOGA end card")
+                self.assertEqual(written[-1]["head"], "DOCOGA")
+                self.assertEqual(written[-1]["sec"], 9)
+            self.assertEqual(meta["beats"][-1]["trig"], brain._norm_tokens(self.episode()["sections"][-1]["narration"])[-3:])
+            twice = brain.with_endcard(meta["beats"], self.episode()["sections"])
+            self.assertEqual(len(twice), len(meta["beats"]), "idempotent")
 
     def test_the_writer_runs_generation_verification_and_writes_only_on_agreement(self):
         import shutil

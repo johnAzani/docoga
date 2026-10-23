@@ -1209,12 +1209,37 @@ def deepdive_verify(ep, facts_by_id, http=None, sleep=None, log=print):
     return out
 
 
+ENDCARD_BEAT = {"head": "DOCOGA", "sub": "docoga.com.ng — link in the description", "img": "celebration", "endcard": True}
+
+
+def _norm_tokens(text):
+    t = str(text or "").lower().replace("\u2014", " ").replace("\u2013", " ").replace("-", " ")
+    return [w for w in re.sub(r"[^a-z0-9' ]", " ", t).split() if w]
+
+
+def with_endcard(beats, sections):
+    """The renderer's contract (tools/deepdive.py, test_deepdive): the LAST beat is the DOCOGA end
+    card. Gemini does not write it (dd4, 23 Oct 2026 — main went red on the contract test), so the
+    writer appends it deterministically, triggered on the last words of section 9 so it lands
+    as the narration closes. Idempotent: an episode that already ends on the card is untouched."""
+    beats = list(beats)
+    if beats and beats[-1].get("endcard"):
+        return beats
+    last = max((int(b.get("sec") or 0) for b in beats), default=9) or 9
+    narration = next((s.get("narration") for s in sections if int(s.get("n") or 0) == last), "") or ""
+    toks = _norm_tokens(narration)
+    trig = toks[-3:] if len(toks) >= 3 else None
+    beats.append(dict(ENDCARD_BEAT, sec=last, trig=trig, shot=None))
+    return beats
+
+
 def write_episode(ep, number, template):
     ep_id = "dd%d" % number
     folder = EPISODES / ep_id
     folder.mkdir(parents=True, exist_ok=False)
     script = "\n\n".join("--- C%d ---\n%s" % (s["n"], " ".join(str(s["narration"]).split())) for s in ep["sections"])
     (folder / "script.txt").write_text(script + "\n", encoding="utf-8")
+    ep = dict(ep, beats=with_endcard(ep["beats"], ep["sections"]))
     meta = {
         "id": ep_id, "number": number, "title": ep["title"],
         "kicker": "DOCOGA — DEEP-DIVE · EPISODE %d" % number,
@@ -1224,8 +1249,9 @@ def write_episode(ep, number, template):
                     "tags": list(ep["youtube"].get("tags") or [])},
         "cover": ep["cover"],
         "sections": [{"n": s["n"], "title": s["title"]} for s in ep["sections"]],
-        "beats": [{"sec": b["sec"], "trig": b.get("trig"), "head": b["head"], "sub": b.get("sub", ""), "img": b.get("img"),
-                   "shot": (str(b.get("shot") or "").strip().lower() or None)}
+        "beats": [dict({"sec": b["sec"], "trig": b.get("trig"), "head": b["head"], "sub": b.get("sub", ""), "img": b.get("img"),
+                        "shot": (str(b.get("shot") or "").strip().lower() or None)},
+                       **({"endcard": True} if b.get("endcard") else {}))
                   for b in ep["beats"]],
         "brain": {"written": datetime.now(LAGOS).isoformat(timespec="seconds"), "theme": ep.get("theme"),
                   "claims": ep["claims"]},
