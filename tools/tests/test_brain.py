@@ -116,6 +116,7 @@ class Sandbox(unittest.TestCase):
         self.addCleanup(self.env.stop)
         import brain_scorecard
         for target, name, value in ((brain, "SAID", root / "said.json"),
+                                    (brain, "REFUSED", root / "refused.json"),
                                     (brain, "FEEDBACK", root / "feedback.md"),
                                     (brain_scorecard, "LEDGER", root / "scorecard.json"),
                                     (newsdesk, "PINNED", root / "newsdesk_pinned.json"),
@@ -795,7 +796,7 @@ class WorkflowContractTests(unittest.TestCase):
         self.assertIn("contents: write", self.wf)
         self.assertIn("issues: write", self.wf)
         self.assertIn("cancel-in-progress: false", self.wf)
-        self.assertIn("for path in brain/drafts brain/feedback.md brain/newsdesk.json brain/listening.json brain/answers logs/brain_said.json logs/brain_deepdive.json episodes site/guides site/sitemap.xml; do", self.wf)
+        self.assertIn("for path in brain/drafts brain/feedback.md brain/newsdesk.json brain/listening.json brain/answers logs/brain_said.json logs/brain_refused.json logs/brain_deepdive.json episodes site/guides site/sitemap.xml; do", self.wf)
         self.assertIn('if [ -e "$path" ]; then git add -A "$path"; fi', self.wf, "one path at a time — a joint add with one missing path adds nothing (22 Oct 2026)")
         self.assertIn("gh issue create", self.wf)
         self.assertIn("brain-automation", self.wf)

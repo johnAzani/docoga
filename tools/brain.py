@@ -63,6 +63,7 @@ import gemini_text  # noqa: E402
 import law_index  # noqa: E402
 import newsdesk  # noqa: E402
 import listening  # noqa: E402
+import series_week  # noqa: E402
 
 LAGOS = ZoneInfo("Africa/Lagos")
 BRAIN = ROOT / "brain"
@@ -72,6 +73,10 @@ FEEDBACK = BRAIN / "feedback.md"
 STRATEGY = BRAIN / "strategy.md"
 AUDIENCE = BRAIN / "audience.md"
 SAID = Path(os.environ.get("DOCOGA_BRAIN_SAID") or (ROOT / "logs" / "brain_said.json"))
+# Why a day was refused, last 40 — the one record that explains a rotation day after the fact
+# (23 Oct 2026: a week of weekday packs refused with no trace; the Actions log was gone).
+REFUSED = Path(os.environ.get("DOCOGA_BRAIN_REFUSED") or (ROOT / "logs" / "brain_refused.json"))
+REFUSED_KEEP = 40
 EPISODES = ROOT / "episodes"
 STATS = ROOT / "logs" / "youtube_stats.json"
 
@@ -236,6 +241,7 @@ def day_context(day, said=None):
     return dict(day=day, weekday=day.strftime("%A"), lead=weekday_lead(day), state=slug,
                 state_name=facts[0]["state"] if facts else slug, facts=facts,
                 short_day=day.weekday() in SHORT_DAYS, calendar=calendar_notes(day),
+                series=series_week.series_for(day) if day.weekday() in SHORT_DAYS else None,
                 recent=recent, feedback=read(FEEDBACK).strip(),
                 strategy=read(STRATEGY).strip(), audience=read(AUDIENCE).strip(),
                 news=newsdesk.fresh_items(), search=search_demand(), asked=listening.fresh_items(),
@@ -288,6 +294,8 @@ def prompt_for(ctx, problems=None):
     shelf = "\n".join("%s | %s | %s" % (f["id"], f["cite"] or "(no section)", f["text"]) for f in ctx["facts"])
     short_rule = ("A Short is rendered on this day: include `short` exactly as specified."
                   if ctx["short_day"] else "No Short is rendered on this day: set `short` to null.")
+    series_block = series_week.brief(ctx.get("series"))
+    series_block = ("\n\n" + series_block) if series_block else ""
     retry = ""
     if problems:
         retry = "\n\nYOUR PREVIOUS DRAFT WAS REFUSED FOR THESE REASONS — fix every one:\n- " + "\n- ".join(problems)
@@ -326,7 +334,7 @@ WHAT NIGERIANS TYPE INTO GOOGLE BEFORE THEY FIND US (Search Console, last 28 day
 {search_block(ctx.get('search') or [])}
 When one of these questions fits today's state and lead, answer it in the FIRST LINE in the
 reader's own words and set `tool` to the page Google already shows — that post and that Short are
-how a position-9 query becomes page one. Never bend the law to fit a query.
+how a position-9 query becomes page one. Never bend the law to fit a query.{series_block}
 
 WHAT THE NUMBERS SAID — SCORECARD, GOALS AND THIS WEEK'S ORDERS (obey the orders)
 {ctx['feedback'] or 'No feedback yet — use the editorial rhythm.'}
@@ -358,9 +366,10 @@ OUTPUT — one JSON object with exactly these keys:
              "plate": "2-4 plain words for a background photograph with no faces and no signs"}},
   "quiz": null, or on Tuesday (quiz day) {{"question": "<= 120 characters, one rule from the shelf as a question", "options": ["2 to 4 answers, <= 40 characters each, one correct"], "correct": 0-based index, "explanation": "<= 200 characters: the answer with its section, e.g. 'Six months — s.13(1)(e), Lagos Tenancy Law 2011.'", "fact_id": "the shelf fact the answer rests on"}},
   "short": null or {{"title": "one or two short sentences", "hook_sub": "<= 9 words",
-                     "hook_say": "20-35 words the narrator reads over the hook: the scene, the mistake, the stake — as a presenter would say it",
+                     "hook_say": "20-28 words the narrator reads over the hook: the scene, the mistake, the stake — as a presenter would say it",
                      "tips": [{{"text": "<= 5 words", "sub": "<= 9 words",
-                               "say": "25-40 words the narrator reads over this tip: what to do, why, what goes wrong without it; name the state when a rule is cited. The five says together stay under 160 words"}}, "... exactly four"]}},
+                               "say": "25-32 words the narrator reads over this tip: what to do, why, what goes wrong without it; name the state when a rule is cited"}}, "... exactly four"]}},
+           WORD BUDGET (counted, refused when over): hook_say + the four says together <= {SAY_TOTAL_MAX} words — 28 + 4 x 32 = 156 fits; 35 + 4 x 40 does not. Count before you answer.
   "why": "one sentence: why today says this"
 }}
 Rules: do not put the link or the disclaimer in `lines`, `cta` or `threads.text` — the renderer adds them.
@@ -712,6 +721,9 @@ def verify(pack, ctx, http=None, sleep=None, log=print):
 def approve(pack, ctx, model_note=""):
     """Shape the approved pack as the lanes read it (brain_drafts)."""
     short = finish_short(pack["short"]) if isinstance(pack.get("short"), dict) else None
+    if short and ctx.get("series"):
+        s = ctx["series"]
+        short["series"] = {"slug": s["slug"], "name": s["name"], "part": s["part"], "total": s["total"], "label": s["label"]}
     out = {
         "version": drafts.SCHEMA_VERSION, "status": "approved", "date": ctx["day"].isoformat(),
         "generated_at": datetime.now(LAGOS).isoformat(timespec="seconds"),
@@ -780,7 +792,27 @@ def plan_day(day, said, http=None, sleep=None, log=print, dry_run=False):
                                                        approved["hook_type"]))
             return approved, []
         log("brain: %s attempt %d refused: %s" % (day, attempt, "; ".join(problems)[:600]))
+    if not dry_run:
+        remember_refusal(day, problems)
     return None, problems
+
+
+def remember_refusal(day, problems, path=None, now=None):
+    """Append why a day stayed on the rotation (newest first, REFUSED_KEEP rows). Never raises."""
+    path = Path(path or REFUSED)
+    try:
+        rows = json.loads(path.read_text(encoding="utf-8")) if path.is_file() else []
+        rows = rows if isinstance(rows, list) else []
+    except (OSError, ValueError):
+        rows = []
+    rows.insert(0, {"date": day.isoformat(), "at": (now or datetime.now(LAGOS)).isoformat(timespec="seconds"),
+                    "short_day": day.weekday() in SHORT_DAYS,
+                    "problems": [str(p)[:200] for p in (problems or [])][:12]})
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(rows[:REFUSED_KEEP], indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+    except OSError:
+        pass
 
 
 def plan(days=3, start=None, http=None, sleep=None, log=print, dry_run=False):

@@ -386,8 +386,11 @@ def short_topic(pack):
     for tip in tips:
         slides.append({"text": tip["text"], "sub": tip.get("sub", ""), "say": tip.get("say") or "", "duration": 4})
     slides.append({"text": "GENERAL INFO ONLY", "sub": "Rules vary by state and agreement", "duration": 4})
-    return {"title": short["title"], "parent": short.get("parent") or "brain",
-            "brain": pack.get("date"), "slides": slides}
+    out = {"title": short["title"], "parent": short.get("parent") or "brain",
+           "brain": pack.get("date"), "slides": slides}
+    if isinstance(short.get("series"), dict) and short["series"].get("slug"):
+        out["pack_series"] = dict(short["series"])  # the week's series this Short was written to
+    return out
 
 
 _WORD = re.compile(r"[a-z0-9₦']+")

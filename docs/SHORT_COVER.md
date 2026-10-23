@@ -112,7 +112,10 @@ number are the day's search phrase** — `RENT IN NIGERIA · No. 9`, `LAGOS TENA
 seconds and index the cover frame, and this is the same phrase the TikTok caption opens with.
 The brand stays in the chip; `SHORTS_SEARCH_KICKER=off` restores `DOCOGA · TENANT TIPS · No. N`
 (docs/ALGORITHM_PLAYBOOK.md §6). The cover is still frame 0 of the video, so
-the video's opening carries the same number.
+the video's opening carries the same number. **On a series day (from Mon 26 Oct 2026) the
+kicker is the week's series and part instead** — `RENT RECEIPT LAW · 2 OF 5`
+(`tools/series_week.py`, `shorts_reel.series_masthead`; the series name is itself a search
+phrase), and the end card gains a yellow pointer to tomorrow's part (playbook §7).
 
 ## 4. Measuring it
 YouTube Studio reports thumbnail impressions and CTR for Shorts since 2026 — **in Studio only**;

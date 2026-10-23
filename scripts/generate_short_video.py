@@ -25,7 +25,7 @@ BRAND COLORS (sampled from the official brand mark, 18 Sep 2026):
 
 import os
 import sys
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 # tools/brain_drafts.py — the brain's Short for a date, when it approved one.
@@ -193,20 +193,50 @@ def yt_title(script, limit=100):
         title = "%s #Shorts" % hook
     if len(title) > limit:
         title = "%s #Shorts" % str(script.get("title") or "").strip()
+    series = script.get("series") if isinstance(script.get("series"), dict) else None
+    if series:
+        # "… (part 2 of 5) #Shorts" — the number in the title is what makes five uploads read as
+        # one series in search and in the channel's grid (tools/series_week.py).
+        numbered = title.replace(" #Shorts", " (part %d of %d) #Shorts" % (series["part"], series["total"]))
+        if len(numbered) <= limit:
+            title = numbered
     return title[:limit]
 
 
 def script_for_date(run_date: date):
-    """The brain's Short for the date when it approved one, else the rotation's topic."""
+    """The brain's Short for the date when it approved one, else the rotation's topic — either
+    one wearing the week's series (`series`) when it honestly belongs to it (tools/series_week)."""
     try:
         import brain_drafts
         pack = brain_drafts.draft_for(run_date)
         topic = brain_drafts.short_topic(pack) if pack else None
     except Exception:  # the rotation must never be lost to the brain
         topic = None
-    if topic:
+    if not topic:
+        topic = VIDEO_SCRIPTS[(run_date.toordinal() - 1) % len(VIDEO_SCRIPTS)]
+    return with_series(topic, run_date)
+
+
+def with_series(topic, run_date):
+    """Attach the series frame (23 Oct 2026): `RENT RECEIPT LAW · 2 OF 5` on the cover, tomorrow's
+    part on the end card. Tomorrow's part is named from tomorrow's approved pack when the brain
+    has already written it, else from the plan. Anything failing here leaves the topic untouched."""
+    try:
+        import series_week
+        framed = series_week.attach(topic, run_date, pack_series=topic.get("pack_series"))
+        series = framed.get("series") if isinstance(framed, dict) else None
+        if series and series["part"] < series["total"]:
+            import brain_drafts
+            nxt = brain_drafts.draft_for(run_date + timedelta(days=1))
+            nxt_short = (nxt or {}).get("short") if isinstance(nxt, dict) else None
+            nxt_series = (nxt_short or {}).get("series") if isinstance(nxt_short, dict) else None
+            if isinstance(nxt_series, dict) and nxt_series.get("slug") == series["slug"] \
+                    and nxt_series.get("part") == series["part"] + 1 and nxt_short.get("title"):
+                series = dict(series, next_title=str(nxt_short["title"]))
+                framed = dict(framed, series=series)
+        return framed
+    except Exception:  # the series is a frame; the Short must render without it
         return topic
-    return VIDEO_SCRIPTS[(run_date.toordinal() - 1) % len(VIDEO_SCRIPTS)]
 
 
 def get_font(size):

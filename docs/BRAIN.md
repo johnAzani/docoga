@@ -93,6 +93,15 @@ with a tenancy angle, a lead-in window and the rule "one greeting line at most; 
 teaches one rule with a fact id". The card renderer reads the same table for the flag ribbon
 (national days) and the masthead greeting; the dashboard lists the next ones. `docs/SPECIAL_DAYS.md`.
 
+## Series weeks (23 Oct 2026)
+From Mon 26 Oct 2026 the weekday Shorts are a five-part series on one law a week
+(`tools/series_week.py`). `day_context` carries `series` on weekdays; the prompt gets the week's
+brief (today's angle, yesterday's, tomorrow's, the tool page); `approve()` stamps
+`short.series = {slug, name, part, total, label}`; the lanes read it back through
+`brain_drafts.short_topic` → `generate_short_video.script_for_date`. A refused day is now
+recorded in `logs/brain_refused.json` (why, newest first, last 40), and the Short's word budget in
+the prompt matches the gate (20–28 + 4 × 25–32 ≤ 160). docs/ALGORITHM_PLAYBOOK.md §7.
+
 ## The community manager, the learning loop and the deep links (17 Oct 2026)
 **Replies.** `tools/brain_replies.py` + `.github/workflows/brain_replies.yml` (8:00am,
 11:40am, 2:40pm, 7:40pm and 8:40pm WAT — within 30–45 minutes of every posting slot, since

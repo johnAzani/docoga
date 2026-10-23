@@ -134,15 +134,41 @@ restores `DOCOGA · TENANT TIPS · No. N`. Already there, checked and not rebuil
 first comment + series playlists (`tools/yt_boost.py`, every Short since 14 Oct has both), the
 Threads topic tag, the Instagram first comment (§4).
 
-## 7. Next levers, in order of expected effect (Founder's brief items)
+## 7. Shipped 23 Oct 2026 — series weeks
 
-1. **Series** — a numbered run ("Receipt law, 1 of 5") across a week so a profile visit
-   has somewhere to go.
+From **Mon 26 Oct 2026** the weekday Shorts are a **five-part series on one law a week**
+(`tools/series_week.py`): Rent receipt law → Tenancy agreement → Notice to quit → Caution
+fee → Agent and landlord → Repairs and moving in, then round again. The spine is deterministic
+from the date, so every lane agrees without talking: the cover and opening masthead read
+`RENT RECEIPT LAW · 2 OF 5`; the end card carries a yellow pointer, `PART 3 TOMORROW · PAID,
+NO RECEIPT. NOW WHAT` (tomorrow's *real* title once the brain has written it, the plan's label
+until then; Friday: `SERIES COMPLETE · ALL 5 ON THE CHANNEL`); the YouTube title ends `(part 2
+of 5) #Shorts`; the description and the Facebook/Instagram captions carry "Part 2 of 5 in this
+week's series on the rent receipt law. Tomorrow: …"; the TikTok caption leads with the series'
+own search phrase (`Rent receipt law Nigeria`). The brain writes each part to that day's angle
+(its prompt gets the week's brief: today's part, yesterday's, tomorrow's, the tool page) and
+stamps the part on the Short it approves; a day without a pack falls to the hand-written
+rotation and wears the series **only when its own words fit the theme** — a photos Short never
+pretends to be receipt law. Why it should move numbers: a numbered part is the cheapest binge
+(a viewer who lands on 3 looks for 1 and 2 — session time), tomorrow has a name so the follow
+has a reason, and five uploads that say they belong together are treated as one subject by
+search. The dashboard plan shows the part. `SHORTS_SERIES_WEEK=off` is the switch.
+
+Also fixed the same day: the brain's Short word budget. The prompt asked for 20–35 + 4 × 25–40
+spoken words but refused anything over 160 in total — the arithmetic could not meet itself, and
+weekday packs were being refused while weekend ones (no Short) passed. The prompt now says
+20–28 + 4 × 25–32 with the budget spelled out, and every refusal is written to
+`logs/brain_refused.json` (newest first, last 40) so a rotation day can be explained afterwards.
+
+## 8. Next levers, in order of expected effect (Founder's brief items)
+
+1. **A playlist per series week** — `yt_boost.py` keeps one Shorts playlist; a playlist per
+   five-part run makes "Up next" play part 2 after part 1.
 2. **Hook bans from the swipe test** — once two Monday pulls have filled
    `averageViewPercentage`, the bottom quartile's hook types go to the brain as "do not open
    like this" (`docs/HOOK_LEDGER.md`).
 
-## 8. What we will not do, and why
+## 9. What we will not do, and why
 
 Engagement pods, bought followers/likes/views, comment bots, follow/unfollow, mass DMs,
 reposting other creators' videos, watermark-stripped reuploads, "like if you agree" bait.

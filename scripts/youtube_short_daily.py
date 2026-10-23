@@ -26,6 +26,7 @@ import shorts_reel  # noqa: E402  — MotionStudio bridge (the only renderer thi
 import deepdive_links  # noqa: E402
 import deepdive_promo  # noqa: E402  — the latest episode, when the parent is not out yet  — which Deep-Dive this Short trails, and its watch link
 import shorts_sound  # noqa: E402  — the soundtrack report, for the run summary
+import series_week  # noqa: E402  — the week's five-part series, for the description line
 
 
 HASHTAGS = "#Shorts #TenantTips #NigeriaRent"
@@ -62,6 +63,11 @@ def describe(script, link=None):
     body = []
     if hook:
         body.append(hook)
+    series = script.get("series") if isinstance(script.get("series"), dict) else None
+    if series:
+        # One prose line the search index and the binge-watcher both read: which part this is,
+        # what tomorrow's is called (tools/series_week.py, 23 Oct 2026).
+        body.append(series_week.sentence(series, series.get("next_title", "")))
     if tips:
         body.append("In this Short:\n" + "\n".join("• " + t for t in tips))
     body.append(

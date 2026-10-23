@@ -826,7 +826,7 @@ function renderFeed(){
     return '<div class="card"><div class="k">'+esc(when)+(d.theme?' · '+esc(d.theme):'')+'</div>'+
       '<div class="v" style="font-size:15px;line-height:1.3">'+esc(d.headline)+'</div>'+
       (d.lines&&d.lines.length?'<div class="s">'+d.lines.map(esc).join('<br>')+'</div>':'')+
-      '<div class="s" style="margin-top:6px">'+(d.threads?'<b>Threads:</b> '+esc(d.threads)+'<br>':'')+(d.short?'<b>Short:</b> '+esc(d.short)+'<br>':'')+(d.reader?'<b>For:</b> '+esc(d.reader)+'<br>':'')+(d.why?'<b>Why today:</b> '+esc(d.why):'')+(d.quiz?'<br>'+chip('Tuesday quiz','ok'):'')+'</div></div>';}).join('')+'</div>'
+      '<div class="s" style="margin-top:6px">'+(d.threads?'<b>Threads:</b> '+esc(d.threads)+'<br>':'')+(d.short?'<b>Short:</b> '+esc(d.short)+(d.series?' <span style="color:#1D4ED8;font-weight:700">· '+esc(d.series)+'</span>':'')+'<br>':'')+(d.reader?'<b>For:</b> '+esc(d.reader)+'<br>':'')+(d.why?'<b>Why today:</b> '+esc(d.why):'')+(d.quiz?'<br>'+chip('Tuesday quiz','ok'):'')+'</div></div>';}).join('')+'</div>'
     :'<p class="hint">no plan in the feed</p>';
   // growth
   const g=f.growth||{},rows=g.rows||[];
