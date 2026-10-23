@@ -26,6 +26,7 @@ agrees without talking to each other. Weekends have no Short and no part.
 from __future__ import annotations
 
 import os
+import re
 from datetime import date, datetime, timedelta
 
 START = date(2026, 10, 26)   # the first series Monday
@@ -200,6 +201,71 @@ def brief(series):
         lines.append("- Tomorrow's part is \"%s\" — the end card announces it; you need not." % series["next_label"])
     lines.append("- `tool` should be `%s` unless the shelf has nothing on it. The `short.title` must be about today's angle." % series["tool"])
     return "\n".join(lines)
+
+
+# ───────────── the chain (23 Oct 2026, evening): every part points at the others ─────────────
+PART_IN_TITLE = re.compile(r"\(part (\d+) of (\d+)\)", re.I)
+SHORT_URL = "https://youtube.com/shorts/%s"
+
+
+def line(series):
+    """`Part 2 of 5 · Rent receipt law` — the one-line frame the captions and the handoffs carry."""
+    return "Part %d of %d · %s" % (series["part"], series["total"], series["name"])
+
+
+def hashtag(series):
+    """`#RentReceiptLaw` — a hashtag page groups the five uploads; it goes first in the description
+    because YouTube shows the first three hashtags above the title."""
+    return "#" + "".join(w[:1].upper() + w[1:] for w in re.sub(r"[^A-Za-z0-9 ]", " ", series["name"]).split())
+
+
+def topic_tag(series):
+    """The Threads topic tag for the evening video post: the series name (≤50 chars, no '.' or '&')."""
+    return series["name"].replace(".", "").replace("&", "and").strip()[:50]
+
+
+def previous_parts(series, day, rows):
+    """[(part, video_id)] of this week's earlier parts, read from the YouTube publish ledger
+    (`logs/youtube_published.json` rows: date, title, video_id). Only this week's dates and only
+    titles that carry `(part N of 5)` count — nothing is claimed that was not published."""
+    day = _day(day)
+    out = {}
+    for r in rows or ():
+        if not isinstance(r, dict) or not r.get("video_id"):
+            continue
+        when = str(r.get("date") or "")[:10]
+        if not (series["week_start"] <= when < day.isoformat()):
+            continue
+        m = PART_IN_TITLE.search(str(r.get("title") or ""))
+        if not m or int(m.group(2)) != series["total"]:
+            continue
+        part = int(m.group(1))
+        if 1 <= part < series["part"] and part not in out:
+            out[part] = r["video_id"]
+    return sorted(out.items())
+
+
+def chain_lines(series, previous):
+    """The lines a comment or a caption adds under a part: where this sits, and the earlier parts
+    by link. `previous` = previous_parts(...)."""
+    lines = [line(series) + "."]
+    for part, vid in previous:
+        lines.append("Part %d: %s" % (part, SHORT_URL % vid))
+    if series["part"] < series["total"]:
+        lines.append("Part %d tomorrow, 7:00pm." % (series["part"] + 1))
+    return lines
+
+
+def playlist(series):
+    """One public playlist per theme, so 'Up next' after part 1 is part 2 (tools/yt_boost.py)."""
+    name = series["name"]
+    return {
+        "key": "series:" + series["slug"],
+        "title": "%s in Nigeria — the 5-part series (DocOga Shorts)" % name,
+        "description": ("%s, one part a day, Monday to Friday, in plain English for tenants and landlords in "
+                        "Nigeria. Start at part 1. General information, not legal advice; rules vary by state and "
+                        "agreement. Free document tools: https://docoga.com.ng/?s=yt" % name),
+    }
 
 
 if __name__ == "__main__":  # pragma: no cover — a glance at the next weeks

@@ -355,7 +355,7 @@ jobs:
             exit 0
           fi
           python3 tools/shorts_handoff.py today 2>&1 | tee /tmp/handoff_today.log
-          grep -E '^THREADS_VIDEO_(URL|TITLE|ID)=' /tmp/handoff_today.log >> "$GITHUB_ENV" || true
+          grep -E '^THREADS_VIDEO_(URL|TITLE|ID|SERIES|TOPIC)=' /tmp/handoff_today.log >> "$GITHUB_ENV" || true
 
       - name: Publish to Threads
         if: ${{ !inputs.probe_only && !inputs.dry_run }}
@@ -368,6 +368,10 @@ jobs:
           ARGS=(--from-json assets/threads/threads_content_latest.json --token-file /tmp/threads_token)
           if [ -n "${THREADS_VIDEO_URL:-}" ]; then
             ARGS+=(--video-url "$THREADS_VIDEO_URL" --video-alt "DocOga Short: ${THREADS_VIDEO_TITLE:-the day in 60 seconds}")
+            # Series week (23 Oct 2026): the video post says which part it is and wears the
+            # series' topic tag, so the five evening videos sit under one topic on Threads.
+            [ -n "${THREADS_VIDEO_SERIES:-}" ] && ARGS+=(--video-series "$THREADS_VIDEO_SERIES")
+            [ -n "${THREADS_VIDEO_TOPIC:-}" ] && ARGS+=(--video-topic "$THREADS_VIDEO_TOPIC")
           fi
           [ -n "${THREADS_USER_ID:-}" ] || unset THREADS_USER_ID
           # Actions hands a boolean input to the shell as the *string* "true" or "false", so

@@ -400,10 +400,13 @@ jobs:
           VIDEO_ID: ${{ steps.upload.outputs.video_id }}
           VIDEO_TOPIC: ${{ steps.short.outputs.topic }}
           PINNED_COMMENT: ${{ steps.short.outputs.pinned_comment }}
+          SERIES_JSON: ${{ steps.short.outputs.series_json }}
           RUN_DATE: ${{ steps.settings.outputs.run_date }}
         run: |
+          # --series (23 Oct 2026): the week's five-part series gets its own playlist, so "Up
+          # next" after part 1 is part 2 (tools/series_week.py). Empty on a plain day.
           python3 tools/yt_boost.py plan --video-id "$VIDEO_ID" --kind short --title "$VIDEO_TOPIC" \
-            --parent-comment "$PINNED_COMMENT" --date "$RUN_DATE"
+            --parent-comment "$PINNED_COMMENT" --date "$RUN_DATE" --series "$SERIES_JSON"
           python3 tools/yt_boost.py run --max 3 2>&1 | tee /tmp/yt_boost.log
       # Never let bookkeeping turn a successful publish red: continue-on-error
       # keeps the job green and leaves a visible warning instead.
@@ -496,10 +499,12 @@ jobs:
           PARENT_URL: ${{ steps.short.outputs.parent_url }}
           PARENT_TITLE: ${{ steps.short.outputs.parent_title }}
           COVER_PATH: ${{ steps.short.outputs.cover_path }}
+          SERIES_CHAIN: ${{ steps.short.outputs.series_chain }}
         run: |
           set -o pipefail
           python3 tools/telegram_video.py --video "$VIDEO_PATH" --title "$VIDEO_TITLE" --url "$VIDEO_URL" \
-            --parent-url "$PARENT_URL" --parent-title "$PARENT_TITLE" --cover "$COVER_PATH" 2>&1 | tee /tmp/telegram_video.log
+            --parent-url "$PARENT_URL" --parent-title "$PARENT_TITLE" --cover "$COVER_PATH" \
+            --series-chain "$SERIES_CHAIN" 2>&1 | tee /tmp/telegram_video.log
           echo "result=$(sed -n 's/^TELEGRAM_VIDEO=//p' /tmp/telegram_video.log | tail -1)" >> "$GITHUB_OUTPUT"
 
       # Owner, 21 Oct 2026: "Threads has never posted videos." Threads fetches video by public
@@ -518,10 +523,13 @@ jobs:
           VIDEO_TITLE: ${{ steps.short.outputs.title }}
           VIDEO_ID: ${{ steps.upload.outputs.video_id }}
           RUN_DATE: ${{ steps.settings.outputs.run_date }}
+          SERIES_LINE: ${{ steps.short.outputs.series_line }}
+          SERIES_TOPIC: ${{ steps.short.outputs.series_topic }}
         run: |
           set -o pipefail
           python3 tools/shorts_handoff.py host --video "$VIDEO_PATH" --video-id "$VIDEO_ID" \
-            --title "$VIDEO_TITLE" --date "$RUN_DATE" --ttl-hours 30 2>&1 | tee /tmp/handoff.log
+            --title "$VIDEO_TITLE" --date "$RUN_DATE" --ttl-hours 30 \
+            --series "$SERIES_LINE" --series-topic "$SERIES_TOPIC" 2>&1 | tee /tmp/handoff.log
           echo "url=$(sed -n 's/^HANDOFF_URL=//p' /tmp/handoff.log | tail -1)" >> "$GITHUB_OUTPUT"
 
       # ── The same Short as a Reel, everywhere Reels are the growth surface (21 Oct 2026) ──
@@ -631,7 +639,7 @@ jobs:
           fi
           printf '%s' "$VIDEO_DESCRIPTION" > /tmp/short_description.txt
           CAPTION=$(python3 tools/reel_caption.py --platform instagram --topic "$VIDEO_TOPIC" --description-file /tmp/short_description.txt --date "$RUN_DATE")
-          FIRST_COMMENT=$(python3 tools/reel_caption.py --platform instagram --first-comment --date "$RUN_DATE")
+          FIRST_COMMENT=$(python3 tools/reel_caption.py --platform instagram --first-comment --description-file /tmp/short_description.txt --date "$RUN_DATE")
           TRIAL="--trial"
           case "$(printf '%s' "${IG_TRIAL_REELS:-on}" | tr '[:upper:]' '[:lower:]')" in 0|false|no|off) TRIAL="" ;; esac
           set +e

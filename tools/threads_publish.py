@@ -550,6 +550,17 @@ def load_config(args):
     return token, (user_id or who_id), 0
 
 
+def series_video_text(text, series_line):
+    """The video post's words with the series frame under them — "▶ Part 2 of 5 · Rent receipt
+    law" (23 Oct 2026) — when it still fits Threads' 500; the plain words otherwise. The card
+    fallback never carries it: the card is not the part."""
+    series_line = " ".join(str(series_line or "").split())
+    if not series_line:
+        return text
+    framed = text.rstrip() + "\n\n▶ " + series_line
+    return framed if cost(framed) <= MAX_COST else text
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Publish one text post to Threads")
     parser.add_argument("--text", help="the post body (≤500 characters)")
@@ -574,6 +585,10 @@ def main(argv=None):
                         help="public MP4 to post as a VIDEO (the day's Short, hosted by tools/media_host.py); "
                              "falls back to the card, then the words, if Threads will not take it")
     parser.add_argument("--video-alt", dest="video_alt", help="alt text for the video (the Short's title)")
+    parser.add_argument("--video-series", dest="video_series", default="",
+                        help='"Part 2 of 5 · Rent receipt law" — appended to the VIDEO post only (the card fallback keeps the plain words)')
+    parser.add_argument("--video-topic", dest="video_topic", default="",
+                        help="the topic tag the VIDEO post wears instead of the day's (the series name on a series day)")
     parser.add_argument("--video-wait", type=int, default=120,
                         help="seconds to wait for the video URL to answer 200 before falling back to the card")
     args = parser.parse_args(argv if argv is not None else sys.argv[1:])
@@ -713,8 +728,11 @@ def main(argv=None):
             else:
                 try:
                     # the card's alt text describes a card; a video gets its own (the Short's title) or none
-                    container_id = create_video_container_with_fallbacks(token, target, text, video_url, args.reply_control,
-                                                                         topic_tag=topic_tag,
+                    video_text, video_topic = series_video_text(text, args.video_series), (args.video_topic or "").strip() or topic_tag
+                    if video_text != text or video_topic != topic_tag:
+                        print("extras: series=%r topic=%r" % ((args.video_series or "").strip(), video_topic))
+                    container_id = create_video_container_with_fallbacks(token, target, video_text, video_url, args.reply_control,
+                                                                         topic_tag=video_topic,
                                                                          alt_text=(args.video_alt or "").strip() or None)
                     ready, state = wait_container(token, container_id, tries=30, delay=10)
                 except ApiError as exc:

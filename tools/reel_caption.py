@@ -100,10 +100,21 @@ QUESTIONS = (
 TEMPLATES_LINE = "Free receipt, agreement and notice templates: docoga.com.ng"
 
 
-def first_comment(day, pack=None):
+def first_comment(day, pack=None, description=""):
     cta = _clean(((pack or {}).get("post") or {}).get("cta")) if pack else ""
     question = cta if (cta.endswith("?") and len(cta) <= 140) else QUESTIONS[(day.timetuple().tm_yday + 3) % len(QUESTIONS)]
-    return question + "\n\n" + TEMPLATES_LINE
+    parts = [question, TEMPLATES_LINE]
+    series = series_parts(description)
+    if series:
+        # Series week (23 Oct 2026): Instagram cannot link, so the comment says where the earlier
+        # parts are — the Reels before this one on the profile — and when the next one lands.
+        where = ["Part %d of %d · %s." % (series["part"], series["total"], series["name"])]
+        if series["part"] > 1:
+            where.append("The earlier parts are the Reels before this one on our profile.")
+        if series["part"] < series["total"]:
+            where.append("Part %d lands tomorrow at 7:00pm." % (series["part"] + 1))
+        parts.insert(0, " ".join(where))
+    return "\n\n".join(parts)
 
 
 def _clean(text):
@@ -164,7 +175,7 @@ def series_parts(description):
     short = "Part %s of %s · %s" % (m.group(1), m.group(2), name)
     if m.group(4):
         short += " · tomorrow: %s" % m.group(4).strip()
-    return {"name": name, "short": short}
+    return {"name": name, "short": short, "part": int(m.group(1)), "total": int(m.group(2))}
 
 
 def send_line(day, pack=None):
@@ -268,7 +279,7 @@ def main(argv=None):
         from datetime import datetime, timedelta, timezone
         day = datetime.now(timezone(timedelta(hours=1))).date()
     if args.first_comment:
-        sys.stdout.write(first_comment(day, pack_for(day)) + "\n")
+        sys.stdout.write(first_comment(day, pack_for(day), description) + "\n")
         return 0
     sys.stdout.write(caption(args.platform, args.topic, description, day, pack_for(day)) + "\n")
     return 0

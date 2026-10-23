@@ -102,9 +102,11 @@ def default_comment(kind, title="", parent_comment=""):
     return "\n\n".join(parts)[:MAX_COMMENT]
 
 
-def plan(rows, video_id, kind, title="", comment="", date=""):
-    """Add or refresh the plan for one video. Never clears what was already done."""
+def plan(rows, video_id, kind, title="", comment="", date="", series=None):
+    """Add or refresh the plan for one video. Never clears what was already done. `series`
+    ({slug, name, part, total, week_start}) adds the week's series playlist (23 Oct 2026)."""
     kind = kind if kind in PLAYLISTS else "short"
+    series = dict(series) if isinstance(series, dict) and series.get("slug") and series.get("name") else None
     for row in rows:
         if row.get("video_id") == video_id:
             row.setdefault("kind", kind)
@@ -112,12 +114,29 @@ def plan(rows, video_id, kind, title="", comment="", date=""):
                 row["title"] = title
             if comment and not row.get("comment_id"):
                 row["comment_text"] = comment[:MAX_COMMENT]
+            if series and not row.get("series"):
+                row["series"], row["series_playlist_id"], row["series_item_id"] = series, "", ""
             return row
     row = {"video_id": video_id, "kind": kind, "title": title, "date": date or now_iso()[:10],
            "comment_text": (comment or default_comment(kind, title))[:MAX_COMMENT],
            "comment_id": "", "playlist_id": "", "playlist_item_id": "", "planned_at": now_iso(), "notes": []}
+    if series:
+        row["series"], row["series_playlist_id"], row["series_item_id"] = series, "", ""
     rows.append(row)
     return row
+
+
+def series_playlist(row):
+    """The {title, description} of the row's series playlist, or None."""
+    series = row.get("series")
+    if not isinstance(series, dict) or not series.get("slug"):
+        return None
+    import series_week
+    return series_week.playlist(series)
+
+
+def wants_series(row):
+    return bool(series_playlist(row)) and not row.get("series_item_id")
 
 
 def import_publish_ledgers(rows, shorts=None, longform=None):
@@ -146,7 +165,7 @@ def import_publish_ledgers(rows, shorts=None, longform=None):
 
 
 def pending(rows):
-    return [r for r in rows if not (r.get("comment_id") and r.get("playlist_item_id"))
+    return [r for r in rows if not (r.get("comment_id") and r.get("playlist_item_id") and not wants_series(r))
             and not r.get("gave_up")]
 
 
@@ -197,7 +216,10 @@ class Boost:
         return self._playlists
 
     def ensure_playlist(self, kind):
-        want = PLAYLISTS[kind]
+        return self.ensure_playlist_titled(PLAYLISTS[kind] if isinstance(kind, str) else kind)
+
+    def ensure_playlist_titled(self, want):
+        """`want` = {title, description}; found by exact title, else created public."""
         have = self.my_playlists()
         if want["title"] in have:
             return have[want["title"]], ""
@@ -269,6 +291,23 @@ def sweep(rows, boost, limit=DEFAULT_MAX, log=print):
             else:
                 row.setdefault("notes", []).append("%s: %s" % (now_iso(), err))
                 log("::warning title=Playlist missing::%s: %s" % (vid, err))
+        if wants_series(row):
+            # The week's series playlist (tools/series_week.py, 23 Oct 2026): "Up next" after
+            # part 1 is part 2. One playlist per theme, found by title, created once.
+            want = series_playlist(row)
+            pid, err = boost.ensure_playlist_titled(want)
+            if pid:
+                item, note = boost.add_to_playlist(pid, vid)
+                if item:
+                    row["series_playlist_id"], row["series_item_id"] = pid, item
+                    log("✅ %s: series playlist — %s (%s)" % (vid, note, want["title"][:48]))
+                    did = True
+                else:
+                    row.setdefault("notes", []).append("%s: series %s" % (now_iso(), note))
+                    log("::warning title=Series playlist add failed::%s: %s" % (vid, note))
+            else:
+                row.setdefault("notes", []).append("%s: series %s" % (now_iso(), err))
+                log("::warning title=Series playlist missing::%s: %s" % (vid, err))
         if not row.get("comment_id"):
             if info.get("privacy") == "public" and info.get("upload") in (None, "processed"):
                 cid, note = boost.comment(vid, row.get("comment_text") or default_comment(kind, row.get("title", "")))
@@ -299,6 +338,7 @@ def main(argv=None, http=None):
     p.add_argument("--comment", default="", help="the first comment; empty = the default question + links")
     p.add_argument("--parent-comment", default="", help="a Short's 'Full episode: …' line, prepended to the default")
     p.add_argument("--date", default="")
+    p.add_argument("--series", default="", help='JSON {"slug","name","part","total","week_start"} — the week\'s series playlist')
     r = sub.add_parser("run")
     r.add_argument("--max", type=int, default=DEFAULT_MAX)
     r.add_argument("--no-import", action="store_true", help="do not pull new videos from the publish ledgers")
@@ -311,15 +351,23 @@ def main(argv=None, http=None):
 
     if args.cmd == "show":
         for row in rows:
-            print("%s %-9s playlist=%s comment=%s %s" % (row["video_id"], row.get("kind"),
-                                                        "yes" if row.get("playlist_item_id") else "no",
-                                                        "yes" if row.get("comment_id") else "no", row.get("title", "")[:50]))
+            print("%s %-9s playlist=%s comment=%s%s %s" % (row["video_id"], row.get("kind"),
+                                                          "yes" if row.get("playlist_item_id") else "no",
+                                                          "yes" if row.get("comment_id") else "no",
+                                                          (" series=" + ("yes" if row.get("series_item_id") else "no")) if row.get("series") else "",
+                                                          row.get("title", "")[:50]))
         print("YT_BOOST_PENDING=%d" % len(pending(rows)))
         return 0
 
     if args.cmd == "plan":
         comment = args.comment or default_comment(args.kind, args.title, args.parent_comment)
-        row = plan(rows, args.video_id, args.kind, title=args.title, comment=comment, date=args.date)
+        series = None
+        if args.series.strip():
+            try:
+                series = json.loads(args.series)
+            except ValueError:
+                print("::warning title=Series ignored::--series is not JSON")
+        row = plan(rows, args.video_id, args.kind, title=args.title, comment=comment, date=args.date, series=series)
         save(rows, ledger)
         print("YT_BOOST_PLANNED=%s" % row["video_id"])
         return 0
