@@ -226,7 +226,8 @@ def card_for_post(message, day_iso, post_type, lane, out_dir=None, visual=None):
     out_dir.mkdir(parents=True, exist_ok=True)
     out = out_dir / ("%s_card_%s.jpg" % (lane, day_iso))
     kicker, background, layout, big = _brief(visual, post_type, (CARD_W, CARD_H), said=message)
-    render(message, out, kicker=kicker, background=background, layout=layout, big=big)
+    event = event_for(day_iso)
+    render(message, out, kicker=event_kicker(kicker, event), background=background, layout=layout, big=big, event=event)
     return str(out)
 
 
@@ -240,8 +241,9 @@ def story_for_post(message, day_iso, post_type, lane, out_dir=None, visual=None)
     out_dir.mkdir(parents=True, exist_ok=True)
     out = out_dir / ("%s_story_%s.jpg" % (lane, day_iso))
     kicker, background, layout, big = _brief(visual, post_type, (STORY_W, STORY_H), said=message)
-    render(message, out, kicker=kicker, size=(STORY_W, STORY_H), safe=STORY_SAFE,
-           background=background, layout=layout, big=big)
+    event = event_for(day_iso)
+    render(message, out, kicker=event_kicker(kicker, event), size=(STORY_W, STORY_H), safe=STORY_SAFE,
+           background=background, layout=layout, big=big, event=event)
     return str(out)
 
 
@@ -283,6 +285,7 @@ NAVY2 = (12, 38, 70)        # the tonal glyph
 FAINT = (96, 128, 170)
 SOFT = (226, 234, 246)      # body white — a notch under pure white so the slab stays brightest
 RED, GREEN = (255, 90, 95), (46, 204, 107)
+FLAG_GREEN = (0, 135, 81)            # #008751 — event frames only (docs/BRAND_STYLE.md)
 GRID_SAFE = 135             # a 4:5 card loses this much top and bottom in the 1:1 grid
 SLAB_PAD_X, SLAB_PAD_Y, SLAB_GAP, OFFSET = 28, 8, 6, 14
 SLAB_MAX_LINES = 3
@@ -547,8 +550,35 @@ def _height(p, tall):
     return h
 
 
+def event_for(day_iso):
+    """The special day (tools/events_calendar.py) that shapes a card dated `day_iso`, else None."""
+    try:
+        import events_calendar
+        from datetime import date as _date
+        return events_calendar.frame_event(_date.fromisoformat(str(day_iso)[:10]))
+    except Exception:  # noqa: BLE001 — a bad date or a missing module is never a missing card
+        return None
+
+
+def event_kicker(kicker, event):
+    """On a special day the masthead carries the greeting: 'DocOga · Happy Independence Day'."""
+    greeting = str((event or {}).get("greeting") or "").split(" — ")[0].strip()
+    if not greeting:
+        return kicker
+    return "DocOga · " + greeting
+
+
+def _flag_ribbon(draw, W, y, left, right, h=12):
+    """Green–white–green, the only place flag green is allowed (docs/BRAND_STYLE.md)."""
+    third = (right - left) // 3
+    for i, colour in enumerate((FLAG_GREEN, (255, 255, 255), FLAG_GREEN)):
+        x0 = left + i * third
+        x1 = right if i == 2 else x0 + third
+        draw.rectangle([x0, y, x1, y + h], fill=colour)
+
+
 def render(text, out_path, kicker="", quality=88, max_kb=900, footer=FOOTER, size=None, safe=(0, 0),
-           background=None, layout="poster", big="", progress=None):
+           background=None, layout="poster", big="", progress=None, event=None):
     """Draw `text` on a brand card (1080×1350 by default) and write a JPEG at `out_path`.
 
     `size` = (w, h) for another frame; `safe` = (top, bottom) pixels the platform covers with
@@ -602,6 +632,9 @@ def render(text, out_path, kicker="", quality=88, max_kb=900, footer=FOOTER, siz
     # Kicker: tracked small caps, muted, pinned to the top of the safe box like a masthead (so a
     # carousel's slides line up); a "2 of 6" label becomes a counter top-right and the kicker
     # says DocOga.
+    if event and event.get("frame") == "flag":
+        # National days (Independence, Democracy Day): a thin flag ribbon above the masthead.
+        _flag_ribbon(draw, W, edge_top + 24, MARGIN, W - MARGIN)
     if kicker:
         kfont, _ = load_font("SemiBold", 30 if tall else 26)
         ky = top - kicker_h
@@ -931,6 +964,15 @@ def main(argv=None):
             _, background, _, _ = _brief({}, "", size, said=text)
             brief = {"background": background}
             print("CARD_BRIEF=rotation plate=%s" % ("yes" if background is not None else "no"))
+    if args.brief:
+        event = event_for(args.brief)
+    else:
+        from datetime import datetime, timedelta, timezone
+        event = event_for(datetime.now(timezone(timedelta(hours=1))).date().isoformat())
+    if event:
+        args.kicker = event_kicker(args.kicker, event)
+        brief["event"] = event
+        print("CARD_EVENT=%s frame=%s" % (event["slug"], event.get("frame") or "none"))
     result = render(text, args.out, kicker=args.kicker, quality=args.quality,
                     max_kb=args.max_kb, footer="" if args.no_footer else FOOTER, **frame, **brief)
 

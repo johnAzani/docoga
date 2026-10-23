@@ -86,6 +86,13 @@ Facebook post 09:30 stay. The scorecard records the hour each post went out, its
 engagement by hour, and Instagram's `online_followers` curve, so the slots are
 corrected from evidence.
 
+## Special days (23 Oct 2026)
+`tools/events_calendar.py` feeds `calendar_notes(day)`: Christmas, Independence Day, Children's
+Day, Democracy Day, the Eids, Easter, New Year, Workers' Day, World Habitat/Tenants' Day — each
+with a tenancy angle, a lead-in window and the rule "one greeting line at most; the post still
+teaches one rule with a fact id". The card renderer reads the same table for the flag ribbon
+(national days) and the masthead greeting; the dashboard lists the next ones. `docs/SPECIAL_DAYS.md`.
+
 ## The community manager, the learning loop and the deep links (17 Oct 2026)
 **Replies.** `tools/brain_replies.py` + `.github/workflows/brain_replies.yml` (8:00am,
 11:40am, 2:40pm, 7:40pm and 8:40pm WAT — within 30–45 minutes of every posting slot, since
