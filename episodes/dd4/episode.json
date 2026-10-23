@@ -1,0 +1,556 @@
+{
+ "id": "dd4",
+ "number": 4,
+ "title": "Advance Rent in Lagos and Kwara: What the Law Forbids",
+ "kicker": "DOCOGA — DEEP-DIVE · EPISODE 4",
+ "disclaimer": "GENERAL INFORMATION · NOT LEGAL ADVICE · RULES VARY BY STATE AND AGREEMENT",
+ "voice": {
+  "_locked": "LOCKED by the owner 14 Oct 2026 — must equal tools/deepdive.py LOCKED_VOICE_*; the engine refuses anything else",
+  "name": "Orus",
+  "instruction": "Narrate this in a natural Nigerian English accent, like a confident Lagos radio presenter:"
+ },
+ "audio": {
+  "_comment": "Sound plan — synthesized by tools/soundkit.py, cued from the beats (python3 tools/deepdive.py dd2 cues). Bed levels are dB(A) relative to the narrator's speech; SFX are dB below the voice peak. Run #1 (-27 raw) was inaudible on phones — these are broadcast-documentary levels.",
+  "bed": true,
+  "bpm": 72,
+  "seed": 7,
+  "bed_gap_db": -8,
+  "bed_speech_db": -16,
+  "sfx_db": -12,
+  "hit_db": -9,
+  "tick_db": -16,
+  "riser_db": -14,
+  "stinger_db": -9,
+  "tail_fade_s": 4
+ },
+ "youtube": {
+  "title": "Advance Rent in Lagos and Kwara: What the Law Forbids (Deep-Dive 4)",
+  "description": "Can a landlord or agent legally demand two years of rent upfront in Lagos or Kwara? We examine the exact statutory provisions under section 4 of the Lagos Tenancy Law 2011 and Kwara State tenancy law, covering advance rent caps, sitting versus new tenants, and the criminal penalties that apply to both landlords and tenants.\n\nGenerate your standard tenancy agreement, rent receipts, and formal notices in two minutes at https://docoga.com.ng\n\nGeneral information, not legal advice.",
+  "tags": [
+   "DocOga",
+   "advance rent nigeria",
+   "lagos tenancy law",
+   "kwara tenancy law",
+   "lagos rent cap",
+   "nigerian tenant rights",
+   "rent receipt nigeria",
+   "tenancy agreement lagos",
+   "lagos landlord tenant",
+   "two years rent lagos"
+  ]
+ },
+ "cover": {
+  "img": "naira",
+  "kicker": "KNOW YOUR RIGHTS",
+  "line1": "ADVANCE RENT",
+  "highlight": "CAPS",
+  "label": "LAGOS & KWARA",
+  "line2": "WHAT THE LAW FORBIDS",
+  "line3": "BEFORE YOU PAY TWO YEARS",
+  "sub": "Statutory limits and penalties"
+ },
+ "sections": [
+  {
+   "n": 1,
+   "title": "The Hook"
+  },
+  {
+   "n": 2,
+   "title": "The Lagos Advance Rent Rule"
+  },
+  {
+   "n": 3,
+   "title": "Sitting Tenants in Lagos"
+  },
+  {
+   "n": 4,
+   "title": "The Lagos Penalty Trap"
+  },
+  {
+   "n": 5,
+   "title": "The Kwara Contradiction"
+  },
+  {
+   "n": 6,
+   "title": "Kwara Penalties and Premiums"
+  },
+  {
+   "n": 7,
+   "title": "Increases and Eviction Pressures"
+  },
+  {
+   "n": 8,
+   "title": "The Paper Trail Strategy"
+  },
+  {
+   "n": 9,
+   "title": "The Law, and DocOga"
+  }
+ ],
+ "beats": [
+  {
+   "sec": 1,
+   "trig": null,
+   "head": "THE TWO YEAR DEMAND",
+   "sub": "Agents routinely ask for two years of rent upfront",
+   "img": "letter",
+   "shot": "paper tenancy offer"
+  },
+  {
+   "sec": 1,
+   "trig": [
+    "your",
+    "chest",
+    "tightens"
+   ],
+   "head": "PAYMENT ANXIETY",
+   "sub": "Finding twenty four months of upfront cash is tough",
+   "img": "naira",
+   "shot": "naira banknotes table"
+  },
+  {
+   "sec": 1,
+   "trig": [
+    "statutory",
+    "limits",
+    "immediately"
+   ],
+   "head": "STATUTORY LIMITS",
+   "sub": "State laws regulate upfront rental demands",
+   "img": "court",
+   "shot": "courtroom interior"
+  },
+  {
+   "sec": 1,
+   "trig": [
+    "knowing",
+    "your",
+    "exact"
+   ],
+   "head": "STAND YOUR GROUND",
+   "sub": "Knowing the law shifts the conversation",
+   "img": "door",
+   "shot": "apartment doorway"
+  },
+  {
+   "sec": 2,
+   "trig": null,
+   "head": "LAGOS SECTION 4",
+   "sub": "Tenancy Law 2011 limits advance payments",
+   "img": "rooftops",
+   "shot": "lagos rooftops"
+  },
+  {
+   "sec": 2,
+   "trig": [
+    "asymmetrically",
+    "between",
+    "sitting"
+   ],
+   "head": "ASYMMETRIC RULES",
+   "sub": "Different rules apply to sitting and new tenants",
+   "img": "danfo",
+   "shot": "commercial street"
+  },
+  {
+   "sec": 2,
+   "trig": [
+    "for",
+    "a",
+    "new"
+   ],
+   "head": "ONE YEAR CEILING",
+   "sub": "Landlords cannot demand over one year from new tenants",
+   "img": "letter",
+   "shot": "tenancy agreement"
+  },
+  {
+   "sec": 2,
+   "trig": [
+    "creates",
+    "an",
+    "explicit"
+   ],
+   "head": "CLEAR STATUTORY CAP",
+   "sub": "Demands exceeding twelve months breach the statute",
+   "img": "pen",
+   "shot": "ballpoint pen"
+  },
+  {
+   "sec": 3,
+   "trig": null,
+   "head": "SITTING TENANTS",
+   "sub": "Lagos rules protect existing residential occupants",
+   "img": "door",
+   "shot": "padlocked door"
+  },
+  {
+   "sec": 3,
+   "trig": [
+    "for",
+    "a",
+    "sitting",
+    "yearly"
+   ],
+   "head": "YEARLY TENANT CAP",
+   "sub": "Sitting yearly tenants cannot be asked for over one year",
+   "img": "calendar",
+   "shot": "desk calendar"
+  },
+  {
+   "sec": 3,
+   "trig": [
+    "for",
+    "a",
+    "sitting",
+    "monthly"
+   ],
+   "head": "MONTHLY TENANT CAP",
+   "sub": "Sitting monthly tenants cannot pay over six months",
+   "img": "letter",
+   "shot": "official notice"
+  },
+  {
+   "sec": 3,
+   "trig": [
+    "the",
+    "statutory",
+    "cap"
+   ],
+   "head": "PROTECTING CASH FLOW",
+   "sub": "Statutory caps preserve household resources",
+   "img": "naira",
+   "shot": "counted naira notes"
+  },
+  {
+   "sec": 4,
+   "trig": null,
+   "head": "BOTH SIDES OFFEND",
+   "sub": "Lagos law penalises both landlord and tenant",
+   "img": "court",
+   "shot": "magistrate bench"
+  },
+  {
+   "sec": 4,
+   "trig": [
+    "read",
+    "those",
+    "words"
+   ],
+   "head": "CRIMINAL LIABILITY",
+   "sub": "Fine of 100,000 naira or 3 months imprisonment",
+   "img": "letter",
+   "shot": null
+  },
+  {
+   "sec": 4,
+   "trig": [
+    "when",
+    "an",
+    "eager"
+   ],
+   "head": "BIDDING RISKS",
+   "sub": "Offering excess advance rent breaks the law",
+   "img": "naira",
+   "shot": "naira currency stack"
+  },
+  {
+   "sec": 4,
+   "trig": [
+    "pushing",
+    "excess",
+    "upfront"
+   ],
+   "head": "NO LEGAL ADVANTAGE",
+   "sub": "Excess payments expose both parties to penalties",
+   "img": "pen",
+   "shot": "desk documents"
+  },
+  {
+   "sec": 5,
+   "trig": null,
+   "head": "THE KWARA DUALITY",
+   "sub": "Two conflicting advance rent caps in Kwara law",
+   "img": "kiosk",
+   "shot": "commercial street stall"
+  },
+  {
+   "sec": 5,
+   "trig": [
+    "under",
+    "section",
+    "4",
+    "subsection"
+   ],
+   "head": "SECTION 4 PROHIBITION",
+   "sub": "Unlawful to demand over one year from individuals",
+   "img": "court",
+   "shot": "tribunal hall"
+  },
+  {
+   "sec": 5,
+   "trig": [
+    "under",
+    "section",
+    "35",
+    "subsection"
+   ],
+   "head": "SECTION 35 OFFENCE",
+   "sub": "Guilty of an offence if demanding over three months",
+   "img": "letter",
+   "shot": "statute page"
+  },
+  {
+   "sec": 5,
+   "trig": [
+    "kwara",
+    "explicitly",
+    "contains"
+   ],
+   "head": "STATUTORY CONFLICT",
+   "sub": "Both contradictory provisions remain published",
+   "img": "pen",
+   "shot": "paper dossier"
+  },
+  {
+   "sec": 6,
+   "trig": null,
+   "head": "KWARA PENALTIES",
+   "sub": "Fine equal to excess rent received",
+   "img": "market",
+   "shot": "busy market row"
+  },
+  {
+   "sec": 6,
+   "trig": [
+    "under",
+    "section",
+    "5",
+    "subsection"
+   ],
+   "head": "LOANS AND PREMIUMS",
+   "sub": "Illegal premiums are recoverable and deductible from rent",
+   "img": "naira",
+   "shot": "cash on table"
+  },
+  {
+   "sec": 6,
+   "trig": [
+    "furthermore",
+    "under",
+    "section"
+   ],
+   "head": "TWICE THE AMOUNT",
+   "sub": "Fine of twice the amount for illegal loans or premiums",
+   "img": "court",
+   "shot": "gavel and block"
+  },
+  {
+   "sec": 6,
+   "trig": [
+    "including",
+    "in",
+    "relation"
+   ],
+   "head": "STRICT ENFORCEMENT",
+   "sub": "Advance rent premiums are strictly penalised",
+   "img": "letter",
+   "shot": "formal summons"
+  },
+  {
+   "sec": 7,
+   "trig": null,
+   "head": "RENT CHALLENGES",
+   "sub": "Ejection barred while rent challenge is pending",
+   "img": "door",
+   "shot": "wooden residential door"
+  },
+  {
+   "sec": 7,
+   "trig": [
+    "however",
+    "you",
+    "must"
+   ],
+   "head": "NO PERCENTAGE CAP",
+   "sub": "No statutory percentage cap on rent hikes in Nigeria",
+   "img": "calendar",
+   "shot": "wall calendar"
+  },
+  {
+   "sec": 7,
+   "trig": [
+    "under",
+    "section",
+    "35",
+    "subsection"
+   ],
+   "head": "EVICTION PENALTY",
+   "sub": "5,000 naira fine or six months for unlawful harassment",
+   "img": "court",
+   "shot": "courtroom interior"
+  },
+  {
+   "sec": 7,
+   "trig": [
+    "failing",
+    "to",
+    "comply"
+   ],
+   "head": "STATUTORY SHIELD",
+   "sub": "Harassment to force ejection remains an offence",
+   "img": "rooftops",
+   "shot": "residential buildings"
+  },
+  {
+   "sec": 8,
+   "trig": null,
+   "head": "PAPER BEATS MEMORY",
+   "sub": "Written evidence settles every tenancy dispute",
+   "img": "letter",
+   "shot": "printed document"
+  },
+  {
+   "sec": 8,
+   "trig": [
+    "when",
+    "you",
+    "pay"
+   ],
+   "head": "INSIST ON RECEIPTS",
+   "sub": "Document every payment amount and covered period",
+   "img": "naira",
+   "shot": "paper receipt and cash"
+  },
+  {
+   "sec": 8,
+   "trig": [
+    "if",
+    "a",
+    "dispute"
+   ],
+   "head": "WRITTEN AGREEMENTS",
+   "sub": "Standard written tenancy forms anchor your rights",
+   "img": "pen",
+   "shot": "signing document"
+  },
+  {
+   "sec": 8,
+   "trig": [
+    "memory",
+    "fades",
+    "and"
+   ],
+   "head": "SPOTLESS PAPERWORK",
+   "sub": "Dated records defeat illegal upfront demands",
+   "img": "phone",
+   "shot": "smartphone screen"
+  },
+  {
+   "sec": 9,
+   "trig": null,
+   "head": "WITHOUT LAWYER FEES",
+   "sub": "Lawyers charge 50,000 naira or more for agreements",
+   "img": "court",
+   "shot": "legal library desk"
+  },
+  {
+   "sec": 9,
+   "trig": [
+    "head",
+    "over",
+    "to"
+   ],
+   "head": "DOCOGA DOCUMENT ENGINE",
+   "sub": "Answer simple questions on your phone in two minutes",
+   "img": "phone",
+   "shot": "smartphone on desk"
+  },
+  {
+   "sec": 9,
+   "trig": [
+    "all",
+    "ten",
+    "tools"
+   ],
+   "head": "FREE TO START",
+   "sub": "Free to start with no signup and no card needed",
+   "img": "letter",
+   "shot": "official template"
+  },
+  {
+   "sec": 9,
+   "trig": [
+    "when",
+    "you",
+    "want"
+   ],
+   "head": "OGA PASS ₦2,000",
+   "sub": "Unlimited clean copies for 30 days at 2,000 naira",
+   "img": "celebration",
+   "shot": "house keys in hand"
+  }
+ ],
+ "brain": {
+  "written": "2026-10-23T06:16:17+01:00",
+  "theme": "advance-rent-demands",
+  "claims": [
+   {
+    "text": "In Lagos State, section 4 of the Tenancy Law 2011 is an enforceable advance-rent cap that operates asymmetrically between sitting tenants and new tenants.",
+    "fact_id": "lagos:advance_rent:1"
+   },
+   {
+    "text": "For a sitting monthly tenant in Lagos, section 4 subsections 1 and 2 provides that a landlord may not demand or receive, and a tenant may not pay, more than six months of rent in advance.",
+    "fact_id": "lagos:advance_rent:2"
+   },
+   {
+    "text": "For a sitting yearly tenant in Lagos, section 4 subsections 1 and 2 provides that a landlord may not demand or receive, and a tenant may not pay, more than one year of rent in advance.",
+    "fact_id": "lagos:advance_rent:3"
+   },
+   {
+    "text": "For a new or would-be tenant in Lagos, section 4 subsections 3 and 4 provides that a landlord may not demand or receive more than one year of rent in advance, with no six-month branch available.",
+    "fact_id": "lagos:advance_rent:4"
+   },
+   {
+    "text": "Under section 4 subsection 5 of the Lagos law, both sides commit an offence: any person who receives or pays rent in excess is liable on conviction to a fine of 100,000 naira or three months imprisonment.",
+    "fact_id": "lagos:advance_rent:5"
+   },
+   {
+    "text": "In Kwara State, the statute contains two conflicting provisions regarding advance rent, stating the cap twice with different numbers.",
+    "fact_id": "kwara:advance_rent:1"
+   },
+   {
+    "text": "Under section 4 subsection 6 of the Kwara law, it is unlawful to demand or receive more than one year from individual tenants and two years from commercial or institutional tenants.",
+    "fact_id": "kwara:advance_rent:2"
+   },
+   {
+    "text": "Under section 35 subsection 6 of the Kwara law, a landlord who demands or receives more than three months from an individual tenant, or twelve months from a commercial or institutional tenant, is guilty of an offence.",
+    "fact_id": "kwara:advance_rent:3"
+   },
+   {
+    "text": "Under section 35 subsection 6 of the Kwara law, the penalty for demanding or receiving excess advance rent is a fine of an amount equivalent to the excess of rent received.",
+    "fact_id": "kwara:advance_rent:4"
+   },
+   {
+    "text": "Under section 5 subsection 4 of the Kwara law, it is unlawful for anyone, in consideration of the grant, continuance, surrender or giving up of a tenancy, to require or receive any loan or premium, and such payment is recoverable by the tenant and may be deducted from rent.",
+    "fact_id": "kwara:premium:1"
+   },
+   {
+    "text": "Under section 35 subsection 5 of the Kwara law, a person who receives a loan or premium contravening the Law, expressly including in relation to advance payment of rent, is liable on summary conviction to a fine of twice the amount received.",
+    "fact_id": "kwara:premium:2"
+   },
+   {
+    "text": "Under section 35 subsection 2 of the Kwara law, attempting to or forcibly ejecting a tenant, harassing or molesting a tenant to eject him, harassing a landlord, doing anything calculated to stultify the Law, or failing to comply with an order carries a penalty of 5,000 naira or six months.",
+    "fact_id": "kwara:penalties:2"
+   },
+   {
+    "text": "Under section 37 subsection 4 of the Lagos law, it is unlawful for a landlord to eject a tenant while an application challenging an unreasonable rent increase is pending.",
+    "fact_id": "lagos:increase_challenge:2"
+   },
+   {
+    "text": "There is no statutory percentage cap on rent increases in Lagos or anywhere else in Nigeria.",
+    "fact_id": "lagos:increase_challenge:3"
+   }
+  ]
+ }
+}

@@ -87,6 +87,39 @@
     "beat 30 shot 'aerial perspective of neighborhood rooftops' dropped"
    ],
    "run_id": "39878533915"
+  },
+  {
+   "at": "2026-10-23T06:14:31+01:00",
+   "episode": "dd4",
+   "attempt": 1,
+   "outcome": "refused",
+   "title": "Advance Rent in Nigeria: What Landlords May Legally Demand",
+   "problems": [
+    "verifier: claim [lagos:advance_rent:1] not supported — The fact only states that s.4 is an asymmetric advance-rent cap between sitting and new tenants, without specifying the exact 1-year or 6-month c",
+    "verifier: claim [kwara:advance_rent:3] not supported — The fact specifies s.35(6) offence for demanding or receiving more than three months from an individual, but does not state the penalty is a fine",
+    "verifier: claim [kwara:penalties:2] not supported — The fact specifies s.35(2) (not subsection 1) and lists molesting, attempting to or forcibly ejecting, but does not list demolishing premises under ",
+    "verifier: legal statement not on the shelf — 'If you are entering an apartment as a brand new tenant, the landlord cannot demand or receive more than one year of rent'",
+    "verifier: legal statement not on the shelf — 'If you are an existing sitting tenant on a yearly agreement, the landlord cannot demand more than one year.'",
+    "verifier: legal statement not on the shelf — 'And if you are a sitting monthly tenant, the landlord is prohibited from collecting more than six months of advance rent'",
+    "verifier: legal statement not on the shelf — 'The maximum allowable advance rent for any incoming residential tenant in Lagos is strictly twelve months.'",
+    "verifier: legal statement not on the shelf — 'The law says money paid as an unlawful premium can be recovered directly by the tenant or deducted from future rent.'"
+   ],
+   "healed": [
+    "beat 12 dropped: trigger '100000 naira or three' not spoken in section 4 after word 0"
+   ],
+   "run_id": "39904333774"
+  },
+  {
+   "at": "2026-10-23T06:16:18+01:00",
+   "episode": "dd4",
+   "attempt": 2,
+   "outcome": "written",
+   "title": "Advance Rent in Lagos and Kwara: What the Law Forbids",
+   "problems": [],
+   "healed": [
+    "beat 14 shot 'law text page' dropped"
+   ],
+   "run_id": "39904333774"
   }
  ]
 }

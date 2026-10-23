@@ -12,5 +12,24 @@
   "reader": "ngozi",
   "tool": "rent-receipt",
   "news_hook": null
+ },
+ {
+  "date": "2026-10-24",
+  "theme": "cross-river-advance-rent-limit-checklist",
+  "headline": "Did your Cross River landlord demand a full year upfront?",
+  "post_type": "checklist",
+  "hook_type": "QUESTION",
+  "state": "cross-river",
+  "fact_ids": [
+   "cross-river:advance_rent:1",
+   "cross-river:premium:1",
+   "cross-river:repairs:1",
+   "cross-river:notice_ladder:4"
+  ],
+  "plate": "keys wooden door",
+  "short": false,
+  "reader": "ngozi",
+  "tool": "tenancy-agreement",
+  "news_hook": null
  }
 ]
