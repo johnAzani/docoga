@@ -1,0 +1,9 @@
+/tmp/short.log:WORDSYNC=vosk
+/tmp/short.log:SHOTS_VIDEO=15
+/tmp/short.log:SHOTS_PHOTO=0
+/tmp/short.log:SHOTS_DOORS=pixabay:on,pexels:nokey,flickr:nokey,unsplash:on,commons:on,openverse:on
+/tmp/short.log:SHOTS_TOTAL=15
+/tmp/short.log:SHOTS_HITS=5/5
+/tmp/short.log:COVER=/home/runner/work/docoga/docoga/assets/videos/docoga_short_20261023.cover.jpg
+/tmp/sheet.log:SHEET_BRIGHTNESS=56.3,25.4,49.7,57.0,51.0,43.5,43.1,22.0
+/tmp/sheet.log:SHEET_PHOTO_FRAMES=6/8
