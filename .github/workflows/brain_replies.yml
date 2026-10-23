@@ -118,12 +118,34 @@ jobs:
           fi
           exit 0
 
+      # The owner's Telegram handshake (23 Oct 2026, 4:54am: he sent the word to the bot).
+      # Telegram keeps an unread update for 24 hours only and the Short lane — the other place
+      # this runs — fires once a weekday, so the first replies run of the day adopts the chat and
+      # says hello back. Never fails the lane; `OWNER_DM=adopted|linked|unknown|skipped`.
+      - name: Adopt the owner's Telegram chat
+        id: owner
+        if: ${{ env.REPLIES_DRY_RUN != 'true' }}
+        continue-on-error: true
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        run: |
+          set -o pipefail
+          python3 -m pip install --quiet requests >/dev/null 2>&1 || true
+          python3 tools/owner_dm.py discover 2>&1 | tee /tmp/owner_discover.log
+          STATE=$(sed -n 's/^OWNER_DM=//p' /tmp/owner_discover.log | tail -1)
+          echo "state=${STATE:-unknown}" >> "$GITHUB_OUTPUT"
+          if [ "$STATE" = "adopted" ]; then
+            python3 tools/owner_dm.py send --text "Linked. This is DocOga's bot: every TikTok caption will arrive here the moment the draft lands in your TikTok inbox (weekdays, 6:00pm), ready to copy." || true
+          fi
+
       - name: Commit the reply ledger
         if: ${{ env.REPLIES_DRY_RUN != 'true' }}
         env:
           BRANCH: ${{ github.event.repository.default_branch }}
         run: |
-          git add -A logs/brain_replied.json 2>/dev/null || true
+          for path in logs/brain_replied.json logs/telegram_owner.json; do
+            if [ -e "$path" ]; then git add -A "$path"; fi
+          done
           if git diff --staged --quiet; then
             echo "nothing new to commit"
             exit 0

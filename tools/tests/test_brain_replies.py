@@ -359,6 +359,11 @@ class WorkflowContractTests(unittest.TestCase):
         self.assertIn("logs/brain_replied.json", text)
         self.assertIn("[skip ci]", text)
         self.assertIn("token_vault.py", text, "Instagram/Threads tokens come out of the vault like every other lane")
+        # 23 Oct 2026: the first replies run of the day adopts the owner's Telegram handshake
+        # (Telegram keeps an unread update 24 h; the Short lane alone would have missed a weekend).
+        self.assertIn("tools/owner_dm.py discover", text)
+        self.assertIn("logs/telegram_owner.json", text, "the adopted chat is committed with the ledger")
+        self.assertTrue(text.index("owner_dm.py discover") < text.index("Commit the reply ledger"))
 
 
 if __name__ == "__main__":
