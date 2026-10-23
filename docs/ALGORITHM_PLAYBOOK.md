@@ -120,17 +120,29 @@ of five-plus words. `tools/brain_replies.py` now refuses any reply under eight w
 is only thanks (`REPLY_MIN_WORDS`, `THIN`), and the prompt asks for one fact or one question
 back in every reply.
 
-## 6. Next levers, in order of expected effect (Founder's brief items)
+## 6. Shipped 23 Oct 2026 — the search phrase on screen
+
+TikTok weights **on-screen text in the first three seconds** next to the spoken words, above
+the caption; YouTube indexes the thumbnail frame the same way. The Short's opening masthead
+— for three seconds and on the cover both platforms index — now reads the day's **search
+phrase plus the episode number**: `RENT IN NIGERIA · No. 9`, `LAGOS TENANCY LAW · No. 10`,
+`NOTICE TO QUIT NIGERIA · No. 11` (`tools/shorts_reel.py search_kicker`). It is the same
+phrase the TikTok caption leads with (`tools/reel_caption.py tiktok_keyword`) — screen,
+caption and query agree — and the brain's SEO line for the day wins when a pack exists. The
+brand stays in the CTA chip, the handle scene and every caption. `SHORTS_SEARCH_KICKER=off`
+restores `DOCOGA · TENANT TIPS · No. N`. Already there, checked and not rebuilt: the YouTube
+first comment + series playlists (`tools/yt_boost.py`, every Short since 14 Oct has both), the
+Threads topic tag, the Instagram first comment (§4).
+
+## 7. Next levers, in order of expected effect (Founder's brief items)
 
 1. **Series** — a numbered run ("Receipt law, 1 of 5") across a week so a profile visit
    has somewhere to go.
-2. **TikTok on-screen keyword** — the search phrase as the first caption chunk of the Short
-   (TikTok reads burned-in text in the first three seconds).
-3. **Hook bans from the swipe test** — once two Monday pulls have filled
+2. **Hook bans from the swipe test** — once two Monday pulls have filled
    `averageViewPercentage`, the bottom quartile's hook types go to the brain as "do not open
    like this" (`docs/HOOK_LEDGER.md`).
 
-## 7. What we will not do, and why
+## 8. What we will not do, and why
 
 Engagement pods, bought followers/likes/views, comment bots, follow/unfollow, mass DMs,
 reposting other creators' videos, watermark-stripped reuploads, "like if you agree" bait.

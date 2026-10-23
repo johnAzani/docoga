@@ -106,7 +106,12 @@ addition with evidence behind it is the **series number**: the kicker reads
 distinct published/scheduled Shorts + 1). Numbered episodes read as a show, not a one-off —
 the returning-viewer cue the Shorts-feed studies credit for repeat taps — and the number is the
 one element that is new every day without touching the hero. `SHORTS_SERIES_NO=<n>` overrides,
-`SHORTS_SERIES_NO=off` restores the plain kicker. The cover is still frame 0 of the video, so
+`SHORTS_SERIES_NO=off` restores the plain kicker. **Since 23 Oct 2026 the words before the
+number are the day's search phrase** — `RENT IN NIGERIA · No. 9`, `LAGOS TENANCY LAW · No. 10`
+(`shorts_reel.search_kicker`): TikTok and YouTube read burned-in text in the first three
+seconds and index the cover frame, and this is the same phrase the TikTok caption opens with.
+The brand stays in the chip; `SHORTS_SEARCH_KICKER=off` restores `DOCOGA · TENANT TIPS · No. N`
+(docs/ALGORITHM_PLAYBOOK.md §6). The cover is still frame 0 of the video, so
 the video's opening carries the same number.
 
 ## 4. Measuring it
