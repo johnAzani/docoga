@@ -1,0 +1,62 @@
+{
+ "version": 1,
+ "status": "approved",
+ "date": "2026-10-25",
+ "generated_at": "2026-10-23T01:37:06+01:00",
+ "theme": "rent-receipt-always-paper-edo",
+ "post_type": "engagement",
+ "hook_type": "STAT",
+ "state": "edo",
+ "claims": [],
+ "post": {
+  "headline": "Over 70% of Nigerian tenants pay rent without paper.",
+  "lines": [
+   "This week's reports show many still pay cash without a proper receipt.",
+   "But memory no be paper, and paper dey save stress.",
+   "A dated rent receipt is your proof of payment, your shield.",
+   "Don't just pay; make sure you get a receipt in return."
+  ],
+  "cta": "Send this to a friend who always pays cash for their rent.",
+  "hashtags": [
+   "#DocOga",
+   "#RentReceipt",
+   "#EdoTenants",
+   "#PaperBeatsMemory"
+  ]
+ },
+ "threads": {
+  "text": "Over 70% of Nigerian tenants pay rent without proper receipts. When you pay rent, your only proof is that paper. No receipt, no proof. What is the one thing your receipt must have?",
+  "hashtags": [
+   "#DocOga",
+   "#Rent"
+  ],
+  "topic": "Tenant Rights Nigeria",
+  "poll": {
+   "option_a": "Date",
+   "option_b": "Amount",
+   "option_c": "Landlord's signature",
+   "option_d": "All of them"
+  },
+  "evening": "A proper rent receipt protects you from paying twice. It must be dated and show the amount paid. Insist on it every time you pay."
+ },
+ "visual": {
+  "kicker": "Engagement Question",
+  "layout": "stat",
+  "big": "70%",
+  "plate": "hand holding receipt"
+ },
+ "short": null,
+ "why": "This post is an engagement question for Ngozi, using a STAT hook about rent payment habits, aligning with the payday window and the need to improve Facebook comments and Threads replies, while promoting the rent receipt tool.",
+ "tool": "rent-receipt",
+ "reader": "ngozi",
+ "news_hook": null,
+ "quiz": null,
+ "gates": [
+  "citation",
+  "no-claims",
+  "lint",
+  "repetition",
+  "shape"
+ ],
+ "note": ""
+}

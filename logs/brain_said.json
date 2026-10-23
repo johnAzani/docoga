@@ -1,1 +1,16 @@
-[]
+[
+ {
+  "date": "2026-10-25",
+  "theme": "rent-receipt-always-paper-edo",
+  "headline": "Over 70% of Nigerian tenants pay rent without paper.",
+  "post_type": "engagement",
+  "hook_type": "STAT",
+  "state": "edo",
+  "fact_ids": [],
+  "plate": "hand holding receipt",
+  "short": false,
+  "reader": "ngozi",
+  "tool": "rent-receipt",
+  "news_hook": null
+ }
+]

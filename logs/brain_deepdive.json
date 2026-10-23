@@ -1,0 +1,92 @@
+{
+ "attempts": [
+  {
+   "at": "2026-10-23T01:39:42+01:00",
+   "episode": "dd4",
+   "attempt": 1,
+   "outcome": "refused",
+   "title": "Advance Rent: How Much Can Your Landlord Really Demand?",
+   "problems": [
+    "no emoji or markdown in narration"
+   ],
+   "healed": [
+    "beat 7 shot 'person holding phone' dropped",
+    "beat 8 shot 'legal document text' dropped",
+    "beat 9 dropped: trigger 'section 46 of the' not spoken in section 3 after word 0",
+    "beat 10 dropped: trigger 'section 356 of the' not spoken in section 3 after word 0",
+    "beat 15 dropped: trigger 'new or wouldbe tenant' not spoken in section 4 after word 61",
+    "beat 18 dropped: trigger 'section 45 makes both' not spoken in section 5 after word 41",
+    "beat 19 dropped: trigger 'fine of 100000 or' not spoken in section 5 after word 41",
+    "beat 21 dropped: trigger 'kwara section 54 makes' not spoken in section 6 after word 0",
+    "beat 29 dropped: trigger 'kwara section 321 mandates' not spoken in section 8 after word 0",
+    "beat 31 dropped: trigger 'lagos section 51 of' not spoken in section 8 after word 61",
+    "beat 38 dropped: trigger '2000 for 30 days' not spoken in section 9 after word 98"
+   ],
+   "run_id": "39878533915"
+  },
+  {
+   "at": "2026-10-23T01:42:17+01:00",
+   "episode": "dd4",
+   "attempt": 2,
+   "outcome": "refused",
+   "title": "Advance Rent: How Much is Too Much? Kwara vs. Lagos Law",
+   "problems": [
+    "36-48 beats (got 21)",
+    "section 6 needs at least two beats",
+    "section 8 needs at least two beats",
+    "no emoji or markdown in narration"
+   ],
+   "healed": [
+    "beat 2 dropped: trigger 'paid more advance rent' not spoken in section 1 after word 0",
+    "beat 4 dropped: trigger 'conflicting interpretations' not spoken in section 1 after word 58",
+    "beat 7 dropped: trigger 'two years from commercial' not spoken in section 2 after word 48",
+    "beat 8 dropped: trigger 'legislative doublespeak' not spoken in section 2 after word 48",
+    "beat 11 dropped: trig ['twelve', 'months', 'from', 'a', 'commercial'] is not 2-4 words",
+    "beat 12 dropped: trig ['fine', 'equivalent', 'to', 'the', 'excess'] is not 2-4 words",
+    "beat 14 dropped: trig ['sitting', 'tenant', 'who', 'pays', 'monthly'] is not 2-4 words",
+    "beat 16 dropped: trigger 'brandnew tenant' not spoken in section 4 after word 76",
+    "beat 22 dropped: trig ['huge', 'chunk', 'of', 'your', 'capital'] is not 2-4 words",
+    "beat 23 dropped: trig ['knowing', 'these', 'laws', 'empowers', 'you'] is not 2-4 words",
+    "beat 24 dropped: trig ['negotiate', 'from', 'a', 'position', 'of', 'strength'] is not 2-4 words",
+    "beat 26 dropped: trig ['unlawful', 'for', 'anyone', 'to', 'require'] is not 2-4 words"
+   ],
+   "run_id": "39878533915"
+  },
+  {
+   "at": "2026-10-23T01:44:01+01:00",
+   "episode": "dd4",
+   "attempt": 3,
+   "outcome": "refused",
+   "title": "Illegal Eviction and Rent Cap Secrets in Lagos and Kwara",
+   "problems": [
+    "verifier: claim [lagos:advance_rent:1] not supported — The fact states s.4 is an advance-rent cap and asymmetric, but does not specify the amounts (one year for new, six months for sitting).",
+    "verifier: claim [kwara:penalties:1] not supported — The fact only mentions s.35(1) and does not include s.35(2) or the actions of forcibly ejecting or molesting a tenant, or the specific penalty for t",
+    "verifier: claim [kwara:advance_rent:2] not supported — The fact states s.4(6) prohibits more than one year from individual tenants and two years from commercial/institutional tenants, but does not men",
+    "verifier: claim [lagos:notice_ladder:5] not supported — The fact only specifies 'Yearly tenant: six months' under s.13(1)(e) and does not list other notice periods.",
+    "verifier: claim [kwara:notice_ladder:4] not supported — The fact only specifies 'Yearly tenancy: half a year' under s.17(1)(d) and does not list other notice periods.",
+    "verifier: claim [lagos:increase_challenge:1] not supported — The fact states a tenant applies to court on Form TL11 to challenge an unreasonable increase, but does not state it is unlawful for the lan",
+    "verifier: legal statement not on the shelf — 'In Kwara, under section 30, no entry on a warrant may be made on a Sunday or public holiday, or outside 6am to 6pm.'",
+    "verifier: legal statement not on the shelf — 'Lagos provides that identical protection under section 42 of its 2011 Law.'",
+    "verifier: legal statement not on the shelf — 'Furthermore, in Kwara, under section 16, after the quit notice expires, the landlord must serve a statutory notice of in'",
+    "verifier: legal statement not on the shelf — 'Under section 26 subsection 2, accommodation is suitable only where it fits the needs of the tenant and family regarding'",
+    "verifier: legal statement not on the shelf — 'In fact, under section 7 of the Kwara law, shifting an extra financial burden to a tenant is treated legally as an incre'",
+    "verifier: legal statement not on the shelf — 'In addition, under section 13 of the Kwara law, any agreement that purports to stop a tenant from exercising legal right'"
+   ],
+   "healed": [
+    "section 9: style word rewritten",
+    "beat 3 dropped: trigger 'selfhelp is completely' not spoken in section 1 after word 29",
+    "beat 8 shot 'fountain pen resting on desk' dropped",
+    "beat 12 shot 'suburban street under dusk light' dropped",
+    "beat 13 shot 'domestic power generator outside house' dropped",
+    "beat 17 shot 'wall calendar showing monthly grid' dropped",
+    "beat 21 shot 'view of town residential roofs' dropped",
+    "beat 23 shot 'commuter tricycle parked in town' dropped",
+    "beat 24 shot 'open front door of house' dropped",
+    "beat 25 shot 'bundle of cash currency notes' dropped",
+    "beat 29 shot 'state high court building facade' dropped",
+    "beat 30 shot 'aerial perspective of neighborhood rooftops' dropped"
+   ],
+   "run_id": "39878533915"
+  }
+ ]
+}

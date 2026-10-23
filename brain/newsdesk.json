@@ -1,1 +1,13 @@
-{"fetched": null, "sources": [], "items": []}
+{
+ "fetched": "2026-10-23T00:30:53+00:00",
+ "sources": [
+  "Punch: 30 stories",
+  "Vanguard: 20 stories",
+  "BusinessDay: 5 stories",
+  "TheCable: unreachable (HTTP Error 403: Forbidden)",
+  "Premium Times: 15 stories",
+  "The Guardian Nigeria: unreachable (HTTP Error 403: Forbidden)",
+  "Nairametrics: 20 stories"
+ ],
+ "items": []
+}
