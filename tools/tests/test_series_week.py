@@ -1,0 +1,252 @@
+"""Series weeks (23 Oct 2026): five weekday Shorts on one law, numbered, each end card naming
+tomorrow's part. The spine is deterministic from the date (tools/series_week.py); the brain
+writes to the day's angle; a rotation script wears the series only when it honestly fits; the
+cover, the title, the description, the captions and the dashboard all read the same frame."""
+import io
+import json
+import os
+import sys
+import tempfile
+import unittest
+from contextlib import redirect_stdout
+from datetime import date, datetime, timezone
+from pathlib import Path
+from unittest.mock import patch
+
+ROOT = Path(__file__).resolve().parents[2]
+for p in (ROOT / "tools", ROOT / "scripts", ROOT / "tools" / "tests"):
+    if str(p) not in sys.path:
+        sys.path.insert(0, str(p))
+
+import brain_drafts  # noqa: E402
+import series_week as sw  # noqa: E402
+
+MON = date(2026, 10, 26)   # the first series Monday: Rent receipt law
+TUE = date(2026, 10, 27)
+FRI = date(2026, 10, 30)
+SAT = date(2026, 10, 31)
+MON2 = date(2026, 11, 2)   # week two: Tenancy agreement
+
+
+class SpineTests(unittest.TestCase):
+    def test_six_themes_five_parts_each_and_every_label_fits_the_screen(self):
+        self.assertGreaterEqual(len(sw.SERIES), 6)
+        self.assertEqual(len({s["slug"] for s in sw.SERIES}), len(sw.SERIES))
+        for s in sw.SERIES:
+            with self.subTest(series=s["slug"]):
+                self.assertEqual(len(s["parts"]), sw.TOTAL)
+                self.assertIn(s["tool"], brain_drafts.TOOLS, "the deep link must be a real tool page")
+                self.assertTrue(s["words"])
+                self.assertLessEqual(len(sw.masthead(dict(name=s["name"], part=5, total=5))), sw.LABEL_MAX)
+                for part in s["parts"]:
+                    self.assertLessEqual(len(part["label"]), 26, part["label"])
+                    self.assertGreater(len(part["angle"]), 30, "the angle is a brief, not a label")
+
+    def test_the_week_is_read_from_the_date(self):
+        s = sw.series_for(MON)
+        self.assertEqual((s["slug"], s["part"], s["total"]), ("rent-receipt-law", 1, 5))
+        self.assertEqual(s["next_label"], "What a receipt must show")
+        self.assertEqual(s["prev_label"], "")
+        self.assertEqual(sw.series_for(FRI)["part"], 5)
+        self.assertEqual(sw.series_for(FRI)["next_label"], "")
+        self.assertEqual(sw.series_for(MON2)["slug"], "tenancy-agreement")
+        self.assertIsNone(sw.series_for(SAT), "no Short on Saturday, no part")
+        self.assertIsNone(sw.series_for(date(2026, 10, 23)), "before the first series Monday: plain Shorts")
+        self.assertIsNone(sw.series_for(MON, env={"SHORTS_SERIES_WEEK": "off"}), "the kill switch")
+        self.assertEqual(sw.series_for("2026-10-27")["part"], 2)
+
+    def test_masthead_pointer_and_sentence(self):
+        s = sw.series_for(TUE)
+        self.assertEqual(sw.masthead(s), "RENT RECEIPT LAW · 2 OF 5")
+        self.assertEqual(sw.pointer(s), "PART 3 TOMORROW · PAID, NO RECEIPT. NOW WHAT")
+        self.assertEqual(sw.pointer(s, "Paid cash, no paper?"), "PART 3 TOMORROW · PAID CASH, NO PAPER?")
+        self.assertEqual(sw.pointer(s, "You paid. No receipt. Do this today, not next week."),
+                         "PART 3 TOMORROW · PAID, NO RECEIPT. NOW WHAT", "a title too long for one glance line → the plan's label")
+        self.assertLessEqual(len(sw.pointer(s, "a very long brain title that would never fit on one glance line at all")), 44)
+        self.assertEqual(sw.pointer(sw.series_for(FRI)), "SERIES COMPLETE · ALL 5 ON THE CHANNEL")
+        self.assertEqual(sw.sentence(s), "Part 2 of 5 in this week's series on the rent receipt law. Tomorrow: Paid, no receipt. Now what.")
+        self.assertTrue(sw.sentence(sw.series_for(FRI)).endswith("All five parts are on the channel."))
+
+    def test_a_rotation_script_wears_the_series_only_when_it_fits(self):
+        import generate_short_video as words
+        receipt = next(s for s in words.VIDEO_SCRIPTS if "receipt" in s["title"].lower())
+        photos = next(s for s in words.VIDEO_SCRIPTS if "photos" in s["title"].lower())
+        s = sw.series_for(MON)
+        self.assertTrue(sw.fits(s, receipt))
+        self.assertFalse(sw.fits(s, photos))
+        self.assertIn("series", sw.attach(receipt, MON))
+        self.assertNotIn("series", sw.attach(photos, MON))
+        self.assertNotIn("series", sw.attach(receipt, SAT))
+        # a brain Short written to the part wears it; one written to another week's part does not
+        brain_short = {"title": "x", "brain": "2026-10-26", "slides": []}
+        self.assertIn("series", sw.attach(brain_short, MON, pack_series={"slug": "rent-receipt-law", "part": 1}))
+        self.assertNotIn("series", sw.attach(brain_short, MON, pack_series={"slug": "notice-to-quit", "part": 1}))
+        self.assertNotIn("series", sw.attach(brain_short, MON))
+
+    def test_the_brief_the_brain_reads(self):
+        text = sw.brief(sw.series_for(TUE))
+        self.assertIn("RENT RECEIPT LAW (part 2 of 5 today)", text)
+        self.assertIn('Today\'s part: "What a receipt must show"', text)
+        self.assertIn('Yesterday\'s part was "Why the receipt is law"', text)
+        self.assertIn('Tomorrow\'s part is "Paid, no receipt. Now what"', text)
+        self.assertIn("`rent-receipt`", text)
+        self.assertEqual(sw.brief(None), "")
+
+
+class LaneTests(unittest.TestCase):
+    """The Short's words, picture, title, description and captions on a series day."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.drafts = Path(self.tmp.name) / "drafts"
+        self.drafts.mkdir()
+        env = patch.dict(os.environ, {"DOCOGA_BRAIN_DRAFTS": str(self.drafts), "DOCOGA_BRAIN": "on",
+                                      "SHORTS_SEARCH_KICKER": "", "SHORTS_SERIES_WEEK": "on"})
+        env.start()
+        self.addCleanup(env.stop)
+
+    def pack(self, day, title, part, slug="rent-receipt-law"):
+        tips = [{"text": "Tip %d" % i, "sub": "sub", "say": "say " * 20} for i in range(1, 5)]
+        pack = {"version": 1, "status": "approved", "date": day.isoformat(), "theme": "t-%d" % part,
+                "post": {"headline": "h", "lines": ["l"], "cta": "c", "hashtags": ["#DocOga"]},
+                "threads": {"text": "t", "hashtags": []}, "visual": {}, "tool": "rent-receipt",
+                "short": {"title": title, "hook_sub": "sub", "hook_say": "say " * 22, "hook_text": title.upper(),
+                          "tips": tips, "series": {"slug": slug, "name": "Rent receipt law", "part": part, "total": 5}}}
+        (self.drafts / ("%s.json" % day.isoformat())).write_text(json.dumps(pack), encoding="utf-8")
+        return pack
+
+    def test_the_rotation_monday_is_part_one_and_a_non_fitting_tuesday_stays_plain(self):
+        import generate_short_video as words
+        mon = words.script_for_date(MON)
+        self.assertIn("receipt", mon["title"].lower())
+        self.assertEqual(mon["series"]["part"], 1)
+        self.assertEqual(words.yt_title(mon), "Rent receipt in Nigeria: pay without a receipt, pay twice (part 1 of 5) #Shorts")
+        tue = words.script_for_date(TUE)
+        self.assertNotIn("series", tue, "the agent script does not pretend to be receipt law")
+        self.assertNotIn("part", words.yt_title(tue))
+        self.assertIn(words.script_for_date(date(2026, 1, 5)), words.VIDEO_SCRIPTS, "before START the rotation is untouched")
+
+    def test_a_brain_short_wears_the_part_and_names_tomorrows_by_its_real_title(self):
+        import generate_short_video as words
+        self.pack(TUE, "Six lines every receipt needs.", 2)
+        self.pack(date(2026, 10, 28), "Paid cash, no paper?", 3)
+        topic = words.script_for_date(TUE)
+        self.assertEqual(topic["brain"], TUE.isoformat())
+        self.assertEqual(topic["series"]["part"], 2)
+        self.assertEqual(topic["series"]["next_title"], "Paid cash, no paper?")
+        self.assertEqual(words.yt_title(topic), "Six lines every receipt needs (part 2 of 5) #Shorts")
+        self.assertEqual(sw.pointer(topic["series"], topic["series"]["next_title"]),
+                         "PART 3 TOMORROW · PAID CASH, NO PAPER?")
+
+    def test_the_reel_carries_the_masthead_and_the_pointer_and_a_plain_day_does_not(self):
+        import generate_short_video as words
+        import shorts_reel
+        reel = shorts_reel.reel_from_topic(words.script_for_date(MON), Path(self.tmp.name) / "s.mp4")
+        kickers = [b["text"] for b in reel["scenes"][0]["beats"] if b["kind"] == "kicker"]
+        self.assertEqual(kickers, ["RENT RECEIPT LAW · 1 OF 5"])
+        end = [b for b in reel["scenes"][-1]["beats"] if b["kind"] == "kicker"]
+        self.assertEqual(end[0]["text"], "PART 2 TOMORROW · WHAT A RECEIPT MUST SHOW")
+        self.assertEqual(end[0]["color"], shorts_reel.ms.YELLOW)
+        self.assertLess(end[0]["y"], end[1]["y"], "the pointer sits above the disclaimer and the follow line")
+        plain = shorts_reel.reel_from_topic(words.script_for_date(TUE), Path(self.tmp.name) / "p.mp4")
+        self.assertFalse([b for b in plain["scenes"][-1]["beats"] if "TOMORROW" in str(b.get("text"))])
+        self.assertNotIn("OF 5", [b["text"] for b in plain["scenes"][0]["beats"] if b["kind"] == "kicker"][0])
+
+    def test_an_explicit_search_kicker_still_wins_on_the_screen(self):
+        import generate_short_video as words
+        import shorts_reel
+        with patch.dict(os.environ, {"SHORTS_SEARCH_KICKER": "rent receipt format"}):
+            reel = shorts_reel.reel_from_topic(words.script_for_date(MON), Path(self.tmp.name) / "k.mp4")
+        self.assertEqual([b["text"] for b in reel["scenes"][0]["beats"] if b["kind"] == "kicker"], ["RENT RECEIPT FORMAT"])
+
+    def test_description_and_captions_say_which_part_and_what_tomorrow_is(self):
+        import generate_short_video as words
+        import reel_caption
+        import youtube_short_daily as lane
+        topic = words.script_for_date(MON)
+        description = lane.describe(topic)
+        self.assertIn("Part 1 of 5 in this week's series on the rent receipt law. Tomorrow: What a receipt must show.", description)
+        self.assertLess(description.index("Part 1 of 5"), description.index("In this Short:"))
+        for platform in ("facebook", "instagram"):
+            text = reel_caption.caption(platform, topic["title"], description, MON)
+            self.assertIn("Part 1 of 5 in this week's series on the rent receipt law.", text, platform)
+        tiktok = reel_caption.caption("tiktok", topic["title"], description, MON)
+        self.assertTrue(tiktok.startswith("Rent receipt law Nigeria:"), tiktok)
+        self.assertIn("Part 1 of 5 · Rent receipt law · tomorrow: What a receipt must show", tiktok)
+        self.assertLessEqual(len(tiktok), reel_caption.TIKTOK_MAX)
+        plain = lane.describe(words.script_for_date(TUE))
+        self.assertNotIn("this week's series", plain)
+        self.assertEqual(reel_caption.series_from(plain), "")
+        self.assertIsNone(reel_caption.series_parts(plain))
+
+    def test_the_dashboard_plan_names_the_part(self):
+        import dashboard_feed
+        self.pack(TUE, "Six lines every receipt needs.", 2)
+        root = Path(self.tmp.name)
+        (root / "brain").mkdir()
+        (root / "brain" / "drafts").symlink_to(self.drafts)
+        rows = dashboard_feed.plan(datetime(2026, 10, 27, 9, 0, tzinfo=timezone.utc), root=root, days=1)
+        self.assertEqual(rows[0]["series"], "Rent receipt law · part 2 of 5")
+        self.assertIn("d.series", (ROOT / "site" / "admin.html").read_text(encoding="utf-8"))
+
+
+class BrainTests(unittest.TestCase):
+    """The brain writes to the day's angle and stamps the part on the Short it approves."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        root = Path(self.tmp.name)
+        env = patch.dict(os.environ, {"DOCOGA_BRAIN_DRAFTS": str(root / "drafts"), "DOCOGA_BRAIN": "on",
+                                      "BRAIN_PLATES": "off", "GEMINI_API_KEY": "test-key"})
+        env.start()
+        self.addCleanup(env.stop)
+        import brain
+        import gemini_quota
+        import newsdesk
+        import listening
+        self.brain = brain
+        for target, name, value in ((brain, "SAID", root / "said.json"), (brain, "REFUSED", root / "refused.json"),
+                                    (brain, "FEEDBACK", root / "feedback.md"), (newsdesk, "PINNED", root / "nd_p.json"),
+                                    (newsdesk, "OUT", root / "nd.json"), (listening, "OUT", root / "li.json"),
+                                    (gemini_quota, "LEDGER", root / "quota.json")):
+            p = patch.object(target, name, value)
+            p.start()
+            self.addCleanup(p.stop)
+
+    def test_the_prompt_carries_the_part_and_the_approved_short_is_stamped(self):
+        from test_brain import good_pack
+        ctx = self.brain.day_context(TUE, said=[])
+        self.assertEqual(ctx["series"]["part"], 2)
+        prompt = self.brain.prompt_for(ctx)
+        self.assertIn("THIS WEEK'S SHORTS SERIES — RENT RECEIPT LAW (part 2 of 5 today)", prompt)
+        self.assertIn("WORD BUDGET", prompt)
+        self.assertIn("28 + 4 x 32 = 156 fits", prompt)
+        ctx["facts_by_id"] = {f["id"]: f for f in ctx["facts"]}
+        approved = self.brain.approve(good_pack(TUE), ctx)
+        self.assertEqual(approved["short"]["series"], {"slug": "rent-receipt-law", "name": "Rent receipt law",
+                                                       "part": 2, "total": 5, "label": "What a receipt must show"})
+        topic = brain_drafts.short_topic(approved)
+        self.assertEqual(topic["pack_series"]["part"], 2)
+        weekend = self.brain.day_context(SAT, said=[])
+        self.assertIsNone(weekend["series"])
+        self.assertNotIn("SHORTS SERIES", self.brain.prompt_for(weekend))
+        self.assertIsNone(self.brain.approve(good_pack(SAT, short=None), weekend)["short"])
+
+    def test_refusals_are_remembered_newest_first_and_capped(self):
+        path = Path(self.tmp.name) / "refused.json"
+        for i in range(45):
+            self.brain.remember_refusal(date(2026, 10, 1) + __import__("datetime").timedelta(days=i), ["short.tips: exactly four", "x" * 300],
+                                        path=path, now=datetime(2026, 10, 23, 7, 0, tzinfo=timezone.utc))
+        rows = json.loads(path.read_text(encoding="utf-8"))
+        self.assertEqual(len(rows), self.brain.REFUSED_KEEP)
+        self.assertEqual(rows[0]["date"], "2026-11-14")
+        self.assertEqual(len(rows[0]["problems"][1]), 200)
+        self.assertIn("short_day", rows[0])
+        wf = (ROOT / ".github" / "workflows" / "brain.yml").read_text(encoding="utf-8")
+        self.assertIn("logs/brain_refused.json", wf, "the ledger reaches main with the packs")
+
+
+if __name__ == "__main__":
+    unittest.main()

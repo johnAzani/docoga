@@ -123,6 +123,25 @@ def kicker_size(text, base=30):
     return base if len(text) <= KICKER_MAX else base - 4
 
 
+def series_masthead(series, env=None):
+    """`RENT RECEIPT LAW · 2 OF 5` when the topic wears the week's series (tools/series_week.py,
+    23 Oct 2026) — the series name is itself the search phrase, so nothing from the search
+    kicker is lost; the part number replaces the running `No. N`. `SHORTS_SEARCH_KICKER` set to
+    anything still wins (verbatim, or `off` → the plain DOCOGA kicker). Empty when no series."""
+    if not series:
+        return ""
+    env = os.environ if env is None else env
+    if str(env.get("SHORTS_SEARCH_KICKER", "")).strip():
+        return ""
+    import series_week
+    return series_week.masthead(series)
+
+
+def series_pointer(series):
+    import series_week
+    return series_week.pointer(series, series.get("next_title", ""))
+
+
 CTA_SUPPORT = "Free tenant documents. No signup."
 DISCLAIMER_KICKER = "GENERAL INFO · RULES VARY BY STATE"
 FOLLOW_KICKER = "FOLLOW " + HANDLE.upper()
@@ -183,7 +202,8 @@ def reel_from_topic(topic, out_path, platform="YouTube Shorts"):
     scenes = []
 
     setup, consequence = split_hook(hook["text"])
-    masthead = search_kicker()
+    series = topic.get("series") if isinstance(topic.get("series"), dict) else None
+    masthead = series_masthead(series) or search_kicker()
     hook_beats = [ms.Beat("kicker", "kicker", masthead, size=kicker_size(masthead), y=470, color=ms.FAINT)]
     if consequence:
         # STAKES hook (the pattern the channel's numbers reward — see
@@ -222,18 +242,27 @@ def reel_from_topic(topic, out_path, platform="YouTube Shorts"):
             ]))
 
     disclaimer_text = DISCLAIMER_KICKER
+    end_beats = [
+        ms.Beat("wordpop", "conclusion", "FREE.", size=190, y=520, color=ms.WHITE,
+                underline=ms.YELLOW, rings=True),
+        ms.Beat("button", "cta", CTA_URL, y=840),
+        ms.Beat("support", "support", CTA_SUPPORT, size=44, y=1010, color=ms.MUTED),
+    ]
+    if series:
+        # The series pointer (23 Oct 2026): "PART 3 TOMORROW · PAID, NO RECEIPT. NOW WHAT" in
+        # brand yellow between the CTA and the disclaimer — the one line that turns a view into
+        # a follow, because tomorrow has a name. Friday closes the set instead.
+        end_beats.append(ms.Beat("kicker", "kicker", series_pointer(series), size=26, y=1085, color=ms.YELLOW,
+                                 t0=1.35, exempt=True, why="a glance label, not a line to read"))
+    end_beats += [
+        ms.Beat("kicker", "kicker", disclaimer_text, size=24, y=1135, color=ms.FAINT,
+                t0=1.60),
+        ms.Beat("kicker", "kicker", FOLLOW_KICKER, size=24, y=1185, color=ms.BLUE,
+                t0=1.85),
+    ]
     scenes.append(dict(
         id=chr(ord("B") + len(tips)), role="conclusion", dur=4.6, punch=0.0, trans="dissolve",
-        beats=[
-            ms.Beat("wordpop", "conclusion", "FREE.", size=190, y=520, color=ms.WHITE,
-                    underline=ms.YELLOW, rings=True),
-            ms.Beat("button", "cta", CTA_URL, y=840),
-            ms.Beat("support", "support", CTA_SUPPORT, size=44, y=1010, color=ms.MUTED),
-            ms.Beat("kicker", "kicker", disclaimer_text, size=24, y=1135, color=ms.FAINT,
-                    t0=1.60),
-            ms.Beat("kicker", "kicker", FOLLOW_KICKER, size=24, y=1185, color=ms.BLUE,
-                    t0=1.85),
-        ]))
+        beats=end_beats))
 
     return dict(
         name="DocOga Short — %s" % topic["title"],

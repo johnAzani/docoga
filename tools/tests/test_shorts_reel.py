@@ -220,6 +220,6 @@ class SearchKickerTests(unittest.TestCase):
         self.assertEqual(phrase, re.sub(r"\s*\(.*?\)", "", reel_caption.tiktok_keyword(today, reel_caption.pack_for(today))).upper(),
                          "screen and TikTok caption agree on the phrase")
         src = (ROOT / "tools" / "shorts_reel.py").read_text(encoding="utf-8")
-        self.assertIn("masthead = search_kicker()", src)
+        self.assertIn("masthead = series_masthead(series) or search_kicker()", src)
         cover = (ROOT / "tools" / "short_cover.py").read_text(encoding="utf-8")
         self.assertIn("len(kicker) <= 30", cover, "a long search phrase steps the cover masthead down, never clips")

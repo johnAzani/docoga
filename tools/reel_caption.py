@@ -142,6 +142,31 @@ def tips_from(description):
     return out[:TIPS_MAX]
 
 
+_SERIES = re.compile(r"^(Part \d+ of \d+ in this week's series on [^\n]+)$", re.M)
+
+
+def series_from(description):
+    """The series line the Short's description carries ('Part 2 of 5 in this week's series on the
+    rent receipt law. Tomorrow: …'), or ''. Read back from the description rather than recomputed,
+    so the caption can never claim a part the video does not wear (tools/series_week.py)."""
+    m = _SERIES.search(str(description or ""))
+    return _clean(m.group(1)) if m else ""
+
+
+def series_parts(description):
+    """{"name": "Rent receipt law", "short": "Part 1 of 5 · Rent receipt law · tomorrow: …"} or None."""
+    line = series_from(description)
+    m = re.match(r"Part (\d+) of (\d+) in this week's series on the ([^.]+)\.(?:\s*Tomorrow: ([^.]+)\.)?", line)
+    if not m:
+        return None
+    name = m.group(3).strip()
+    name = name[:1].upper() + name[1:]
+    short = "Part %s of %s · %s" % (m.group(1), m.group(2), name)
+    if m.group(4):
+        short += " · tomorrow: %s" % m.group(4).strip()
+    return {"name": name, "short": short}
+
+
 def send_line(day, pack=None):
     """The brain's own send/forward line when today's pack carries one; else the rotation."""
     cta = _clean(((pack or {}).get("post") or {}).get("cta")) if pack else ""
@@ -177,12 +202,17 @@ def tiktok_caption(topic, description, day, pack=None):
     """Search phrase first, the spoken hook, two tips, a save line, bio pointer, five tags.
     150–300 characters is the 2026 sweet spot for TikTok search; the ceiling is 2,200."""
     hook = hook_from(description, topic)
-    keyword = tiktok_keyword(day, pack)
+    series = series_parts(description)
+    # A series day leads with the series' own search phrase ("Rent receipt law Nigeria"), so the
+    # caption, the cover and the title all name the same query (tools/series_week.py).
+    keyword = ("%s Nigeria" % series["name"]) if series else tiktok_keyword(day, pack)
     first = hook if hook.lower().startswith(keyword.lower()) else "%s: %s" % (keyword, hook)
     tips = tips_from(description)[:2]
     parts = [first]
     if tips:
         parts.append(" · ".join(tips))
+    if series:
+        parts.append(series["short"])
     parts.append("Save this for your next rent. " + send_line(day, pack))
     parts.append("Free templates — link in bio (docoga.com.ng)")
     parts.append(HASHTAGS["tiktok"])
@@ -205,6 +235,9 @@ def caption(platform, topic, description, day, pack=None):
     parts = [hook]
     if tips:
         parts.append("\n".join("→ " + t for t in tips))
+    series = series_from(description)
+    if series:
+        parts.append(series)
     parts.append(send_line(day, pack))
     if platform == "facebook":
         parts.append("Free receipt, agreement and notice templates: %s" % SITE)

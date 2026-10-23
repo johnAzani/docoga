@@ -89,6 +89,13 @@ def _first_line(text, limit=140):
     return (line[: limit - 1] + "…") if len(line) > limit else line
 
 
+def _series_line(series):
+    """'Rent receipt law · part 2 of 5' when the Short was written to the week's series."""
+    if not isinstance(series, dict) or not series.get("name"):
+        return ""
+    return "%s · part %s of %s" % (series["name"], series.get("part"), series.get("total"))
+
+
 def plan(now, root=ROOT, days=3):
     """The brain's approved packs for today and the next days, or the honest absence."""
     out = []
@@ -112,6 +119,7 @@ def plan(now, root=ROOT, days=3):
                 "threads": _first_line(threads.get("text"), 160),
                 "threads_evening": _first_line(threads.get("evening"), 160),
                 "short": _first_line(short.get("title"), 120) if short else "",
+                "series": _series_line(short.get("series")) if short else "",
                 "reader": str(pack.get("reader") or "")[:80],
                 "tool": pack.get("tool"),
                 "state": pack.get("state"),
