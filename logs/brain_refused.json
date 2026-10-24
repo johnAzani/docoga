@@ -1,6 +1,17 @@
 [
  {
   "date": "2026-10-26",
+  "at": "2026-10-24T05:55:26+01:00",
+  "short_day": true,
+  "problems": [
+   "a body line is 144 characters; max 110: 'No more paying cash without paper. In Kw'",
+   "a body line is 112 characters; max 110: 'This rent book is kept by you, the tenan'",
+   "news_hook is not one of this week's NEWSDESK headlines — a story the papers did not print is not a story",
+   "a cited post names the section number (e.g. s.5) in its copy"
+  ]
+ },
+ {
+  "date": "2026-10-26",
   "at": "2026-10-24T01:31:16+01:00",
   "short_day": true,
   "problems": [
