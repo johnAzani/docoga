@@ -144,5 +144,19 @@
     "planned_at": "2026-10-23T20:28:10+00:00",
     "notes": [],
     "commented_at": "2026-10-23T21:30:43+00:00"
+  },
+  {
+    "video_id": "tEicM9au4hE",
+    "kind": "deepdive",
+    "title": "Advance Rent in Lagos and Kwara: What the Law Forbids",
+    "date": "2026-10-24",
+    "comment_text": "Which part surprised you most? Drop your question below — the next episode answers the best ones.\n\nFree receipt, tenancy agreement and notice templates (no sign-up): https://docoga.com.ng/?s=yt",
+    "comment_id": "",
+    "playlist_id": "",
+    "playlist_item_id": "",
+    "planned_at": "2026-10-24T02:12:45+00:00",
+    "notes": [
+      "2026-10-24T02:12:46+00:00: playlistItems.insert HTTP 409 (SERVICE_UNAVAILABLE)"
+    ]
   }
 ]
