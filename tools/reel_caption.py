@@ -204,9 +204,32 @@ def tiktok_keyword(day, pack=None):
             seo = _clean(seo_line(pack))
         except Exception:  # noqa: BLE001 — the rotation is the fallback by design
             seo = ""
+    seo = fit_phrase(seo)
     if seo and 8 <= len(seo) <= 60:
         return seo
     return TIKTOK_KEYWORDS[day.timetuple().tm_yday % len(TIKTOK_KEYWORDS)]
+
+
+PHRASE_MAX = 26          # the cover masthead's width (tools/shorts_reel.search_kicker)
+PHRASE_FILLER = ("sample", "format", "template")
+
+
+def fit_phrase(phrase):
+    """The search phrase at masthead width, so screen and caption say the same words (24 Oct
+    2026: "Tenancy agreement sample Nigeria" was 32 characters, the cover fell back to "Rent in
+    Nigeria" and the two disagreed). Filler words go first ("Rent receipt format Nigeria" →
+    "Rent receipt Nigeria"); a phrase still too long is dropped, and the day's rotation keyword
+    speaks instead. The state in brackets is not counted — the cover strips it."""
+    phrase = " ".join(str(phrase or "").split())
+    if not phrase:
+        return ""
+    bare = re.sub(r"\s*\(.*?\)", "", phrase).strip()
+    tail = phrase[len(bare):]
+    if len(bare) <= PHRASE_MAX:
+        return phrase
+    words = [w for w in bare.split() if w.lower() not in PHRASE_FILLER]
+    bare = " ".join(words)
+    return (bare + tail) if len(bare) <= PHRASE_MAX else ""
 
 
 def tiktok_caption(topic, description, day, pack=None):

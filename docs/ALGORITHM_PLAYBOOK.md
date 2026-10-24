@@ -175,6 +175,34 @@ All of it flows from one place — `youtube_short_daily.py series_outputs()` →
 `series_json`, `series_line`, `series_topic`, `series_chain` — and all of it is empty on a plain
 day, so nothing changes for a Short that does not belong to a series.
 
+## 7½. Shipped 24 Oct 2026 — nothing twice
+
+Owner, 24 Oct: "Make sure you are not repeating or recycling contents." The audit found the
+machine had been: the six-script Shorts rotation came round weekly ("Pay the wrong agent" 15 and
+21 Oct, "Skip the photos" 16 and 22 Oct, every Reel/Story/TikTok draft/Telegram video carrying
+the repeat); the Threads morning replayed a rotation hook on weekends (18 and 24 Oct) past a
+live duplicate guard that only saw the replies lane's last 25 replies; the Telegram fallback
+drew `random.choice` with no memory. Platforms deprioritise duplicates (§1–§3) and followers
+notice before platforms do.
+
+`tools/fresh.py` is now the one memory every fallback consults — the ledgers themselves
+(`logs/youtube_published.json`, `threads_sent.json`, `instagram_sent.json`, `telegram_sent.json`),
+nothing new written, so a re-run sees what the first run saw. A line is **fresh** when that
+platform has not carried its opening words for **28 days**.
+
+| Lane | Before | Now |
+|---|---|---|
+| Shorts (and every hand-off) | ordinal walk through six scripts | the first script YouTube has not carried in 28 days; when all six are spent the lane **asks the brain once more at 6:00pm**, and if it still has nothing it **skips the day (exit 7)**, DMs the owner why, and the summary says so — a repeat is not a post |
+| Threads 7:20am | the day's Short hook, weekends included | Short day: the Short's hook (a teaser). Weekend with a pack: the pack's second line — the brain's own words, new daily. Else the first rotation hook the profile has not carried in 28 days; all spent → the question alone |
+| Telegram 9:00am fallback | `random.choice` | the Facebook replay guard, seeded `docoga-telegram-<day>`, and the channel's own ledger (which now keeps each post's opening words) |
+| Facebook / Threads lunch / Instagram card fallback | replay guard (21 Oct) | replay guard **plus** the channel's ledger |
+| Threads + Instagram publishers | exact-wording check against the live list | plus `refused-a-repeat` when the ledger carried the opening words inside 28 days |
+| Brain | — | refuses any **statistic it cannot source** (percentages, "N in M", millions; "reports show" is banned) — the 25 Oct pack opened "Over 70% of Nigerian tenants pay rent without paper" and was withdrawn; a six-line reflow is healed by joining short neighbours instead of refused |
+
+The honest consequence: a six-script bank cannot feed five Shorts a week without recycling,
+so from this week the brain is the only source of new Shorts and the rotation is a 28-day
+backstop. `DOCOGA_FRESH=off` is for tests only.
+
 ## 8. Next levers, in order of expected effect (Founder's brief items)
 
 1. **Hook bans from the swipe test** — once two Monday pulls have filled

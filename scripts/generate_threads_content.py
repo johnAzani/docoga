@@ -240,24 +240,60 @@ def build_morning(day, rng):
     already exist — the spoken hook of the day's Short (the brain's, or the rotation's), the
     one paragraph written to stop a thumb. Image post, no link (a link costs reach; the lunch
     post carries it), the day's topic tag, no poll (refused beside an image)."""
-    import generate_short_video as words  # the Short's words; the renderer is never imported
-    script = words.script_for_date(day)
-    slides = script.get("slides") or []
-    hook = " ".join(str((slides[0] if slides else {}).get("say") or "").split())
-    if not hook:
-        hook = str(script.get("title") or "").strip()
-    question = MORNING_QUESTIONS[day.toordinal() % len(MORNING_QUESTIONS)]
     pack = brain_drafts.draft_for(day)
-    text = hook + "\n\n" + question
+    hook, source = morning_hook(day, pack)
+    question = MORNING_QUESTIONS[day.toordinal() % len(MORNING_QUESTIONS)]
+    text = (hook + "\n\n" + question) if hook else question
     if pack and brain_drafts.has_claims(pack) and brain_drafts.DISCLAIMER.lower() not in text.lower():
         text = text + "\n\n" + brain_drafts.DISCLAIMER
     text, notes = fit(brain_drafts.strip_links(text), "")
-    notes = ["morning: hook of '%s'" % script.get("title", "")] + list(notes)
+    notes = ["morning: %s" % source] + list(notes)
     extras = extras_for(pack)
     extras["poll"] = None
     extras["image_url"], extras["card_path"] = card_for(day, "morning")
     extras["reply_text"] = None
     return "morning", text, notes, extras
+
+
+def morning_hook(day, pack=None):
+    """The paragraph above the morning question, and where it came from — never a paragraph this
+    profile carried inside fresh.FRESH_DAYS (24 Oct 2026, owner: "make sure you are not repeating
+    or recycling contents"):
+
+      1. a Short day: the spoken hook of today's Short (the brain's, or a rotation script YouTube
+         has not carried for four weeks) — the morning teases the 7:00pm upload;
+      2. no Short but a brain pack (weekends): the pack's second body line — the brain's own words,
+         new every day, and not the headline the lunch card opens with;
+      3. nothing from the brain: the first rotation hook this profile has not carried for four
+         weeks, walking from the day's ordinal; when all six are spent the question stands alone
+         rather than a paragraph the followers read last fortnight."""
+    import generate_short_video as words  # the Short's words; the renderer is never imported
+    script = words.script_for_date(day)
+
+    def spoken(s):
+        slides = s.get("slides") or []
+        return " ".join(str((slides[0] if slides else {}).get("say") or "").split()) or str(s.get("title") or "").strip()
+
+    if script.get("brain"):
+        return spoken(script), "hook of the brain's Short '%s'" % script.get("title", "")
+    if pack:
+        lines = [str(x).strip() for x in ((pack.get("post") or {}).get("lines") or []) if str(x).strip()]
+        if len(lines) >= 2:
+            return lines[1], "the brain's pack (%s), second line" % pack.get("theme", "")
+        if lines:
+            return lines[0], "the brain's pack (%s), first line" % pack.get("theme", "")
+    try:
+        import fresh
+        pick = fresh.pick_rotation(day, words.VIDEO_SCRIPTS, fresh.history("threads"), name=spoken)
+    except Exception:
+        pick = {"script": script, "stale": False}
+    if pick["stale"] or not pick["script"]:
+        return "", "every rotation hook was on this profile inside %d days — question only" % getattr(fresh, "FRESH_DAYS", 28)
+    chosen = pick["script"]
+    note = "hook of '%s'" % chosen.get("title", "")
+    if chosen.get("title") != script.get("title"):
+        note += " (the day's '%s' was on this profile recently)" % script.get("title", "")
+    return spoken(chosen), note
 
 
 def build_evening(day, rng):

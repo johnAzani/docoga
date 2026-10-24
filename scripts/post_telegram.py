@@ -131,6 +131,16 @@ def log(message):
     docoga_log.append(LOG_FILE, log_msg)
 
 
+def _opening(message, limit=120):
+    """The first `limit` characters of the message as a reader sees them (markup stripped)."""
+    try:
+        from telegram_mdv2 import to_plain
+        plain = to_plain(message or "")
+    except Exception:
+        plain = message or ""
+    return " ".join(str(plain).split())[:limit]
+
+
 def run_date():
     return (datetime.utcnow() + WAT).date()
 
@@ -542,6 +552,10 @@ def post_to_telegram():
                 privacy="channel",
                 characters=len(message or ""),
                 chat=str(TELEGRAM_CHAT_ID or ""),
+                # The opening words in plain text (24 Oct 2026): the hash above is the duplicate
+                # key, but tools/fresh.py needs the words themselves to keep the rotation from
+                # bringing the same paragraph back inside a month.
+                note=_opening(message),
             )
         else:
             failed += 1

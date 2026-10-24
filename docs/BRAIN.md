@@ -386,8 +386,22 @@ tested (`tools/tests/test_round7.py`).
    trigger words appear in order, known plates, and pass
    `python3 tools/deepdive.py ddN check` — the engine's own test.
 
+6. **Statistics** (24 Oct 2026) — a percentage, an "N in M" or a million/billion
+   figure anywhere in the pack must sit in a cited fact's text, and "reports show",
+   "studies show", "experts say" are banned phrases. The shelf has periods, fines
+   and limits; it has no survey, so a survey-shaped number can only be invented
+   (the 25 Oct pack opened "Over 70% of Nigerian tenants pay rent without paper"
+   and was withdrawn the day it was found).
+
 A refused day is not an incident: the lane posts from the rotation and the run
-summary says why the brain's draft was refused.
+summary says why the brain's draft was refused — with two limits since 24 Oct
+2026 (`tools/fresh.py`, owner: "make sure you are not repeating or recycling
+contents"): the rotation never repeats what a platform carried inside 28 days,
+and on a Short day with nothing fresh left the Shorts lane asks the brain once
+more at 6:00pm (`plan --days 1`, the pack committed from that lane) and skips
+the day rather than publish a repeat. `tidy()` also heals a reflow that lands on
+six or seven lines by joining short neighbours — layout only — which was the
+commonest refusal on Short days.
 
 ## Quota (free plan, forever)
 Research of 16 Oct 2026: Google no longer publishes free-tier limits; projects

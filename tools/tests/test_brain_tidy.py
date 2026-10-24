@@ -29,9 +29,20 @@ class TidyTests(unittest.TestCase):
         pack = brain.tidy({"post": {"headline": "h", "lines": ["One.", "Two  spaces stay."]}})
         self.assertEqual(pack["post"]["lines"], ["One.", "Two  spaces stay."])
 
-    def test_when_the_reflow_would_pass_five_lines_lint_still_refuses(self):
+    def test_when_the_reflow_passes_five_lines_short_neighbours_are_joined(self):
+        # 24 Oct 2026: a 144-character line in a five-line post was refused twice and the day fell
+        # back to the rotation. The reflow makes six lines; the two shortest neighbours are joined.
         pack = brain.tidy({"post": {"headline": "h", "lines": ["a b", "c d", "e f", "g h", LONG]}})
-        self.assertEqual(len(pack["post"]["lines"]), 5)
+        lines = pack["post"]["lines"]
+        self.assertEqual(len(lines), 5)
+        self.assertEqual(lines[0], "a b c d")
+        self.assertEqual(" ".join(lines).split(), "a b c d e f g h".split() + LONG.split(), "layout only")
+        self.assertFalse(any("a body line is" in p for p in brain.lint(pack, CTX, [])))
+
+    def test_when_no_neighbours_fit_together_lint_still_refuses(self):
+        wide = "w" * 100
+        pack = brain.tidy({"post": {"headline": "h", "lines": [wide, wide, wide, wide, LONG]}})
+        self.assertEqual(len(pack["post"]["lines"]), 5, "left for lint, untouched")
         self.assertTrue(any("a body line is" in p for p in brain.lint(pack, CTX, [])))
 
     def test_a_line_with_no_boundary_is_not_cut_mid_word(self):

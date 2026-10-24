@@ -220,6 +220,15 @@ jobs:
             echo "paused=yes" >> "$GITHUB_OUTPUT"
             exit 0
           fi
+          # 7 = nothing fresh to say (24 Oct 2026, owner: "make sure you are not repeating or
+          # recycling contents"): every rotation script has been on the channel inside 28 days and
+          # the brain, asked once more at the slot, did not approve a new Short. The day is skipped
+          # like a narrator pause — no upload, no hand-offs — and the owner is told why below.
+          # The script has already written paused=yes, stale=yes and stale_reason to GITHUB_OUTPUT.
+          if [ "$code" -eq 7 ]; then
+            echo "paused=yes" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           # Photographs behind the cards (owner, 18 Oct 2026): SHOTS_HITS=<matched>/<scenes>
           # from tools/shorts_reel.py; each miss names its reason above it ("stays navy (…)").
           SHOTS=$(sed -n 's/^SHOTS_HITS=//p' /tmp/short.log | tail -1)
@@ -235,6 +244,17 @@ jobs:
           DOORS=$(sed -n 's/^SHOTS_DOORS=//p' /tmp/short.log | tail -1)
           echo "::notice title=Footage + word-sync::SHOTS_TOTAL=${TOTAL:-?} shots (${NV:-0} clips, ${NP:-0} photographs) · doors ${DOORS:-?} · WORDSYNC=${WS:-none reported}"
           exit "$code"
+
+      - name: Tell the owner the day was skipped, not repeated
+        if: steps.short.outputs.stale == 'yes'
+        continue-on-error: true
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          REASON: ${{ steps.short.outputs.stale_reason }}
+          RUN_DATE: ${{ steps.settings.outputs.run_date }}
+        run: |
+          python3 tools/owner_dm.py send --text "DocOga — no Short today ($RUN_DATE). $REASON Nothing was repeated; the next fresh Short goes out at its usual 7:00pm."
+          echo "- **No Short today** — $REASON" >> "$GITHUB_STEP_SUMMARY"
 
       # What the Short looks like, without downloading it: a labelled contact sheet (frame 0 =
       # the cover every platform shows, then frames across the Short) and the cover JPEG, on
@@ -724,7 +744,10 @@ jobs:
           # nothing at all (22 Oct 2026 — logs/telegram_owner.json never existed, so the TikTok
           # drafts, the Threads hand-over record and last night's Instagram Reel were never
           # committed; Threads never found a Short to carry).
-          for path in logs/youtube_boosts.json logs/tiktok_drafts.json logs/tiktok_refresh_token.box logs/telegram_owner.json logs/shorts_media.json logs/facebook_reels.json logs/instagram_sent.json; do
+          # brain/drafts + logs/brain_said.json: when the brain wrote today's Short at the slot
+          # (scripts/youtube_short_daily.py fresh_or_nothing), the pack must reach main so the
+          # evening lanes and tonight's brain run see it.
+          for path in logs/youtube_boosts.json logs/tiktok_drafts.json logs/tiktok_refresh_token.box logs/telegram_owner.json logs/shorts_media.json logs/facebook_reels.json logs/instagram_sent.json brain/drafts logs/brain_said.json logs/brain_refused.json; do
             if [ -e "$path" ]; then git add -f "$path"; fi
           done
           if git diff --staged --quiet; then
@@ -756,6 +779,8 @@ jobs:
           PARENT_URL: ${{ steps.short.outputs.parent_url }}
           PINNED_COMMENT: ${{ steps.short.outputs.pinned_comment }}
           PAUSED: ${{ steps.short.outputs.paused }}
+          STALE: ${{ steps.short.outputs.stale }}
+          STALE_REASON: ${{ steps.short.outputs.stale_reason }}
           VOICE_REASON: ${{ steps.short.outputs.voice_reason }}
           VOICE_RESUMES_AT: ${{ steps.short.outputs.voice_resumes_at }}
           SOUNDTRACK: ${{ steps.short.outputs.soundtrack }}
@@ -785,7 +810,9 @@ jobs:
             echo "| Topic | ${TOPIC:-not rendered} |"
             echo "| Title | ${TITLE:-—} |"
             echo "| Privacy | ${PRIVACY:-—} |"
-            if [ "$PAUSED" = "yes" ]; then
+            if [ "$STALE" = "yes" ]; then
+              echo "| Result | ⏭️ No Short today — nothing fresh to say, and a repeat is not a post. $STALE_REASON |"
+            elif [ "$PAUSED" = "yes" ]; then
               echo "| Result | ⏸️ Paused — no voice, no Short. $VOICE_REASON |"
               echo "| Resumes | ${VOICE_RESUMES_AT:-at the next Pacific midnight} — the narrator-resume workflow publishes it then; nothing to press |"
             elif [ "$SKIP" = "yes" ]; then
