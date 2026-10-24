@@ -213,8 +213,28 @@ def script_for_date(run_date: date):
     except Exception:  # the rotation must never be lost to the brain
         topic = None
     if not topic:
-        topic = VIDEO_SCRIPTS[(run_date.toordinal() - 1) % len(VIDEO_SCRIPTS)]
+        topic = rotation_for(run_date)
     return with_series(topic, run_date)
+
+
+def rotation_for(run_date: date):
+    """The rotation script for a day the brain did not write — the first one, walking from the
+    ordinal position, that YouTube has not carried for fresh.FRESH_DAYS (24 Oct 2026, owner:
+    "make sure you are not repeating or recycling contents"). When every script is stale the
+    least recently published one comes back carrying `stale=True` and `last_published`, and the
+    Shorts lane refuses to publish it as new (scripts/youtube_short_daily.py). Anything failing
+    here is the bare ordinal pick."""
+    ordinal = VIDEO_SCRIPTS[(run_date.toordinal() - 1) % len(VIDEO_SCRIPTS)]
+    try:
+        import fresh
+        pick = fresh.pick_rotation(run_date, VIDEO_SCRIPTS, fresh.history("youtube"))
+        script = pick["script"] or ordinal
+        if pick["stale"]:
+            script = dict(script, stale=True,
+                          last_published=pick["last_seen"].isoformat() if pick["last_seen"] else "")
+        return script
+    except Exception:
+        return ordinal
 
 
 def with_series(topic, run_date):

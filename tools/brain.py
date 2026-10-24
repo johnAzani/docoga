@@ -93,7 +93,17 @@ HOOKS = ("STAT", "QUESTION", "CLAIM", "STAKES", "CURIOSITY", "HOWTO", "STORY")
 LAYOUTS = ("poster", "stat", "checklist")
 BANNED = ("unlock", "game-changer", "game changer", "delve", "fast-paced", "we are excited",
           "legally binding guaranteed", "100%", "lawyer not needed", "court-proof", "courtproof",
-          "guaranteed to win")
+          "guaranteed to win",
+          # hearsay dressed as evidence (24 Oct 2026: "This week's reports show many still pay cash")
+          "reports show", "studies show", "research shows", "statistics show", "data shows",
+          "surveys show", "survey shows", "experts say", "it is estimated", "according to statistics")
+# A statistic DocOga has not sourced is a fabricated testimonial with a number on it. Any percentage,
+# "N in M" or million/billion figure must appear in a cited shelf fact (24 Oct 2026: an approved
+# pack opened "Over 70% of Nigerian tenants pay rent without paper" — nobody measured that).
+STAT = re.compile(r"\b\d+(?:\.\d+)?\s?(?:%|percent|per cent)|"
+                  r"\b(?:\d+|one|two|three|four|five|six|seven|eight|nine)\s+(?:in|out of)\s+(?:every\s+)?"
+                  r"(?:\d+|two|three|four|five|ten|twenty|hundred)\b|"
+                  r"\b\d+(?:\.\d+)?\s?(?:million|billion)\b", re.I)
 # heal_deepdive rewrites these (style only); the rest of BANNED still refuses the draft.
 STYLE_FIXES = (("game-changer", "big difference"), ("game changer", "big difference"),
                ("unlock", "open up"), ("delve", "look"), ("fast-paced", "busy"),
@@ -375,7 +385,10 @@ OUTPUT — one JSON object with exactly these keys:
 Rules: do not put the link or the disclaimer in `lines`, `cta` or `threads.text` — the renderer adds them.
 The `cta` is not a slogan: it names who to send it to, or asks one answerable question. Follow the ORDERS block.
 Every legal statement in the post must appear in `claims` with its fact id. Name the state in the post
-whenever a claim is made. No markdown, no asterisks, no emoji in the headline, kicker or Short.{retry}"""
+whenever a claim is made. No markdown, no asterisks, no emoji in the headline, kicker or Short.
+No statistics: no percentage, no "N in M", no million/billion figure, no "reports show" — DocOga has no
+survey data and publishes no number that is not in a shelf fact you cite. A STAT hook uses a number FROM
+THE SHELF (a period, a fine, a limit), never an invented share of tenants.{retry}"""
 
 
 VERIFY_SYSTEM = """You are a careful Nigerian lawyer checking a social media post against a list of
@@ -443,6 +456,16 @@ def tidy(pack):
     out = []
     for ln in lines:
         out.extend(_wrap_line(ln, LINE_MAX) if len(ln) > LINE_MAX else [ln])
+    # Six or seven lines after the reflow (24 Oct 2026: a 144-character line in a five-line post
+    # was refused twice, and the day fell back to the rotation): join the two neighbouring lines
+    # that fit together inside LINE_MAX, shortest pair first, until five remain. Still layout only.
+    while len(out) > 5:
+        pairs = [(len(out[i]) + 1 + len(out[i + 1]), i) for i in range(len(out) - 1)
+                 if len(out[i]) + 1 + len(out[i + 1]) <= LINE_MAX]
+        if not pairs:
+            break
+        _, i = min(pairs)
+        out[i:i + 2] = [out[i] + " " + out[i + 1]]
     if 2 <= len(out) <= 5 and all(len(ln) <= LINE_MAX for ln in out):
         post["lines"] = out
     return pack
@@ -576,6 +599,7 @@ def lint(pack, ctx, said):
         clean = amount.strip(".,")
         if clean not in OUR_PRICES and ("₦" + clean) not in fact_texts and clean not in fact_texts:
             p.append("price ₦%s is neither ours nor in a cited fact" % clean)
+    p.extend(statistic_problems(pack, fact_texts))
 
     # citations
     state = pack.get("state")
@@ -640,6 +664,37 @@ def lint(pack, ctx, said):
             if sim >= HEADLINE_REPEAT:
                 p.append("headline is %d%% the same as %r (%s)" % (round(sim * 100), e.get("headline"), e.get("date")))
     return p
+
+
+def _spoken_corpus(pack):
+    """Every sentence a reader or listener meets: post, CTA, Threads text and evening, the Short."""
+    post = pack.get("post") if isinstance(pack.get("post"), dict) else {}
+    threads = pack.get("threads") if isinstance(pack.get("threads"), dict) else {}
+    short = pack.get("short") if isinstance(pack.get("short"), dict) else {}
+    parts = [post.get("headline"), post.get("cta"), threads.get("text"), threads.get("evening"),
+             short.get("title"), short.get("hook_sub"), short.get("hook_say")]
+    parts += list(post.get("lines") or [])
+    for tip in short.get("tips") or []:
+        if isinstance(tip, dict):
+            parts += [tip.get("text"), tip.get("sub"), tip.get("say")]
+    return "\n".join(str(x) for x in parts if x)
+
+
+def statistic_problems(pack, fact_texts):
+    """Percentages, "N in M" and million/billion figures are refused unless the number sits in a
+    cited fact's text. The law shelf has periods, fines and limits; it has no survey — so a
+    survey-shaped number can only have been made up."""
+    problems = []
+    low_facts = (fact_texts or "").lower()
+    seen = set()
+    for m in STAT.finditer(_spoken_corpus(pack)):
+        figure = m.group(0).strip()
+        digits = re.findall(r"\d+(?:\.\d+)?", figure)
+        token = digits[0] if digits else figure.split()[0].lower()
+        if token not in low_facts and figure.lower() not in seen:
+            seen.add(figure.lower())
+            problems.append("statistic %r is not in a cited fact — DocOga publishes no number it cannot source" % figure)
+    return problems
 
 
 def short_problems(short):

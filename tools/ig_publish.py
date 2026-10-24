@@ -86,6 +86,7 @@ Usage
 import argparse
 import hashlib
 import json
+from datetime import date
 import os
 import re
 import struct
@@ -667,6 +668,26 @@ def find_duplicate(posts, caption):
         if normalize(post.get("caption")) == needle:
             return post.get("permalink") or post.get("id")
     return None
+
+
+def find_recent_repeat(caption, day=None, platform="instagram"):
+    """The date this lane's ledger last carried the opening words of `caption`, when that is
+    inside fresh.FRESH_DAYS and before `day`; else None. Never raises."""
+    try:
+        import fresh
+        day = day or date.today()
+        seen = fresh.last_seen(caption, fresh.history(platform))
+        if seen and seen < day and (day - seen).days < fresh.FRESH_DAYS:
+            return seen
+    except Exception:
+        return None
+    return None
+
+
+try:
+    from fresh import FRESH_DAYS
+except Exception:  # the publisher must post without the memory module
+    FRESH_DAYS = 28
 
 
 def create_container(token, user_id, data):
@@ -1258,6 +1279,15 @@ def main(argv=None):
                 machine("refused-duplicate", None, IG_PERMALINK=hit)
                 return 0
             print("duplicate guard: live — %d recent post(s) on @%s checked" % (len(posts), username))
+        # The ledger's memory (24 Oct 2026, owner: "make sure you are not repeating or recycling
+        # contents"): the live list is the last 12 media; logs/instagram_sent.json remembers every
+        # post this lane made. The same opening words inside fresh.FRESH_DAYS are refused too.
+        seen = find_recent_repeat(args.caption)
+        if seen and not args.force:
+            print("refused-a-repeat: @%s carried these opening words on %s — not twice in %d days"
+                  % (username, seen, FRESH_DAYS))
+            machine("refused-duplicate", None, IG_PERMALINK="")
+            return 0
 
     if args.dry_run:
         print("Dry run — the credential works, the media reads as publishable, and the caption "

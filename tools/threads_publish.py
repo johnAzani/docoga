@@ -65,6 +65,7 @@ Usage
 import argparse
 import hashlib
 import json
+from datetime import date
 import os
 import re
 import sys
@@ -244,6 +245,26 @@ def find_duplicate(posts, text):
         if normalize(post.get("text")) == needle:
             return post.get("permalink") or "(posted, permalink not returned)"
     return None
+
+
+def find_recent_repeat(text, day=None, platform="threads"):
+    """The date this lane's ledger last carried the opening words of `text`, when that is inside
+    fresh.FRESH_DAYS and before `day`; else None. Never raises."""
+    try:
+        import fresh
+        day = day or date.today()
+        seen = fresh.last_seen(text, fresh.history(platform))
+        if seen and seen < day and (day - seen).days < fresh.FRESH_DAYS:
+            return seen
+    except Exception:
+        return None
+    return None
+
+
+try:
+    from fresh import FRESH_DAYS
+except Exception:  # the publisher must post without the memory module
+    FRESH_DAYS = 28
 
 
 def create_text_container(token, user_id, text, link_attachment=None, reply_control=None,
@@ -695,6 +716,18 @@ def main(argv=None):
                 print("THREADS_RESULT=refused-duplicate")
                 print("THREADS_PERMALINK=%s" % hit)
                 return 0
+        # The ledger's memory (24 Oct 2026): the profile list above is the 25 most recent
+        # threads, and since the replies lane those are mostly replies — a paragraph from six
+        # days ago slipped past it ("Most people sign a tenancy agreement…", 18 and 24 Oct).
+        # logs/threads_sent.json remembers every post this lane made; the same opening words
+        # inside fresh.FRESH_DAYS are refused the same way.
+        seen = find_recent_repeat(text)
+        if seen and not args.force:
+            print("refused-a-repeat: this profile carried these opening words on %s — not twice in %d days"
+                  % (seen, FRESH_DAYS))
+            print("THREADS_RESULT=refused-duplicate")
+            print("THREADS_PERMALINK=")
+            return 0
         if guard == "live":
             print("duplicate guard: live — %d recent post(s) on @%s checked for this wording"
                   % (len(posts or []), username))

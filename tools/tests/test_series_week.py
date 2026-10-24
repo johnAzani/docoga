@@ -101,7 +101,7 @@ class LaneTests(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         self.drafts = Path(self.tmp.name) / "drafts"
         self.drafts.mkdir()
-        env = patch.dict(os.environ, {"DOCOGA_BRAIN_DRAFTS": str(self.drafts), "DOCOGA_BRAIN": "on",
+        env = patch.dict(os.environ, {"DOCOGA_BRAIN_DRAFTS": str(self.drafts), "DOCOGA_BRAIN": "on", "DOCOGA_FRESH": "off",
                                       "SHORTS_SEARCH_KICKER": "", "SHORTS_SERIES_WEEK": "on"})
         env.start()
         self.addCleanup(env.stop)
@@ -198,7 +198,7 @@ class BrainTests(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         root = Path(self.tmp.name)
-        env = patch.dict(os.environ, {"DOCOGA_BRAIN_DRAFTS": str(root / "drafts"), "DOCOGA_BRAIN": "on",
+        env = patch.dict(os.environ, {"DOCOGA_BRAIN_DRAFTS": str(root / "drafts"), "DOCOGA_BRAIN": "on", "DOCOGA_FRESH": "off",
                                       "BRAIN_PLATES": "off", "GEMINI_API_KEY": "test-key"})
         env.start()
         self.addCleanup(env.stop)
@@ -265,7 +265,7 @@ class ChainTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
-        env = patch.dict(os.environ, {"DOCOGA_BRAIN_DRAFTS": str(Path(self.tmp.name) / "none"), "SHORTS_SEARCH_KICKER": ""})
+        env = patch.dict(os.environ, {"DOCOGA_BRAIN_DRAFTS": str(Path(self.tmp.name) / "none"), "SHORTS_SEARCH_KICKER": "", "DOCOGA_FRESH": "off"})
         env.start()
         self.addCleanup(env.stop)
 

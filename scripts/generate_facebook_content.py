@@ -84,9 +84,11 @@ def log(message):
         pass  # logging must never be the reason a day's post fails
 
 
-def raw_pick(day):
-    """(post_type, template) the date-seeded rotation lands on for `day`, before the repeat guard."""
-    rng = random.Random("docoga-facebook-%s" % day.isoformat())
+def raw_pick(day, channel="facebook"):
+    """(post_type, template) the date-seeded rotation lands on for `day`, before the repeat guard.
+    `channel` seeds the walk, so Telegram (24 Oct 2026) and Facebook do not draw the same template
+    on the same morning while each stays deterministic for its own re-runs."""
+    rng = random.Random("docoga-%s-%s" % (channel, day.isoformat()))
     post_type = rng.choice(tg.WEEKLY_SCHEDULE.get(day.weekday(), ["promo"]))
     return post_type, rng.choice(tg.TEMPLATES[post_type])
 
@@ -95,7 +97,7 @@ ROTATION_EPOCH = date(2026, 10, 1)   # the rotation's memory starts here; earlie
 ROTATION_HORIZON_DAYS = 120          # how far back the replay goes at most (speed, not meaning)
 
 
-def pick(day):
+def pick(day, channel="facebook", hist=None):
     """Today's rotation post — never the same words as any recent day's.
 
     Two seeded days can land on the same template (19 and 20 Oct 2026 both drew the caution-fee
@@ -105,26 +107,49 @@ def pick(day):
     silent since 16 Oct while every run was green. The guard is deterministic: the picks of the
     previous days are REPLAYED from ROTATION_EPOCH, not remembered, so a re-run still produces
     the same post and the duplicate guards still have something to compare. A template is not
-    used again until every other template of its type has had a turn (pool size − 1 picks)."""
+    used again until every other template of its type has had a turn (pool size − 1 picks).
+
+    24 Oct 2026 (owner: "make sure you are not repeating or recycling contents"): on the day itself
+    the channel's own ledger is read too (tools/fresh.py) — a template the channel carried inside
+    fresh.FRESH_DAYS, by any lane or by hand, is passed over for the next one the replay allows.
+    `channel` names the ledger and seeds the replay; Telegram shares this function since that day."""
     start = max(ROTATION_EPOCH, day - timedelta(days=ROTATION_HORIZON_DAYS))
     recent = {t: [] for t in tg.TEMPLATES}
+    if hist is None:
+        try:
+            import fresh
+            hist = fresh.history(channel) if channel in fresh.LEDGERS else {}
+        except Exception:
+            hist = {}
     d = start
     chosen = None
     while d <= day:
-        post_type, template = raw_pick(d)
+        post_type, template = raw_pick(d, channel)
         pool = tg.TEMPLATES[post_type]
         window = recent[post_type][-(len(pool) - 1):] if len(pool) > 1 else []
-        if template in window:
-            i = pool.index(template)
-            for step in range(1, len(pool)):
-                candidate = pool[(i + step) % len(pool)]
-                if candidate not in window:
-                    template = candidate
-                    break
+        i = pool.index(template)
+        for step in range(0, len(pool)):
+            candidate = pool[(i + step) % len(pool)]
+            if candidate in window:
+                continue
+            if d == day and hist and not _fresh_on_channel(candidate, hist, d):
+                continue
+            template = candidate
+            break
         recent[post_type].append(template)
         chosen = (post_type, template)
         d += timedelta(days=1)
     return chosen
+
+
+def _fresh_on_channel(template, hist, day):
+    """True unless the channel's ledger carried this template's words inside fresh.FRESH_DAYS."""
+    try:
+        import fresh
+        from telegram_mdv2 import to_plain
+        return fresh.is_fresh(to_plain(template), hist, day)
+    except Exception:
+        return True
 
 
 def build_message(post_type, rng, template=None):

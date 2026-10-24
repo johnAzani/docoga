@@ -130,6 +130,10 @@ def main():
         run_date = datetime.fromisoformat(for_date).date()
         print(f"rendering the rotation topic for {run_date} (RUN_FOR_DATE)")
     script = shorts_reel.topic_for(run_date)
+    if script.get("stale"):
+        script = fresh_or_nothing(script, run_date)
+        if script is None:
+            return 7
     output_path = shorts_reel.default_output_path(run_date, prefix="docoga_short")
     try:
         video = Path(shorts_reel.render_topic(script, output_path, tag="yt",
@@ -190,6 +194,63 @@ def main():
     write_outputs(outputs)
     print(f"Prepared {outputs['title']} ({video.stat().st_size} bytes)")
     return 0
+
+
+STALE_EXIT = 7   # nothing fresh to say today — a skip the workflow reads like a pause, never a repeat
+
+
+def fresh_or_nothing(script, run_date, think=None, log=print):
+    """Every rotation script has been on the channel inside fresh.FRESH_DAYS (24 Oct 2026, owner:
+    "make sure you are not repeating or recycling contents"). Before giving the slot up, ask the
+    brain for today's Short one more time — the nightly runs may have refused twice on a layout
+    gate; a fresh roll at 6:00pm often passes. If it approves, that pack is today's Short. If
+    not, print why, write the outputs the workflow and the owner's DM read, and return None:
+    the lane skips the day rather than publish a repeat. Never raises — a failure to think is
+    just another reason to skip."""
+    last = script.get("last_published") or "recently"
+    log(f"::warning title=Nothing fresh in the rotation::every rotation script has been on the channel "
+        f"inside the last {FRESH_DAYS} days ('{script.get('title')}' last on {last}). Asking the brain "
+        f"for a new Short before giving the slot up.")
+    verdict = "brain not asked"
+    if os.environ.get("DOCOGA_BRAIN", "on").strip().lower() in ("off", "0", "false", "no"):
+        verdict = "brain switched off (DOCOGA_BRAIN=off)"
+    elif not os.environ.get("GEMINI_API_KEY", "").strip():
+        verdict = "no GEMINI_API_KEY in this job"
+    else:
+        try:
+            think = think or _brain_plan
+            result = think(run_date)
+            if result.get("approved"):
+                fresh_script = shorts_reel.topic_for(run_date)
+                if fresh_script.get("brain") and not fresh_script.get("stale"):
+                    log(f"::notice title=The brain wrote today's Short at the slot::{fresh_script.get('title')}")
+                    return fresh_script
+                verdict = "brain approved a pack but it carried no Short"
+            elif result.get("quota"):
+                verdict = "brain paused — Gemini free bucket empty (%s)" % result["quota"]
+            else:
+                problems = result.get("refused", {}).get(run_date.isoformat()) or []
+                verdict = "brain refused: " + ("; ".join(str(p) for p in problems)[:300] or "no reason recorded")
+        except Exception as exc:  # the skip must be reported, never crash
+            verdict = "brain failed: %s" % str(exc)[:200]
+    reason = (f"No new Short today: {verdict}. The rotation's six scripts have all been on the channel "
+              f"within {FRESH_DAYS} days (latest repeat would be '{script.get('title')}', last published {last}).")
+    write_outputs({"paused": "yes", "stale": "yes", "stale_reason": reason,
+                   "topic": script.get("title", ""), "title": shorts_reel.title_for(script)})
+    log("::error title=No fresh Short — the day is skipped, not repeated::" + reason)
+    return None
+
+
+def _brain_plan(run_date):
+    """One more editorial pass for `run_date` only (tools/brain.py plan --days 1 --date …)."""
+    import brain
+    return brain.plan(days=1, start=run_date)
+
+
+try:
+    from fresh import FRESH_DAYS  # noqa: E402
+except Exception:  # the lane renders without the memory module; the guard simply names 28
+    FRESH_DAYS = 28
 
 
 def gemini_quota_status():

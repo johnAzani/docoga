@@ -348,12 +348,14 @@ def generate_daily_content():
         visual = brain_drafts.visual(pack)
         log("🧠 brain pack for %s: %s (%s)" % (pack["date"], pack.get("theme"), post_type))
     else:
-        # Pick a post type from today's options
-        options = WEEKLY_SCHEDULE.get(day_of_week, ["promo"])
-        post_type = random.choice(options)
-
-        # Select a random template from the chosen type
-        template = brain_drafts.tag_links_mdv2(random.choice(TEMPLATES[post_type]), "telegram")
+        # The rotation, with a memory (24 Oct 2026, owner: "make sure you are not repeating or
+        # recycling contents"): `random.choice` here had none, so a template could come round
+        # two mornings running. generate_facebook_content.pick() replays the seeded walk and
+        # reads this channel's own ledger, so the words are never ones the channel carried
+        # inside fresh.FRESH_DAYS. Lazy import: that module imports this one.
+        import generate_facebook_content as fb
+        post_type, template = fb.pick(today.date(), channel="telegram")
+        template = brain_drafts.tag_links_mdv2(template, "telegram")
         hashtag = HASHTAGS.get(post_type, "#DocOga #NigerianProperty")
 
     # Build the full message. The templates carry their own MarkdownV2 escapes
