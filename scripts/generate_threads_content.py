@@ -255,6 +255,23 @@ def build_morning(day, rng):
     return "morning", text, notes, extras
 
 
+def standalone_line(pack):
+    """A body line of the pack that reads on its own: starts with a capital, ends with a full
+    stop, question or exclamation mark, at least six words. The second line first (the headline
+    opens the lunch card; the first line often continues it), then the rest, then the first;
+    the headline when nothing qualifies (25 Oct 2026, Sunday: line two was "any quit notice
+    served afterwards has no effect…" — the tail of line one, not a sentence)."""
+    post = pack.get("post") if isinstance(pack.get("post"), dict) else {}
+    lines = [" ".join(str(x).split()) for x in (post.get("lines") or []) if str(x).strip()]
+    order = [(i, ln) for i, ln in enumerate(lines)]
+    order = order[1:] + order[:1]
+    for i, ln in order:
+        if ln[:1].isupper() and ln[-1:] in ".?!" and len(ln.split()) >= 6:
+            return ln, "line %d" % (i + 1)
+    headline = " ".join(str(post.get("headline") or "").split())
+    return headline, "headline"
+
+
 def morning_hook(day, pack=None):
     """The paragraph above the morning question, and where it came from — never a paragraph this
     profile carried inside fresh.FRESH_DAYS (24 Oct 2026, owner: "make sure you are not repeating
@@ -277,11 +294,9 @@ def morning_hook(day, pack=None):
     if script.get("brain"):
         return spoken(script), "hook of the brain's Short '%s'" % script.get("title", "")
     if pack:
-        lines = [str(x).strip() for x in ((pack.get("post") or {}).get("lines") or []) if str(x).strip()]
-        if len(lines) >= 2:
-            return lines[1], "the brain's pack (%s), second line" % pack.get("theme", "")
-        if lines:
-            return lines[0], "the brain's pack (%s), first line" % pack.get("theme", "")
+        line, which = standalone_line(pack)
+        if line:
+            return line, "the brain's pack (%s), %s" % (pack.get("theme", ""), which)
     try:
         import fresh
         pick = fresh.pick_rotation(day, words.VIDEO_SCRIPTS, fresh.history("threads"), name=spoken)

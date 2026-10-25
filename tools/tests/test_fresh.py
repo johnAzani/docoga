@@ -260,13 +260,21 @@ class ThreadsMorningTests(unittest.TestCase):
         (self.dir / "drafts" / ("%s.json" % day.isoformat())).write_text(json.dumps(pack), encoding="utf-8")
         return pack
 
-    def test_a_weekend_pack_without_a_short_lends_its_second_line(self):
+    def test_a_weekend_pack_without_a_short_lends_a_line_that_stands_alone(self):
         import generate_threads_content as th
         sat = date(2026, 10, 24)
         pack = self._pack(sat)
         hook, source = th.morning_hook(sat, pack)
         self.assertEqual(hook, "Second line, the brain's own words.")
-        self.assertIn("second line", source)
+        self.assertIn("line 2", source)
+        # 25 Oct 2026: line two was the tail of line one — not a sentence on its own
+        sunday = {"post": {"headline": "A dispute at the tribunal pauses your quit notice",
+                           "lines": ["In Edo State, once a tenant applies to the Rent Tribunal,",
+                                     "any quit notice served afterwards has no effect under section 16.",
+                                     "A landlord cannot use a retaliatory notice to force you out while the tribunal is hearing your case.",
+                                     "Know your rights before an agent uses threats to push you out."]}}
+        self.assertEqual(th.standalone_line(sunday), ("A landlord cannot use a retaliatory notice to force you out while the tribunal is hearing your case.", "line 3"))
+        self.assertEqual(th.standalone_line({"post": {"headline": "Only a headline.", "lines": ["short one.", "and lower"]}}), ("Only a headline.", "headline"))
 
     def test_a_rotation_hook_the_profile_carried_this_month_is_passed_over(self):
         import generate_threads_content as th
@@ -398,15 +406,14 @@ class BrainGateTests(unittest.TestCase):
         self.assertEqual(" ".join(healed).split(), " ".join(["Short one.", "Short two.", long_line, "Short four.", "Short five."]).split(),
                          "layout only — never a word")
 
-    def test_the_withdrawn_sunday_pack_is_no_longer_a_draft(self):
-        import brain_drafts
+    def test_the_sunday_pack_was_rewritten_without_the_statistic(self):
+        # 24 Oct 2026: the approved 25 Oct pack opened "Over 70% of Nigerian tenants pay rent
+        # without paper" and was withdrawn; the brain rewrote the day at 1:30am under the gate.
+        import brain
         pack = json.loads((ROOT / "brain" / "drafts" / "2026-10-25.json").read_text(encoding="utf-8"))
-        self.assertEqual(pack["status"], "withdrawn")
-        self.assertIn("70%", pack["post"]["headline"], "the unsourced statistic that withdrew it")
-        env = dict(os.environ, DOCOGA_BRAIN="on")
-        env.pop("DOCOGA_BRAIN_DRAFTS", None)
-        with patch.dict(os.environ, env, clear=True):
-            self.assertIsNone(brain_drafts.draft_for(date(2026, 10, 25)), "the brain rewrites the day")
+        self.assertEqual(pack["status"], "approved")
+        self.assertNotIn("70%", pack["post"]["headline"])
+        self.assertEqual(brain.statistic_problems(pack, ""), [])
 
 
 class SearchPhraseTests(unittest.TestCase):

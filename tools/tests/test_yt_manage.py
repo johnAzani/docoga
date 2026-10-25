@@ -169,6 +169,23 @@ class Manager(unittest.TestCase):
 class Scheduling(Manager):
     """`schedule <Lagos time> <ids>` — owner, 21 Oct 2026: Deep-Dives go public on a date, not by a tap."""
 
+    def setUp(self):
+        super().setUp()
+        # The plan lines below name 24 Oct 2026; once that evening had passed (25 Oct, 10:55pm)
+        # parse_publish_at moved the instant to the next safe mark and the pins broke. The clock
+        # of the lane is fixed to the morning the plan was written.
+        import datetime as _dt
+
+        class Frozen(_dt.datetime):
+            @classmethod
+            def now(cls, tz=None):
+                fixed = _dt.datetime(2026, 10, 21, 8, 0, tzinfo=_dt.timezone.utc)
+                return fixed.astimezone(tz) if tz else fixed.replace(tzinfo=None)
+
+        frozen = patch("yt_publish.datetime", Frozen)
+        frozen.start()
+        self.addCleanup(frozen.stop)
+
     def test_an_unlisted_video_becomes_private_with_publish_at_in_utc(self):
         self.fake.queue("status", [video("JJhRcCgAxyQ", "unlisted", "Rent Receipt in Nigeria")])
         self.fake.queue("update", [Resp(200, {"status": {"privacyStatus": "private", "publishAt": "2026-10-24T18:00:00Z"}})])

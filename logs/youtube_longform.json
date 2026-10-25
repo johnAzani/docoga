@@ -19,12 +19,13 @@
     "topic": "The Rent Receipt: The ₦50 Paper That Wins Cases",
     "video_id": "JJhRcCgAxyQ",
     "url": "https://www.youtube.com/watch?v=JJhRcCgAxyQ",
-    "privacy": "unlisted",
-    "state": "uploaded",
-    "note": "",
+    "privacy": "public",
+    "state": "scheduled",
+    "note": "corrected 25 Oct 2026 from logs/youtube_manage.json: scheduled public for Sat 24 Oct 7:00pm by the manage lane on 21 Oct; this row was never updated, so the promo week never ran | scheduled public at 2026-10-25T22:55:00Z by tools/yt_manage.py (2026-10-25) | scheduled public at 2026-10-25T22:55:00Z by tools/yt_manage.py (2026-10-25) | scheduled public at 2026-10-25T22:55:00Z by tools/yt_manage.py (2026-10-25) | scheduled public at 2026-10-25T22:55:00Z by tools/yt_manage.py (2026-10-25) | scheduled public at 2026-10-24T18:00:00Z by tools/yt_manage.py (2026-10-25) | scheduled public at 2026-10-31T18:00:00Z by tools/yt_manage.py (2026-10-25) | scheduled public at 2026-10-24T18:00:00Z by tools/yt_manage.py (2026-10-25) | scheduled public at 2026-10-31T18:00:00Z by tools/yt_manage.py (2026-10-25)",
     "date": "2026-10-15",
     "run_id": "38697775895",
-    "size_bytes": 63659706
+    "size_bytes": 63659706,
+    "publish_at": "2026-10-31T18:00:00Z"
   },
   {
     "recorded_at": "2026-10-14T17:36:39+01:00",

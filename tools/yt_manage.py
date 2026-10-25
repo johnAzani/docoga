@@ -143,6 +143,44 @@ def record(ledger, action, video_id, result, title=""):
     })
 
 
+PUBLISH_LEDGERS = (Path(__file__).resolve().parents[1] / "logs" / "youtube_longform.json",
+                   Path(__file__).resolve().parents[1] / "logs" / "youtube_published.json")
+
+
+def note_schedule(video_id, publish_at, ledgers=PUBLISH_LEDGERS, now=None):
+    """Write a schedule into the row the publish ledgers keep for `video_id` (25 Oct 2026).
+
+    Deep-Dive 3 was scheduled public for Sat 24 Oct 7:00pm by this lane, but its row in
+    logs/youtube_longform.json still said `unlisted`, no publish_at — so tools/deepdive_promo.py
+    dated the episode 15 Oct and the launch, feature and recap posts never ran. The manage ledger
+    is this lane's own record; the publish ledgers are what every other lane reads. Returns the
+    paths it changed. Never raises."""
+    changed = []
+    for path in ledgers:
+        try:
+            rows = json.loads(Path(path).read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if not isinstance(rows, list):
+            continue
+        hit = False
+        for row in rows:
+            if isinstance(row, dict) and row.get("video_id") == video_id:
+                row["publish_at"] = publish_at
+                row["privacy"] = "public"
+                row["state"] = "scheduled"
+                stamp = (now or datetime.datetime.now(datetime.timezone.utc)).strftime("%Y-%m-%d")
+                row["note"] = ("%s | " % row["note"] if row.get("note") else "") + "scheduled public at %s by tools/yt_manage.py (%s)" % (publish_at, stamp)
+                hit = True
+        if hit:
+            try:
+                Path(path).write_text(json.dumps(rows, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+                changed.append(Path(path))
+            except OSError:
+                pass
+    return changed
+
+
 def transport(http):
     """Accept a bare session (tests, or any requests-like object) or a yt_publish.Http."""
     if http is not None and not isinstance(http, yt_publish.Http):
@@ -308,6 +346,9 @@ def run_plan(plan, ledger_path, dry_run=False, http=None, log=print):
         if not dry_run:
             record(ledger, action, video_id, result, title)
             save_ledger(ledger_path, ledger)
+            if result.startswith("scheduled "):
+                for path in note_schedule(video_id, result.split(" ", 1)[1]):
+                    log("  📒 %s now carries the schedule" % path.name)
     return code
 
 
