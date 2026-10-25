@@ -1,6 +1,23 @@
 [
  {
   "date": "2026-10-27",
+  "at": "2026-10-25T06:10:09+01:00",
+  "short_day": true,
+  "problems": [
+   "verifier: legal statement not on the shelf — 'A simple bank transfer alert is not the statutory receipt the law requires.'",
+   "verifier: legal statement not on the shelf — 'Ensure your landlord or authorised agent signs the paper.'"
+  ]
+ },
+ {
+  "date": "2026-10-26",
+  "at": "2026-10-25T06:06:27+01:00",
+  "short_day": true,
+  "problems": [
+   "short.tips[2].text: 1-5 words, <= 30 characters"
+  ]
+ },
+ {
+  "date": "2026-10-27",
   "at": "2026-10-25T01:37:54+01:00",
   "short_day": true,
   "problems": [
