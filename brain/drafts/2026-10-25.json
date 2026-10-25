@@ -1,62 +1,66 @@
 {
  "version": 1,
- "status": "withdrawn",
+ "status": "approved",
  "date": "2026-10-25",
- "generated_at": "2026-10-23T01:37:06+01:00",
- "theme": "rent-receipt-always-paper-edo",
+ "generated_at": "2026-10-25T01:33:32+01:00",
+ "theme": "edo-tribunal-dispute-protects-tenant",
  "post_type": "engagement",
- "hook_type": "STAT",
+ "hook_type": "CLAIM",
  "state": "edo",
- "claims": [],
+ "claims": [
+  {
+   "text": "In Edo State, once a tenant applies to the Rent Tribunal, any quit notice served afterwards has no effect under section 16.",
+   "fact_id": "edo:security_of_tenancy:1"
+  }
+ ],
  "post": {
-  "headline": "Over 70% of Nigerian tenants pay rent without paper.",
+  "headline": "A dispute at the tribunal pauses your quit notice",
   "lines": [
-   "This week's reports show many still pay cash without a proper receipt.",
-   "But memory no be paper, and paper dey save stress.",
-   "A dated rent receipt is your proof of payment, your shield.",
-   "Don't just pay; make sure you get a receipt in return."
+   "In Edo State, once a tenant applies to the Rent Tribunal,",
+   "any quit notice served afterwards has no effect under section 16.",
+   "A landlord cannot use a retaliatory notice to force you out while the tribunal is hearing your case.",
+   "Know your rights before an agent uses threats to push you out."
   ],
-  "cta": "Send this to a friend who always pays cash for their rent.",
+  "cta": "Which state are you renting in? Tell us below, and follow for the next rule.",
   "hashtags": [
    "#DocOga",
-   "#RentReceipt",
-   "#EdoTenants",
-   "#PaperBeatsMemory"
+   "#EdoState",
+   "#TenantRights",
+   "#NigeriaRent"
   ]
  },
  "threads": {
-  "text": "Over 70% of Nigerian tenants pay rent without proper receipts. When you pay rent, your only proof is that paper. No receipt, no proof. What is the one thing your receipt must have?",
+  "text": "In Edo State, filing a matter before the Rent Tribunal stops any retaliatory quit notice under section 16. The landlord cannot issue a notice while the tribunal decides. Has your landlord ever threatened you with eviction after a simple complaint?",
   "hashtags": [
    "#DocOga",
-   "#Rent"
+   "#RentRights"
   ],
   "topic": "Tenant Rights Nigeria",
   "poll": {
-   "option_a": "Date",
-   "option_b": "Amount",
-   "option_c": "Landlord's signature",
-   "option_d": "All of them"
+   "option_a": "Yes, happened to me",
+   "option_b": "No, never",
+   "option_c": "I am a landlord"
   },
-  "evening": "A proper rent receipt protects you from paying twice. It must be dated and show the amount paid. Insist on it every time you pay."
+  "evening": "In Edo State, retaliatory quit notices have no legal weight once the dispute is before the tribunal."
  },
  "visual": {
-  "kicker": "Engagement Question",
+  "kicker": "know your rights",
   "layout": "stat",
-  "big": "70%",
-  "plate": "hand holding receipt"
+  "big": "s.16 EDO",
+  "plate": "keys wooden door"
  },
  "short": null,
- "why": "This post is an engagement question for Ngozi, using a STAT hook about rent payment habits, aligning with the payday window and the need to improve Facebook comments and Threads replies, while promoting the rent receipt tool.",
- "tool": "rent-receipt",
+ "why": "Sunday engagement question using the CLAIM hook on Edo's strong s.16 anti-retaliation protection, obeying the 5-word question and follow orders.",
+ "tool": "tenant-rights",
  "reader": "ngozi",
  "news_hook": null,
  "quiz": null,
  "gates": [
   "citation",
-  "no-claims",
+  "verification",
   "lint",
   "repetition",
   "shape"
  ],
- "note": " | withdrawn 24 Oct 2026: opened with an unsourced statistic (\"Over 70% of Nigerian tenants…\"); the statistic gate now refuses it — the brain rewrites the day at 1:30am."
+ "note": ""
 }

@@ -31,5 +31,21 @@
   "reader": "ngozi",
   "tool": "tenancy-agreement",
   "news_hook": null
+ },
+ {
+  "date": "2026-10-25",
+  "theme": "edo-tribunal-dispute-protects-tenant",
+  "headline": "A dispute at the tribunal pauses your quit notice",
+  "post_type": "engagement",
+  "hook_type": "CLAIM",
+  "state": "edo",
+  "fact_ids": [
+   "edo:security_of_tenancy:1"
+  ],
+  "plate": "keys wooden door",
+  "short": false,
+  "reader": "ngozi",
+  "tool": "tenant-rights",
+  "news_hook": null
  }
 ]

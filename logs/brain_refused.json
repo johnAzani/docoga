@@ -1,5 +1,24 @@
 [
  {
+  "date": "2026-10-27",
+  "at": "2026-10-25T01:37:54+01:00",
+  "short_day": true,
+  "problems": [
+   "a body line is 116 characters; max 110: 'In Lagos, every landlord must issue a re'",
+   "a body line is 121 characters; max 110: 'This receipt must state the date, names '",
+   "news_hook is not one of this week's NEWSDESK headlines — a story the papers did not print is not a story",
+   "the disclaimer is added by the renderer — remove it from the copy"
+  ]
+ },
+ {
+  "date": "2026-10-26",
+  "at": "2026-10-25T01:37:30+01:00",
+  "short_day": true,
+  "problems": [
+   "news_hook is not one of this week's NEWSDESK headlines — a story the papers did not print is not a story"
+  ]
+ },
+ {
   "date": "2026-10-26",
   "at": "2026-10-24T05:55:26+01:00",
   "short_day": true,
