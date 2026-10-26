@@ -206,20 +206,24 @@ backstop. `DOCOGA_FRESH=off` is for tests only.
 ## 7¾. Shipped 26 Oct 2026 — DocOga Live, the always-on stream
 
 Owner, 4:20am: "go — I want live stream to always be on for life, pulling in watch time,
-subscribers etc." The Studio screenshot that morning showed the Live Control Room open, so
-the channel can stream through an encoder today, with no subscriber minimum.
+subscribers etc." Then, after the research: "I don't want to run it on GitHub, I don't want
+to take that risk. Let's do it in Oracle." The Studio screenshot that morning showed the Live
+Control Room open, so the channel can stream through an encoder today, with no subscriber
+minimum.
 
 | Lever | Where | What it does |
 |---|---|---|
-| One public broadcast, never auto-stopped | `tools/yt_live.py ensure` | the LIVE badge in search and the live shelf, all day; auto-start when data arrives, DVR on |
-| The channel's own episodes on a loop | `plan` + `build` | every Deep-Dive master (`deepdive-<ep>` releases) and every weekday Short (banked on `live-library` by the Shorts lane) — newest Short opens the loop, Shorts interleave with Deep-Dives |
-| Normalise once, stream bytes | `normalise_cmd`, `stream_cmd` | one 1080p30 profile, keyframe every 2 s; the runner streams with `-c copy` and encodes only what is new |
-| Six-hour windows, chained | `.github/workflows/youtube_live.yml` | each window queues its successor at the start; the `docoga-live` concurrency group hands over (≈1 minute of "reconnecting" inside the same broadcast); the clock dispatches a backstop at 1:05am / 7:05am / 1:05pm / 7:05pm |
+| One public broadcast, never auto-stopped | `tools/yt_live.py ensure` (Actions) | the LIVE badge in search and the live shelf, all day; auto-start when data arrives, DVR on |
+| The channel's own episodes on a loop | `prepare` (Actions) → `loop.json` on the `live-library` release | every Deep-Dive master once its Saturday has come, every weekday Short (banked by the Shorts lane) — newest Short opens the loop, Shorts interleave with Deep-Dives |
+| Normalise once on Actions, copy bytes on the VM | `normalise_cmd` / `serve` | one 1080p30 profile, keyframe every 2 s; the Oracle Always Free micro VM streams with `-c copy` and never encodes |
+| The mouth is not GitHub | `deploy/live/` (systemd on Oracle) | GitHub's Actions terms forbid CDN-like use and allow only develop/test/deploy/publish; the stream runs where that risk does not touch the rest of the machine |
+| Off-air alarm | `health` (Actions, 4×/day) | no data from the VM → one Telegram to the owner with the one tap |
 | Honest on its face | `TITLE`, `DESCRIPTION`, the backdrop card | "pre-recorded loop" in the title, "This is not a live presenter" in the description, "LIVE 24/7 · PRE-RECORDED" on the card behind every Short |
-| Kill switch | repo variable `DOCOGA_LIVE=off` | ends the broadcast on the next window and stops the chain; the Shorts lane stops banking too |
+| Kill switch | repo variable `DOCOGA_LIVE=off` · `systemctl stop docoga-live` | ends the broadcast / stops the push |
 
-What it will not do: archive (YouTube keeps no VOD of a stream past 12 hours — this is a window, not a
-video), re-encode while live, or use anything but the channel's own published episodes. Runbook: `docs/LIVE.md`.
+What it will not do: archive (YouTube keeps no VOD past 12 hours — a window, not a video),
+re-encode while live, push a byte from a GitHub runner, or use anything but the channel's own
+published episodes. Runbook: `docs/LIVE.md`.
 
 ## 8. Next levers, in order of expected effect (Founder's brief items)
 

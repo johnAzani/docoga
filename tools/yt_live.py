@@ -1,38 +1,38 @@
 #!/usr/bin/env python3
-"""DocOga Live — the channel's always-on stream, at ₦0.
+"""DocOga Live — the channel's always-on stream, at ₦0, from an Oracle Always Free VM.
 
 Owner, 26 Oct 2026, 4:20am: "go — I want live stream to always be on for life, pulling in
-watch time, subscribers etc." The Studio screenshot that morning showed the Live Control
-Room open with a Schedule Stream button and no enable-wait banner: the channel can go
-live now, through an encoder, with no subscriber minimum (the 50-subscriber rule is the
-phone app only — support.google.com/youtube/answer/2907883).
+watch time, subscribers etc." Then, after the research (same morning): "I don't want to run
+it on GitHub, I don't want to take that risk. Let's do it in Oracle." GitHub's Actions terms
+(27 Aug 2026) say Actions may only be used to develop and test the application and never as
+a content delivery network; a 24/7 RTMP relay on GitHub's runners would put the whole
+machine at risk for one stream. So the work is split:
 
-What this is
-------------
-One broadcast that stays live. A GitHub Actions runner pushes the channel's own finished
-episodes — every Deep-Dive master banked on its `deepdive-<ep>` release and every weekday
-Short the Shorts lane banks on the `live-library` release — over RTMPS to YouTube's ingest,
-on a loop, with ffmpeg copying the already-encoded bytes (no re-encode while streaming, so a
-2-vCPU runner does it with room to spare). A job may run 6 hours; this one streams for
-LIVE_MINUTES (5h45m) and queues its successor the moment it starts, so the hand-over is the
-concurrency group letting the next run in as this one ends: a gap of about a minute every
-six hours, inside a broadcast that stays live because auto-stop is off. YouTube does not
-archive a stream longer than 12 hours — fine: this is a window, not a VOD. The watch time,
-the live shelf, the LIVE badge in search and the subscribers it pulls are the point.
+* **GitHub Actions is the brain, minutes a day** (`prepare`, `ensure`, `health`): it reads the
+  library from the releases (Deep-Dive masters on `deepdive-<ep>`, banked Shorts on
+  `live-library`), normalises what is new to one 1080p30 profile (keyframe every 2 s), banks
+  the segments and a `loop.json` manifest on `live-library`, keeps the public broadcast
+  alive (auto-start on, auto-stop OFF, bound to one reusable stream key) and, when the
+  stream has no data, tells the owner by Telegram. No video leaves a runner.
+* **The Oracle VM is the mouth, all day** (`serve`): a systemd service that pulls `loop.json`
+  from the public release, fetches the segments it lacks, concatenates the reel and pushes
+  it to YouTube's RTMPS ingest with `ffmpeg -re -stream_loop -1 -c copy` — no re-encoding,
+  so Oracle's 1/8-OCPU micro VM does it with room to spare. It re-reads the manifest every
+  half hour and restarts the push at the next check when the loop has changed. The only
+  secret on the VM is the stream key (deploy/live/install.sh).
 
-Honesty, on the record: the title and description say the loop is pre-recorded. Nothing
-here claims to be a person talking in real time; the episodes are the episodes.
+Honesty, on the record: the title and description say the loop is pre-recorded, and the
+card behind every Short says PRE-RECORDED. Nothing claims to be a person talking live.
 
-What it never does: touch the Shorts or Deep-Dive uploads, use a non-Google voice, or
-spend money. Kill switch: repository variable `DOCOGA_LIVE=off` ends the broadcast on the
-next run and stops queuing successors.
+Kill switch: repository variable `DOCOGA_LIVE=off` ends the broadcast on the next control
+run and the Shorts lane stops banking; on the VM, `systemctl stop docoga-live`.
 
-CLI (the workflow drives these; each reads YT_* secrets from the environment):
-    python3 tools/yt_live.py plan --assets assets.json --out plan.json      # which clips, in what order
-    python3 tools/yt_live.py build --plan plan.json --lib DIR --reel reel.mp4 # normalise + concat
-    python3 tools/yt_live.py ensure --out live.json                           # broadcast + stream key
-    python3 tools/yt_live.py stream --reel reel.mp4 --ingest live.json --minutes 345
-    python3 tools/yt_live.py off                                              # end every live broadcast
+CLI:
+    python3 tools/yt_live.py prepare --assets assets.json --lib DIR [--backdrop bd.jpg]   # Actions
+    python3 tools/yt_live.py ensure --out live.json [--cover cover.jpg]                   # Actions
+    python3 tools/yt_live.py health [--dm]                                                # Actions
+    python3 tools/yt_live.py off                                                          # Actions
+    python3 tools/yt_live.py serve --key-file /etc/docoga-live/stream_key --lib DIR       # the VM
 """
 from __future__ import annotations
 
@@ -44,7 +44,7 @@ import re
 import subprocess
 import sys
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -56,7 +56,11 @@ API = "https://www.googleapis.com/youtube/v3"
 RELEASE_TAG = "live-library"          # banked Shorts + normalised clips + the manifest
 LEDGER = ROOT / "logs" / "youtube_live.json"
 
-LIVE_MINUTES = 345                    # 5h45m of a 6-hour job; the successor is already queued
+MANIFEST = "loop.json"                # the VM's running order, banked on the live-library release
+RELEASE_DOWNLOAD = "https://github.com/johnAzani/docoga/releases/download/%s/%s"
+INGEST_URL = "rtmps://a.rtmps.youtube.com/live2"          # YouTube's primary RTMPS ingest
+INGEST_BACKUP = "rtmps://b.rtmps.youtube.com/live2?backup=1"
+RECHECK_S = 1800                      # the VM re-reads the manifest every half hour
 CANVAS = (1920, 1080)                 # one landscape canvas; Shorts stand on the brand navy
 FPS = 30
 GOP = 60                              # a keyframe every 2 s — YouTube ingest asks for ≤ 4 s
@@ -223,14 +227,15 @@ def cover(out_path):
     return out_path
 
 
-def build(plan_rows, lib_dir, reel_path, download, upload, log=print, run=subprocess.run,
-          backdrop_path=None, ffmpeg="ffmpeg"):
-    """Normalise what is new, keep what is not, concatenate the lot into `reel_path`.
+def prepare(plan_rows, lib_dir, download, upload, log=print, run=subprocess.run, backdrop_path=None,
+            ffmpeg="ffmpeg", now=None):
+    """Actions, minutes a day: normalise what is new, bank it, write the manifest the VM reads.
 
-    `download(release, name, dest_dir)` fetches one release asset; `upload(path)` banks a
-    freshly normalised segment on the live-library release so the next run skips it.
-    Returns the list of segment paths in loop order. Raises RuntimeError when nothing
-    could be prepared — a live with no picture is not a live."""
+    `download(release, name, dest_dir)` fetches one release asset; `upload(path)` banks a file
+    on the live-library release. A segment already banked is never encoded again. Returns the
+    manifest (dict) — also written to `lib_dir/loop.json` and uploaded. Raises RuntimeError
+    when not one clip could be prepared: a manifest with no segments must never be banked,
+    because the VM would then have nothing to stream."""
     lib = Path(lib_dir)
     lib.mkdir(parents=True, exist_ok=True)
     segments = []
@@ -242,7 +247,7 @@ def build(plan_rows, lib_dir, reel_path, download, upload, log=print, run=subpro
             except Exception:  # noqa: BLE001 — not banked yet; normalise it now
                 pass
         if seg.is_file() and seg.stat().st_size > 0:
-            segments.append(seg)
+            segments.append(row)
             continue
         try:
             download(row["release"], row["name"], lib)
@@ -257,17 +262,25 @@ def build(plan_rows, lib_dir, reel_path, download, upload, log=print, run=subpro
             continue
         try:
             upload(seg)
-        except Exception as exc:  # noqa: BLE001 — banking is a saving, not a condition
+        except Exception as exc:  # noqa: BLE001 — the VM cannot fetch what is not banked
             log("::warning title=Segment not banked::%s — %s" % (seg.name, exc))
-        segments.append(seg)
+            continue
+        segments.append(row)
     if not segments:
         raise RuntimeError("no clip could be prepared for the loop")
-    list_path = lib / "reel.txt"
-    list_path.write_text(concat_list(segments), encoding="utf-8")
-    r = run(concat_cmd(list_path, reel_path, ffmpeg=ffmpeg))
-    if getattr(r, "returncode", 1) != 0 or not Path(reel_path).is_file():
-        raise RuntimeError("the reel could not be concatenated (ffmpeg exit %s)" % getattr(r, "returncode", "?"))
-    return segments
+    manifest = loop_manifest(segments, now=now)
+    out = lib / MANIFEST
+    out.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    upload(out)
+    return manifest
+
+
+def loop_manifest(rows, now=None):
+    """What the VM downloads: the segments in loop order, each with its public URL."""
+    stamp = (now or datetime.now(timezone.utc)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return {"generated_at": stamp, "ingest_url": INGEST_URL, "ingest_backup": INGEST_BACKUP,
+            "segments": [{"key": r["key"], "kind": r["kind"], "name": r["name"],
+                          "url": RELEASE_DOWNLOAD % (RELEASE_TAG, r["key"])} for r in rows]}
 
 
 # ---------------------------------------------------------------- the broadcast
@@ -397,47 +410,137 @@ def record(entry, path=LEDGER, now=None):
     return rows
 
 
-# ------------------------------------------------------------------ the push
+# --------------------------------------------------------------- health (Actions)
 
-def stream(reel, ingest_url, stream_key, minutes=LIVE_MINUTES, popen=subprocess.Popen, clock=time.monotonic,
-           sleep=time.sleep, log=print, ffmpeg="ffmpeg", retry_wait=5.0):
-    """Keep ffmpeg pushing until the deadline. A push that dies early (a network blip, an
-    ingest hiccup) is restarted after `retry_wait`; a push that keeps dying inside its first
-    minute is a fault, and after five of those in a row the run stops with exit 3 so the
-    issue is visible rather than a silent six hours of reconnects. Returns the exit code."""
-    deadline = clock() + minutes * 60
-    quick_deaths = 0
-    attempts = 0
-    while clock() < deadline:
-        attempts += 1
-        started = clock()
-        proc = popen(stream_cmd(reel, ingest_url, stream_key, ffmpeg=ffmpeg))
-        while clock() < deadline:
-            code = proc.poll()
-            if code is not None:
-                break
-            sleep(5)
-        else:
+def health(http, log=print):
+    """Is data arriving? liveStreams.list → status.streamStatus is `active` while the VM is
+    pushing, `inactive` when nothing has arrived. Returns (ok, text)."""
+    streams = _get(http, "liveStreams", part="id,snippet,status", mine="true", maxResults=50).get("items", [])
+    ours = [s for s in streams if s.get("snippet", {}).get("title") == STREAM_TITLE]
+    if not ours:
+        return False, "no stream yet — the first control run creates it"
+    st = ours[0].get("status") or {}
+    status = st.get("streamStatus", "?")
+    hs = (st.get("healthStatus") or {}).get("status", "")
+    text = "stream %s%s" % (status, (" (%s)" % hs) if hs else "")
+    log(text)
+    return status == "active", text
+
+
+OWNER_DM = ("DocOga Live is OFF AIR: YouTube has had no data from the Oracle VM. On your phone: "
+            "Oracle Cloud app/console → Compute → Instances → docoga-live → if it says STOPPED tap Start; "
+            "if RUNNING, it restarts itself within a minute — tell me if this message repeats.")
+
+
+# ------------------------------------------------------------------ serve (the VM)
+
+def fetch_manifest(url, get=None):
+    """The current loop.json from the public release, or None when it cannot be read."""
+    import requests
+    get = get or requests.get
+    try:
+        r = get(url, timeout=30, allow_redirects=True)
+        if r.status_code != 200:
+            return None
+        return r.json()
+    except Exception:  # noqa: BLE001 — the old reel keeps playing
+        return None
+
+
+def sync_segments(manifest, lib_dir, get=None, log=print):
+    """Download the segments the VM lacks; return the ordered local paths (only those present)."""
+    import requests
+    get = get or requests.get
+    lib = Path(lib_dir)
+    lib.mkdir(parents=True, exist_ok=True)
+    paths = []
+    for seg in manifest.get("segments", []):
+        dst = lib / seg["key"]
+        if not (dst.is_file() and dst.stat().st_size > 0):
+            tmp = dst.with_suffix(".part")
             try:
-                proc.terminate()
-                proc.wait(timeout=20)
-            except Exception:  # noqa: BLE001
-                try:
-                    proc.kill()
-                except Exception:  # noqa: BLE001
-                    pass
-            log("window complete after %d push(es); the next run is already queued" % attempts)
-            return 0
-        ran = clock() - started
-        if ran < 60:
-            quick_deaths += 1
-        else:
-            quick_deaths = 0
-        log("::warning title=Push ended::ffmpeg exited %s after %ds; reconnecting" % (code, int(ran)))
-        if quick_deaths >= 5:
-            log("::error title=Ingest refused::five pushes died inside a minute each — see the stream key, the broadcast state and the reel")
-            return 3
-        sleep(retry_wait)
+                with get(seg["url"], stream=True, timeout=60, allow_redirects=True) as r:
+                    if r.status_code != 200:
+                        log("segment %s: HTTP %s" % (seg["key"], r.status_code))
+                        continue
+                    with open(tmp, "wb") as fh:
+                        for chunk in r.iter_content(1 << 20):
+                            fh.write(chunk)
+                tmp.rename(dst)
+                log("fetched %s" % seg["key"])
+            except Exception as exc:  # noqa: BLE001
+                log("segment %s: %s" % (seg["key"], exc))
+                tmp.unlink(missing_ok=True)
+                continue
+        paths.append(dst)
+    wanted = {seg["key"] for seg in manifest.get("segments", [])}
+    for old in lib.glob("norm-*.mp4"):
+        if old.name not in wanted:
+            old.unlink(missing_ok=True)                 # the micro VM has 47 GB; keep only the loop
+    return paths
+
+
+def serve(key_file, lib_dir, manifest_url=None, popen=subprocess.Popen, clock=time.monotonic, sleep=time.sleep,
+          log=print, ffmpeg="ffmpeg", get=None, run=subprocess.run, max_cycles=None, recheck_s=RECHECK_S):
+    """The VM's forever loop. Every `recheck_s`: read the manifest; when it changed (or the reel
+    is missing) fetch segments, rebuild the reel and (re)start ffmpeg; when ffmpeg has died,
+    start it again. The stream key is read from `key_file` on every start so a rotated key
+    takes effect without a redeploy. Never raises; systemd restarts the service if it does."""
+    manifest_url = manifest_url or RELEASE_DOWNLOAD % (RELEASE_TAG, MANIFEST)
+    lib = Path(lib_dir)
+    reel = lib / "reel.mp4"
+    current = None
+    proc = None
+    cycles = 0
+    while max_cycles is None or cycles < max_cycles:
+        cycles += 1
+        manifest = fetch_manifest(manifest_url, get=get)
+        changed = manifest is not None and manifest.get("generated_at") != (current or {}).get("generated_at")
+        if changed or (not reel.is_file() and manifest is not None):
+            paths = sync_segments(manifest, lib, get=get, log=log)
+            if paths:
+                list_path = lib / "reel.txt"
+                list_path.write_text(concat_list(paths), encoding="utf-8")
+                tmp = lib / "reel.next.mp4"
+                r = run(concat_cmd(list_path, tmp, ffmpeg=ffmpeg))
+                if getattr(r, "returncode", 1) == 0 and tmp.is_file():
+                    if proc is not None and proc.poll() is None:
+                        proc.terminate()
+                        try:
+                            proc.wait(timeout=20)
+                        except Exception:  # noqa: BLE001
+                            proc.kill()
+                        proc = None
+                    tmp.replace(reel)
+                    current = manifest
+                    log("loop rebuilt: %d segment(s), manifest %s" % (len(paths), manifest.get("generated_at")))
+                else:
+                    log("reel not rebuilt (ffmpeg exit %s); the old reel keeps playing" % getattr(r, "returncode", "?"))
+        if reel.is_file() and (proc is None or proc.poll() is not None):
+            try:
+                key = Path(key_file).read_text(encoding="utf-8").strip()
+            except OSError:
+                key = ""
+            if key:
+                ingest = (current or {}).get("ingest_url") or INGEST_URL
+                proc = popen(stream_cmd(reel, ingest, key, ffmpeg=ffmpeg))
+                log("push started")
+            else:
+                log("no stream key in %s" % key_file)
+        # Watch the push between manifest checks; a dead push is restarted after 5 s.
+        waited = 0
+        while waited < recheck_s:
+            sleep(5)
+            waited += 5
+            if proc is not None and proc.poll() is not None:
+                log("push ended (exit %s); restarting" % proc.returncode)
+                sleep(5)
+                key = Path(key_file).read_text(encoding="utf-8").strip() if Path(key_file).is_file() else ""
+                if key and reel.is_file():
+                    ingest = (current or {}).get("ingest_url") or INGEST_URL
+                    proc = popen(stream_cmd(reel, ingest, key, ffmpeg=ffmpeg))
+            if max_cycles is not None:
+                break
     return 0
 
 
@@ -456,21 +559,26 @@ def gh_upload(path, release=RELEASE_TAG):
 
 
 def main(argv=None, http=None):
-    ap = argparse.ArgumentParser(description="DocOga Live — the always-on stream")
+    ap = argparse.ArgumentParser(description="DocOga Live — the always-on stream (Actions = brain, Oracle VM = mouth)")
     sub = ap.add_subparsers(dest="cmd", required=True)
-    p = sub.add_parser("plan"); p.add_argument("--assets", required=True); p.add_argument("--out", required=True)
-    p.add_argument("--ledger", default=str(LONGFORM_LEDGER))
-    b = sub.add_parser("build"); b.add_argument("--plan", required=True); b.add_argument("--lib", required=True)
-    b.add_argument("--reel", required=True); b.add_argument("--backdrop", default="")
+    pr = sub.add_parser("prepare"); pr.add_argument("--assets", required=True); pr.add_argument("--lib", required=True)
+    pr.add_argument("--backdrop", default=""); pr.add_argument("--ledger", default=str(LONGFORM_LEDGER))
     e = sub.add_parser("ensure"); e.add_argument("--out", required=True); e.add_argument("--cover", default="")
-    s = sub.add_parser("stream"); s.add_argument("--reel", required=True); s.add_argument("--ingest", required=True)
-    s.add_argument("--minutes", type=int, default=LIVE_MINUTES)
+    h = sub.add_parser("health"); h.add_argument("--dm", action="store_true", help="Telegram the owner when no data arrives")
     sub.add_parser("off")
     c = sub.add_parser("cover"); c.add_argument("--out", required=True)
     bd = sub.add_parser("backdrop"); bd.add_argument("--out", required=True)
+    sv = sub.add_parser("serve"); sv.add_argument("--key-file", required=True); sv.add_argument("--lib", required=True)
+    sv.add_argument("--manifest-url", default="")
     a = ap.parse_args(argv)
 
-    if a.cmd == "plan":
+    if a.cmd == "cover":
+        cover(a.out); print(a.out); return 0
+    if a.cmd == "backdrop":
+        backdrop(a.out); print(a.out); return 0
+    if a.cmd == "serve":
+        return serve(a.key_file, a.lib, manifest_url=a.manifest_url or None)
+    if a.cmd == "prepare":
         assets = json.loads(Path(a.assets).read_text(encoding="utf-8"))
         try:
             ledger_rows = json.loads(Path(a.ledger).read_text(encoding="utf-8"))
@@ -480,22 +588,15 @@ def main(argv=None, http=None):
         if hidden:
             print("LIVE_HIDDEN=%s" % ",".join(sorted(hidden)))
         rows = plan(assets, hidden=hidden)
-        Path(a.out).write_text(json.dumps(rows, indent=2) + "\n", encoding="utf-8")
-        print("LIVE_CLIPS=%d" % len(rows))
         for r in rows:
             print("  %-8s %s" % (r["kind"], r["name"]))
-        return 0 if rows else 5
-    if a.cmd == "cover":
-        cover(a.out); print(a.out); return 0
-    if a.cmd == "backdrop":
-        backdrop(a.out); print(a.out); return 0
-    if a.cmd == "build":
-        rows = json.loads(Path(a.plan).read_text(encoding="utf-8"))
+        if not rows:
+            print("::error title=Nothing to stream::no Deep-Dive master or banked Short on the releases"); return 5
         try:
-            segs = build(rows, a.lib, a.reel, gh_download, gh_upload, backdrop_path=a.backdrop or None)
+            manifest = prepare(rows, a.lib, gh_download, gh_upload, backdrop_path=a.backdrop or None)
         except RuntimeError as exc:
-            print("::error title=No reel::%s" % exc); return 5
-        print("LIVE_SEGMENTS=%d" % len(segs)); return 0
+            print("::error title=No loop::%s" % exc); return 5
+        print("LIVE_SEGMENTS=%d" % len(manifest["segments"])); return 0
     try:
         http, _ = yt_publish.authorize(http)
         if a.cmd == "ensure":
@@ -512,12 +613,23 @@ def main(argv=None, http=None):
             print("LIVE_URL=%s" % info["watch_url"])
             print("LIVE_CREATED=%s" % ("yes" if info.get("created") else "no"))
             return 0
+        if a.cmd == "health":
+            ok, text = health(http)
+            print("LIVE_HEALTH=%s" % ("on-air" if ok else "off-air"))
+            if not ok and a.dm:
+                import owner_dm
+                token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+                rec = owner_dm.load_record() or {}
+                chat = rec.get("chat_id")
+                if token and chat:
+                    sent, note = owner_dm.send(token, chat, OWNER_DM + " (" + text + ")")
+                    print("owner DM: %s" % note)
+                else:
+                    print("owner DM skipped: no bot token or no owner chat yet")
+            return 0
         if a.cmd == "off":
             ended = end_all(http)
             print("LIVE_ENDED=%d" % len(ended)); return 0
-        if a.cmd == "stream":
-            info = json.loads(Path(a.ingest).read_text(encoding="utf-8"))
-            return stream(a.reel, info["ingest_url"], info["stream_key"], minutes=a.minutes)
     except yt_publish.Problem as exc:
         print("::error title=DocOga Live %s::%s %s" % (exc.kind, exc.what, exc.action))
         return getattr(exc, "exit_code", 1) or 1

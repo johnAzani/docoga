@@ -530,7 +530,8 @@ jobs:
       # Owner, 26 Oct 2026: "I want live stream to always be on for life." The always-on
       # stream (youtube_live.yml, tools/yt_live.py) loops the channel's own episodes, and a
       # Short only ever lived inside this run — so the published file is banked on the
-      # `live-library` release as short-<date>.mp4 and joins the loop in the next window.
+      # `live-library` release as short-<date>.mp4; the next control run (7:05pm) normalises it into
+      # loop.json and the Oracle VM picks it up within the half hour.
       # Never fails the publish; DOCOGA_LIVE=off skips the banking too.
       - name: Bank the Short for DocOga Live
         if: always() && steps.upload.outputs.video_id != '' && steps.short.outputs.paused != 'yes' && (vars.DOCOGA_LIVE || 'on') != 'off'
