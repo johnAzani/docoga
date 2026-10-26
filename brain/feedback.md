@@ -71,9 +71,9 @@ A caution fee is a refundable sec' (3) — write the next threads post in that r
 ### Not measured (and why)
 - sales: DOCOGA_ADMIN_PASSPHRASE not set — revenue not connected (optional; the dashboard passphrase as a repo secret)
 
-## YouTube (snapshot 2026-10-14): 49 subscribers, 142 views, 13 videos
-- Top short: 'Change the lock. Become the defendant.' 108 views; 'Keep a Rent Paper Trail' 57 views; 'Stop paying rent after a notice? The Supreme Court answered' 16 views
-- Top longform: 'Notice to Quit in Nigeria: The Legal Timeline Every Tenant & Landlord Must Know' 2 views; 'Caution Fee: The Refund War' 1 views; 'Tenancy Agreement in Nigeria: The 8 Clauses That Decide Everything' 0 views
+## YouTube (snapshot 2026-10-26): 49 subscribers, 478 views, 19 videos
+- Top short: 'Change the lock. Become the defendant.' 108 views; 'Skip the photos. Pay for old damage.' 93 views; 'Sign without asking. Fund the repaint.' 76 views
+- Top longform: 'Notice to Quit in Nigeria: The Legal Timeline Every Tenant & Landlord Must Know' 4 views; 'The Rent Receipt: The ₦50 Paper That Wins Cases' 2 views; 'Tenancy Agreement in Nigeria: The 8 Clauses That Decide Everything' 2 views
 
 ## Last 28 days of the brain's own output
 - post types: engagement ×2, checklist ×1

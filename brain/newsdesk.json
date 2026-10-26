@@ -1,5 +1,5 @@
 {
- "fetched": "2026-10-26T00:30:53+00:00",
+ "fetched": "2026-10-26T05:08:29+00:00",
  "sources": [
   "Punch: 30 stories",
   "Vanguard: 20 stories",
@@ -9,5 +9,17 @@
   "The Guardian Nigeria: unreachable (HTTP Error 403: Forbidden)",
   "Nairametrics: 20 stories"
  ],
- "items": []
+ "items": [
+  {
+   "title": "Ogun residents fear eviction over Chinese land allocation",
+   "link": "https://punchng.com/ogun-residents-fear-eviction-over-chinese-land-allocation/?utm_source=rss.punchng.com&utm_medium=web",
+   "published": "2026-10-26T01:28:30+00:00",
+   "source": "Punch",
+   "score": 9,
+   "matched": [
+    "eviction"
+   ],
+   "summary": "Ogun residents in Obafemi Owode LGA appeal to Gov Dapo Abiodun to halt land allocation to Chinese investors, fearing it will render hundreds homeless. Read More: https://punchng.com/ogun-residents-fea"
+  }
+ ]
 }

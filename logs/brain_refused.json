@@ -1,6 +1,36 @@
 [
  {
   "date": "2026-10-28",
+  "at": "2026-10-26T06:18:21+01:00",
+  "short_day": true,
+  "problems": [
+   "news_hook is not one of this week's NEWSDESK headlines — a story the papers did not print is not a story"
+  ]
+ },
+ {
+  "date": "2026-10-27",
+  "at": "2026-10-26T06:15:22+01:00",
+  "short_day": true,
+  "problems": [
+   "verifier: claim [lagos:receipts:2] not supported — The fact 'lagos:receipts:2' only states that the receipt must state 'the date on which the rent was received'. It does not mention names, addresses, ",
+   "verifier: legal statement not on the shelf — 'This receipt must state the names and addresses of both landlord and tenant, property description and location, amount p'",
+   "verifier: legal statement not on the shelf — 'Every valid rent receipt in Lagos must clearly show the full names and addresses of both the landlord and the tenant, id'",
+   "verifier: legal statement not on the shelf — 'The receipt must explicitly state the exact amount of rent you have paid. This prevents any dispute over the sum exchang'",
+   "verifier: legal statement not on the shelf — \"It must specify the period to which the payment relates, such as 'January to December 2027' or 'first quarter of 2027'. \"",
+   "verifier: legal statement not on the shelf — 'The receipt needs to describe the premises and its location, making it clear which property the rent payment is for. (s.'"
+  ]
+ },
+ {
+  "date": "2026-10-26",
+  "at": "2026-10-26T06:10:52+01:00",
+  "short_day": true,
+  "problems": [
+   "a cited post names the section number (e.g. s.5) in its copy",
+   "short.tips[4].say: no link — the end card carries it"
+  ]
+ },
+ {
+  "date": "2026-10-28",
   "at": "2026-10-26T01:38:02+01:00",
   "short_day": true,
   "problems": [
