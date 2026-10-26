@@ -1,4 +1,4 @@
-# What the numbers said — written 2026-10-19 by tools/brain.py feedback
+# What the numbers said — written 2026-10-26 by tools/brain.py feedback
 
 ## Scorecard 2026-W43 (taken 2026-10-19 11:13)
 
@@ -75,4 +75,9 @@ A caution fee is a refundable sec' (3) — write the next threads post in that r
 - Top short: 'Change the lock. Become the defendant.' 108 views; 'Keep a Rent Paper Trail' 57 views; 'Stop paying rent after a notice? The Supreme Court answered' 16 views
 - Top longform: 'Notice to Quit in Nigeria: The Legal Timeline Every Tenant & Landlord Must Know' 2 views; 'Caution Fee: The Refund War' 1 views; 'Tenancy Agreement in Nigeria: The 8 Clauses That Decide Everything' 0 views
 
-No brain output in the last 28 days yet — follow the editorial rhythm.
+## Last 28 days of the brain's own output
+- post types: engagement ×2, checklist ×1
+- hooks: STAT ×1, QUESTION ×1, CLAIM ×1
+- states: edo ×2, cross-river ×1
+
+Rotate away from the most-used type and hook above; the least-used state is overdue.

@@ -1,25 +1,13 @@
 {
- "fetched": "2026-10-25T05:04:48+00:00",
+ "fetched": "2026-10-26T00:30:53+00:00",
  "sources": [
   "Punch: 30 stories",
   "Vanguard: 20 stories",
   "BusinessDay: 5 stories",
   "TheCable: unreachable (HTTP Error 403: Forbidden)",
-  "Premium Times: 0 stories",
+  "Premium Times: 15 stories",
   "The Guardian Nigeria: unreachable (HTTP Error 403: Forbidden)",
   "Nairametrics: 20 stories"
  ],
- "items": [
-  {
-   "title": "Ebola: Virologists urge Nigerians to embrace hygiene as current strain defies treatment",
-   "link": "https://punchng.com/ebola-virologists-urge-nigerians-to-embrace-hygiene-as-current-strain-defies-treatment/?utm_source=rss.punchng.com&utm_medium=web",
-   "published": "2026-10-25T00:00:47+00:00",
-   "source": "Punch",
-   "score": 6,
-   "matched": [
-    "rent"
-   ],
-   "summary": "Renowned virologists urge Nigerians to embrace hygiene as a case of the Bundibugyo Ebola virus, which has no approved vaccine or treatment, is confirmed. Read More: https://punchng.com/ebola-virologis"
-  }
- ]
+ "items": []
 }
