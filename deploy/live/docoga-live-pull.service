@@ -1,0 +1,6 @@
+[Unit]
+Description=DocOga Live — pull the repo so a fix on main reaches the VM
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c 'cd /opt/docoga && git fetch -q origin main && if [ "$(git rev-parse HEAD)" != "$(git rev-parse origin/main)" ]; then git reset -q --hard origin/main && systemctl restart docoga-live; fi'

@@ -1,0 +1,21 @@
+[Unit]
+Description=DocOga Live — the always-on YouTube stream (tools/yt_live.py serve)
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/docoga
+ExecStart=/usr/bin/python3 /opt/docoga/tools/yt_live.py serve --key-file /etc/docoga-live/stream_key --lib /var/lib/docoga-live
+Restart=always
+RestartSec=10
+Nice=-5
+# The stream key is read by the service only; nothing here needs more than the loop directory.
+ProtectSystem=full
+ReadWritePaths=/var/lib/docoga-live
+PrivateTmp=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

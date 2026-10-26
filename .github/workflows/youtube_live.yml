@@ -1,43 +1,43 @@
 name: DocOga Live
 
-# The channel's always-on stream (owner, 26 Oct 2026, 4:20am: "go — I want live stream to
-# always be on for life, pulling in watch time, subscribers etc").
+# The brain of the always-on stream — minutes a day, never the stream itself.
 #
-# How a ₦0 stack stays live for life: one public YouTube broadcast with auto-stop OFF, fed
-# by a chain of six-hour windows. Each window queues its successor the moment it starts
-# (the `docoga-live` concurrency group holds that successor until this one ends), streams
-# the channel's own banked episodes on a loop for LIVE_MINUTES (5h45m), and exits. The
-# hand-over is roughly a minute of "reconnecting" inside the same broadcast. The clock
-# (workers/clock) also dispatches this lane every six hours as a backstop, so a window that
-# died at setup is replaced within the hour — and a second pending run in the group simply
-# replaces the first. Kill switch: repository variable DOCOGA_LIVE=off ends the broadcast
-# and stops the chain. Everything else is tools/yt_live.py.
+# Owner, 26 Oct 2026, 4:20am: "go — I want live stream to always be on for life, pulling in
+# watch time, subscribers etc." Then, the same morning, after the research: "I don't want to
+# run it on GitHub, I don't want to take that risk. Let's do it in Oracle." GitHub's Actions
+# terms (27 Aug 2026) allow Actions only to develop, test, deploy and publish the project and
+# forbid using it as a content delivery network; a 24/7 relay on the runners would put the
+# whole machine at risk for one stream. So no video is ever pushed from here.
 #
-# The library: every Deep-Dive master on its `deepdive-<ep>` release and every weekday Short
-# the Shorts lane banks on the `live-library` release (short-<date>.mp4). Clips are normalised
-# once (one size, one codec profile, keyframe every 2 s) and the normalised copies are banked
-# on the same release, so a window only encodes what is new and streams with `-c copy`.
+# What this lane does, four times a day (and after every Short, which banks itself):
+#   1. prepare — read the library from the releases (Deep-Dive masters on deepdive-<ep>, banked
+#      Shorts on live-library), normalise only what is new to one 1080p30 profile, bank the
+#      segments and loop.json (the running order) on the live-library release;
+#   2. ensure  — keep one public broadcast alive (auto-start on, auto-stop OFF) bound to the one
+#      reusable stream key; the first run creates it and sets the cover;
+#   3. health  — is data arriving from the VM? If not, Telegram the owner the one tap to make.
+# The Oracle Always Free VM (deploy/live/) pulls loop.json and streams it with ffmpeg -c copy.
+# Kill switch: repository variable DOCOGA_LIVE=off ends the broadcast and stops the banking.
 
 on:
   schedule:
-    # Backstop every six hours (the chain itself keeps the stream up); one line per hour so
-    # every clock and heartbeat reader parses it the same way.
+    # Control runs every six hours; one line per hour so every clock and heartbeat reader
+    # parses it the same way.
     - cron: '5 0 * * *'
     - cron: '5 6 * * *'
     - cron: '5 12 * * *'
     - cron: '5 18 * * *'
   workflow_dispatch:
     inputs:
-      minutes:
-        description: 'Minutes to stream in this window (default 345 = 5h45m)'
+      skip_health:
+        description: 'Do not DM the owner about an off-air stream this run (e.g. the VM is being set up)'
         required: false
-        default: ''
-        type: string
+        default: false
+        type: boolean
 
 permissions:
   contents: write   # logs/youtube_live.json (the broadcast ledger) + release assets (the library)
-  actions: write    # each window queues the next one
-  issues: write     # a window that could not stream opens one visible issue
+  issues: write     # a control run that failed opens one visible issue
 
 concurrency:
   group: docoga-live
@@ -47,10 +47,10 @@ env:
   LIVE_RELEASE: live-library
 
 jobs:
-  live:
-    name: Stream the next window
+  control:
+    name: Prepare the loop, keep the broadcast, check the air
     runs-on: ubuntu-24.04
-    timeout-minutes: 358
+    timeout-minutes: 40
     env:
       YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
       SOCIAL_TOKEN_KEY: ${{ secrets.SOCIAL_TOKEN_KEY }}
@@ -68,7 +68,7 @@ jobs:
       - name: Install the dependencies (requests, the vault, Pillow for the card)
         run: python3 -m pip install --quiet "requests>=2.31,<3" cryptography "Pillow>=10"
 
-      # DOCOGA_LIVE=off: end the broadcast, queue nothing, go home green.
+      # DOCOGA_LIVE=off: end the broadcast and go home green.
       - name: Honour the kill switch
         id: switch
         env:
@@ -82,58 +82,38 @@ jobs:
             echo "on=yes" >> "$GITHUB_OUTPUT"
           fi
 
-      # The successor waits in the concurrency group until this window ends; a window that
-      # fails later still leaves a successor behind, which is how the chain heals itself.
-      - name: Queue the next window
-        if: steps.switch.outputs.on == 'yes'
-        continue-on-error: true
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh workflow run youtube_live.yml --ref "${GITHUB_REF_NAME:-main}"
-
       - name: Install ffmpeg and Inter
         if: steps.switch.outputs.on == 'yes'
         run: bash tools/install_motionstudio_deps.sh
 
       - name: Read the library
         if: steps.switch.outputs.on == 'yes'
-        id: library
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -o pipefail
           gh release view "$LIVE_RELEASE" >/dev/null 2>&1 || \
             gh release create "$LIVE_RELEASE" --prerelease --title "DocOga Live library" \
-              --notes "Banked Shorts (short-<date>.mp4) and normalised loop segments (norm-*.mp4) for the always-on stream. Managed by youtube_live.yml."
+              --notes "Banked Shorts (short-<date>.mp4), normalised loop segments (norm-*.mp4) and loop.json for the always-on stream. Managed by youtube_live.yml; streamed by the Oracle VM (deploy/live)."
           # One page of 100 releases is the whole shelf for years (one release per Deep-Dive).
           gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" \
             | python3 -c 'import json,sys; rels=json.load(sys.stdin); json.dump([{"release": r["tag_name"], "name": a["name"], "size": a["size"]} for r in rels for a in r.get("assets", [])], open("/tmp/assets.json", "w"))'
-          set +e
-          python3 tools/yt_live.py plan --assets /tmp/assets.json --out /tmp/plan.json 2>&1 | tee /tmp/plan.log
-          CODE=${PIPESTATUS[0]}
-          set -e
-          echo "clips=$(sed -n 's/^LIVE_CLIPS=//p' /tmp/plan.log | tail -1)" >> "$GITHUB_OUTPUT"
-          if [ "$CODE" != "0" ]; then
-            echo "::error title=Nothing to stream::no Deep-Dive master or banked Short was found on the releases"
-            exit "$CODE"
-          fi
 
-      - name: Prepare the loop (normalise what is new, concatenate the reel)
+      - name: Prepare the loop (normalise what is new, bank the segments and loop.json)
         if: steps.switch.outputs.on == 'yes'
-        id: reel
+        id: loop
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -o pipefail
           python3 tools/yt_live.py backdrop --out /tmp/backdrop.jpg
           python3 tools/yt_live.py cover --out /tmp/live-cover.jpg
-          python3 tools/yt_live.py build --plan /tmp/plan.json --lib /tmp/lib --reel /tmp/reel.mp4 \
-            --backdrop /tmp/backdrop.jpg 2>&1 | tee /tmp/build.log
-          echo "segments=$(sed -n 's/^LIVE_SEGMENTS=//p' /tmp/build.log | tail -1)" >> "$GITHUB_OUTPUT"
+          python3 tools/yt_live.py prepare --assets /tmp/assets.json --lib /tmp/lib --backdrop /tmp/backdrop.jpg 2>&1 | tee /tmp/prepare.log
+          echo "segments=$(sed -n 's/^LIVE_SEGMENTS=//p' /tmp/prepare.log | tail -1)" >> "$GITHUB_OUTPUT"
 
       # The broadcast and its key. The key is masked before anything else can print it; the
-      # ingest file is 0600 in /tmp and never leaves the runner.
-      - name: Find or create the broadcast
+      # ingest file is 0600 in /tmp and is deleted at the end of the step — the VM has its own copy.
+      - name: Keep the broadcast
         if: steps.switch.outputs.on == 'yes'
         id: live
         run: |
@@ -142,6 +122,7 @@ jobs:
           echo "::add-mask::$(python3 -c 'import json; print(json.load(open("/tmp/live.json"))["stream_key"])')"
           echo "url=$(sed -n 's/^LIVE_URL=//p' /tmp/ensure.log | tail -1)" >> "$GITHUB_OUTPUT"
           echo "created=$(sed -n 's/^LIVE_CREATED=//p' /tmp/ensure.log | tail -1)" >> "$GITHUB_OUTPUT"
+          rm -f /tmp/live.json
 
       - name: Commit the broadcast ledger
         if: steps.live.outputs.created == 'yes'
@@ -159,50 +140,51 @@ jobs:
           git pull --rebase --autostash origin "$BRANCH" >/dev/null 2>&1 || true
           git push origin "HEAD:$BRANCH" || echo "::warning title=Ledger not pushed::the broadcast exists; its row did not reach $BRANCH"
 
-      - name: Stream this window
+      - name: Check the air (DM the owner if the VM has gone quiet)
         if: steps.switch.outputs.on == 'yes'
-        id: push
+        id: health
+        continue-on-error: true
         env:
-          IN_MINUTES: ${{ inputs.minutes }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          IN_SKIP: ${{ inputs.skip_health }}
         run: |
           set -o pipefail
-          ARGS=(--reel /tmp/reel.mp4 --ingest /tmp/live.json)
-          case "${IN_MINUTES:-}" in
-            ''|*[!0-9]*) ;;
-            *) ARGS+=(--minutes "$IN_MINUTES") ;;
-          esac
-          python3 tools/yt_live.py stream "${ARGS[@]}" 2>&1 | tee /tmp/stream.log
+          ARGS=()
+          [ "${IN_SKIP:-false}" = "true" ] || ARGS+=(--dm)
+          python3 tools/yt_live.py health "${ARGS[@]}" 2>&1 | tee /tmp/health.log
+          echo "state=$(sed -n 's/^LIVE_HEALTH=//p' /tmp/health.log | tail -1)" >> "$GITHUB_OUTPUT"
 
       - name: Summary
         if: always()
         env:
           URL: ${{ steps.live.outputs.url }}
-          CLIPS: ${{ steps.library.outputs.clips }}
-          SEGMENTS: ${{ steps.reel.outputs.segments }}
+          SEGMENTS: ${{ steps.loop.outputs.segments }}
+          STATE: ${{ steps.health.outputs.state }}
           ON: ${{ steps.switch.outputs.on }}
         run: |
           {
-            echo "### DocOga Live — window $(date -u +%FT%TZ)"
+            echo "### DocOga Live — control run $(date -u +%FT%TZ)"
             echo
             echo "- switch: ${ON:-?}"
             echo "- broadcast: ${URL:-(none)}"
-            echo "- clips in the loop: ${CLIPS:-?} planned, ${SEGMENTS:-?} prepared"
+            echo "- loop: ${SEGMENTS:-?} segment(s) in loop.json"
+            echo "- air: ${STATE:-?} (the Oracle VM streams; this lane only checks)"
             echo
             echo '```'
-            tail -n 20 /tmp/stream.log 2>/dev/null || tail -n 20 /tmp/build.log 2>/dev/null || echo "(no stream output)"
+            tail -n 20 /tmp/prepare.log 2>/dev/null || echo "(no output)"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Open a visible issue if the window could not stream
+      - name: Open a visible issue if the control run failed
         if: failure()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           set -uo pipefail
-          TITLE="DocOga Live: a window could not stream"
-          TAIL=$(tail -n 30 /tmp/stream.log 2>/dev/null || tail -n 30 /tmp/ensure.log 2>/dev/null || tail -n 30 /tmp/build.log 2>/dev/null || echo "(no output)")
-          BODY=$(printf 'Run: %s\n\nThe next window is already queued and will try again; the broadcast stays open. Last lines:\n\n```\n%s\n```\n' "$RUN_URL" "$TAIL")
+          TITLE="DocOga Live: a control run failed"
+          TAIL=$(tail -n 30 /tmp/ensure.log 2>/dev/null || tail -n 30 /tmp/prepare.log 2>/dev/null || echo "(no output)")
+          BODY=$(printf 'Run: %s\n\nThe VM keeps streaming the last loop it fetched; the next control run tries again. Last lines:\n\n```\n%s\n```\n' "$RUN_URL" "$TAIL")
           EXISTING=$(gh issue list --state open --search "\"$TITLE\" in:title" --json number -q '.[0].number' 2>/dev/null || true)
           if [ -n "$EXISTING" ]; then
             gh issue comment "$EXISTING" --body "$BODY" || true

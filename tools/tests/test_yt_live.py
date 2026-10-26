@@ -1,11 +1,13 @@
 """DocOga Live — the always-on stream (tools/yt_live.py, youtube_live.yml), 26 Oct 2026.
 
 Owner: "go — I want live stream to always be on for life, pulling in watch time, subscribers
-etc." What these pin: the loop is built from the channel's own banked episodes and nothing
-else; every clip is normalised to one profile so the stream copies bytes instead of
-encoding; the broadcast never auto-stops (the hand-over lives inside it); the title says
-pre-recorded; the key is masked before it can be printed; and the chain queues its
-successor, honours the kill switch and cannot run two windows at once.
+etc." Then, the same morning: "I don't want to run it on GitHub, I don't want to take that risk.
+Let's do it in Oracle." What these pin: the loop is built from the channel's own banked
+episodes and nothing else; every clip is normalised to one profile so the VM copies bytes
+instead of encoding; Actions prepares, keeps the broadcast and checks the air but NEVER
+streams; the VM's serve loop follows loop.json and restarts a dead push; the broadcast never
+auto-stops; the title says pre-recorded; the key is masked before it can be printed; and the
+install script keeps the key at 0600 and the service on Restart=always.
 """
 from __future__ import annotations
 
@@ -28,6 +30,7 @@ except ImportError:  # pragma: no cover
 
 LIVE_YML = ROOT / ".github" / "workflows" / "youtube_live.yml"
 SHORTS_YML = ROOT / ".github" / "workflows" / "youtube_scheduled.yml"
+DEPLOY = ROOT / "deploy" / "live"
 
 
 def asset(release, name, size=1):
@@ -242,70 +245,8 @@ class EnsureTests(unittest.TestCase):
             self.assertEqual([r["broadcast_id"] for r in rows], ["bc-2", "bc-1"])
 
 
-class FakeProc:
-    def __init__(self, lives_for, clock):
-        self.clock = clock
-        self.ends_at = clock() + lives_for
-        self.terminated = False
-
-    def poll(self):
-        return 1 if self.clock() >= self.ends_at and not self.terminated else None
-
-    def terminate(self):
-        self.terminated = True
-
-    def wait(self, timeout=None):
-        return 0
-
-
-class StreamLoopTests(unittest.TestCase):
-    def setUp(self):
-        self.t = [0.0]
-        self.spawned = []
-
-    def clock(self):
-        return self.t[0]
-
-    def sleep(self, s):
-        self.t[0] += s
-
-    def popen_factory(self, lives):
-        it = iter(lives)
-
-        def popen(cmd):
-            self.spawned.append(cmd)
-            return FakeProc(next(it, 10 ** 9), self.clock)
-        return popen
-
-    def test_a_window_that_runs_to_its_deadline_exits_clean(self):
-        code = yt_live.stream("reel.mp4", "rtmps://x/live2", "k", minutes=1, popen=self.popen_factory([10 ** 9]),
-                              clock=self.clock, sleep=self.sleep, log=lambda *_: None)
-        self.assertEqual(code, 0)
-        self.assertEqual(len(self.spawned), 1)
-
-    def test_a_push_that_drops_is_reconnected(self):
-        code = yt_live.stream("reel.mp4", "rtmps://x/live2", "k", minutes=10,
-                              popen=self.popen_factory([120, 90, 10 ** 9]),
-                              clock=self.clock, sleep=self.sleep, log=lambda *_: None)
-        self.assertEqual(code, 0)
-        self.assertEqual(len(self.spawned), 3)
-
-    def test_five_quick_deaths_in_a_row_are_a_visible_failure(self):
-        code = yt_live.stream("reel.mp4", "rtmps://x/live2", "k", minutes=60,
-                              popen=self.popen_factory([5, 5, 5, 5, 5, 10 ** 9]),
-                              clock=self.clock, sleep=self.sleep, log=lambda *_: None)
-        self.assertEqual(code, 3)
-        self.assertEqual(len(self.spawned), 5)
-
-    def test_a_long_run_resets_the_quick_death_count(self):
-        code = yt_live.stream("reel.mp4", "rtmps://x/live2", "k", minutes=60,
-                              popen=self.popen_factory([5, 5, 5, 5, 600, 5, 5, 10 ** 9]),
-                              clock=self.clock, sleep=self.sleep, log=lambda *_: None)
-        self.assertEqual(code, 0)
-
-
-class BuildTests(unittest.TestCase):
-    def test_a_banked_segment_is_downloaded_and_a_new_clip_is_normalised_then_banked(self):
+class PrepareTests(unittest.TestCase):
+    def test_a_banked_segment_is_kept_a_new_clip_is_normalised_and_the_manifest_is_banked(self):
         with tempfile.TemporaryDirectory() as d:
             lib = Path(d) / "lib"
             rows = yt_live.plan([asset("deepdive-dd3", "dd3-episode.mp4"), asset("live-library", "short-2026-10-26.mp4")])
@@ -328,19 +269,248 @@ class BuildTests(unittest.TestCase):
                 Path(cmd[-1]).write_bytes(b"out")
                 return R()
 
-            segs = yt_live.build(rows, lib, Path(d) / "reel.mp4", download, uploaded.append, log=lambda *_: None, run=run)
-            self.assertEqual([s.name for s in segs], [rows[0]["key"], banked])
+            manifest = yt_live.prepare(rows, lib, download, uploaded.append, log=lambda *_: None, run=run,
+                                       now=datetime(2026, 10, 26, 18, 5, tzinfo=timezone.utc))
+            self.assertEqual([s["key"] for s in manifest["segments"]], [rows[0]["key"], banked])
             self.assertEqual(len([c for c in ran if "-c:v" in c]), 1, "only the Short was encoded")
-            self.assertEqual([p.name for p in uploaded], [rows[0]["key"]])
-            self.assertTrue((Path(d) / "reel.mp4").is_file())
+            self.assertEqual([p.name for p in uploaded], [rows[0]["key"], "loop.json"])
+            self.assertEqual(manifest["generated_at"], "2026-10-26T18:05:00Z")
+            self.assertTrue(manifest["segments"][0]["url"].startswith("https://github.com/johnAzani/docoga/releases/download/live-library/norm-"))
+            self.assertEqual(manifest["ingest_url"], "rtmps://a.rtmps.youtube.com/live2")
+            on_disk = json.loads((lib / "loop.json").read_text())
+            self.assertEqual(on_disk, manifest)
 
-    def test_no_clip_at_all_is_an_error_not_a_silent_black_stream(self):
+    def test_a_segment_that_could_not_be_banked_is_left_out_of_the_manifest(self):
+        with tempfile.TemporaryDirectory() as d:
+            rows = yt_live.plan([asset("deepdive-dd3", "dd3-episode.mp4"), asset("deepdive-dd2", "dd2-episode.mp4")])
+
+            def download(release, name, dest):
+                if name.startswith("norm-"):
+                    raise FileNotFoundError(name)
+                (Path(dest) / name).write_bytes(b"src")
+
+            class R:
+                returncode = 0
+
+            def run(cmd):
+                Path(cmd[-1]).write_bytes(b"out"); return R()
+
+            def upload(path):
+                if "dd2" in path.name:
+                    raise RuntimeError("release refused")
+            manifest = yt_live.prepare(rows, d, download, upload, log=lambda *_: None, run=run)
+            self.assertEqual([s["name"] for s in manifest["segments"]], ["dd3-episode.mp4"],
+                             "the VM must never be told to fetch a file that is not on the release")
+
+    def test_no_clip_at_all_is_an_error_not_an_empty_manifest(self):
         with tempfile.TemporaryDirectory() as d:
             def download(*_):
                 raise FileNotFoundError("gone")
             with self.assertRaises(RuntimeError):
-                yt_live.build(yt_live.plan([asset("deepdive-dd3", "dd3-episode.mp4")]), d, Path(d) / "reel.mp4",
-                              download, lambda p: None, log=lambda *_: None, run=lambda cmd: None)
+                yt_live.prepare(yt_live.plan([asset("deepdive-dd3", "dd3-episode.mp4")]), d,
+                                download, lambda p: None, log=lambda *_: None, run=lambda cmd: None)
+
+
+class FakeProc:
+    def __init__(self, exits_after_polls=None):
+        self.polls = 0
+        self.exits_after_polls = exits_after_polls
+        self.terminated = False
+        self.returncode = None
+
+    def poll(self):
+        self.polls += 1
+        if self.terminated:
+            return 0
+        if self.exits_after_polls is not None and self.polls > self.exits_after_polls:
+            self.returncode = 1
+            return 1
+        return None
+
+    def terminate(self):
+        self.terminated = True
+
+    def wait(self, timeout=None):
+        return 0
+
+    def kill(self):
+        self.terminated = True
+
+
+class FakeGet:
+    """requests.get for the VM: the manifest by URL, segments as streamed bytes."""
+
+    def __init__(self, manifests):
+        self.manifests = list(manifests)      # one per call to the manifest URL, last one repeats
+        self.calls = []
+
+    def __call__(self, url, **kw):
+        self.calls.append(url)
+        get = self
+
+        class R:
+            status_code = 200
+
+            def __enter__(self_inner):
+                return self_inner
+
+            def __exit__(self_inner, *a):
+                return False
+
+            def json(self_inner):
+                m = get.manifests.pop(0) if len(get.manifests) > 1 else get.manifests[0]
+                return m
+
+            def iter_content(self_inner, n):
+                yield b"segment-bytes"
+        return R()
+
+
+def manifest(stamp, keys):
+    return {"generated_at": stamp, "ingest_url": yt_live.INGEST_URL,
+            "segments": [{"key": k, "kind": "short", "name": k, "url": "https://x/" + k} for k in keys]}
+
+
+class ServeTests(unittest.TestCase):
+    def run_serve(self, manifests, procs, cycles, lib):
+        spawned = []
+        it = iter(procs)
+
+        def popen(cmd):
+            spawned.append(cmd)
+            return next(it)
+
+        class R:
+            returncode = 0
+
+        def run(cmd):
+            Path(cmd[-1]).write_bytes(b"reel"); return R()
+        key = Path(lib) / "key"
+        key.write_text("s3cret\n")
+        get = FakeGet(manifests)
+        code = yt_live.serve(key, lib, manifest_url="https://x/loop.json", popen=popen, sleep=lambda s: None,
+                             log=lambda *_: None, get=get, run=run, max_cycles=cycles)
+        return code, spawned, get
+
+    def test_first_cycle_fetches_the_loop_builds_the_reel_and_starts_the_push(self):
+        with tempfile.TemporaryDirectory() as d:
+            code, spawned, get = self.run_serve([manifest("t1", ["norm-a.mp4"])], [FakeProc()], 1, d)
+            self.assertEqual(code, 0)
+            self.assertEqual(len(spawned), 1)
+            self.assertTrue((Path(d) / "norm-a.mp4").is_file())
+            self.assertTrue((Path(d) / "reel.mp4").is_file())
+            self.assertEqual(spawned[0][-1], yt_live.INGEST_URL + "/s3cret")
+            self.assertIn("copy", spawned[0])
+
+    def test_an_unchanged_manifest_leaves_the_push_alone(self):
+        with tempfile.TemporaryDirectory() as d:
+            p = FakeProc()
+            code, spawned, get = self.run_serve([manifest("t1", ["norm-a.mp4"])], [p], 3, d)
+            self.assertEqual(len(spawned), 1)
+            self.assertFalse(p.terminated)
+
+    def test_a_changed_manifest_rebuilds_the_reel_and_restarts_the_push(self):
+        with tempfile.TemporaryDirectory() as d:
+            p1, p2 = FakeProc(), FakeProc()
+            code, spawned, get = self.run_serve([manifest("t1", ["norm-a.mp4"]), manifest("t2", ["norm-b.mp4", "norm-a.mp4"])],
+                                                [p1, p2], 2, d)
+            self.assertEqual(len(spawned), 2)
+            self.assertTrue(p1.terminated)
+            self.assertTrue((Path(d) / "norm-b.mp4").is_file())
+
+    def test_a_segment_no_longer_in_the_loop_is_deleted_from_the_small_disk(self):
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d) / "norm-old.mp4").write_bytes(b"x")
+            self.run_serve([manifest("t1", ["norm-a.mp4"])], [FakeProc()], 1, d)
+            self.assertFalse((Path(d) / "norm-old.mp4").exists())
+
+    def test_a_dead_push_is_started_again(self):
+        with tempfile.TemporaryDirectory() as d:
+            code, spawned, get = self.run_serve([manifest("t1", ["norm-a.mp4"])], [FakeProc(exits_after_polls=0), FakeProc()], 1, d)
+            self.assertEqual(len(spawned), 2)
+
+    def test_an_unreadable_manifest_keeps_the_old_reel_playing(self):
+        with tempfile.TemporaryDirectory() as d:
+            p = FakeProc()
+            spawned = []
+
+            def popen(cmd):
+                spawned.append(cmd); return p
+
+            class R:
+                returncode = 0
+
+            def run(cmd):
+                Path(cmd[-1]).write_bytes(b"reel"); return R()
+            (Path(d) / "key").write_text("k")
+            calls = {"n": 0}
+            good = manifest("t1", ["norm-a.mp4"])
+
+            def get(url, **kw):
+                calls["n"] += 1
+                if calls["n"] > 2:
+                    raise ConnectionError("github down")
+                return FakeGet([good])(url, **kw)
+            yt_live.serve(Path(d) / "key", d, manifest_url="https://x/loop.json", popen=popen, sleep=lambda s: None,
+                          log=lambda *_: None, get=get, run=run, max_cycles=3)
+            self.assertEqual(len(spawned), 1)
+            self.assertFalse(p.terminated)
+
+    def test_without_a_key_nothing_is_pushed(self):
+        with tempfile.TemporaryDirectory() as d:
+            spawned = []
+
+            class R:
+                returncode = 0
+
+            def run(cmd):
+                Path(cmd[-1]).write_bytes(b"reel"); return R()
+            yt_live.serve(Path(d) / "missing-key", d, manifest_url="https://x/loop.json", popen=lambda c: spawned.append(c),
+                          sleep=lambda s: None, log=lambda *_: None, get=FakeGet([manifest("t1", ["norm-a.mp4"])]), run=run,
+                          max_cycles=1)
+            self.assertEqual(spawned, [])
+
+
+class HealthTests(unittest.TestCase):
+    def test_active_is_on_air_and_anything_else_is_not(self):
+        on = FakeHttp(streams=[dict(existing_stream(), status={"streamStatus": "active", "healthStatus": {"status": "good"}})])
+        self.assertTrue(yt_live.health(on, log=lambda *_: None)[0])
+        off = FakeHttp(streams=[dict(existing_stream(), status={"streamStatus": "inactive"})])
+        ok, text = yt_live.health(off, log=lambda *_: None)
+        self.assertFalse(ok)
+        self.assertIn("inactive", text)
+        self.assertFalse(yt_live.health(FakeHttp(), log=lambda *_: None)[0])
+
+    def test_the_owner_message_names_the_one_tap(self):
+        self.assertIn("Start", yt_live.OWNER_DM)
+        self.assertIn("Oracle", yt_live.OWNER_DM)
+
+
+class DeployTests(unittest.TestCase):
+    def test_the_installer_keeps_the_key_private_and_installs_the_service(self):
+        text = (DEPLOY / "install.sh").read_text(encoding="utf-8")
+        self.assertIn("set -euo pipefail", text)
+        self.assertIn("umask 077", text)
+        self.assertIn('chmod 600 "$ETC/stream_key"', text)
+        self.assertIn("apt-get install", text)
+        for pkg in ("ffmpeg", "python3-requests", "git"):
+            self.assertIn(pkg, text)
+        self.assertIn("systemctl enable docoga-live", text)
+        self.assertNotIn("echo \"$KEY\"", text, "the key is never echoed")
+
+    def test_the_service_restarts_forever_and_runs_serve(self):
+        unit = (DEPLOY / "docoga-live.service").read_text(encoding="utf-8")
+        self.assertIn("Restart=always", unit)
+        self.assertIn("StartLimitIntervalSec=0", unit)
+        self.assertIn("tools/yt_live.py serve --key-file /etc/docoga-live/stream_key", unit)
+        self.assertIn("ReadWritePaths=/var/lib/docoga-live", unit)
+        timer = (DEPLOY / "docoga-live-pull.timer").read_text(encoding="utf-8")
+        self.assertIn("OnUnitActiveSec=1h", timer)
+
+    def test_the_cloud_init_fetches_main_and_carries_a_placeholder_not_a_key(self):
+        text = (DEPLOY / "cloud-init.sh").read_text(encoding="utf-8")
+        self.assertIn("raw.githubusercontent.com/johnAzani/docoga/main/deploy/live/install.sh", text)
+        self.assertIn("PASTE_STREAM_KEY_HERE", text)
 
 
 @unittest.skipIf(yaml is None, "PyYAML is required for the workflow contract tests")
@@ -348,37 +518,41 @@ class WorkflowContractTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.wf = yaml.safe_load(LIVE_YML.read_text(encoding="utf-8"))
-        cls.job = cls.wf["jobs"]["live"]
+        cls.job = cls.wf["jobs"]["control"]
         cls.steps = cls.job["steps"]
         cls.by_name = {s.get("name"): s for s in cls.steps}
         cls.shorts = yaml.safe_load(SHORTS_YML.read_text(encoding="utf-8"))
 
-    def test_two_windows_can_never_stream_at_once(self):
+    def test_actions_never_streams(self):
+        """Owner, 26 Oct 2026: "I don't want to run it on GitHub, I don't want to take that risk." """
+        text = LIVE_YML.read_text(encoding="utf-8")
+        self.assertNotIn("yt_live.py stream", text)
+        self.assertNotIn("yt_live.py serve", text)
+        self.assertNotIn("Queue the next window", text)
+        self.assertNotIn("actions: write", text)
+        self.assertLessEqual(self.job["timeout-minutes"], 60, "a control run is minutes, never a window")
         self.assertEqual(self.wf["concurrency"]["group"], "docoga-live")
-        self.assertIs(self.wf["concurrency"]["cancel-in-progress"], False)
 
-    def test_the_window_fits_inside_the_six_hour_job_limit(self):
-        self.assertLessEqual(self.job["timeout-minutes"], 360)
-        self.assertGreater(self.job["timeout-minutes"], yt_live.LIVE_MINUTES)
+    def test_the_control_run_prepares_keeps_and_checks(self):
+        names = [s.get("name") for s in self.steps]
+        for name in ("Read the library", "Prepare the loop (normalise what is new, bank the segments and loop.json)",
+                     "Keep the broadcast", "Check the air (DM the owner if the VM has gone quiet)"):
+            self.assertIn(name, names)
+        self.assertIn("yt_live.py prepare", self.by_name["Prepare the loop (normalise what is new, bank the segments and loop.json)"]["run"])
+        self.assertIn("yt_live.py health", self.by_name["Check the air (DM the owner if the VM has gone quiet)"]["run"])
+        self.assertIn("TELEGRAM_BOT_TOKEN", str(self.by_name["Check the air (DM the owner if the VM has gone quiet)"]["env"]))
 
-    def test_each_window_queues_its_successor_and_may_do_so(self):
-        step = self.by_name["Queue the next window"]
-        self.assertIn("gh workflow run youtube_live.yml", step["run"])
-        self.assertEqual(self.wf["permissions"]["actions"], "write")
-        self.assertIs(step.get("continue-on-error"), True)
-
-    def test_the_kill_switch_ends_the_broadcast_and_gates_every_streaming_step(self):
+    def test_the_kill_switch_ends_the_broadcast_and_gates_every_step(self):
         switch = self.by_name["Honour the kill switch"]
         self.assertIn("vars.DOCOGA_LIVE", str(switch["env"]))
         self.assertIn("yt_live.py off", switch["run"])
-        for name in ("Queue the next window", "Read the library", "Find or create the broadcast", "Stream this window"):
+        for name in ("Read the library", "Keep the broadcast", "Check the air (DM the owner if the VM has gone quiet)"):
             self.assertIn("steps.switch.outputs.on == 'yes'", str(self.by_name[name].get("if", "")), name)
 
-    def test_the_stream_key_is_masked_before_the_stream_starts(self):
-        names = [s.get("name") for s in self.steps]
-        ensure = self.by_name["Find or create the broadcast"]
+    def test_the_stream_key_is_masked_and_the_ingest_file_deleted(self):
+        ensure = self.by_name["Keep the broadcast"]
         self.assertIn("::add-mask::", ensure["run"])
-        self.assertLess(names.index("Find or create the broadcast"), names.index("Stream this window"))
+        self.assertIn("rm -f /tmp/live.json", ensure["run"])
 
     def test_every_step_that_runs_gh_declares_a_token(self):
         for step in self.steps:
@@ -386,7 +560,7 @@ class WorkflowContractTests(unittest.TestCase):
                 with self.subTest(step=step.get("name")):
                     self.assertIn("GH_TOKEN", str(step.get("env", "")))
 
-    def test_the_clock_can_dispatch_it_and_the_backstop_is_six_hourly(self):
+    def test_the_clock_can_dispatch_it_and_the_control_runs_are_six_hourly(self):
         on = self.wf[True]
         self.assertIn("workflow_dispatch", on)
         self.assertEqual([c["cron"] for c in on["schedule"]], ["5 0 * * *", "5 6 * * *", "5 12 * * *", "5 18 * * *"])
