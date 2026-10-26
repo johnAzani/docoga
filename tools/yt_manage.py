@@ -147,16 +147,18 @@ PUBLISH_LEDGERS = (Path(__file__).resolve().parents[1] / "logs" / "youtube_longf
                    Path(__file__).resolve().parents[1] / "logs" / "youtube_published.json")
 
 
-def note_schedule(video_id, publish_at, ledgers=PUBLISH_LEDGERS, now=None):
+def note_schedule(video_id, publish_at, ledgers=None, now=None):
     """Write a schedule into the row the publish ledgers keep for `video_id` (25 Oct 2026).
 
     Deep-Dive 3 was scheduled public for Sat 24 Oct 7:00pm by this lane, but its row in
     logs/youtube_longform.json still said `unlisted`, no publish_at — so tools/deepdive_promo.py
     dated the episode 15 Oct and the launch, feature and recap posts never ran. The manage ledger
     is this lane's own record; the publish ledgers are what every other lane reads. Returns the
-    paths it changed. Never raises."""
+    paths it changed. Never raises. `ledgers` is read at call time (not bound at import) so a
+    test can point the module at copies — 26 Oct 2026: the Scheduling tests had been writing
+    the real logs/youtube_longform.json, and PR #136 shipped dd3 re-dated to 31 Oct by a test."""
     changed = []
-    for path in ledgers:
+    for path in (PUBLISH_LEDGERS if ledgers is None else ledgers):
         try:
             rows = json.loads(Path(path).read_text(encoding="utf-8"))
         except (OSError, ValueError):

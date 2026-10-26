@@ -203,6 +203,24 @@ The honest consequence: a six-script bank cannot feed five Shorts a week without
 so from this week the brain is the only source of new Shorts and the rotation is a 28-day
 backstop. `DOCOGA_FRESH=off` is for tests only.
 
+## 7¾. Shipped 26 Oct 2026 — DocOga Live, the always-on stream
+
+Owner, 4:20am: "go — I want live stream to always be on for life, pulling in watch time,
+subscribers etc." The Studio screenshot that morning showed the Live Control Room open, so
+the channel can stream through an encoder today, with no subscriber minimum.
+
+| Lever | Where | What it does |
+|---|---|---|
+| One public broadcast, never auto-stopped | `tools/yt_live.py ensure` | the LIVE badge in search and the live shelf, all day; auto-start when data arrives, DVR on |
+| The channel's own episodes on a loop | `plan` + `build` | every Deep-Dive master (`deepdive-<ep>` releases) and every weekday Short (banked on `live-library` by the Shorts lane) — newest Short opens the loop, Shorts interleave with Deep-Dives |
+| Normalise once, stream bytes | `normalise_cmd`, `stream_cmd` | one 1080p30 profile, keyframe every 2 s; the runner streams with `-c copy` and encodes only what is new |
+| Six-hour windows, chained | `.github/workflows/youtube_live.yml` | each window queues its successor at the start; the `docoga-live` concurrency group hands over (≈1 minute of "reconnecting" inside the same broadcast); the clock dispatches a backstop at 1:05am / 7:05am / 1:05pm / 7:05pm |
+| Honest on its face | `TITLE`, `DESCRIPTION`, the backdrop card | "pre-recorded loop" in the title, "This is not a live presenter" in the description, "LIVE 24/7 · PRE-RECORDED" on the card behind every Short |
+| Kill switch | repo variable `DOCOGA_LIVE=off` | ends the broadcast on the next window and stops the chain; the Shorts lane stops banking too |
+
+What it will not do: archive (YouTube keeps no VOD of a stream past 12 hours — this is a window, not a
+video), re-encode while live, or use anything but the channel's own published episodes. Runbook: `docs/LIVE.md`.
+
 ## 8. Next levers, in order of expected effect (Founder's brief items)
 
 1. **Hook bans from the swipe test** — once two Monday pulls have filled

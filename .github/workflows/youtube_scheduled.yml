@@ -527,6 +527,28 @@ jobs:
             --series-chain "$SERIES_CHAIN" 2>&1 | tee /tmp/telegram_video.log
           echo "result=$(sed -n 's/^TELEGRAM_VIDEO=//p' /tmp/telegram_video.log | tail -1)" >> "$GITHUB_OUTPUT"
 
+      # Owner, 26 Oct 2026: "I want live stream to always be on for life." The always-on
+      # stream (youtube_live.yml, tools/yt_live.py) loops the channel's own episodes, and a
+      # Short only ever lived inside this run — so the published file is banked on the
+      # `live-library` release as short-<date>.mp4 and joins the loop in the next window.
+      # Never fails the publish; DOCOGA_LIVE=off skips the banking too.
+      - name: Bank the Short for DocOga Live
+        if: always() && steps.upload.outputs.video_id != '' && steps.short.outputs.paused != 'yes' && (vars.DOCOGA_LIVE || 'on') != 'off'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VIDEO_PATH: ${{ steps.short.outputs.video_path }}
+          RUN_DATE: ${{ steps.settings.outputs.run_date }}
+        run: |
+          set -o pipefail
+          TAG=live-library
+          gh release view "$TAG" >/dev/null 2>&1 || \
+            gh release create "$TAG" --prerelease --title "DocOga Live library" \
+              --notes "Banked Shorts (short-<date>.mp4) and normalised loop segments (norm-*.mp4) for the always-on stream. Managed by youtube_live.yml."
+          cp "$VIDEO_PATH" "/tmp/short-$RUN_DATE.mp4"
+          gh release upload "$TAG" "/tmp/short-$RUN_DATE.mp4" --clobber
+          echo "- banked for DocOga Live: short-$RUN_DATE.mp4" >> "$GITHUB_STEP_SUMMARY"
+
       # Owner, 21 Oct 2026: "Threads has never posted videos." Threads fetches video by public
       # URL, and the Short only ever lived inside this run. tools/shorts_handoff.py parks the
       # file in the docoga-pass KV namespace for 30 hours (the Instagram third door, ₦0, ~4 KV
