@@ -39,10 +39,21 @@ class TidyTests(unittest.TestCase):
         self.assertEqual(" ".join(lines).split(), "a b c d e f g h".split() + LONG.split(), "layout only")
         self.assertFalse(any("a body line is" in p for p in brain.lint(pack, CTX, [])))
 
-    def test_when_no_neighbours_fit_together_lint_still_refuses(self):
+    def test_a_sixth_line_is_the_reflows_one_line_of_slack(self):
+        # 26 Oct 2026, 1:31am: four wide lines, one of 157 characters — six after the re-break,
+        # no neighbours short enough to join. Six is accepted; the model is still asked for five.
         wide = "w" * 100
+        pack = brain.tidy({"post": {"headline": "h", "lines": [wide, wide, wide, LONG]}})
+        self.assertEqual(len(pack["post"]["lines"]), 5)
         pack = brain.tidy({"post": {"headline": "h", "lines": [wide, wide, wide, wide, LONG]}})
-        self.assertEqual(len(pack["post"]["lines"]), 5, "left for lint, untouched")
+        self.assertEqual(len(pack["post"]["lines"]), 6)
+        self.assertFalse(any("a body line is" in p or "post.lines must be" in p for p in brain.lint(pack, CTX, [])))
+        self.assertEqual(brain.LINES_MAX, 6)
+
+    def test_when_the_reflow_passes_six_lines_lint_still_refuses(self):
+        wide = "w" * 100
+        pack = brain.tidy({"post": {"headline": "h", "lines": [wide, wide, wide, wide, wide, LONG]}})
+        self.assertEqual(len(pack["post"]["lines"]), 6, "left for lint, untouched")
         self.assertTrue(any("a body line is" in p for p in brain.lint(pack, CTX, [])))
 
     def test_a_line_with_no_boundary_is_not_cut_mid_word(self):
