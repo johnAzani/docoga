@@ -1,16 +1,16 @@
 # What the numbers said — written 2026-10-26 by tools/brain.py feedback
 
-## Scorecard 2026-W44 (taken 2026-10-26 05:40)
+## Scorecard 2026-W44 (taken 2026-10-26 11:31)
 
 **Money:** not connected — add the dashboard passphrase as `DOCOGA_ADMIN_PASSPHRASE` and sales are graded weekly.
-**Traffic:** 36 visits to the site this week (Nigeria 50.0%) — direct 16, facebook 14, google 6
+**Traffic:** 36 visits to the site this week (Nigeria 50.0%) — direct 15, facebook 14, google 7
 **Google (28 days):** 12 clicks / 430 impressions, CTR 2.8% — 'quit notice' (0 clicks, pos 1.0), 'notice to quit' (0 clicks, pos 4.3), 'notice to quit' (0 clicks, pos 4.8), 'quit notice letter from landlord to tenant in nigeria' (0 clicks, pos 6.3)
 
 | Channel | Followers | 7-day views | Signal |
 |---|---|---|---|
-| Facebook | 1 | 32 | shares/post 29.8 · comments/post 61.5% · clicks/post 15.4% |
+| Facebook | 1 | 31 | shares/post 27.7 · comments/post 64.3% · clicks/post 14.3% |
 | Instagram | 1 | 32 | sends+saves per reach 4.5% · per post 8.3% |
-| Threads | 0 | 35 | replies/post 35.0% · reposts/post 0.0% |
+| Threads | 0 | 30 | replies/post 35.0% · reposts/post 0.0% |
 | Telegram | 2 | — | members only (Bot API has no views) |
 | YouTube | 49 | 478 total | top Short: Change the lock. Become the defendant. |
 
@@ -26,7 +26,7 @@
 | Facebook shares per view (>= 1.5%) | 1.6 | 1.5% | ✅ |
 | Instagram shares+saves per reach (>= 1.5%) | 4.5% | 1.5% | ✅ |
 | Threads replies per post (>= 3) | 35.0% | 3.0 | 🔻 |
-| Facebook comments per post (>= 2) | 61.5% | 2.0 | 🔻 |
+| Facebook comments per post (>= 2) | 64.3% | 2.0 | 🔻 |
 
 ### Milestones (where the audience becomes income)
 | Milestone | Now | To go | Pace/week | Needed/week | ETA | Status |
@@ -42,21 +42,24 @@ Threads engagement by posting hour (WAT): 20:00 → 3.0, 13:00 → 0.43, 7:00 �
 ### What the brain's choices earned (avg engagement score, posts)
 | Dimension | Choice | Avg | n |
 |---|---|---|---|
-| hook_type | rotation | 34.5 | 35 |
+| hook_type | rotation | 33.6 | 36 |
 | hook_type | CLAIM | 2.0 | 5 |
 | hook_type | QUESTION | 1.6 | 5 |
-| post_type | rotation | 34.5 | 35 |
+| post_type | rotation | 33.6 | 36 |
 | post_type | engagement | 2.0 | 5 |
 | post_type | checklist | 1.6 | 5 |
-| reader | rotation | 34.5 | 35 |
+| reader | rotation | 33.6 | 36 |
 | reader | ngozi | 1.8 | 10 |
-| source | rotation | 34.5 | 35 |
+| source | rotation | 33.6 | 36 |
 | source | brain | 1.8 | 10 |
 
 ### Orders for the coming week
 - Threads replies are under 3 per post: every Threads post ends with a question answerable in five words ('which state are you renting in?'); one opinion post this week.
 - Facebook comments are under 2 per post: ask for the reader's state or a yes/no in the last line; a Thursday scenario people will argue with.
 - YouTube subscribers are behind: change the Short hook archetype for two weeks and put a number in the first line; the title must name the loss.
+- Telegram has been behind two weeks running: the state-spotlight and checklist days this week carry the most-forwarded genre — what a landlord may and may not demand.
+- Facebook has been behind two weeks running: the state-spotlight and checklist days this week carry the most-forwarded genre — what a landlord may and may not demand.
+- Instagram has been behind two weeks running: the state-spotlight and checklist days this week carry the most-forwarded genre — what a landlord may and may not demand.
 - Brain-written days averaged 2 against 34 for rotation days (the hand-written baseline is winning — study its hooks).
 - Facebook Stars is behind pace: 499 to go, 0 a week now, 36.4 a week needed by 2027-01-31 — this week every Facebook post ends with the follow line ('follow for the next rule') and the Reel/Short names the Page by hand.
 - Instagram gifts is behind pace: 999 to go, 0 a week now, 37.8 a week needed by 2027-04-30 — this week every Instagram post ends with the follow line ('follow for the next rule') and the Reel/Short names the Page by hand.
@@ -77,7 +80,7 @@ In Edo State, filing a matter befo' (2) — write the next instagram post in tha
 - sales: DOCOGA_ADMIN_PASSPHRASE not set — revenue not connected (optional; the dashboard passphrase as a repo secret)
 
 ## YouTube (snapshot 2026-10-26): 49 subscribers, 478 views, 19 videos
-- Top short: 'Change the lock. Become the defendant.' 108 views; 'Skip the photos. Pay for old damage.' 93 views; 'Sign without asking. Fund the repaint.' 76 views
+- Top short: 'Change the lock. Become the defendant.' 108 views; 'Skip the photos. Pay for old damage.' 93 views; 'Sign without asking. Fund the repaint.' 77 views
 - Top longform: 'Notice to Quit in Nigeria: The Legal Timeline Every Tenant & Landlord Must Know' 4 views; 'The Rent Receipt: The ₦50 Paper That Wins Cases' 2 views; 'Tenancy Agreement in Nigeria: The 8 Clauses That Decide Everything' 2 views
 
 ## Last 28 days of the brain's own output
