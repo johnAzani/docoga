@@ -87,6 +87,7 @@ POST_MAX = 900
 THREADS_MAX = 480
 HEADLINE_MAX = 70
 LINE_MAX = 110
+LINES_MAX = 6             # lint's ceiling: 5 from the model, +1 for tidy()'s reflow
 SHORT_DAYS = (0, 1, 2, 3, 4)         # every weekday: Mon + Thu = FB/IG Reel (08:30 UTC) AND YouTube Short (17:00 UTC, same words, cached voice); Tue/Wed/Fri = YouTube Short (17 Oct 2026)
 POST_TYPES = ("educational", "state_spotlight", "pidgin", "story", "promo", "checklist", "engagement")
 HOOKS = ("STAT", "QUESTION", "CLAIM", "STAKES", "CURIOSITY", "HOWTO", "STORY")
@@ -466,7 +467,7 @@ def tidy(pack):
             break
         _, i = min(pairs)
         out[i:i + 2] = [out[i] + " " + out[i + 1]]
-    if 2 <= len(out) <= 5 and all(len(ln) <= LINE_MAX for ln in out):
+    if 2 <= len(out) <= LINES_MAX and all(len(ln) <= LINE_MAX for ln in out):
         post["lines"] = out
     return pack
 
@@ -499,7 +500,10 @@ def lint(pack, ctx, said):
         p.append("headline is %d characters; max %d" % (len(headline), HEADLINE_MAX))
     if headline and headline.isupper() and len(headline) > 12:
         p.append("headline is shouting (all caps)")
-    if not (2 <= len(lines) <= 5):
+    # The model is asked for 2 to 5; a sixth line is tidy()'s one line of slack after re-breaking
+    # an over-long line (26 Oct 2026, 1:31am: a 157- and a 123-character line in a four-line post
+    # refused the series Monday for the fifth time; the card and the post read six lines fine).
+    if not (2 <= len(lines) <= LINES_MAX):
         p.append("post.lines must be 2 to 5 lines (got %d)" % len(lines))
     for ln in lines:
         if len(ln) > LINE_MAX:
