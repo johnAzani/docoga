@@ -2318,5 +2318,1658 @@
   "problems": [
    "sales: DOCOGA_ADMIN_PASSPHRASE not set — revenue not connected (optional; the dashboard passphrase as a repo secret)"
   ]
+ },
+ {
+  "taken_at": "2026-10-26T05:40:44+00:00",
+  "week": "2026-W44",
+  "channels": {
+   "facebook": {
+    "followers": 1,
+    "views_7d": 32,
+    "engagements_7d": 260,
+    "follows_7d": 0,
+    "video_views_7d": 12,
+    "posts": [
+     {
+      "id": "102466208923830_963835113449629",
+      "at": "2026-10-25T08:31:17+0000",
+      "hour_wat": 9,
+      "weekday": "Sun",
+      "text": "A dispute at the tribunal pauses your quit notice\n\nIn Edo State, once a tenant applies to ",
+      "reactions": 0,
+      "comments": 1,
+      "shares": 0,
+      "clicks": 0,
+      "views": 5
+     },
+     {
+      "id": "102466208923830_962922863540854",
+      "at": "2026-10-24T08:31:19+0000",
+      "hour_wat": 9,
+      "weekday": "Sat",
+      "text": "Did your Cross River landlord demand a full year upfront?\n\n1. Under s.6(6), a landlord can",
+      "reactions": 1,
+      "comments": 1,
+      "shares": 0,
+      "clicks": 0,
+      "views": 9
+     },
+     {
+      "id": "102466208923830_962512753581865",
+      "at": "2026-10-23T20:29:59+0000",
+      "hour_wat": 21,
+      "weekday": "Fri",
+      "text": "A caution fee is meant to be refundable. But if nobody wrote down what it covers, the land",
+      "reactions": 0,
+      "comments": 0,
+      "shares": 0,
+      "clicks": 0,
+      "views": 5
+     },
+     {
+      "id": "102466208923830_962006203632520",
+      "at": "2026-10-23T08:31:24+0000",
+      "hour_wat": 9,
+      "weekday": "Fri",
+      "text": "Your rent receipt, before the money moves.\n\nDate. Amount. Period covered. Address. Who pai",
+      "reactions": 0,
+      "comments": 1,
+      "shares": 0,
+      "clicks": 0,
+      "views": 8
+     },
+     {
+      "id": "102466208923830_961480113685129",
+      "at": "2026-10-22T17:20:21+0000",
+      "hour_wat": 18,
+      "weekday": "Thu",
+      "text": "You move in and the wall is already cracked.\n\n→ Photograph each room\n→ Note the date\n→ Rec",
+      "reactions": 0,
+      "comments": 0,
+      "shares": 58,
+      "clicks": 0,
+      "views": 6
+     },
+     {
+      "id": "102466208923830_961096733723467",
+      "at": "2026-10-22T08:31:14+0000",
+      "hour_wat": 9,
+      "weekday": "Thu",
+      "text": "Picture this: a tenancy that lived on WhatsApp.\n\nRent agreed in a voice note. Increase ann",
+      "reactions": 0,
+      "comments": 1,
+      "shares": 0,
+      "clicks": 0,
+      "views": 7
+     },
+     {
+      "id": "102466208923830_960203527146121",
+      "at": "2026-10-21T08:31:17+0000",
+      "hour_wat": 9,
+      "weekday": "Wed",
+      "text": "₦2,000 a month. Unlimited clean documents.\n\nOga Pass: tenancy agreements, receipts, notice",
+      "reactions": 0,
+      "comments": 1,
+      "shares": 57,
+      "clicks": 0,
+      "views": 17
+     },
+     {
+      "id": "102466208923830_959149917251482",
+      "at": "2026-10-20T07:25:50+0000",
+      "hour_wat": 8,
+      "weekday": "Tue",
+      "text": "4 rights every Nigerian tenant has.\n\n1. Peaceful enjoyment of the property you pay for\n2. ",
+      "reactions": 0,
+      "comments": 0,
+      "shares": 76,
+      "clicks": 0,
+      "views": 22
+     },
+     {
+      "id": "102466208923830_958246714008469",
+      "at": "2026-10-19T08:31:12+0000",
+      "hour_wat": 9,
+      "weekday": "Mon",
+      "text": "Caution fee is a deposit, not a gift.\n\nIt is refundable when you leave the place in good c",
+      "reactions": 1,
+      "comments": 1,
+      "shares": 61,
+      "clicks": 0,
+      "views": 37
+     },
+     {
+      "id": "102466208923830_957319427434531",
+      "at": "2026-10-18T08:31:22+0000",
+      "hour_wat": 9,
+      "weekday": "Sun",
+      "text": "🎉 Oya Check Am!\n\nDocOga dey help you make tenancy agreement for free! No need pay lawyer ₦",
+      "reactions": 0,
+      "comments": 0,
+      "shares": 0,
+      "clicks": 0,
+      "views": 29
+     },
+     {
+      "id": "102466208923830_956521050847702",
+      "at": "2026-10-17T12:17:18+0000",
+      "hour_wat": 13,
+      "weekday": "Sat",
+      "text": "📍 Rivers State Guide\n\nPort Harcourt landlords: proper rent receipts protect you AND your t",
+      "reactions": 0,
+      "comments": 2,
+      "shares": 45,
+      "clicks": 2,
+      "views": 29
+     },
+     {
+      "id": "102466208923830_955634454269695",
+      "at": "2026-10-16T13:22:33+0000",
+      "hour_wat": 14,
+      "weekday": "Fri",
+      "text": "🚨 Rent Due Soon?\n\nMake sure you have a proper rent receipt ready. Landlords: generate rece",
+      "reactions": 1,
+      "comments": 0,
+      "shares": 51,
+      "clicks": 0,
+      "views": 27
+     },
+     {
+      "id": "102466208923830_954375721062235",
+      "at": "2026-10-15T04:58:01+0000",
+      "hour_wat": 5,
+      "weekday": "Thu",
+      "text": "💯 Trusted by Nigerians\n\n\"As a tenant, I use DocOga for all my rent receipts. Fast, easy, a",
+      "reactions": 1,
+      "comments": 0,
+      "shares": 40,
+      "clicks": 0,
+      "views": 47
+     }
+    ]
+   },
+   "instagram": {
+    "followers": 1,
+    "views_7d": 32,
+    "reach_7d": 15,
+    "engaged_7d": 2,
+    "interactions_7d": 15,
+    "online_followers_wat": {},
+    "media": [
+     {
+      "id": "18238718953319290",
+      "at": "2026-10-25T18:12:21+0000",
+      "hour_wat": 19,
+      "weekday": "Sun",
+      "type": "IMAGE",
+      "text": "Tenant rights in Nigeria\n\nIn Edo State, filing a matter before the Rent Tribunal stops any",
+      "likes": 0,
+      "comments": 1,
+      "views": 0,
+      "reach": 0,
+      "saved": 0,
+      "shares": 0
+     },
+     {
+      "id": "18035236799895790",
+      "at": "2026-10-24T18:12:29+0000",
+      "hour_wat": 19,
+      "weekday": "Sat",
+      "type": "IMAGE",
+      "text": "Tenancy agreement sample Nigeria\n\nDid your Cross River landlord ask for one year upfront? ",
+      "likes": 0,
+      "comments": 1,
+      "views": 0,
+      "reach": 0,
+      "saved": 0,
+      "shares": 0
+     },
+     {
+      "id": "18401950741205478",
+      "at": "2026-10-23T20:30:13+0000",
+      "hour_wat": 21,
+      "weekday": "Fri",
+      "type": "VIDEO",
+      "text": "A caution fee is meant to be refundable. But if nobody wrote down what it covers, the land",
+      "likes": 0,
+      "comments": 1,
+      "views": 8,
+      "reach": 5,
+      "saved": 0,
+      "shares": 0
+     },
+     {
+      "id": "17932022052162634",
+      "at": "2026-10-23T18:12:35+0000",
+      "hour_wat": 19,
+      "weekday": "Fri",
+      "type": "IMAGE",
+      "text": "Rent and tenancy documents Nigeria\n\nYour rent receipt, before the money moves.\n\nDate. Amou",
+      "likes": 0,
+      "comments": 1,
+      "views": 0,
+      "reach": 0,
+      "saved": 0,
+      "shares": 0
+     },
+     {
+      "id": "18019491749884807",
+      "at": "2026-10-22T18:12:49+0000",
+      "hour_wat": 19,
+      "weekday": "Thu",
+      "type": "CAROUSEL_ALBUM",
+      "text": "Rent and tenancy documents Nigeria\n\nPicture this: a tenancy that lived on WhatsApp.\n\nRent ",
+      "likes": 0,
+      "comments": 1,
+      "views": 0,
+      "reach": 0,
+      "saved": 0,
+      "shares": 0
+     },
+     {
+      "id": "17876482056582261",
+      "at": "2026-10-22T17:21:26+0000",
+      "hour_wat": 18,
+      "weekday": "Thu",
+      "type": "VIDEO",
+      "text": "You move in and the wall is already cracked.\n\n→ Photograph each room\n→ Note the date\n→ Rec",
+      "likes": 0,
+      "comments": 1,
+      "views": 12,
+      "reach": 11,
+      "saved": 0,
+      "shares": 0
+     },
+     {
+      "id": "18637782613055674",
+      "at": "2026-10-21T18:12:41+0000",
+      "hour_wat": 19,
+      "weekday": "Wed",
+      "type": "IMAGE",
+      "text": "Rent and tenancy documents Nigeria\n\n₦2,000 a month. Unlimited clean documents.\n\nOga Pass: ",
+      "likes": 0,
+      "comments": 0,
+      "views": 0,
+      "reach": 0,
+      "saved": 0,
+      "shares": 0
+     },
+     {
+      "id": "18334928824276170",
+      "at": "2026-10-21T17:19:54+0000",
+      "hour_wat": 18,
+      "weekday": "Wed",
+      "type": "VIDEO",
+      "text": "Someone shows you a flat, collects your money, and disappears. The real landlord has never",
+      "likes": 1,
+      "comments": 0,
+      "views": 0,
+      "reach": 0,
+      "saved": 0,
+      "shares": 0
+     },
+     {
+      "id": "18078998822415028",
+      "at": "2026-10-20T07:26:54+0000",
+      "hour_wat": 8,
+      "weekday": "Tue",
+      "type": "VIDEO",
+      "text": "4 rights every Nigerian tenant has.\n\n1. Peaceful enjoyment of the property you pay for\n2. ",
+      "likes": 1,
+      "comments": 0,
+      "views": 4,
+      "reach": 1,
+      "saved": 0,
+      "shares": 0
+     },
+     {
+      "id": "18119102393072466",
+      "at": "2026-10-19T18:12:37+0000",
+      "hour_wat": 19,
+      "weekday": "Mon",
+      "type": "CAROUSEL_ALBUM",
+      "text": "Rent and tenancy documents Nigeria\n\nCaution fee is a deposit, not a gift.\n\nIt is refundabl",
+      "likes": 1,
+      "comments": 0,
+      "views": 5,
+      "reach": 1,
+      "saved": 1,
+      "shares": 0
+     },
+     {
+      "id": "17875510281587767",
+      "at": "2026-10-18T18:12:20+0000",
+      "hour_wat": 19,
+      "weekday": "Sun",
+      "type": "IMAGE",
+      "text": "Rent and tenancy documents Nigeria\n\nOga, no pay rent without receipt.\n\nCash don enter hand",
+      "likes": 1,
+      "comments": 0,
+      "views": 3,
+      "reach": 2,
+      "saved": 0,
+      "shares": 0
+     },
+     {
+      "id": "18121190129064241",
+      "at": "2026-10-16T06:37:17+0000",
+      "hour_wat": 7,
+      "weekday": "Fri",
+      "type": "IMAGE",
+      "text": "⏰ Don't Wait Until There's a Problem!\n\nMost landlord-tenant disputes happen because there ",
+      "likes": 1,
+      "comments": 0,
+      "views": 2,
+      "reach": 2,
+      "saved": 0,
+      "shares": 0
+     }
+    ],
+    "username": "docoga.ng"
+   },
+   "threads": {
+    "followers": 0,
+    "views_7d": 35,
+    "likes_7d": 0,
+    "replies_7d": 0,
+    "reposts_7d": 0,
+    "quotes_7d": 0,
+    "posts": [
+     {
+      "id": "18467775856140022",
+      "at": "2026-10-25T19:12:43+0000",
+      "hour_wat": 20,
+      "weekday": "Sun",
+      "text": "In Edo State, retaliatory quit notices have no legal weight once the dispute is before the",
+      "views": 1,
+      "likes": 0,
+      "replies": 1,
+      "reposts": 0,
+      "quotes": 0,
+      "shares": 0
+     },
+     {
+      "id": "18129521149831526",
+      "at": "2026-10-25T12:11:52+0000",
+      "hour_wat": 13,
+      "weekday": "Sun",
+      "text": "In Edo State, filing a matter before the Rent Tribunal stops any retaliatory quit notice u",
+      "views": 2,
+      "likes": 0,
+      "replies": 1,
+      "reposts": 0,
+      "quotes": 0,
+      "shares": 0
+     },
+     {
+      "id": "18128874631892372",
+      "at": "2026-10-25T06:21:59+0000",
+      "hour_wat": 7,
+      "weekday": "Sun",
+      "text": "any quit notice served afterwards has no effect under section 16.\n\nLagos, Abuja, Port Harc",
+      "views": 3,
+      "likes": 0,
+      "replies": 0,
+      "reposts": 0,
+      "quotes": 0,
+      "shares": 0
+     },
+     {
+      "id": "18346628821287353",
+      "at": "2026-10-24T19:13:19+0000",
+      "hour_wat": 20,
+      "weekday": "Sat",
+      "text": "In Cross River, asking an individual tenant for one year rent upfront breaches s.6(6). The",
+      "views": 2,
+      "likes": 0,
+      "replies": 1,
+      "reposts": 0,
+      "quotes": 0,
+      "shares": 0
+     },
+     {
+      "id": "17973880482168585",
+      "at": "2026-10-24T12:12:05+0000",
+      "hour_wat": 13,
+      "weekday": "Sat",
+      "text": "Did your Cross River landlord ask for one year upfront? Under s.6(6), an individual cannot",
+      "views": 2,
+      "likes": 0,
+      "replies": 0,
+      "reposts": 0,
+      "quotes": 0,
+      "shares": 0
+     },
+     {
+      "id": "18119838592757363",
+      "at": "2026-10-24T06:22:03+0000",
+      "hour_wat": 7,
+      "weekday": "Sat",
+      "text": "Most people sign a tenancy agreement in the agent's office in under a minute, then live un",
+      "views": 1,
+      "likes": 0,
+      "replies": 0,
+      "reposts": 0,
+      "quotes": 0,
+      "shares": 0
+     },
+     {
+      "id": "17896719687413897",
+      "at": "2026-10-23T19:12:40+0000",
+      "hour_wat": 20,
+      "weekday": "Fri",
+      "text": "Most disputes start the same way: no paper.\n\nNot a bad landlord, not a bad tenant — an agr",
+      "views": 3,
+      "likes": 0,
+      "replies": 1,
+      "reposts": 0,
+      "quotes": 0,
+      "shares": 0
+     },
+     {
+      "id": "18096332690405127",
+      "at": "2026-10-23T12:12:17+0000",
+      "hour_wat": 13,
+      "weekday": "Fri",
+      "text": "Your rent receipt, before the money moves.\n\nDate. Amount. Period covered. Address. Who pai",
+      "views": 2,
+      "likes": 0,
+      "replies": 0,
+      "reposts": 0,
+      "quotes": 0,
+      "shares": 0
+     },
+     {
+      "id": "18392018065166403",
+      "at": "2026-10-23T06:21:55+0000",
+      "hour_wat": 7,
+      "weekday": "Fri",
+      "text": "A caution fee is meant to be refundable. But if nobody wrote down what it covers, the land",
+      "views": 0,
+      "likes": 0,
+      "replies": 0,
+      "reposts": 0,
+      "quotes": 0,
+      "shares": 0
+     },
+     {
+      "id": "18169350556492586",
+      "at": "2026-10-22T19:12:06+0000",
+      "hour_wat": 20,
+      "weekday": "Thu",
+      "text": "How much did your last agreement cost?\n\nA) Nothing — I wrote it myself\nB) ₦5,000 – ₦15,000",
+      "views": 2,
+      "likes": 0,
+      "replies": 1,
+      "reposts": 0,
+      "quotes": 0,
+      "shares": 0
+     },
+     {
+      "id": "17990438123867200",
+      "at": "2026-10-22T12:21:29+0000",
+      "hour_wat": 13,
+      "weekday": "Thu",
+      "text": "Picture this: a tenancy that lived on WhatsApp.\n\nRent agreed in a voice note. Increase ann",
+      "views": 1,
+      "likes": 0,
+      "replies": 0,
+      "reposts": 0,
+      "quotes": 0,
+      "shares": 0
+     },
+     {
+      "id": "18142063780616725",
+      "at": "2026-10-22T06:21:47+0000",
+      "hour_wat": 7,
+      "weekday": "Thu",
+      "text": "You move in and the wall is already cracked. You move out, and the landlord deducts repair",
+      "views": 0,
+      "likes": 0,
+      "replies": 0,
+      "reposts": 0,
+      "quotes": 0,
+      "shares": 0
+     },
+     {
+      "id": "17888711985686219",
+      "at": "2026-10-21T19:12:15+0000",
+      "hour_wat": 20,
+      "weekday": "Wed",
+      "text": "Lagos yearly tenant: 6 months' notice. Full stop.\n\nNa Tenancy Law 2011, s.13(1) talk am — ",
+      "views": 0,
+      "likes": 0,
+      "replies": 1,
+      "reposts": 0,
+      "quotes": 0,
+      "shares": 0
+     },
+     {
+      "id": "18001388964008498",
+      "at": "2026-10-21T12:12:18+0000",
+      "hour_wat": 13,
+      "weekday": "Wed",
+      "text": "₦2,000 a month. Unlimited clean documents.\n\nOga Pass: tenancy agreements, receipts, notice",
+      "views": 1,
+      "likes": 0,
+      "replies": 0,
+      "reposts": 0,
+      "quotes": 0,
+      "shares": 0
+     },
+     {
+      "id": "17918907828462751",
+      "at": "2026-10-21T06:22:01+0000",
+      "hour_wat": 7,
+      "weekday": "Wed",
+      "text": "Someone shows you a flat, collects your money, and disappears. The real landlord has never",
+      "views": 0,
+      "likes": 0,
+      "replies": 0,
+      "reposts": 0,
+      "quotes": 0,
+      "shares": 0
+     },
+     {
+      "id": "18117302270053139",
+      "at": "2026-10-20T12:11:57+0000",
+      "hour_wat": 13,
+      "weekday": "Tue",
+      "text": "4 rights every Nigerian tenant has.\n\n1. Peaceful enjoyment of the property you pay for\n2. ",
+      "views": 0,
+      "likes": 0,
+      "replies": 0,
+      "reposts": 0,
+      "quotes": 0,
+      "shares": 0
+     },
+     {
+      "id": "17898816306396156",
+      "at": "2026-10-20T06:21:57+0000",
+      "hour_wat": 7,
+      "weekday": "Tue",
+      "text": "You pay rent in cash, the landlord says thank you, and nobody writes anything down. Months",
+      "views": 1,
+      "likes": 0,
+      "replies": 0,
+      "reposts": 0,
+      "quotes": 0,
+      "shares": 0
+     },
+     {
+      "id": "18119392672971520",
+      "at": "2026-10-19T19:12:15+0000",
+      "hour_wat": 20,
+      "weekday": "Mon",
+      "text": "4 rights every Nigerian tenant has.\n\n1. Peaceful enjoyment of the property you pay for\n2. ",
+      "views": 2,
+      "likes": 0,
+      "replies": 1,
+      "reposts": 0,
+      "quotes": 0,
+      "shares": 0
+     },
+     {
+      "id": "18012258101770304",
+      "at": "2026-10-19T12:11:57+0000",
+      "hour_wat": 13,
+      "weekday": "Mon",
+      "text": "Caution fee is a deposit, not a gift.\n\nIt is refundable when you leave the place in good c",
+      "views": 1,
+      "likes": 0,
+      "replies": 0,
+      "reposts": 0,
+      "quotes": 0,
+      "shares": 0
+     },
+     {
+      "id": "18139844686527566",
+      "at": "2026-10-19T06:22:00+0000",
+      "hour_wat": 7,
+      "weekday": "Mon",
+      "text": "The roof leaks, you mention it to the caretaker, and months later the ceiling comes down. ",
+      "views": 3,
+      "likes": 0,
+      "replies": 0,
+      "reposts": 0,
+      "quotes": 0,
+      "shares": 0
+     }
+    ]
+   },
+   "telegram": {
+    "members": 2,
+    "chat": "@docogadaily"
+   },
+   "youtube": {
+    "subscribers": 49,
+    "views": 478,
+    "videos": 19,
+    "taken_at": "2026-10-26T06:00:44+01:00",
+    "top_shorts": [
+     {
+      "title": "Change the lock. Become the defendant.",
+      "views": 108
+     },
+     {
+      "title": "Skip the photos. Pay for old damage.",
+      "views": 93
+     },
+     {
+      "title": "Sign without asking. Fund the repaint.",
+      "views": 76
+     },
+     {
+      "title": "Skip the photos. Pay for old damage.",
+      "views": 73
+     },
+     {
+      "title": "Keep a Rent Paper Trail",
+      "views": 60
+     }
+    ]
+   },
+   "sales": null,
+   "site": {
+    "days": 7,
+    "site_tag": null,
+    "visits": 36,
+    "pageviews": 38,
+    "by_channel": {
+     "direct": 16,
+     "facebook": 14,
+     "google": 6
+    },
+    "by_host": {
+     "www.facebook.com": 10,
+     "www.google.com": 6,
+     "m.facebook.com": 4
+    },
+    "by_path": {
+     "/tenant-rights-nigeria": 10,
+     "/": 10,
+     "/tenancy-agreement-nigeria": 8,
+     "/notice-to-quit-enugu": 2,
+     "/tiktok-connect": 2,
+     "/notice-to-quit-abuja": 1,
+     "/v/DR-0000-0000": 1,
+     "/notice-to-quit-delta": 1,
+     "/notice-to-quit-anambra": 1
+    },
+    "by_country": {
+     "NG": 18,
+     "US": 18
+    },
+    "nigeria_share": 0.5
+   },
+   "search": {
+    "taken_at": "2026-10-19T10:25:26+00:00",
+    "site": "https://docoga.com.ng/",
+    "window": {
+     "start": "2026-09-18",
+     "end": "2026-10-16",
+     "days": 28
+    },
+    "clicks": 12,
+    "impressions": 430,
+    "ctr": 0.0279,
+    "nigeria_clicks": 11,
+    "top_queries": [
+     {
+      "query": "quit notice",
+      "page": "https://docoga.com.ng/notice-to-quit-nigeria.html",
+      "clicks": 0,
+      "impressions": 48,
+      "ctr": 0.0,
+      "position": 1.0
+     },
+     {
+      "query": "notice to quit",
+      "page": "https://docoga.com.ng/notice-to-quit-nigeria",
+      "clicks": 0,
+      "impressions": 22,
+      "ctr": 0.0,
+      "position": 4.3
+     },
+     {
+      "query": "notice to quit",
+      "page": "https://docoga.com.ng/notice-to-quit-nigeria.html",
+      "clicks": 0,
+      "impressions": 20,
+      "ctr": 0.0,
+      "position": 4.8
+     },
+     {
+      "query": "quit notice letter from landlord to tenant in nigeria",
+      "page": "https://docoga.com.ng/notice-to-quit-nigeria",
+      "clicks": 0,
+      "impressions": 19,
+      "ctr": 0.0,
+      "position": 6.3
+     },
+     {
+      "query": "quit notice",
+      "page": "https://docoga.com.ng/notice-to-quit-nigeria",
+      "clicks": 0,
+      "impressions": 8,
+      "ctr": 0.0,
+      "position": 1.4
+     },
+     {
+      "query": "quit notice from landlord to tenant",
+      "page": "https://docoga.com.ng/notice-to-quit-nigeria.html",
+      "clicks": 0,
+      "impressions": 5,
+      "ctr": 0.0,
+      "position": 32.2
+     },
+     {
+      "query": "quite notice",
+      "page": "https://docoga.com.ng/notice-to-quit-nigeria.html",
+      "clicks": 0,
+      "impressions": 5,
+      "ctr": 0.0,
+      "position": 1.0
+     },
+     {
+      "query": "edo state tenancy law",
+      "page": "https://docoga.com.ng/notice-to-quit-edo.html",
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0.0,
+      "position": 6.7
+     },
+     {
+      "query": "enugu",
+      "page": "https://docoga.com.ng/notice-to-quit-enugu",
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0.0,
+      "position": 2.0
+     },
+     {
+      "query": "quit notice from landlord to tenant",
+      "page": "https://docoga.com.ng/notice-to-quit-nigeria",
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0.0,
+      "position": 10.0
+     },
+     {
+      "query": "quit notice letter from landlord to tenant in nigeria",
+      "page": "https://docoga.com.ng/notice-to-quit-nigeria.html",
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0.0,
+      "position": 6.3
+     },
+     {
+      "query": "how to write quit notice",
+      "page": "https://docoga.com.ng/notice-to-quit-nigeria",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0.0,
+      "position": 1.0
+     },
+     {
+      "query": "notice to quite",
+      "page": "https://docoga.com.ng/notice-to-quit-nigeria.html",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0.0,
+      "position": 5.0
+     },
+     {
+      "query": "quite notice",
+      "page": "https://docoga.com.ng/notice-to-quit-nigeria",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0.0,
+      "position": 1.0
+     },
+     {
+      "query": "shop agreement",
+      "page": "https://docoga.com.ng/shop-tenancy-agreement-nigeria.html",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0.0,
+      "position": 10.5
+     },
+     {
+      "query": "how many months does your landlord have to give notice",
+      "page": "https://docoga.com.ng/tenant-rights-nigeria.html",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0.0,
+      "position": 9.0
+     },
+     {
+      "query": "how to expire",
+      "page": "https://docoga.com.ng/notice-to-quit-nigeria",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0.0,
+      "position": 6.0
+     },
+     {
+      "query": "in enugu",
+      "page": "https://docoga.com.ng/notice-to-quit-enugu",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0.0,
+      "position": 3.0
+     },
+     {
+      "query": "quit notes",
+      "page": "https://docoga.com.ng/notice-to-quit-nigeria.html",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0.0,
+      "position": 3.0
+     },
+     {
+      "query": "quit notice letter from landlord to tenant",
+      "page": "https://docoga.com.ng/notice-to-quit-nigeria.html",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0.0,
+      "position": 36.0
+     },
+     {
+      "query": "quitting notice",
+      "page": "https://docoga.com.ng/notice-to-quit-nigeria.html",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0.0,
+      "position": 1.0
+     },
+     {
+      "query": "rental receipt",
+      "page": "https://docoga.com.ng/rent-receipt-format-nigeria.html",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0.0,
+      "position": 8.0
+     },
+     {
+      "query": "rivers state tenancy law",
+      "page": "https://docoga.com.ng/tenancy-agreement-rivers.html",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0.0,
+      "position": 11.0
+     },
+     {
+      "query": "tenancy law in edo state",
+      "page": "https://docoga.com.ng/notice-to-quit-edo.html",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0.0,
+      "position": 9.0
+     },
+     {
+      "query": "yearly tenancy notice to quit",
+      "page": "https://docoga.com.ng/notice-to-quit-nigeria",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0.0,
+      "position": 9.0
+     },
+     {
+      "query": "yearly tenancy notice to quit",
+      "page": "https://docoga.com.ng/notice-to-quit-nigeria.html",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0.0,
+      "position": 11.0
+     }
+    ],
+    "striking_distance": [],
+    "top_pages": [
+     {
+      "page": "https://docoga.com.ng/",
+      "clicks": 2,
+      "impressions": 26,
+      "position": 3.7
+     },
+     {
+      "page": "https://docoga.com.ng/notice-to-quit-nigeria.html",
+      "clicks": 2,
+      "impressions": 161,
+      "position": 4.7
+     },
+     {
+      "page": "https://docoga.com.ng/notice-to-quit-rivers.html",
+      "clicks": 2,
+      "impressions": 14,
+      "position": 3.0
+     },
+     {
+      "page": "https://docoga.com.ng/notice-to-quit-enugu",
+      "clicks": 1,
+      "impressions": 14,
+      "position": 3.6
+     },
+     {
+      "page": "https://docoga.com.ng/notice-to-quit-enugu.html",
+      "clicks": 1,
+      "impressions": 2,
+      "position": 1.0
+     },
+     {
+      "page": "https://docoga.com.ng/notice-to-quit-nigeria",
+      "clicks": 1,
+      "impressions": 116,
+      "position": 4.6
+     },
+     {
+      "page": "https://docoga.com.ng/notice-to-quit-plateau.html",
+      "clicks": 1,
+      "impressions": 5,
+      "position": 2.4
+     },
+     {
+      "page": "https://docoga.com.ng/power-of-attorney-nigeria.html",
+      "clicks": 1,
+      "impressions": 16,
+      "position": 4.1
+     },
+     {
+      "page": "https://docoga.com.ng/shop-tenancy-agreement-nigeria.html",
+      "clicks": 1,
+      "impressions": 25,
+      "position": 6.4
+     },
+     {
+      "page": "https://docoga.com.ng/caution-fee-abuja",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 3.0
+     },
+     {
+      "page": "https://docoga.com.ng/caution-fee-enugu.html",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 1.0
+     },
+     {
+      "page": "https://docoga.com.ng/caution-fee-kano.html",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 9.0
+     },
+     {
+      "page": "https://docoga.com.ng/evict-tenant-nigeria",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 3.5
+     },
+     {
+      "page": "https://docoga.com.ng/notice-to-quit-abuja",
+      "clicks": 0,
+      "impressions": 5,
+      "position": 6.4
+     },
+     {
+      "page": "https://docoga.com.ng/notice-to-quit-abuja.html",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 7.0
+     },
+     {
+      "page": "https://docoga.com.ng/notice-to-quit-delta.html",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 2.5
+     },
+     {
+      "page": "https://docoga.com.ng/notice-to-quit-edo.html",
+      "clicks": 0,
+      "impressions": 20,
+      "position": 6.8
+     },
+     {
+      "page": "https://docoga.com.ng/notice-to-quit-kaduna.html",
+      "clicks": 0,
+      "impressions": 9,
+      "position": 6.3
+     },
+     {
+      "page": "https://docoga.com.ng/notice-to-quit-kano",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 2.0
+     },
+     {
+      "page": "https://docoga.com.ng/notice-to-quit-kano.html",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 1.0
+     },
+     {
+      "page": "https://docoga.com.ng/notice-to-quit-lagos",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 7.7
+     },
+     {
+      "page": "https://docoga.com.ng/notice-to-quit-rivers",
+      "clicks": 0,
+      "impressions": 4,
+      "position": 3.0
+     },
+     {
+      "page": "https://docoga.com.ng/rent-receipt-format-nigeria.html",
+      "clicks": 0,
+      "impressions": 4,
+      "position": 6.0
+     },
+     {
+      "page": "https://docoga.com.ng/rent-receipt-kano",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 2.5
+     },
+     {
+      "page": "https://docoga.com.ng/rent-receipt-kano.html",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 6.0
+     }
+    ]
+   }
+  },
+  "kpis": {
+   "learning": {
+    "hook_type": {
+     "CLAIM": {
+      "n": 5,
+      "total": 10.0,
+      "avg": 2.0
+     },
+     "QUESTION": {
+      "n": 5,
+      "total": 8.0,
+      "avg": 1.6
+     },
+     "rotation": {
+      "n": 35,
+      "total": 1206.0,
+      "avg": 34.5
+     }
+    },
+    "post_type": {
+     "engagement": {
+      "n": 5,
+      "total": 10.0,
+      "avg": 2.0
+     },
+     "checklist": {
+      "n": 5,
+      "total": 8.0,
+      "avg": 1.6
+     },
+     "rotation": {
+      "n": 35,
+      "total": 1206.0,
+      "avg": 34.5
+     }
+    },
+    "reader": {
+     "ngozi": {
+      "n": 10,
+      "total": 18.0,
+      "avg": 1.8
+     },
+     "rotation": {
+      "n": 35,
+      "total": 1206.0,
+      "avg": 34.5
+     }
+    },
+    "source": {
+     "brain": {
+      "n": 10,
+      "total": 18.0,
+      "avg": 1.8
+     },
+     "rotation": {
+      "n": 35,
+      "total": 1206.0,
+      "avg": 34.5
+     }
+    }
+   },
+   "facebook.followers": 1,
+   "facebook.views_7d": 32,
+   "facebook.engagements_7d": 260,
+   "facebook.follows_7d": 0,
+   "facebook.posts_14d": 13,
+   "facebook.share_rate": 1.5645,
+   "facebook.shares_per_post": 29.8462,
+   "facebook.comments_per_post": 0.6154,
+   "facebook.clicks_per_post": 0.1538,
+   "facebook.best_posts": [
+    {
+     "text": "4 rights every Nigerian tenant has.\n\n1. Peaceful enjoyment of the property you pay for\n2. ",
+     "score": 228,
+     "hour_wat": 8,
+     "weekday": "Tue"
+    },
+    {
+     "text": "Caution fee is a deposit, not a gift.\n\nIt is refundable when you leave the place in good c",
+     "score": 186,
+     "hour_wat": 9,
+     "weekday": "Mon"
+    },
+    {
+     "text": "You move in and the wall is already cracked.\n\n→ Photograph each room\n→ Note the date\n→ Rec",
+     "score": 174,
+     "hour_wat": 18,
+     "weekday": "Thu"
+    }
+   ],
+   "facebook.by_hour": {
+    "5": 121.0,
+    "8": 228.0,
+    "9": 52.57,
+    "13": 139.0,
+    "14": 154.0,
+    "18": 174.0,
+    "21": 0.0
+   },
+   "instagram.followers": 1,
+   "instagram.views_7d": 32,
+   "instagram.reach_7d": 15,
+   "instagram.interactions_7d": 15,
+   "instagram.posts_14d": 12,
+   "instagram.send_rate": 0.0455,
+   "instagram.sends_per_post": 0.0833,
+   "instagram.best_posts": [
+    {
+     "text": "Rent and tenancy documents Nigeria\n\nCaution fee is a deposit, not a gift.\n\nIt is refundabl",
+     "score": 3,
+     "hour_wat": 19,
+     "weekday": "Mon"
+    },
+    {
+     "text": "Tenant rights in Nigeria\n\nIn Edo State, filing a matter before the Rent Tribunal stops any",
+     "score": 2,
+     "hour_wat": 19,
+     "weekday": "Sun"
+    },
+    {
+     "text": "Tenancy agreement sample Nigeria\n\nDid your Cross River landlord ask for one year upfront? ",
+     "score": 2,
+     "hour_wat": 19,
+     "weekday": "Sat"
+    }
+   ],
+   "instagram.by_hour": {
+    "7": 1.0,
+    "8": 1.0,
+    "18": 1.5,
+    "19": 1.71,
+    "21": 2.0
+   },
+   "instagram.by_hour_n": {
+    "19": 7,
+    "21": 1,
+    "18": 2,
+    "8": 1,
+    "7": 1
+   },
+   "threads.followers": 0,
+   "threads.views_7d": 35,
+   "threads.posts_14d": 20,
+   "threads.replies_per_post": 0.35,
+   "threads.reposts_per_post": 0.0,
+   "threads.best_posts": [
+    {
+     "text": "In Edo State, retaliatory quit notices have no legal weight once the dispute is before the",
+     "score": 3,
+     "hour_wat": 20,
+     "weekday": "Sun"
+    },
+    {
+     "text": "In Edo State, filing a matter before the Rent Tribunal stops any retaliatory quit notice u",
+     "score": 3,
+     "hour_wat": 13,
+     "weekday": "Sun"
+    },
+    {
+     "text": "In Cross River, asking an individual tenant for one year rent upfront breaches s.6(6). The",
+     "score": 3,
+     "hour_wat": 20,
+     "weekday": "Sat"
+    }
+   ],
+   "threads.by_hour": {
+    "7": 0.0,
+    "13": 0.43,
+    "20": 3.0
+   },
+   "telegram.members": 2,
+   "youtube.subscribers": 49,
+   "youtube.views": 478,
+   "youtube.top_shorts": [
+    {
+     "title": "Change the lock. Become the defendant.",
+     "views": 108
+    },
+    {
+     "title": "Skip the photos. Pay for old damage.",
+     "views": 93
+    },
+    {
+     "title": "Sign without asking. Fund the repaint.",
+     "views": 76
+    },
+    {
+     "title": "Skip the photos. Pay for old damage.",
+     "views": 73
+    },
+    {
+     "title": "Keep a Rent Paper Trail",
+     "views": 60
+    }
+   ],
+   "site.visits_7d": 36,
+   "site.by_channel": {
+    "direct": 16,
+    "facebook": 14,
+    "google": 6
+   },
+   "site.top_pages": {
+    "/tenant-rights-nigeria": 10,
+    "/": 10,
+    "/tenancy-agreement-nigeria": 8,
+    "/notice-to-quit-enugu": 2,
+    "/tiktok-connect": 2,
+    "/notice-to-quit-abuja": 1,
+    "/v/DR-0000-0000": 1,
+    "/notice-to-quit-delta": 1,
+    "/notice-to-quit-anambra": 1
+   },
+   "site.nigeria_share": 0.5,
+   "google.clicks_28d": 12,
+   "google.impressions_28d": 430,
+   "google.ctr": 0.0279,
+   "google.top_queries": [
+    {
+     "query": "quit notice",
+     "page": "https://docoga.com.ng/notice-to-quit-nigeria.html",
+     "clicks": 0,
+     "impressions": 48,
+     "ctr": 0.0,
+     "position": 1.0
+    },
+    {
+     "query": "notice to quit",
+     "page": "https://docoga.com.ng/notice-to-quit-nigeria",
+     "clicks": 0,
+     "impressions": 22,
+     "ctr": 0.0,
+     "position": 4.3
+    },
+    {
+     "query": "notice to quit",
+     "page": "https://docoga.com.ng/notice-to-quit-nigeria.html",
+     "clicks": 0,
+     "impressions": 20,
+     "ctr": 0.0,
+     "position": 4.8
+    },
+    {
+     "query": "quit notice letter from landlord to tenant in nigeria",
+     "page": "https://docoga.com.ng/notice-to-quit-nigeria",
+     "clicks": 0,
+     "impressions": 19,
+     "ctr": 0.0,
+     "position": 6.3
+    },
+    {
+     "query": "quit notice",
+     "page": "https://docoga.com.ng/notice-to-quit-nigeria",
+     "clicks": 0,
+     "impressions": 8,
+     "ctr": 0.0,
+     "position": 1.4
+    },
+    {
+     "query": "quit notice from landlord to tenant",
+     "page": "https://docoga.com.ng/notice-to-quit-nigeria.html",
+     "clicks": 0,
+     "impressions": 5,
+     "ctr": 0.0,
+     "position": 32.2
+    },
+    {
+     "query": "quite notice",
+     "page": "https://docoga.com.ng/notice-to-quit-nigeria.html",
+     "clicks": 0,
+     "impressions": 5,
+     "ctr": 0.0,
+     "position": 1.0
+    },
+    {
+     "query": "edo state tenancy law",
+     "page": "https://docoga.com.ng/notice-to-quit-edo.html",
+     "clicks": 0,
+     "impressions": 3,
+     "ctr": 0.0,
+     "position": 6.7
+    },
+    {
+     "query": "enugu",
+     "page": "https://docoga.com.ng/notice-to-quit-enugu",
+     "clicks": 0,
+     "impressions": 3,
+     "ctr": 0.0,
+     "position": 2.0
+    },
+    {
+     "query": "quit notice from landlord to tenant",
+     "page": "https://docoga.com.ng/notice-to-quit-nigeria",
+     "clicks": 0,
+     "impressions": 3,
+     "ctr": 0.0,
+     "position": 10.0
+    },
+    {
+     "query": "quit notice letter from landlord to tenant in nigeria",
+     "page": "https://docoga.com.ng/notice-to-quit-nigeria.html",
+     "clicks": 0,
+     "impressions": 3,
+     "ctr": 0.0,
+     "position": 6.3
+    },
+    {
+     "query": "how to write quit notice",
+     "page": "https://docoga.com.ng/notice-to-quit-nigeria",
+     "clicks": 0,
+     "impressions": 2,
+     "ctr": 0.0,
+     "position": 1.0
+    },
+    {
+     "query": "notice to quite",
+     "page": "https://docoga.com.ng/notice-to-quit-nigeria.html",
+     "clicks": 0,
+     "impressions": 2,
+     "ctr": 0.0,
+     "position": 5.0
+    },
+    {
+     "query": "quite notice",
+     "page": "https://docoga.com.ng/notice-to-quit-nigeria",
+     "clicks": 0,
+     "impressions": 2,
+     "ctr": 0.0,
+     "position": 1.0
+    },
+    {
+     "query": "shop agreement",
+     "page": "https://docoga.com.ng/shop-tenancy-agreement-nigeria.html",
+     "clicks": 0,
+     "impressions": 2,
+     "ctr": 0.0,
+     "position": 10.5
+    },
+    {
+     "query": "how many months does your landlord have to give notice",
+     "page": "https://docoga.com.ng/tenant-rights-nigeria.html",
+     "clicks": 0,
+     "impressions": 1,
+     "ctr": 0.0,
+     "position": 9.0
+    },
+    {
+     "query": "how to expire",
+     "page": "https://docoga.com.ng/notice-to-quit-nigeria",
+     "clicks": 0,
+     "impressions": 1,
+     "ctr": 0.0,
+     "position": 6.0
+    },
+    {
+     "query": "in enugu",
+     "page": "https://docoga.com.ng/notice-to-quit-enugu",
+     "clicks": 0,
+     "impressions": 1,
+     "ctr": 0.0,
+     "position": 3.0
+    },
+    {
+     "query": "quit notes",
+     "page": "https://docoga.com.ng/notice-to-quit-nigeria.html",
+     "clicks": 0,
+     "impressions": 1,
+     "ctr": 0.0,
+     "position": 3.0
+    },
+    {
+     "query": "quit notice letter from landlord to tenant",
+     "page": "https://docoga.com.ng/notice-to-quit-nigeria.html",
+     "clicks": 0,
+     "impressions": 1,
+     "ctr": 0.0,
+     "position": 36.0
+    },
+    {
+     "query": "quitting notice",
+     "page": "https://docoga.com.ng/notice-to-quit-nigeria.html",
+     "clicks": 0,
+     "impressions": 1,
+     "ctr": 0.0,
+     "position": 1.0
+    },
+    {
+     "query": "rental receipt",
+     "page": "https://docoga.com.ng/rent-receipt-format-nigeria.html",
+     "clicks": 0,
+     "impressions": 1,
+     "ctr": 0.0,
+     "position": 8.0
+    },
+    {
+     "query": "rivers state tenancy law",
+     "page": "https://docoga.com.ng/tenancy-agreement-rivers.html",
+     "clicks": 0,
+     "impressions": 1,
+     "ctr": 0.0,
+     "position": 11.0
+    },
+    {
+     "query": "tenancy law in edo state",
+     "page": "https://docoga.com.ng/notice-to-quit-edo.html",
+     "clicks": 0,
+     "impressions": 1,
+     "ctr": 0.0,
+     "position": 9.0
+    },
+    {
+     "query": "yearly tenancy notice to quit",
+     "page": "https://docoga.com.ng/notice-to-quit-nigeria",
+     "clicks": 0,
+     "impressions": 1,
+     "ctr": 0.0,
+     "position": 9.0
+    },
+    {
+     "query": "yearly tenancy notice to quit",
+     "page": "https://docoga.com.ng/notice-to-quit-nigeria.html",
+     "clicks": 0,
+     "impressions": 1,
+     "ctr": 0.0,
+     "position": 11.0
+    }
+   ],
+   "google.striking_distance": [],
+   "milestones": [
+    {
+     "key": "facebook.followers",
+     "label": "Facebook 500 followers — unlocks Stars (needs 500 for 30 straight days)",
+     "unlocks": "Facebook Stars",
+     "target": 500,
+     "current": 1,
+     "remaining": 499,
+     "pace_per_week": 0.0,
+     "weeks_to_go": null,
+     "needed_per_week": 36.4,
+     "due": "2027-01-31",
+     "status": "behind_pace"
+    },
+    {
+     "key": "youtube.subscribers",
+     "label": "YouTube 500 subscribers — fan-funding tier of the Partner Program",
+     "unlocks": "YouTube fan funding",
+     "target": 500,
+     "current": 49,
+     "remaining": 451,
+     "pace_per_week": 49.0,
+     "weeks_to_go": 9.2,
+     "needed_per_week": 20.4,
+     "due": "2027-03-31",
+     "status": "on_pace"
+    },
+    {
+     "key": "instagram.followers",
+     "label": "Instagram 1,000 followers — subscriptions/gifts eligibility",
+     "unlocks": "Instagram gifts",
+     "target": 1000,
+     "current": 1,
+     "remaining": 999,
+     "pace_per_week": 0.0,
+     "weeks_to_go": null,
+     "needed_per_week": 37.8,
+     "due": "2027-04-30",
+     "status": "behind_pace"
+    },
+    {
+     "key": "telegram.members",
+     "label": "Telegram 1,000 members — channel ads/stars eligibility",
+     "unlocks": "Telegram Stars",
+     "target": 1000,
+     "current": 2,
+     "remaining": 998,
+     "pace_per_week": 0.0,
+     "weeks_to_go": null,
+     "needed_per_week": 37.8,
+     "due": "2027-04-30",
+     "status": "behind_pace"
+    }
+   ],
+   "slot_advice": null
+  },
+  "grades": [
+   {
+    "key": "sales.passes",
+    "label": "Oga Pass sales per week (+1 each week, from 2)",
+    "actual": null,
+    "baseline": null,
+    "target": null,
+    "status": "not_measured"
+   },
+   {
+    "key": "telegram.members",
+    "label": "Telegram members (+9%/week)",
+    "actual": 2,
+    "baseline": 2,
+    "target": 2.2,
+    "status": "behind"
+   },
+   {
+    "key": "facebook.followers",
+    "label": "Facebook followers (+5.5%/week)",
+    "actual": 1,
+    "baseline": 1,
+    "target": 1.1,
+    "status": "behind"
+   },
+   {
+    "key": "instagram.followers",
+    "label": "Instagram followers (+5.5%/week)",
+    "actual": 1,
+    "baseline": 1,
+    "target": 1.1,
+    "status": "behind"
+   },
+   {
+    "key": "threads.followers",
+    "label": "Threads followers (+7%/week)",
+    "actual": 0,
+    "baseline": 0,
+    "target": 0.0,
+    "status": "on_track"
+   },
+   {
+    "key": "youtube.subscribers",
+    "label": "YouTube subscribers (+13/week)",
+    "actual": 49,
+    "baseline": 49,
+    "target": 62.0,
+    "status": "behind"
+   },
+   {
+    "key": "facebook.share_rate",
+    "label": "Facebook shares per view (>= 1.5%)",
+    "actual": 1.5645,
+    "target": 0.015,
+    "baseline": null,
+    "status": "on_track"
+   },
+   {
+    "key": "instagram.send_rate",
+    "label": "Instagram shares+saves per reach (>= 1.5%)",
+    "actual": 0.0455,
+    "target": 0.015,
+    "baseline": null,
+    "status": "on_track"
+   },
+   {
+    "key": "threads.replies_per_post",
+    "label": "Threads replies per post (>= 3)",
+    "actual": 0.35,
+    "target": 3.0,
+    "baseline": null,
+    "status": "behind"
+   },
+   {
+    "key": "facebook.comments_per_post",
+    "label": "Facebook comments per post (>= 2)",
+    "actual": 0.6154,
+    "target": 2.0,
+    "baseline": null,
+    "status": "behind"
+   }
+  ],
+  "streaks": {
+   "sales.passes": 0,
+   "telegram.members": 1,
+   "facebook.followers": 1,
+   "instagram.followers": 1,
+   "threads.followers": 0,
+   "youtube.subscribers": 1,
+   "facebook.share_rate": 0,
+   "instagram.send_rate": 0,
+   "threads.replies_per_post": 3,
+   "facebook.comments_per_post": 3
+  },
+  "orders": [
+   "Threads replies are under 3 per post: every Threads post ends with a question answerable in five words ('which state are you renting in?'); one opinion post this week.",
+   "Facebook comments are under 2 per post: ask for the reader's state or a yes/no in the last line; a Thursday scenario people will argue with.",
+   "YouTube subscribers are behind: change the Short hook archetype for two weeks and put a number in the first line; the title must name the loss.",
+   "Brain-written days averaged 2 against 34 for rotation days (the hand-written baseline is winning — study its hooks).",
+   "Facebook Stars is behind pace: 499 to go, 0 a week now, 36.4 a week needed by 2027-01-31 — this week every Facebook post ends with the follow line ('follow for the next rule') and the Reel/Short names the Page by hand.",
+   "Instagram gifts is behind pace: 999 to go, 0 a week now, 37.8 a week needed by 2027-04-30 — this week every Instagram post ends with the follow line ('follow for the next rule') and the Reel/Short names the Page by hand.",
+   "Telegram Stars is behind pace: 998 to go, 0 a week now, 37.8 a week needed by 2027-04-30 — this week every Telegram post ends with the follow line ('follow for the next rule') and the Reel/Short names the Page by hand.",
+   "Facebook best this fortnight: '4 rights every Nigerian tenant has.\n\n1. Peaceful enjoyment o' (228); 'Caution fee is a deposit, not a gift.\n\nIt is refundable when' (186) — write the next facebook post in that register, on a different theme.",
+   "Instagram best this fortnight: 'Rent and tenancy documents Nigeria\n\nCaution fee is a deposit' (3); 'Tenant rights in Nigeria\n\nIn Edo State, filing a matter befo' (2) — write the next instagram post in that register, on a different theme.",
+   "Threads best this fortnight: 'In Edo State, retaliatory quit notices have no legal weight ' (3); 'In Edo State, filing a matter before the Rent Tribunal stops' (3) — write the next threads post in that register, on a different theme."
+  ],
+  "problems": [
+   "sales: DOCOGA_ADMIN_PASSPHRASE not set — revenue not connected (optional; the dashboard passphrase as a repo secret)"
+  ]
  }
 ]
