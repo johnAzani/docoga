@@ -70,6 +70,18 @@ class Manager(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.mkdtemp()
         self.ledger = os.path.join(self.tmp, "youtube_manage.json")
+        # A schedule also writes into the publish ledgers (note_schedule). The tests get copies:
+        # on 25 Oct 2026 they wrote the REAL logs/youtube_longform.json and the polluted file was
+        # committed in PR #136 (dd3 re-dated to 31 Oct, so the Monday recap would have skipped).
+        self.publish_ledgers = []
+        for name in ("youtube_longform.json", "youtube_published.json"):
+            src = ROOT / "logs" / name
+            dst = Path(self.tmp) / name
+            dst.write_text(src.read_text(encoding="utf-8") if src.is_file() else "[]", encoding="utf-8")
+            self.publish_ledgers.append(dst)
+        ledgers = patch.object(yt_manage, "PUBLISH_LEDGERS", tuple(self.publish_ledgers))
+        ledgers.start()
+        self.addCleanup(ledgers.stop)
         self.fake = Google()
         self.fake.queue("token", [Resp(200, {"access_token": "ya29.t", "expires_in": 3599})])
         self.scopes(FORCE_SSL)
@@ -207,6 +219,22 @@ class Scheduling(Manager):
         code, out = self.run_main(["--plan-text", "schedule 2026-10-31T19:00 JJhRcCgAxyQ"])
         self.assertEqual(code, 0, out)
         self.assertEqual(len(self.fake.of("update")), 2)
+
+    def test_a_schedule_writes_the_copies_and_never_the_real_publish_ledgers(self):
+        """26 Oct 2026: the real logs/youtube_longform.json had been rewritten by this very test
+        class and shipped in PR #136. The copies take the write; the repo files do not change."""
+        real = [(ROOT / "logs" / n) for n in ("youtube_longform.json", "youtube_published.json")]
+        before = [p.read_bytes() if p.is_file() else b"" for p in real]
+        self.fake.queue("status", [video("JJhRcCgAxyQ", "unlisted", "Rent Receipt in Nigeria")])
+        self.fake.queue("update", [Resp(200, {"status": {"privacyStatus": "private", "publishAt": "2026-10-31T18:00:00Z"}})])
+        code, out = self.run_main(["--plan-text", "schedule 2026-10-31T19:00 JJhRcCgAxyQ"])
+        self.assertEqual(code, 0, out)
+        copy = json.loads(self.publish_ledgers[0].read_text(encoding="utf-8"))
+        hit = [r for r in copy if r.get("video_id") == "JJhRcCgAxyQ"]
+        if hit:
+            self.assertEqual(hit[0]["publish_at"], "2026-10-31T18:00:00Z", "the copy took the write")
+        self.assertEqual([p.read_bytes() if p.is_file() else b"" for p in real], before,
+                         "a test must never rewrite the repo's publish ledgers")
 
     def test_a_public_video_is_never_hidden_by_a_schedule(self):
         """21 Oct 2026, first live run: dd2 was already public (the owner had tapped it) and the
