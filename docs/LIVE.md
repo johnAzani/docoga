@@ -5,6 +5,15 @@ watch time, subscribers etc."* Same morning, after the research: *"I don't want 
 GitHub, I don't want to take that risk. Let's do it in Oracle."* This is that lane. ₦0,
 touches no upload lane, runs by itself.
 
+**Host status — 27 Oct 2026, 11:20am: PARKED (owner's choice A).** The owner could not get
+through Oracle's signup gate (*"I could not use Oracle"*, 27 Oct) and chose to park the stream
+rather than pay for a box: *"A"*. What that means in practice: the control runs keep going at
+₦0 (the loop stays banked and current, the reusable key stays ready), the public broadcast is
+**not** created until data arrives on that key, and nobody is Telegrammed. Un-parking is not a
+code change: install `deploy/live/install.sh` on any Ubuntu 24.04 machine with the key, and the
+next control run makes the broadcast and takes it live. Candidate boxes and their prices are in
+"Choosing the machine" below; the first spend waits for the app's own fund, on the owner's word.
+
 ## What a viewer sees
 
 A public live video on the channel, 24 hours a day: **"DocOga Live 24/7 — Nigerian rent &
