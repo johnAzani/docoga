@@ -182,7 +182,7 @@ class PullTests(unittest.TestCase):
         text = sc.summary_md(snap)
         self.assertIn("Sold by channel (28 days):** telegram 3, facebook 1", text)
         self.assertIn("**Traffic:** 400 visits", text)
-        self.assertIn("Google (28 days):** 210 clicks", text)
+        self.assertIn("Google (28 days, pulled 2026-10-19):** 210 clicks", text)
         self.assertTrue(any("Money follows Telegram" in o for o in snap["orders"]), snap["orders"])
         self.assertTrue(any("notice to quit lagos" in o for o in snap["orders"]), snap["orders"])
         self.assertEqual(k["google.striking_distance"][0]["query"], "notice to quit lagos")

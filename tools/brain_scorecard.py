@@ -584,6 +584,7 @@ def kpis(channels, said=None):
         k["google.ctr"] = search.get("ctr")
         k["google.top_queries"] = search.get("top_queries")
         k["google.striking_distance"] = search.get("striking_distance")
+        k["google.taken_at"] = search.get("taken_at")   # the pull date on the line, so an old pull never reads as this week's
     return k
 
 
@@ -962,8 +963,9 @@ def summary_md(snap):
         lines.append("**Sold by channel (28 days):** %s · checkout taps: %s" % (sold, taps))
     if k.get("google.clicks_28d") is not None:
         qs = ", ".join("'%s' (%s clicks, pos %s)" % (q["query"], q["clicks"], q["position"]) for q in (k.get("google.top_queries") or [])[:4])
-        lines.append("**Google (28 days):** %s clicks / %s impressions, CTR %s — %s"
-                     % (_fmt(k["google.clicks_28d"]), _fmt(k["google.impressions_28d"]), _fmt(k.get("google.ctr")), qs or "no queries yet"))
+        pulled = str(k.get("google.taken_at") or "")[:10]
+        lines.append("**Google (28 days, pulled %s):** %s clicks / %s impressions, CTR %s — %s"
+                     % (pulled or "?", _fmt(k["google.clicks_28d"]), _fmt(k["google.impressions_28d"]), _fmt(k.get("google.ctr")), qs or "no queries yet"))
     lines += ["", "| Channel | Followers | 7-day views | Signal |", "|---|---|---|---|"]
     lines.append("| Facebook | %s | %s | shares/post %s · comments/post %s · clicks/post %s |"
                  % (_fmt(k.get("facebook.followers")), _fmt(k.get("facebook.views_7d")), _fmt(k.get("facebook.shares_per_post")),
