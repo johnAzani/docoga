@@ -1,5 +1,32 @@
 [
  {
+  "date": "2026-10-29",
+  "at": "2026-10-27T01:39:54+01:00",
+  "short_day": true,
+  "problems": [
+   "news_hook is not one of this week's NEWSDESK headlines — a story the papers did not print is not a story",
+   "price ₦0 is neither ours nor in a cited fact"
+  ]
+ },
+ {
+  "date": "2026-10-28",
+  "at": "2026-10-27T01:35:34+01:00",
+  "short_day": true,
+  "problems": [
+   "news_hook is not one of this week's NEWSDESK headlines — a story the papers did not print is not a story",
+   "short.title: 1-64 characters"
+  ]
+ },
+ {
+  "date": "2026-10-27",
+  "at": "2026-10-27T01:35:13+01:00",
+  "short_day": true,
+  "problems": [
+   "news_hook is not one of this week's NEWSDESK headlines — a story the papers did not print is not a story",
+   "short.title: 1-64 characters"
+  ]
+ },
+ {
   "date": "2026-10-28",
   "at": "2026-10-26T06:18:21+01:00",
   "short_day": true,
