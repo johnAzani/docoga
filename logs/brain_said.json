@@ -47,5 +47,19 @@
   "reader": "ngozi",
   "tool": "tenant-rights",
   "news_hook": null
+ },
+ {
+  "date": "2026-10-28",
+  "theme": "anambra-rent-receipt-paid-no-paper",
+  "headline": "You paid rent in Anambra and got no receipt?",
+  "post_type": "pidgin",
+  "hook_type": "STAT",
+  "state": "anambra",
+  "fact_ids": [],
+  "plate": "hand holding cash",
+  "short": true,
+  "reader": "ngozi",
+  "tool": "rent-receipt",
+  "news_hook": null
  }
 ]

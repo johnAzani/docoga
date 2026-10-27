@@ -1,0 +1,91 @@
+{
+ "version": 1,
+ "status": "approved",
+ "date": "2026-10-28",
+ "generated_at": "2026-10-27T06:27:58+01:00",
+ "theme": "anambra-rent-receipt-paid-no-paper",
+ "post_type": "pidgin",
+ "hook_type": "STAT",
+ "state": "anambra",
+ "claims": [],
+ "post": {
+  "headline": "You paid rent in Anambra and got no receipt?",
+  "lines": [
+   "Many tenants pay cash and get nothing in return.",
+   "But your rent receipt na your proof say you don pay.",
+   "No receipt fit make landlord say you never pay o.",
+   "Protect yourself, collect your paper always."
+  ],
+  "cta": "Send this to the friend who always pays cash without paper.",
+  "hashtags": [
+   "#DocOga",
+   "#RentReceipt",
+   "#AnambraTenants",
+   "#PaperBeatsMemory"
+  ]
+ },
+ "threads": {
+  "text": "You don pay your rent finish, but no receipt for hand? Na big risk you dey take o. Your receipt na your proof, e dey protect you from wahala. Without am, landlord fit claim say you never pay. Always ask for your receipt.\n\nDid your last receipt carry a date?",
+  "hashtags": [
+   "#DocOga",
+   "#RentReceipt"
+  ],
+  "topic": "Tenant Rights Nigeria",
+  "poll": null,
+  "evening": "No receipt after paying rent? That's double trouble. It's your only proof of payment. Make sure you get it."
+ },
+ "visual": {
+  "kicker": "Paid, no paper",
+  "layout": "stat",
+  "big": "NO RECEIPT",
+  "plate": "hand holding cash"
+ },
+ "short": {
+  "title": "Paid without a receipt? That's paying twice.",
+  "hook_sub": "Your proof of payment",
+  "hook_say": "You just paid your rent but got no receipt. Now what? You are at risk of paying twice. This is what the law says next and what you need to do today.",
+  "tips": [
+   {
+    "text": "No receipt, no proof",
+    "sub": "Your receipt shows you paid.",
+    "say": "Without a written receipt, you have no legal proof that you've paid your rent. This can lead to disputes with your landlord."
+   },
+   {
+    "text": "Demand it now",
+    "sub": "Ask for it immediately.",
+    "say": "If you paid cash or transfer, ask your landlord or agent for a receipt right away. Don't delay or you might forget."
+   },
+   {
+    "text": "Use DocOga",
+    "sub": "Make a free rent receipt.",
+    "say": "You can quickly make a standard rent receipt on your phone in two minutes using DocOga. It's free to start and gives you proof."
+   },
+   {
+    "text": "Keep copies safe",
+    "sub": "For your records.",
+    "say": "Always keep a copy of every receipt you get or make. It protects you in case of any future disagreement."
+   }
+  ],
+  "hook_text": "PAID WITHOUT A RECEIPT?\nTHAT'S PAYING TWICE.",
+  "series": {
+   "slug": "rent-receipt-law",
+   "name": "Rent receipt law",
+   "part": 3,
+   "total": 5,
+   "label": "Paid, no receipt. Now what"
+  }
+ },
+ "why": "Today's post addresses the common issue of paying rent without a receipt, a key pain point for Ngozi, leveraging the STAT hook and the ongoing Short series on rent receipts during the payday window.",
+ "tool": "rent-receipt",
+ "reader": "ngozi",
+ "news_hook": null,
+ "quiz": null,
+ "gates": [
+  "citation",
+  "no-claims",
+  "lint",
+  "repetition",
+  "shape"
+ ],
+ "note": ""
+}

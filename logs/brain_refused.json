@@ -1,6 +1,32 @@
 [
  {
   "date": "2026-10-29",
+  "at": "2026-10-27T06:32:19+01:00",
+  "short_day": true,
+  "problems": [
+   "headline is 79 characters; max 70",
+   "news_hook is not one of this week's NEWSDESK headlines — a story the papers did not print is not a story"
+  ]
+ },
+ {
+  "date": "2026-10-27",
+  "at": "2026-10-27T06:25:40+01:00",
+  "short_day": true,
+  "problems": [
+   "verifier: claim [lagos:receipts:1] not supported — The fact does not specify 'Lagos Tenancy Law 2011'.",
+   "verifier: claim [lagos:receipts:7] not supported — The fact does not specify 'Lagos Tenancy Law 2011'.",
+   "verifier: legal statement not on the shelf — 'S.5(1) of the Lagos Tenancy Law 2011 makes it a statutory duty for every landlord to issue a receipt.'",
+   "verifier: legal statement not on the shelf — \"If they don't, s.5(3) states they are liable to a ₦100,000 fine.\"",
+   "verifier: legal statement not on the shelf — 'In Lagos, every landlord must issue a rent receipt.'",
+   "verifier: legal statement not on the shelf — 'If they fail to, s.5(3) of the Tenancy Law 2011 says they face a ₦100,000 fine.'",
+   "verifier: legal statement not on the shelf — 'A valid rent receipt must clearly state the full names and addresses of both the landlord and the tenant. This is crucia'",
+   "verifier: legal statement not on the shelf — 'It must show the exact amount of rent received and the specific period the payment relates to. This avoids confusion, as'",
+   "verifier: legal statement not on the shelf — \"The receipt needs to include a clear description and location of the premises you are renting. This ensures there's no a\"",
+   "verifier: legal statement not on the shelf — \"Crucially, it must carry the date on which the rent was received and the landlord's signature to be fully legitimate in \""
+  ]
+ },
+ {
+  "date": "2026-10-29",
   "at": "2026-10-27T01:39:54+01:00",
   "short_day": true,
   "problems": [
