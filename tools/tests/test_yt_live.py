@@ -181,6 +181,9 @@ class FakeHttp:
             self.streams.append(s)
             return FakeResponse(200, s)
         if url.endswith("/liveBroadcasts") and method == "GET":
+            if "mine" in params and "broadcastStatus" in params:
+                return FakeResponse(400, {"error": {"code": 400, "message": "Incompatible parameters specified in the request: mine, broadcastStatus",
+                                                    "errors": [{"reason": "incompatibleParameters", "domain": "youtube.parameter"}]}})
             return FakeResponse(200, {"items": self.active if params.get("broadcastStatus") == "active" else self.upcoming})
         if url.endswith("/liveBroadcasts") and method == "POST":
             b = {"id": "bc-new", "snippet": json.loads(data)["snippet"], "status": {"lifeCycleStatus": "ready"},
@@ -194,8 +197,9 @@ class FakeHttp:
         return FakeResponse(404, {"error": "unscripted %s %s" % (method, url)})
 
 
-def existing_stream(sid="stream-1"):
+def existing_stream(sid="stream-1", pushing=False):
     return {"id": sid, "snippet": {"title": yt_live.STREAM_TITLE},
+            "status": {"streamStatus": "active" if pushing else "inactive"},
             "cdn": {"ingestionInfo": {"rtmpsIngestionAddress": "rtmps://a.rtmps.youtube.com/live2",
                                       "streamName": "old-key"}}}
 
@@ -214,21 +218,44 @@ class EnsureTests(unittest.TestCase):
         self.assertFalse(any(path == "liveBroadcasts/bind" for _, path, _ in http.calls))
 
     def test_someone_elses_live_video_is_not_mistaken_for_ours(self):
-        http = FakeHttp(streams=[existing_stream()],
+        http = FakeHttp(streams=[existing_stream(pushing=True)],
                         active=[{"id": "bc-other", "snippet": {"title": "Owner testing from phone"},
                                  "status": {"lifeCycleStatus": "live"}, "contentDetails": {}}])
         info = yt_live.ensure(http, log=lambda *_: None)
         self.assertEqual(info["broadcast_id"], "bc-new")
         self.assertTrue(info["created"])
 
-    def test_from_nothing_it_makes_the_stream_the_broadcast_and_binds_them(self):
+    def test_from_nothing_it_makes_the_key_and_waits_for_data_before_any_broadcast(self):
+        """26–27 Oct: with no machine pushing, a broadcast would sit public as 'waiting' for
+        days. The key is made so a host can be set up; the broadcast waits for data."""
         http = FakeHttp()
         info = yt_live.ensure(http, log=lambda *_: None)
-        self.assertTrue(info["created"] and info["created_stream"])
+        self.assertTrue(info["created_stream"] and info["waiting"])
+        self.assertFalse(info["created"])
         self.assertEqual(info["stream_id"], "stream-new")
+        self.assertEqual(info["stream_key"], "secret-key")
+        self.assertEqual(info["broadcast_id"], "")
+        self.assertFalse(any(path == "liveBroadcasts" and m == "POST" for m, path, _ in http.calls))
+
+    def test_once_data_arrives_it_makes_the_broadcast_binds_it_and_takes_it_live(self):
+        http = FakeHttp(streams=[existing_stream(pushing=True)])
+        info = yt_live.ensure(http, log=lambda *_: None)
+        self.assertTrue(info["created"] and not info["waiting"])
         bind = [p for _, path, p in http.calls if path == "liveBroadcasts/bind"]
-        self.assertEqual(bind[0]["streamId"], "stream-new")
+        self.assertEqual(bind[0]["streamId"], "stream-1")
+        trans = [p for _, path, p in http.calls if path == "liveBroadcasts/transition"]
+        self.assertEqual(trans[0]["broadcastStatus"], "live")
+        self.assertEqual(info["status"], "live")
         self.assertEqual(info["watch_url"], "https://www.youtube.com/watch?v=bc-new")
+
+    def test_broadcast_lookups_never_pair_mine_with_broadcast_status(self):
+        """The exact 400 every control run died of, 26–27 Oct 2026."""
+        http = FakeHttp(streams=[existing_stream(pushing=True)])
+        yt_live.ensure(http, log=lambda *_: None)
+        yt_live.end_all(http, log=lambda *_: None)
+        for _, path, params in http.calls:
+            if path == "liveBroadcasts":
+                self.assertFalse("mine" in params and "broadcastStatus" in params, params)
 
     def test_off_ends_only_our_broadcasts(self):
         http = FakeHttp(active=[{"id": "ours", "snippet": {"title": yt_live.TITLE}},
@@ -481,9 +508,18 @@ class HealthTests(unittest.TestCase):
         self.assertIn("inactive", text)
         self.assertFalse(yt_live.health(FakeHttp(), log=lambda *_: None)[0])
 
-    def test_the_owner_message_names_the_one_tap(self):
+    def test_the_owner_message_names_the_one_tap_and_no_particular_host(self):
         self.assertIn("Start", yt_live.OWNER_DM)
-        self.assertIn("Oracle", yt_live.OWNER_DM)
+        self.assertNotIn("Oracle", yt_live.OWNER_DM)       # the box can be any Ubuntu host now
+
+    def test_nobody_is_nagged_before_a_broadcast_has_ever_existed(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / "live.json"
+            self.assertFalse(yt_live.has_been_on_air(path))
+            path.write_text("[]")
+            self.assertFalse(yt_live.has_been_on_air(path))
+            yt_live.record({"broadcast_id": "bc-1", "watch_url": "u"}, path=path)
+            self.assertTrue(yt_live.has_been_on_air(path))
 
 
 class DeployTests(unittest.TestCase):
@@ -536,17 +572,17 @@ class WorkflowContractTests(unittest.TestCase):
     def test_the_control_run_prepares_keeps_and_checks(self):
         names = [s.get("name") for s in self.steps]
         for name in ("Read the library", "Prepare the loop (normalise what is new, bank the segments and loop.json)",
-                     "Keep the broadcast", "Check the air (DM the owner if the VM has gone quiet)"):
+                     "Keep the broadcast", "Check the air (DM the owner if the streaming machine has gone quiet)"):
             self.assertIn(name, names)
         self.assertIn("yt_live.py prepare", self.by_name["Prepare the loop (normalise what is new, bank the segments and loop.json)"]["run"])
-        self.assertIn("yt_live.py health", self.by_name["Check the air (DM the owner if the VM has gone quiet)"]["run"])
-        self.assertIn("TELEGRAM_BOT_TOKEN", str(self.by_name["Check the air (DM the owner if the VM has gone quiet)"]["env"]))
+        self.assertIn("yt_live.py health", self.by_name["Check the air (DM the owner if the streaming machine has gone quiet)"]["run"])
+        self.assertIn("TELEGRAM_BOT_TOKEN", str(self.by_name["Check the air (DM the owner if the streaming machine has gone quiet)"]["env"]))
 
     def test_the_kill_switch_ends_the_broadcast_and_gates_every_step(self):
         switch = self.by_name["Honour the kill switch"]
         self.assertIn("vars.DOCOGA_LIVE", str(switch["env"]))
         self.assertIn("yt_live.py off", switch["run"])
-        for name in ("Read the library", "Keep the broadcast", "Check the air (DM the owner if the VM has gone quiet)"):
+        for name in ("Read the library", "Keep the broadcast", "Check the air (DM the owner if the streaming machine has gone quiet)"):
             self.assertIn("steps.switch.outputs.on == 'yes'", str(self.by_name[name].get("if", "")), name)
 
     def test_the_stream_key_is_masked_and_the_ingest_file_deleted(self):

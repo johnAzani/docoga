@@ -1,4 +1,4 @@
-# DocOga Live — the always-on stream (Oracle VM = mouth, GitHub Actions = brain)
+# DocOga Live — the always-on stream (one small machine = mouth, GitHub Actions = brain)
 
 Owner, 26 Oct 2026, 4:20am: *"go — I want live stream to always be on for life, pulling in
 watch time, subscribers etc."* Same morning, after the research: *"I don't want to run it on
@@ -26,15 +26,32 @@ A 24/7 RTMP relay is the textbook case. So **no video is ever pushed from Action
 
 | Where | What | How often |
 |---|---|---|
-| **GitHub Actions** (`youtube_live.yml`) | `prepare` — read the library from the releases, normalise what is new to one 1080p30 profile (keyframe every 2 s), bank the segments and `loop.json` on the `live-library` release · `ensure` — keep one public broadcast alive (auto-start on, **auto-stop off**, DVR, bound to the one reusable stream key; first run creates it and sets the cover) · `health` — is data arriving? If not, Telegram the owner the one tap | 1:05am · 7:05am · 1:05pm · 7:05pm (the clock), minutes each |
+| **GitHub Actions** (`youtube_live.yml`) | `prepare` — read the library from the releases, normalise what is new to one 1080p30 profile (keyframe every 2 s), bank the segments and `loop.json` on the `live-library` release · `ensure` — keep the one reusable stream key; once data is arriving on it, keep one public broadcast alive (auto-start on, **auto-stop off**, DVR, bound to that key; the first run after data arrives creates it, binds it, takes it live and sets the cover — see `_broadcasts`: `broadcastStatus` is never paired with `mine`, the HTTP 400 that killed every control run 26–27 Oct) · `health` — is data arriving? If not, and a broadcast has ever existed, Telegram the owner the one tap (no nagging before any machine exists) | 1:05am · 7:05am · 1:05pm · 7:05pm (the clock), minutes each |
 | **Shorts lane** | after every published 7:00pm Short, bank the file as `short-<date>.mp4` on `live-library` | weekdays |
-| **Oracle Always Free VM** (`deploy/live/`) | `serve` — pull `loop.json` from the public release, fetch the segments it lacks, concatenate the reel, push it with `ffmpeg -re -stream_loop -1 -c copy` to `rtmps://a.rtmps.youtube.com/live2`; re-read the manifest every half hour, rebuild and restart the push when the loop changed, restart a dead push after 5 s | always |
+| **The host machine** (`deploy/live/`; Oracle Always Free when it can be had, else the cheapest paid box the fund allows) | `serve` — pull `loop.json` from the public release, fetch the segments it lacks, concatenate the reel, push it with `ffmpeg -re -stream_loop -1 -c copy` to `rtmps://a.rtmps.youtube.com/live2`; re-read the manifest every half hour, rebuild and restart the push when the loop changed, restart a dead push after 5 s | always |
 
 The VM never re-encodes, so Oracle's smallest free machine (VM.Standard.E2.1.Micro: 1/8 OCPU,
 1 GB, 50 Mbps out) carries a 4.6 Mbps stream with room to spare. Data: ~50 GB/day, ~1.5 TB a
 month, inside Oracle's 10 TB/month free egress.
 
-## The VM, exactly
+## Choosing the machine (researched 26–27 Oct 2026)
+
+Need: always on, ~1.5 TB/month out at 1080p30 (~260 GB even at 480p), no expiry. What fits:
+
+| Host | Cost | Traffic | Notes |
+|---|---|---|---|
+| Oracle Always Free (E2.1.Micro) | ₦0 | 10 TB/mo | the only free-for-life fit; signup gate rejected the owner 26 Oct |
+| Oracle Pay-As-You-Go, same tenancy | ₦0 inside the free limits | 10 TB/mo | no idle reclaim; needs a card that passes the same gate |
+| RackNerd annual KVM (2 TB plan) | ≈ $11–18 a year, fixed for life | 2 TB/mo | the cheapest paid ticket; same `install.sh` |
+| Hetzner CAX11/CX23 (EU) | ≈ €6/mo + €0.50 IPv4 | 20 TB/mo | boring and reliable; prices rose twice in 2026 |
+
+Ruled out, with the number that rules them out: Render (5 GB/mo), Koyeb (100 GB, closed to
+new free users), Back4App (60-minute containers), Fly (no free tier), GCP e2-micro (1 GB/mo
+free egress), the 24/7-restream SaaS tiers (24 h *per month* free), and Cloudflare Durable
+Objects on the Free plan (10 ms CPU per invocation — a socket can be held but 50 GB/day cannot
+be framed through it; the Paid plan could, at $5/mo, and would still be harder than a VM).
+
+## The machine, exactly (Oracle wording; any Ubuntu 24.04 box is the same from "Stream key" on)
 
 - **Account:** Oracle Cloud Free Tier (oracle.com/cloud/free). The signup gate rejects
   prepaid/virtual cards and many debit cards; a Visa/Mastercard with international payments

@@ -335,9 +335,22 @@ def _refusal(r, what):
                               action or "See the reason; the stream will be retried by the next run.")
 
 
+def _broadcasts(http, status):
+    """liveBroadcasts.list filtered by lifecycle. `broadcastStatus` is already scoped to the
+    signed-in channel; adding `mine=true` beside it is what YouTube answered with HTTP 400
+    "Incompatible parameters specified in the request: mine, broadcastStatus" (every control
+    run 26–27 Oct). One filter, never two."""
+    return _get(http, "liveBroadcasts", part="id,snippet,status,contentDetails",
+                broadcastStatus=status, maxResults=50).get("items", [])
+
+
 def ensure(http, now=None, log=print):
-    """The live broadcast and the key to feed it: reuse whatever is already live, else make
-    one and bind the reusable stream. Returns the dict the stream step reads."""
+    """The reusable stream (the key any host pushes to) always; the public broadcast only once
+    data is arriving on that key. A broadcast made before any machine streams would sit on the
+    channel as a public "waiting" placeholder for as long as the host takes — days, with no
+    host at all — so the first control run after the mouth starts is the one that makes it,
+    binds it and, when auto-start has not already fired, takes it live. Returns the dict the
+    workflow reads; `waiting` is True when there is a key but no broadcast yet."""
     streams = _get(http, "liveStreams", part="id,snippet,cdn,status", mine="true", maxResults=50).get("items", [])
     stream = next((s for s in streams if s.get("snippet", {}).get("title") == STREAM_TITLE), None)
     created_stream = False
@@ -350,38 +363,48 @@ def ensure(http, now=None, log=print):
     if not (url and key):
         raise yt_publish.Problem("forbidden", "noIngest", "the stream has no ingestion address/key",
                                  "Delete the stream in Studio → Manage streams and let the next run recreate it.")
+    data_arriving = ((stream.get("status") or {}).get("streamStatus") == "active")
 
-    live = _get(http, "liveBroadcasts", part="id,snippet,status,contentDetails", mine="true",
-                broadcastStatus="active", maxResults=50).get("items", [])
-    ours = [b for b in live if b.get("snippet", {}).get("title") == TITLE]
+    ours = [b for b in _broadcasts(http, "active") if b.get("snippet", {}).get("title") == TITLE]
     created = False
     if ours:
         bc = ours[0]
     else:
-        upcoming = _get(http, "liveBroadcasts", part="id,snippet,status,contentDetails", mine="true",
-                        broadcastStatus="upcoming", maxResults=50).get("items", [])
-        ours = [b for b in upcoming if b.get("snippet", {}).get("title") == TITLE]
+        ours = [b for b in _broadcasts(http, "upcoming") if b.get("snippet", {}).get("title") == TITLE]
         if ours:
             bc = ours[0]
+        elif not data_arriving:
+            log("key ready on stream %s; no data arriving yet, so no broadcast is made this run — "
+                "the first control run after the host starts pushing creates it" % stream["id"])
+            return {"broadcast_id": "", "stream_id": stream["id"], "ingest_url": url, "stream_key": key,
+                    "created": False, "created_stream": created_stream, "waiting": True,
+                    "watch_url": "", "status": ""}
         else:
             bc = _post(http, "liveBroadcasts", broadcast_body(now), part="id,snippet,status,contentDetails")
             created = True
     bound = (bc.get("contentDetails") or {}).get("boundStreamId")
     if bound != stream["id"]:
         bc = _post(http, "liveBroadcasts/bind", None, part="id,contentDetails", id=bc["id"], streamId=stream["id"])
+    status = (bc.get("status") or {}).get("lifeCycleStatus", "")
+    if data_arriving and status in ("ready", "created"):
+        # Auto-start fires when the bound stream *becomes* active; it was active already, so
+        # take the broadcast live ourselves (monitor stream is off, ready → live is allowed).
+        try:
+            bc = _post(http, "liveBroadcasts/transition", None, part="id,status", id=bc["id"], broadcastStatus="live")
+            status = (bc.get("status") or {}).get("lifeCycleStatus", status)
+        except yt_publish.Problem as exc:
+            log("transition to live refused (%s); auto-start will take it: %s" % (exc.reason, exc.what))
     out = {"broadcast_id": bc["id"], "stream_id": stream["id"], "ingest_url": url, "stream_key": key,
-           "created": created, "created_stream": created_stream,
-           "watch_url": "https://www.youtube.com/watch?v=%s" % bc["id"],
-           "status": (bc.get("status") or {}).get("lifeCycleStatus", "")}
+           "created": created, "created_stream": created_stream, "waiting": False,
+           "watch_url": "https://www.youtube.com/watch?v=%s" % bc["id"], "status": status}
     log("broadcast %s (%s%s) on stream %s" % (bc["id"], out["status"] or "?", ", new" if created else "", stream["id"]))
     return out
 
 
 def end_all(http, log=print):
     """`off`: transition every active broadcast of ours to complete. Returns the ids ended."""
-    live = _get(http, "liveBroadcasts", part="id,snippet,status", mine="true",
-                broadcastStatus="active", maxResults=50).get("items", [])
     ended = []
+    live = _broadcasts(http, "active")
     for b in live:
         if b.get("snippet", {}).get("title") != TITLE:
             continue
@@ -427,9 +450,21 @@ def health(http, log=print):
     return status == "active", text
 
 
-OWNER_DM = ("DocOga Live is OFF AIR: YouTube has had no data from the Oracle VM. On your phone: "
-            "Oracle Cloud app/console → Compute → Instances → docoga-live → if it says STOPPED tap Start; "
+OWNER_DM = ("DocOga Live is OFF AIR: YouTube has had no data from the streaming machine. On your phone: "
+            "open the host's console → the docoga-live machine → if it says STOPPED tap Start; "
             "if RUNNING, it restarts itself within a minute — tell me if this message repeats.")
+
+
+def has_been_on_air(path=None):
+    """True once a broadcast of ours was ever created (the ledger has a row) — before that
+    there is no machine to be quiet, and the owner is not nagged four times a day about it."""
+    path = Path(path or LEDGER)
+    if not path.is_file():
+        return False
+    try:
+        return bool(json.loads(path.read_text(encoding="utf-8")))
+    except ValueError:
+        return False
 
 
 # ------------------------------------------------------------------ serve (the VM)
@@ -612,11 +647,14 @@ def main(argv=None, http=None):
                     print(("cover: %s" % note) if ok else "::warning title=Live cover not set::%s" % note)
             print("LIVE_URL=%s" % info["watch_url"])
             print("LIVE_CREATED=%s" % ("yes" if info.get("created") else "no"))
+            print("LIVE_WAITING=%s" % ("yes" if info.get("waiting") else "no"))
             return 0
         if a.cmd == "health":
             ok, text = health(http)
             print("LIVE_HEALTH=%s" % ("on-air" if ok else "off-air"))
-            if not ok and a.dm:
+            if not ok and a.dm and not has_been_on_air():
+                print("owner DM skipped: no broadcast has ever been made — there is no machine to be quiet yet")
+            elif not ok and a.dm:
                 import owner_dm
                 token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
                 rec = owner_dm.load_record() or {}

@@ -15,8 +15,9 @@ name: DocOga Live
 #      segments and loop.json (the running order) on the live-library release;
 #   2. ensure  — keep one public broadcast alive (auto-start on, auto-stop OFF) bound to the one
 #      reusable stream key; the first run creates it and sets the cover;
-#   3. health  — is data arriving from the VM? If not, Telegram the owner the one tap to make.
-# The Oracle Always Free VM (deploy/live/) pulls loop.json and streams it with ffmpeg -c copy.
+#   3. health  — is data arriving from the streaming machine? If not (and it once was), Telegram the owner.
+# Any Ubuntu box (deploy/live/ — Oracle, RackNerd, Hetzner, a laptop) pulls loop.json and streams it with ffmpeg -c copy.
+# The broadcast is only created once data arrives on the key, so no public 'waiting' placeholder sits on the channel.
 # Kill switch: repository variable DOCOGA_LIVE=off ends the broadcast and stops the banking.
 
 on:
@@ -30,7 +31,7 @@ on:
   workflow_dispatch:
     inputs:
       skip_health:
-        description: 'Do not DM the owner about an off-air stream this run (e.g. the VM is being set up)'
+        description: 'Do not DM the owner about an off-air stream this run (e.g. the machine is being set up)'
         required: false
         default: false
         type: boolean
@@ -94,7 +95,7 @@ jobs:
           set -o pipefail
           gh release view "$LIVE_RELEASE" >/dev/null 2>&1 || \
             gh release create "$LIVE_RELEASE" --prerelease --title "DocOga Live library" \
-              --notes "Banked Shorts (short-<date>.mp4), normalised loop segments (norm-*.mp4) and loop.json for the always-on stream. Managed by youtube_live.yml; streamed by the Oracle VM (deploy/live)."
+              --notes "Banked Shorts (short-<date>.mp4), normalised loop segments (norm-*.mp4) and loop.json for the always-on stream. Managed by youtube_live.yml; streamed by the host machine (deploy/live)."
           # One page of 100 releases is the whole shelf for years (one release per Deep-Dive).
           gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" \
             | python3 -c 'import json,sys; rels=json.load(sys.stdin); json.dump([{"release": r["tag_name"], "name": a["name"], "size": a["size"]} for r in rels for a in r.get("assets", [])], open("/tmp/assets.json", "w"))'
@@ -140,7 +141,7 @@ jobs:
           git pull --rebase --autostash origin "$BRANCH" >/dev/null 2>&1 || true
           git push origin "HEAD:$BRANCH" || echo "::warning title=Ledger not pushed::the broadcast exists; its row did not reach $BRANCH"
 
-      - name: Check the air (DM the owner if the VM has gone quiet)
+      - name: Check the air (DM the owner if the streaming machine has gone quiet)
         if: steps.switch.outputs.on == 'yes'
         id: health
         continue-on-error: true
@@ -168,7 +169,7 @@ jobs:
             echo "- switch: ${ON:-?}"
             echo "- broadcast: ${URL:-(none)}"
             echo "- loop: ${SEGMENTS:-?} segment(s) in loop.json"
-            echo "- air: ${STATE:-?} (the Oracle VM streams; this lane only checks)"
+            echo "- air: ${STATE:-?} (a separate machine streams; this lane only checks)"
             echo
             echo '```'
             tail -n 20 /tmp/prepare.log 2>/dev/null || echo "(no output)"
@@ -184,7 +185,7 @@ jobs:
           set -uo pipefail
           TITLE="DocOga Live: a control run failed"
           TAIL=$(tail -n 30 /tmp/ensure.log 2>/dev/null || tail -n 30 /tmp/prepare.log 2>/dev/null || echo "(no output)")
-          BODY=$(printf 'Run: %s\n\nThe VM keeps streaming the last loop it fetched; the next control run tries again. Last lines:\n\n```\n%s\n```\n' "$RUN_URL" "$TAIL")
+          BODY=$(printf 'Run: %s\n\nThe streaming machine, if any, keeps pushing the last loop it fetched; the next control run tries again. Last lines:\n\n```\n%s\n```\n' "$RUN_URL" "$TAIL")
           EXISTING=$(gh issue list --state open --search "\"$TITLE\" in:title" --json number -q '.[0].number' 2>/dev/null || true)
           if [ -n "$EXISTING" ]; then
             gh issue comment "$EXISTING" --body "$BODY" || true

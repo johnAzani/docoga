@@ -253,8 +253,11 @@ class DailyShortOutputTests(unittest.TestCase):
         # The lane renders through the MotionStudio bridge (tools/shorts_reel.py), never
         # the retired card renderer in this module — so that is what gets mocked. A real
         # render is ~3 minutes of CPU and belongs in the lane, not in a unit test.
+        # DOCOGA_FRESH=off: these tests pin the output contract of a *rendered* day. With the
+        # real ledgers, the whole rotation ages inside FRESH_DAYS by late October and the lane
+        # rightly pauses (no GEMINI key here) — a different contract, pinned in test_fresh.
         with patch.object(daily.shorts_reel, "render_topic", return_value=self.video):
-            with patch.dict(os.environ, {"GITHUB_OUTPUT": str(self.output_file)}):
+            with patch.dict(os.environ, {"GITHUB_OUTPUT": str(self.output_file), "DOCOGA_FRESH": "off"}):
                 daily.main()
         return parse_github_output(self.output_file.read_text(encoding="utf-8"))
 
