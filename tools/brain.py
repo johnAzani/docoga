@@ -302,7 +302,7 @@ def search_block(rows):
 def prompt_for(ctx, problems=None):
     recent_lines = ["- %s | %s | %s" % (e.get("date"), e.get("theme"), e.get("headline"))
                     for e in sorted(ctx["recent"], key=lambda e: e.get("date", ""))[-60:]]
-    shelf = "\n".join("%s | %s | %s" % (f["id"], f["cite"] or "(no section)", f["text"]) for f in ctx["facts"])
+    shelf = "\n".join("%s | %s %s | %s" % (f["id"], f.get("statute") or "", f["cite"] or "(no section)", f["text"]) for f in ctx["facts"])
     short_rule = ("A Short is rendered on this day: include `short` exactly as specified."
                   if ctx["short_day"] else "No Short is rendered on this day: set `short` to null.")
     series_block = series_week.brief(ctx.get("series"))
@@ -394,11 +394,15 @@ THE SHELF (a period, a fine, a limit), never an invented share of tenants.{retry
 
 VERIFY_SYSTEM = """You are a careful Nigerian lawyer checking a social media post against a list of
 verified statutory facts. You are strict: a claim is supported only if the fact says the same thing
-for the same state, with the same number, period or amount. Answer with one JSON object only."""
+for the same state, with the same number, period or amount. The statute name and section shown
+with a fact are part of that fact: naming them, or restating the fact in plainer words with the
+same number, period or amount, is supported. Answer with one JSON object only."""
 
 
 def verify_prompt(pack, facts_by_id):
-    facts = "\n".join("%s | %s | %s" % (f["id"], f["cite"], f["text"]) for f in facts_by_id.values())
+    # statute name on every line: the verifier was refusing claims that named "the Lagos Tenancy
+    # Law 2011" because the fact line showed only "s.5" (25–27 Oct 2026, six refusals, no Short)
+    facts = "\n".join("%s | %s %s | %s" % (f["id"], f.get("statute") or "", f["cite"], f["text"]) for f in facts_by_id.values())
     claims = "\n".join("- [%s] %s" % (c.get("fact_id"), c.get("text")) for c in pack.get("claims") or [])
     text = drafts.post_text(pack) + "\n\nTHREADS VERSION:\n" + drafts.threads_text(pack)
     short = pack.get("short")

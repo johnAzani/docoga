@@ -54,17 +54,33 @@ def _clip(text):
     return (cut if len(cut) > 120 else text[:MAX_TEXT]).rstrip(".") + "."
 
 
-def _facts_from(value, slug, key, cite, out):
+def _stem(text):
+    """When a topic's text ends by opening a list ("s.5(2): the receipt must state —"), that last
+    clause is the stem every list item below it must carry. A bare fragment such as "the amount
+    of rent paid" is not a fact a verifier can check: on 25–27 Oct 2026 the editor's Short on the
+    receipt law was refused six times because the shelf showed the Lagos s.5(2) contents as five
+    headless fragments and the verifier (rightly) could not find "the receipt must state" in any
+    of them. Returns "" when the text does not open a list."""
+    t = plain(text)
+    if not t or t[-1] not in "—:–-":
+        return ""
+    last = re.split(r"(?<=[.!?])\s+", t)[-1]
+    return last.rstrip("—:–- ").strip()
+
+
+def _facts_from(value, slug, key, cite, out, stem=""):
     """Walk one topic of a state's dict and append facts to `out`."""
     if isinstance(value, dict):
         own_cite = value.get("cite") or cite
         text = value.get("text")
         if text:
             out.append(dict(key=key, cite=plain(own_cite or ""), text=_clip(text)))
+        child_stem = _stem(text) if text else ""
         for sub, item in value.items():
             if sub in ("cite", "text") or sub in SKIP_KEYS:
                 continue
-            _facts_from(item, slug, "%s.%s" % (key, sub), own_cite, out)
+            _facts_from(item, slug, "%s.%s" % (key, sub), own_cite, out,
+                        stem=child_stem if isinstance(item, list) else "")
     elif isinstance(value, list):
         if value and all(isinstance(row, (list, tuple)) for row in value):
             for row in value:
@@ -76,6 +92,8 @@ def _facts_from(value, slug, key, cite, out):
             for item in value:
                 if isinstance(item, str):
                     text = plain(item)
+                    if stem and text[:1].islower():
+                        text = "%s %s" % (stem, text.rstrip(".;,")) + "."
                     m = CITE_IN_TEXT.match(text)
                     out.append(dict(key=key, cite=plain(m.group(1)) if m else plain(cite or ""),
                                     text=_clip(text)))
@@ -131,7 +149,7 @@ def shelf_text(slug, limit=None):
     """The prompt-ready shelf for one state: `id | cite | text` lines."""
     lines = []
     for fact in facts_for(slug)[: limit or None]:
-        lines.append("%s | %s | %s" % (fact["id"], fact["cite"] or "(no section)", fact["text"]))
+        lines.append("%s | %s %s | %s" % (fact["id"], fact["statute"], fact["cite"] or "(no section)", fact["text"]))
     return "\n".join(lines)
 
 
