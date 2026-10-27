@@ -99,6 +99,10 @@ The mint, three taps (**DONE 17 Oct 2026 10:06 WAT — 7 of 7, `SCOPES_GOOGLE=co
 Every Google-facing lane (`yt_publish.authorize`, used by Shorts, Deep-Dive upload, manage,
 captions, stats, Search Console; and the Monday scope audit) reads the vault first and the
 `YT_REFRESH_TOKEN` secret only when there is no box. The secret is never edited again.
+The Monday permissions audit (`tools/token_scopes.py audit`, in the scorecard) grades the **same**
+box, opened through `token_vault` directly, and names which token it read on its line. (27 Oct 2026:
+it had been grading the bootstrap secret because `yt_publish` imports `requests`, which the
+scorecard job never installs — a false "Google is short 6 permissions" for weeks.)
 Machine lines: `GOOGLE_CONSENT=ok|partial|refused|failed`, `GOOGLE_SCOPES_MISSING=`.
 
 ## 5 · LinkedIn → secret `LINKEDIN_ACCESS_TOKEN` (+ `LINKEDIN_CLIENT_ID`, `LINKEDIN_CLIENT_SECRET` so the audit can read it)

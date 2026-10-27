@@ -165,3 +165,52 @@ class WorkflowTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class GoogleReadsTheVaultWithoutRequests(unittest.TestCase):
+    """27 Oct 2026: the Monday scorecard said Google was 'short 6 permissions' while every YouTube
+    lane and YouTube Analytics worked. The audit had gone through yt_publish (which imports
+    `requests`); in a job that installed only `cryptography` the import failed quietly and the
+    audit graded the bootstrap YT_REFRESH_TOKEN secret instead of the vault. The reader now opens
+    the box through token_vault directly and names which token it graded."""
+
+    def test_the_vault_token_wins_and_is_named_even_if_yt_publish_cannot_import(self):
+        import importlib
+        import sys
+        from unittest import mock
+        seen = {}
+
+        def fake_http(method, url, params=None, data=None, headers=None, timeout=30):
+            if url.endswith("/token"):
+                seen["refresh"] = data["refresh_token"]
+                return 200, {"access_token": "acc"}
+            return 200, {"scope": " ".join(ts.WANT["google"])}
+
+        tv = importlib.import_module("token_vault")
+        with mock.patch.dict(sys.modules, {"yt_publish": None}), \
+             mock.patch.object(tv, "_vault_path", return_value=mock.Mock(is_file=lambda: True)), \
+             mock.patch.object(tv, "open_box", return_value=("VAULT-REFRESH", {"name": "YT_REFRESH_TOKEN"})):
+            rows = ts.audit({"SOCIAL_TOKEN_KEY": "k", "YT_REFRESH_TOKEN": "OLD-SECRET", "YT_CLIENT_ID": "c",
+                             "YT_CLIENT_SECRET": "s"}, fake_http, only="google")
+        self.assertEqual(seen["refresh"], "VAULT-REFRESH")
+        self.assertEqual(rows[0]["state"], "complete")
+        self.assertIn("vault", rows[0]["how"])
+        self.assertNotIn("import yt_publish", open(ts.__file__, encoding="utf-8").read().split("def _vault_refresh_token")[1])
+
+    def test_without_a_vault_the_secret_is_graded_and_the_summary_says_so(self):
+        from unittest import mock
+        import importlib
+        tv = importlib.import_module("token_vault")
+
+        def fake_http(method, url, params=None, data=None, headers=None, timeout=30):
+            if url.endswith("/token"):
+                return 200, {"access_token": "acc"}
+            return 200, {"scope": "https://www.googleapis.com/auth/youtube.force-ssl"}
+
+        with mock.patch.object(tv, "_vault_path", return_value=mock.Mock(is_file=lambda: False)):
+            rows = ts.audit({"SOCIAL_TOKEN_KEY": "k", "YT_REFRESH_TOKEN": "OLD-SECRET", "YT_CLIENT_ID": "c",
+                             "YT_CLIENT_SECRET": "s"}, fake_http, only="google")
+        self.assertEqual(rows[0]["state"], "missing")
+        self.assertIn("YT_REFRESH_TOKEN secret", rows[0]["how"])
+        md = ts.markdown(rows)
+        self.assertIn("read via tokeninfo on the YT_REFRESH_TOKEN secret", md)

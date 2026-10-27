@@ -218,12 +218,30 @@ def read_threads(env, http=_http):
     return None, "unreadable"
 
 
-def read_google(env, http=_http):
+def _vault_refresh_token(env):
+    """The refresh token the lanes actually use — logs/yt_refresh_token.box opened with
+    SOCIAL_TOKEN_KEY — read through token_vault directly. It used to go through
+    yt_publish.vault_refresh_token, and yt_publish imports `requests` at the top: in a job
+    that installed only `cryptography` (the Monday scorecard) that import failed quietly,
+    the audit fell back to the bootstrap YT_REFRESH_TOKEN secret (the old one-scope token)
+    and told the owner for weeks that Google was "short 6 permissions" while every lane
+    was fine (27 Oct 2026). Returns "" when there is no key or no box."""
+    if not (env.get("SOCIAL_TOKEN_KEY") or os.environ.get("SOCIAL_TOKEN_KEY")):
+        return ""
     try:
-        import yt_publish
-        refresh = yt_publish.vault_refresh_token(env) or _secret(env, "YT_REFRESH_TOKEN")
-    except ImportError:
-        refresh = _secret(env, "YT_REFRESH_TOKEN")
+        import token_vault
+        if not token_vault._vault_path("YT_REFRESH_TOKEN").is_file():
+            return ""
+        plaintext, _payload = token_vault.open_box("YT_REFRESH_TOKEN")
+        return (plaintext or "").strip()
+    except Exception:  # noqa: BLE001 — a damaged box falls back to the secret, named as such
+        return ""
+
+
+def read_google(env, http=_http):
+    refresh, source = _vault_refresh_token(env), "the vault (logs/yt_refresh_token.box)"
+    if not refresh:
+        refresh, source = _secret(env, "YT_REFRESH_TOKEN"), "the YT_REFRESH_TOKEN secret (bootstrap — not the vault)"
     cid, csec = env.get("YT_CLIENT_ID", ""), env.get("YT_CLIENT_SECRET", "")
     if not (refresh and cid and csec):
         return None, "no-token"
@@ -235,7 +253,7 @@ def read_google(env, http=_http):
     st, info = http("GET", "https://oauth2.googleapis.com/tokeninfo", {"access_token": access})
     if st != 200 or not info.get("scope"):
         return None, "unreadable"
-    return str(info["scope"]).split(), "tokeninfo"
+    return str(info["scope"]).split(), "tokeninfo on " + source
 
 
 def read_linkedin(env, http=_http):
@@ -300,8 +318,8 @@ def markdown(rows):
             lines.append("- ✅ **%s**: every permission on the list (%d, read via %s)" % (name, len(WANT[r["token"]]), r.get("how")))
         elif r["state"] == "missing":
             short = [s.rsplit("/", 1)[-1] for s in r["missing"]]
-            lines.append("- ⚠️ **%s** is short %d permission(s): `%s` — one mint with the full list in docs/TOKENS.md ends this for good"
-                         % (name, len(r["missing"]), "`, `".join(short)))
+            lines.append("- ⚠️ **%s** is short %d permission(s): `%s` (read via %s) — one mint with the full list in docs/TOKENS.md ends this for good"
+                         % (name, len(r["missing"]), "`, `".join(short), r.get("how")))
             for s in r["missing"]:
                 if s in USED_BY:
                     lines.append("  - `%s` → %s" % (s.rsplit("/", 1)[-1], USED_BY[s]))
