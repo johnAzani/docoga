@@ -1,0 +1,58 @@
+# Issue tidy — the automation closes its own alerts once the lane has healed.
+#
+# The nightly heartbeat (automation-heartbeat.yml, 9:00pm Lagos) runs the same tool every day.
+# This workflow exists for the moment the tool itself changes: it runs once on the push that
+# lands it (and on the owner's button), so a fix to the rule takes effect at once instead of
+# waiting for the night. No cron here on purpose — one clock for the lane, in the heartbeat.
+#
+# Owner, 27 Oct 2026: "Close them yourself." The agent's token cannot write issues; this one can.
+name: Issue tidy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - tools/issue_tidy.py
+      - .github/workflows/issue_tidy.yml
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Say what would close; write nothing"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  actions: read     # which workflow an alert points at, and whether it has succeeded since
+  issues: write     # close the alert with a comment that names the healing run
+
+concurrency:
+  group: issue-tidy
+  cancel-in-progress: true
+
+jobs:
+  tidy:
+    name: Close the alerts whose lane has healed
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Tidy
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          if [ "${DRY_RUN:-false}" = "true" ]; then
+            python3 tools/issue_tidy.py --dry-run 2>&1 | tee /tmp/issue_tidy.log
+          else
+            python3 tools/issue_tidy.py 2>&1 | tee /tmp/issue_tidy.log
+          fi
+          { echo "### Alerts tidied"; grep '^ISSUE_TIDY' /tmp/issue_tidy.log | sed 's/^/- /'; } >> "$GITHUB_STEP_SUMMARY" || true

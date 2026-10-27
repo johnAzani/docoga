@@ -122,6 +122,24 @@ jobs:
         if: always()
         run: cat /tmp/heartbeat.md >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
 
+      # The lanes open their own alert issues when they fail; nothing closed them, so the owner
+      # was tidying up after machines (27 Oct 2026: "Close them yourself"). An alert closes when
+      # its workflow has completed a successful run since — the failure is over, and a new one
+      # opens a new issue. The heartbeat's own issue (below) and the scorecard are not touched.
+      - name: Close the alerts whose lane has healed
+        if: always()
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          if [ "${DRY_RUN:-false}" = "true" ]; then
+            python3 tools/issue_tidy.py --dry-run 2>&1 | tee /tmp/issue_tidy.log
+          else
+            python3 tools/issue_tidy.py 2>&1 | tee /tmp/issue_tidy.log
+          fi
+          { echo; echo "### Alerts tidied"; grep '^ISSUE_TIDY' /tmp/issue_tidy.log | sed 's/^/- /'; } >> "$GITHUB_STEP_SUMMARY" || true
+
       # The colour rule, in one place: new signature ⇒ red + a fresh issue; same
       # signature ⇒ comment and stay green; healthy ⇒ close the tracked issue.
       - name: File, update or close the visible issue
