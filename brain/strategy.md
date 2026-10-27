@@ -88,6 +88,16 @@ can be corrected from evidence rather than articles.
 - **Payday rhythm: 25th to month-end** — the pass is bought when there is
   money; promo and "make it today" posts land in that window, not on the 12th.
 - **November–December**: "pack out before Christmas", end-of-year notices.
+- **Rent-relief season: December → 31 March (every year from 2026).** Nigeria Tax Act
+  2025 s.30(2)(a)(vi): tenants deduct 20% of rent paid, max ₦500,000, *only* with a
+  rent receipt in their name, a tenancy agreement and the landlord's details; employers
+  apply it through payroll on receipt (annual return 31 Jan), individuals file by 31 Mar.
+  Payroll desks ask for evidence from December. Posts: "the ₦500,000 you are leaving on
+  the table", "what HR will ask you for", "landlord TIN on the receipt", joint tenants,
+  rent that straddles two years. Deep link: `rent-relief-nigeria.html` (calculator +
+  free declaration letter), then `/#receipt`. Facts and sources: docs/RENT_RELIEF.md.
+  Until the shelf carries a federal tax entry, a post states the two numbers (20%,
+  ₦500,000) and the section exactly as written there, nothing more.
 - **Rent-increase anger** is the standing national mood (Lagos rents +25–40%
   in H1 2026; renters spending 50–70% of income): posts about what a landlord
   may and may not demand are the most forwarded genre.

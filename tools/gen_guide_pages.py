@@ -28,7 +28,9 @@ unverified as general practice + "confirm with a lawyer".
   * Rent receipt: on payment of rent the landlord must issue a receipt stating
     the date, names and addresses of landlord and tenant, description and
     location of the premises, amount paid and period covered; failure attracts
-    a ₦10,000 fine payable to the court. A separate receipt is required for a
+    a ₦100,000 fine on conviction (s.5(3) — gazetted text, Lagos Ministry of
+    Justice PDF; the ₦10,000 figure that circulates online is from a 2011
+    newspaper summary of the draft). A separate receipt is required for a
     security deposit / services / service charge, and the tenant is entitled to
     a written account at least every 6 months of how the money was spent
     (text of the Law as reproduced by Nigeria Property Centre + cuab appraisal).
@@ -186,9 +188,9 @@ PAGES["tenancy-agreement-nigeria.html"] = dict(
 
 # 2 ── notice to quit: how many months ------------------------------------------
 PAGES["notice-to-quit-nigeria.html"] = dict(
-    title="Notice to Quit in Nigeria: How Many Months? (2026)",
-    h1="Notice to quit in Nigeria — how many months, and what makes it valid",
-    desc="How much notice a Nigerian landlord must give: 1 week, 1 month, 3 months or 6 months — plus the 7-day notice of intention to recover possession. Free generator, 2 minutes.",
+    title="Quit Notice in Nigeria: Free Letter Template + How Many Months (2026)",
+    h1="Quit notice in Nigeria — the free letter, how many months, and what makes it valid",
+    desc="Write a valid quit notice (notice to quit) letter free in 2 minutes — print, PDF or WhatsApp. How many months the law requires: 1 week, 1 month, 3 months or 6 months, plus the 7-day notice.",
     lead="A notice to quit is the formal letter that starts a lawful end to a tenancy. Get the period "
          "wrong, or serve it on the wrong person, and the court will throw the case out — months "
          "wasted. Here is how many months each tenancy type actually requires in Nigeria, and a "
@@ -335,7 +337,7 @@ PAGES["caution-fee-nigeria.html"] = dict(
 PAGES["rent-receipt-format-nigeria.html"] = dict(
     title="Rent Receipt Format in Nigeria: How to Write One (2026)",
     h1="Rent receipt format in Nigeria — the five things the law requires",
-    desc="The correct Nigerian rent receipt format: the five details Lagos law requires on every receipt, the ₦10,000 fine for refusing one, and a free generator that prints or saves as PDF.",
+    desc="The correct Nigerian rent receipt format: the five details Lagos law requires on every receipt, the ₦100,000 fine for refusing one, and a free generator that prints or saves as PDF.",
     lead="Nigerian rent is paid in advance, often a whole year in one transfer. That makes the receipt "
          "the single most important document a tenant holds — it is the proof of payment in any "
          "dispute, and the landlord's clean record too. In Lagos it is not optional: a landlord who "
@@ -352,7 +354,7 @@ PAGES["rent-receipt-format-nigeria.html"] = dict(
             "altered;",
             "<b>the period the payment covers</b> (for example, one year from 1 October 2026).",
          ]) + "<p class=\"law\">A landlord who fails to issue a rent payment receipt is liable on "
-              "conviction to a fine of <b>₦10,000</b> payable to the court.</p>"),
+              "conviction to a fine of <b>₦100,000</b> (s.5(3)).</p>"),
         ("A receipt that holds up looks like this",
          '<pre class="sample">RENT RECEIPT — No. 0142\n\nDate received:   1 October 2026\nReceived from:   Chinedu Okafor, 12 Bode Thomas St, Surulere, Lagos\nOf:              Landlord — Mrs A. Bello, 4 Adeola St, Ikeja, Lagos\nThe sum of:      One Million Five Hundred Thousand Naira only (₦1,500,000)\nBeing:           Rent for the self-contained apartment at Flat 2, 12 Bode\n                 Thomas Street, Surulere, Lagos\nPeriod covered:  1 October 2026 to 30 September 2027 (one year)\nPaid by:         Bank transfer — ref 90827364\n\nSigned:  ______________________   (landlord or authorised agent)\n         Mrs A. Bello</pre>'),
         ("Other money needs its own receipt", ul([
@@ -377,7 +379,7 @@ PAGES["rent-receipt-format-nigeria.html"] = dict(
     faq=[
         ("Is my landlord obliged to give me a receipt?",
          "In Lagos, yes — the Tenancy Law 2011 requires a rent payment receipt on payment of rent, and "
-         "a landlord who refuses is liable to a ₦10,000 fine. Even where a state's law is silent, a "
+         "a landlord who refuses is liable on conviction to a ₦100,000 fine (s.5(3)). Even where a state's law is silent, a "
          "landlord who will not receipt a payment is a red flag no tenant should accept."),
         ("Can a rent receipt be handwritten?",
          "Yes — what matters is the content and the signature, not the printing. A clean printed "
@@ -421,7 +423,7 @@ PAGES["tenant-rights-nigeria.html"] = dict(
             "changing locks, or wilful damage a criminal offence — fine up to ₦250,000 or up to six "
             "months' imprisonment.",
             "<b>3. A receipt for every payment.</b> Rent, deposit and service charge each get their "
-            "own receipt; refusing a rent receipt carries a ₦10,000 fine in Lagos.",
+            "own receipt; refusing a rent receipt carries a ₦100,000 fine in Lagos (s.5(3)).",
             "<b>4. Quiet enjoyment.</b> The landlord must not terminate or restrict a common facility "
             "or service for the premises, and must not seize your property or interfere with your "
             "access to it (s.7).",
@@ -672,6 +674,180 @@ PAGES["invoice-format-nigeria.html"] = dict(
 )
 
 # ------------------------------------------------------------------ rendering
+WIDGET_RENT_RELIEF = r'''<style>
+.calc{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.calc label{display:block;font-size:13px;font-weight:700;color:#37455E;margin-bottom:4px}
+.calc input,.calc select{width:100%;padding:11px 12px;border:1px solid #C6D2E6;border-radius:10px;font-size:16px;font-family:inherit;color:#141F33;background:#fff}
+.calc .full{grid-column:1/-1}
+.result{background:#0B1B3F;color:#fff;border-radius:12px;padding:16px 18px;margin-top:12px}
+.result b{font-size:24px;display:block;margin:2px 0 4px}
+.result small{color:#C9D4EA;font-size:12.5px}
+.letter{background:#fff;border:1px solid #DCE4F0;border-radius:10px;padding:22px 24px;margin-top:12px;font-size:14px;line-height:1.7;color:#111}
+.letter h3{font-size:15px;text-transform:uppercase;letter-spacing:.04em;margin:0 0 10px}
+.letter table{font-size:13px}
+.letter .sig{margin-top:22px}
+.letter .foot{margin-top:16px;font-size:11px;color:#555;border-top:1px solid #ddd;padding-top:6px}
+.btnrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.btn2{display:inline-block;background:#0040E0;color:#fff;font-weight:800;border:0;border-radius:10px;padding:12px 18px;font-size:15px;cursor:pointer;text-decoration:none}
+.btn2.alt{background:#E8EEFB;color:#0040E0}
+@media (max-width:560px){.calc{grid-template-columns:1fr}}
+@media print{.stickycta,.noprint,.brand,.lead,h1,.box:not(.printme),footer{display:none}.letter{border:0;padding:0}.wrap{padding:0}body{background:#fff}}
+</style>
+<div class="box noprint" id="calc">
+<h2>Rent relief calculator (NTA 2025, s.30)</h2>
+<div class="calc">
+<div><label for="rr_rent">Annual rent you paid (₦)</label><input id="rr_rent" type="number" inputmode="numeric" min="0" placeholder="e.g. 1500000"></div>
+<div><label for="rr_months">Months of that rent falling in this tax year</label><select id="rr_months"></select></div>
+<div class="full"><label for="rr_income">Your annual gross income (₦, optional — for the tax-saved estimate)</label><input id="rr_income" type="number" inputmode="numeric" min="0" placeholder="e.g. 6000000"></div>
+</div>
+<div class="result" id="rr_out"><small>Enter your rent to see the deduction.</small></div>
+<p class="law">Formula: the lower of 20% of the rent actually paid for the year and ₦500,000 (s.30(2)(a)(vi)). Rent that straddles two years counts only for the months in the year being assessed. The tax-saved figure is an estimate using the 2026 bands (0% to ₦800,000; 15%; 18%; 21%; 23%; 25% above ₦50m) and assumes no other deductions — your payroll or the tax office computes the exact amount.</p>
+</div>
+
+<div class="box noprint" id="letter">
+<h2>Your rent-relief declaration letter — free</h2>
+<p>This is the one-page evidence letter HR, payroll or the State Internal Revenue Service asks for. Fill it, attach your rent receipt and tenancy agreement, sign it, and hand it in. Nothing you type leaves your phone.</p>
+<div class="calc">
+<div class="full"><label for="rr_name">Your full name (as on your payslip / TIN)</label><input id="rr_name" placeholder="e.g. Chinedu Okafor"></div>
+<div class="full"><label for="rr_addr">Address of the rented home</label><input id="rr_addr" placeholder="e.g. Flat 3, 12 Bode Thomas Street, Surulere, Lagos"></div>
+<div><label for="rr_tin">Your TIN (or NIN)</label><input id="rr_tin" placeholder="optional"></div>
+<div><label for="rr_to">Addressed to</label><select id="rr_to"><option>The Head of Human Resources / Payroll</option><option>The Executive Chairman, State Internal Revenue Service</option></select></div>
+<div class="full"><label for="rr_org">Employer / tax office name</label><input id="rr_org" placeholder="e.g. Zenith Microfinance Bank Ltd  ·  Lagos State Internal Revenue Service"></div>
+<div class="full"><label for="rr_ll">Landlord's full name</label><input id="rr_ll" placeholder="e.g. Mrs Aisha Bello"></div>
+<div><label for="rr_lltin">Landlord's TIN / NIN</label><input id="rr_lltin" placeholder="optional, if the landlord gave it"></div>
+<div><label for="rr_period">Period the rent covers</label><input id="rr_period" placeholder="e.g. 1 Jan 2026 – 31 Dec 2026"></div>
+<div><label for="rr_paid">Date rent was paid</label><input id="rr_paid" type="date"></div>
+<div><label for="rr_method">How you paid</label><select id="rr_method"><option>Bank transfer</option><option>Cash (receipted)</option><option>POS</option><option>USSD</option><option>Cheque</option></select></div>
+<div><label for="rr_receipt">Rent receipt number(s)</label><input id="rr_receipt" placeholder="e.g. RCP-014"></div>
+<div><label for="rr_date">Date of this letter</label><input id="rr_date" type="date"></div>
+</div>
+<div class="btnrow"><button class="btn2" type="button" onclick="rrPrint()">Print / Save PDF</button><a class="btn2 alt" href="https://docoga.com.ng/#receipt">Make the rent receipt first →</a></div>
+</div>
+
+<div class="box printme" id="rr_sheet"></div>
+
+<script>
+(function(){
+var BANDS=[[800000,0],[2200000,0.15],[9000000,0.18],[13000000,0.21],[25000000,0.23],[Infinity,0.25]];
+function tax(ci){var t=0,left=Math.max(0,ci);for(var i=0;i<BANDS.length&&left>0;i++){var w=Math.min(left,BANDS[i][0]);t+=w*BANDS[i][1];left-=w;}return t;}
+function relief(rent,months){var m=(months==null?12:months);var eligible=Math.max(0,Number(rent)||0)*m/12;return Math.min(Math.round(eligible*0.2),500000);}
+function fmt(n){return '₦'+Math.round(n).toLocaleString('en-NG');}
+function $(id){return document.getElementById(id);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function longDate(v){if(!v)return '____________';var d=new Date(v+'T12:00:00');if(isNaN(d))return esc(v);return d.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});}
+var sel=$('rr_months');for(var i=12;i>=1;i--){var o=document.createElement('option');o.value=i;o.textContent=i+(i===12?' (whole year)':'');sel.appendChild(o);}
+function calc(){var rent=Number($('rr_rent').value)||0,months=Number($('rr_months').value)||12,inc=Number($('rr_income').value)||0;var out=$('rr_out');if(!rent){out.innerHTML='<small>Enter your rent to see the deduction.</small>';return;}var r=relief(rent,months);var capped=(rent*months/12*0.2)>500000;var html='<small>Your rent relief for the year</small><b>'+fmt(r)+'</b><small>'+(capped?'The ₦500,000 cap applies — 20% of your rent is higher.':'20% of '+fmt(rent*months/12)+' of rent counted for the year.')+'</small>';if(inc){var saved=tax(inc)-tax(inc-r);html+='<div style="margin-top:10px"><small>Estimated tax saved this year</small><b>'+fmt(Math.max(0,saved))+'</b><small>Estimate only — assumes no other deductions.</small></div>';}out.innerHTML=html;render();}
+function render(){var rent=Number($('rr_rent').value)||0,months=Number($('rr_months').value)||12;var r=relief(rent,months);var rows=[['Tenant',esc($('rr_name').value)||'________________'],['Rented home',esc($('rr_addr').value)||'________________'],['Tenant TIN / NIN',esc($('rr_tin').value)||'—'],['Landlord',esc($('rr_ll').value)||'________________'],['Landlord TIN / NIN',esc($('rr_lltin').value)||'—'],['Annual rent paid',rent?fmt(rent):'₦______________'],['Period covered',esc($('rr_period').value)||'________________'],['Months in this tax year',String(months)],['Date paid · method',longDate($('rr_paid').value)+' · '+esc($('rr_method').value)],['Rent receipt no(s).',esc($('rr_receipt').value)||'________________'],['Rent relief claimed (20%, max ₦500,000)',rent?fmt(r):'₦______________']];var tbl='<table>'+rows.map(function(x){return '<tr><th style="width:42%">'+x[0]+'</th><td>'+x[1]+'</td></tr>';}).join('')+'</table>';$('rr_sheet').innerHTML='<div class="letter"><div style="text-align:right">'+longDate($('rr_date').value)+'</div><p>'+esc($('rr_to').value)+',<br>'+(esc($('rr_org').value)||'________________')+'</p><h3>Declaration of rent paid — claim for rent relief under section 30(2)(a)(vi), Nigeria Tax Act 2025</h3><p>I, <b>'+(esc($('rr_name').value)||'________________')+'</b>, declare that I occupy the residential premises below as a tenant and that I paid the rent stated for the period stated. I ask that the rent relief of 20% of the annual rent paid, subject to the maximum of ₦500,000, be applied in computing my chargeable income for the year of assessment.</p>'+tbl+'<p><b>Attached:</b> rent receipt(s) · tenancy agreement · proof of payment.</p><p>I declare that the information above is accurate, that the rent was actually paid by me, and that I do not occupy employer-provided accommodation. I understand the relief is granted only on rent actually paid and accurately declared.</p><div class="sig"><div style="border-bottom:1px solid #333;width:220px;height:34px"></div>Signature of tenant · '+longDate($('rr_date').value)+'</div><div class="foot">Made free with DocOga — docoga.com.ng · This letter is a declaration of facts you supply; it is not tax advice. Rent relief: Nigeria Tax Act 2025, s.30(2)(a)(vi).</div></div>';}
+window.rrPrint=function(){render();try{if(window.gtag)window.gtag('event','rent_relief_letter',{});}catch(e){}window.print();};
+['rr_rent','rr_months','rr_income'].forEach(function(id){$(id).addEventListener('input',calc);$(id).addEventListener('change',calc);});
+['rr_name','rr_addr','rr_tin','rr_to','rr_org','rr_ll','rr_lltin','rr_period','rr_paid','rr_method','rr_receipt','rr_date'].forEach(function(id){$(id).addEventListener('input',render);$(id).addEventListener('change',render);});
+if(!$('rr_date').value){var t=new Date();$('rr_date').value=t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');}
+window.DocOgaRentRelief={relief:relief,tax:tax};
+render();
+})();
+</script>'''
+
+# 8 ── rent relief (NTA 2025) — the 2026 reason a tenant needs a receipt ----------
+# FACTS VERIFIED 27 Oct 2026: Nigeria Tax Act 2025 s.30(2)(a)(vi) — rent relief of 20% of
+# annual rent paid, maximum ₦500,000, from 1 Jan 2026, on accurate declaration (TheCable
+# 1 Aug 2025 quoting the Act; Forvis Mazars 21 Apr 2026; PwC Tax Summaries 29 May 2026).
+# Not automatic; employees via payroll on receipt, self-employed to the state IRS; employer
+# annual return 31 Jan 2027, individual return 31 Mar 2027 (BusinessDay 22 Jan 2026 quoting
+# the NRS's Olufemi Olarinde; Daily Trust 16 Feb 2026; taxngr.com Mar 2026). Evidence asked
+# for in practice: receipts in the tenant's name, tenancy agreement, transfer proof, the
+# landlord's name and TIN/NIN (FSC Professionals; infosteps.com.ng; UNILAG staff circular
+# 3 Feb 2026 — "evidence of rent payment … must indicate the name and address of applicant").
+# Joint tenants: each up to ₦500,000 on their own share; multi-year rent pro-rated to the
+# year of assessment (Forvis Mazars). PIT bands 2026: 0% first ₦800k, 15%, 18%, 21%, 23%,
+# 25% above ₦50m (PwC; KPMG Flash Alert 2025-168). Employer-provided accommodation: no relief.
+PAGES["rent-relief-nigeria.html"] = dict(
+    title="Rent Relief in Nigeria 2026: Claim the ₦500,000 Tax Deduction (Calculator + Free Letter)",
+    h1="Rent relief in Nigeria — the 20% deduction every tenant can claim from 2026, and the papers you need",
+    desc="Since 1 January 2026 tenants deduct 20% of rent paid (max ₦500,000) from taxable income — but only with a rent receipt and tenancy agreement. Calculator, deadlines, and a free declaration letter for HR or the tax office.",
+    lead="The Nigeria Tax Act 2025 scrapped the old consolidated relief and gave tenants something "
+         "better: a deduction of 20% of the rent you actually pay, up to ₦500,000 a year. It is not "
+         "automatic. Nobody gets it without the paper — a rent receipt in your name, a tenancy "
+         "agreement, and your landlord's details. Here is the law, the arithmetic, the deadlines, "
+         "and a free letter that puts it all in front of your payroll desk.",
+    widget=WIDGET_RENT_RELIEF,
+    boxes=[
+        ("What the law says",
+         "<p>Section 30(2)(a)(vi) of the Nigeria Tax Act 2025 allows, in computing chargeable "
+         "income, a <b>rent relief of 20% of annual rent paid, subject to a maximum of ₦500,000, "
+         "whichever is lower</b> — \"provided that the individual accurately declares the actual "
+         "amount of rent paid and other relevant information as may be prescribed by the relevant "
+         "tax authority\". It applies from the <b>2026 year of assessment</b> (1 January 2026) to "
+         "employees under PAYE and to the self-employed assessed directly.</p>" + ul([
+            "<b>Only tenants.</b> Homeowners and people in employer-provided accommodation do not qualify.",
+            "<b>Only rent actually paid.</b> Prepaid rent counts only to the extent it has been paid; "
+            "rent that straddles two years is counted for the months in the year being assessed.",
+            "<b>Joint tenants</b> each claim on their own share, each up to the ₦500,000 cap.",
+            "<b>The cap bites at ₦2,500,000 of rent</b> — above that, more rent earns no more relief.",
+         ])),
+        ("The four papers that unlock it", ul([
+            "<b>A rent receipt in your name</b> showing the date, the amount, the property and the "
+            "period — exactly what Lagos law already requires on every receipt (Tenancy Law 2011, "
+            "s.5(2)). Ask for the <b>landlord's TIN or NIN</b> on it; payroll desks are asking.",
+            "<b>A signed tenancy agreement</b> covering the year, naming you, the landlord, the "
+            "premises and the rent.",
+            "<b>Proof of payment</b> — the bank transfer or POS record. A transfer alone is not a "
+            "receipt; the two together are unanswerable.",
+            "<b>This declaration letter</b>, signed and dated, with the three above attached.",
+         ]) + "<p class=\"law\">Nothing on this page needs a lawyer. The receipt and the agreement "
+              "are both free on DocOga, in about two minutes each.</p>"),
+        ("How and when to claim", ul([
+            "<b>Employees (PAYE):</b> hand the letter and attachments to HR / payroll. The NRS has said "
+            "that if you pay your rent in January and provide the receipt, the employer can apply the "
+            "relief in your monthly tax immediately. Employers file their annual PAYE return by "
+            "<b>31 January 2027</b>.",
+            "<b>Self-employed, traders and artisans:</b> submit the receipts / agreement with your "
+            "annual return to your <b>State Internal Revenue Service</b> by <b>31 March 2027</b> for "
+            "the 2026 year.",
+            "<b>Missed it in payroll?</b> You can still claim the balance in your own annual return "
+            "by 31 March of the following year.",
+            "<b>Keep everything six years.</b> Tax records must be retained; a receipt you can "
+            "verify online (every DocOga receipt carries a code) is the easiest to defend.",
+         ])),
+        ("Worked examples (2026 bands)",
+         '<table><tr><th>Annual rent</th><th>20% of rent</th><th>Relief allowed</th></tr>'
+         '<tr><td>₦600,000</td><td>₦120,000</td><td>₦120,000</td></tr>'
+         '<tr><td>₦1,500,000</td><td>₦300,000</td><td>₦300,000</td></tr>'
+         '<tr><td>₦2,500,000</td><td>₦500,000</td><td>₦500,000</td></tr>'
+         '<tr><td>₦4,000,000</td><td>₦800,000</td><td>₦500,000 (cap)</td></tr></table>'
+         '<p class="law">What that is worth in tax depends on your band: a ₦300,000 deduction saves '
+         '₦45,000 at 15%, ₦54,000 at 18%, ₦63,000 at 21%. If your taxable income is already under '
+         '₦800,000 you pay no income tax, so the relief changes nothing for you.</p>'),
+    ],
+    faq=[
+        ("Is rent relief automatic in my salary?",
+         "No. Under s.30 of the Nigeria Tax Act 2025 the relief is granted only when you accurately "
+         "declare the rent actually paid, with evidence. If you declare nothing, the relief is ₦0 — "
+         "there is no fallback figure."),
+        ("What documents do I need for rent relief?",
+         "A rent receipt in your name (date, amount, property, period, landlord's name — ideally "
+         "the landlord's TIN or NIN), a signed tenancy agreement covering the year, proof of payment "
+         "such as the bank transfer, and a signed declaration to your employer or tax office."),
+        ("My landlord will not give me a receipt. Can I still claim?",
+         "Insist, in writing — in Lagos a landlord who refuses a rent receipt commits an offence "
+         "(Tenancy Law 2011, s.5(3), ₦100,000 fine). Practitioners report that a signed confirmation "
+         "letter from the landlord plus your bank transfer evidence can stand in, but with no "
+         "evidence at all there is no relief for that period."),
+        ("I paid two years' rent in 2025. What can I claim in 2026?",
+         "Relief is on an actual-year basis: only the part of the rent attributable to the 2026 "
+         "year of assessment counts, and only if it was actually paid. Use the months selector in "
+         "the calculator above."),
+        ("Does the Oga Pass affect my claim?",
+         "No. The free receipt and letter carry a small DocOga line; the ₦2,000 pass removes it and "
+         "unlocks unlimited clean copies for 30 days. The tax office cares about the content, the "
+         "signature and the proof of payment."),
+    ],
+    cta=("receipt", "Make your rent receipt free →"),
+    related=["rent-receipt-format-nigeria.html", "tenancy-agreement-nigeria.html",
+             "tenant-rights-nigeria.html", "caution-fee-nigeria.html"],
+    priority="0.9",
+)
+
+
 CSS = """*{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;color:#141F33;background:#F5F7FB;line-height:1.6}
 .wrap{max-width:760px;margin:0 auto;padding:20px 18px 110px}
@@ -715,6 +891,7 @@ def render(fname, p):
     )
     cta_hash, cta_label = p["cta"]
     ld = json.dumps(faq_jsonld(p["faq"]), ensure_ascii=False, indent=1)
+    widget = ("\n" + p["widget"] + "\n") if p.get("widget") else ""
     return """<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -739,7 +916,7 @@ def render(fname, p):
 <a class="brand" href="%(domain)s/">DocOga</a>
 <h1>%(h1)s</h1>
 <p class="lead">%(lead)s</p>
-
+%(widget)s
 %(boxes)s
 
 <div class="box">
@@ -783,7 +960,7 @@ your case with a qualified Nigerian lawyer or your accountant.
 """ % dict(title=p["title"], desc=p["desc"], h1=p["h1"], lead=p["lead"], boxes=boxes,
            faq=faq_block(p["faq"]), related=related, state_links=state_links,
            tool_links=tool_links, cta_hash=cta_hash, cta_label=cta_label,
-           fname=fname, domain=DOMAIN, css=CSS, ld=ld, as_at=AS_AT)
+           fname=fname, domain=DOMAIN, css=CSS, ld=ld, as_at=AS_AT, widget=widget)
 
 
 def main():
@@ -796,6 +973,7 @@ def main():
         "tenant-rights-nigeria.html": "Tenant rights &amp; landlord duties",
         "shop-tenancy-agreement-nigeria.html": "Shop &amp; business tenancy",
         "invoice-format-nigeria.html": "Invoice format + 7.5% VAT",
+        "rent-relief-nigeria.html": "Rent relief: the ₦500,000 tax deduction",
     }
     for f, p in PAGES.items():
         p["navtitle"] = navtitles[f]

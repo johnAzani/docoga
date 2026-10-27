@@ -448,7 +448,7 @@ body.has-pass .buy-only{display:none !important}
   <div class="seo-block">
     <h2>Free guides — the questions Nigerians ask first</h2>
     <p>Plain-English answers on Nigerian renting and small-business paperwork, current for 2026:</p>
-    <p style="line-height:2"><a href="tenancy-agreement-lagos.html">Lagos</a> · <a href="tenancy-agreement-abuja.html">Abuja (FCT)</a> · <a href="tenancy-agreement-rivers.html">Rivers</a> · <a href="tenancy-agreement-oyo.html">Oyo</a> · <a href="tenancy-agreement-kano.html">Kano</a> · <a href="tenancy-agreement-enugu.html">Enugu</a> · <a href="tenancy-agreement-delta.html">Delta</a> · <a href="tenancy-agreement-kaduna.html">Kaduna</a> · <a href="tenancy-agreement-ogun.html">Ogun</a> · <a href="tenancy-agreement-anambra.html">Anambra</a> · <a href="tenancy-agreement-edo.html">Edo</a> · <a href="tenancy-agreement-plateau.html">Plateau</a></p>
+    <p style="line-height:2"><a href="rent-relief-nigeria.html"><b>Rent relief 2026: claim the ₦500,000 tax deduction</b></a> · <a href="tenancy-agreement-nigeria.html">Tenancy agreement format</a> · <a href="notice-to-quit-nigeria.html">Quit notice: free letter + how many months</a> · <a href="rent-receipt-format-nigeria.html">Rent receipt format</a> · <a href="caution-fee-nigeria.html">Is the caution fee refundable?</a> · <a href="tenant-rights-nigeria.html">Tenant rights &amp; landlord duties</a> · <a href="shop-tenancy-agreement-nigeria.html">Shop &amp; business tenancy</a> · <a href="invoice-format-nigeria.html">Invoice format + 7.5% VAT</a></p>
   </div>
 
   <div class="seo-block">
@@ -597,6 +597,7 @@ body.has-pass .buy-only{display:none !important}
           <div><label>Receipt number</label><input id="r_no" placeholder="e.g. RCP-014"></div>
           <div><label>Date</label><input id="r_date" type="date"></div>
           <div class="full"><label>Received from</label><input id="r_from" placeholder="Tenant / payer name"></div>
+          <div class="full"><label>Payer's address <span style="font-weight:400;color:#5B6B85">(optional — the tax office asks for it when the tenant claims rent relief)</span></label><input id="r_from_addr" placeholder="Where the tenant lives (usually the property)"></div>
           <div><label>Amount (₦)</label><input id="r_amt" type="number" inputmode="numeric" min="0" placeholder="e.g. 1500000"><div class="amount-hint" id="hint-r_amt"></div></div>
           <div><label>Payment method</label><select id="r_method"><option>Bank transfer</option><option>Cash</option><option>POS</option><option>USSD</option><option>Cheque</option><option>Other</option></select></div>
           <div class="full"><label>Being payment for</label><input id="r_purpose" placeholder="e.g. Annual rent 2026/2027"></div>
@@ -605,6 +606,8 @@ body.has-pass .buy-only{display:none !important}
           <div><label>Balance outstanding (₦, optional)</label><input id="r_bal" type="number" inputmode="numeric" min="0" placeholder="0"></div>
           <div class="full"><label>Issued by (landlord / business)</label><input id="r_issuer" placeholder="Name as it should appear"></div>
           <div><label>Phone</label><input id="r_phone" placeholder="080..."></div>
+          <div><label>Landlord TIN / NIN <span style="font-weight:400;color:#5B6B85">(optional)</span></label><input id="r_tin" placeholder="For the tenant's rent-relief claim"></div>
+          <div class="full hint" style="margin:-2px 0 2px">Tenants can deduct <b>20% of rent (up to ₦500,000)</b> from taxable income from 2026 — with this receipt. <a href="rent-relief-nigeria.html" target="_blank" rel="noopener">How rent relief works →</a></div>
           <div><label>State (for the verification code)</label><select id="r_state"></select></div>
           <div class="full"><label style="display:flex;gap:10px;align-items:flex-start;cursor:pointer;font-weight:500"><input type="checkbox" id="r_verify" checked style="margin-top:3px;flex:none"><span>Print a free <b>verification code</b> anyone can check online. Only amount, state, period, date and a fingerprint of the words are kept — never names, addresses or phones.</span></label></div>
         </div>
@@ -1429,10 +1432,11 @@ return html;
 function collectReceipt(){
 return { r_no:$('r_no').value, r_date:$('r_date').value, r_from:$('r_from').value, r_amt:$('r_amt').value,
 r_method:$('r_method').value, r_purpose:$('r_purpose').value, r_prop:$('r_prop').value, r_period:$('r_period').value,
-r_bal:$('r_bal').value, r_issuer:$('r_issuer').value, r_phone:$('r_phone').value, r_state:$('r_state').value, r_verify:$('r_verify').checked };
+r_bal:$('r_bal').value, r_issuer:$('r_issuer').value, r_phone:$('r_phone').value, r_state:$('r_state').value, r_verify:$('r_verify').checked,
+r_from_addr:$('r_from_addr').value, r_tin:$('r_tin').value };
 }
 function applyReceipt(p){
-[['r_no','r_no'],['r_date','r_date'],['r_from','r_from'],['r_amt','r_amt'],['r_purpose','r_purpose'],['r_prop','r_prop'],['r_period','r_period'],['r_bal','r_bal'],['r_issuer','r_issuer'],['r_phone','r_phone']].forEach(([k,id])=>{ $(id).value=p[k]||''; });
+[['r_no','r_no'],['r_date','r_date'],['r_from','r_from'],['r_from_addr','r_from_addr'],['r_amt','r_amt'],['r_purpose','r_purpose'],['r_prop','r_prop'],['r_period','r_period'],['r_bal','r_bal'],['r_issuer','r_issuer'],['r_phone','r_phone'],['r_tin','r_tin']].forEach(([k,id])=>{ $(id).value=p[k]||''; });
 if(p.r_method) $('r_method').value=p.r_method;
 if(p.r_state!=null) $('r_state').value=p.r_state;
 if(p.r_verify!=null) $('r_verify').checked=!!p.r_verify;
@@ -1493,13 +1497,13 @@ const html =
 '<div class="receipt-box">'+
 '<h1>RECEIPT</h1>'+
 '<div class="doc-meta">No: '+(esc(d.r_no)||'____')+' &nbsp;·&nbsp; Date: '+fmtDateLong(d.r_date)+'</div>'+
-'<p><b>RECEIVED</b> with thanks from <b>'+(esc(d.r_from)||'________________')+'</b> the sum of <b>'+(d.r_amt?nairaWords(d.r_amt):'₦______________')+'</b></p>'+
+'<p><b>RECEIVED</b> with thanks from <b>'+(esc(d.r_from)||'________________')+'</b>'+(d.r_from_addr?' of '+esc(d.r_from_addr):'')+' the sum of <b>'+(d.r_amt?nairaWords(d.r_amt):'₦______________')+'</b></p>'+
 '<p>by <b>'+(esc(d.r_method)||'____')+'</b>, being payment for <b>'+(esc(d.r_purpose)||'________________')+'</b>'+(d.r_period?' covering <b>'+esc(d.r_period)+'</b>':'')+'.</p>'+
 (d.r_prop?'<p>In respect of the property at: <b>'+esc(d.r_prop)+'</b></p>':'')+
 '<p>Balance outstanding: <b>'+((d.r_bal!==''&&d.r_bal!=null)?fmtN(d.r_bal):'NIL')+'</b></p>'+
 '<hr>'+
 '<div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px">'+
-'<div><div style="border-bottom:1px solid #333;width:200px;height:34px"></div><b>'+(esc(d.r_issuer)||'________________')+'</b><div style="font-size:12px;color:#444">'+(d.r_phone?'Tel: '+esc(d.r_phone):'')+'</div></div>'+
+'<div><div style="border-bottom:1px solid #333;width:200px;height:34px"></div><b>'+(esc(d.r_issuer)||'________________')+'</b><div style="font-size:12px;color:#444">'+(d.r_phone?'Tel: '+esc(d.r_phone):'')+(d.r_tin?(d.r_phone?' · ':'')+'TIN/NIN: '+esc(d.r_tin):'')+'</div></div>'+
 '<div style="font-size:11.5px;color:#444;text-align:right">Keep this receipt safe.<br>It is your proof of payment.</div>'+
 '</div>'+
 receiptVerifyLine(d)+
