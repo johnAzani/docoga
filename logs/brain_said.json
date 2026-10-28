@@ -61,5 +61,22 @@
   "reader": "ngozi",
   "tool": "rent-receipt",
   "news_hook": null
+ },
+ {
+  "date": "2026-10-30",
+  "theme": "kano-rent-receipt-demand-it",
+  "headline": "No rent receipt in Kano? You could pay twice.",
+  "post_type": "promo",
+  "hook_type": "STAKES",
+  "state": "kano",
+  "fact_ids": [
+   "kano:receipts:1",
+   "kano:receipts:1"
+  ],
+  "plate": "pen on receipt form",
+  "short": true,
+  "reader": "ngozi",
+  "tool": "rent-receipt",
+  "news_hook": null
  }
 ]

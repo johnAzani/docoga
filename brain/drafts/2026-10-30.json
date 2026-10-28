@@ -1,0 +1,100 @@
+{
+ "version": 1,
+ "status": "approved",
+ "date": "2026-10-30",
+ "generated_at": "2026-10-28T07:10:55+01:00",
+ "theme": "kano-rent-receipt-demand-it",
+ "post_type": "promo",
+ "hook_type": "STAKES",
+ "state": "kano",
+ "claims": [
+  {
+   "text": "In Kano, there is no state law that forces your landlord to issue a rent receipt with specific details.",
+   "fact_id": "kano:receipts:1"
+  },
+  {
+   "text": "This means your signed rent receipt is your only real proof of payment.",
+   "fact_id": "kano:receipts:1"
+  }
+ ],
+ "post": {
+  "headline": "No rent receipt in Kano? You could pay twice.",
+  "lines": [
+   "In Kano, there is no state law that forces your landlord to issue a rent receipt with specific details.",
+   "This means your signed rent receipt is your only real proof of payment.",
+   "Without it, you risk losing your flat or paying again for the same period.",
+   "Make a clean, standard rent receipt on your phone in two minutes, free to start."
+  ],
+  "cta": "Send this to the friend who always pays cash for rent.",
+  "hashtags": [
+   "#DocOga",
+   "#KanoRent",
+   "#RentReceipt",
+   "#TenantRights"
+  ]
+ },
+ "threads": {
+  "text": "Paying rent in Kano without a receipt is risky business. With no specific state law on receipts, your written proof of payment is everything. Protect yourself from paying twice. Did your last receipt carry a date?",
+  "hashtags": [
+   "#DocOga",
+   "#Kano"
+  ],
+  "topic": "Tenant Rights Nigeria",
+  "poll": null,
+  "evening": "In Kano, your rent receipt is your only shield against claims of non-payment. Don't rely on memory; get it in writing for every kobo you pay."
+ },
+ "visual": {
+  "kicker": "Demand paper",
+  "layout": "poster",
+  "big": "",
+  "plate": "pen on receipt form"
+ },
+ "short": {
+  "title": "Pay without a receipt? Pay twice. Demand it in writing.",
+  "hook_sub": "Your evidence is critical",
+  "hook_say": "Imagine paying your rent, only for your landlord to claim you haven't. Without a receipt, your word means nothing. Demand your rent receipt in writing.",
+  "tips": [
+   {
+    "text": "Insist on paper",
+    "sub": "For every payment, no exception",
+    "say": "Always insist on a physical rent receipt for every single payment you make. It's your primary evidence, especially in Kano where specific laws are absent."
+   },
+   {
+    "text": "Get landlord details",
+    "sub": "Name, address, contact",
+    "say": "Ensure the receipt includes your landlord's full name, address, and contact information. This proves who you paid and where the property is located."
+   },
+   {
+    "text": "Date and amount",
+    "sub": "Proof of when and how much",
+    "say": "Every receipt must clearly state the date of payment, the amount paid in Naira, and the period the rent covers. This prevents disputes on timing and figures."
+   },
+   {
+    "text": "Use our template",
+    "sub": "Free, standard, two minutes",
+    "say": "Don't stress over writing one. DocOga has a free, standard rent receipt template you can make on your phone in about two minutes. Protect your payment today."
+   }
+  ],
+  "hook_text": "PAY WITHOUT A RECEIPT? PAY TWICE. DEMAND IT IN WRITING.",
+  "series": {
+   "slug": "rent-receipt-law",
+   "name": "Rent receipt law",
+   "part": 5,
+   "total": 5,
+   "label": "Demand it in writing"
+  }
+ },
+ "why": "Today is a promo day within the payday window, so we highlight the critical role of the rent receipt in Kano where statutory protection is absent, aligning with the STAKES hook and the Short's theme.",
+ "tool": "rent-receipt",
+ "reader": "ngozi",
+ "news_hook": null,
+ "quiz": null,
+ "gates": [
+  "citation",
+  "verification",
+  "lint",
+  "repetition",
+  "shape"
+ ],
+ "note": ""
+}

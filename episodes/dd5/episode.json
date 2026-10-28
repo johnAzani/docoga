@@ -1,0 +1,515 @@
+{
+ "id": "dd5",
+ "number": 5,
+ "title": "Advance Rent in Lagos and Abuja: What the Law Says",
+ "kicker": "DOCOGA — DEEP-DIVE · EPISODE 5",
+ "disclaimer": "GENERAL INFORMATION · NOT LEGAL ADVICE · RULES VARY BY STATE AND AGREEMENT",
+ "voice": {
+  "_locked": "LOCKED by the owner 14 Oct 2026 — must equal tools/deepdive.py LOCKED_VOICE_*; the engine refuses anything else",
+  "name": "Orus",
+  "instruction": "Narrate this in a natural Nigerian English accent, like a confident Lagos radio presenter:"
+ },
+ "audio": {
+  "_comment": "Sound plan — synthesized by tools/soundkit.py, cued from the beats (python3 tools/deepdive.py dd2 cues). Bed levels are dB(A) relative to the narrator's speech; SFX are dB below the voice peak. Run #1 (-27 raw) was inaudible on phones — these are broadcast-documentary levels.",
+  "bed": true,
+  "bpm": 72,
+  "seed": 7,
+  "bed_gap_db": -8,
+  "bed_speech_db": -16,
+  "sfx_db": -12,
+  "hit_db": -9,
+  "tick_db": -16,
+  "riser_db": -14,
+  "stinger_db": -9,
+  "tail_fade_s": 4
+ },
+ "youtube": {
+  "title": "Advance Rent in Lagos and Abuja: What the Law Says (Deep-Dive 5)",
+  "description": "Fed up with landlords demanding years of rent upfront? Discover the exact advance rent laws in Lagos and Abuja, what the statutes say, and how to protect your finances. Create standard tenancy agreements instantly on your phone with DocOga. Free to start, no signup required. General information, not legal advice.\n\nMake yours in two minutes: https://docoga.com.ng",
+  "tags": [
+   "Advance Rent Lagos",
+   "Abuja Tenancy Law",
+   "DocOga",
+   "Nigerian Tenants",
+   "Rent Cap Lagos",
+   "Tenancy Agreement Nigeria",
+   "Rent Receipt",
+   "Landlord Tenant Laws",
+   "Lagos Tenancy Law 2011",
+   "Recovery of Premises Act"
+  ]
+ },
+ "cover": {
+  "img": "naira",
+  "kicker": "know your rights",
+  "line1": "ADVANCE RENT",
+  "highlight": "LAGOS",
+  "label": "AND ABUJA",
+  "line2": "What the law says today",
+  "line3": "Protect your money from abuse",
+  "sub": "Free to start on your phone"
+ },
+ "sections": [
+  {
+   "n": 1,
+   "title": "The Hook"
+  },
+  {
+   "n": 2,
+   "title": "The Lagos Advance Rent Rule"
+  },
+  {
+   "n": 3,
+   "title": "The Penalty in Lagos"
+  },
+  {
+   "n": 4,
+   "title": "The Abuja Reality"
+  },
+  {
+   "n": 5,
+   "title": "Abuja Agreements Matter"
+  },
+  {
+   "n": 6,
+   "title": "Sitting Versus New Tenants"
+  },
+  {
+   "n": 7,
+   "title": "Why Agents Push For More"
+  },
+  {
+   "n": 8,
+   "title": "Protecting Your Money"
+  },
+  {
+   "n": 9,
+   "title": "The Law, and DocOga"
+  }
+ ],
+ "beats": [
+  {
+   "sec": 1,
+   "trig": null,
+   "head": "THE RENT SHOCK",
+   "sub": "Three years upfront demand",
+   "img": "door",
+   "shot": "closed wooden door"
+  },
+  {
+   "sec": 1,
+   "trig": [
+    "picture",
+    "this",
+    "scenario",
+    "in"
+   ],
+   "head": "SURULERE OR ABUJA",
+   "sub": "Finding your next apartment",
+   "img": "rooftops",
+   "shot": "lagos rooftops dusk"
+  },
+  {
+   "sec": 1,
+   "trig": [
+    "your",
+    "heart",
+    "sinks",
+    "right"
+   ],
+   "head": "HEAVY BEATING",
+   "sub": "Financial pressure is real",
+   "img": "naira",
+   "shot": "naira banknotes table"
+  },
+  {
+   "sec": 1,
+   "trig": [
+    "paper",
+    "beats",
+    "memory",
+    "every"
+   ],
+   "head": "KNOW YOUR RIGHTS",
+   "sub": "Protect your hard earned money",
+   "img": "letter",
+   "shot": "paper receipt"
+  },
+  {
+   "sec": 2,
+   "trig": null,
+   "head": "LAGOS TENANCY LAW",
+   "sub": "Governed by the 2011 statute",
+   "img": "court",
+   "shot": "court building exterior"
+  },
+  {
+   "sec": 2,
+   "trig": [
+    "sitting",
+    "monthly",
+    "tenant",
+    "in"
+   ],
+   "head": "MONTHLY CAP",
+   "sub": "Maximum six months advance",
+   "img": "calendar",
+   "shot": "calendar on desk"
+  },
+  {
+   "sec": 2,
+   "trig": [
+    "brand",
+    "new",
+    "or",
+    "would"
+   ],
+   "head": "NEW TENANT LIMIT",
+   "sub": "One year maximum in Lagos",
+   "img": "phone",
+   "shot": null
+  },
+  {
+   "sec": 2,
+   "trig": [
+    "ease",
+    "the",
+    "heavy",
+    "burden"
+   ],
+   "head": "CLEAR LINE",
+   "sub": "Stop unlawful landlord demands",
+   "img": "market",
+   "shot": "busy street market"
+  },
+  {
+   "sec": 3,
+   "trig": null,
+   "head": "BREAKING THE RULE",
+   "sub": "Advance limits have teeth",
+   "img": "generator",
+   "shot": "generator outside house"
+  },
+  {
+   "sec": 3,
+   "trig": [
+    "any",
+    "person",
+    "who",
+    "receives"
+   ],
+   "head": "COMMITS AN OFFENCE",
+   "sub": "Both sides carry liability",
+   "img": "court",
+   "shot": "legal gavel table"
+  },
+  {
+   "sec": 3,
+   "trig": [
+    "one",
+    "hundred",
+    "thousand",
+    "naira"
+   ],
+   "head": "CONVICTION PENALTY",
+   "sub": "Fine or three months prison",
+   "img": "naira",
+   "shot": "naira banknotes table"
+  },
+  {
+   "sec": 3,
+   "trig": [
+    "section",
+    "four",
+    "exists",
+    "to"
+   ],
+   "head": "SECTION FOUR",
+   "sub": "Protecting you from pressure",
+   "img": "letter",
+   "shot": "paper receipt"
+  },
+  {
+   "sec": 4,
+   "trig": null,
+   "head": "ABUJA REALITY",
+   "sub": "Cross country legal difference",
+   "img": "rooftops",
+   "shot": "lagos rooftops dusk"
+  },
+  {
+   "sec": 4,
+   "trig": [
+    "recovery",
+    "of",
+    "premises",
+    "act"
+   ],
+   "head": "FCT STATUTE",
+   "sub": "Contains a significant gap",
+   "img": "court",
+   "shot": "court building exterior"
+  },
+  {
+   "sec": 4,
+   "trig": [
+    "sets",
+    "no",
+    "limit",
+    "whatsoever"
+   ],
+   "head": "NO STATUTORY CAP",
+   "sub": "Advance rent is wide open",
+   "img": "naira",
+   "shot": "naira banknotes table"
+  },
+  {
+   "sec": 4,
+   "trig": [
+    "has",
+    "no",
+    "statutory",
+    "shield"
+   ],
+   "head": "NO SHIELD",
+   "sub": "Demands can be higher",
+   "img": "door",
+   "shot": "closed wooden door"
+  },
+  {
+   "sec": 5,
+   "trig": null,
+   "head": "PROTECT YOURSELF",
+   "sub": "In the nation capital",
+   "img": "phone",
+   "shot": null
+  },
+  {
+   "sec": 5,
+   "trig": [
+    "whatever",
+    "financial",
+    "terms",
+    "you"
+   ],
+   "head": "AGREED TERMS",
+   "sub": "Become the absolute rule",
+   "img": "letter",
+   "shot": "paper receipt"
+  },
+  {
+   "sec": 5,
+   "trig": [
+    "not",
+    "rely",
+    "on",
+    "verbal"
+   ],
+   "head": "NO VERBAL PROMISES",
+   "sub": "Get everything in writing",
+   "img": "pen",
+   "shot": "pen signing document"
+  },
+  {
+   "sec": 5,
+   "trig": [
+    "paper",
+    "beats",
+    "memory",
+    "every"
+   ],
+   "head": "PAPER BEATS MEMORY",
+   "sub": "Essential for Abuja tenants",
+   "img": "letter",
+   "shot": "paper receipt"
+  },
+  {
+   "sec": 6,
+   "trig": null,
+   "head": "SITTING TENANTS",
+   "sub": "Versus incoming occupiers",
+   "img": "calendar",
+   "shot": "calendar on desk"
+  },
+  {
+   "sec": 6,
+   "trig": [
+    "distinguishes",
+    "between",
+    "a",
+    "person"
+   ],
+   "head": "CLEAR DISTINCTION",
+   "sub": "Law treats them differently",
+   "img": "court",
+   "shot": "court building exterior"
+  },
+  {
+   "sec": 6,
+   "trig": [
+    "maximum",
+    "is",
+    "one",
+    "year"
+   ],
+   "head": "ONE YEAR CEILING",
+   "sub": "Applied across the board",
+   "img": "naira",
+   "shot": "naira banknotes table"
+  },
+  {
+   "sec": 7,
+   "trig": null,
+   "head": "WHY AGENTS PUSH",
+   "sub": "Market pressures and greed",
+   "img": "market",
+   "shot": "busy street market"
+  },
+  {
+   "sec": 7,
+   "trig": [
+    "housing",
+    "demand",
+    "far",
+    "exceeds"
+   ],
+   "head": "HIGH DEMAND",
+   "sub": "More seekers than flats",
+   "img": "rooftops",
+   "shot": "lagos rooftops dusk"
+  },
+  {
+   "sec": 8,
+   "trig": null,
+   "head": "PROPER RECORDS",
+   "sub": "Protecting your hard cash",
+   "img": "letter",
+   "shot": "paper receipt"
+  },
+  {
+   "sec": 8,
+   "trig": [
+    "verifiable",
+    "proof",
+    "of",
+    "what"
+   ],
+   "head": "VERIFIABLE PROOF",
+   "sub": "Every payment tracked",
+   "img": "pen",
+   "shot": "pen signing document"
+  },
+  {
+   "sec": 8,
+   "trig": [
+    "section",
+    "five",
+    "also",
+    "requires"
+   ],
+   "head": "SECTION FIVE",
+   "sub": "Mandatory Lagos receipt",
+   "img": "letter",
+   "shot": "paper receipt"
+  },
+  {
+   "sec": 8,
+   "trig": [
+    "nobody",
+    "can",
+    "intimidate",
+    "you"
+   ],
+   "head": "NO INTIMIDATION",
+   "sub": "Documents keep you safe",
+   "img": "door",
+   "shot": "closed wooden door"
+  },
+  {
+   "sec": 9,
+   "trig": null,
+   "head": "DOCOGA DOCUMENT ENGINE",
+   "sub": "Standard papers in minutes",
+   "img": "phone",
+   "shot": null
+  },
+  {
+   "sec": 9,
+   "trig": [
+    "section",
+    "four",
+    "of",
+    "the"
+   ],
+   "head": "STATUTORY SHELF",
+   "sub": "Citing exact sections",
+   "img": "court",
+   "shot": "court building exterior"
+  },
+  {
+   "sec": 9,
+   "trig": [
+    "fifty",
+    "thousand",
+    "naira",
+    "on"
+   ],
+   "head": "SAVE MONEY",
+   "sub": "Without heavy lawyer fees",
+   "img": "naira",
+   "shot": "naira banknotes table"
+  },
+  {
+   "sec": 9,
+   "trig": [
+    "oga",
+    "pass",
+    "for",
+    "just"
+   ],
+   "head": "OGA PASS",
+   "sub": "Two thousand naira for thirty days",
+   "img": "phone",
+   "shot": null
+  },
+  {
+   "sec": 9,
+   "trig": [
+    "not",
+    "legal",
+    "advice"
+   ],
+   "head": "DOCOGA",
+   "sub": "docoga.com.ng — link in the description",
+   "img": "celebration",
+   "shot": null,
+   "endcard": true
+  }
+ ],
+ "brain": {
+  "written": "2026-10-28T07:11:55+01:00",
+  "theme": "advance-rent-lagos-abuja",
+  "claims": [
+   {
+    "text": "Sitting tenant monthly in Lagos may not be asked for, or pay, more than six months.",
+    "fact_id": "lagos:advance_rent:2"
+   },
+   {
+    "text": "Sitting tenant yearly in Lagos may not be asked for, or pay, more than one year.",
+    "fact_id": "lagos:advance_rent:3"
+   },
+   {
+    "text": "New or would-be tenant in Lagos may not be asked for, or pay, more than one year.",
+    "fact_id": "lagos:advance_rent:4"
+   },
+   {
+    "text": "Any person who receives or pays rent in excess in Lagos is liable on conviction to a fine of one hundred thousand naira or three months imprisonment.",
+    "fact_id": "lagos:advance_rent:5"
+   },
+   {
+    "text": "The Recovery of Premises Act in the Federal Capital Territory sets no limit on how much rent a landlord may demand in advance.",
+    "fact_id": "abuja:advance_rent:1"
+   }
+  ]
+ }
+}

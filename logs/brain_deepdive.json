@@ -194,6 +194,26 @@
     "beat 29 dropped: trig ['tenancy', 'agreement', 'tool', 'helps', 'you'] is not 2-4 words"
    ],
    "run_id": "40609200411"
+  },
+  {
+   "at": "2026-10-28T07:11:55+01:00",
+   "episode": "dd5",
+   "attempt": 1,
+   "outcome": "written",
+   "title": "Advance Rent in Lagos and Abuja: What the Law Says",
+   "problems": [],
+   "healed": [
+    "beat 7 shot 'person holding phone' dropped",
+    "beat 17 shot 'person holding phone' dropped",
+    "beat 24 dropped: trigger 'stopping agents from tricking' not spoken in section 6 after word 96",
+    "beat 27 dropped: trigger 'making the local currency' not spoken in section 7 after word 37",
+    "beat 28 shot 'person holding phone' dropped",
+    "beat 28 dropped: trigger 'keeping you confident when' not spoken in section 7 after word 37",
+    "beat 33 shot 'person holding phone' dropped",
+    "beat 36 shot 'person holding phone' dropped",
+    "description: tool link appended"
+   ],
+   "run_id": "40641354273"
   }
  ]
 }

@@ -1,5 +1,16 @@
 [
  {
+  "date": "2026-10-29",
+  "at": "2026-10-28T07:06:11+01:00",
+  "short_day": true,
+  "problems": [
+   "a body line is 140 characters; max 110: 'In Rivers, a notice to quit must termina'",
+   "a body line is 142 characters; max 110: \"For a yearly tenant, that's six months (\"",
+   "news_hook is not one of this week's NEWSDESK headlines — a story the papers did not print is not a story",
+   "statistic '20%' is not in a cited fact — DocOga publishes no number it cannot source"
+  ]
+ },
+ {
   "date": "2026-10-30",
   "at": "2026-10-28T01:32:35+01:00",
   "short_day": true,
