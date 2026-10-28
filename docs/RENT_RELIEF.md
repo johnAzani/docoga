@@ -56,3 +56,27 @@ said so, and the receipt had no landlord-TIN or payer-address line.
 - A federal (NTA) entry on the brain's law shelf, so posts can cite `nigeria:rent_relief:1` and the Shorts spine can carry a rent-relief series week.
 - A public receipt-verify page HR can hit (TEST NEXT #7).
 - The WhatsApp door (TEST NEXT #5).
+
+## Update 28 Oct 2026 — the tax authorities' own guidelines
+
+**Source:** Joint Revenue Board of Nigeria, *Personal Income Tax Guidelines, 2026* (jrb.gov.ng,
+dated 24 February 2026; Forvis Mazars, 21 April 2026, cites its issue on 7 April 2026), Part III
+paragraph 9:
+
+| Para | Rule |
+|---|---|
+| 9.1–9.2 | 20% of annual rent paid, maximum ₦500,000; actual rent paid "and other prescribed information must be accurately declared" |
+| 9.3 | Shared tenancy: each tenant up to ₦500,000 on the portion of rent they bear |
+| 9.4 | Actual-year basis: rent paid in 2026 relieves the 2026 year of assessment |
+| 9.5 | Rent spanning years is apportioned — the Board's example: ₦2,000,000 for 24 months → ₦1,000,000 attributable to 2026 |
+| 9.6 | Minimum information: (i) legal tenant's name; (ii) actual rent paid and period covered; (iii) landlord's full name and **one of** mobile number, Tax ID or NIN; (iv) property address |
+
+**What changed in the product:** the receipt tool checks the four para-9.6 particulars live
+("Rent-relief ready?") and, when all four are present, prints a line under the signature saying
+so. The ledger fingerprint (`receiptCanonical`) is untouched. The page quotes paragraphs 9.3–9.6;
+the shelf carries them as `nigeria:rent_relief:4` and `:8`.
+
+**Payroll systems:** SeamlessHR's 2026 tax-reform FAQ says admins may require staff to upload
+"valid rent certificates or any proof of rent paid" before the relief is used — the system holds
+the declared number; the tenant still brings the paper. That is the opening for DocOga, not a
+threat from payroll software.

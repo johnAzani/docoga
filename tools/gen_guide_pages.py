@@ -758,7 +758,8 @@ render();
 # landlord's name and TIN/NIN (FSC Professionals; infosteps.com.ng; UNILAG staff circular
 # 3 Feb 2026 — "evidence of rent payment … must indicate the name and address of applicant").
 # Joint tenants: each up to ₦500,000 on their own share; multi-year rent pro-rated to the
-# year of assessment (Forvis Mazars). PIT bands 2026: 0% first ₦800k, 15%, 18%, 21%, 23%,
+# year of assessment (Forvis Mazars). JRB "Personal Income Tax Guidelines, 2026" (jrb.gov.ng, 24 Feb
+# 2026) Part III para 9.1–9.6 verified 28 Oct 2026 — the minimum information list. PIT bands 2026: 0% first ₦800k, 15%, 18%, 21%, 23%,
 # 25% above ₦50m (PwC; KPMG Flash Alert 2025-168). Employer-provided accommodation: no relief.
 PAGES["rent-relief-nigeria.html"] = dict(
     title="Rent Relief in Nigeria 2026: Claim the ₦500,000 Tax Deduction (Calculator + Free Letter)",
@@ -784,10 +785,30 @@ PAGES["rent-relief-nigeria.html"] = dict(
             "<b>Joint tenants</b> each claim on their own share, each up to the ₦500,000 cap.",
             "<b>The cap bites at ₦2,500,000 of rent</b> — above that, more rent earns no more relief.",
          ])),
+        ("What the tax authorities' own guidelines say",
+         "<p>The Joint Revenue Board of Nigeria (the body of all State tax authorities and the NRS) "
+         "issued <b>Personal Income Tax Guidelines, 2026</b> (dated 24 February 2026). Part III, "
+         "paragraph 9 is the rent relief, and it settles the questions people argue about:</p>" + ul([
+            "<b>9.1–9.2</b> — 20% of annual rent paid, maximum ₦500,000; the actual rent paid \"and other "
+            "prescribed information must be accurately declared\".",
+            "<b>9.3 Shared tenancy</b> — each tenant claims up to ₦500,000 on <i>their own portion</i> of "
+            "the rent. Two flatmates on ₦3,000,000 each claim on ₦1,500,000 → ₦300,000 each.",
+            "<b>9.4–9.5 Actual-year basis</b> — rent paid in 2026 relieves 2026; rent spanning years is "
+            "apportioned. The Board's own example: ₦2,000,000 paid for 24 months counts ₦1,000,000 for "
+            "2026, relief ₦200,000.",
+            "<b>9.6 Minimum information</b> — (i) the legal tenant's name; (ii) actual rent paid and the "
+            "period covered; (iii) the landlord's full name and <b>one of</b> mobile number, Tax ID or "
+            "NIN; (iv) the property address.",
+         ]) + "<p class=\"law\">That fourth paragraph is the test your receipt has to pass. A receipt that "
+              "names the tenant, states the rent and the period, carries the landlord's name with a phone "
+              "number, TIN or NIN, and gives the property address meets it. Payroll systems (SeamlessHR's "
+              "own FAQ says so) hold the <i>number</i> you declare; the <i>paper</i> is still yours to "
+              "bring, and HR may require it uploaded before the relief is applied.</p>"),
         ("The four papers that unlock it", ul([
-            "<b>A rent receipt in your name</b> showing the date, the amount, the property and the "
-            "period — exactly what Lagos law already requires on every receipt (Tenancy Law 2011, "
-            "s.5(2)). Ask for the <b>landlord's TIN or NIN</b> on it; payroll desks are asking.",
+            "<b>A rent receipt in your name</b> showing the amount, the period covered, the property "
+            "address and the landlord's full name with a <b>phone number, TIN or NIN</b> — the four "
+            "particulars the Joint Revenue Board's guidelines list (para 9.6, below). The DocOga receipt "
+            "tells you when all four are on it.",
             "<b>A signed tenancy agreement</b> covering the year, naming you, the landlord, the "
             "premises and the rent.",
             "<b>Proof of payment</b> — the bank transfer or POS record. A transfer alone is not a "
@@ -824,9 +845,11 @@ PAGES["rent-relief-nigeria.html"] = dict(
          "declare the rent actually paid, with evidence. If you declare nothing, the relief is ₦0 — "
          "there is no fallback figure."),
         ("What documents do I need for rent relief?",
-         "A rent receipt in your name (date, amount, property, period, landlord's name — ideally "
-         "the landlord's TIN or NIN), a signed tenancy agreement covering the year, proof of payment "
-         "such as the bank transfer, and a signed declaration to your employer or tax office."),
+         "A rent receipt in your name carrying the four particulars in para 9.6 of the Joint Revenue "
+         "Board's PIT Guidelines 2026 — your name, the rent and period covered, the landlord's full "
+         "name with a phone number, TIN or NIN, and the property address — plus a signed tenancy "
+         "agreement covering the year, proof of payment such as the bank transfer, and a signed "
+         "declaration to your employer or tax office."),
         ("My landlord will not give me a receipt. Can I still claim?",
          "Insist, in writing — in Lagos a landlord who refuses a rent receipt commits an offence "
          "(Tenancy Law 2011, s.5(3), ₦100,000 fine). Practitioners report that a signed confirmation "

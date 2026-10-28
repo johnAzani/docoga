@@ -602,12 +602,13 @@ body.has-pass .buy-only{display:none !important}
           <div><label>Payment method</label><select id="r_method"><option>Bank transfer</option><option>Cash</option><option>POS</option><option>USSD</option><option>Cheque</option><option>Other</option></select></div>
           <div class="full"><label>Being payment for</label><input id="r_purpose" placeholder="e.g. Annual rent 2026/2027"></div>
           <div class="full"><label>Property address</label><input id="r_prop" placeholder="Property the payment relates to"></div>
-          <div><label>Period covered (optional)</label><input id="r_period" placeholder="e.g. Oct 2026 – Sep 2027"></div>
+          <div><label>Period covered <span style="font-weight:400;color:#5B6B85">(rent relief needs it)</span></label><input id="r_period" placeholder="e.g. Oct 2026 – Sep 2027"></div>
           <div><label>Balance outstanding (₦, optional)</label><input id="r_bal" type="number" inputmode="numeric" min="0" placeholder="0"></div>
           <div class="full"><label>Issued by (landlord / business)</label><input id="r_issuer" placeholder="Name as it should appear"></div>
           <div><label>Phone</label><input id="r_phone" placeholder="080..."></div>
           <div><label>Landlord TIN / NIN <span style="font-weight:400;color:#5B6B85">(optional)</span></label><input id="r_tin" placeholder="For the tenant's rent-relief claim"></div>
-          <div class="full hint" style="margin:-2px 0 2px">Tenants can deduct <b>20% of rent (up to ₦500,000)</b> from taxable income from 2026 — with this receipt. <a href="rent-relief-nigeria.html" target="_blank" rel="noopener">How rent relief works →</a></div>
+          <div class="full hint" id="rr-check" style="margin:-2px 0 2px;line-height:1.75" aria-live="polite"></div>
+          <div class="full hint" style="margin:-2px 0 2px">Tenants deduct <b>20% of rent (up to ₦500,000)</b> from taxable income from 2026 — only with a receipt that carries the four particulars above (Joint Revenue Board PIT Guidelines 2026, para 9.6). <a href="rent-relief-nigeria.html" target="_blank" rel="noopener">How rent relief works →</a></div>
           <div><label>State (for the verification code)</label><select id="r_state"></select></div>
           <div class="full"><label style="display:flex;gap:10px;align-items:flex-start;cursor:pointer;font-weight:500"><input type="checkbox" id="r_verify" checked style="margin-top:3px;flex:none"><span>Print a free <b>verification code</b> anyone can check online. Only amount, state, period, date and a fingerprint of the words are kept — never names, addresses or phones.</span></label></div>
         </div>
@@ -1489,9 +1490,34 @@ function bookClear(){ if(confirm('Remove the list from this phone? The codes sti
 function renderBook(){ const b=bookRead(), el=$('book'); $('book-n').textContent=b.length?'('+b.length+')':''; if(!$('book-wrap').open) return;
   el.innerHTML=b.length?b.map(x=>'<div style="display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px dashed var(--line);font-size:13.5px"><span>'+esc(x.d||'')+' · '+esc(x.p||'—')+'<br><b>'+ngn(x.a)+'</b> · <span style="font-family:ui-monospace,Menlo,monospace">'+esc(x.c)+'</span></span><span style="text-align:right;white-space:nowrap"><a href="https://'+LEDGER_CHECK+esc(x.c)+'" target="_blank" rel="noopener">Check</a><br><a href="https://wa.me/?text='+encodeURIComponent('Verify this DocOga receipt: https://'+LEDGER_CHECK+x.c)+'" target="_blank" rel="noopener">Send link</a></span></div>').join('')+'<button type="button" class="btn sm" style="margin-top:8px" onclick="bookClear()">Clear book</button>'
   :'<p class="hint">No codes yet. Print a receipt with the verification box ticked and it appears here.</p>'; }
+/* Rent relief (Nigeria Tax Act 2025 s.30(2)(a)(vi)): the Joint Revenue Board's PIT Guidelines 2026,
+   para 9.6, list the minimum information a claim needs — the legal tenant's name; actual rent paid and
+   the period covered; the landlord's full name and one of mobile number, Tax ID or NIN; the property
+   address. rentReliefMissing() names what this receipt still lacks; when it lacks nothing the printed
+   receipt says so, under the signature. Nothing here touches receiptCanonical(). */
+function rentReliefMissing(d){
+  const m=[];
+  if(!String(d.r_from||'').trim()) m.push("tenant's name");
+  if(!(Number(d.r_amt)>0)||!String(d.r_period||'').trim()) m.push('rent and period covered');
+  if(!String(d.r_issuer||'').trim()||!(String(d.r_phone||'').trim()||String(d.r_tin||'').trim())) m.push("landlord's name + phone, TIN or NIN");
+  if(!String(d.r_prop||'').trim()) m.push('property address');
+  return m;
+}
+function rentReliefLine(d){
+  if(rentReliefMissing(d).length) return '';
+  return '<p style="font-size:11px;color:#444;margin:8px 0 0">Rent relief: this receipt carries the four particulars in para 9.6 of the Joint Revenue Board\u2019s Personal Income Tax Guidelines 2026 \u2014 tenant\u2019s name, rent and period, landlord\u2019s name and contact, property address.</p>';
+}
+function renderRentReliefCheck(d){
+  const el=$('rr-check'); if(!el) return;
+  const miss=rentReliefMissing(d);
+  el.innerHTML=miss.length
+    ? '<b>Rent-relief ready?</b> Not yet \u2014 still missing: '+esc(miss.join(' \u00b7 '))+'.'
+    : '<b style="color:#1B6B3A">\u2713 Rent-relief ready</b> \u2014 all four particulars the tax authorities list are on this receipt.';
+}
 function renderReceipt(){
 const d=collectReceipt();
 $('hint-r_amt').textContent=(d.r_amt? '= '+numWords(d.r_amt)+' Naira':'');
+renderRentReliefCheck(d);
 const html =
 '<div class="'+sheetClass()+'">'+
 '<div class="receipt-box">'+
@@ -1506,6 +1532,7 @@ const html =
 '<div><div style="border-bottom:1px solid #333;width:200px;height:34px"></div><b>'+(esc(d.r_issuer)||'________________')+'</b><div style="font-size:12px;color:#444">'+(d.r_phone?'Tel: '+esc(d.r_phone):'')+(d.r_tin?(d.r_phone?' · ':'')+'TIN/NIN: '+esc(d.r_tin):'')+'</div></div>'+
 '<div style="font-size:11.5px;color:#444;text-align:right">Keep this receipt safe.<br>It is your proof of payment.</div>'+
 '</div>'+
+rentReliefLine(d)+
 receiptVerifyLine(d)+
 '</div>'+
 freeBanner()+
