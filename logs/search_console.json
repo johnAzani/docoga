@@ -1,15 +1,15 @@
 {
- "taken_at": "2026-10-19T10:25:26+00:00",
+ "taken_at": "2026-10-28T14:05:16+00:00",
  "site": "https://docoga.com.ng/",
  "window": {
-  "start": "2026-09-18",
-  "end": "2026-10-16",
+  "start": "2026-09-27",
+  "end": "2026-10-25",
   "days": 28
  },
- "clicks": 12,
- "impressions": 430,
- "ctr": 0.0279,
- "nigeria_clicks": 11,
+ "clicks": 18,
+ "impressions": 613,
+ "ctr": 0.0294,
+ "nigeria_clicks": 17,
  "top_queries": [
   {
    "query": "quit notice",
@@ -23,9 +23,9 @@
    "query": "notice to quit",
    "page": "https://docoga.com.ng/notice-to-quit-nigeria",
    "clicks": 0,
-   "impressions": 22,
+   "impressions": 23,
    "ctr": 0.0,
-   "position": 4.3
+   "position": 7.4
   },
   {
    "query": "notice to quit",
@@ -42,6 +42,14 @@
    "impressions": 19,
    "ctr": 0.0,
    "position": 6.3
+  },
+  {
+   "query": "edo state tenancy law",
+   "page": "https://docoga.com.ng/notice-to-quit-edo.html",
+   "clicks": 0,
+   "impressions": 9,
+   "ctr": 0.0,
+   "position": 8.9
   },
   {
    "query": "quit notice",
@@ -68,14 +76,6 @@
    "position": 1.0
   },
   {
-   "query": "edo state tenancy law",
-   "page": "https://docoga.com.ng/notice-to-quit-edo.html",
-   "clicks": 0,
-   "impressions": 3,
-   "ctr": 0.0,
-   "position": 6.7
-  },
-  {
    "query": "enugu",
    "page": "https://docoga.com.ng/notice-to-quit-enugu",
    "clicks": 0,
@@ -98,6 +98,14 @@
    "impressions": 3,
    "ctr": 0.0,
    "position": 6.3
+  },
+  {
+   "query": "tenancy law in edo state",
+   "page": "https://docoga.com.ng/notice-to-quit-edo.html",
+   "clicks": 0,
+   "impressions": 3,
+   "ctr": 0.0,
+   "position": 9.3
   },
   {
    "query": "how to write quit notice",
@@ -132,6 +140,14 @@
    "position": 10.5
   },
   {
+   "query": "how many days does a tenant have to give notice",
+   "page": "https://docoga.com.ng/tenant-rights-nigeria.html",
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0.0,
+   "position": 11.0
+  },
+  {
    "query": "how many months does your landlord have to give notice",
    "page": "https://docoga.com.ng/tenant-rights-nigeria.html",
    "clicks": 0,
@@ -154,6 +170,38 @@
    "impressions": 1,
    "ctr": 0.0,
    "position": 3.0
+  },
+  {
+   "query": "in plateau state",
+   "page": "https://docoga.com.ng/",
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0.0,
+   "position": 2.0
+  },
+  {
+   "query": "landlord tenant rights",
+   "page": "https://docoga.com.ng/tenant-rights-nigeria.html",
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0.0,
+   "position": 45.0
+  },
+  {
+   "query": "portharcourt",
+   "page": "https://docoga.com.ng/notice-to-quit-rivers.html",
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0.0,
+   "position": 2.0
+  },
+  {
+   "query": "power of attorney",
+   "page": "https://docoga.com.ng/power-of-attorney-nigeria.html",
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0.0,
+   "position": 2.0
   },
   {
    "query": "quit notes",
@@ -196,12 +244,12 @@
    "position": 11.0
   },
   {
-   "query": "tenancy law in edo state",
-   "page": "https://docoga.com.ng/notice-to-quit-edo.html",
+   "query": "shop tenancy agreement",
+   "page": "https://docoga.com.ng/shop-tenancy-agreement-nigeria.html",
    "clicks": 0,
    "impressions": 1,
    "ctr": 0.0,
-   "position": 9.0
+   "position": 7.0
   },
   {
    "query": "yearly tenancy notice to quit",
@@ -220,13 +268,28 @@
    "position": 11.0
   }
  ],
- "striking_distance": [],
+ "striking_distance": [
+  {
+   "query": "notice to quit",
+   "page": "https://docoga.com.ng/notice-to-quit-nigeria",
+   "clicks": 0,
+   "impressions": 23,
+   "ctr": 0.0,
+   "position": 7.4
+  }
+ ],
  "top_pages": [
+  {
+   "page": "https://docoga.com.ng/notice-to-quit-enugu.html",
+   "clicks": 3,
+   "impressions": 15,
+   "position": 4.7
+  },
   {
    "page": "https://docoga.com.ng/",
    "clicks": 2,
-   "impressions": 26,
-   "position": 3.7
+   "impressions": 21,
+   "position": 4.7
   },
   {
    "page": "https://docoga.com.ng/notice-to-quit-nigeria.html",
@@ -237,8 +300,26 @@
   {
    "page": "https://docoga.com.ng/notice-to-quit-rivers.html",
    "clicks": 2,
-   "impressions": 14,
-   "position": 3.0
+   "impressions": 32,
+   "position": 3.6
+  },
+  {
+   "page": "https://docoga.com.ng/tenant-rights-nigeria.html",
+   "clicks": 2,
+   "impressions": 21,
+   "position": 15.2
+  },
+  {
+   "page": "https://docoga.com.ng/notice-to-quit-delta.html",
+   "clicks": 1,
+   "impressions": 10,
+   "position": 3.7
+  },
+  {
+   "page": "https://docoga.com.ng/notice-to-quit-edo.html",
+   "clicks": 1,
+   "impressions": 46,
+   "position": 6.7
   },
   {
    "page": "https://docoga.com.ng/notice-to-quit-enugu",
@@ -247,40 +328,46 @@
    "position": 3.6
   },
   {
-   "page": "https://docoga.com.ng/notice-to-quit-enugu.html",
-   "clicks": 1,
-   "impressions": 2,
-   "position": 1.0
-  },
-  {
    "page": "https://docoga.com.ng/notice-to-quit-nigeria",
    "clicks": 1,
-   "impressions": 116,
-   "position": 4.6
+   "impressions": 141,
+   "position": 5.9
   },
   {
    "page": "https://docoga.com.ng/notice-to-quit-plateau.html",
    "clicks": 1,
-   "impressions": 5,
-   "position": 2.4
+   "impressions": 7,
+   "position": 2.9
   },
   {
    "page": "https://docoga.com.ng/power-of-attorney-nigeria.html",
    "clicks": 1,
-   "impressions": 16,
-   "position": 4.1
+   "impressions": 49,
+   "position": 4.8
   },
   {
    "page": "https://docoga.com.ng/shop-tenancy-agreement-nigeria.html",
    "clicks": 1,
-   "impressions": 25,
-   "position": 6.4
+   "impressions": 40,
+   "position": 6.2
+  },
+  {
+   "page": "https://docoga.com.ng/?s=ig",
+   "clicks": 0,
+   "impressions": 1,
+   "position": 1.0
   },
   {
    "page": "https://docoga.com.ng/caution-fee-abuja",
    "clicks": 0,
    "impressions": 1,
    "position": 3.0
+  },
+  {
+   "page": "https://docoga.com.ng/caution-fee-enugu",
+   "clicks": 0,
+   "impressions": 2,
+   "position": 8.5
   },
   {
    "page": "https://docoga.com.ng/caution-fee-enugu.html",
@@ -290,6 +377,12 @@
   },
   {
    "page": "https://docoga.com.ng/caution-fee-kano.html",
+   "clicks": 0,
+   "impressions": 1,
+   "position": 9.0
+  },
+  {
+   "page": "https://docoga.com.ng/caution-fee-nigeria.html",
    "clicks": 0,
    "impressions": 1,
    "position": 9.0
@@ -313,22 +406,10 @@
    "position": 7.0
   },
   {
-   "page": "https://docoga.com.ng/notice-to-quit-delta.html",
-   "clicks": 0,
-   "impressions": 2,
-   "position": 2.5
-  },
-  {
-   "page": "https://docoga.com.ng/notice-to-quit-edo.html",
-   "clicks": 0,
-   "impressions": 20,
-   "position": 6.8
-  },
-  {
    "page": "https://docoga.com.ng/notice-to-quit-kaduna.html",
    "clicks": 0,
-   "impressions": 9,
-   "position": 6.3
+   "impressions": 13,
+   "position": 6.7
   },
   {
    "page": "https://docoga.com.ng/notice-to-quit-kano",
@@ -339,38 +420,14 @@
   {
    "page": "https://docoga.com.ng/notice-to-quit-kano.html",
    "clicks": 0,
-   "impressions": 1,
-   "position": 1.0
+   "impressions": 11,
+   "position": 4.5
   },
   {
    "page": "https://docoga.com.ng/notice-to-quit-lagos",
    "clicks": 0,
    "impressions": 3,
    "position": 7.7
-  },
-  {
-   "page": "https://docoga.com.ng/notice-to-quit-rivers",
-   "clicks": 0,
-   "impressions": 4,
-   "position": 3.0
-  },
-  {
-   "page": "https://docoga.com.ng/rent-receipt-format-nigeria.html",
-   "clicks": 0,
-   "impressions": 4,
-   "position": 6.0
-  },
-  {
-   "page": "https://docoga.com.ng/rent-receipt-kano",
-   "clicks": 0,
-   "impressions": 2,
-   "position": 2.5
-  },
-  {
-   "page": "https://docoga.com.ng/rent-receipt-kano.html",
-   "clicks": 0,
-   "impressions": 1,
-   "position": 6.0
   }
  ]
 }
