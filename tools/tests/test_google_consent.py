@@ -200,3 +200,101 @@ class WorkflowTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SearchProfileTests(unittest.TestCase):
+    """28 Oct 2026: a second, read-only consent as the PERSONAL account for Search Console + GA4 —
+    its own box, its own workflow; refused when the account cannot see docoga.com.ng; the YouTube
+    box never touched; search_console.py reads the new box first."""
+
+    def setUp(self):
+        self.box = os.path.join(tempfile.mkdtemp(), "search.box")
+        self.env = {"YT_CLIENT_ID": "c", "YT_CLIENT_SECRET": "s", "YT_CHANNEL_ID": "UCdocoga"}
+
+    def http_for(self, sites, scope=None):
+        scope = " ".join(gc.SEARCH_SCOPES) if scope is None else scope
+
+        def http(method, url, data=None, params=None):
+            http.calls.append(url)
+            if url == gc.TOKEN_URL:
+                return 200, {"access_token": "at", "refresh_token": "RT-S", "scope": scope}
+            if url == gc.SITES_URL:
+                return 200, {"siteEntry": [{"siteUrl": s, "permissionLevel": "siteOwner"} for s in sites]}
+            return 200, {}
+        http.calls = []
+        return http
+
+    def test_the_search_link_asks_for_the_two_read_only_scopes_and_nothing_youtube(self):
+        q = parse_qs(urlparse(gc.consent_url("cid", profile="search")).query)
+        self.assertEqual(set(q["scope"][0].split()), set(token_scopes.WANT["google_search"]))
+        self.assertEqual(len(token_scopes.WANT["google_search"]), 2)
+        self.assertFalse(any("youtube" in s for s in q["scope"][0].split()))
+        self.assertEqual(q["access_type"], ["offline"])
+        self.assertEqual(q["prompt"], ["consent"])
+
+    def test_a_token_that_sees_the_site_is_sealed_into_its_own_box_without_a_channel_check(self):
+        http = self.http_for(["sc-domain:docoga.com.ng", "https://docoga.com.ng/"])
+        logs = []
+        with patch.dict(os.environ, {"SOCIAL_TOKEN_KEY": KEY}):
+            rc = gc.run_exchange("4/0Acode", env=self.env, http=http, log=logs.append, vault_path=self.box, profile="search")
+        self.assertEqual(rc, 0, logs)
+        self.assertNotIn(gc.CHANNELS_URL, http.calls)
+        self.assertIn("GOOGLE_SEARCH_SITES=2", logs)
+        self.assertIn("GOOGLE_CONSENT=ok", logs)
+        self.assertTrue(os.path.exists(self.box))
+        with patch.dict(os.environ, {"SOCIAL_TOKEN_KEY": KEY}):
+            self.assertEqual(token_vault.open_box("GOOGLE_SEARCH_TOKEN", path=self.box)[0], "RT-S")
+        self.assertFalse(any("RT-S" in l for l in logs))
+
+    def test_the_brand_account_that_cannot_see_the_site_is_refused_and_nothing_is_written(self):
+        http = self.http_for([])
+        logs = []
+        with patch.dict(os.environ, {"SOCIAL_TOKEN_KEY": KEY}):
+            rc = gc.run_exchange("4/0Acode", env=self.env, http=http, log=logs.append, vault_path=self.box, profile="search")
+        self.assertEqual(rc, 7)
+        self.assertIn("GOOGLE_CONSENT=wrong_account", logs)
+        self.assertTrue(any("PERSONAL" in l for l in logs))
+        self.assertFalse(os.path.exists(self.box))
+
+    def test_a_short_search_token_is_refused(self):
+        http = self.http_for(["sc-domain:docoga.com.ng"], scope="https://www.googleapis.com/auth/webmasters.readonly")
+        logs = []
+        with patch.dict(os.environ, {"SOCIAL_TOKEN_KEY": KEY}):
+            rc = gc.run_exchange("4/0Acode", env=self.env, http=http, log=logs.append, vault_path=self.box, profile="search")
+        self.assertEqual(rc, 4)
+        self.assertFalse(os.path.exists(self.box))
+
+    def test_search_console_reads_the_personal_box_first_and_the_youtube_token_when_there_is_none(self):
+        import search_console as scn
+        tmp = tempfile.mkdtemp()
+        cwd = os.getcwd()
+        os.chdir(tmp)
+        try:
+            with patch.dict(os.environ, {"SOCIAL_TOKEN_KEY": KEY, "YT_CLIENT_ID": "c", "YT_CLIENT_SECRET": "s"}):
+                with patch.object(token_vault, "VAULT_DIR", Path(tmp) / "logs"):
+                    self.assertEqual(scn.search_refresh_token(), "")
+                    token_vault.seal("GOOGLE_SEARCH_TOKEN", "RT-S", out=open(os.devnull, "w"))
+                    self.assertEqual(scn.search_refresh_token(), "RT-S")
+                    seen = {}
+
+                    def fake_refresh(cid, csec, refresh, http=None):
+                        seen["refresh"] = refresh
+                        return {"access_token": "AT-S"}
+                    with patch.object(yt_publish, "refresh_access_token", fake_refresh):
+                        http, which = scn.authorize(http=yt_publish.Http(session=object()))
+                    self.assertEqual(which, "search-box")
+                    self.assertEqual(seen["refresh"], "RT-S")
+                    self.assertEqual(http.token, "AT-S")
+        finally:
+            os.chdir(cwd)
+
+    def test_the_search_workflow_is_the_same_phone_path_and_never_touches_the_youtube_box(self):
+        text = (ROOT / ".github" / "workflows" / "google_search_consent.yml").read_text(encoding="utf-8")
+        for need in ("YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}", "YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}",
+                     "SOCIAL_TOKEN_KEY: ${{ secrets.SOCIAL_TOKEN_KEY }}", "google_consent.py url --profile search",
+                     "google_consent.py exchange --profile search", "logs/google_search_token.box", "PERSONAL", "set +e",
+                     "tools/search_console.py"):
+            self.assertIn(need, text)
+        self.assertNotIn("yt_refresh_token.box", text)
+        self.assertNotIn("accept_partial", text)
+        self.assertNotIn("echo \"$GOOGLE_AUTH_CODE\"", text)

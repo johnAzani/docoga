@@ -8,10 +8,11 @@ it two ways: the Monday scorecard grades Google clicks like any other channel, a
 "striking distance" list (queries at positions 5–20 with real impressions) becomes posts and
 Shorts that answer the question in their first line, linking the page Google already ranks.
 
-Same Google OAuth client and refresh token as the YouTube lane. The token must carry
-`https://www.googleapis.com/auth/webmasters.readonly` — one re-consent that also adds
-`yt-analytics.readonly` (docs/BRAIN.md). Without the scope Google answers 403; this tool
-prints `SEARCH_CONSOLE=missing-scope` and writes nothing, and the scorecard says so.
+Same Google OAuth client as the YouTube lane; the token is the PERSONAL account's read-only
+box (logs/google_search_token.box, tools/google_consent.py --profile search) when it exists —
+Search Console is verified under the personal account and the brand-channel YouTube token cannot
+see it (28 Oct 2026) — else the YouTube token. Without the webmasters.readonly scope Google
+answers 403; this tool prints `SEARCH_CONSOLE=missing-scope` and writes nothing.
 
     python3 tools/search_console.py [--days 28] [--out logs/search_console.json]
 Exit 0 always (a data pull must never redden the stats lane); machine line SEARCH_CONSOLE=…
@@ -100,23 +101,59 @@ def pull(http, days=28, today=None):
     return None, "no-property", json.dumps(last[1])[:160] if last else "neither property answered"
 
 
+SEARCH_VAULT = "GOOGLE_SEARCH_TOKEN"      # logs/google_search_token.box — the personal account, read-only
+
+
+def search_refresh_token():
+    """The refresh token of the second consent (tools/google_consent.py --profile search), when
+    its box exists and SOCIAL_TOKEN_KEY opens it; else "". 28 Oct 2026: Search Console is
+    verified under the owner's PERSONAL Google account; the YouTube token belongs to the DocOga
+    brand account (its own identity) and has seen no property since the 19 Oct re-mint — the
+    Google line froze at 19 Oct. This box wins; the YouTube token is the fallback."""
+    if not os.environ.get("SOCIAL_TOKEN_KEY"):
+        return ""
+    try:
+        import token_vault
+        if not token_vault._vault_path(SEARCH_VAULT).is_file():
+            return ""
+        return (token_vault.open_box(SEARCH_VAULT)[0] or "").strip()
+    except Exception:  # noqa: BLE001 — a damaged box falls back to the YouTube token
+        return ""
+
+
+def authorize(http=None):
+    """(http, which) — `which` names the token used: 'search-box' or 'youtube'."""
+    refresh = search_refresh_token()
+    if refresh and os.environ.get("YT_CLIENT_ID") and os.environ.get("YT_CLIENT_SECRET"):
+        http = http or yt_publish.Http()
+        payload = yt_publish.refresh_access_token(os.environ["YT_CLIENT_ID"], os.environ["YT_CLIENT_SECRET"], refresh, http=http)
+        http.token = payload["access_token"]
+        return http, "search-box"
+    http, _ = yt_publish.authorize(http)
+    return http, "youtube"
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description="pull Google Search Console demand data for docoga.com.ng")
     ap.add_argument("--days", type=int, default=28)
     ap.add_argument("--out", default=str(OUT))
     a = ap.parse_args(argv)
     try:
-        http, _ = yt_publish.authorize()
+        http, which = authorize()
     except yt_publish.Problem as p:
         print("::notice title=Search Console skipped::%s" % p.what[:160])
         print("SEARCH_CONSOLE=no-token")
         return 0
+    print("SEARCH_CONSOLE_TOKEN=%s" % which)
     data, state, detail = pull(http, days=a.days)
     if state == "missing-scope":
         print("::notice title=Search Console needs one re-consent::the Google token has no webmasters.readonly — redo the "
               "YouTube consent once with the extra scope (docs/BRAIN.md → Google re-consent) and Google's queries feed the brain. %s" % detail)
         print("SEARCH_CONSOLE=missing-scope")
         return 0
+    if state == "no-property" and which == "youtube":
+        print("::notice title=Search Console needs the personal-account consent::the YouTube (brand) token cannot "
+              "see the property. Actions → 'Google consent — Search Console (personal account)' (docs/TOKENS.md §4b). %s" % detail)
     if state != "ok":
         print("::notice title=Search Console not read (%s)::%s" % (state, detail))
         print("SEARCH_CONSOLE=%s" % state)

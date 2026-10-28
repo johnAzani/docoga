@@ -105,6 +105,38 @@ it had been grading the bootstrap secret because `yt_publish` imports `requests`
 scorecard job never installs — a false "Google is short 6 permissions" for weeks.)
 Machine lines: `GOOGLE_CONSENT=ok|partial|refused|failed`, `GOOGLE_SCOPES_MISSING=`.
 
+## 4b · Google — Search Console + GA4, the PERSONAL account, read-only → `logs/google_search_token.box`
+
+**Why a second token (28 Oct 2026).** Search Console for docoga.com.ng is verified under the owner's
+*personal* Google account. The YouTube token (§4) was deliberately minted for the **DocOga brand
+channel** — Google's second chooser — and a brand account is its own identity: it is not a user of
+the Search Console property. From the 19 Oct re-mint the pull answered `no-property` and the Google
+line on the scorecard froze at 19 Oct (12 clicks / 430 impressions). The YouTube token is correct
+and is never touched; Search Console needs its own, read-only consent as the personal account.
+
+Scopes (both read-only; `analytics.readonly` is on the same consent so GA4 reporting never needs a
+third tap):
+
+```
+https://www.googleapis.com/auth/webmasters.readonly
+https://www.googleapis.com/auth/analytics.readonly
+```
+
+The mint, from the phone, same shape as §4:
+1. Actions → **Google consent — Search Console (personal account)** → Run workflow (code empty) →
+   the summary prints the link (`python3 tools/google_consent.py url --profile search` rebuilds it).
+2. Open it, **pick the personal Google account** (the one Search Console's emails go to — there is
+   no channel chooser on this path), tick both boxes, Continue. It lands on
+   `developers.google.com/oauthplayground/?code=4/0A…` — copy the whole address.
+3. Run the workflow again with the address in **code**. The job exchanges it, checks both scopes,
+   **lists the Search Console sites the token can see and refuses one that cannot see
+   docoga.com.ng** (`GOOGLE_CONSENT=wrong_account`, exit 7 — the brand account picked by mistake),
+   seals `GOOGLE_SEARCH_TOKEN` into `logs/google_search_token.box`, commits, and pulls Search
+   Console once to prove it.
+
+`tools/search_console.py` reads this box first and the YouTube token only when there is no box.
+The Monday audit grades it as `google_search` (`SCOPES_GOOGLE_SEARCH=complete`).
+
 ## 5 · LinkedIn → secret `LINKEDIN_ACCESS_TOKEN` (+ `LINKEDIN_CLIENT_ID`, `LINKEDIN_CLIENT_SECRET` so the audit can read it)
 
 Products: **Sign In with LinkedIn using OpenID Connect** + **Share on LinkedIn**. Scopes: `openid profile email w_member_social`. (Company-Page scopes need a verified Page product; add later only if we ever post as a Page.)
