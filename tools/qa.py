@@ -306,8 +306,17 @@ check(f"every SPA deep link resolves to a real route ({len(routes)} routes)",
 
 # 11c. A sitemap entry for a file we don't ship is a soft 404 in Search Console.
 smap_locs = re.findall(r"<loc>https://docoga\.com\.ng/([^<]*)</loc>", smap)
-orphan = [l for l in smap_locs if l and not os.path.exists(os.path.join(SITE, l))]
+def _served(l):  # Cloudflare html_handling: /x → x.html, /dir/ → dir/index.html, /x.html → 307 /x
+    cands = [l, l + ".html", l.rstrip("/") + "/index.html"] if l else []
+    return any(os.path.isfile(os.path.join(SITE, c)) for c in cands)
+orphan = [l for l in smap_locs if l and not _served(l)]
 check(f"every sitemap loc is a real file ({len(smap_locs)} locs)", not orphan, ", ".join(orphan[:5]))
+# 11d. Clean URLs (28 Oct 2026). Cloudflare answers /x.html with 307 → /x, so a canonical, og:url
+# or sitemap loc ending in .html points at a redirect — Search Console indexed pages twice for it.
+_cu = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "clean_urls.py"), "--check"],
+                     capture_output=True, text=True)
+check("no canonical / og:url / sitemap loc ends in .html (Cloudflare 307s it)", _cu.returncode == 0,
+      (_cu.stdout.strip().splitlines() or [""])[0])
 
 print("── 12. Hosting is Cloudflare Pages (Netlify retired 3 Oct 2026) ──")
 # The owner moved hosting off Netlify entirely. These three checks exist because

@@ -145,7 +145,7 @@ def page_html(meta, row, now=None, build=None):
     eid = meta["id"]
     yt = meta.get("youtube") or {}
     video_id = row["video_id"]
-    url = "%s/%s/%s.html" % (HOST, DIRNAME, eid)
+    url = "%s/%s/%s" % (HOST, DIRNAME, eid)  # clean URL: Cloudflare 307s /x.html → /x
     watch = "https://www.youtube.com/watch?v=%s" % video_id
     title = str(yt.get("title") or meta.get("title") or "").strip()
     desc_full = str(yt.get("description") or "").strip()
@@ -260,7 +260,7 @@ def build(site=None, ledger=None, episodes=None, build_dir=None, now=None, log=p
     folder = site / DIRNAME
     written, entries, urls = [], [], []
     for meta, row in published_episodes(ledger, episodes):
-        url = "%s/%s/%s.html" % (HOST, DIRNAME, meta["id"])
+        url = "%s/%s/%s" % (HOST, DIRNAME, meta["id"])
         text = page_html(meta, row, now=now, build=build_dir)
         if _write_if_changed(folder / ("%s.html" % meta["id"]), text):
             written.append(url)

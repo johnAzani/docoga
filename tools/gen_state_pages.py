@@ -2,7 +2,9 @@
 """Generate DocOga state SEO pages: 4 tenancy tools x 6 states = 24 pages.
 Facts verified 19 Sep 2026: Lagos Tenancy Law 2011 s.13(1)/s.4/s.13(2)-(3);
 Recovery of Premises Act s.8 (FCT). Other states: honest general framing."""
-import io, os
+import io, os, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from clean_urls import clean_text  # Cloudflare 307s /x.html → /x: canonicals, links and sitemap locs are bare
 
 STATES = {
  'lagos': dict(name='Lagos', place='Lagos', full='Lagos State',
@@ -663,7 +665,7 @@ def main():
             d['same_state_links'] = '\n'.join(f'<a href="https://docoga.com.ng/{ts2}-{slug}.html">{t2["tool"]} \u2014 {st["name"]}</a>' for ts2, t2 in TOOLS.items() if ts2 != tslug)
             d['other_states_links'] = '\n'.join(f'<a href="https://docoga.com.ng/{tslug}-{s2}.html">{st2["name"]}</a>' for s2, st2 in STATES.items() if s2 != slug)
             html = TPL.format(**d)
-            io.open('site/' + fname, 'w', encoding='utf-8').write(html)
+            io.open('site/' + fname, 'w', encoding='utf-8').write(clean_text(html, relative=True))
             sitemap_add.append(fname)
             made += 1
     print(f"generated {made} state pages")
@@ -675,9 +677,9 @@ def main():
     # Remove existing state page entries (idempotent regeneration)
     import re
     for f in sitemap_add:
-        pattern = rf'\s*<url>\s*<loc>https://docoga\.com\.ng/{re.escape(f)}</loc>\s*<priority>0\.7</priority>\s*</url>'
+        pattern = rf'\s*<url>\s*<loc>https://docoga\.com\.ng/{re.escape(f[:-5])}(?:\.html)?</loc>\s*<priority>0\.7</priority>\s*</url>'
         s = re.sub(pattern, '', s)
-    entries = ''.join(f'  <url>\n    <loc>https://docoga.com.ng/{f}</loc>\n    <priority>0.7</priority>\n  </url>\n' for f in sitemap_add)
+    entries = ''.join(f'  <url>\n    <loc>https://docoga.com.ng/{f[:-5]}</loc>\n    <priority>0.7</priority>\n  </url>\n' for f in sitemap_add)
     s = s.replace('</urlset>', entries + '</urlset>')
     io.open('site/sitemap.xml', 'w', encoding='utf-8').write(s)
     print(f"sitemap: {len(sitemap_add)} URLs (regenerated)")

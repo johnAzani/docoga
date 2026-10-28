@@ -43,22 +43,22 @@ class PageTests(unittest.TestCase):
 
     def test_seo_contract_canonical_schema_and_sitemap(self):
         t = _page()
-        self.assertIn('<link rel="canonical" href="https://docoga.com.ng/rent-relief-nigeria.html">', t)
+        self.assertIn('<link rel="canonical" href="https://docoga.com.ng/rent-relief-nigeria">', t)
         ld = re.search(r'<script type="application/ld\+json">\s*(\{.*?\})\s*</script>', t, re.S).group(1)
         data = json.loads(ld)
         self.assertEqual(data["@type"], "FAQPage")
         self.assertGreaterEqual(len(data["mainEntity"]), 4)
         smap = (SITE / "sitemap.xml").read_text(encoding="utf-8")
-        self.assertIn("https://docoga.com.ng/rent-relief-nigeria.html", smap)
-        self.assertEqual(smap.count("rent-relief-nigeria.html"), 1)
+        self.assertIn("<loc>https://docoga.com.ng/rent-relief-nigeria</loc>", smap)   # clean URL: Cloudflare 307s /x.html → /x
+        self.assertEqual(smap.count("rent-relief-nigeria"), 1)
 
     def test_the_homepage_links_the_guides_not_the_states_twice(self):
         idx = INDEX.read_text(encoding="utf-8")
         i = idx.index("Free guides — the questions Nigerians ask first")
         block = idx[i:idx.index("</div>", i)]
-        self.assertIn('href="rent-relief-nigeria.html"', block)
-        self.assertIn('href="notice-to-quit-nigeria.html"', block)
-        self.assertNotIn('href="tenancy-agreement-lagos.html"', block)   # that is the State guides block's job
+        self.assertIn('href="/rent-relief-nigeria"', block)
+        self.assertIn('href="/notice-to-quit-nigeria"', block)
+        self.assertNotIn('href="/tenancy-agreement-lagos"', block)   # that is the State guides block's job
 
     def test_the_letter_and_calculator_widgets_are_on_the_page(self):
         t = _page()
@@ -91,7 +91,7 @@ class ReceiptFieldTests(unittest.TestCase):
         self.assertIn("['r_from_addr','r_from_addr']", idx)
         self.assertIn("['r_tin','r_tin']", idx)
         self.assertIn("TIN/NIN: '+esc(d.r_tin)", idx)
-        self.assertIn('href="rent-relief-nigeria.html"', idx)
+        self.assertIn('href="/rent-relief-nigeria"', idx)
         # the ledger fingerprint must not change shape: still the six fixed fields
         self.assertIn("return ['v1',n(f.date),amt,n(f.from),n(f.issuer),n(f.property),n(f.period)].join('|');", idx)
 
