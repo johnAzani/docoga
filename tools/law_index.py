@@ -30,6 +30,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 import state_law_data as law  # noqa: E402
+import federal_law_data as federal  # noqa: E402
 
 TAG = re.compile(r"<[^>]+>")
 CITE_IN_TEXT = re.compile(r"^\s*(s\.\s*[0-9][0-9A-Za-z().,–\- ]{0,40}?)\s*[—:\-–]\s*", re.U)
@@ -105,9 +106,21 @@ def _facts_from(value, slug, key, cite, out, stem=""):
             out.append(dict(key=key, cite=plain(cite or ""), text=_clip(text)))
 
 
-def facts_for(slug):
-    """[{id, state, slug, tier, statute, key, cite, text}] for one state."""
-    state = law.STATE_LAW[slug]
+FEDERAL_SLUG = "nigeria"
+
+
+def is_federal(fact_or_slug):
+    """Federal facts (Nigeria Tax Act etc.) apply in every state: a claim from any state may cite them."""
+    slug = fact_or_slug.get("slug") if isinstance(fact_or_slug, dict) else fact_or_slug
+    return slug in federal.FEDERAL_LAW
+
+
+def _source(slug):
+    return law.STATE_LAW.get(slug) or federal.FEDERAL_LAW[slug]
+
+
+def _own_facts(slug):
+    state = _source(slug)
     statute = (state.get("statutes") or [{}])[0].get("title", "")
     raw = []
     for key, value in state.items():
@@ -128,10 +141,28 @@ def facts_for(slug):
     return facts
 
 
+def federal_facts():
+    """The federal shelf alone (ids `nigeria:…`)."""
+    out = []
+    for slug in federal.FEDERAL_LAW:
+        out.extend(_own_facts(slug))
+    return out
+
+
+def facts_for(slug):
+    """[{id, state, slug, tier, statute, key, cite, text}] for one state — its own law first, then
+    the federal shelf (rent relief and whatever federal law is added later), because a tenant in
+    that state lives under both. `facts_for("nigeria")` is the federal shelf alone."""
+    if is_federal(slug):
+        return _own_facts(slug)
+    return _own_facts(slug) + federal_facts()
+
+
 def all_facts():
     out = []
     for slug in law.STATE_LAW:
-        out.extend(facts_for(slug))
+        out.extend(_own_facts(slug))
+    out.extend(federal_facts())
     return out
 
 

@@ -421,7 +421,9 @@ Answer:
 {{
   "verdicts": [{{"fact_id": "...", "claim": "...", "supported": true or false, "reason": "short"}}],
   "unsupported_statements": ["any sentence in the post or Short that states a legal rule, period, amount,
-                              duty or right that is NOT in the facts above — empty list if none"]
+                              duty or right that is NOT in the facts above — empty list if none. Questions,
+                              calls to action ('make yours at DocOga'), and practical tips that state no rule
+                              ('keep the receipt', 'ask for a signed copy') are NOT legal statements"]
 }}"""
 
 
@@ -624,9 +626,11 @@ def lint(pack, ctx, said):
         fact = ctx["facts_by_id"].get(fid) or everything.get(fid)
         if not fact:
             p.append("claim cites unknown fact id %r" % fid)
-        elif state and fact["slug"] != state:
+        elif state and fact["slug"] != state and not law_index.is_federal(fact):
             p.append("fact %s belongs to %s, not %s" % (fid, fact["slug"], state))
-    if claims and state and ctx["state_name"].lower() not in low and ctx["state"].replace("-", " ") not in low:
+    only_federal = bool(claims) and all(law_index.is_federal(everything.get(str(c.get("fact_id") or "")) or ctx["facts_by_id"].get(str(c.get("fact_id") or "")) or {})
+                                        for c in claims if isinstance(c, dict))
+    if claims and state and not only_federal and ctx["state_name"].lower() not in low and ctx["state"].replace("-", " ") not in low:
         p.append("name the state (%s) in the post when a claim is made" % ctx["state_name"])
     if claims and (len(re.findall(r"\bs\.\s?\d", corpus)) or 0) == 0 and pack.get("post_type") in ("educational", "state_spotlight"):
         p.append("a cited post names the section number (e.g. s.5) in its copy")

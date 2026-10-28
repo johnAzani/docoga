@@ -107,6 +107,7 @@ class BrainTests(unittest.TestCase):
         self.assertEqual(len(hit), 1)
         self.assertIn("docoga.com.ng/rent-relief-nigeria.html", hit[0]["link"])
         self.assertIn("never call it automatic", hit[0]["note"].lower())
+        self.assertIn("nigeria:rent_relief:1", hit[0]["note"])
 
 
 @unittest.skipUnless(HAS_JSDOM, "node + jsdom (npm install) needed to run the page's own script")
@@ -145,3 +146,58 @@ console.log(JSON.stringify({
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class FederalShelfTests(unittest.TestCase):
+    """The brain refused its first rent-relief post on 28 Oct 1:32am ('price ₦500,000 is neither ours nor
+    in a cited fact', 'statistic 20% is not in a cited fact', 'claim cites unknown fact id 2026-10-27')
+    because the law lived in strategy.md and the newsdesk, not on the shelf. Now it is a federal fact
+    every state's shelf carries, citable from any state."""
+
+    def test_the_federal_facts_carry_the_numbers_the_gates_look_for(self):
+        import sys
+        sys.path.insert(0, str(ROOT / "tools"))
+        import law_index
+        fed = {f["id"]: f for f in law_index.federal_facts()}
+        one = fed["nigeria:rent_relief:1"]
+        self.assertEqual(one["cite"], "s.30(2)(a)(vi)")
+        self.assertEqual(one["statute"], "Nigeria Tax Act 2025")
+        for needle in ("20%", "₦500,000", "accurately declares"):
+            self.assertIn(needle, one["text"])
+        texts = " ".join(f["text"] for f in fed.values())
+        for needle in ("31 January 2027", "31 March 2027", "TIN or NIN", "₦240,000", "₦800,000", "25% above ₦50,000,000", "₦0"):
+            self.assertIn(needle, texts)
+        self.assertFalse(any(len(f["text"]) >= law_index.MAX_TEXT for f in fed.values()), "a clipped fact loses its numbers")
+
+    def test_every_state_shelf_ends_with_the_federal_facts_and_the_rotation_never_picks_nigeria(self):
+        import sys
+        sys.path.insert(0, str(ROOT / "tools"))
+        import law_index
+        lagos = law_index.facts_for("lagos")
+        self.assertEqual(lagos[-1]["id"], "nigeria:rent_relief:7")
+        self.assertTrue(all(f["slug"] == "lagos" for f in lagos[:-7]))
+        self.assertEqual(law_index.facts_for("nigeria"), law_index.federal_facts())
+        self.assertNotIn("nigeria", [s for s, _, _ in law_index.states()])
+        ids = [f["id"] for f in law_index.all_facts()]
+        self.assertEqual(len(ids), len(set(ids)))
+        self.assertTrue(law_index.is_federal(lagos[-1]) and not law_index.is_federal(lagos[0]))
+
+    def test_a_federal_claim_passes_the_state_and_number_gates_from_any_state(self):
+        import sys
+        sys.path.insert(0, str(ROOT / "tools"))
+        import law_index, brain
+        sys.path.insert(0, str(ROOT / "tools" / "tests"))
+        import test_brain
+        from datetime import date
+        pack = test_brain.good_pack()
+        ctx = brain.day_context(date(2026, 10, 26), said=[])
+        ctx["facts_by_id"] = {f["id"]: f for f in ctx["facts"]}
+        pack["state"] = ctx["state"]
+        state = ctx["state"]
+        pack["claims"] = [{"fact_id": "nigeria:rent_relief:1", "text": "20% of rent, max ₦500,000"}]
+        pack["post"]["lines"] = ["Under s.30 of the Nigeria Tax Act 2025 you deduct 20% of the rent you paid, up to ₦500,000.",
+                                 "It is claimed, not automatic: your receipt and agreement are the evidence."]
+        pack["post"]["headline"] = "Your rent cuts your tax from 2026"
+        problems = brain.lint(pack, ctx, [])
+        bad = [p for p in problems if "cited fact" in p or "belongs to" in p or "unknown fact id" in p or "name the state" in p]
+        self.assertEqual(bad, [])
