@@ -1,0 +1,8 @@
+{
+  "v": 1,
+  "alg": "A256GCM",
+  "name": "GOOGLE_SEARCH_TOKEN",
+  "nonce": "c6nrAtS2A9aJvmr+",
+  "ciphertext": "eXY6bWW4hGvrE5aKg1kY8E3sZzMj0X3bE2Da3+sZ6ltJ/jXzgnP7EvO5khZdovyBap9o/J42c2NIjgk+gutGRMBFTZnBGR+/SleIfGVf4eqgRDQWP9K9gNxroD6tGJcvPxsH1L+9bEI1gl4Nevl+DDKfbGwIkj8=",
+  "minted_at": "2026-10-28T14:03:37+00:00"
+}
