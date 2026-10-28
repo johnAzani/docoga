@@ -119,9 +119,22 @@ third tap):
 
 ```
 https://www.googleapis.com/auth/webmasters.readonly
+https://www.googleapis.com/auth/webmasters            (sites.add — put the verified property in Search Console)
+https://www.googleapis.com/auth/siteverification      (verify docoga.com.ng under this account — META tag)
 https://www.googleapis.com/auth/analytics.readonly
 https://www.googleapis.com/auth/userinfo.email      (non-sensitive — so the summary names the account)
 ```
+
+**28 Oct 2026, 2:20pm — the finding and the owner's word.** Run #3 proved `tagme.int@gmail.com` sees
+zero Search Console properties; the site had been verified under another account (its META tag is
+still line 15 of `site/index.html` and stays). Owner: *"verify a new one under tagme.int@gmail.com."*
+So the consent carries `siteverification` + `webmasters`, and the job finishes the whole thing itself
+(`tools/search_console_verify.py`): getToken(META) → a second `google-site-verification` tag in
+`site/index.html` → commit **without** `[skip ci]` (the Workers build must serve it) → poll the live
+page → `webResource.insert` → `sites.add` → pull 28 days. Re-runnable any time from Actions →
+**Search Console — verify docoga.com.ng (personal account)** (already verified → straight to the
+pull). Needs the **Site Verification API** enabled on the DocOga project — when it is not, the summary
+prints the one enable link (exit 9).
 
 The mint, from the phone, same shape as §4:
 1. Actions → **Google consent — Search Console (personal account)** → Run workflow (code empty) →

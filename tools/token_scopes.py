@@ -82,6 +82,8 @@ WANT = {
     # Console is verified under the personal account, which the brand-channel token cannot see.
     "google_search": [
         "https://www.googleapis.com/auth/webmasters.readonly",
+        "https://www.googleapis.com/auth/webmasters",          # sites.add — put the verified property in Search Console
+        "https://www.googleapis.com/auth/siteverification",    # verify docoga.com.ng under this account (META tag, ₦0)
         "https://www.googleapis.com/auth/analytics.readonly",
         "https://www.googleapis.com/auth/userinfo.email",     # so the consent summary can NAME the account it was given
     ],

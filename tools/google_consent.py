@@ -176,13 +176,22 @@ def run_exchange(code, env=None, http=_http, accept_partial=False, log=print, va
                 "nothing written." % (st, detail))
             log("GOOGLE_CONSENT=sites_api_%s" % st)
             return 8
-        if not ok:
+        can_verify = "https://www.googleapis.com/auth/siteverification" in have
+        if not ok and not can_verify:
             log("google consent: the account %s sees %d Search Console propert%s (%s) and %s is not among them "
                 "— it is not the account that verified the site. Refused; nothing written. Open the link again "
                 "and pick the Google account whose Search Console shows %s (search.google.com/search-console)."
                 % (who or "picked", len(names), "y" if len(names) == 1 else "ies", ", ".join(names) or "none", SITE_HOST, SITE_HOST))
             log("GOOGLE_CONSENT=wrong_account")
             return 7
+        if not ok:
+            # 28 Oct 2026, the owner's word: "verify a new one under tagme.int@gmail.com". The token can
+            # verify, so it is sealed and tools/search_console_verify.py does the rest in the same run.
+            log("google consent: the account %s does not see %s yet — sealed anyway; the verification step "
+                "puts its tag on the site and verifies it under this account." % (who or "picked", SITE_HOST))
+            log("GOOGLE_SEARCH_VERIFIED=no")
+        else:
+            log("GOOGLE_SEARCH_VERIFIED=yes")
         rc = token_vault.seal(vault_name, refresh, path=vault_path, out=sys.stdout)
         if rc:
             log("GOOGLE_CONSENT=failed")

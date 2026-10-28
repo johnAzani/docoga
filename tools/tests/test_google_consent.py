@@ -231,7 +231,7 @@ class SearchProfileTests(unittest.TestCase):
     def test_the_search_link_asks_for_the_two_read_only_scopes_and_nothing_youtube(self):
         q = parse_qs(urlparse(gc.consent_url("cid", profile="search")).query)
         self.assertEqual(set(q["scope"][0].split()), set(token_scopes.WANT["google_search"]))
-        self.assertEqual(len(token_scopes.WANT["google_search"]), 3)
+        self.assertEqual(len(token_scopes.WANT["google_search"]), 5)
         self.assertIn("https://www.googleapis.com/auth/userinfo.email", q["scope"][0].split())
         self.assertFalse(any("youtube" in s for s in q["scope"][0].split()))
         self.assertEqual(q["access_type"], ["offline"])
@@ -246,20 +246,33 @@ class SearchProfileTests(unittest.TestCase):
         self.assertNotIn(gc.CHANNELS_URL, http.calls)
         self.assertIn("GOOGLE_SEARCH_SITES=2", logs)
         self.assertIn("GOOGLE_ACCOUNT=owner@example.com", logs)
+        self.assertIn("GOOGLE_SEARCH_VERIFIED=yes", logs)
         self.assertIn("GOOGLE_CONSENT=ok", logs)
         self.assertTrue(os.path.exists(self.box))
         with patch.dict(os.environ, {"SOCIAL_TOKEN_KEY": KEY}):
             self.assertEqual(token_vault.open_box("GOOGLE_SEARCH_TOKEN", path=self.box)[0], "RT-S")
         self.assertFalse(any("RT-S" in l for l in logs))
 
-    def test_the_brand_account_that_cannot_see_the_site_is_refused_and_nothing_is_written(self):
+    def test_an_account_that_cannot_see_the_site_but_can_verify_is_sealed_for_the_verification_step(self):
+        # 28 Oct 2026, the owner's word: "verify a new one under tagme.int@gmail.com".
         http = self.http_for([])
         logs = []
         with patch.dict(os.environ, {"SOCIAL_TOKEN_KEY": KEY}):
             rc = gc.run_exchange("4/0Acode", env=self.env, http=http, log=logs.append, vault_path=self.box, profile="search")
+        self.assertEqual(rc, 0, logs)
+        self.assertIn("GOOGLE_ACCOUNT=owner@example.com", logs)
+        self.assertIn("GOOGLE_SEARCH_VERIFIED=no", logs)
+        self.assertIn("GOOGLE_CONSENT=ok", logs)
+        self.assertTrue(os.path.exists(self.box))
+
+    def test_without_the_verify_scope_an_account_that_cannot_see_the_site_is_still_refused(self):
+        legacy = "https://www.googleapis.com/auth/webmasters.readonly https://www.googleapis.com/auth/analytics.readonly https://www.googleapis.com/auth/userinfo.email"
+        http = self.http_for([], scope=legacy)
+        logs = []
+        with patch.dict(os.environ, {"SOCIAL_TOKEN_KEY": KEY}):
+            rc = gc.run_exchange("4/0Acode", env=self.env, http=http, log=logs.append, vault_path=self.box, profile="search", accept_partial=True)
         self.assertEqual(rc, 7)
         self.assertIn("GOOGLE_CONSENT=wrong_account", logs)
-        self.assertIn("GOOGLE_ACCOUNT=owner@example.com", logs)
         self.assertTrue(any("owner@example.com sees 0 Search Console properties" in l for l in logs))
         self.assertFalse(os.path.exists(self.box))
 

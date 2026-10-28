@@ -1,0 +1,99 @@
+name: Search Console — verify docoga.com.ng (personal account)
+
+# 28 Oct 2026. Re-runnable finish of the personal-account consent: the sealed box
+# (logs/google_search_token.box) → Site Verification API (META) → tag in site/index.html →
+# commit WITHOUT [skip ci] so the Workers build serves it → verify → sites.add → pull 28 days.
+# Idempotent: already verified → straight to the pull. Needs the Site Verification API enabled on
+# the DocOga project (the summary prints the enable link when it is not).
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: google-consent
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify and pull
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      TZ: Africa/Lagos
+      YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+      YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+      SOCIAL_TOKEN_KEY: ${{ secrets.SOCIAL_TOKEN_KEY }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - run: python3 -m pip install --quiet "requests>=2.31,<3" cryptography
+
+      - name: Prepare the verification tag
+        run: |
+          set +e
+          python3 tools/search_console_verify.py prepare | tee /tmp/prep.log
+          rc=${PIPESTATUS[0]}
+          set -e
+          grep -E "^SEARCH_VERIFY" /tmp/prep.log >> "$GITHUB_ENV" || true
+          {
+            echo "### 1 · Verification tag"
+            echo
+            echo '```'
+            grep -E "^(search verify:|SEARCH_VERIFY)" /tmp/prep.log || true
+            echo '```'
+            [ "$rc" = "9" ] && echo "⏸ One tap: enable the **Site Verification API** on the DocOga project (link above), then run this workflow again."
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$rc"
+
+      - name: Commit the tag so the site rebuilds
+        if: ${{ env.SEARCH_VERIFY_CHANGED == 'yes' }}
+        run: |
+          git config user.name "docoga-bot"
+          git config user.email "docoga-bot@users.noreply.github.com"
+          git add site/index.html
+          git commit -m "Search Console: verification tag for the personal account (site rebuild)" || exit 0
+          git pull --rebase origin main || true
+          git push origin HEAD:main
+
+      - name: Verify with Google (waits for the live page)
+        run: |
+          set +e
+          python3 tools/search_console_verify.py verify --wait 480 | tee /tmp/verify.log
+          rc=${PIPESTATUS[0]}
+          set -e
+          {
+            echo "### 2 · Verification"
+            echo
+            echo '```'
+            grep -E "^(search verify:|SEARCH_VERIFY|SEARCH_CONSOLE_SITE_ADD)" /tmp/verify.log || true
+            echo '```'
+            case "$rc" in
+              0) echo "✅ docoga.com.ng is verified under this account." ;;
+              *) echo "⏸ Not finished — read the line above; if the tag is 'not live' yet, run this workflow again in a few minutes." ;;
+            esac
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$rc"
+
+      - name: Pull Search Console, 28 days
+        run: |
+          set +e
+          python3 tools/search_console.py --days 28 | tee /tmp/sc.log
+          set -e
+          {
+            echo "### 3 · Search Console, 28 days"
+            echo
+            echo '```'
+            tail -n 10 /tmp/sc.log
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          git config user.name "docoga-bot"
+          git config user.email "docoga-bot@users.noreply.github.com"
+          git add logs/search_console.json 2>/dev/null || true
+          git commit -m "Auto: Search Console pull after verification [skip ci]" || exit 0
+          git pull --rebase origin main || true
+          git push origin HEAD:main || true

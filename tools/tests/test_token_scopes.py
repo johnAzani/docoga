@@ -54,7 +54,10 @@ class ListTests(unittest.TestCase):
         self.assertEqual(missing, [], "scopes the code names but the mint list lacks")
         self.assertIn("instagram_business_manage_comments", named, "the extractor sees the replies lane's scopes")
         google = set(re.findall(r"https://www\.googleapis\.com/auth/[a-z.\-]+", code))
-        self.assertTrue(google <= set(ts.WANT["google"]), google - set(ts.WANT["google"]))
+        # two Google tokens since 28 Oct 2026: the brand channel's (google) and the personal
+        # account's read+verify one (google_search) — a scope must be on one of the two mint lists
+        both = set(ts.WANT["google"]) | set(ts.WANT["google_search"])
+        self.assertTrue(google <= both, google - both)
 
     def test_the_doc_names_every_scope_in_the_code_list(self):
         doc = (ROOT / "docs" / "TOKENS.md").read_text(encoding="utf-8")
