@@ -131,7 +131,7 @@ def faq_for(pack):
 def page_html(pack, facts_by_id=None, now=None):
     now = now or dt.datetime.now(LAGOS)
     slug = slug_for(pack)
-    url = "%s/%s/%s.html" % (HOST, GUIDES_DIRNAME, slug)
+    url = "%s/%s/%s" % (HOST, GUIDES_DIRNAME, slug)  # clean URL: Cloudflare 307s /x.html → /x
     headline = str(pack.get("post", {}).get("headline") or "").strip()
     lines = [str(x).strip() for x in (pack.get("post", {}).get("lines") or []) if str(x).strip()]
     rows = law_rows(pack, facts_by_id)

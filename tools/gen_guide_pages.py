@@ -53,6 +53,8 @@ unverified as general practice + "confirm with a lawyer".
 Run: python3 tools/gen_guide_pages.py   (idempotent — safe to re-run)
 """
 import io, json, os, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from clean_urls import clean_text  # Cloudflare 307s /x.html → /x: canonicals, links and sitemap locs are bare
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 SITE = os.path.join(ROOT, "site")
@@ -1004,7 +1006,7 @@ def main():
     made = []
     for fname, p in PAGES.items():
         html = render(fname, p)
-        io.open(os.path.join(SITE, fname), "w", encoding="utf-8").write(html)
+        io.open(os.path.join(SITE, fname), "w", encoding="utf-8").write(clean_text(html, relative=True))
         made.append(fname)
     sizes = [os.path.getsize(os.path.join(SITE, f)) for f in made]
     print("generated %d guide pages" % len(made))
@@ -1014,11 +1016,11 @@ def main():
     # --- sitemap (idempotent) -------------------------------------------------
     smap_path = os.path.join(SITE, "sitemap.xml")
     s = io.open(smap_path, encoding="utf-8").read()
-    missing = [f for f in made if f not in s]
+    missing = [f for f in made if ("<loc>%s/%s</loc>" % (DOMAIN, f[:-5])) not in s]
     if missing:
         entries = "".join(
             '  <url>\n    <loc>%s/%s</loc>\n    <changefreq>monthly</changefreq>\n'
-            '    <priority>%s</priority>\n  </url>\n' % (DOMAIN, f, PAGES[f]["priority"])
+            '    <priority>%s</priority>\n  </url>\n' % (DOMAIN, f[:-5], PAGES[f]["priority"])
             for f in missing
         )
         assert "</urlset>" in s
@@ -1046,7 +1048,7 @@ def main():
                  '    <p style="line-height:2">%s</p>\n  </div>\n\n  ' % links)
         # insert immediately before the State guides block
         idx = idx.replace('<div class="seo-block">\n    ' + anchor, block + '<div class="seo-block">\n    ' + anchor, 1)
-        io.open(idx_path, "w", encoding="utf-8").write(idx)
+        io.open(idx_path, "w", encoding="utf-8").write(clean_text(idx, relative=True))
         print("index: guides block added (%+d bytes)" % (len(idx.encode()) - 0))
 
     print("done")

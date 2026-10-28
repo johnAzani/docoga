@@ -55,7 +55,7 @@ class VideoPages(unittest.TestCase):
 
     def test_page_carries_transcript_player_schema_and_tool_link(self):
         written, urls = self._build()
-        self.assertEqual(urls, ["https://docoga.com.ng/videos/dd3.html"])
+        self.assertEqual(urls, ["https://docoga.com.ng/videos/dd3"])  # clean URL: Cloudflare 307s /x.html → /x
         self.assertIn("https://docoga.com.ng/videos/", written)
         page = (self.site / "videos" / "dd3.html").read_text(encoding="utf-8")
         self.assertIn("youtube-nocookie.com/embed/LIVE456", page, "the public upload, not the deleted one")
@@ -74,7 +74,7 @@ class VideoPages(unittest.TestCase):
         self.assertTrue(schema["transcript"].startswith("Show me your receipts"))
         self.assertIn("1:00</span>What a Receipt Is", page)                 # chapter link with the stamp
         sitemap = (self.site / "sitemap.xml").read_text(encoding="utf-8")
-        self.assertEqual(sitemap.count("<loc>https://docoga.com.ng/videos/dd3.html</loc>"), 1)
+        self.assertEqual(sitemap.count("<loc>https://docoga.com.ng/videos/dd3</loc>"), 1)
         self.assertIn("<loc>https://docoga.com.ng/videos/</loc>", sitemap)
         index = (self.site / "videos" / "index.html").read_text(encoding="utf-8")
         self.assertIn(self.yt_title, index)
@@ -85,7 +85,7 @@ class VideoPages(unittest.TestCase):
         self.assertEqual(written, [])
         self.assertEqual(len(urls), 1)
         sitemap = (self.site / "sitemap.xml").read_text(encoding="utf-8")
-        self.assertEqual(sitemap.count("videos/dd3.html"), 1)
+        self.assertEqual(sitemap.count("videos/dd3<"), 1)
 
     def test_without_aligned_words_the_page_still_builds(self):
         shutil.rmtree(self.build)
