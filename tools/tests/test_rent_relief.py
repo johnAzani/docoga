@@ -201,3 +201,36 @@ class FederalShelfTests(unittest.TestCase):
         problems = brain.lint(pack, ctx, [])
         bad = [p for p in problems if "cited fact" in p or "belongs to" in p or "unknown fact id" in p or "name the state" in p]
         self.assertEqual(bad, [])
+
+
+class NewsHookTests(unittest.TestCase):
+    """11 of the brain's first 20 refusals were 'news_hook is not one of this week's NEWSDESK headlines'
+    — honest shortenings of a 200-character headline, each one a day's post lost."""
+
+    NEWS = [{"title": "Rent relief season: from 2026 tenants deduct 20% of rent (max ₦500,000) — only with a receipt in their name"},
+            {"title": "Viral video: Lagos landlord reportedly punched by tenant after proposing a ₦200k → ₦350k rent jump on renewal"}]
+
+    def test_exact_opening_clause_and_most_words_match_but_invented_stories_do_not(self):
+        import sys
+        sys.path.insert(0, str(ROOT / "tools"))
+        import brain
+        m = lambda h: brain.news_hook_matches(h, self.NEWS)  # noqa: E731
+        self.assertTrue(m(self.NEWS[0]["title"]))
+        self.assertTrue(m("Rent relief season: from 2026 tenants deduct 20% of rent (max ₦500,000)"))
+        self.assertTrue(m("Viral video: Lagos landlord reportedly punched by tenant after proposing a rent jump"))
+        self.assertTrue(m("Lagos landlord punched by tenant after proposing ₦200k to ₦350k rent jump on renewal"))
+        self.assertFalse(m("Senate passes rent control act"))
+        self.assertFalse(m("Lagos"))
+        self.assertFalse(m(""))
+
+    def test_the_pinned_story_is_headline_length_and_its_note_reaches_the_prompt(self):
+        import sys
+        sys.path.insert(0, str(ROOT / "tools"))
+        import newsdesk
+        rows = json.loads((ROOT / "brain" / "newsdesk_pinned.json").read_text(encoding="utf-8"))
+        items = rows["items"] if isinstance(rows, dict) else rows
+        hit = [r for r in items if r["title"].startswith("Rent relief season")][0]
+        self.assertLessEqual(len(hit["title"]), 120)
+        block = newsdesk.prompt_block([hit])
+        self.assertIn("note: Nigeria Tax Act 2025", block)
+        self.assertIn("MUST cite nigeria:rent_relief:1", block)
