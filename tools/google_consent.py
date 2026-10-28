@@ -24,7 +24,8 @@ Nothing here prints a token, a code or a secret.
 
 Machine lines: GOOGLE_CONSENT=ok|partial|refused|failed  GOOGLE_SCOPES_MISSING=<space list>
 Exit: 0 sealed · 2 missing env · 3 Google refused the code · 4 partial and not accepted · 6 wrong channel ·
-5 vault error · 7 wrong account (search profile: the token cannot see docoga.com.ng in Search Console)
+5 vault error · 7 wrong account (search profile: the token cannot see docoga.com.ng in Search Console) ·
+8 the Search Console site list itself failed (API disabled / HTTP error — not an account problem)
 
 --profile search (28 Oct 2026): a second, read-only consent as the PERSONAL account — Search Console
 + GA4 reporting — sealed into logs/google_search_token.box. The YouTube box is never touched.
@@ -47,7 +48,7 @@ TOKEN_URL = "https://oauth2.googleapis.com/token"
 CHANNELS_URL = "https://www.googleapis.com/youtube/v3/channels"
 TOKENINFO_URL = "https://oauth2.googleapis.com/tokeninfo"
 REDIRECT_URI = "https://developers.google.com/oauthplayground"
-SITES_URL = "https://www.googleapis.com/webmasters/v3/sites"
+SITES_URL = "https://searchconsole.googleapis.com/webmasters/v3/sites"
 VAULT_NAME = "YT_REFRESH_TOKEN"
 SCOPES = tuple(token_scopes.WANT["google"])
 
@@ -77,11 +78,21 @@ def consent_url(client_id, profile="youtube"):
 
 
 def sees_site(access_token, http=None):
-    """Search Console sites the token can read; (True, names) when docoga.com.ng is among them."""
+    """Search Console sites the token can read: (ok, names, status, detail). `ok` only when the
+    call answered 200 and docoga.com.ng is among the sites; `detail` is Google's short error
+    message when it did not (never the token)."""
     http = http or _http
     st, body = http("GET", SITES_URL, params={"access_token": access_token})
     names = [str(s.get("siteUrl", "")) for s in ((body or {}).get("siteEntry") or [])] if st == 200 else []
-    return any(SITE_HOST in n for n in names), names
+    detail = "" if st == 200 else str(((body or {}).get("error") or {}).get("message") or json.dumps(body or {}))[:200]
+    return any(SITE_HOST in n for n in names), names, st, detail
+
+
+def account_email(body, http=None):
+    """The account the token belongs to, when the consent carried userinfo.email; else ''."""
+    http = http or _http
+    st, info = http("GET", TOKENINFO_URL, params={"access_token": body.get("access_token", "")})
+    return str((info or {}).get("email") or "") if st == 200 else ""
 
 
 def code_from(text):
@@ -156,12 +167,20 @@ def run_exchange(code, env=None, http=_http, accept_partial=False, log=print, va
     # channel. Google shows a second chooser after the account: the brand channel must be picked
     # there.) With YT_CHANNEL_ID set, a mismatch is refused and the old token stays.
     if prof["check"] == "site":
-        ok, names = sees_site(body.get("access_token", ""), http=http)
+        who = account_email(body, http=http)
+        log("GOOGLE_ACCOUNT=%s" % (who or "unknown"))
+        ok, names, st, detail = sees_site(body.get("access_token", ""), http=http)
         log("GOOGLE_SEARCH_SITES=%d" % len(names))
+        if st != 200:
+            log("google consent: Search Console's site list answered HTTP %s — %s. Not an account problem; "
+                "nothing written." % (st, detail))
+            log("GOOGLE_CONSENT=sites_api_%s" % st)
+            return 8
         if not ok:
-            log("google consent: this account cannot see %s in Search Console — it is not the account "
-                "that verified the site. Refused; nothing written. Open the link again and pick the "
-                "PERSONAL Google account (the one Search Console emails go to), not the DocOga brand." % SITE_HOST)
+            log("google consent: the account %s sees %d Search Console propert%s (%s) and %s is not among them "
+                "— it is not the account that verified the site. Refused; nothing written. Open the link again "
+                "and pick the Google account whose Search Console shows %s (search.google.com/search-console)."
+                % (who or "picked", len(names), "y" if len(names) == 1 else "ies", ", ".join(names) or "none", SITE_HOST, SITE_HOST))
             log("GOOGLE_CONSENT=wrong_account")
             return 7
         rc = token_vault.seal(vault_name, refresh, path=vault_path, out=sys.stdout)

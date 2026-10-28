@@ -120,6 +120,7 @@ third tap):
 ```
 https://www.googleapis.com/auth/webmasters.readonly
 https://www.googleapis.com/auth/analytics.readonly
+https://www.googleapis.com/auth/userinfo.email      (non-sensitive — so the summary names the account)
 ```
 
 The mint, from the phone, same shape as §4:
@@ -130,7 +131,8 @@ The mint, from the phone, same shape as §4:
    `developers.google.com/oauthplayground/?code=4/0A…` — copy the whole address.
 3. Run the workflow again with the address in **code**. The job exchanges it, checks both scopes,
    **lists the Search Console sites the token can see and refuses one that cannot see
-   docoga.com.ng** (`GOOGLE_CONSENT=wrong_account`, exit 7 — the brand account picked by mistake),
+   docoga.com.ng** (`GOOGLE_CONSENT=wrong_account`, exit 7 — the summary names the account and the properties it does
+   see; exit 8 = the site list call itself failed, not an account problem),
    seals `GOOGLE_SEARCH_TOKEN` into `logs/google_search_token.box`, commits, and pulls Search
    Console once to prove it.
 

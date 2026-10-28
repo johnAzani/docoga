@@ -219,7 +219,11 @@ class SearchProfileTests(unittest.TestCase):
             if url == gc.TOKEN_URL:
                 return 200, {"access_token": "at", "refresh_token": "RT-S", "scope": scope}
             if url == gc.SITES_URL:
+                if sites is None:
+                    return 403, {"error": {"message": "Google Search Console API has not been used in project 1 before or it is disabled."}}
                 return 200, {"siteEntry": [{"siteUrl": s, "permissionLevel": "siteOwner"} for s in sites]}
+            if url == gc.TOKENINFO_URL:
+                return 200, {"email": "owner@example.com", "scope": scope}
             return 200, {}
         http.calls = []
         return http
@@ -227,7 +231,8 @@ class SearchProfileTests(unittest.TestCase):
     def test_the_search_link_asks_for_the_two_read_only_scopes_and_nothing_youtube(self):
         q = parse_qs(urlparse(gc.consent_url("cid", profile="search")).query)
         self.assertEqual(set(q["scope"][0].split()), set(token_scopes.WANT["google_search"]))
-        self.assertEqual(len(token_scopes.WANT["google_search"]), 2)
+        self.assertEqual(len(token_scopes.WANT["google_search"]), 3)
+        self.assertIn("https://www.googleapis.com/auth/userinfo.email", q["scope"][0].split())
         self.assertFalse(any("youtube" in s for s in q["scope"][0].split()))
         self.assertEqual(q["access_type"], ["offline"])
         self.assertEqual(q["prompt"], ["consent"])
@@ -240,6 +245,7 @@ class SearchProfileTests(unittest.TestCase):
         self.assertEqual(rc, 0, logs)
         self.assertNotIn(gc.CHANNELS_URL, http.calls)
         self.assertIn("GOOGLE_SEARCH_SITES=2", logs)
+        self.assertIn("GOOGLE_ACCOUNT=owner@example.com", logs)
         self.assertIn("GOOGLE_CONSENT=ok", logs)
         self.assertTrue(os.path.exists(self.box))
         with patch.dict(os.environ, {"SOCIAL_TOKEN_KEY": KEY}):
@@ -253,7 +259,18 @@ class SearchProfileTests(unittest.TestCase):
             rc = gc.run_exchange("4/0Acode", env=self.env, http=http, log=logs.append, vault_path=self.box, profile="search")
         self.assertEqual(rc, 7)
         self.assertIn("GOOGLE_CONSENT=wrong_account", logs)
-        self.assertTrue(any("PERSONAL" in l for l in logs))
+        self.assertIn("GOOGLE_ACCOUNT=owner@example.com", logs)
+        self.assertTrue(any("owner@example.com sees 0 Search Console properties" in l for l in logs))
+        self.assertFalse(os.path.exists(self.box))
+
+    def test_a_failing_site_list_is_named_as_an_api_problem_not_a_wrong_account(self):
+        http = self.http_for(None)
+        logs = []
+        with patch.dict(os.environ, {"SOCIAL_TOKEN_KEY": KEY}):
+            rc = gc.run_exchange("4/0Acode", env=self.env, http=http, log=logs.append, vault_path=self.box, profile="search")
+        self.assertEqual(rc, 8)
+        self.assertIn("GOOGLE_CONSENT=sites_api_403", logs)
+        self.assertTrue(any("has not been used in project" in l for l in logs))
         self.assertFalse(os.path.exists(self.box))
 
     def test_a_short_search_token_is_refused(self):
