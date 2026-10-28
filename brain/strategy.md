@@ -97,9 +97,21 @@ can be corrected from evidence rather than articles.
   rent that straddles two years. Deep link: `rent-relief-nigeria.html` (calculator +
   free declaration letter), then `/#receipt`. Facts and sources: docs/RENT_RELIEF.md.
   The shelf carries it: cite `nigeria:rent_relief:1` (the section and the two numbers),
-  `:3` (what the evidence is), `:4` (what HR asks for), `:5` (the two deadlines), `:6`
-  (worked figures) — federal facts may be cited from any state's day. Never call it
-  automatic; never promise a naira amount saved without `:6`/`:7`.
+  `:3` (what the evidence is), `:4` (the Joint Revenue Board's four particulars, para 9.6:
+  tenant's name; rent and period; landlord's name + phone/TIN/NIN; property address),
+  `:5` (the two deadlines), `:6` (worked figures), `:8` (shared tenancy; multi-year rent
+  apportioned — the Board's own ₦2,000,000/24-months example) — federal facts may be
+  cited from any state's day. Never call it automatic; never promise a naira amount saved
+  without `:6`/`:7`. The receipt tool now shows "Rent-relief ready" when all four are on
+  it — that is the product line for the season: *"a receipt that passes para 9.6"*.
+- **Who pays (28 Oct 2026 finding):** nearly every post speaks to the tenant, but the
+  ₦2,000 pass is bought by whoever issues documents *repeatedly* — landlords and agents
+  (receipts and agreements for many units), shop and service businesses (invoices and
+  receipts every week). At least two posts a week address the issuer directly: "a receipt
+  book that never runs out", "the agreement your lawyer charges 5–10% of rent for", "an
+  invoice with VAT shown right". The LinkedIn lane (Mon/Wed/Fri) speaks to HR and payroll
+  in the season: "what you will ask every tenant on staff for, and the one page that
+  gives it to them".
 - **Rent-increase anger** is the standing national mood (Lagos rents +25–40%
   in H1 2026; renters spending 50–70% of income): posts about what a landlord
   may and may not demand are the most forwarded genre.

@@ -12,6 +12,15 @@ Olarinde) in BusinessDay 22 Jan 2026 and Daily Trust 16 Feb 2026 for timing; the
 Lagos staff circular (3 Feb 2026) for what evidence an employer asks for.
 """
 
+# SOURCES ADDED 28 Oct 2026: Joint Revenue Board of Nigeria, "Personal Income Tax Guidelines,
+# 2026" (jrb.gov.ng, dated 24 Feb 2026; Forvis Mazars 21 Apr 2026 cites its issue on 7 Apr 2026)
+# — Part III para 9: 9.1 20% / ₦500,000; 9.2 accurate declaration; 9.3 shared tenancy, each up to
+# ₦500,000 on their portion; 9.4 actual-year basis; 9.5 multi-year rent apportioned (example:
+# ₦2,000,000 over 24 months → ₦1,000,000 attributable to 2026); 9.6 minimum information —
+# legal tenant's name; actual rent paid and period covered; landlord's full name and one of
+# mobile number, Tax ID or NIN; property address. SeamlessHR support FAQ (Jan 2026): admins may
+# require staff to upload "valid rent certificates or any proof of rent paid" before the relief
+# is applied — the payroll system holds the number, the tenant must still bring the paper.
 FEDERAL_LAW = {
     "nigeria": dict(
         slug="nigeria",
@@ -45,11 +54,11 @@ FEDERAL_LAW = {
                 "it assesses)."
             ),
             evidence=(
-                "Evidence the tax authorities and employers ask for in practice (NRS guidance, January "
-                "2026; employer circulars, February 2026): a rent receipt in the tenant's own name showing "
-                "the date, amount, property and period; the signed tenancy agreement; proof of payment "
-                "(transfer or teller); and the landlord's name with TIN or NIN. Records are kept for six "
-                "years."
+                "Joint Revenue Board PIT Guidelines 2026, para 9.6 — minimum information for rent relief: "
+                "(i) the legal tenant's name; (ii) actual rent paid and the period covered; (iii) the "
+                "landlord's full name and one of mobile number, Tax ID or NIN; (iv) the property address. "
+                "A receipt in the tenant's own name with all four, the signed agreement and proof of "
+                "payment is what HR and tax offices ask for."
             ),
             deadlines=(
                 "Employer's annual PAYE return for the 2026 year: 31 January 2027. Individual annual "
@@ -64,6 +73,13 @@ FEDERAL_LAW = {
                 "Fourth Schedule, Nigeria Tax Act 2025 — rates on taxable income from 2026: 0% on the first "
                 "₦800,000; 15% on the next ₦2,200,000; 18% on the next ₦9,000,000; 21% on the next "
                 "₦13,000,000; 23% on the next ₦25,000,000; 25% above ₦50,000,000."
+            ),
+            shared=(
+                "Joint Revenue Board PIT Guidelines 2026, paras 9.3–9.5: in a shared tenancy each tenant "
+                "claims up to ₦500,000 on the portion of rent they bear; the relief is on an actual-year "
+                "basis (rent paid in 2026 relieves 2026); rent spanning years is apportioned — the "
+                "Board's own example: ₦2,000,000 for 24 months counts ₦1,000,000 for 2026, relief "
+                "₦200,000."
             ),
         ),
     ),

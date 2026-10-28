@@ -144,6 +144,72 @@ console.log(JSON.stringify({
         self.assertIn("section 30(2)(a)(vi)", got["sheet"])
 
 
+class JrbGuidelinesTests(unittest.TestCase):
+    """28 Oct 2026: the Joint Revenue Board's PIT Guidelines 2026 para 9.6 name the four particulars a
+    rent-relief claim needs. The page quotes them; the receipt tool checks for them and says so in print;
+    the shelf carries them (nigeria:rent_relief:4) and the shared-tenancy / actual-year rule (:8)."""
+
+    def test_the_page_quotes_paragraph_9_6_and_the_shared_tenancy_rule(self):
+        t = PAGE.read_text(encoding="utf-8")
+        self.assertIn("Personal Income Tax Guidelines, 2026", t)
+        self.assertIn("9.6 Minimum information", t)
+        self.assertIn("one of</b> mobile number, Tax ID or NIN", t)
+        self.assertIn("9.3 Shared tenancy", t)
+        self.assertIn("₦1,000,000 for 2026, relief ₦200,000", t)
+
+    def test_the_receipt_tool_checks_the_four_particulars_without_touching_the_canonical(self):
+        idx = (ROOT / "site" / "index.html").read_text(encoding="utf-8")
+        self.assertIn('id="rr-check"', idx)
+        self.assertIn("function rentReliefMissing(d)", idx)
+        self.assertIn("rentReliefLine(d)+\nreceiptVerifyLine(d)+", idx)
+        self.assertIn("para 9.6 of the Joint Revenue Board", idx)
+        # the ledger fingerprint reads the same six fields as before (workers/ledger/index.js mirrors it)
+        self.assertIn("function receiptFields(d){ return {date:d.r_date,amount:d.r_amt,from:d.r_from,issuer:d.r_issuer,property:d.r_prop,period:d.r_period}; }", idx)
+
+    def test_the_shelf_carries_the_four_particulars_and_the_shared_tenancy_rule(self):
+        import sys
+        sys.path.insert(0, str(ROOT / "tools"))
+        import law_index
+        by = {f["id"]: f["text"] for f in law_index.federal_facts()}
+        self.assertIn("para 9.6", by["nigeria:rent_relief:4"])
+        for piece in ("legal tenant's name", "period covered", "mobile number, Tax ID or NIN", "property address",
+                      "what HR and tax offices ask for"):
+            self.assertIn(piece, by["nigeria:rent_relief:4"], piece)
+        self.assertIn("each tenant", by["nigeria:rent_relief:8"])
+        self.assertIn("₦1,000,000 for 2026", by["nigeria:rent_relief:8"])
+
+
+@unittest.skipUnless(HAS_JSDOM, "node + jsdom (npm install) needed to run the page's own script")
+class ReceiptRentReliefDomTests(unittest.TestCase):
+    SCRIPT = r"""
+const {JSDOM}=require('jsdom');const fs=require('fs');
+const dom=new JSDOM(fs.readFileSync(process.argv[1],'utf8'),{runScripts:'dangerously',url:'https://docoga.com.ng/'});
+const w=dom.window,d=w.document;
+const set=(id,v)=>{const e=d.getElementById(id);e.value=v;};
+set('r_from','Chinedu Okafor');set('r_amt','1200000');set('r_period','Jan 2026 – Dec 2026');set('r_issuer','Mrs A. Bello');
+const before=w.renderReceipt();
+const chk1=d.getElementById('rr-check').textContent;
+set('r_prop','12 Allen Avenue, Ikeja, Lagos');set('r_phone','08012345678');
+const after=w.renderReceipt();
+console.log(JSON.stringify({chk1:chk1,chk2:d.getElementById('rr-check').textContent,
+  before:before.includes('para 9.6'),after:after.includes('para 9.6'),
+  canon:w.receiptCanonical(w.receiptFields(w.collectReceipt()))}));
+"""
+
+    def test_the_check_names_what_is_missing_and_the_print_line_appears_only_when_complete(self):
+        r = subprocess.run([NODE, "-e", self.SCRIPT, str(ROOT / "site" / "index.html")],
+                           capture_output=True, text=True, cwd=ROOT, timeout=90)
+        self.assertEqual(r.returncode, 0, r.stderr[-800:])
+        got = json.loads(r.stdout.strip().splitlines()[-1])
+        self.assertIn("Not yet", got["chk1"])
+        self.assertIn("property address", got["chk1"])
+        self.assertIn("landlord's name + phone, TIN or NIN", got["chk1"])
+        self.assertFalse(got["before"])
+        self.assertIn("Rent-relief ready", got["chk2"])
+        self.assertTrue(got["after"])
+        self.assertNotIn("9.6", got["canon"])
+
+
 if __name__ == "__main__":
     unittest.main()
 
@@ -165,7 +231,7 @@ class FederalShelfTests(unittest.TestCase):
         for needle in ("20%", "₦500,000", "accurately declares"):
             self.assertIn(needle, one["text"])
         texts = " ".join(f["text"] for f in fed.values())
-        for needle in ("31 January 2027", "31 March 2027", "TIN or NIN", "₦240,000", "₦800,000", "25% above ₦50,000,000", "₦0"):
+        for needle in ("31 January 2027", "31 March 2027", "Tax ID or NIN", "₦240,000", "₦800,000", "25% above ₦50,000,000", "₦0"):
             self.assertIn(needle, texts)
         self.assertFalse(any(len(f["text"]) >= law_index.MAX_TEXT for f in fed.values()), "a clipped fact loses its numbers")
 
@@ -174,8 +240,8 @@ class FederalShelfTests(unittest.TestCase):
         sys.path.insert(0, str(ROOT / "tools"))
         import law_index
         lagos = law_index.facts_for("lagos")
-        self.assertEqual(lagos[-1]["id"], "nigeria:rent_relief:7")
-        self.assertTrue(all(f["slug"] == "lagos" for f in lagos[:-7]))
+        self.assertEqual(lagos[-1]["id"], "nigeria:rent_relief:8")
+        self.assertTrue(all(f["slug"] == "lagos" for f in lagos[:-8]))
         self.assertEqual(law_index.facts_for("nigeria"), law_index.federal_facts())
         self.assertNotIn("nigeria", [s for s, _, _ in law_index.states()])
         ids = [f["id"] for f in law_index.all_facts()]
