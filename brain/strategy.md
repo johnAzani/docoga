@@ -96,8 +96,10 @@ can be corrected from evidence rather than articles.
   the table", "what HR will ask you for", "landlord TIN on the receipt", joint tenants,
   rent that straddles two years. Deep link: `rent-relief-nigeria.html` (calculator +
   free declaration letter), then `/#receipt`. Facts and sources: docs/RENT_RELIEF.md.
-  Until the shelf carries a federal tax entry, a post states the two numbers (20%,
-  ₦500,000) and the section exactly as written there, nothing more.
+  The shelf carries it: cite `nigeria:rent_relief:1` (the section and the two numbers),
+  `:3` (what the evidence is), `:4` (what HR asks for), `:5` (the two deadlines), `:6`
+  (worked figures) — federal facts may be cited from any state's day. Never call it
+  automatic; never promise a naira amount saved without `:6`/`:7`.
 - **Rent-increase anger** is the standing national mood (Lagos rents +25–40%
   in H1 2026; renters spending 50–70% of income): posts about what a landlord
   may and may not demand are the most forwarded genre.

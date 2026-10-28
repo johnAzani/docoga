@@ -140,7 +140,7 @@ class LawShelfTests(unittest.TestCase):
             facts = law_index.facts_for(slug)
             self.assertTrue(facts, slug)
             for f in facts:
-                self.assertTrue(f["id"].startswith(slug + ":"), f["id"])
+                self.assertTrue(f["id"].startswith(slug + ":") or law_index.is_federal(f), f["id"])  # the federal shelf rides on every state's
                 self.assertTrue(f["text"])
                 self.assertNotIn("<b>", f["text"], "HTML must not reach the prompt")
 
