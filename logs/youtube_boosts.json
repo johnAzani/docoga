@@ -172,5 +172,26 @@
     "planned_at": "2026-10-26T17:17:05+00:00",
     "notes": [],
     "commented_at": "2026-10-26T18:20:48+00:00"
+  },
+  {
+    "video_id": "RSVjMTiA4eM",
+    "kind": "short",
+    "title": "Paid without a receipt? That's paying twice.",
+    "date": "2026-10-28",
+    "comment_text": "Full episode (free, 9 minutes): Rent Receipt in Nigeria: The 7 Lines That Win Every Rent Dispute (Deep-Dive 3) — https://www.youtube.com/watch?v=JJhRcCgAxyQ\nPart 3 of 5 · Rent receipt law.\nPart 4 tomorrow, 7:00pm.\n\nWhich of these do you already do — and which one have you been skipping? Tell me below 👇\n\nFree receipt, tenancy agreement and notice templates (no sign-up): https://docoga.com.ng/?s=yt",
+    "comment_id": "",
+    "playlist_id": "PLGn3YRk7msT0",
+    "playlist_item_id": "UExHbjNZUms3bXNUMC41MzJCQjBCNDIyRkJDN0VD",
+    "planned_at": "2026-10-28T17:13:15+00:00",
+    "notes": [],
+    "series": {
+      "slug": "rent-receipt-law",
+      "name": "Rent receipt law",
+      "part": 3,
+      "total": 5,
+      "week_start": "2026-10-26"
+    },
+    "series_playlist_id": "PLLZmwnofoLMs",
+    "series_item_id": "UExMWm13bm9mb0xNcy41NkI0NEY2RDEwNTU3Q0M2"
   }
 ]
