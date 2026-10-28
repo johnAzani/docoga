@@ -1,5 +1,32 @@
 [
  {
+  "date": "2026-10-30",
+  "at": "2026-10-28T01:32:35+01:00",
+  "short_day": true,
+  "problems": [
+   "news_hook is not one of this week's NEWSDESK headlines — a story the papers did not print is not a story",
+   "price ₦500,000 is neither ours nor in a cited fact",
+   "price ₦500,000 is neither ours nor in a cited fact",
+   "price ₦500,000 is neither ours nor in a cited fact",
+   "statistic '20%' is not in a cited fact — DocOga publishes no number it cannot source",
+   "claim cites unknown fact id '2026-10-27'"
+  ]
+ },
+ {
+  "date": "2026-10-29",
+  "at": "2026-10-28T01:31:59+01:00",
+  "short_day": true,
+  "problems": [
+   "verifier: claim [rivers:rent_in_arrears:1] not supported — The fact states 'unless the parties agree otherwise' but does not specify that this agreement must be 'in writing'.",
+   "verifier: legal statement not on the shelf — 'A written receipt signed by the landlord or agent clear doubts before disputes start.'",
+   "verifier: legal statement not on the shelf — 'Did your last rent payment come with a signed paper receipt?'",
+   "verifier: legal statement not on the shelf — 'Bank transfer is not enough proof'",
+   "verifier: legal statement not on the shelf — 'You transferred rent to an agent in Port Harcourt and saved the debit alert. If a dispute happens, can you prove that mo'",
+   "verifier: legal statement not on the shelf — 'A signed paper receipt specifies the exact period and purpose of your payment clearly.'",
+   "verifier: legal statement not on the shelf — 'Create a clean rent receipt on your phone in two minutes at DocOga dot com dot n g.'"
+  ]
+ },
+ {
   "date": "2026-10-29",
   "at": "2026-10-27T06:32:19+01:00",
   "short_day": true,

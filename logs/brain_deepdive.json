@@ -120,6 +120,80 @@
     "beat 14 shot 'law text page' dropped"
    ],
    "run_id": "39904333774"
+  },
+  {
+   "at": "2026-10-28T01:33:20+01:00",
+   "episode": "dd5",
+   "attempt": 1,
+   "outcome": "refused",
+   "title": "Rent Increase Wahala: Your Rights in Lagos and Abuja",
+   "problems": [
+    "total narration 967 words; need 1,100-1,800",
+    "36-48 beats (got 26)",
+    "no emoji or markdown in narration"
+   ],
+   "healed": [
+    "beat 24 shot 'person using smartphone' dropped",
+    "beat 27 dropped: trig ['an', 'oga', 'pass', 'for', 'just'] is not 2-4 words"
+   ],
+   "run_id": "40609200411"
+  },
+  {
+   "at": "2026-10-28T01:34:20+01:00",
+   "episode": "dd5",
+   "attempt": 2,
+   "outcome": "refused",
+   "title": "Rent Increase: Your Rights in Lagos and Abuja",
+   "problems": [
+    "verifier: claim [lagos:notice_extras:2] not supported — The fact only mentions 'a monthly tenant six months in arrears' and does not include 'quarterly or half-yearly tenant one year in arrears'.",
+    "verifier: legal statement not on the shelf — \"The specific notice period often depends on the type of tenancy you have – whether it's monthly, quarterly, or yearly.\"",
+    "verifier: legal statement not on the shelf — 'If your agreement specifies how and when rent can be increased, then those terms will govern.'",
+    "verifier: legal statement not on the shelf — 'If the agreement is silent on rent increases, then it becomes a matter of negotiation between you and your landlord.'",
+    "verifier: legal statement not on the shelf — 'Without a written agreement, or if the agreement is vague, it leaves you vulnerable.'"
+   ],
+   "healed": [
+    "beat 1 shot 'person checking phone with worried face' dropped",
+    "beat 2 dropped: trigger 'your rent has increased' not spoken in section 1 after word 0",
+    "beat 6 shot 'formal letter on a table' dropped",
+    "beat 8 shot 'hand holding a pen signing document' dropped",
+    "beat 18 shot 'hand holding phone in an empty room' dropped",
+    "beat 21 shot 'door half open into darkness' dropped",
+    "beat 22 shot 'notice paper on a door' dropped",
+    "beat 23 shot 'calendar page for a month' dropped",
+    "beat 26 shot 'pen writing on a contract' dropped",
+    "beat 29 shot 'hand holding phone with docoga logo' dropped",
+    "beat 30 shot 'keke napep on a busy street' dropped",
+    "beat 31 shot 'pile of crisp naira notes' dropped"
+   ],
+   "run_id": "40609200411"
+  },
+  {
+   "at": "2026-10-28T01:35:06+01:00",
+   "episode": "dd5",
+   "attempt": 3,
+   "outcome": "refused",
+   "title": "Rent Hikes in Nigeria: Your Rights When Landlord Demands More",
+   "problems": [
+    "36-48 beats (got 19)",
+    "section 5 needs at least two beats",
+    "section 8 needs at least two beats",
+    "section 9 needs at least two beats"
+   ],
+   "healed": [
+    "section 3: style word rewritten",
+    "beat 2 dropped: trigger 'twentyfive to forty percent' not spoken in section 1 after word 0",
+    "beat 8 dropped: trig ['section', '37', 'of', 'the', 'law'] is not 2-4 words",
+    "beat 14 dropped: head 'Abuja: No Section 37 Equivalent' is not 1-28 characters",
+    "beat 15: first beat of section 5 — trig cleared",
+    "beat 16 dropped: trig ['becomes', 'a', 'matter', 'for', 'the'] is not 2-4 words",
+    "beat 19 dropped: trigger 'welldrafted agreement protects both' not spoken in section 6 after word 35",
+    "beat 23 dropped: trig ['pay', 'the', 'rent', 'into', 'the', 'court'] is not 2-4 words",
+    "beat 25 dropped: trig ['section', '6', 'guarantees', 'your', 'quiet'] is not 2-4 words",
+    "beat 26 dropped: trig ['forcibly', 'eject', 'threaten', 'or', 'molest'] is not 2-4 words",
+    "beat 27 dropped: trig ['landlord', 'may', 'not', 'resort', 'to', 'self-help'] is not 2-4 words",
+    "beat 29 dropped: trig ['tenancy', 'agreement', 'tool', 'helps', 'you'] is not 2-4 words"
+   ],
+   "run_id": "40609200411"
   }
  ]
 }

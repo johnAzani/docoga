@@ -1,5 +1,5 @@
 {
- "fetched": "2026-10-27T05:23:28+00:00",
+ "fetched": "2026-10-28T00:30:49+00:00",
  "sources": [
   "Punch: 30 stories",
   "Vanguard: 20 stories",
@@ -11,17 +11,40 @@
  ],
  "items": [
   {
-   "title": "Experts urge early intervention for children with developmental delays",
-   "link": "https://punchng.com/experts-urge-early-intervention-for-children-with-developmental-delays/?utm_source=rss.punchng.com&utm_medium=web",
-   "published": "2026-10-27T01:43:11+00:00",
+   "title": "Newborn, parents escape death as fire razes Kwara apartment",
+   "link": "https://punchng.com/newborn-parents-escape-death-as-fire-razes-kwara-apartment/?utm_source=rss.punchng.com&utm_medium=web",
+   "published": "2026-10-28T00:29:36+00:00",
    "source": "Punch",
-   "score": 5,
+   "score": 15,
    "matched": [
     "rent",
     "rents",
-    "sme"
+    "apartment"
    ],
-   "summary": "Health experts urge parents to seek early assessment and intervention for children with developmental delays to improve their quality of life and learning. Read More: https://punchng.com/experts-urge-"
+   "summary": "A couple and their newborn baby have escaped death after a fire, caused by a fallen electricity line, ravaged their apartment in Ilorin, Kwara State. Read More: https://punchng.com/newborn-parents-esc"
+  },
+  {
+   "title": "Reps seek transparent framework for EV, CNG vehicle imports",
+   "link": "https://www.premiumtimesng.com/news/top-news/920838-reps-seek-transparent-framework-for-ev-cng-vehicle-imports.html",
+   "published": "2026-10-27T20:18:10+00:00",
+   "source": "Premium Times",
+   "score": 6,
+   "matched": [
+    "rent"
+   ],
+   "summary": "The lawmakers called for stricter conditions for companies seeking to import electric and Compressed Natural Gas vehicles into Nigeria, including requirements for maintenance centres, spare parts, tec"
+  },
+  {
+   "title": "BPP launches free training to help Nigerian small businesses win government contracts",
+   "link": "https://nairametrics.com/2026/10/27/bpp-launches-free-training-to-help-nigerian-small-businesses-win-government-contracts/",
+   "published": "2026-10-27T16:12:04+00:00",
+   "source": "Nairametrics",
+   "score": 4,
+   "matched": [
+    "sme",
+    "small business"
+   ],
+   "summary": "The Bureau of Public Procurement (BPP) has launched a free digital training portal to help micro, small and medium enterprises (MSMEs) improve their capacity to compete for government contracts in Nig"
   }
  ]
 }
