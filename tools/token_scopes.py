@@ -78,6 +78,12 @@ WANT = {
         "threads_profile_discovery",   # read public profiles (who replies to us)
     ],
     # Google OAuth consent (one screen, tick every box). Scopes are URLs.
+    # 28 Oct 2026: the personal account's read-only token (logs/google_search_token.box) — Search
+    # Console is verified under the personal account, which the brand-channel token cannot see.
+    "google_search": [
+        "https://www.googleapis.com/auth/webmasters.readonly",
+        "https://www.googleapis.com/auth/analytics.readonly",
+    ],
     "google": [
         "https://www.googleapis.com/auth/youtube",
         "https://www.googleapis.com/auth/youtube.force-ssl",
@@ -238,6 +244,30 @@ def _vault_refresh_token(env):
         return ""
 
 
+def read_google_search(env, http=_http):
+    """The personal account's read-only token: vault box only, no secret fallback."""
+    refresh = ""
+    if env.get("SOCIAL_TOKEN_KEY"):
+        try:
+            import token_vault
+            if token_vault._vault_path("GOOGLE_SEARCH_TOKEN").is_file():
+                refresh = (token_vault.open_box("GOOGLE_SEARCH_TOKEN")[0] or "").strip()
+        except Exception:  # noqa: BLE001
+            refresh = ""
+    cid, csec = env.get("YT_CLIENT_ID", ""), env.get("YT_CLIENT_SECRET", "")
+    if not (refresh and cid and csec):
+        return None, "no-token"
+    st, body = http("POST", "https://oauth2.googleapis.com/token",
+                    data={"client_id": cid, "client_secret": csec, "refresh_token": refresh, "grant_type": "refresh_token"})
+    access = (body or {}).get("access_token") if st == 200 else None
+    if not access:
+        return None, "unreadable"
+    st, info = http("GET", "https://oauth2.googleapis.com/tokeninfo", {"access_token": access})
+    if st != 200 or not info.get("scope"):
+        return None, "unreadable"
+    return str(info["scope"]).split(), "tokeninfo on the vault (logs/google_search_token.box)"
+
+
 def read_google(env, http=_http):
     refresh, source = _vault_refresh_token(env), "the vault (logs/yt_refresh_token.box)"
     if not refresh:
@@ -271,7 +301,7 @@ def read_linkedin(env, http=_http):
 
 
 READERS = {"facebook": read_facebook, "instagram": read_instagram, "threads": read_threads,
-           "google": read_google, "linkedin": read_linkedin}
+           "google": read_google, "google_search": read_google_search, "linkedin": read_linkedin}
 
 
 # ─────────────────────────── the verdict ───────────────────────────

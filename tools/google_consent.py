@@ -24,7 +24,10 @@ Nothing here prints a token, a code or a secret.
 
 Machine lines: GOOGLE_CONSENT=ok|partial|refused|failed  GOOGLE_SCOPES_MISSING=<space list>
 Exit: 0 sealed · 2 missing env · 3 Google refused the code · 4 partial and not accepted · 6 wrong channel ·
-5 vault error
+5 vault error · 7 wrong account (search profile: the token cannot see docoga.com.ng in Search Console)
+
+--profile search (28 Oct 2026): a second, read-only consent as the PERSONAL account — Search Console
++ GA4 reporting — sealed into logs/google_search_token.box. The YouTube box is never touched.
 """
 from __future__ import annotations
 
@@ -44,17 +47,41 @@ TOKEN_URL = "https://oauth2.googleapis.com/token"
 CHANNELS_URL = "https://www.googleapis.com/youtube/v3/channels"
 TOKENINFO_URL = "https://oauth2.googleapis.com/tokeninfo"
 REDIRECT_URI = "https://developers.google.com/oauthplayground"
+SITES_URL = "https://www.googleapis.com/webmasters/v3/sites"
 VAULT_NAME = "YT_REFRESH_TOKEN"
 SCOPES = tuple(token_scopes.WANT["google"])
 
+# Two consents, two boxes (28 Oct 2026). The YouTube token belongs to the DocOga *brand*
+# account — the one Google's second chooser offers — and a brand account is its own identity:
+# it is not a user of the Search Console property, which the owner verified under the personal
+# account. So after the 19 Oct re-mint Search Console answered "no property" and the Google
+# line on the scorecard froze at 19 Oct. The `search` profile is a second, READ-ONLY consent as
+# the personal account (Search Console + GA4 reporting), sealed into its own box; the YouTube
+# token is never touched. The exchange proves the account by listing Search Console sites and
+# refuses a token that cannot see docoga.com.ng (exit 7) — the wrong account, kept out.
+SEARCH_SCOPES = tuple(token_scopes.WANT["google_search"])
+PROFILES = {
+    "youtube": dict(scopes=SCOPES, vault=VAULT_NAME, check="channel"),
+    "search": dict(scopes=SEARCH_SCOPES, vault="GOOGLE_SEARCH_TOKEN", check="site"),
+}
+SITE_HOST = "docoga.com.ng"
 
-def consent_url(client_id):
+
+def consent_url(client_id, profile="youtube"):
     """The link the owner opens once. Every scope, offline, consent forced so a refresh token
     is issued even though one exists, and granted scopes merged in."""
     q = {"client_id": client_id, "redirect_uri": REDIRECT_URI, "response_type": "code",
-         "scope": " ".join(SCOPES), "access_type": "offline", "prompt": "consent",
+         "scope": " ".join(PROFILES[profile]["scopes"]), "access_type": "offline", "prompt": "consent",
          "include_granted_scopes": "true"}
     return AUTH_URL + "?" + urlencode(q)
+
+
+def sees_site(access_token, http=None):
+    """Search Console sites the token can read; (True, names) when docoga.com.ng is among them."""
+    http = http or _http
+    st, body = http("GET", SITES_URL, params={"access_token": access_token})
+    names = [str(s.get("siteUrl", "")) for s in ((body or {}).get("siteEntry") or [])] if st == 200 else []
+    return any(SITE_HOST in n for n in names), names
 
 
 def code_from(text):
@@ -95,8 +122,10 @@ def granted_scopes(body, http=_http):
     return str((info or {}).get("scope") or "").split() if st == 200 else []
 
 
-def run_exchange(code, env=None, http=_http, accept_partial=False, log=print, vault_path=None):
+def run_exchange(code, env=None, http=_http, accept_partial=False, log=print, vault_path=None, profile="youtube"):
     env = os.environ if env is None else env
+    prof = PROFILES[profile]
+    scopes, vault_name = prof["scopes"], prof["vault"]
     cid, csec = env.get("YT_CLIENT_ID", "").strip(), env.get("YT_CLIENT_SECRET", "").strip()
     code = code_from(code)
     if not (cid and csec and code):
@@ -115,7 +144,7 @@ def run_exchange(code, env=None, http=_http, accept_partial=False, log=print, va
         log("GOOGLE_CONSENT=failed")
         return 3
     have = set(granted_scopes(body, http=http))
-    missing = [s for s in SCOPES if s not in have]
+    missing = [s for s in scopes if s not in have]
     log("GOOGLE_SCOPES_MISSING=%s" % " ".join(missing))
     if missing and not accept_partial:
         log("google consent: the new token is short of %d scope(s) — a box was left unticked. "
@@ -126,6 +155,23 @@ def run_exchange(code, env=None, http=_http, accept_partial=False, log=print, va
     # personal channel, not the DocOga brand channel — every YouTube lane then talked to an empty
     # channel. Google shows a second chooser after the account: the brand channel must be picked
     # there.) With YT_CHANNEL_ID set, a mismatch is refused and the old token stays.
+    if prof["check"] == "site":
+        ok, names = sees_site(body.get("access_token", ""), http=http)
+        log("GOOGLE_SEARCH_SITES=%d" % len(names))
+        if not ok:
+            log("google consent: this account cannot see %s in Search Console — it is not the account "
+                "that verified the site. Refused; nothing written. Open the link again and pick the "
+                "PERSONAL Google account (the one Search Console emails go to), not the DocOga brand." % SITE_HOST)
+            log("GOOGLE_CONSENT=wrong_account")
+            return 7
+        rc = token_vault.seal(vault_name, refresh, path=vault_path, out=sys.stdout)
+        if rc:
+            log("GOOGLE_CONSENT=failed")
+            return 5
+        log("google consent: %d of %d scopes, sealed into the vault (%s) — Search Console reads it from the next run"
+            % (len(scopes) - len(missing), len(scopes), vault_name.lower() + ".box"))
+        log("GOOGLE_CONSENT=%s" % ("partial" if missing else "ok"))
+        return 0
     want = str(env.get("YT_CHANNEL_ID", "")).strip()
     st, chan = http("GET", CHANNELS_URL, params={"part": "snippet", "mine": "true",
                                                  "access_token": body.get("access_token", "")})
@@ -139,12 +185,12 @@ def run_exchange(code, env=None, http=_http, accept_partial=False, log=print, va
             "pick the DocOga channel, not the personal one." % (got_title, got_id, want))
         log("GOOGLE_CONSENT=wrong_channel")
         return 6
-    rc = token_vault.seal(VAULT_NAME, refresh, path=vault_path, out=sys.stdout)
+    rc = token_vault.seal(vault_name, refresh, path=vault_path, out=sys.stdout)
     if rc:
         log("GOOGLE_CONSENT=failed")
         return 5
     log("google consent: %d of %d scopes, sealed into the vault — no lane needs a secret pasted"
-        % (len(SCOPES) - len(missing), len(SCOPES)))
+        % (len(scopes) - len(missing), len(scopes)))
     log("GOOGLE_CONSENT=%s" % ("partial" if missing else "ok"))
     return 0
 
@@ -154,15 +200,17 @@ def main(argv=None):
     ap.add_argument("command", choices=("url", "exchange"))
     ap.add_argument("--code", default="", help="the code, or the whole Playground address")
     ap.add_argument("--accept-partial", action="store_true")
+    ap.add_argument("--profile", choices=tuple(PROFILES), default="youtube",
+                    help="youtube = the brand channel's 7-scope token; search = the personal account's read-only Search Console + GA4 token")
     a = ap.parse_args(argv)
     if a.command == "url":
         cid = os.environ.get("YT_CLIENT_ID", "").strip()
         if not cid:
             print("google consent: YT_CLIENT_ID is not set", file=sys.stderr)
             return 2
-        print(consent_url(cid))
+        print(consent_url(cid, profile=a.profile))
         return 0
-    return run_exchange(a.code or os.environ.get("GOOGLE_AUTH_CODE", ""), accept_partial=a.accept_partial)
+    return run_exchange(a.code or os.environ.get("GOOGLE_AUTH_CODE", ""), accept_partial=a.accept_partial, profile=a.profile)
 
 
 if __name__ == "__main__":

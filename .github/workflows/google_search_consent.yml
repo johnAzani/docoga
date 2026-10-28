@@ -1,0 +1,108 @@
+name: Google consent — Search Console (personal account)
+
+# 28 Oct 2026. Search Console for docoga.com.ng is verified under the owner's PERSONAL Google
+# account. The YouTube token belongs to the DocOga brand account (Google's second chooser) — a
+# separate identity that cannot see the property, so the Google line on the scorecard froze at
+# 19 Oct. This is the second, READ-ONLY consent: Search Console + GA4 reporting, as the personal
+# account, sealed into its own box (logs/google_search_token.box). The YouTube token is never
+# touched. The exchange refuses a token that cannot see docoga.com.ng (wrong account, exit 7).
+# Same phone path as google_consent.yml: the client secret never leaves GitHub.
+
+on:
+  workflow_dispatch:
+    inputs:
+      code:
+        description: 'Paste the Playground address (…oauthplayground/?code=4/0A…) or just the code. Leave empty to only print the consent link.'
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: google-consent
+  cancel-in-progress: false
+
+jobs:
+  consent:
+    name: Exchange and seal (read-only, personal account)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      TZ: Africa/Lagos
+      YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+      YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+      SOCIAL_TOKEN_KEY: ${{ secrets.SOCIAL_TOKEN_KEY }}
+      GOOGLE_AUTH_CODE: ${{ inputs.code }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - run: python3 -m pip install --quiet "requests>=2.31,<3" cryptography
+
+      - name: Show the link
+        run: |
+          link="$(python3 tools/google_consent.py url --profile search)"
+          {
+            echo "### 1 · Open this link on the phone — pick the PERSONAL Google account (the one Search Console emails go to), tick both boxes, then copy the address it lands on"
+            echo
+            echo "$link"
+            echo
+            echo "It lands on \`developers.google.com/oauthplayground/?code=4/0A…\`. Copy that whole address,"
+            echo "run this workflow again and paste it into **code**."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Exchange the code and seal the box
+        if: ${{ inputs.code != '' }}
+        run: |
+          set +e
+          python3 tools/google_consent.py exchange --profile search | tee /tmp/consent.log
+          code=${PIPESTATUS[0]}
+          set -e
+          echo "consent_code=$code" >> "$GITHUB_ENV"
+          {
+            echo "### 2 · Result"
+            echo
+            echo '```'
+            grep -E "^(google consent:|GOOGLE_)" /tmp/consent.log || true
+            echo '```'
+            case "$code" in
+              0) echo "✅ Sealed. Search Console reads this box from the next Monday pull (or run 'YouTube stats' now)." ;;
+              3) echo "❌ Google refused the code (used twice, or older than ~10 minutes). Open the link in step 1 again and paste the new address." ;;
+              4) echo "⏸ A box was left unticked — refused, nothing written. Open the link again and tick both boxes." ;;
+              7) echo "❌ Wrong account — this account cannot see docoga.com.ng in Search Console. Open the link again and pick the PERSONAL account, not the DocOga brand." ;;
+              *) echo "❌ Exit $code — read the lines above." ;;
+            esac
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$code"
+
+      - name: Commit the vault box
+        if: ${{ inputs.code != '' && env.consent_code == '0' }}
+        run: |
+          git config user.name "docoga-bot"
+          git config user.email "docoga-bot@users.noreply.github.com"
+          git add logs/google_search_token.box
+          git commit -m "vault: Google Search Console token sealed (personal account, read-only) [skip ci]" || exit 0
+          git pull --rebase origin main || true
+          git push origin HEAD:main
+
+      - name: Prove it — pull Search Console with the new box
+        if: ${{ inputs.code != '' && env.consent_code == '0' }}
+        continue-on-error: true
+        run: |
+          set +e
+          python3 tools/search_console.py --days 28 | tee /tmp/sc.log
+          set -e
+          {
+            echo "### 3 · Search Console, 28 days"
+            echo
+            echo '```'
+            tail -n 10 /tmp/sc.log
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          git add logs/search_console.json 2>/dev/null || true
+          git commit -m "Auto: Search Console pull after consent [skip ci]" || exit 0
+          git pull --rebase origin main || true
+          git push origin HEAD:main || true
