@@ -72,7 +72,8 @@ jobs:
               0) echo "✅ Sealed. Search Console reads this box from the next Monday pull (or run 'YouTube stats' now)." ;;
               3) echo "❌ Google refused the code (used twice, or older than ~10 minutes). Open the link in step 1 again and paste the new address." ;;
               4) echo "⏸ A box was left unticked — refused, nothing written. Open the link again and tick both boxes." ;;
-              7) echo "❌ Wrong account — this account cannot see docoga.com.ng in Search Console. Open the link again and pick the PERSONAL account, not the DocOga brand." ;;
+              7) echo "❌ Wrong account — the account named above cannot see docoga.com.ng in Search Console. Open search.google.com/search-console, note which account shows docoga.com.ng, open the link again and pick that one." ;;
+              8) echo "❌ Google's Search Console site list failed (see the line above) — not an account problem; nothing to redo on the phone." ;;
               *) echo "❌ Exit $code — read the lines above." ;;
             esac
           } >> "$GITHUB_STEP_SUMMARY"

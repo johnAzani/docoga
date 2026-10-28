@@ -83,6 +83,7 @@ WANT = {
     "google_search": [
         "https://www.googleapis.com/auth/webmasters.readonly",
         "https://www.googleapis.com/auth/analytics.readonly",
+        "https://www.googleapis.com/auth/userinfo.email",     # so the consent summary can NAME the account it was given
     ],
     "google": [
         "https://www.googleapis.com/auth/youtube",
