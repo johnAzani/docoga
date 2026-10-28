@@ -233,8 +233,9 @@ def fresh_items(data=None, now=None, max_age_days=7, pinned=None):
 def prompt_block(items):
     if not items:
         return "(no fresh stories — open with the reader's situation, not the news)"
-    return "\n".join("- %s — %s%s" % (it["title"], it.get("source", ""),
-                                       (" (" + it["published"][:10] + ")") if it.get("published") else "")
+    return "\n".join("- %s — %s%s%s" % (it["title"], it.get("source", ""),
+                                         (" (" + it["published"][:10] + ")") if it.get("published") else "",
+                                         ("\n    note: " + str(it["note"]).strip()) if it.get("note") else "")
                      for it in items)
 
 

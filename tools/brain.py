@@ -478,6 +478,32 @@ def tidy(pack):
     return pack
 
 
+def _norm_words(text):
+    return [w for w in re.sub(r"[^a-z0-9₦% ]+", " ", str(text or "").lower()).split() if len(w) > 2]
+
+
+def news_hook_matches(hook, news):
+    """Is `hook` one of this week's headlines? Exact after normalising, or the headline's opening
+    (a model shortens a 200-character headline to its first clause — that is still the story the
+    papers printed), or at least 70% of the hook's words appear in one headline. Invented
+    stories still fail: 11 of the first 20 refusals (Oct 2026) were honest shortenings of a real
+    headline, each one a day's post lost."""
+    hw = _norm_words(hook)
+    if not hw:
+        return False
+    hs = " ".join(hw)
+    for n in news:
+        tw = _norm_words(n.get("title", ""))
+        ts = " ".join(tw)
+        if not tw:
+            continue
+        if hs == ts or (len(hs) >= 25 and (ts.startswith(hs) or hs in ts)):
+            return True
+        if len(hw) >= 4 and sum(1 for w in hw if w in set(tw)) / len(hw) >= 0.7:
+            return True
+    return False
+
+
 def lint(pack, ctx, said):
     """Deterministic gates. Returns a list of problems (empty = passed)."""
     p = []
@@ -534,8 +560,7 @@ def lint(pack, ctx, said):
                     p.append("quiz.explanation must carry the section of its fact (%s)" % ctx["facts_by_id"][fid].get("cite"))
     hook = pack.get("news_hook")
     if hook is not None and str(hook).strip():
-        titles = {str(n.get("title", "")).strip().lower() for n in ctx.get("news") or []}
-        if str(hook).strip().lower() not in titles:
+        if not news_hook_matches(hook, ctx.get("news") or []):
             p.append("news_hook is not one of this week's NEWSDESK headlines — a story the papers did not print is not a story")
     cta = str(post.get("cta") or "").strip()
     if not cta:
