@@ -499,12 +499,21 @@ def plan(draw, headline, body, big, frame):
             lines = wrap(draw, headline, font, slab_width)
             if size > (128 if tall else 112) and len(lines) > 2:
                 continue        # three slabs of display type would be more yellow than card
+            # Height as well as line count (29 Oct 2026, the 1200×630 link-preview frame): three
+            # slabs that do not fit the safe box are not a headline; try smaller, else go white.
+            reserve = (3 * int(30 * 1.34) + (40 if tall else 34)) if body else 0
             if len(lines) <= SLAB_MAX_LINES and not big:
                 if len(lines) > 1 and len(headline.split()) <= 14:
                     lines = balanced(draw, headline, font, slab_width, len(lines)) or lines
+                trial = dict(out, mode="slab", h_font=font, h_size=size, h_lines=lines, b_lines=[], b_size=0)
+                if _height(trial, tall) + reserve > ceiling - top:
+                    continue
                 out.update(mode="slab", h_font=font, h_size=size, h_lines=lines)
                 break
             if big and len(lines) <= 3:
+                trial = dict(out, mode="stat", h_font=font, h_size=size, h_lines=lines, b_lines=[], b_size=0)
+                if _height(trial, tall) + reserve > ceiling - top:
+                    continue
                 out.update(mode="stat", h_font=font, h_size=size, h_lines=lines)
                 break
         if "h_font" not in out:

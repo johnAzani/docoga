@@ -318,6 +318,13 @@ _cu = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "clean_urls.py
 check("no canonical / og:url / sitemap loc ends in .html (Cloudflare 307s it)", _cu.returncode == 0,
       (_cu.stdout.strip().splitlines() or [""])[0])
 
+# 11e. Link previews (29 Oct 2026). Every public page carries an og:image that exists and is
+# light enough for WhatsApp; before this no page had one, so every shared link was a bare box.
+_og = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "og_images.py"), "--check"],
+                     capture_output=True, text=True)
+check("every public page has an og:image that exists (WhatsApp/Facebook/Threads link previews)", _og.returncode == 0,
+      (_og.stdout.strip().splitlines() or [""])[0])
+
 print("── 12. Hosting is Cloudflare Pages (Netlify retired 3 Oct 2026) ──")
 # The owner moved hosting off Netlify entirely. These three checks exist because
 # the failure mode is silent: a re-added netlify.toml, or a doc that still says

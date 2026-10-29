@@ -159,6 +159,11 @@ def page_html(pack, facts_by_id=None, now=None):
              '<link rel="canonical" href="%s">' % esc(url),
              '<meta property="og:title" content="%s">' % esc(title_tag),
              '<meta property="og:description" content="%s">' % esc(desc),
+             '<meta property="og:image" content="%s/og/%s-%s.jpg">' % (HOST, GUIDES_DIRNAME, slug),
+             '<meta property="og:image:width" content="1200">',
+             '<meta property="og:image:height" content="630">',
+             '<meta property="og:image:alt" content="%s">' % esc(title),
+             '<meta name="twitter:card" content="summary_large_image">',
              '<meta property="og:url" content="%s">' % esc(url),
              '<meta property="og:type" content="article">',
              '<script type="application/ld+json">%s</script>' % json.dumps(schema, ensure_ascii=False)]
@@ -208,7 +213,12 @@ def index_html(entries, now=None):
             "<title>Rent, tenancy and landlord guides for Nigeria | DocOga</title>"
             "<meta name=\"description\" content=\"Short, cited guides to Nigerian tenancy law — notice periods, rent receipts, caution fees, "
             "agreements — one a day, each with the section of the law it rests on.\">"
-            "<link rel=\"canonical\" href=\"%s\"><style>%s</style></head><body><div class=\"wrap\">"
+            "<link rel=\"canonical\" href=\"%s\">"
+            "<meta property=\"og:image\" content=\"https://docoga.com.ng/og/guides-index.jpg\">"
+            "<meta property=\"og:image:width\" content=\"1200\"><meta property=\"og:image:height\" content=\"630\">"
+            "<meta property=\"og:image:alt\" content=\"Rent, tenancy and landlord guides for Nigeria\">"
+            "<meta name=\"twitter:card\" content=\"summary_large_image\">"
+            "<style>%s</style></head><body><div class=\"wrap\">"
             "<a class=\"brand\" href=\"%s/\">DocOga</a><h1>Rent and tenancy guides for Nigeria</h1>"
             "<p class=\"lead\">One short guide a day, each resting on a named section of the law. Updated %s.</p>"
             "<div class=\"box\"><ul>%s</ul></div>"
@@ -286,6 +296,15 @@ def build(day=None, site=None, now=None, log=print, drafts_dir=None):
         if target.is_file() and target.read_text(encoding="utf-8") == page:
             continue
         target.write_text(page, encoding="utf-8")
+        try:
+            import og_images
+            og_out = og_images.OG_DIR / ("%s-%s.jpg" % (GUIDES_DIRNAME, slug))
+            if not og_out.is_file():
+                og_images.OG_DIR.mkdir(exist_ok=True)
+                m = re.search(r"<title>(.*?)</title>", page, re.S)
+                og_images.render(target, og_out, og_images.clean_title(m.group(1) if m else slug))
+        except Exception as exc:  # the page is the deliverable; the preview image is a bonus
+            print("guides: og image skipped for %s: %s" % (slug, str(exc)[:80]))
         manifest[slug] = {"slug": slug, "title": pack["post"]["headline"], "date": pack["date"],
                           "state": (law_rows(pack, facts_by_id) or [{}])[0].get("state", ""), "theme": pack.get("theme")}
         written.append("%s/%s/%s" % (HOST, GUIDES_DIRNAME, slug))  # clean URL: Cloudflare 307s /x.html → /x

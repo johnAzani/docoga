@@ -174,6 +174,11 @@ TPL = '''<!DOCTYPE html>
 <link rel="canonical" href="https://docoga.com.ng/{fname}">
 <meta property="og:title" content="{title}">
 <meta property="og:description" content="{desc}">
+<meta property="og:image" content="https://docoga.com.ng/og/{og_slug}.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="{title}">
+<meta name="twitter:card" content="summary_large_image">
 <style>
 *{{box-sizing:border-box;margin:0;padding:0}}
 body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;color:#141F33;background:#F5F7FB;line-height:1.6}}
@@ -689,6 +694,7 @@ def main():
             d['faq'] = faq_html(t, st)
             d['fname'] = fname
             d['share_id'] = fname[:-5]
+            d['og_slug'] = fname[:-5]
             d['share_text'] = share_text(d['title'], fname[:-5])
             d['arrears_block'] = ('<p class="law">' + st['arrears'] + '</p>' if st['arrears'] else '')
             d['notice_table'] = notice_table(slug, st['place'])
