@@ -175,6 +175,7 @@ def fit_size(draw, text, weight, max_width, start, floor=34, step=2):
 
 # Where the daily lanes' cards go. Under assets/ (gitignored) because the Facebook and
 # Telegram lanes upload bytes, not URLs — only the Instagram lane needs site/social/.
+LAST_PLAN = {}   # the last render's plan + frame (tests read it; the lanes ignore it)
 LANE_CARD_DIRS = {"facebook": Path("assets/facebook"), "telegram": Path("assets/telegram")}
 
 # Post art the lanes may NOT ship. The files under brand/ are logo explorations and
@@ -313,6 +314,30 @@ def classify(line):
     return "plain", "", line.strip()
 
 
+HEADLINE_MAX_WORDS = 16     # above this a "headline" is a paragraph; the rest of it becomes body
+SENTENCE_END = re.compile(r"(?<=[.!?])\s+(?=[A-Z0-9\u20a6\"'(])")
+
+
+def _first_sentence(text):
+    """Split a paragraph into (first sentence, the rest). The first sentence is clipped to
+    HEADLINE_MAX_WORDS at the last comma/semicolon/dash before the limit when it runs on,
+    so the headline is never longer than the body it introduces."""
+    words = text.split()
+    pieces = SENTENCE_END.split(text, maxsplit=1)
+    first = pieces[0].strip()
+    after = pieces[1].strip() if len(pieces) > 1 else ""
+    if len(first.split()) > HEADLINE_MAX_WORDS:
+        head = first.split()
+        cut = HEADLINE_MAX_WORDS
+        for i in range(HEADLINE_MAX_WORDS, 5, -1):
+            if head[i - 1].endswith((",", ";", ":", "\u2014", "-")):
+                cut = i
+                break
+        first = " ".join(head[:cut]).rstrip(",;:\u2014- ") + ("" if cut == len(head) else "\u2026")
+        after = (" ".join(head[cut:]) + (" " + after if after else "")).strip()
+    return first, after
+
+
 def structure(text, footer=True, layout="poster"):
     """Headline + typed body lines from the lane's copy (plain or MarkdownV2 — both stripped).
 
@@ -323,6 +348,15 @@ def structure(text, footer=True, layout="poster"):
     parts = [b for b in raw.split("\n\n") if b.strip()] or [raw]
     headline = " ".join(plain_for_card(parts[0]).split())
     rest = "\n\n".join(parts[1:])
+    # 29 Oct 2026 (owner's screenshot, Threads lunch card): a post written as ONE paragraph made
+    # the whole paragraph the headline, and a headline is only ever fitted for width — 70 words
+    # of display type ran off the bottom of the frame and under the chip. A headline is one
+    # sentence; everything after the first sentence is body, which shrinks and, last resort, cuts.
+    if len(headline.split()) > HEADLINE_MAX_WORDS:
+        first, after = _first_sentence(headline)
+        if after:
+            headline = first
+            rest = (after + ("\n\n" + rest if rest else "")) if not (layout == "checklist" and rest) else rest + "\n\n" + after
     if layout == "checklist" and rest:
         rest = _numbered(rest)
     body = []
@@ -478,6 +512,17 @@ def plan(draw, headline, body, big, frame):
             font, size = fit_size(draw, headline, "Black", max_width, start, floor=44)
             out.update(mode="stat" if big else "white", h_font=font, h_size=size,
                        h_lines=wrap(draw, headline, font, max_width))
+            # Height, not only width (29 Oct 2026): a white headline must leave the body at least
+            # its floor, and alone it must sit inside the safe box — shrink to 40, then cut lines.
+            out["b_lines"], out["b_size"] = [], 0
+            reserve = (3 * int(30 * 1.34) + (40 if tall else 34)) if body else 0
+            while _height(out, tall) + reserve > ceiling - top and size > 40:
+                size -= 4
+                font, _ = load_font("Black", size)
+                out.update(h_font=font, h_size=size, h_lines=wrap(draw, headline, font, max_width))
+            while len(out["h_lines"]) > 1 and _height(out, tall) + reserve > ceiling - top:
+                out["h_lines"].pop()
+                out["h_lines"][-1] = out["h_lines"][-1].rstrip(" ,;:") + "\u2026"
     else:
         out.update(h_font=None, h_size=0, h_lines=[])
     # Body: shrink until the block fits, then (last resort) cut.
@@ -527,6 +572,7 @@ def plan(draw, headline, body, big, frame):
             k, l, t, ind = out["b_lines"][-1]
             out["b_lines"][-1] = (k, l, t.rstrip(" ,;:") + "\u2026", ind)
     out["height"] = _height(out, tall)
+    out["fits"] = out["height"] <= ceiling - top
     return out
 
 
@@ -612,6 +658,10 @@ def render(text, out_path, kicker="", quality=88, max_kb=900, footer=FOOTER, siz
     ceiling = H - edge_bottom - (60 if four_five else 56) - (chip_h + 40 if footer else 0)
     frame = {"w": W, "h": H, "top": top, "ceiling": ceiling, "tall": tall}
     p = plan(draw, headline, body, big, frame)
+    globals()["LAST_PLAN"] = dict(p, frame=frame, headline=headline, body=body)
+    if not p["fits"]:
+        print("::warning title=Card overflow::planned height %d > safe box %d — the renderer's fit guarantee failed"
+              % (p["height"], frame["ceiling"] - frame["top"]), file=sys.stderr)
 
     # Optical placement: a touch above true centre of the safe box.
     room = (ceiling - top) - p["height"]
