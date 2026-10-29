@@ -256,7 +256,25 @@ def probe(chain=None, http_get=None, key=None, log=print):
     verdict = "empty" if not served else ("thin" if len(served) < 2 else "ok")
     log("GEMINI_SERVED=%s" % ",".join(served))
     log("GEMINI_LADDER=%s" % verdict)
+    # The narrator's ladder (tools/deepdive.GEMINI_MODELS + GEMINI_TTS_MODEL) against the same
+    # list — the Short and the Deep-Dive have no voice without a served -tts rung (29 Oct 2026).
+    tts_chain = tts_models()
+    tts_served = [m for m in tts_chain if m in names]
+    for m in tts_chain:
+        log("  %s %s (narrator)" % ("✅" if m in tts_served else "—", m))
+    log("GEMINI_TTS_SERVED=%s" % ",".join(tts_served))
+    log("GEMINI_TTS_LADDER=%s" % ("empty" if not tts_served else ("thin" if len(tts_served) < 2 else "ok")))
     return served, missing
+
+
+def tts_models():
+    """The narrator's ladder as deepdive.gemini_tts walks it: GEMINI_TTS_MODEL first, then the
+    engine's rungs. Read from the engine's source so the two can never drift apart."""
+    env_model = os.environ.get("GEMINI_TTS_MODEL", "").strip()
+    src = (ROOT / "tools" / "deepdive.py").read_text(encoding="utf-8")
+    m = re.search(r"^GEMINI_MODELS = \((.*?)\)", src, re.M | re.S)
+    rungs = tuple(re.findall(r'"([^"]+)"', m.group(1))) if m else ()
+    return ((env_model,) if env_model else ()) + rungs
 
 
 if __name__ == "__main__":

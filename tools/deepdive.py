@@ -310,6 +310,17 @@ def parse_retry_seconds(body):
     return float(m.group(1)) if m else None
 
 
+def not_served(code, body):
+    """True when an HTTP answer means 'this key is not served this model' rather than a failure —
+    the same rule tools/gemini_text.py applies to the text ladder (29 Oct 2026)."""
+    low = (body or "").lower()
+    if code == 404:
+        return True
+    if code == 400 and ("not found" in low or "not supported" in low):
+        return True
+    return code == 403 and "quota" not in low
+
+
 def gemini_tts(text, voice, instruction, out_mp3, models=None):
     """One request → one mp3. Returns ('ok', 0) | ('wait', seconds) | ('fail', 0)."""
     if (voice, instruction) != locked_voice():
@@ -345,8 +356,11 @@ def gemini_tts(text, voice, instruction, out_mp3, models=None):
                           % (model, (" (limit %d/day)" % refusal["limit"]) if refusal.get("limit") else "",
                              gemini_quota.lagos(gemini_quota.next_reset())))
                 return "wait", wait
-            if e.code == 404:
-                print("  model %s not available here — trying the next" % model)
+            if not_served(e.code, full):
+                # 404: no such model for this key. 403 without a quota word: Google is not serving
+                # this model to this project (the 2.5 rule since Sep 2026). 400 "not found / not
+                # supported": a retired name. None of these costs a request — step down the ladder.
+                print("  model %s not available here (HTTP %d) — trying the next" % (model, e.code))
                 continue
             print("  HTTP %d from %s: %s" % (e.code, model, last[:200]))
             gemini_quota.note_request(model, "fail")
