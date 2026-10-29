@@ -346,7 +346,7 @@ class GuidesTests(unittest.TestCase):
         text = (WF / "brain.yml").read_text()
         self.assertIn("tools/guides_build.py build", text)
         self.assertIn("BRAIN_GUIDES: ${{ vars.BRAIN_GUIDES }}", text)
-        self.assertIn("site/guides site/sitemap.xml", text)
+        self.assertIn("site/guides site/og site/sitemap.xml", text)
         self.assertIn("tools/listening.py pull", text)
         self.assertIn("tools/listening.py answer", text)
         self.assertIn("tools/gemini_text.py probe", text)

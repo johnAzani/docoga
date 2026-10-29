@@ -309,7 +309,7 @@ jobs:
           # (brain/answers exists on Mondays only): every pack, the newsdesk, the Deep-Dive
           # attempts — written on the runner, never committed, so the lanes posted from the
           # rotation every day. tools/tests/test_workflow_contract.py now forbids the shape.
-          for path in brain/drafts brain/feedback.md brain/newsdesk.json brain/listening.json brain/answers logs/brain_said.json logs/brain_refused.json logs/brain_deepdive.json episodes site/guides site/sitemap.xml; do
+          for path in brain/drafts brain/feedback.md brain/newsdesk.json brain/listening.json brain/answers logs/brain_said.json logs/brain_refused.json logs/brain_deepdive.json episodes site/guides site/og site/sitemap.xml; do
             if [ -e "$path" ]; then git add -A "$path"; fi
           done
           if [ -n "${INDEXNOW_KEY:-}" ] && [ -f "site/${INDEXNOW_KEY}.txt" ]; then git add "site/${INDEXNOW_KEY}.txt"; fi

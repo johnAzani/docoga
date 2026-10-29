@@ -1180,6 +1180,11 @@ def render(fname, p):
 <link rel="canonical" href="%(domain)s/%(fname)s">
 <meta property="og:title" content="%(title)s">
 <meta property="og:description" content="%(desc)s">
+<meta property="og:image" content="%(domain)s/og/%(bare)s.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="%(title)s">
+<meta name="twitter:card" content="summary_large_image">
 <meta property="og:url" content="%(domain)s/%(fname)s">
 <meta property="og:type" content="article">
 <script type="application/ld+json">
@@ -1238,7 +1243,7 @@ your case with a qualified Nigerian lawyer or your accountant.
 </body>
 </html>
 """ % dict(title=p["title"], desc=p["desc"], h1=p["h1"], lead=p["lead"], boxes=boxes,
-           share_id=bare, share_text=quote("%s \u2014 %s/%s" % (p["title"].replace("&amp;", "&"), DOMAIN, bare), safe=""),
+           bare=bare, share_id=bare, share_text=quote("%s \u2014 %s/%s" % (p["title"].replace("&amp;", "&"), DOMAIN, bare), safe=""),
            faq=faq_block(p["faq"]), related=related, state_links=state_links,
            tool_links=tool_links, cta_hash=cta_hash, cta_label=cta_label,
            fname=fname, domain=DOMAIN, css=CSS, ld=ld, as_at=AS_AT, widget=widget)
