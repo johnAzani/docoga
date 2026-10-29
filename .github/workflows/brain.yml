@@ -108,6 +108,9 @@ jobs:
           if grep -q '^GEMINI_LADDER=empty' /tmp/gemini_probe.log; then
             echo "::error title=No Gemini model served::the key is served none of the brain's models — set BRAIN_MODELS to a model the probe lists, or make a new key in AI Studio"
           fi
+          if grep -q '^GEMINI_TTS_LADDER=empty' /tmp/gemini_probe.log; then
+            echo "::error title=No Gemini TTS model served::the key is served none of the narrator's models — the Short and the Deep-Dive will have no voice. Set the GEMINI_TTS_MODEL variable to a -tts model the probe lists (the voice Orus and its instruction do not change)."
+          fi
 
       - name: Newsdesk — what Nigeria is talking about this week
         run: |
