@@ -454,53 +454,95 @@ PAGES["rent-receipt-format-nigeria.html"] = dict(
 
 # 5 ── tenant rights ------------------------------------------------------------
 PAGES["tenant-rights-nigeria.html"] = dict(
-    title="Rights of a Tenant in Nigeria &amp; Landlord Obligations (2026)",
-    h1="Rights of a tenant in Nigeria — and the landlord obligations that back them",
-    desc="Six enforceable tenant rights in Nigeria: lawful notice, no forceful ejection, receipts for every payment, quiet enjoyment and the advance-rent cap. Plus landlord and tenant obligations.",
+    # Rewritten 29 Oct 2026 (Search Console: position 15, 21 impressions, 2 clicks). Page-one
+    # rivals all run the "what your landlord cannot do" angle and most of them invent rules
+    # (24–48h entry notice, deposit statutes, percentage caps). Ours answers the same question
+    # with the section numbers — every one from tools/state_law_data.py, read from the enrolled
+    # Lagos text — and says plainly what the law does NOT promise.
+    title="Tenant Rights in Nigeria 2026: What Your Landlord Cannot Do",
+    h1="Tenant rights in Nigeria — what your landlord cannot do, with the section of the law",
+    desc="Tenant rights in Nigeria with the section numbers: 9 things your landlord cannot do, how many months' notice, rent increases — and what the law does not promise you.",
     lead="Most Nigerian tenants do not know what they are legally owed — which is why disputes get "
-         "settled by whoever shouts loudest. The rights below are enforceable, and they come from the "
-         "Lagos Tenancy Law 2011 (the most detailed state law) and the recovery-of-premises "
-         "legislation other states and the FCT apply. Knowing them changes how a conversation with "
-         "your landlord goes.",
+         "settled by whoever shouts loudest. Everything below carries the section it rests on, from "
+         "the Lagos Tenancy Law 2011 (the most detailed state law) with the FCT and other states "
+         "noted where they differ. Knowing the section changes how a conversation with your landlord "
+         "goes.",
     boxes=[
-        ("Six rights every Nigerian tenant has", ul([
-            "<b>1. Lawful notice before you can be asked to leave.</b> Where the agreement is silent: "
-            "1 week (tenant at will or weekly), 1 month (monthly), 3 months (quarterly or "
-            "half-yearly), 6 months (yearly) — then a further 7 days' notice of the owner's intention "
-            "to recover possession before court.",
-            "<b>2. No forceful ejection.</b> Only a court can order possession. In Lagos, s.44 makes "
-            "forcible ejection, threats or molestation aimed at ejecting a tenant, removing a roof, "
-            "changing locks, or wilful damage a criminal offence — fine up to ₦250,000 or up to six "
-            "months' imprisonment.",
-            "<b>3. A receipt for every payment.</b> Rent, deposit and service charge each get their "
-            "own receipt; refusing a rent receipt carries a ₦100,000 fine in Lagos (s.5(3)).",
-            "<b>4. Quiet enjoyment.</b> The landlord must not terminate or restrict a common facility "
-            "or service for the premises, and must not seize your property or interfere with your "
-            "access to it (s.7).",
-            "<b>5. Repairs of the structure and common parts.</b> The landlord must effect repairs and "
-            "maintain the external and common parts of the premises (s.7).",
-            "<b>6. The advance-rent cap.</b> A Lagos landlord or agent may not demand or receive more "
-            "than one year's rent in advance from a yearly tenant, or six months from a monthly "
-            "tenant (s.4).",
+        ("Nine things your landlord cannot do — with the section", ul([
+            "<b>1. Put you out without a court order.</b> Forcibly ejecting you or attempting to, "
+            "threatening or molesting you to make you leave, or demolishing, altering or modifying "
+            "the building to eject you without the court's approval is a <b>criminal offence</b> in "
+            "Lagos — fine of ₦250,000 or six months' imprisonment (s.44(1)). Removing the roof, "
+            "changing the locks and taking off the doors all fall inside it.",
+            "<b>2. Seize your property or block your access to it</b> — the landlord's statutory "
+            "obligations include not seizing any item of the tenant's property or interfering with "
+            "access to it (s.8). This is the answer to \"he has locked my things inside\".",
+            "<b>3. Cut off a facility or service</b> the premises came with — light, water, the "
+            "borehole, the common generator (s.8).",
+            "<b>4. Disturb your quiet enjoyment.</b> s.6 gives you quiet and peaceable enjoyment: "
+            "privacy, freedom from unreasonable disturbance, exclusive possession (subject only to "
+            "the landlord's <i>restricted</i> right of inspection) and use of the common areas.",
+            "<b>5. Refuse you a receipt.</b> Every rent payment must be receipted, and the receipt must "
+            "show the date, both names and addresses, the premises, the amount and the period "
+            "(s.5(1)–(2)); failing to issue it is a ₦100,000 fine (s.5(3)). Deposits and service "
+            "charges get their own receipt and a written account at least every six months (s.10).",
+            "<b>6. Demand more than a year's rent upfront.</b> A sitting yearly tenant may not be asked "
+            "for more than one year, a sitting monthly tenant more than six months, a new tenant more "
+            "than one year (s.4(1)–(4)). Both the landlord who collects it and the tenant who pays "
+            "commit the offence — ₦100,000 or three months (s.4(5)).",
+            "<b>7. Shorten your notice.</b> Where the agreement is silent: one week (tenant at will), "
+            "one month (monthly), three months (quarterly and half-yearly), six months (yearly) "
+            "(s.13(1)(a)–(e)) — then a further 7 days' notice of the owner's intention to recover "
+            "possession before court. Full table and a free letter: "
+            "<a href=\"https://docoga.com.ng/notice-to-quit-nigeria\">quit notice — how many months</a>.",
+            "<b>8. Eject you while you are challenging a rent increase.</b> s.37 lets a sitting tenant "
+            "ask the court (Form TL11) to declare an increase unreasonable; it is unlawful to eject the "
+            "tenant while that application is pending (s.37(4)).",
+            "<b>9. Refuse your rent and then call you a defaulter.</b> Where a landlord will not accept "
+            "rent, the tenant may apply to the court to pay it into the Court Registry (s.29).",
         ])),
-        ("Landlord obligations in the same breath", ul([
-            "Deliver the premises in a tenantable condition and keep the external and common parts "
-            "repaired.",
-            "Not to cut off facilities or services, and not to seize the tenant's belongings.",
-            "To issue receipts — rent, and separately for any deposit, service or facility charge.",
-            "To give a written account at least every six months of how deposit and service-charge "
-            "money was spent.",
-            "To follow the lawful process to recover possession: notice to quit, then 7 days' notice, "
-            "then court.",
-            "For business premises (Lagos, s.9): not to inhibit the tenant's access in any substantial "
-            "manner, and not to substantially alter or inhibit the flow of customers to the premises.",
+        ("How many months' notice before you can be asked to leave", NOTICE_TABLE +
+         '<p class="law">Lagos s.13(1). Abuja (Recovery of Premises Act, Cap. 544, s.8) runs the same '
+         'ladder without the half-yearly tier: a tenancy over one year is a yearly tenancy and six '
+         'calendar months suffice. In both, the period counts from the <b>date of service</b>, not the '
+         'date written on the letter. After the notice expires, a second notice — seven days, owner\'s '
+         'intention to recover possession — and only then court. Arrears change this in Lagos: a '
+         'monthly tenant six months behind, or a quarterly/half-yearly tenant a year behind, loses the '
+         'right to a quit notice (s.13(2)–(3)).</p>'),
+        ("Rent increase: what the law actually gives you", ul([
+            "<b>There is no percentage cap</b> on rent increases in Lagos or anywhere in Nigeria. Any "
+            "page that quotes one is wrong.",
+            "<b>Mid-term, the agreement governs.</b> If the rent is fixed for the term, it cannot be "
+            "raised before the term ends; an increase properly takes effect at renewal, on notice.",
+            "<b>Your remedy is s.37.</b> Apply to the court on Form TL11 for an order that the increase "
+            "is unreasonable. The court weighs the general level of rents in the locality, the "
+            "witnesses and any special circumstances, and may fix the rent at a specific figure (Form "
+            "TL13). You cannot be ejected while it is pending (s.37(4)).",
         ])),
-        ("And the tenant's side", ul([
+        ("What the law does NOT promise you — the honest list", ul([
+            "<b>No \"24–48 hours' notice before entry\" rule.</b> That figure is copied from foreign "
+            "tenancy law. What Lagos gives you is privacy and exclusive possession under s.6, with the "
+            "landlord's right of inspection <i>restricted</i> — so write the inspection notice period "
+            "into your agreement.",
+            "<b>No deposit statute.</b> The Lagos law does not use the words \"caution fee\". What it "
+            "regulates is the receipt (s.10) and the six-monthly written account of how the money was "
+            "spent; whether and how it is refunded is what your agreement says. "
+            "<a href=\"https://docoga.com.ng/caution-fee-nigeria\">Caution fee: what to write in</a>.",
+            "<b>No single national tenancy law.</b> The FCT's Recovery of Premises Act is not a federal "
+            "law of general application; every state has its own. And the Lagos law itself does not "
+            "apply in Apapa, Ikeja GRA, Ikoyi or Victoria Island (s.1(3)).",
+            "<b>No right to withhold rent</b> because repairs are outstanding. The landlord must effect "
+            "repairs and maintain the external and common parts (s.8(vi)); you keep the inside in good "
+            "and tenantable repair, fair wear and tear excepted (s.7(3)). Withholding rent hands the "
+            "landlord the arrears case — put the repair demand in writing instead.",
+        ])),
+        ("And the tenant's side (s.7)", ul([
             "Pay the rent at the time and in the manner agreed — arrears are the fastest route to "
             "losing the protection of a quit notice.",
-            "Keep the premises in good and tenantable repair, fair wear and tear excepted.",
+            "Keep the premises in good and tenantable repair, fair wear and tear excepted (s.7(3)).",
             "Pay the rates and charges that are the tenant's responsibility under the agreement.",
-            "Not to sublet, assign or alter the premises without the landlord's written consent.",
+            "Not to sublet, assign or alter the premises without the landlord's written consent "
+            "(improvements made <i>with</i> written consent can be claimed for on quitting — s.6(2)).",
             "Not to use the premises for an illegal or immoral purpose.",
             "To give up possession lawfully at the end of the term.",
         ])),
@@ -508,17 +550,36 @@ PAGES["tenant-rights-nigeria.html"] = dict(
             "<b>Put everything in writing</b> — WhatsApp messages are admissible evidence and they are "
             "dated.",
             "<b>Self-help against a self-help landlord is still self-help.</b> Do not withhold rent "
-            "unilaterally; in Lagos you can apply to pay it into the court's registry if the landlord "
-            "refuses to accept it (s.28).",
-            "<b>Forceful ejection is reportable.</b> It is a criminal offence in Lagos, not a civil "
-            "disagreement.",
+            "unilaterally; if the landlord refuses to accept it, apply to pay it into the court's "
+            "registry (s.29).",
+            "<b>Forceful ejection is reportable.</b> It is a criminal offence in Lagos (s.44), not a "
+            "civil disagreement — the police station and the Magistrates' Court, not a shouting match.",
+            "<b>Where to go:</b> in Lagos the Magistrates' Court (the High Court for high-value "
+            "premises); there is no Rent Tribunal in Lagos any more. The court may send the case to "
+            "mediation (s.32); the Citizens Mediation Centre is free.",
             "<b>Document everything</b> — receipts, photos, the agreement, the notices you received.",
         ])),
     ],
     faq=[
-        ("Can my landlord remove my roof or change the locks to make me leave?",
-         "No. In Lagos that is an offence under s.44 — a fine of up to ₦250,000 or up to six months' "
-         "imprisonment. Possession can only be recovered by a court order."),
+        ("Can my landlord lock me out or remove my roof if I owe rent?",
+         "No. Even in arrears, possession is recovered only through the court. In Lagos forcible "
+         "ejection, threats to make you leave, or altering the building to eject you is an offence "
+         "under s.44 — ₦250,000 or six months' imprisonment — and seizing your property or blocking "
+         "your access to it breaches the landlord's obligations under s.8."),
+        ("Can my landlord enter my flat without notice?",
+         "Lagos law gives you privacy and exclusive possession (s.6) with the landlord's right of "
+         "inspection restricted, but it does not fix a number of hours' notice — the 24–48 hours quoted "
+         "online is foreign law. Put the inspection notice period in your tenancy agreement."),
+        ("Can my landlord increase my rent at any time?",
+         "Not mid-term if the agreement fixes the rent for the term; increases properly take effect "
+         "at renewal, on notice. There is no statutory percentage cap, but a sitting tenant can ask the "
+         "court under s.37 to declare an increase unreasonable, and cannot be ejected while that "
+         "application is pending."),
+        ("How many months' notice must my landlord give me?",
+         "Where the agreement is silent: one week for a tenant at will, one month for a monthly tenant, "
+         "three months for a quarterly or half-yearly tenant, six months for a yearly tenant (Lagos "
+         "s.13(1); Abuja s.8 of the Recovery of Premises Act is the same without the half-yearly tier). "
+         "Then a further seven days' notice before court."),
         ("Do I still pay rent during the notice period?",
          "Yes. A six-month notice is not six free months — rent continues to be due throughout, and "
          "after expiry the landlord can claim mesne profits for the period you remain."),
@@ -526,14 +587,14 @@ PAGES["tenant-rights-nigeria.html"] = dict(
          "Yes. Under the Lagos law a tenancy is deemed to exist where premises are granted for value, "
          "whether oral or written. The statutory notice minimums and protections still apply — you "
          "just have no agreed rent record, which is why you should write one now."),
-        ("Can my landlord raise my rent at any time?",
-         "Not mid-term if your agreement fixes the rent for the term. Rent increases properly take "
-         "effect at renewal, on notice — and the agreement's renewal clause governs. Any increase "
-         "demanded mid-term without a contractual basis is worth challenging."),
+        ("Is my caution fee or deposit refundable?",
+         "The Lagos law does not legislate the refund; it requires a separate receipt for a deposit "
+         "and a written account every six months of how it was spent (s.10). Refund terms are whatever "
+         "the agreement says — so write them in before you pay."),
         ("Which law applies to me?",
          "State law. Lagos runs the Tenancy Law 2011 (which does not apply in Apapa, Ikeja GRA, Ikoyi "
-         "or Victoria Island); the FCT runs the Recovery of Premises Act; other states run their own "
-         "recovery-of-premises legislation."),
+         "or Victoria Island); the FCT runs the Recovery of Premises Act, Cap. 544; other states run "
+         "their own recovery-of-premises legislation — see the state guides below."),
     ],
     cta=("agreement", "Put your tenancy in writing — free →"),
     related=["notice-to-quit-nigeria.html", "caution-fee-nigeria.html",
