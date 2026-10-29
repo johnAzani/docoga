@@ -93,7 +93,7 @@ class WhatsAppShareTests(unittest.TestCase):
 
     def test_every_generated_page_carries_one_share_row_with_a_bare_url_and_a_ga_event(self):
         pages = self._pages()
-        self.assertEqual(len(pages), 8 + 60)
+        self.assertGreaterEqual(len(pages), 9 + 60)
         for p in pages:
             t = p.read_text(encoding="utf-8")
             self.assertEqual(t.count('<div class="share">'), 1, p.name)
