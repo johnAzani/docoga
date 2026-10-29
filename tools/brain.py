@@ -64,6 +64,7 @@ import law_index  # noqa: E402
 import newsdesk  # noqa: E402
 import listening  # noqa: E402
 import series_week  # noqa: E402
+import rent_monitor  # noqa: E402
 
 LAGOS = ZoneInfo("Africa/Lagos")
 BRAIN = ROOT / "brain"
@@ -104,7 +105,8 @@ BANNED = ("unlock", "game-changer", "game changer", "delve", "fast-paced", "we a
 STAT = re.compile(r"\b\d+(?:\.\d+)?\s?(?:%|percent|per cent)|"
                   r"\b(?:\d+|one|two|three|four|five|six|seven|eight|nine)\s+(?:in|out of)\s+(?:every\s+)?"
                   r"(?:\d+|two|three|four|five|ten|twenty|hundred)\b|"
-                  r"\b\d+(?:\.\d+)?\s?(?:million|billion)\b", re.I)
+                  r"\b\d+(?:\.\d+)?\s?(?:million|billion)\b|"
+                  r"\b\d+\s+of\s+\d{2,}\b", re.I)      # "9 of 30" (Rent Monitor shape, 29 Oct 2026); "part 4 of 5" is not a statistic
 # heal_deepdive rewrites these (style only); the rest of BANNED still refuses the draft.
 STYLE_FIXES = (("game-changer", "big difference"), ("game changer", "big difference"),
                ("unlock", "open up"), ("delve", "look"), ("fast-paced", "busy"),
@@ -249,8 +251,10 @@ def day_context(day, said=None):
     slug = state_for(day)
     facts = law_index.facts_for(slug)
     hook, hook_why, hook_binding = hook_order(day, said)
+    monitor = rent_monitor.context(day)        # Friday: the Rent Monitor's live counts as citable facts
+    facts = facts + monitor
     return dict(day=day, weekday=day.strftime("%A"), lead=weekday_lead(day), state=slug,
-                state_name=facts[0]["state"] if facts else slug, facts=facts,
+                state_name=facts[0]["state"] if facts else slug, facts=facts, monitor=monitor,
                 short_day=day.weekday() in SHORT_DAYS, calendar=calendar_notes(day),
                 series=series_week.series_for(day) if day.weekday() in SHORT_DAYS else None,
                 recent=recent, feedback=read(FEEDBACK).strip(),
@@ -307,6 +311,7 @@ def prompt_for(ctx, problems=None):
                   if ctx["short_day"] else "No Short is rendered on this day: set `short` to null.")
     series_block = series_week.brief(ctx.get("series"))
     series_block = ("\n\n" + series_block) if series_block else ""
+    series_block += rent_monitor.prompt_block(ctx.get("monitor") or [])
     retry = ""
     if problems:
         retry = "\n\nYOUR PREVIOUS DRAFT WAS REFUSED FOR THESE REASONS — fix every one:\n- " + "\n- ".join(problems)

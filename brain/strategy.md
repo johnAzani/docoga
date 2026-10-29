@@ -76,6 +76,10 @@ can be corrected from evidence rather than articles.
   get the sends and saves)
 - 1 story-style scenario (shares and comments)
 - 1 promo (one tool, one job, free to start — never two promos in a row)
+  - On Fridays the promo is the **Rent Monitor**: the week's live count of verified receipts
+    and the state closest to 30, from the ledger (`tools/rent_monitor.py`), pointing at the free
+    receipt and `docoga.com.ng/rent-index-nigeria`. Numbers only from the `monitor:*` facts; the
+    pitch is the receipt (which becomes the Oga Pass), never the index itself.
 - 1 engagement question (Sunday; comments and replies)
 - Pidgin on Wednesdays or when the theme is a market/agent story
 - 2 Shorts/Reels, 1 Deep-Dive; Stories every day

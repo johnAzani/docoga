@@ -35,11 +35,12 @@ SITE = ROOT / "site"
 # checked by the lint; the page must exist in site/ or the link falls back, in order, to the
 # national guide and then the homepage. Never a 404 from a social post.
 TOOLS = ("tenancy-agreement", "notice-to-quit", "rent-receipt", "caution-fee", "letter-of-demand",
-         "invoice", "payslip", "employment-contract", "warning-letter", "power-of-attorney", "tenant-rights")
+         "invoice", "payslip", "employment-contract", "warning-letter", "power-of-attorney", "tenant-rights",
+         "rent-index")   # the Rent Monitor page (29 Oct 2026) — Friday's weekly counts post points here
 NATIONAL_PAGE = {"tenancy-agreement": "tenancy-agreement-nigeria.html", "notice-to-quit": "notice-to-quit-nigeria.html",
                  "rent-receipt": "rent-receipt-format-nigeria.html", "caution-fee": "caution-fee-nigeria.html",
                  "invoice": "invoice-format-nigeria.html", "power-of-attorney": "power-of-attorney-nigeria.html",
-                 "tenant-rights": "tenant-rights-nigeria.html"}
+                 "tenant-rights": "tenant-rights-nigeria.html", "rent-index": "rent-index-nigeria.html"}
 STATE_PAGE_TOOLS = ("tenancy-agreement", "notice-to-quit", "rent-receipt", "caution-fee")
 
 
@@ -256,7 +257,7 @@ TOPIC_TAGS = {"tenancy-agreement": "Tenant Rights Nigeria", "notice-to-quit": "T
               "rent-receipt": "Tenant Rights Nigeria", "caution-fee": "Tenant Rights Nigeria",
               "tenant-rights": "Tenant Rights Nigeria", "shop-tenancy-agreement": "Nigerian Small Business",
               "invoice": "Nigerian Small Business", "payslip": "Nigerian Workplace",
-              "power-of-attorney": "Nigerian Law", "affidavit": "Nigerian Law"}
+              "power-of-attorney": "Nigerian Law", "affidavit": "Nigerian Law", "rent-index": "Rent in Nigeria"}
 DEFAULT_TOPIC = "Rent in Nigeria"
 # Instagram SEO (Google indexes professional accounts' posts since 10 Jul 2025; Instagram's own
 # search reads the caption's first line and the alt text). One plain search phrase per tool —
@@ -265,7 +266,8 @@ SEO_PHRASES = {"tenancy-agreement": "Tenancy agreement sample Nigeria", "notice-
                "rent-receipt": "Rent receipt format Nigeria", "caution-fee": "Caution fee refund Nigeria",
                "tenant-rights": "Tenant rights in Nigeria", "shop-tenancy-agreement": "Shop tenancy agreement Nigeria",
                "invoice": "Invoice template Nigeria", "payslip": "Payslip format Nigeria",
-               "power-of-attorney": "Power of attorney Nigeria", "affidavit": "Affidavit format Nigeria"}
+               "power-of-attorney": "Power of attorney Nigeria", "affidavit": "Affidavit format Nigeria",
+               "rent-index": "Rent index Nigeria"}
 DEFAULT_SEO = "Rent and tenancy documents Nigeria"
 STATE_NAMES = {"lagos": "Lagos", "abuja": "Abuja", "fct": "Abuja", "rivers": "Rivers", "kano": "Kano", "oyo": "Oyo",
                "ogun": "Ogun", "enugu": "Enugu", "kaduna": "Kaduna", "delta": "Delta", "anambra": "Anambra"}

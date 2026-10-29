@@ -70,6 +70,7 @@ jobs:
       BRAIN_DEEPDIVE: ${{ inputs.deepdive }}
       BRAIN_DRY_RUN: ${{ inputs.dry_run }}
       BRAIN_FORUM_ANSWER: ${{ inputs.forum_answer }}
+      DOCOGA_MONITOR: ${{ vars.DOCOGA_MONITOR || 'on' }}   # Friday: live receipt counts as citable facts (tools/rent_monitor.py)
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
