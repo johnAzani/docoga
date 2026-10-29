@@ -1,1 +1,60 @@
-{"used": {}}
+{
+ "used": {
+  "pixabay:201013": {
+   "n": 1,
+   "last": "2026-10-29",
+   "query": "atm card bank nigeria",
+   "door": "pixabay",
+   "lane": ""
+  },
+  "pixabay:187690": {
+   "n": 1,
+   "last": "2026-10-29",
+   "query": "padlocked door nigeria",
+   "door": "pixabay",
+   "lane": ""
+  },
+  "pixabay:313345": {
+   "n": 1,
+   "last": "2026-10-29",
+   "query": "bank building atm nigeria",
+   "door": "pixabay",
+   "lane": ""
+  },
+  "pixabay:313952": {
+   "n": 1,
+   "last": "2026-10-29",
+   "query": "lagos street nigeria",
+   "door": "pixabay",
+   "lane": ""
+  },
+  "pixabay:201018": {
+   "n": 1,
+   "last": "2026-10-29",
+   "query": "paper receipt nigeria",
+   "door": "pixabay",
+   "lane": ""
+  },
+  "pixabay:201009": {
+   "n": 1,
+   "last": "2026-10-29",
+   "query": "paper receipt nigeria",
+   "door": "pixabay",
+   "lane": ""
+  },
+  "pixabay:98445": {
+   "n": 1,
+   "last": "2026-10-29",
+   "query": "courthouse columns nigeria",
+   "door": "pixabay",
+   "lane": ""
+  },
+  "pixabay:313948": {
+   "n": 1,
+   "last": "2026-10-29",
+   "query": "paper receipt nigeria",
+   "door": "pixabay",
+   "lane": ""
+  }
+ }
+}

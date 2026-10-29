@@ -49,19 +49,32 @@
       "run_id": "40731528667",
       "series": "Part 3 of 5 · Rent receipt law",
       "series_topic": "Rent receipt law"
+    },
+    {
+      "date": "2026-10-29",
+      "video_id": "XJlXCJjHuw0",
+      "title": "Transfer alert to an agent? You could pay twice (part 4 of 5) #Shorts",
+      "url": "https://docoga-pass.johnazani.workers.dev/m/odqBSDNjoB_V120K9t4GEjdk4H350aHZ.mp4",
+      "name": "odqBSDNjoB_V120K9t4GEjdk4H350aHZ",
+      "bytes": 40440356,
+      "hosted_at": "2026-10-29T17:17:57+00:00",
+      "expires_at": "2026-10-30T23:17:57+00:00",
+      "run_id": "40917132160",
+      "series": "Part 4 of 5 · Rent receipt law",
+      "series_topic": "Rent receipt law"
     }
   ],
   "latest": {
-    "date": "2026-10-28",
-    "video_id": "RSVjMTiA4eM",
-    "title": "Paid without a receipt? That's paying twice (part 3 of 5) #Shorts",
-    "url": "https://docoga-pass.johnazani.workers.dev/m/Pr1ajIOnFeiKyFZw1ykBrBclljwyPr7y.mp4",
-    "name": "Pr1ajIOnFeiKyFZw1ykBrBclljwyPr7y",
-    "bytes": 35016334,
-    "hosted_at": "2026-10-28T17:14:29+00:00",
-    "expires_at": "2026-10-29T23:14:29+00:00",
-    "run_id": "40731528667",
-    "series": "Part 3 of 5 · Rent receipt law",
+    "date": "2026-10-29",
+    "video_id": "XJlXCJjHuw0",
+    "title": "Transfer alert to an agent? You could pay twice (part 4 of 5) #Shorts",
+    "url": "https://docoga-pass.johnazani.workers.dev/m/odqBSDNjoB_V120K9t4GEjdk4H350aHZ.mp4",
+    "name": "odqBSDNjoB_V120K9t4GEjdk4H350aHZ",
+    "bytes": 40440356,
+    "hosted_at": "2026-10-29T17:17:57+00:00",
+    "expires_at": "2026-10-30T23:17:57+00:00",
+    "run_id": "40917132160",
+    "series": "Part 4 of 5 · Rent receipt law",
     "series_topic": "Rent receipt law"
   }
 }
