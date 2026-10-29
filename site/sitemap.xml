@@ -309,5 +309,53 @@
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
+  <url>
+    <loc>https://docoga.com.ng/tenancy-law-lagos</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://docoga.com.ng/tenancy-law-abuja</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://docoga.com.ng/tenancy-law-rivers</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://docoga.com.ng/tenancy-law-oyo</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://docoga.com.ng/tenancy-law-kano</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://docoga.com.ng/tenancy-law-enugu</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://docoga.com.ng/tenancy-law-delta</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://docoga.com.ng/tenancy-law-kaduna</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://docoga.com.ng/tenancy-law-ogun</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://docoga.com.ng/tenancy-law-anambra</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://docoga.com.ng/tenancy-law-edo</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://docoga.com.ng/tenancy-law-plateau</loc>
+    <priority>0.7</priority>
+  </url>
 </urlset>
 <!-- Add one <url> block per SEO content page as you publish them (see PLAN.md keyword cluster). -->

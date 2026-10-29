@@ -93,7 +93,7 @@ class ApproveKeepsTheFieldsTests(Sandbox):
         self.assertEqual(approved["post"]["cta"], "Send this to the friend whose rent is due in January.")
         self.assertEqual(approved["quiz"]["question"], quiz["question"])
         self.assertEqual(approved["news_hook"], "Lagos rent up 20% — Punch")
-        self.assertTrue(brain_drafts.link_for(approved).endswith("/notice-to-quit-lagos.html"),
+        self.assertTrue(brain_drafts.link_for(approved).endswith("/notice-to-quit-lagos"),
                         "the deep link needs `tool` on the saved pack — it used to fall to the homepage")
         self.assertIn("Send this to the friend", brain_drafts.post_text(approved))
 
@@ -304,7 +304,8 @@ class GuidesTests(unittest.TestCase):
         self.assertIn("s.13(1)(e)", html)
         self.assertIn("Tenancy Law of Lagos State 2011", html)
         self.assertIn('"@type": "FAQPage"', html)
-        self.assertIn("notice-to-quit-lagos.html?s=g", html)
+        self.assertIn("notice-to-quit-lagos?s=g", html)
+        self.assertNotIn(".html?s=g", html)
         self.assertIn("not legal advice", html)
         self.assertNotIn("Send this to the friend", html.split("<h1>")[1].split("</h1>")[0])
         sitemap = (self.site / "sitemap.xml").read_text()

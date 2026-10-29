@@ -143,6 +143,25 @@ TOOLS = {
      ('Is a caution fee the same as rent?', 'No \u2014 it is a refundable security deposit held against damage or unpaid charges. It is not the landlord\u2019s income.'),
      ('How much can a caution fee be?', 'Commonly a fraction of the rent, but it is negotiable \u2014 record whatever you agree in the tenancy agreement and receipt it.'),
      ('What if the landlord refuses to refund?', 'Your receipt with written refund terms, plus your move-in condition record, is exactly what {courts} will want to see.')]),
+ 'tenancy-law': dict(tool='Tenancy Agreement', label='Tenancy law', hash='#agreement', verb='tenancy agreement',
+   # Added 29 Oct 2026. People type "<state> tenancy law"; the verified law block (tools/state_law_data.py)
+   # was buried on the tool pages — this page leads with it. Where a state's statute is not verified the
+   # page says so (unverified_block) rather than borrowing another state's sections.
+   title='Tenancy Law in {place}: Notice Periods, Rent, Courts',
+   desc='What the tenancy law in {place} actually says \u2014 the statute, how many months\u2019 notice, receipts and advance rent, where a dispute goes \u2014 with section numbers, and what we could not confirm.',
+   lead='Which law governs a tenancy in {place}, how many months\u2019 notice it requires, what it says about receipts, advance rent and caution money, and which court or tribunal hears a dispute. Every rule below carries its section; where we could not verify a point from the primary text we say so instead of guessing.',
+   body_title='The five things the law in {place} decides',
+   bullets=[
+     '<b>Which statute applies</b> \u2014 named and cited below, or an honest note that we could not cite one.',
+     '<b>How many months\u2019 notice</b> before a tenancy can be ended where the agreement is silent (the table above), and the 7 days\u2019 notice that follows it.',
+     '<b>Receipts and money up front</b> \u2014 whether a receipt is a statutory duty, whether advance rent is capped, and what the law calls caution money.',
+     '<b>Where a dispute goes</b> \u2014 {courts}.',
+     '<b>The documents that make the law work for you</b> \u2014 a written agreement, a receipt for every payment, and a notice that fits the period: links to each, free, below.'],
+   faq=[
+     ('Is there a tenancy law in {place}?', 'The block below names the statute we verified for {place} with its citation and sections \u2014 or, where we could not cite one from a source we trust, says so and sets out the general Nigerian position that applies instead.'),
+     ('How many months\u2019 notice does a landlord have to give in {place}?', 'Where the agreement is silent: one week for a tenant at will, one month for a monthly tenant, three months for a quarterly tenant and six months for a yearly tenant \u2014 the table above shows the {place} ladder with its section. A written agreement can fix its own period.'),
+     ('Can my landlord throw me out without going to court in {place}?', 'No. Across Nigeria possession is recovered through {courts} after the notice to quit and the 7 days\u2019 notice have expired. Lock-outs, removing doors or roofs and seizing belongings are self-help the courts do not allow.'),
+     ('Does the agreement override the law in {place}?', 'On notice periods, generally yes \u2014 the statutory periods apply where the agreement is silent. Protections written as offences or prohibitions (for example a receipt duty or an advance-rent cap) cannot be contracted out of.')]),
 }
 
 TPL = '''<!DOCTYPE html>
@@ -181,6 +200,8 @@ footer{{margin-top:34px;border-top:1px solid #DCE4F0;padding-top:16px;font-size:
 .stickycta span{{font-size:13.5px;color:#141F33;font-weight:600}}
 .stickycta a{{background:#0040E0;color:#fff;font-weight:800;text-decoration:none;border-radius:9px;padding:11px 18px;font-size:14.5px;white-space:nowrap}}
 .cta2{{color:#0040E0;font-weight:700;text-decoration:none}}
+.share{{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:#E9FBEF;border:1px solid #BFE9CC;border-radius:12px;padding:12px 16px;margin:14px 0;font-size:14.5px}}
+.share a{{background:#25D366;color:#fff;font-weight:800;text-decoration:none;border-radius:9px;padding:10px 16px;white-space:nowrap}}
 @media print{{.stickycta{{display:none}}}}
 </style>
 </head>
@@ -214,6 +235,8 @@ footer{{margin-top:34px;border-top:1px solid #DCE4F0;padding-top:16px;font-size:
 <a class="cta" href="https://docoga.com.ng/{hash}">Create your {verb} free \u2192</a>
 <p style="font-size:14.5px;margin-top:2px">Need it clean \u2014 no banner, unlimited copies? <a class="cta2" href="https://docoga.com.ng/#pricing">Get the Oga Pass, \u20a62,000 for 30 days \u2192</a></p>
 </div>
+
+<div class="share"><span>Someone in {place} needs this?</span> <a href="https://wa.me/?text={share_text}" target="_blank" rel="noopener" onclick="window.gtag&amp;&amp;gtag('event','share',{{method:'whatsapp',content_type:'page',item_id:'{share_id}'}})">Share on WhatsApp \u2192</a></div>
 
 <div class="box">
 <h2>Questions people ask</h2>
@@ -641,6 +664,13 @@ def faq_html(t, st):
         out.append('<details><summary>' + q.replace('{place}', st['place']) + '</summary><p>' + a + '</p></details>')
     return '\n'.join(out)
 
+def share_text(title, bare):
+    """WhatsApp pre-filled text: the page title and its bare URL (Cloudflare 307s .html → bare anyway).
+    Nigeria's rent conversations happen on WhatsApp; a tap here is the \u20a60 distribution channel."""
+    from urllib.parse import quote
+    return quote("%s \u2014 https://docoga.com.ng/%s" % (title.replace('&amp;', '&'), bare), safe='')
+
+
 def main():
     made = 0
     sitemap_add = []
@@ -658,11 +688,13 @@ def main():
             d['bullets'] = '\n'.join('<li>' + b.format(place=st['place'], courts=st['courts']) + '</li>' for b in t['bullets'])
             d['faq'] = faq_html(t, st)
             d['fname'] = fname
+            d['share_id'] = fname[:-5]
+            d['share_text'] = share_text(d['title'], fname[:-5])
             d['arrears_block'] = ('<p class="law">' + st['arrears'] + '</p>' if st['arrears'] else '')
             d['notice_table'] = notice_table(slug, st['place'])
             d['law_block'] = law_block(slug, tslug)
             d['sources_block'] = sources_block(slug)
-            d['same_state_links'] = '\n'.join(f'<a href="https://docoga.com.ng/{ts2}-{slug}.html">{t2["tool"]} \u2014 {st["name"]}</a>' for ts2, t2 in TOOLS.items() if ts2 != tslug)
+            d['same_state_links'] = '\n'.join(f'<a href="https://docoga.com.ng/{ts2}-{slug}.html">{t2.get("label", t2["tool"])} \u2014 {st["name"]}</a>' for ts2, t2 in TOOLS.items() if ts2 != tslug)
             d['other_states_links'] = '\n'.join(f'<a href="https://docoga.com.ng/{tslug}-{s2}.html">{st2["name"]}</a>' for s2, st2 in STATES.items() if s2 != slug)
             html = TPL.format(**d)
             io.open('site/' + fname, 'w', encoding='utf-8').write(clean_text(html, relative=True))
@@ -674,15 +706,13 @@ def main():
 
     s = io.open('site/sitemap.xml', encoding='utf-8').read()
     assert '</urlset>' in s
-    # Remove existing state page entries (idempotent regeneration)
-    import re
-    for f in sitemap_add:
-        pattern = rf'\s*<url>\s*<loc>https://docoga\.com\.ng/{re.escape(f[:-5])}(?:\.html)?</loc>\s*<priority>0\.7</priority>\s*</url>'
-        s = re.sub(pattern, '', s)
-    entries = ''.join(f'  <url>\n    <loc>https://docoga.com.ng/{f[:-5]}</loc>\n    <priority>0.7</priority>\n  </url>\n' for f in sitemap_add)
-    s = s.replace('</urlset>', entries + '</urlset>')
-    io.open('site/sitemap.xml', 'w', encoding='utf-8').write(s)
-    print(f"sitemap: {len(sitemap_add)} URLs (regenerated)")
+    # Append only the pages the sitemap does not carry yet (idempotent; never reorders)
+    missing = [f for f in sitemap_add if f'<loc>https://docoga.com.ng/{f[:-5]}</loc>' not in s]
+    if missing:
+        entries = ''.join(f'  <url>\n    <loc>https://docoga.com.ng/{f[:-5]}</loc>\n    <priority>0.7</priority>\n  </url>\n' for f in missing)
+        s = s.replace('</urlset>', entries + '</urlset>')
+        io.open('site/sitemap.xml', 'w', encoding='utf-8').write(s)
+    print(f"sitemap: +{len(missing)} URLs ({len(sitemap_add)} state pages)")
 
     s = io.open('site/index.html', encoding='utf-8').read()
     anchor = '''    <p>DocOga puts a standard, fill-in-the-blanks document generator in every pocket — from Lagos to Kano to Port Harcourt. Answer simple questions, and your document is ready to print, save as PDF, or share on WhatsApp. The free version carries a small DocOga banner; the <b>Oga Pass (₦2,000)</b> removes it and unlocks unlimited clean copies for 30 days.</p>
@@ -705,12 +735,16 @@ def main():
     else:
         # Update existing state guides block with current state list
         import re as _re
-        old_links = _re.search(r'(<p style="line-height:2">).*?(</p>)', s, _re.DOTALL)
+        head = s.find('State guides')
+        old_links = _re.compile(r'(<p style="line-height:2">).*?(</p>)', _re.DOTALL).search(s, head) if head >= 0 else None
         if old_links:
-            replacement = f'<p style="line-height:2">{links}</p>'
-            s = s[:old_links.start()] + replacement + s[old_links.end():]
-            io.open('site/index.html', 'w', encoding='utf-8').write(s)
-            print("index: state guides block updated")
+            replacement = clean_text(f'<p style="line-height:2">{links}</p>', relative=True)
+            if s[old_links.start():old_links.end()] != replacement:
+                s = s[:old_links.start()] + replacement + s[old_links.end():]
+                io.open('site/index.html', 'w', encoding='utf-8').write(s)
+                print("index: state guides block updated")
+            else:
+                print("index: state guides block current")
         else:
             print("index: state guides block already present")
 
