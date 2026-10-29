@@ -1013,6 +1013,146 @@ footer{margin-top:34px;border-top:1px solid #DCE4F0;padding-top:16px;font-size:1
 @media print{.stickycta{display:none}}"""
 
 
+WIDGET_RENT_INDEX = r"""<style>
+.mon{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:8px 0 12px}
+.mon div{background:#0B1B3F;color:#fff;border-radius:12px;padding:14px 12px;text-align:center}
+.mon b{display:block;font-size:26px;line-height:1.1}
+.mon small{color:#C9D4EA;font-size:12px}
+.bar{height:8px;background:#E8EEFB;border-radius:6px;overflow:hidden}
+.bar i{display:block;height:100%;background:#0040E0}
+#mon_states td:nth-child(2),#mon_states th:nth-child(2){text-align:right;white-space:nowrap}
+@media (max-width:560px){.mon{grid-template-columns:1fr 1fr}}
+</style>
+<div class="box noprint" id="monitor">
+<h2>The DocOga Rent Monitor &mdash; live counts</h2>
+<p class="law">Read straight from the public receipt ledger (counts only &mdash; no names, no addresses, no amounts). A state publishes a rent level only when one of its cells reaches <b>30 receipts</b> in a calendar month.</p>
+<div class="mon" id="mon_kpi"><div><b>&hellip;</b><small>receipts verified</small></div><div><b>&hellip;</b><small>states reporting</small></div><div><b>&hellip;</b><small>cells ready to publish</small></div></div>
+<table id="mon_states"><tr><th>State</th><th>Receipts</th><th style="width:40%">Closest cell to 30</th></tr><tr><td colspan="3" class="law" id="mon_wait">Reading the ledger&hellip;</td></tr></table>
+<p class="law" id="mon_note"></p>
+</div>
+<script>
+(function(){
+  var LEDGER_URL="https://docoga-ledger.johnazani.workers.dev";
+  var M=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  function ym(s){return /^\d{4}-\d{2}$/.test(s||"")?M[Number(s.slice(5,7))-1]+" "+s.slice(0,4):s;}
+  function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
+  function fail(msg){var w=document.getElementById("mon_wait");if(w)w.textContent=msg;}
+  var ctl=("AbortController" in window)?new AbortController():null;
+  var tm=ctl?setTimeout(function(){ctl.abort();},6000):null;
+  fetch(LEDGER_URL+"/api/stats",ctl?{signal:ctl.signal}:{}).then(function(r){if(tm)clearTimeout(tm);if(!r.ok)throw new Error(r.status);return r.json();}).then(function(d){
+    var at=Number(d.publish_at||30),cells=d.cells||{},byState=d.by_state||{};
+    var ready=0,best={};
+    Object.keys(cells).forEach(function(k){var n=cells[k],st=k.split("|")[0];if(n>=at)ready+=1;if(!best[st]||n>best[st].n)best[st]={n:n,k:k};});
+    var states=Object.keys(byState).filter(function(s){return s&&s!=="?";}).sort(function(a,b){return byState[b]-byState[a];});
+    var k=document.getElementById("mon_kpi");
+    k.innerHTML='<div><b>'+Number(d.total||0).toLocaleString("en-NG")+'</b><small>receipts verified</small></div><div><b>'+states.length+'</b><small>of 37 states reporting</small></div><div><b>'+ready+'</b><small>cells at '+at+' or more</small></div>';
+    var t=document.getElementById("mon_states");
+    var rows=states.slice(0,15).map(function(s){var b=best[s]||{n:0,k:"||"},parts=b.k.split("|"),pct=Math.min(100,Math.round(100*b.n/at));
+      return '<tr><td>'+esc(s)+'</td><td>'+byState[s]+'</td><td><div class="bar"><i style="width:'+pct+'%"></i></div><small class="law">'+b.n+' of '+at+(parts[1]&&parts[2]?' &middot; '+esc(parts[1])+', '+esc(ym(parts[2])):'')+'</small></td></tr>';}).join("");
+    t.innerHTML='<tr><th>State</th><th>Receipts</th><th style="width:40%">Closest cell to '+at+'</th></tr>'+(rows||'<tr><td colspan="3" class="law">No receipts registered yet &mdash; the first one can be yours.</td></tr>');
+    var n=document.getElementById("mon_note");
+    n.textContent=(d.latest_receipt_date?"Latest receipt dated "+d.latest_receipt_date+". ":"")+"Counts refresh hourly. No rent level is published until a cell reaches "+at+" receipts.";
+  }).catch(function(){fail("The ledger could not be read just now. Counts refresh hourly \u2014 try again shortly.");});
+})();
+</script>"""
+
+
+PAGES["rent-index-nigeria.html"] = dict(
+    title="Rent Index Nigeria 2026: Rent Actually Paid, by State (DocOga Rent Monitor)",
+    h1="Nigeria\u2019s rent index \u2014 built from rent actually paid, not asking prices",
+    desc="Nigeria has no official rent index. The DocOga Rent Monitor counts verified rent receipts by state and publishes a median only when a state reaches 30 receipts in a month. Live counts, the method, and how to add your receipt free.",
+    lead="Nobody in Nigeria measures the rent people actually pay. The Bureau of Statistics publishes a "
+         "national price index, not rents by state; the private \u201caverage rent\u201d figures come "
+         "from listings \u2014 what landlords ask, not what tenants pay. DocOga\u2019s free rent receipt "
+         "carries a verification code, and every verified receipt is one anonymous data point: state, "
+         "kind, amount, period, date. Here is what has been counted so far, the rules we publish under, "
+         "and how to add yours in two minutes.",
+    widget=WIDGET_RENT_INDEX,
+    boxes=[
+        ("Why Nigeria has no rent index yet",
+         "<p>Three things have to be true for a rent index to exist: the rent has to be written down, "
+         "the paper has to be dated and placed, and somebody has to collect it at scale without "
+         "collecting the tenant. In Nigeria the first step fails \u2014 most rent changes hands against "
+         "a transfer alert or a handshake, so there is nothing to count.</p>" + ul([
+            "<b>What exists:</b> the National Bureau of Statistics\u2019 Consumer Price Index, which "
+            "has a housing component but is a national price index, not a rent series, and not by state.",
+            "<b>What the \u201caverage rent in Lagos\u201d articles use:</b> asking prices scraped from "
+            "property listings. Asking is not paid \u2014 listings over-represent the top of the market "
+            "and vanish once a flat is let.",
+            "<b>What a real index needs:</b> the amount actually paid, the period it covers, the state, "
+            "the date \u2014 which is exactly what a lawful rent receipt carries (Lagos Tenancy Law "
+            "2011, s.5(2)).",
+         ])),
+        ("How the DocOga Rent Monitor works",
+         ul([
+            "<b>One receipt, one observation.</b> When a landlord or agent prints a DocOga rent receipt "
+            "with the free verification code, the ledger stores five fields: state, kind of payment, "
+            "amount, period in months, date. Nothing else.",
+            "<b>No person in the data.</b> No name, address, phone number, IP address or cookie is "
+            "recorded \u2014 only a one-way fingerprint of the receipt\u2019s words, computed on the "
+            "issuer\u2019s own phone, so the code can be checked later. Data that cannot be related to an "
+            "individual is outside the Nigeria Data Protection Act 2023 (s.65), and the ledger is built "
+            "to the Act\u2019s minimisation rule (s.24(1)(c)) regardless.",
+            "<b>A cell is a state &times; kind &times; calendar month.</b> A cell publishes a rent level "
+            "only at <b>30 receipts or more</b>; below that, counts only. Above it: the median and the "
+            "inter-quartile range, never an average \u2014 rents are heavy-tailed and one penthouse "
+            "would move a mean.",
+            "<b>Annualised before comparison:</b> amount &divide; months &times; 12, so a six-month "
+            "payment and a two-year payment sit on the same scale. Receipts without a period are counted "
+            "but excluded from the level.",
+            "<b>Published in the open.</b> The counts on this page come live from the same public "
+            "endpoint the verification page uses; the method is written here before the first number, "
+            "so nobody can accuse the first number of being chosen.",
+         ])),
+        ("Add your receipt \u2014 it takes two minutes and costs nothing",
+         "<p>Issue the rent receipt on DocOga as usual. Pick the state, leave the <b>verification "
+         "code</b> box ticked, print or save the PDF. The receipt carries a code and a QR anyone can "
+         "check at docoga.com.ng/v/ &mdash; the tenant gets proof that survives a lost phone, the "
+         "landlord gets a receipt that meets s.5 of the Lagos law, and the state gets one more receipt "
+         "towards its first published rent level.</p>" + ul([
+            "<b>Tenants:</b> ask for the DocOga receipt by name. The ₦500,000 rent-relief deduction "
+            "under the Nigeria Tax Act 2025 (s.30(2)(a)(vi)) is claimed with a receipt and a tenancy "
+            "agreement \u2014 see the rent relief guide below.",
+            "<b>Landlords and agents:</b> the free version prints a small banner; the Oga Pass "
+            "(₦2,000 for 30 days) removes it across all 10 tools. The verification code is free either way.",
+            "<b>Prefer not to register a receipt?</b> Untick the box. The receipt still prints; it just "
+            "carries no code.",
+         ])),
+        ("What happens when a state reaches 30",
+         "<p>The first state to put 30 verified receipts of one kind into one month gets its median "
+         "published here, with the sample size beside it, and a post on every DocOga channel the same "
+         "day. On current traffic that is Lagos first. Until then this page shows counts, not levels, "
+         "and says so.</p><p class=\"law\">Honest note: a rent index from receipts measures the rents "
+         "of people who use receipts. In its early months it will lean towards tenants and landlords who "
+         "already keep paper. That bias shrinks as the free receipt spreads; we will print the sample "
+         "size beside every number so readers can judge it.</p>"),
+    ],
+    faq=[
+        ("Is my rent amount visible to anyone?",
+         "No. Amounts are never shown individually \u2014 only as a median across 30 or more receipts in "
+         "a state, kind and month. The fingerprint that lets a code be checked is never published and "
+         "cannot be reversed into names or addresses, which the ledger never had."),
+        ("Does registering a receipt cost anything?",
+         "No. The verification code, the QR and the check page are free on the free tier. The Oga Pass "
+         "only removes the banner from the printed document."),
+        ("What is the difference between asking rent and paid rent?",
+         "Asking rent is the figure in a listing; paid rent is what the tenant actually handed over after "
+         "negotiation, inclusive of any agreed discount or increase. Listing-based \u201caverage rent\u201d "
+         "figures measure the first; a receipt measures the second."),
+        ("When will the first rent level be published?",
+         "When any state reaches 30 verified receipts of one kind in one calendar month. The live table "
+         "above shows each state\u2019s closest cell and how far it is from 30."),
+        ("Can a landlord be identified from the ledger?",
+         "No. The ledger holds state, kind, amount, period, date and a one-way fingerprint. Even DocOga "
+         "cannot tell whose receipt a code belongs to \u2014 only that a receipt with exactly those words "
+         "was printed."),
+    ],
+    related=["rent-receipt-format-nigeria.html", "rent-relief-nigeria.html", "tenant-rights-nigeria.html"],
+    cta=("receipt", "Issue a verified rent receipt free \u2192"),
+    priority="0.8",
+)
+
+
 def render(fname, p):
     bare = fname[:-5] if fname.endswith(".html") else fname  # WhatsApp share carries the clean URL
     boxes = "\n\n".join(
@@ -1115,6 +1255,7 @@ def main():
         "shop-tenancy-agreement-nigeria.html": "Shop &amp; business tenancy",
         "invoice-format-nigeria.html": "Invoice format + 7.5% VAT",
         "rent-relief-nigeria.html": "Rent relief: the ₦500,000 tax deduction",
+        "rent-index-nigeria.html": "Rent Monitor: rent actually paid, by state",
     }
     for f, p in PAGES.items():
         p["navtitle"] = navtitles[f]
