@@ -298,7 +298,7 @@ class GuidesTests(unittest.TestCase):
         quiz = {"question": "How many months for a yearly tenant?", "explanation": "Six — s.13(1)(e)."}
         self.write(self.pack(quiz=quiz))
         written = guides_build.build(day=dt.date(2026, 10, 17), site=self.site, drafts_dir=self.drafts, log=lambda *a: None)
-        self.assertEqual(written, ["https://docoga.com.ng/guides/yearly-tenant-six-months-lagos.html"])
+        self.assertEqual(written, ["https://docoga.com.ng/guides/yearly-tenant-six-months-lagos"])  # clean URL: Cloudflare 307s /x.html → /x
         html = (self.site / "guides" / "yearly-tenant-six-months-lagos.html").read_text()
         self.assertIn("<h1>Yearly tenant in Lagos? Six months&#x27; notice, not three</h1>", html)
         self.assertIn("s.13(1)(e)", html)
@@ -309,9 +309,9 @@ class GuidesTests(unittest.TestCase):
         self.assertNotIn("Send this to the friend", html.split("<h1>")[1].split("</h1>")[0])
         sitemap = (self.site / "sitemap.xml").read_text()
         self.assertIn("<loc>https://docoga.com.ng/guides/</loc>", sitemap)
-        self.assertIn("<loc>https://docoga.com.ng/guides/yearly-tenant-six-months-lagos.html</loc>", sitemap)
+        self.assertIn("<loc>https://docoga.com.ng/guides/yearly-tenant-six-months-lagos</loc>", sitemap)
         index = (self.site / "guides" / "index.html").read_text()
-        self.assertIn("yearly-tenant-six-months-lagos.html", index)
+        self.assertIn('href="https://docoga.com.ng/guides/yearly-tenant-six-months-lagos"', index)  # clean URL
         self.assertEqual(json.loads((self.site / "guides" / "guides.json").read_text())[0]["state"], "Lagos")
 
     def test_rebuilding_is_idempotent_and_a_pack_without_law_is_not_a_page(self):

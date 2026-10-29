@@ -200,7 +200,7 @@ def page_html(pack, facts_by_id=None, now=None):
 def index_html(entries, now=None):
     now = now or dt.datetime.now(LAGOS)
     url = "%s/%s/" % (HOST, GUIDES_DIRNAME)
-    items = "".join('<li><a href="%s/%s/%s.html">%s</a> <span class="law">· %s · %s</span></li>'
+    items = "".join('<li><a href="%s/%s/%s">%s</a> <span class="law">· %s · %s</span></li>'
                     % (HOST, GUIDES_DIRNAME, esc(e["slug"]), esc(e["title"]), esc(e.get("state") or "Nigeria"), esc(e["date"]))
                     for e in entries[:MAX_INDEX])
     return ("<!DOCTYPE html>\n<html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
@@ -287,7 +287,7 @@ def build(day=None, site=None, now=None, log=print, drafts_dir=None):
         target.write_text(page, encoding="utf-8")
         manifest[slug] = {"slug": slug, "title": pack["post"]["headline"], "date": pack["date"],
                           "state": (law_rows(pack, facts_by_id) or [{}])[0].get("state", ""), "theme": pack.get("theme")}
-        written.append("%s/%s/%s.html" % (HOST, GUIDES_DIRNAME, slug))
+        written.append("%s/%s/%s" % (HOST, GUIDES_DIRNAME, slug))  # clean URL: Cloudflare 307s /x.html → /x
         log("guide: %s ← %s" % (target.relative_to(site), pack["date"]))
     entries = sorted(manifest.values(), key=lambda e: (e["date"], e["slug"]), reverse=True)
     if written or not (folder / "index.html").is_file():
@@ -346,7 +346,7 @@ def main(argv=None):
         print("GUIDES_WRITTEN=0")
         return 0
     if a.command == "ping":
-        urls = ["%s/%s/%s.html" % (HOST, GUIDES_DIRNAME, e["slug"]) for e in load_manifest(a.site)[:20]]
+        urls = ["%s/%s/%s" % (HOST, GUIDES_DIRNAME, e["slug"]) for e in load_manifest(a.site)[:20]]
         ensure_key_file(a.site)
         ok = ping(urls)
         print("INDEXNOW=%s" % ("ok" if ok else "skipped"))

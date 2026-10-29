@@ -86,6 +86,25 @@ NOTICE_TABLE = '''<table>
 agreement stipulates a notice period, that stipulation generally governs — so the notice you
 actually want must be written into the agreement.</p>'''
 
+SAMPLE_QUIT_NOTICE = '''<p>For a <b>yearly</b> tenant in Lagos where the agreement is silent (six months). Change the
+tenancy type and the period for a monthly (1 month) or quarterly (3 months) tenant — the table below.</p>
+<div style="background:#fff;border:1px solid #DCE4F0;border-radius:10px;padding:18px 20px;margin:10px 0;font-size:14.5px;line-height:1.75;color:#111">
+<p style="text-align:right">[Date of service]</p>
+<p>To: <b>[Tenant's full name]</b><br>[Flat / shop / house and full address of the premises]</p>
+<p style="text-transform:uppercase;letter-spacing:.04em;font-weight:800;margin:10px 0">Notice to quit</p>
+<p>I, <b>[Landlord's full name]</b>, the landlord of the premises you occupy as a <b>yearly tenant</b> at
+<b>[address of the premises]</b>, hereby give you <b>six months' notice</b> to quit and deliver up
+possession of the said premises to me on or before <b>[expiry date]</b>.</p>
+<p>Take notice that if you remain in possession after that date, I shall serve on you the seven days'
+notice of owner's intention to recover possession and apply to the court for an order of possession,
+together with any arrears of rent and mesne profits.</p>
+<p>Dated this ____ day of ______________ 20____.</p>
+<p style="margin-top:18px">______________________________<br>[Landlord's name, signature and phone number]<br>
+<span style="font-size:12.5px;color:#5B6B85">or: [Agent / solicitor's name], for the landlord, under written authority dated [date before this notice]</span></p>
+</div>
+<p class="law">Copy it, or let the generator fill the names, the period and the expiry date for you and give you a
+clean PDF or a WhatsApp-ready copy — free. <a href="https://docoga.com.ng/#notice"><b>Make your quit notice free →</b></a></p>'''
+
 LAGOS_SCOPE = ('<b>Where the Lagos law applies:</b> the Lagos Tenancy Law 2011 covers most of '
                'Lagos State, but <b>s.1(3) excludes four areas: Apapa, Ikeja GRA, Ikoyi and '
                'Victoria Island</b> (plus residential premises of educational institutions, '
@@ -190,15 +209,38 @@ PAGES["tenancy-agreement-nigeria.html"] = dict(
 
 # 2 ── notice to quit: how many months ------------------------------------------
 PAGES["notice-to-quit-nigeria.html"] = dict(
-    title="Quit Notice in Nigeria: Free Letter Template + How Many Months (2026)",
-    h1="Quit notice in Nigeria — the free letter, how many months, and what makes it valid",
-    desc="Write a valid quit notice (notice to quit) letter free in 2 minutes — print, PDF or WhatsApp. How many months the law requires: 1 week, 1 month, 3 months or 6 months, plus the 7-day notice.",
-    lead="A notice to quit is the formal letter that starts a lawful end to a tenancy. Get the period "
-         "wrong, or serve it on the wrong person, and the court will throw the case out — months "
-         "wasted. Here is how many months each tenancy type actually requires in Nigeria, and a "
-         "generator that produces a correctly-formatted notice in about two minutes.",
+    # Snippet rewritten 29 Oct 2026 from Search Console: #1 for "quit notice" (56 impressions,
+    # 0 clicks) — Nigerians searching it want a SAMPLE letter and "how many months"; the title
+    # now says both inside 60 characters and the page opens with the sample itself.
+    title="Quit Notice Nigeria: Sample Letter, Format, How Many Months",
+    h1="Quit notice in Nigeria — sample letter, how to write it, and how many months",
+    desc="Quit notice sample letter (Nigeria): copy the wording or make yours free in 2 minutes — PDF or WhatsApp. How many months: 1 week, 1 month, 3 or 6 months, plus the 7-day notice.",
+    lead="A notice to quit (quit notice) is the formal letter that starts a lawful end to a tenancy. "
+         "Get the period wrong, or serve it on the wrong person, and the court will throw the case "
+         "out — months wasted. Below: a sample you can copy, how many months each tenancy type "
+         "requires in Nigeria, how to serve it, and a generator that produces a correctly-formatted "
+         "notice in about two minutes.",
     boxes=[
+        ("Sample quit notice letter (copy the wording)", SAMPLE_QUIT_NOTICE),
         ("How many months? The minimums", NOTICE_TABLE),
+        ("How to write a quit notice — the six things it must carry", ul([
+            "<b>Who is giving it</b> — the landlord by name, or an agent/solicitor who holds the "
+            "landlord's <i>written</i> authority dated before the notice.",
+            "<b>Who it is to and which premises</b> — the tenant's name and the exact flat, shop or "
+            "house (the address as it appears on the rent receipt or agreement).",
+            "<b>The type of tenancy</b> — weekly, monthly, quarterly, half-yearly or yearly, because "
+            "that fixes the length of notice (table above).",
+            "<b>The notice period and the expiry date</b> — \"six months' notice … to deliver up "
+            "possession on or before [date]\". Where the written agreement fixes its own period, use "
+            "that one.",
+            "<b>Date and signature</b> — dated the day it is served and signed by the person giving it.",
+            "<b>Plain language.</b> It is a notice, not a lawsuit: no insults, no threats beyond the "
+            "lawful next step (the 7 days' notice and the court). Reasons are optional; the period "
+            "and the date are not.",
+        ]) + '<p class="law">Serving it in Lagos: hand it to the tenant; or leave it with an adult '
+             'living in the premises; or send it by courier; or, where the tenant cannot be found, '
+             'paste it on a conspicuous part of the premises and photograph it (Lagos Tenancy Law '
+             '2011, ss.13–16). Keep a dated copy — proof of service wins or loses the case later.</p>'),
         ("The two notices every lawful eviction needs", ul([
             "<b>1. The notice to quit</b> — see the table. It must state the premises, the date the "
             "tenant is to give up possession, and be signed by the landlord or by an agent/solicitor "
@@ -229,6 +271,12 @@ PAGES["notice-to-quit-nigeria.html"] = dict(
          "this section.</p>"),
     ],
     faq=[
+        ("How do I write a quit notice in Nigeria?",
+         "State who is giving it (the landlord, or an agent with written authority), the tenant's "
+         "name and the exact premises, the type of tenancy, the length of notice and the date the "
+         "tenant must give up possession, then date and sign it. Serve it personally, through an adult "
+         "living there, by courier, or by pasting it on the premises — and keep a dated copy. The sample "
+         "and the free generator on this page produce exactly that."),
         ("Can my landlord give me less than six months' notice?",
          "If your written agreement specifies a shorter (or longer) notice, that clause generally "
          "governs — the statutory minimums apply only where the agreement is silent. Read your "
