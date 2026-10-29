@@ -357,5 +357,11 @@
     <loc>https://docoga.com.ng/tenancy-law-plateau</loc>
     <priority>0.7</priority>
   </url>
+  <url>
+    <loc>https://docoga.com.ng/videos/dd5</loc>
+    <lastmod>2026-10-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
 </urlset>
 <!-- Add one <url> block per SEO content page as you publish them (see PLAN.md keyword cluster). -->
