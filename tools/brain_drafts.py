@@ -50,11 +50,13 @@ def link_for(pack, site=None):
     state = str((pack or {}).get("state") or "").strip().lower()
     if tool not in TOOLS:
         return LINK
+    # Bare URLs since 29 Oct 2026: Cloudflare 307s /x.html → /x, and the guides lane was still
+    # printing ".html?s=g" links that tools/clean_urls.py then flagged (test_clean_urls idempotency).
     if tool in STATE_PAGE_TOOLS and state and (site / ("%s-%s.html" % (tool, state))).is_file():
-        return "%s/%s-%s.html" % (LINK, tool, state)
+        return "%s/%s-%s" % (LINK, tool, state)
     national = NATIONAL_PAGE.get(tool)
     if national and (site / national).is_file():
-        return "%s/%s" % (LINK, national)
+        return "%s/%s" % (LINK, national[:-5] if national.endswith(".html") else national)
     return LINK
 
 

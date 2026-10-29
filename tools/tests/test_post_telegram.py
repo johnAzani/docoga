@@ -202,7 +202,7 @@ class PosterFallbackTests(unittest.TestCase):
         result, _ = self._run(post_telegram.send_photo_message, str(photo), "Caption", buttons=buttons)
         self.assertTrue(result)
         markup = json.loads(self.calls[0]["data"]["reply_markup"])
-        self.assertEqual(markup["inline_keyboard"][0][0]["url"], "https://docoga.com.ng/notice-to-quit-lagos.html?s=tg")
+        self.assertEqual(markup["inline_keyboard"][0][0]["url"], "https://docoga.com.ng/notice-to-quit-lagos?s=tg")
         self.assertIn("wa.me/?text=", markup["inline_keyboard"][1][0]["url"])
         self.assertIn("s%3Dwa", markup["inline_keyboard"][1][0]["url"])
         self.assertIn("t.me/share/url?url=", markup["inline_keyboard"][1][1]["url"])

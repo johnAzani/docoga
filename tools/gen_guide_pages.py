@@ -53,6 +53,7 @@ unverified as general practice + "confirm with a lawyer".
 Run: python3 tools/gen_guide_pages.py   (idempotent — safe to re-run)
 """
 import io, json, os, sys
+from urllib.parse import quote
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from clean_urls import clean_text  # Cloudflare 307s /x.html → /x: canonicals, links and sitemap locs are bare
 
@@ -1006,11 +1007,14 @@ p{margin:8px 0}
 footer{margin-top:34px;border-top:1px solid #DCE4F0;padding-top:16px;font-size:12.5px;color:#5B6B85}
 .stickycta{position:fixed;left:0;right:0;bottom:0;z-index:60;background:#fff;border-top:1px solid #DCE4F0;box-shadow:0 -2px 14px rgba(20,31,51,.10);padding:10px 16px;display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap}
 .stickycta span{font-size:13.5px;color:#141F33;font-weight:600}
+.share{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:#E9FBEF;border:1px solid #BFE9CC;border-radius:12px;padding:12px 16px;margin:14px 0;font-size:14.5px}
+.share a{background:#25D366;color:#fff;font-weight:800;text-decoration:none;border-radius:9px;padding:10px 16px;white-space:nowrap}
 .stickycta a{background:#0040E0;color:#fff;font-weight:800;text-decoration:none;border-radius:9px;padding:11px 18px;font-size:14.5px;white-space:nowrap}
 @media print{.stickycta{display:none}}"""
 
 
 def render(fname, p):
+    bare = fname[:-5] if fname.endswith(".html") else fname  # WhatsApp share carries the clean URL
     boxes = "\n\n".join(
         '<div class="box">\n<h2>%s</h2>\n%s\n</div>' % (h, body) for h, body in p["boxes"]
     )
@@ -1061,6 +1065,8 @@ can print, save as PDF or share on WhatsApp. The free version carries a small ba
 <a class="cta" href="%(domain)s/#%(cta_hash)s">%(cta_label)s</a>
 </div>
 
+<div class="share"><span>Someone you know needs this?</span> <a href="https://wa.me/?text=%(share_text)s" target="_blank" rel="noopener" onclick="window.gtag&amp;&amp;gtag('event','share',{method:'whatsapp',content_type:'page',item_id:'%(share_id)s'})">Share on WhatsApp \u2192</a></div>
+
 <div class="box">
 <h2>Questions people ask</h2>
 %(faq)s
@@ -1092,6 +1098,7 @@ your case with a qualified Nigerian lawyer or your accountant.
 </body>
 </html>
 """ % dict(title=p["title"], desc=p["desc"], h1=p["h1"], lead=p["lead"], boxes=boxes,
+           share_id=bare, share_text=quote("%s \u2014 %s/%s" % (p["title"].replace("&amp;", "&"), DOMAIN, bare), safe=""),
            faq=faq_block(p["faq"]), related=related, state_links=state_links,
            tool_links=tool_links, cta_hash=cta_hash, cta_label=cta_label,
            fname=fname, domain=DOMAIN, css=CSS, ld=ld, as_at=AS_AT, widget=widget)

@@ -219,9 +219,9 @@ class GateTests(Sandbox):
 
     def test_the_post_links_to_the_state_page_for_its_tool_and_never_to_a_404(self):
         """17 Oct 2026: one tap less between the post and the paper."""
-        self.assertTrue(brain_drafts.post_text(good_pack()).endswith("https://docoga.com.ng/notice-to-quit-lagos.html"))
-        self.assertIn("notice-to-quit-lagos.html", brain_drafts.threads_text(good_pack()))
-        self.assertTrue(brain_drafts.post_text(good_pack(state="kwara")).endswith("notice-to-quit-nigeria.html"),
+        self.assertTrue(brain_drafts.post_text(good_pack()).endswith("https://docoga.com.ng/notice-to-quit-lagos"))
+        self.assertIn("notice-to-quit-lagos", brain_drafts.threads_text(good_pack()))
+        self.assertTrue(brain_drafts.post_text(good_pack(state="kwara")).endswith("notice-to-quit-nigeria"),
                         "no Kwara page → the national guide")
         self.assertTrue(brain_drafts.post_text(good_pack(tool="payslip")).endswith("https://docoga.com.ng"),
                         "no payslip page → the homepage")

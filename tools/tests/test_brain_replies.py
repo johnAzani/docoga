@@ -156,7 +156,7 @@ class RunTests(unittest.TestCase):
         self.assertEqual((ledger[0]["comment_id"], ledger[0]["reply_id"]), ("r1", "pub-1"))
         prompt = g.seen[0]
         self.assertIn("lagos:notice_ladder:5", prompt, "the model sees the facts the post was built on")
-        self.assertIn("notice-to-quit-lagos.html", prompt, "and the deep link it may give")
+        self.assertIn("notice-to-quit-lagos", prompt, "and the deep link it may give")
         self.assertIn("Abeg how many months", prompt)
 
     def test_a_reply_that_breaks_a_gate_is_refused_not_published(self):
@@ -264,7 +264,7 @@ class CommentToDmTests(unittest.TestCase):
         text = br.dm_text({"author": "Ngozi Okafor", "platform": "instagram"}, ctx)
         self.assertIn("Hi Ngozi!", text)
         self.assertIn("free notice to quit", text)
-        self.assertIn("https://docoga.com.ng/notice-to-quit-lagos.html?s=ig", text)
+        self.assertIn("https://docoga.com.ng/notice-to-quit-lagos?s=ig", text)
         self.assertNotIn("Hi @", br.dm_text({"author": "@handle", "platform": "facebook"}, ctx))
 
     def _ig_net(self, dm_status=200):
@@ -336,7 +336,7 @@ class ContextTests(unittest.TestCase):
         ctx = br.context_for({"post_at": "2026-10-17T12:10:00+0000"}, PACKS)
         self.assertEqual(ctx["state"], "lagos")
         self.assertEqual([f["id"] for f in ctx["facts"]], ["lagos:notice_ladder:5"])
-        self.assertEqual(ctx["link"], "https://docoga.com.ng/notice-to-quit-lagos.html")
+        self.assertEqual(ctx["link"], "https://docoga.com.ng/notice-to-quit-lagos")
 
     def test_a_rotation_day_has_no_pack_and_no_legal_shelf(self):
         ctx = br.context_for({"post_at": "2026-10-01T12:10:00+0000"}, PACKS)

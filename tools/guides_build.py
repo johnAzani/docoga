@@ -34,6 +34,7 @@ from zoneinfo import ZoneInfo
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 import brain_drafts as drafts  # noqa: E402
+from clean_urls import clean_text  # noqa: E402  (bare URLs — the lane must never re-introduce .html links)
 import law_index  # noqa: E402
 
 SITE = Path(os.environ.get("DOCOGA_SITE") or (ROOT / "site"))
@@ -280,7 +281,7 @@ def build(day=None, site=None, now=None, log=print, drafts_dir=None):
             # a page with no cited law is an opinion; the site only carries law
             continue
         slug = slug_for(pack)
-        page = page_html(pack, facts_by_id, now=now)
+        page = clean_text(page_html(pack, facts_by_id, now=now), relative=False)
         target = folder / ("%s.html" % slug)
         if target.is_file() and target.read_text(encoding="utf-8") == page:
             continue
