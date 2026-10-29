@@ -82,3 +82,17 @@ class LiveSiteTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PayerCopyTests(unittest.TestCase):
+    """Pricing page, 29 Oct 2026: the Pass is sold to the person who issues documents (landlord,
+    agent, shop owner) with figures the research verified — never a testimonial, never a name."""
+    def test_the_payer_block_names_the_three_buyers_with_verified_figures(self):
+        t = (SITE / "index.html").read_text(encoding="utf-8")
+        block = t.split("Who buys the Oga Pass", 1)[1].split("</section>", 1)[0]
+        for needle in ("Landlord with tenants", "Estate agent", "Shop or small-business owner",
+                       "s.5(3)", "₦100,000", "₦500,000", "about ₦5,000", "₦5,000-a-month",
+                       'href="#receipt"', 'href="#agreement"', 'href="#invoice"'):
+            self.assertIn(needle, block, needle)
+        self.assertNotIn("said", block.lower())
+        self.assertNotIn("testimonial", block.lower())
