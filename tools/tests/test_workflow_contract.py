@@ -1296,7 +1296,9 @@ class FacebookReelsContractTests(unittest.TestCase):
         added = re.findall(r"git add (\S+)", self.text)
         # Two ledgers since 16 Oct 2026: the Instagram Reel rides this lane (same render, same
         # Page token, Meta's resumable upload) and records itself in Instagram's ledger.
-        self.assertEqual(sorted(set(added)), ["logs/facebook_reels.json", "logs/instagram_sent.json"],
+        # Three since 29 Oct 2026: the footage ledger (which clips/photos were shown) rides every
+        # rendering lane so the same clip is not behind every video.
+        self.assertEqual(sorted(set(added)), ["logs/facebook_reels.json", "logs/footage_used.json", "logs/instagram_sent.json"],
                          "write access that touches anything else is a bigger question than a ledger")
 
     def test_the_instagram_reel_follows_facebooks_bookkeeping_and_the_readiness_probe(self):

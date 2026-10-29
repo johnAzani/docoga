@@ -770,7 +770,7 @@ jobs:
           # brain/drafts + logs/brain_said.json: when the brain wrote today's Short at the slot
           # (scripts/youtube_short_daily.py fresh_or_nothing), the pack must reach main so the
           # evening lanes and tonight's brain run see it.
-          for path in logs/youtube_boosts.json logs/tiktok_drafts.json logs/tiktok_refresh_token.box logs/telegram_owner.json logs/shorts_media.json logs/facebook_reels.json logs/instagram_sent.json brain/drafts logs/brain_said.json logs/brain_refused.json; do
+          for path in logs/youtube_boosts.json logs/tiktok_drafts.json logs/tiktok_refresh_token.box logs/telegram_owner.json logs/shorts_media.json logs/footage_used.json logs/facebook_reels.json logs/instagram_sent.json brain/drafts logs/brain_said.json logs/brain_refused.json; do
             if [ -e "$path" ]; then git add -f "$path"; fi
           done
           if git diff --staged --quiet; then

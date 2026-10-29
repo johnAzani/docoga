@@ -208,7 +208,12 @@ def pick(query, http=None, sleeper=None):
     kept = [c for c in candidates if relevant(c, query)]
     if not kept:
         return None, "no relevant result for %r (%s)" % (query, note)
-    return kept[0], "%d relevant of %s" % (len(kept), note)
+    # Not kept[0] (29 Oct 2026): the first relevant result was the same picture every day for
+    # every card and beat about the same subject. The footage ledger pushes recently shown ids
+    # back and the day's draw picks among the rest.
+    import footage_ledger
+    chosen = footage_ledger.choose(kept, lambda c: 0, query)
+    return chosen, "%d relevant of %s" % (len(kept), note)
 
 
 def photo_for(text, hint=None, size=None, http=None, sleeper=None, treat=None):
@@ -225,6 +230,8 @@ def photo_for(text, hint=None, size=None, http=None, sleeper=None, treat=None):
             img, prov = brain_visual.fetch_candidate(cand, query, http=http)
             if img is None:
                 continue
+            import footage_ledger
+            footage_ledger.record("openverse:%s" % cand.get("id"), query=query, door="openverse")
             if size:
                 img = (treat or brain_visual.treat)(img, size)
             return img, {"query": query, **(prov or {})}

@@ -545,6 +545,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add logs/instagram_sent.json
+          git add logs/footage_used.json 2>/dev/null || true   # which clips/photos were shown (tools/footage_ledger.py, 29 Oct 2026)
           git commit -q -m "Auto: record Instagram post $(date -u +%F) [skip ci]" || exit 0
           git pull --rebase --autostash origin "$BRANCH" || { echo "::warning title=Instagram ledger not rebased::the post is live but unrecorded, so a re-run could publish it again."; exit 1; }
           git push origin "HEAD:$BRANCH" || echo "::warning title=Instagram ledger not pushed::the post is live, the entry did not reach $BRANCH."

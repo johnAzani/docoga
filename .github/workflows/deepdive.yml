@@ -555,6 +555,7 @@ jobs:
           git pull --rebase --autostash origin "$BRANCH" || { echo "::warning title=Ledger not committed::could not rebase on $BRANCH"; exit 1; }
           git add logs/youtube_longform.json
           git add -f logs/youtube_boosts.json 2>/dev/null || true
+          git add logs/footage_used.json 2>/dev/null || true   # which clips/photos were shown (tools/footage_ledger.py, 29 Oct 2026)
           for path in site/videos site/sitemap.xml; do if [ -e "$path" ]; then git add "$path"; fi; done   # one at a time (22 Oct 2026)
           # No `[skip ci]`: this commit carries the episode's page under site/, and the site deploy
           # is a push-triggered workflow — skipping CI would leave the page unpublished (the

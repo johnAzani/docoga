@@ -480,6 +480,7 @@ jobs:
             exit 1
           fi
           git add logs/threads_sent.json
+          git add logs/footage_used.json 2>/dev/null || true   # which clips/photos were shown (tools/footage_ledger.py, 29 Oct 2026)
           git diff --staged --quiet || git commit -q -m "Auto: record Threads post $(date -u +%F) [skip ci]"
           git push origin "HEAD:$BRANCH" || echo "::warning title=Threads ledger not pushed::the post is live, the entry did not reach $BRANCH."
 
