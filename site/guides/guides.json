@@ -1,5 +1,12 @@
 [
  {
+  "slug": "agent-transfer-alert-not-receipt-rivers",
+  "title": "Transfer alert to an agent is not a rent receipt",
+  "date": "2026-10-29",
+  "state": "Rivers",
+  "theme": "agent-transfer-alert-not-receipt-rivers"
+ },
+ {
   "slug": "edo-tribunal-dispute-protects-tenant",
   "title": "A dispute at the tribunal pauses your quit notice",
   "date": "2026-10-25",

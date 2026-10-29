@@ -1,5 +1,5 @@
 {
- "fetched": "2026-10-28T06:01:46+00:00",
+ "fetched": "2026-10-29T00:30:54+00:00",
  "sources": [
   "Punch: 30 stories",
   "Vanguard: 20 stories",
@@ -11,29 +11,27 @@
  ],
  "items": [
   {
-   "title": "Newborn, parents escape death as fire razes Kwara apartment",
-   "link": "https://punchng.com/newborn-parents-escape-death-as-fire-razes-kwara-apartment/?utm_source=rss.punchng.com&utm_medium=web",
-   "published": "2026-10-28T00:29:36+00:00",
-   "source": "Punch",
-   "score": 15,
+   "title": "FMBN launches non-interest lease-to-own housing scheme for NHF contributors",
+   "link": "https://nairametrics.com/2026/10/28/fmbn-launches-non-interest-lease-to-own-housing-scheme-for-nhf-contributors/",
+   "published": "2026-10-28T16:18:07+00:00",
+   "source": "Nairametrics",
+   "score": 6,
    "matched": [
-    "rent",
-    "rents",
-    "apartment"
+    "housing",
+    "lease"
    ],
-   "summary": "A couple and their newborn baby have escaped death after a fire, caused by a fallen electricity line, ravaged their apartment in Ilorin, Kwara State. Read More: https://punchng.com/newborn-parents-esc"
+   "summary": "The Federal Mortgage Bank of Nigeria (FMBN) has launched a lease-to-own housing finance scheme to give eligible National Housing Fund (NHF) contributors an alternative route to homeownership. The post"
   },
   {
-   "title": "BPP launches free training to help Nigerian small businesses win government contracts",
-   "link": "https://nairametrics.com/2026/10/27/bpp-launches-free-training-to-help-nigerian-small-businesses-win-government-contracts/",
-   "published": "2026-10-27T16:12:04+00:00",
-   "source": "Nairametrics",
-   "score": 4,
+   "title": "UNIPORT don seeks parental education to check decadent behaviour",
+   "link": "https://punchng.com/uniport-don-seeks-parental-education-to-check-decadent-behaviour/?utm_source=rss.punchng.com&utm_medium=web",
+   "published": "2026-10-29T00:22:29+00:00",
+   "source": "Punch",
+   "score": 6,
    "matched": [
-    "sme",
-    "small business"
+    "rent"
    ],
-   "summary": "The Bureau of Public Procurement (BPP) has launched a free digital training portal to help micro, small and medium enterprises (MSMEs) improve their capacity to compete for government contracts in Nig"
+   "summary": "A University of Port Harcourt don, Prof Chinelo Ugwu, has advocated for parental education in Nigeria to address the rising decadent behaviour among youths Read More: https://punchng.com/uniport-don-s"
   }
  ]
 }

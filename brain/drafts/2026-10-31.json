@@ -1,0 +1,74 @@
+{
+ "version": 1,
+ "status": "approved",
+ "date": "2026-10-31",
+ "generated_at": "2026-10-29T01:32:49+01:00",
+ "theme": "abuja-quit-notice-checklist",
+ "post_type": "checklist",
+ "hook_type": "STAT",
+ "state": "abuja",
+ "claims": [
+  {
+   "text": "In Abuja, a yearly tenancy requires half a year (six calendar months) notice to quit.",
+   "fact_id": "abuja:notice_ladder:4"
+  },
+  {
+   "text": "The full statutory period must fall between service and the stated expiry under the Recovery of Premises Act.",
+   "fact_id": "abuja:notice_extras:3"
+  },
+  {
+   "text": "An agent or solicitor needs written authority before issuing a valid notice in Abuja.",
+   "fact_id": "abuja:notice_extras:5"
+  },
+  {
+   "text": "Under s.7, a written notice of intention to recover possession giving not less than seven days must follow.",
+   "fact_id": "abuja:notice_extras:4"
+  }
+ ],
+ "post": {
+  "headline": "Abuja quit notice checklist: 4 rules your landlord must meet",
+  "lines": [
+   "In Abuja, a yearly tenancy requires half a year (six calendar months) notice to quit.",
+   "The full statutory period must fall between service and the stated expiry under the Recovery of Premises Act.",
+   "An agent or solicitor needs written authority before issuing a valid notice in Abuja.",
+   "Under s.7, a written notice of intention to recover possession giving not less than seven days must follow."
+  ],
+  "cta": "Send this to a friend renting in Abuja, or comment your state below.",
+  "hashtags": [
+   "#DocOga",
+   "#AbujaTenants",
+   "#NoticeToQuit",
+   "#TenantRights"
+  ]
+ },
+ "threads": {
+  "text": "In Abuja, a yearly tenant gets 6 full calendar months notice to quit, not 3 months. An agent or solicitor needs written authority before issuing a valid notice in Abuja. Then a 7-day notice of owner's intention must follow after it expires. Did your landlord serve you 6 full months?",
+  "hashtags": [
+   "#DocOga",
+   "#AbujaRent"
+  ],
+  "topic": "Abuja Tenant Rights",
+  "poll": null,
+  "evening": "In Abuja, the date of service is what counts on a notice to quit. The full statutory period must run from the day it reaches your hands."
+ },
+ "visual": {
+  "kicker": "Abuja rules",
+  "layout": "checklist",
+  "big": "6 MONTHS",
+  "plate": "abuja city gate dusk"
+ },
+ "short": null,
+ "why": "Saturday checklist using the STAT hook for Abuja's statutory notice period, targeting Tunde in Abuja and strictly matching shelf facts.",
+ "tool": "notice-to-quit",
+ "reader": "tunde",
+ "news_hook": null,
+ "quiz": null,
+ "gates": [
+  "citation",
+  "verification",
+  "lint",
+  "repetition",
+  "shape"
+ ],
+ "note": ""
+}

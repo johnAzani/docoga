@@ -78,5 +78,40 @@
   "reader": "ngozi",
   "tool": "rent-receipt",
   "news_hook": null
+ },
+ {
+  "date": "2026-10-29",
+  "theme": "agent-transfer-alert-not-receipt-rivers",
+  "headline": "Transfer alert to an agent is not a rent receipt",
+  "post_type": "story",
+  "hook_type": "STAKES",
+  "state": "rivers",
+  "fact_ids": [
+   "rivers:receipts:1"
+  ],
+  "plate": "keys wooden table",
+  "short": true,
+  "reader": "okafor",
+  "tool": "rent-receipt",
+  "news_hook": null
+ },
+ {
+  "date": "2026-10-31",
+  "theme": "abuja-quit-notice-checklist",
+  "headline": "Abuja quit notice checklist: 4 rules your landlord must meet",
+  "post_type": "checklist",
+  "hook_type": "STAT",
+  "state": "abuja",
+  "fact_ids": [
+   "abuja:notice_ladder:4",
+   "abuja:notice_extras:3",
+   "abuja:notice_extras:5",
+   "abuja:notice_extras:4"
+  ],
+  "plate": "abuja city gate dusk",
+  "short": false,
+  "reader": "tunde",
+  "tool": "notice-to-quit",
+  "news_hook": null
  }
 ]

@@ -1,0 +1,97 @@
+{
+ "version": 1,
+ "status": "approved",
+ "date": "2026-10-29",
+ "generated_at": "2026-10-29T01:31:10+01:00",
+ "theme": "agent-transfer-alert-not-receipt-rivers",
+ "post_type": "story",
+ "hook_type": "STAKES",
+ "state": "rivers",
+ "claims": [
+  {
+   "text": "In Rivers State, a receipt is the legal proof of payment, and whoever asserts payment must prove it.",
+   "fact_id": "rivers:receipts:1"
+  }
+ ],
+ "post": {
+  "headline": "Transfer alert to an agent is not a rent receipt",
+  "lines": [
+   "A landlord in Port Harcourt sent his agent to collect one year of rent from three tenants.",
+   "The tenants sent bank transfers directly to the agent, but neither agent nor landlord issued a paper receipt.",
+   "Months later, the landlord claimed rent was unpaid after the agent disappeared with the funds.",
+   "In Rivers State, a receipt is the legal proof of payment, and whoever asserts payment must prove it.",
+   "Generate a valid rent receipt on your phone in two minutes, free to start."
+  ],
+  "cta": "Did your landlord give you a signed receipt this year? Tell us below.",
+  "hashtags": [
+   "#DocOga",
+   "#RentReceipt",
+   "#RiversState",
+   "#NigerianLandlords"
+  ]
+ },
+ "threads": {
+  "text": "A tenant in Port Harcourt transferred rent to an agent. No paper receipt was issued. When the agent disappeared, the landlord sued for arrears. In Rivers State, the person who claims payment was made bears the legal burden of proving it with a receipt. A bank alert alone leaves you open to dispute. Did your landlord issue a written receipt this year?",
+  "hashtags": [
+   "#DocOga",
+   "#RiversState"
+  ],
+  "topic": "Tenant Rights Nigeria",
+  "poll": null,
+  "evening": "A bank transfer alert proves money moved to an account, but it does not prove it was received as rent. Demand a signed receipt every single time."
+ },
+ "visual": {
+  "kicker": "proof of payment",
+  "layout": "poster",
+  "big": "",
+  "plate": "keys wooden table"
+ },
+ "short": {
+  "title": "Transfer alert to an agent? You could pay twice.",
+  "hook_sub": "A bank alert is not a receipt",
+  "hook_say": "You transferred rent to an agent in Port Harcourt and kept only the bank alert. If that agent disappears, you could face eviction for unpaid rent.",
+  "tips": [
+   {
+    "text": "Alert is not receipt",
+    "sub": "A bank transfer never names rent terms",
+    "say": "A bank alert shows funds left your account, but it does not specify property address, rental period, or tenancy terms. You still lack legal proof."
+   },
+   {
+    "text": "Demand paper from landlord",
+    "sub": "The landlord remains legally responsible",
+    "say": "Even when an agent collects the money, insist on an official written receipt acknowledging payment on behalf of the property owner immediately."
+   },
+   {
+    "text": "Include four vital details",
+    "sub": "Names, dates, amount, and property address",
+    "say": "Ensure the receipt states tenant name, exact amount paid, address, and the specific term covered. Missing details weaken your protection in court."
+   },
+   {
+    "text": "Generate on your phone",
+    "sub": "Create standard rent receipts in two minutes",
+    "say": "DocOga lets landlords and tenants issue clean, standard rent receipts on a phone in two minutes, completely free to start."
+   }
+  ],
+  "hook_text": "TRANSFER ALERT TO AN AGENT?\nYOU COULD PAY TWICE.",
+  "series": {
+   "slug": "rent-receipt-law",
+   "name": "Rent receipt law",
+   "part": 4,
+   "total": 5,
+   "label": "Transfers and agents"
+  }
+ },
+ "why": "Thursday story-style scenario targeting Mr Okafor and tenants in Rivers State using a STAKES hook focused on the risks of paying rent to agents without a written receipt.",
+ "tool": "rent-receipt",
+ "reader": "okafor",
+ "news_hook": null,
+ "quiz": null,
+ "gates": [
+  "citation",
+  "verification",
+  "lint",
+  "repetition",
+  "shape"
+ ],
+ "note": ""
+}
