@@ -611,6 +611,7 @@ jobs:
             exit 1
           fi
           git add logs/facebook_reels.json
+          git add logs/footage_used.json 2>/dev/null || true   # which clips/photos were shown (tools/footage_ledger.py, 29 Oct 2026)
           if git diff --staged --quiet; then
             echo "Ledger unchanged — nothing to commit."
             exit 0

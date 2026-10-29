@@ -180,12 +180,18 @@ def score(cand, query, need_s=0.0):
     return s
 
 
-def choose(cands, query, need_s=0.0, used=()):
+def choose(cands, query, need_s=0.0, used=(), day=None):
+    """The clip to show. `used` = ids already in THIS render (never twice in one Short). Across
+    renders the footage ledger does the remembering: a clip shown in the last 21 days goes to the
+    back of the queue, and among near-equal candidates the day's draw decides — so the same
+    sentence on another day gets another clip (owner, 29 Oct 2026: "the same image or video clips
+    behind the card of all the videos")."""
+    import footage_ledger
     kept = [c for c in cands if c.get("url") and c.get("id") not in used and relevant(c, query)
             and not excluded(" ".join([str(c.get("title") or ""), str(c.get("tags_text") or "")]))]
     if not kept:
         return None
-    return max(kept, key=lambda c: (score(c, query, need_s), -len(str(c.get("title") or ""))))
+    return footage_ledger.choose(kept, lambda c: score(c, query, need_s), query, day=day)
 
 
 # ───────────────────────── http ─────────────────────────
@@ -445,6 +451,8 @@ def media_for(text, hint=None, need_s=4.0, used=None, kinds=("video", "photo"), 
                         used.add(cand["id"])      # do not re-download a dead link on the next sentence
                         continue
                     used.add(cand["id"])
+                    import footage_ledger
+                    footage_ledger.record(cand["id"], query=query, door=door)
                     out = dict(cand)
                     out.update(path=str(path), query=query)
                     return out, "%s %s" % (door, kind)
