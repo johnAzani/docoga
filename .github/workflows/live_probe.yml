@@ -1,0 +1,168 @@
+name: Live probe — is DocOga up
+
+# Not a publisher. A monitor for the product itself.
+#
+# The heartbeat judges whether every lane RAN. Nothing judged whether the PRODUCT
+# ANSWERED: docoga.com.ng on Cloudflare Pages, the payment worker, the receipt ledger
+# the Rent Monitor reads, the clock that rings every lane, the TLS certificate, every
+# page in the sitemap. A broken deploy or a quiet 404 would have been found by the next
+# customer. Paid uptime monitors start at $7/month; this runner's egress is free and
+# the repository is public, so the probe costs ₦0. See tools/live_probe.py.
+#
+# Colour rule, same as the heartbeat: red — one email — only when the set of failing
+# checks CHANGES. The same outage on the next tick is a comment on the same issue and a
+# green tick, so the monitor stays worth reading.
+
+on:
+  schedule:
+    # Five times a day at :25 UTC = 01:25 am, 05:25 am, 09:25 am, 01:25 pm, 05:25 pm Lagos.
+    # Between the posting slots on purpose (Instagram :10, Threads :10/:20, replies :40,
+    # the 06:00 pm Short, the 07:20 pm boost), so a probe never shares a minute with a post;
+    # and every tick is before the 09:00 pm heartbeat, which judges this lane like any other.
+    - cron: '25 0,4,8,12,16 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Report only — no issue filed, no red run'
+        required: false
+        default: false
+        type: boolean
+      quick:
+        description: 'Only the first five sitemap pages (smoke test)'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  issues: write     # one tracked issue, updated rather than duplicated
+
+# A monitor has no side effects: two overlapping probes of the same state would only
+# produce the same numbers twice, so the newer one wins.
+concurrency:
+  group: live-probe
+  cancel-in-progress: true
+
+env:
+  TZ: Africa/Lagos
+
+jobs:
+  probe:
+    name: Ask the live site and workers to answer
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      # continue-on-error because the tool's exit code is a *finding*, not the job's
+      # verdict: the next step decides whether this tick's findings are news.
+      - name: Probe
+        id: probe
+        continue-on-error: true
+        env:
+          QUICK: ${{ inputs.quick }}
+        run: |
+          set -uo pipefail
+          EXTRA=()
+          [ "${QUICK:-false}" = "true" ] && EXTRA+=(--quick)
+          # The tool exits 1 on purpose when something is down — the case the next step
+          # must hear about. `set +e` around the one command allowed to fail; the verdict
+          # travels in CODE, read from PIPESTATUS on the very next line.
+          set +e
+          python3 tools/live_probe.py --out /tmp/live_probe.json --markdown /tmp/live_probe.md "${EXTRA[@]}" 2>&1 | tee /tmp/live_probe.log
+          CODE=${PIPESTATUS[0]}
+          set -e
+          echo "state=$(sed -n 's/^LIVE_PROBE=//p' /tmp/live_probe.log | tail -1)" >> "$GITHUB_OUTPUT"
+          echo "failing=$(sed -n 's/^LIVE_PROBE_FAILING=//p' /tmp/live_probe.log | tail -1)" >> "$GITHUB_OUTPUT"
+          echo "signature=$(sed -n 's/^LIVE_PROBE_SIGNATURE=//p' /tmp/live_probe.log | tail -1)" >> "$GITHUB_OUTPUT"
+          echo "code=$CODE" >> "$GITHUB_OUTPUT"
+
+      - name: Put the table in the run summary
+        if: always()
+        run: cat /tmp/live_probe.md >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
+
+      - name: File, update or close the visible issue
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          STATE: ${{ steps.probe.outputs.state }}
+          FAILING: ${{ steps.probe.outputs.failing }}
+          SIGNATURE: ${{ steps.probe.outputs.signature }}
+          CODE: ${{ steps.probe.outputs.code }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -uo pipefail
+          if [ "${DRY_RUN:-false}" != "true" ]; then
+            gh label create live-probe --color b60205 \
+              --description "docoga.com.ng or one of its workers stopped answering" >/dev/null 2>&1 || true
+          fi
+
+          if [ -z "$SIGNATURE" ]; then
+            echo "::error title=Live probe could not judge::no signature was printed, so the tool did not reach a verdict (exit ${CODE:-?}). Not filing a blind issue."
+            [ "${DRY_RUN:-false}" = "true" ] && exit 0
+            exit 1
+          fi
+
+          NUMBER=$(gh issue list --label live-probe --state open --json number --jq '.[0].number // empty')
+
+          if [ "${STATE:-ok}" = "ok" ]; then
+            if [ -n "$NUMBER" ]; then
+              echo "Everything answers again — closing #${NUMBER}."
+              [ "${DRY_RUN:-false}" = "true" ] || gh issue close "$NUMBER" --comment "docoga.com.ng and every worker answered on every check as of $(date +'%-I:%M %p') Lagos ($(date -u +%FT%TZ)). Closing. Run: $RUN_URL"
+            else
+              echo "Everything answers. Nothing to close."
+            fi
+            exit 0
+          fi
+
+          {
+            echo "Automatic probe of the live site and workers, $(date +'%a %-d %b %-I:%M %p') Lagos."
+            echo
+            echo "Run: $RUN_URL"
+            echo
+            echo "Failing: \`${FAILING:-?}\` · verdict signature \`${SIGNATURE}\`"
+            echo
+            cat /tmp/live_probe.md 2>/dev/null || true
+            echo
+            echo "What to do: open the failing URL on your phone. If the site is down, Cloudflare Pages → docoga → Deployments shows the last build; if a worker is down, Workers & Pages → that worker → Logs. Nothing in this probe can verify a code, move money or post — it only reads."
+            echo
+            echo "<details><summary>tool output</summary>"
+            echo
+            echo '```'
+            tail -n 60 /tmp/live_probe.log 2>/dev/null | tr -d '`' || echo "(none)"
+            echo '```'
+            echo
+            echo "</details>"
+          } > /tmp/issue_body.md
+
+          if [ "${DRY_RUN:-false}" = "true" ]; then
+            echo "::notice title=Dry run::would file/update an issue with this body: $(head -c 200 /tmp/issue_body.md | tr '\n' ' ')"
+            exit 0
+          fi
+
+          if [ -n "$NUMBER" ] && gh issue view "$NUMBER" --json body -q .body | grep -q "$SIGNATURE"; then
+            echo "Issue #${NUMBER} already carries this verdict set (${SIGNATURE}) — commenting, staying green."
+            gh issue comment "$NUMBER" --body "Still down at $(date +'%-I:%M %p') Lagos, same ${FAILING} check(s), signature \`${SIGNATURE}\`. Run: $RUN_URL" >/dev/null || echo "::warning title=Comment failed::could not comment on #${NUMBER}"
+            exit 0
+          fi
+
+          if [ -n "$NUMBER" ]; then
+            echo "The set of failing checks changed — updating #${NUMBER} and going red."
+            gh issue edit "$NUMBER" --body-file /tmp/issue_body.md >/dev/null || echo "::warning title=Edit failed::could not update #${NUMBER}"
+            gh issue comment "$NUMBER" --body "The set of failing checks changed at $(date +'%-I:%M %p') Lagos (now ${FAILING}, signature \`${SIGNATURE}\`). Body updated. Run: $RUN_URL" >/dev/null || true
+          else
+            echo "Filing the issue and going red."
+            gh issue create --label live-probe \
+              --title "🔴 Live probe: ${FAILING} check(s) not answering on docoga.com.ng" \
+              --body-file /tmp/issue_body.md >/dev/null || echo "::warning title=Issue not created::gh issue create failed"
+          fi
+          echo "::error title=DocOga is not fully answering::${FAILING} check(s) failed after a retry — see the issue labelled live-probe."
+          exit 1

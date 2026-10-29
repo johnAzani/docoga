@@ -35,6 +35,10 @@ no server, 0 Naira/month to run.
   correction): **`INSTAGRAM_THREADS_AUTOMATION.md`**.
   Run the heartbeat by hand any time:
   `python3 tools/automation_heartbeat.py --repo <owner>/<repo> --token "$(gh auth token)" --verbose`
+  The heartbeat judges the *lanes*; **`live_probe.yml`** (five times a day, 29 Oct 2026)
+  judges the *product*: every sitemap page, the home link-preview image, the payment,
+  ledger and clock workers and the TLS certificate — read-only GETs, one `live-probe`
+  issue while anything is down, closed when it answers again. `python3 tools/live_probe.py`.
 - `brain/` — **the standing editor** (16 Oct 2026). `brain.yml` runs nightly, reads the
   business memory + editorial policy + the section-cited law shelf, asks Gemini (free
   tier, 2–3 requests) for the next days' posts, Short topics and visual briefs, and

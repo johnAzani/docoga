@@ -1248,8 +1248,10 @@ class HeartbeatWorkflowTests(unittest.TestCase):
                 other = cron.split()
                 if other[1] == "*" or other[1] == mine[1]:
                     continue
+                # A list of hours (the live probe's `0,4,8,12,16`) is judged by its latest tick.
+                latest = max(int(h) for h in other[1].split(","))
                 with self.subTest(lane=file_name, other=cron):
-                    self.assertGreater(int(mine[1]), int(other[1]),
+                    self.assertGreater(int(mine[1]), latest,
                                        "%s fires later than the lane it judges — judging "
                                        "'nothing arrived' before the arrival window closes is "
                                        "a daily false alarm" % file_name)
