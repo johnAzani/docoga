@@ -1,5 +1,12 @@
 [
  {
+  "slug": "kano-rent-receipt-demand-it",
+  "title": "No rent receipt in Kano? You could pay twice.",
+  "date": "2026-10-30",
+  "state": "Kano",
+  "theme": "kano-rent-receipt-demand-it"
+ },
+ {
   "slug": "agent-transfer-alert-not-receipt-rivers",
   "title": "Transfer alert to an agent is not a rent receipt",
   "date": "2026-10-29",

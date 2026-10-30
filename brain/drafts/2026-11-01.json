@@ -1,0 +1,62 @@
+{
+ "version": 1,
+ "status": "approved",
+ "date": "2026-11-01",
+ "generated_at": "2026-10-30T01:31:11+01:00",
+ "theme": "cross-river-rent-control-advance-rent-limits-question",
+ "post_type": "engagement",
+ "hook_type": "CURIOSITY",
+ "state": "cross-river",
+ "claims": [
+  {
+   "text": "In Cross River State, a landlord may demand and receive the prescribed rent in advance for a period not exceeding three months from tenants who are individuals.",
+   "fact_id": "cross-river:advance_rent:1"
+  }
+ ],
+ "post": {
+  "headline": "How many months' rent can your landlord demand in Cross River?",
+  "lines": [
+   "Many tenants pay a full year upfront, but the law in Cross River State has a limit.",
+   "For individuals, landlords can only ask for up to three months' rent in advance.",
+   "This is much stricter than what you might find in other states like Lagos.",
+   "Knowing your rights can help you plan your rent payments better."
+  ],
+  "cta": "Send this to a friend who lives in Cross River. Follow for the next rule.",
+  "hashtags": [
+   "#DocOga",
+   "#CrossRiverRent",
+   "#TenantRightsNigeria",
+   "#RentControl"
+  ]
+ },
+ "threads": {
+  "text": "Did you know that in Cross River State, your landlord can only demand up to three months' rent in advance if you are an individual? This law protects tenants from huge upfront demands. It’s a key difference from other states. How many months' rent did you pay?",
+  "hashtags": [
+   "#DocOga",
+   "#RentNigeria"
+  ],
+  "topic": "Tenant Rights Nigeria",
+  "poll": null,
+  "evening": "In Cross River, individuals are protected: landlords can only ask for three months' rent in advance. This is a strict rule designed to ease tenant burden. Don't pay more than the law allows without checking."
+ },
+ "visual": {
+  "kicker": "Know Your Rights",
+  "layout": "poster",
+  "big": "",
+  "plate": "rent payment receipt"
+ },
+ "short": null,
+ "why": "This post uses the forced CURIOSITY hook and targets Ngozi on a Sunday engagement day, highlighting Cross River's strict advance rent law to spark conversation and address rent pressure, while incorporating the 'follow for the next rule' order.",
+ "tool": "tenancy-agreement",
+ "reader": "ngozi",
+ "news_hook": null,
+ "quiz": null,
+ "gates": [
+  "citation",
+  "verification",
+  "lint",
+  "repetition",
+  "shape"
+ ],
+ "note": ""
+}

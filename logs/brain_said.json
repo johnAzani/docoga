@@ -113,5 +113,21 @@
   "reader": "tunde",
   "tool": "notice-to-quit",
   "news_hook": null
+ },
+ {
+  "date": "2026-11-01",
+  "theme": "cross-river-rent-control-advance-rent-limits-question",
+  "headline": "How many months' rent can your landlord demand in Cross River?",
+  "post_type": "engagement",
+  "hook_type": "CURIOSITY",
+  "state": "cross-river",
+  "fact_ids": [
+   "cross-river:advance_rent:1"
+  ],
+  "plate": "rent payment receipt",
+  "short": false,
+  "reader": "ngozi",
+  "tool": "tenancy-agreement",
+  "news_hook": null
  }
 ]

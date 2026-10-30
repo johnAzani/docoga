@@ -1,5 +1,5 @@
 {
- "fetched": "2026-10-29T06:13:02+00:00",
+ "fetched": "2026-10-30T00:30:49+00:00",
  "sources": [
   "Punch: 30 stories",
   "Vanguard: 20 stories",
@@ -11,16 +11,38 @@
  ],
  "items": [
   {
-   "title": "FMBN launches non-interest lease-to-own housing scheme for NHF contributors",
-   "link": "https://nairametrics.com/2026/10/28/fmbn-launches-non-interest-lease-to-own-housing-scheme-for-nhf-contributors/",
-   "published": "2026-10-28T16:18:07+00:00",
+   "title": "Explainer: What NELFUND tokenisation means for students, parents",
+   "link": "https://businessday.ng/education/article/explainer-what-nelfund-tokenisation-means-for-students-parents/",
+   "published": "2026-10-29T22:27:59+00:00",
+   "source": "BusinessDay",
+   "score": 12,
+   "matched": [
+    "rent",
+    "rents"
+   ],
+   "summary": "Managing Director of NELFUND Akintunde Sawyerr, speaking during an interview on Thursday at Igbobi College in Yaba, Lagos, clarified the"
+  },
+  {
+   "title": "World Bank projects Brent oil prices to fall to $79 per barrel in 2027",
+   "link": "https://nairametrics.com/2026/10/29/world-bank-projects-brent-oil-prices-to-fall-to-79-per-barrel-in-2027/",
+   "published": "2026-10-29T16:27:54+00:00",
    "source": "Nairametrics",
    "score": 6,
    "matched": [
-    "housing",
-    "lease"
+    "rent"
    ],
-   "summary": "The Federal Mortgage Bank of Nigeria (FMBN) has launched a lease-to-own housing finance scheme to give eligible National Housing Fund (NHF) contributors an alternative route to homeownership. The post"
+   "summary": "The World Bank projects Brent crude oil prices to decline to an average of $79 per barrel in 2027, down from $91 per barrel in 2026, as rising global supplies are expected to ease market tightness. Th"
+  },
+  {
+   "title": "Minimum wage: NECA urges balance between welfare, affordability",
+   "link": "https://punchng.com/minimum-wage-neca-urges-balance-between-welfare-affordability/?utm_source=rss.punchng.com&utm_medium=web",
+   "published": "2026-10-30T00:33:14+00:00",
+   "source": "Punch",
+   "score": 6,
+   "matched": [
+    "minimum wage"
+   ],
+   "summary": "The Nigeria Employers’ Consultative Association has urged for a balance between workers’ welfare and employers’ ability to pay in minimum wage negotiations Read More: https://punchng.com/minimum-wage-"
   }
  ]
 }
