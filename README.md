@@ -39,6 +39,11 @@ no server, 0 Naira/month to run.
   judges the *product*: every sitemap page, the home link-preview image, the payment,
   ledger and clock workers and the TLS certificate — read-only GETs, one `live-probe`
   issue while anything is down, closed when it answers again. `python3 tools/live_probe.py`.
+  **`kv_backup.yml`** (02:45 am nightly, 30 Oct 2026) is the business's only backup: the
+  one KV namespace that holds every paid pass, every Business team and the Rent Monitor's
+  receipts, read through the account API, gzipped, sealed under `SOCIAL_TOKEN_KEY` into
+  `logs/backup/kv-latest.box` (dated copy Sundays). Cloudflare KV has no backup of its own.
+  Restore is a human act: `python3 tools/kv_backup.py restore --file … --confirm RESTORE`.
 - `brain/` — **the standing editor** (16 Oct 2026). `brain.yml` runs nightly, reads the
   business memory + editorial policy + the section-cited law shelf, asks Gemini (free
   tier, 2–3 requests) for the next days' posts, Short topics and visual briefs, and

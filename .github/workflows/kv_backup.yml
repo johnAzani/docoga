@@ -1,0 +1,164 @@
+name: KV backup — the nightly copy of every pass and receipt
+
+# Not a publisher. The business's only backup.
+#
+# One Cloudflare KV namespace holds every pass ever paid for, every DocOga Business
+# team and invoice, and the anonymised rent receipts the Rent Monitor is built on.
+# Cloudflare KV has no built-in backup on any plan, and until 30 Oct 2026 nothing
+# copied it. This lane reads the whole namespace through the account REST API
+# (read-only), gzips it, encrypts it with the same SOCIAL_TOKEN_KEY the token vault
+# uses, and commits ONE file: logs/backup/kv-latest.box (plus a dated copy on Sundays,
+# last eight kept). Git history keeps every night's version after that for free.
+# Restore: `python3 tools/kv_backup.py restore --file … --confirm RESTORE` — by a human.
+#
+# Fails loudly (one issue under `kv-backup`, red run) when the token cannot read KV,
+# when the key is missing, or when the namespace lists zero keys (the last good copy is
+# never overwritten with nothing). See tools/kv_backup.py.
+
+on:
+  schedule:
+    # 02:45 am Lagos — after the 01:30 Brain, before the 03:00 Deep-Dive and 04:35 clock deploy.
+    - cron: '45 1 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Take the copy, verify it, commit nothing'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write   # one commit: logs/backup/kv-latest.box
+  issues: write     # one tracked issue, updated rather than duplicated
+
+concurrency:
+  group: kv-backup
+  cancel-in-progress: false
+
+env:
+  TZ: Africa/Lagos
+
+jobs:
+  backup:
+    name: Copy the KV namespace, encrypted, into the repo
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: python3 -m pip install --quiet cryptography
+
+      - name: Take the copy
+        id: copy
+        continue-on-error: true
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          SOCIAL_TOKEN_KEY: ${{ secrets.SOCIAL_TOKEN_KEY }}
+        run: |
+          set -uo pipefail
+          set +e
+          python3 tools/kv_backup.py backup 2>&1 | tee /tmp/kv_backup.log
+          CODE=${PIPESTATUS[0]}
+          set -e
+          echo "state=$(sed -n 's/^KV_BACKUP=//p' /tmp/kv_backup.log | tail -1)" >> "$GITHUB_OUTPUT"
+          echo "keys=$(sed -n 's/^KV_BACKUP_KEYS=//p' /tmp/kv_backup.log | tail -1)" >> "$GITHUB_OUTPUT"
+          echo "code=$CODE" >> "$GITHUB_OUTPUT"
+          { echo "## KV backup — $(date +'%a %-d %b %-I:%M %p') Lagos"; echo; grep '^|' /tmp/kv_backup.log || true; echo; tail -n 3 /tmp/kv_backup.log | sed 's/^/    /'; } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Prove the copy opens
+        if: steps.copy.outputs.state == 'ok'
+        env:
+          SOCIAL_TOKEN_KEY: ${{ secrets.SOCIAL_TOKEN_KEY }}
+        run: python3 tools/kv_backup.py verify
+
+      - name: Commit the copy
+        if: steps.copy.outputs.state == 'ok' && inputs.dry_run != true
+        env:
+          BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          if [ -e logs/backup ]; then git add -A logs/backup; fi
+          if git diff --staged --quiet; then
+            echo "nothing new to commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -m "Auto: KV backup $(date +%F) [skip ci]"
+          if ! git pull --rebase --autostash origin "$BRANCH"; then
+            echo "::error title=Backup not committed::could not rebase on $BRANCH — tonight's copy stays on the runner only"
+            exit 1
+          fi
+          if ! git push origin "HEAD:$BRANCH"; then
+            echo "::error title=Backup not pushed::the copy did not reach $BRANCH"
+            exit 1
+          fi
+
+      - name: File, update or close the visible issue
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          STATE: ${{ steps.copy.outputs.state }}
+          KEYS: ${{ steps.copy.outputs.keys }}
+          CODE: ${{ steps.copy.outputs.code }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -uo pipefail
+          if [ "${DRY_RUN:-false}" != "true" ]; then
+            gh label create kv-backup --color b60205 \
+              --description "The nightly KV backup did not complete" >/dev/null 2>&1 || true
+          fi
+          NUMBER=$(gh issue list --label kv-backup --state open --json number --jq '.[0].number // empty')
+          if [ "${STATE:-}" = "ok" ]; then
+            if [ -n "$NUMBER" ]; then
+              [ "${DRY_RUN:-false}" = "true" ] || gh issue close "$NUMBER" --comment "The backup completed again at $(date +'%-I:%M %p') Lagos (${KEYS:-?} keys). Closing. Run: $RUN_URL"
+            fi
+            echo "Backup ok (${KEYS:-?} keys)."
+            exit 0
+          fi
+          case "${STATE:-}" in
+            missing-permission) WHY="The Cloudflare token behind CLOUDFLARE_API_TOKEN cannot read KV. One tap: dash.cloudflare.com → My Profile → API Tokens → that token → Edit → add **Account · Workers KV Storage · Read** → Continue → Save. Nothing else changes." ;;
+            missing-key)        WHY="SOCIAL_TOKEN_KEY is missing or malformed in this repository's Actions secrets, so the copy was not written (customer data is never stored unencrypted)." ;;
+            missing-config)     WHY="CLOUDFLARE_ACCOUNT_ID or CLOUDFLARE_API_TOKEN is not set." ;;
+            empty)              WHY="The namespace listed ZERO keys. Either the data is gone or the token sees the wrong account — look at the Workers KV page in the Cloudflare dashboard now. The last good copy was left untouched." ;;
+            *)                  WHY="The Cloudflare API did not answer cleanly (exit ${CODE:-?}). See the run log." ;;
+          esac
+          {
+            echo "The nightly KV backup did not complete at $(date +'%a %-d %b %-I:%M %p') Lagos — state \`${STATE:-none}\`."
+            echo
+            echo "$WHY"
+            echo
+            echo "Run: $RUN_URL"
+            echo
+            echo "<details><summary>tool output</summary>"
+            echo
+            echo '```'
+            tail -n 30 /tmp/kv_backup.log 2>/dev/null | tr -d '`' || echo "(none)"
+            echo '```'
+            echo
+            echo "</details>"
+          } > /tmp/issue_body.md
+          if [ "${DRY_RUN:-false}" = "true" ]; then
+            echo "::notice title=Dry run::would file an issue: $(head -c 200 /tmp/issue_body.md | tr '\n' ' ')"
+            exit 1
+          fi
+          if [ -n "$NUMBER" ]; then
+            gh issue comment "$NUMBER" --body-file /tmp/issue_body.md >/dev/null || echo "::warning title=Comment failed::could not comment on #${NUMBER}"
+          else
+            gh issue create --label kv-backup \
+              --title "🔴 KV backup did not complete (${STATE:-none})" \
+              --body-file /tmp/issue_body.md >/dev/null || echo "::warning title=Issue not created::gh issue create failed"
+          fi
+          echo "::error title=KV backup did not complete::state ${STATE:-none} — see the issue labelled kv-backup."
+          exit 1
