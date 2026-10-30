@@ -378,3 +378,26 @@ class CrosslinkTests(unittest.TestCase):
 if __name__ == "__main__":
     unittest.main()
 
+
+
+class SitemapDedupeTests(unittest.TestCase):
+    """30 Oct 2026: two guides sat in the sitemap twice. One <url> per <loc>, newest block wins."""
+
+    def test_duplicate_locs_collapse_to_the_latest_block(self):
+        import sys
+        sys.path.insert(0, str(ROOT / "tools"))
+        import guides_build as gb
+        block = "  <url>\n    <loc>%s</loc>\n    <lastmod>%s</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>0.6</priority>\n  </url>\n"
+        text = ('<?xml version="1.0"?>\n<urlset>\n' + block % ("https://docoga.com.ng/a", "2026-10-24")
+                + block % ("https://docoga.com.ng/b", "2026-10-25") + block % ("https://docoga.com.ng/a", "2026-10-29") + "</urlset>\n")
+        out, dropped = gb.dedupe_sitemap(text)
+        self.assertEqual(dropped, 1)
+        self.assertEqual(out.count("<loc>https://docoga.com.ng/a</loc>"), 1)
+        self.assertIn("2026-10-29", out)
+        self.assertNotIn("2026-10-24", out)
+        self.assertEqual(gb.dedupe_sitemap(out), (out, 0))
+
+    def test_the_committed_sitemap_has_no_duplicate_loc(self):
+        import re
+        locs = re.findall(r"<loc>([^<]+)</loc>", (ROOT / "site" / "sitemap.xml").read_text(encoding="utf-8"))
+        self.assertEqual(len(locs), len(set(locs)), sorted({l for l in locs if locs.count(l) > 1}))

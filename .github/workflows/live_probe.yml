@@ -35,6 +35,7 @@ on:
 
 permissions:
   contents: read
+  actions: read     # the clock's pulse: was any lane dispatched in the last six hours
   issues: write     # one tracked issue, updated rather than duplicated
 
 # A monitor has no side effects: two overlapping probes of the same state would only
@@ -68,6 +69,10 @@ jobs:
         continue-on-error: true
         env:
           QUICK: ${{ inputs.quick }}
+          # The clock's own credential, exercised read-only (one GET of the workflow list) so an
+          # expired or revoked token is a finding here instead of a week of late lanes. Never printed.
+          GH_DISPATCH_TOKEN: ${{ secrets.GH_DISPATCH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -uo pipefail
           EXTRA=()

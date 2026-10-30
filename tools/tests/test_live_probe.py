@@ -1,6 +1,8 @@
 """live_probe (29 Oct 2026): the product is probed, not only the lanes. Offline — every HTTP
 call is replaced by a fake, so the suite never touches the live site."""
+import datetime as dt
 import json
+import os
 import sys
 import unittest
 from pathlib import Path
@@ -41,10 +43,27 @@ class ProbeTests(unittest.TestCase):
         self._fetch, self._tls = lp.fetch, lp.check_tls
         lp.fetch = healthy
         lp.check_tls = lambda *a, **k: lp.Result("TLS certificate", "https://docoga.com.ng", True, 200, 5, "80 days left")
+        self._gh, self._whois = lp._gh, lp.whois
+        lp._gh = self.gh
+        lp.whois = lambda *a, **k: "Domain Name: docoga.com.ng\nRegistry Expiry Date: 2099-01-01T00:00:00Z\n"
+        os.environ["GH_DISPATCH_TOKEN"] = "fake-dispatch"
+        os.environ["GITHUB_TOKEN"] = "fake-actions"
         self.calls = []
+
+    @staticmethod
+    def gh(url, token):
+        if "/actions/workflows" in url:
+            return 200, {"github-authentication-token-expiration": "2099-01-01 00:00:00 UTC"}, b"{}"
+        if "/actions/runs" in url:
+            recent = (dt.datetime.now(dt.timezone.utc) - dt.timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
+            return 200, {}, json.dumps({"workflow_runs": [{"created_at": recent, "name": "Brain"}]}).encode()
+        return 404, {}, b""
 
     def tearDown(self):
         lp.fetch, lp.check_tls = self._fetch, self._tls
+        lp._gh, lp.whois = self._gh, self._whois
+        os.environ.pop("GH_DISPATCH_TOKEN", None)
+        os.environ.pop("GITHUB_TOKEN", None)
 
     def run_tool(self, tmp):
         return lp.main(["--out", str(tmp / "lp.json"), "--markdown", str(tmp / "lp.md"), "--retry-wait", "0"])
@@ -60,8 +79,25 @@ class ProbeTests(unittest.TestCase):
         self.assertEqual(sum(1 for n in names if n.startswith("/p")), 25)
         for must in ("home page", "sitemap.xml", "robots.txt", "og/home.jpg", "docoga-pass (payments)",
                      "docoga-ledger /health", "docoga-ledger /api/stats (Rent Monitor)",
-                     "docoga-clock (the schedule)", "TLS certificate"):
+                     "docoga-clock (the schedule)", "TLS certificate", "clock credential (GH_DISPATCH_TOKEN)",
+                     "clock pulse (a lane dispatched in the last 6 h)", "domain registration (docoga.com.ng)"):
             self.assertIn(must, names)
+
+    def test_the_clocks_credential_and_pulse_and_the_domain_are_judged(self):
+        self.assertFalse(lp.check_clock_token("t", gh=lambda u, k: (401, {}, b"")).ok)
+        soon = (dt.datetime.now(dt.timezone.utc) + dt.timedelta(days=5)).strftime("%Y-%m-%d %H:%M:%S UTC")
+        r = lp.check_clock_token("t", gh=lambda u, k: (200, {"github-authentication-token-expiration": soon}, b"{}"))
+        self.assertFalse(r.ok)
+        self.assertIn("expires in", r.note)
+        self.assertTrue(lp.check_clock_token("t", gh=lambda u, k: (200, {}, b"{}")).ok)
+        self.assertIn("skipped", lp.check_clock_token("", gh=lambda u, k: (200, {}, b"{}")).note)
+        stale = json.dumps({"workflow_runs": [{"created_at": "2026-10-01T00:00:00Z", "name": "Brain"}]}).encode()
+        self.assertFalse(lp.check_clock_pulse("t", gh=lambda u, k: (200, {}, stale)).ok)
+        self.assertTrue(lp.check_clock_pulse("t", gh=lambda u, k: (403, {}, b"")).ok, "cannot judge is not a failure")
+        text = "Domain Name: docoga.com.ng\nRegistry Expiry Date: 2027-03-01T00:00:00Z\n"
+        self.assertTrue(lp.check_domain(text, now=dt.datetime(2026, 10, 30, tzinfo=dt.timezone.utc)).ok)
+        self.assertFalse(lp.check_domain(text, now=dt.datetime(2027, 2, 15, tzinfo=dt.timezone.utc)).ok)
+        self.assertTrue(lp.check_domain("no such line").ok, "an unreadable whois is a note, never an alarm")
 
     def test_a_dead_worker_is_exit_1_after_a_second_look(self):
         looks = []
@@ -135,7 +171,10 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual(crons, ["25 0,4,8,12,16 * * *"])
 
     def test_it_reads_only_and_can_file_one_issue(self):
-        self.assertEqual(self.doc["permissions"], {"contents": "read", "issues": "write"})
+        self.assertEqual(self.doc["permissions"], {"contents": "read", "actions": "read", "issues": "write"})
+        probe = next(s for s in self.doc["jobs"]["probe"]["steps"] if s.get("id") == "probe")
+        self.assertEqual(probe["env"]["GH_DISPATCH_TOKEN"], "${{ secrets.GH_DISPATCH_TOKEN }}",
+                         "the clock's credential is exercised by the probe")
         self.assertIn("gh issue list --label live-probe", self.text)
         self.assertIn("gh issue create --label live-probe", self.text)
         self.assertIn("gh issue close", self.text)
