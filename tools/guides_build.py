@@ -271,9 +271,27 @@ def update_sitemap(site, urls, now=None):
                  % (u, now.date().isoformat()))
         text = text.replace("</urlset>", entry + "</urlset>", 1)
         added += 1
-    if added:
+    text, dropped = dedupe_sitemap(text)
+    if added or dropped:
         p.write_text(text, encoding="utf-8")
     return added
+
+
+_URL_BLOCK = re.compile(r"  <url>\n    <loc>([^<]+)</loc>\n(?:    <[a-z]+>[^<]*</[a-z]+>\n)*  </url>\n")
+
+
+def dedupe_sitemap(text):
+    """One <url> per <loc> — the later block (newest lastmod) wins. 30 Oct 2026: two guides had
+    been appended twice (once by the state-page generator's rewrite, once here), and Google
+    treats a duplicated loc as a sitemap error. Returns (text, number_dropped)."""
+    blocks = list(_URL_BLOCK.finditer(text))
+    last = {}
+    for m in blocks:
+        last[m.group(1)] = m.start()
+    drop = [m for m in blocks if last[m.group(1)] != m.start()]
+    for m in reversed(drop):
+        text = text[:m.start()] + text[m.end():]
+    return text, len(drop)
 
 
 def build(day=None, site=None, now=None, log=print, drafts_dir=None):

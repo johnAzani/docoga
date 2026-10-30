@@ -21,6 +21,11 @@ What it checks (read-only GETs only — nothing here can verify a code, move mon
     * docoga-ledger GET /health and /api/stats → 200 JSON
     * docoga-clock GET /  → {ok:true, token:"present", paused:false}
     * TLS certificate of docoga.com.ng: more than 14 days left
+    * the clock's own credential (30 Oct 2026): GH_DISPATCH_TOKEN still opens the repo
+      (401 = every lane is back on GitHub's late scheduler, silently) and, when GitHub
+      says it expires, more than 10 days remain; plus proof of life — some lane was
+      dispatched by the clock in the last 6 hours
+    * the domain itself: NiRA's whois says docoga.com.ng has more than 30 days to run
 
 Flapping guard: anything that fails is tried again after a pause before it counts, so a
 single Cloudflare hiccup is not an alarm. The workflow files ONE issue under the label
@@ -37,6 +42,7 @@ import argparse
 import datetime as dt
 import hashlib
 import json
+import os
 import re
 import socket
 import ssl
@@ -218,6 +224,126 @@ def check_tls(host="docoga.com.ng", min_days=TLS_MIN_DAYS):
         return Result("TLS certificate", "https://%s" % host, False, 0, int((time.monotonic() - t0) * 1000), str(e)[:160])
 
 
+GITHUB_API = "https://api.github.com"
+REPO = "johnAzani/docoga"
+TOKEN_MIN_DAYS = 10
+PULSE_HOURS = 6
+DOMAIN = "docoga.com.ng"
+WHOIS_HOST = "whois.nic.net.ng"      # NiRA, port 43; rdap.nic.net.ng times out (checked Aug 2026)
+DOMAIN_MIN_DAYS = 30
+
+
+def _gh(url, token):
+    req = urllib.request.Request(url, headers={"Authorization": "Bearer %s" % token, "Accept": "application/vnd.github+json",
+                                               "X-GitHub-Api-Version": "2022-11-28", "User-Agent": UA})
+    try:
+        with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
+            return r.status, dict(r.headers), r.read(400_000)
+    except urllib.error.HTTPError as e:
+        return e.code, dict(e.headers or {}), b""
+    except Exception as e:
+        return 0, {}, str(e).encode()
+
+
+def check_clock_token(token=None, gh=None):
+    """The credential the clock rings every lane with. Nothing else ever exercised it."""
+    gh = gh or _gh
+    token = token if token is not None else os.environ.get("GH_DISPATCH_TOKEN", "")
+    name = "clock credential (GH_DISPATCH_TOKEN)"
+    if not token:
+        return Result(name, GITHUB_API, True, None, 0, "not provided to this run — skipped")
+    t0 = time.monotonic()
+    status, hdrs, body = gh("%s/repos/%s/actions/workflows?per_page=1" % (GITHUB_API, REPO), token)
+    ms = int((time.monotonic() - t0) * 1000)
+    if status in (401, 403):
+        return Result(name, GITHUB_API, False, status, ms,
+                      "GitHub answers %d — the token is expired, revoked or lost its Actions scope; every lane is "
+                      "silently back on GitHub's late scheduler. Re-mint per docs/CLOCK.md, update the secret, the "
+                      "04:35 am deploy forwards it" % status)
+    if status != 200:
+        return Result(name, GITHUB_API, False, status, ms, "GitHub answered %s" % status)
+    exp = {k.lower(): v for k, v in hdrs.items()}.get("github-authentication-token-expiration", "")
+    if exp:
+        try:
+            when = dt.datetime.strptime(exp.strip()[:19], "%Y-%m-%d %H:%M:%S").replace(tzinfo=dt.timezone.utc)
+            days = (when - dt.datetime.now(dt.timezone.utc)).days
+        except ValueError:
+            return Result(name, GITHUB_API, True, 200, ms, "valid; expiry header unreadable (%r)" % exp[:30])
+        if days <= TOKEN_MIN_DAYS:
+            return Result(name, GITHUB_API, False, 200, ms,
+                          "valid but expires in %d day(s) (%s) — re-mint now per docs/CLOCK.md or every lane goes "
+                          "quiet on that day" % (days, exp.strip()[:10]))
+        return Result(name, GITHUB_API, True, 200, ms, "valid, %d days left" % days)
+    return Result(name, GITHUB_API, True, 200, ms, "valid, no expiry")
+
+
+def check_clock_pulse(token=None, gh=None, now=None):
+    """Did the clock actually ring anything lately? The clock worker keeps no log of its own."""
+    gh = gh or _gh
+    token = token if token is not None else os.environ.get("GITHUB_TOKEN", "")
+    name = "clock pulse (a lane dispatched in the last %d h)" % PULSE_HOURS
+    if not token:
+        return Result(name, GITHUB_API, True, None, 0, "no GITHUB_TOKEN — skipped")
+    t0 = time.monotonic()
+    status, hdrs, body = gh("%s/repos/%s/actions/runs?event=workflow_dispatch&per_page=1" % (GITHUB_API, REPO), token)
+    ms = int((time.monotonic() - t0) * 1000)
+    if status != 200:
+        return Result(name, GITHUB_API, True, status, ms, "GitHub answered %s — cannot judge, not counted" % status)
+    try:
+        runs = json.loads(body.decode("utf-8")).get("workflow_runs") or []
+        created = dt.datetime.fromisoformat(runs[0]["created_at"].replace("Z", "+00:00"))
+    except Exception:
+        return Result(name, GITHUB_API, False, 200, ms, "no workflow_dispatch run at all — the clock has never rung")
+    age_h = ((now or dt.datetime.now(dt.timezone.utc)) - created).total_seconds() / 3600
+    if age_h > PULSE_HOURS:
+        return Result(name, GITHUB_API, False, 200, ms,
+                      "last dispatch %.1f h ago (%s) — the clock is not ringing; check docoga-clock logs and the token"
+                      % (age_h, runs[0].get("name", "?")))
+    return Result(name, GITHUB_API, True, 200, ms, "last dispatch %.1f h ago (%s)" % (age_h, runs[0].get("name", "?")))
+
+
+def whois(domain=DOMAIN, host=WHOIS_HOST):
+    with socket.create_connection((host, 43), timeout=TIMEOUT) as s:
+        s.sendall((domain + "\r\n").encode())
+        chunks = []
+        while True:
+            b = s.recv(65536)
+            if not b:
+                break
+            chunks.append(b)
+    return b"".join(chunks).decode("utf-8", "replace")
+
+
+def check_domain(text=None, min_days=DOMAIN_MIN_DAYS, now=None):
+    """The one renewal nobody is reminded of by a machine. NiRA publishes 'Registry Expiry Date'."""
+    name = "domain registration (%s)" % DOMAIN
+    t0 = time.monotonic()
+    try:
+        text = text if text is not None else whois()
+    except Exception as e:
+        return Result(name, WHOIS_HOST, True, 0, int((time.monotonic() - t0) * 1000), "whois unreachable (%s) — not counted" % str(e)[:60])
+    ms = int((time.monotonic() - t0) * 1000)
+    m = re.search(r"(?im)^\s*(?:Registry Expiry Date|Registrar Registration Expiration Date|Expiry Date|Expiration Date)\s*:\s*(\S+)", text)
+    if not m:
+        return Result(name, WHOIS_HOST, True, 0, ms, "no expiry line in the whois answer — not counted")
+    raw = m.group(1)
+    when = None
+    for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M:%S.%f", "%Y-%m-%d", "%d-%b-%Y", "%d/%m/%Y"):
+        try:
+            when = dt.datetime.strptime(raw.rstrip("Z").split("+")[0][:26], fmt).replace(tzinfo=dt.timezone.utc)
+            break
+        except ValueError:
+            continue
+    if when is None:
+        return Result(name, WHOIS_HOST, True, 0, ms, "expiry %r unreadable — not counted" % raw)
+    days = (when - (now or dt.datetime.now(dt.timezone.utc))).days
+    if days <= min_days:
+        return Result(name, WHOIS_HOST, False, 0, ms,
+                      "expires in %d day(s) (%s) — renew at the registrar now; a lapsed .ng takes the site, the "
+                      "workers' custom routes and the brand email down together" % (days, when.date()))
+    return Result(name, WHOIS_HOST, True, 200, ms, "%d days left (%s)" % (days, when.date()))
+
+
 # ── the pass ────────────────────────────────────────────────────────────────────────────
 
 def run_once(quick=False, log=print):
@@ -236,12 +362,16 @@ def run_once(quick=False, log=print):
     results.extend(check_ledger())
     results.append(check_clock())
     results.append(check_tls())
+    results.append(check_clock_token())
+    results.append(check_clock_pulse())
+    results.append(check_domain())
     return results
 
 
 RETRYABLE = {"home page", "sitemap.xml", "robots.txt", "og/home.jpg", "docoga-pass (payments)",
              "docoga-ledger /health", "docoga-ledger /api/stats (Rent Monitor)", "docoga-clock (the schedule)",
-             "TLS certificate"}
+             "TLS certificate", "clock credential (GH_DISPATCH_TOKEN)",
+             "clock pulse (a lane dispatched in the last %d h)" % 6, "domain registration (docoga.com.ng)"}
 
 
 def retry(failed, log=print):
@@ -266,6 +396,12 @@ def retry(failed, log=print):
             again = check_clock()
         elif r.name == "TLS certificate":
             again = check_tls()
+        elif r.name.startswith("clock credential"):
+            again = check_clock_token()
+        elif r.name.startswith("clock pulse"):
+            again = check_clock_pulse()
+        elif r.name.startswith("domain registration"):
+            again = check_domain()
         elif r.url.startswith(SITE + "/") and r.name != "sitemap size":
             again = check_page(r.url)
         else:

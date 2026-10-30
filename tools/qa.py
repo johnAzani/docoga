@@ -311,6 +311,8 @@ def _served(l):  # Cloudflare html_handling: /x → x.html, /dir/ → dir/index.
     return any(os.path.isfile(os.path.join(SITE, c)) for c in cands)
 orphan = [l for l in smap_locs if l and not _served(l)]
 check(f"every sitemap loc is a real file ({len(smap_locs)} locs)", not orphan, ", ".join(orphan[:5]))
+_dups = sorted({l for l in smap_locs if smap_locs.count(l) > 1})
+check("no sitemap loc appears twice (Google reads a duplicate as a sitemap error)", not _dups, ", ".join(_dups[:3]))
 # 11d. Clean URLs (28 Oct 2026). Cloudflare answers /x.html with 307 → /x, so a canonical, og:url
 # or sitemap loc ending in .html points at a redirect — Search Console indexed pages twice for it.
 _cu = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "clean_urls.py"), "--check"],
