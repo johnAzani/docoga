@@ -513,3 +513,101 @@ class WorkflowContractTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class InstagramDiagnosisTests(unittest.TestCase):
+    """31 Oct 2026: 30 uploads, 1 follower, 16 accounts reached in a week. The owner asked whether
+    anyone sees the content; the scorecard now answers from the API every Monday."""
+
+    def net(self, skip_rate_ok=True):
+        def http(method, url, params=None, body=None, headers=None, timeout=30):
+            params = params or {}
+            metric = params.get("metric", "")
+            if url.endswith("/me"):
+                return 200, {"followers_count": 1, "media_count": 30, "username": "docoga.ng"}
+            if url.endswith("/me/insights"):
+                if params.get("breakdown") == "follow_type":
+                    return 200, {"data": [{"name": "reach", "total_value": {"value": 16, "breakdowns": [
+                        {"dimension_keys": ["follow_type"], "results": [
+                            {"dimension_values": ["FOLLOWER"], "value": 2}, {"dimension_values": ["NON_FOLLOWER"], "value": 14}]}]}}]}
+                if "profile_views" in metric:
+                    return 200, {"data": [{"name": "profile_views", "total_value": {"value": 5}},
+                                          {"name": "website_clicks", "total_value": {"value": 1}}]}
+                if metric == "online_followers":
+                    return 200, {"data": []}
+                return 200, {"data": [{"name": "views", "total_value": {"value": 26}}, {"name": "reach", "total_value": {"value": 16}},
+                                      {"name": "accounts_engaged", "total_value": {"value": 1}},
+                                      {"name": "total_interactions", "total_value": {"value": 11}}]}
+            if url.endswith("/me/media"):
+                return 200, {"data": [
+                    {"id": "R1", "caption": "You move in and the wall is already cracked.", "timestamp": "2026-10-22T17:21:00+0000",
+                     "media_type": "VIDEO", "like_count": 0, "comments_count": 0},
+                    {"id": "C1", "caption": "Rent and tenancy documents Nigeria\n\nYour rent receipt", "timestamp": "2026-10-23T18:12:00+0000",
+                     "media_type": "IMAGE", "like_count": 0, "comments_count": 0}]}
+            if "/R1/insights" in url:
+                if "reels_skip_rate" in metric and not skip_rate_ok:
+                    return 400, {"error": {"message": "(#100) reels_skip_rate is not valid", "code": 100}}
+                if "ig_reels_avg_watch_time" in metric:
+                    data = [{"name": "ig_reels_avg_watch_time", "total_value": {"value": 4200}}]
+                    if "reels_skip_rate" in metric:
+                        data.append({"name": "reels_skip_rate", "total_value": {"value": 61}})
+                    return 200, {"data": data}
+                if "profile_visits" in metric:
+                    return 200, {"data": [{"name": "profile_visits", "total_value": {"value": 1}}, {"name": "follows", "total_value": {"value": 0}}]}
+                return 200, {"data": [{"name": "views", "total_value": {"value": 12}}, {"name": "reach", "total_value": {"value": 11}},
+                                      {"name": "saved", "total_value": {"value": 0}}, {"name": "shares", "total_value": {"value": 0}}]}
+            if "/C1/insights" in url:
+                if "profile_visits" in metric:
+                    return 200, {"data": [{"name": "profile_visits", "total_value": {"value": 0}}, {"name": "follows", "total_value": {"value": 0}}]}
+                return 200, {"data": [{"name": "views", "total_value": {"value": 0}}, {"name": "reach", "total_value": {"value": 0}},
+                                      {"name": "saved", "total_value": {"value": 0}}, {"name": "shares", "total_value": {"value": 0}}]}
+            return 404, {"error": {"message": "no route for " + url}}
+        return http
+
+    def test_follower_split_watch_time_and_profile_visits_are_pulled(self):
+        problems = []
+        ig = sc.pull_instagram(self.net(), {"IG_ACCESS_TOKEN": "igt"}, datetime(2026, 10, 27, 5, 40, tzinfo=timezone.utc), problems)
+        self.assertEqual((ig["reach_followers_7d"], ig["reach_non_followers_7d"]), (2, 14))
+        self.assertEqual((ig["profile_views_7d"], ig["website_clicks_7d"]), (5, 1))
+        reel = next(m for m in ig["media"] if m["id"] == "R1")
+        card = next(m for m in ig["media"] if m["id"] == "C1")
+        self.assertEqual((reel["avg_watch_s"], reel["skip_rate"], reel["profile_visits"], reel["follows"]), (4.2, 0.61, 1, 0))
+        self.assertEqual((card["avg_watch_s"], card["skip_rate"], card["reach"]), (None, None, 0), "a card has no watch time")
+        self.assertEqual([p for p in problems if "instagram" in p], [])
+
+    def test_a_metric_the_api_does_not_carry_falls_back_instead_of_losing_the_reel(self):
+        ig = sc.pull_instagram(self.net(skip_rate_ok=False), {"IG_ACCESS_TOKEN": "igt"}, datetime(2026, 10, 27, 5, 40, tzinfo=timezone.utc), [])
+        reel = next(m for m in ig["media"] if m["id"] == "R1")
+        self.assertEqual((reel["avg_watch_s"], reel["skip_rate"]), (4.2, None))
+
+    def test_the_verdict_speaks_in_counts_and_names_the_text_card_gap(self):
+        ig = sc.pull_instagram(self.net(), {"IG_ACCESS_TOKEN": "igt"}, datetime(2026, 10, 27, 5, 40, tzinfo=timezone.utc), [])
+        k = sc.kpis({"instagram": ig})
+        self.assertEqual(k["instagram.reach_non_followers_7d"], 14)
+        self.assertAlmostEqual(k["instagram.non_follower_share"], 14 / 16, places=3)
+        self.assertEqual((k["instagram.reels_reach_per_post"], k["instagram.cards_reach_per_post"]), (11.0, 0.0))
+        self.assertEqual((k["instagram.reels_avg_watch_s"], k["instagram.reels_skip_rate"], k["instagram.zero_reach_posts"]), (4.2, 0.61, 1))
+        v = sc.ig_verdict(k)
+        text = "\n".join(v)
+        self.assertIn("Strangers who saw us this week: 14 (followers: 2) — 87.5% of all reach was recommendation.", text)
+        self.assertIn("Posts shown to nobody (reach 0) this fortnight: 1 of 2.", text)
+        self.assertIn("Reels reach 11.0 people per post; text cards and carousels 0.0", text)
+        self.assertIn("Reels hold a viewer 4.2 s on average; 61.0% leave inside 3 seconds", text)
+        self.assertIn("Profile visits from posts: 1; follows from posts: 0; website taps this week: 1.", text)
+        md = sc.summary_md({"week": "2026-W44", "taken_at": "2026-10-27T05:40", "channels": {"instagram": ig}, "kpis": k, "grades": [], "orders": []})
+        self.assertIn("### Instagram diagnosis — is anyone seeing it?", md)
+        orders = sc.orders(k, [])
+        self.assertFalse(any(o.startswith("Instagram reached") for o in orders), "two posts are not a fortnight of evidence")
+
+    def test_a_fortnight_of_posts_nobody_forwards_becomes_an_order(self):
+        media = [{"id": str(i), "type": "VIDEO" if i % 3 == 0 else "IMAGE", "reach": 11 if i % 3 == 0 else 0, "views": 12 if i % 3 == 0 else 0,
+                  "likes": 0, "comments": 0, "saved": 0, "shares": 0, "text": "post %d" % i, "hour_wat": 19, "weekday": "Thu",
+                  "at": "2026-10-%02dT18:12:00+0000" % (14 + i)} for i in range(14)]
+        k = sc.kpis({"instagram": {"followers": 1, "views_7d": 26, "reach_7d": 16, "engaged_7d": 1, "interactions_7d": 11, "media": media}})
+        self.assertEqual(k["instagram.reach_non_followers_7d"], None, "an API without the breakdown leaves None, not zero")
+        self.assertIn("Accounts reached this week: 16 (1 follower, so nearly all of it was strangers).", sc.ig_verdict(k))
+        orders = sc.orders(k, [])
+        self.assertTrue(any(o.startswith("Instagram reached 16 accounts this week and nobody forwarded a post") for o in orders), orders)
+        for line in sc.ig_verdict(k):
+            if line.startswith("Reels reach"):
+                self.assertNotIn("%", line, "per-post reach is a count, never a percentage")

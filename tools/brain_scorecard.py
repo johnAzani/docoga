@@ -218,6 +218,25 @@ def pull_instagram(http, env, now, problems):
         out["interactions_7d"] = _sum_series(body, "total_interactions")
     else:
         problems.append("instagram: account insights unavailable (needs instagram_business_manage_insights) — " + _err(body))
+    # Connected vs unconnected reach (Mosseri, Jan 2025: sends per reach is the signal for strangers;
+    # 31 Oct 2026 the account had 1 follower, so every account it reached was a stranger). Optional:
+    # a token or API version without the breakdown leaves the two numbers None, not a problem line.
+    out["reach_followers_7d"] = out["reach_non_followers_7d"] = None
+    st, body = http("GET", "%s/%s/insights" % (base, node),
+                    {"metric": "reach", "period": "day", "metric_type": "total_value", "breakdown": "follow_type",
+                     "since": since, "until": until, "access_token": token})
+    if st == 200:
+        split = _breakdown(body, "reach")
+        if split:
+            out["reach_followers_7d"] = split.get("FOLLOWER", 0)
+            out["reach_non_followers_7d"] = split.get("NON_FOLLOWER", 0)
+    out["profile_views_7d"] = out["website_clicks_7d"] = None
+    st, body = http("GET", "%s/%s/insights" % (base, node),
+                    {"metric": "profile_views,website_clicks", "period": "day", "metric_type": "total_value",
+                     "since": since, "until": until, "access_token": token})
+    if st == 200:
+        out["profile_views_7d"] = _sum_series(body, "profile_views")
+        out["website_clicks_7d"] = _sum_series(body, "website_clicks")
     st, body = http("GET", "%s/%s/insights" % (base, node),
                     {"metric": "online_followers", "period": "lifetime", "access_token": token})
     if st == 200:
@@ -249,7 +268,48 @@ def pull_instagram(http, env, now, problems):
         if st2 == 200:
             for k in ("views", "reach", "saved", "shares"):
                 row[k] = _sum_series(b2, k)
+        row.update(_media_diagnosis(http, base, m, token))
         out["media"].append(row)
+    return out
+
+
+def _breakdown(payload, name):
+    """{dimension_value: n} from a total_value insight with one breakdown, or {}."""
+    for row in (payload or {}).get("data") or []:
+        if row.get("name") != name:
+            continue
+        for b in ((row.get("total_value") or {}).get("breakdowns") or []):
+            out = {}
+            for r in b.get("results") or []:
+                dims = r.get("dimension_values") or []
+                if dims:
+                    out[str(dims[0])] = int(r.get("value") or 0)
+            if out:
+                return out
+    return {}
+
+
+def _media_diagnosis(http, base, m, token):
+    """The numbers that say WHY a post stopped: for a Reel the average watch time (ms → s) and the
+    share of viewers gone inside 3 seconds; for every post the profile visits and follows it earned.
+    Each call is optional — a metric the API version or account does not carry leaves None."""
+    out = {"avg_watch_s": None, "skip_rate": None, "profile_visits": None, "follows": None}
+    is_reel = str(m.get("media_type") or "").upper() == "VIDEO"
+    if is_reel:
+        for metrics in ("ig_reels_avg_watch_time,reels_skip_rate", "ig_reels_avg_watch_time"):
+            st, b = http("GET", "%s/%s/insights" % (base, m.get("id")), {"metric": metrics, "access_token": token})
+            if st == 200:
+                ms = _sum_series(b, "ig_reels_avg_watch_time")
+                if ms is not None:
+                    out["avg_watch_s"] = round(ms / 1000.0, 1)
+                skip = _sum_series(b, "reels_skip_rate")
+                if skip is not None:
+                    out["skip_rate"] = round(skip / 100.0, 3) if skip > 1 else float(skip)
+                break
+    st, b = http("GET", "%s/%s/insights" % (base, m.get("id")), {"metric": "profile_visits,follows", "access_token": token})
+    if st == 200:
+        out["profile_visits"] = _sum_series(b, "profile_visits")
+        out["follows"] = _sum_series(b, "follows")
     return out
 
 
@@ -501,6 +561,83 @@ def learning(channels, said=None):
     return out
 
 
+def _mean(xs):
+    xs = [x for x in xs if x is not None]
+    return round(sum(xs) / len(xs), 2) if xs else None
+
+
+def ig_diagnosis(ig):
+    """Why Instagram does or does not show us to strangers, as numbers (31 Oct 2026: 30 uploads, 1
+    follower, 16 accounts reached in a week). Keys are None when the API did not give the number."""
+    media = ig.get("media") or []
+    reels = [m for m in media if str(m.get("type") or "").upper() == "VIDEO"]
+    cards = [m for m in media if str(m.get("type") or "").upper() in ("IMAGE", "CAROUSEL_ALBUM")]
+    reach = sum(m.get("reach") or 0 for m in media)
+    likes = sum(m.get("likes") or 0 for m in media)
+    shares = sum(m.get("shares") or 0 for m in media)
+    d = {}
+    d["instagram.reach_followers_7d"] = ig.get("reach_followers_7d")
+    d["instagram.reach_non_followers_7d"] = ig.get("reach_non_followers_7d")
+    total = (ig.get("reach_followers_7d") or 0) + (ig.get("reach_non_followers_7d") or 0)
+    d["instagram.non_follower_share"] = _rate(ig.get("reach_non_followers_7d") or 0, total) if total else None
+    d["instagram.profile_views_7d"] = ig.get("profile_views_7d")
+    d["instagram.website_clicks_7d"] = ig.get("website_clicks_7d")
+    d["instagram.likes_per_reach"] = _rate(likes, reach) if reach else None
+    d["instagram.shares_per_reach"] = _rate(shares, reach) if reach else None
+    d["instagram.reels_n"] = len(reels)
+    d["instagram.cards_n"] = len(cards)
+    d["instagram.reels_reach_per_post"] = _rate(sum(m.get("reach") or 0 for m in reels), len(reels)) if reels else None
+    d["instagram.cards_reach_per_post"] = _rate(sum(m.get("reach") or 0 for m in cards), len(cards)) if cards else None
+    d["instagram.reels_avg_watch_s"] = _mean([m.get("avg_watch_s") for m in reels])
+    d["instagram.reels_skip_rate"] = _mean([m.get("skip_rate") for m in reels])
+    d["instagram.profile_visits_14d"] = sum(m.get("profile_visits") or 0 for m in media) if any(m.get("profile_visits") is not None for m in media) else None
+    d["instagram.follows_14d"] = sum(m.get("follows") or 0 for m in media) if any(m.get("follows") is not None for m in media) else None
+    d["instagram.zero_reach_posts"] = sum(1 for m in media if m.get("reach") is not None and (m.get("reach") or 0) == 0)
+    return d
+
+
+def _num(v):
+    """A plain count (per post / seconds) — never a percentage, however small."""
+    if v is None:
+        return "—"
+    return ("%.1f" % v) if isinstance(v, float) else _fmt(v)
+
+
+def ig_verdict(k):
+    """One plain sentence per fact the owner asked for on 31 Oct 2026 ('does it mean people are
+    not seeing my content?'). Empty when Instagram was not measured."""
+    if k.get("instagram.posts_14d") is None:
+        return []
+    out = []
+    nf, f = k.get("instagram.reach_non_followers_7d"), k.get("instagram.reach_followers_7d")
+    if nf is not None:
+        out.append("Strangers who saw us this week: %s (followers: %s) — %s of all reach was recommendation."
+                   % (_fmt(nf), _fmt(f), _fmt(k.get("instagram.non_follower_share"))))
+    else:
+        out.append("Accounts reached this week: %s (%s follower%s, so nearly all of it was strangers)."
+                   % (_fmt(k.get("instagram.reach_7d")), _fmt(k.get("instagram.followers")),
+                      "" if k.get("instagram.followers") == 1 else "s"))
+    if k.get("instagram.posts_14d"):
+        out.append("Posts shown to nobody (reach 0) this fortnight: %s of %s."
+                   % (k.get("instagram.zero_reach_posts"), k.get("instagram.posts_14d")))
+    rr, cr = k.get("instagram.reels_reach_per_post"), k.get("instagram.cards_reach_per_post")
+    if rr is not None and cr is not None:
+        out.append("Reels reach %s people per post; text cards and carousels %s — Instagram says it shows "
+                   "majority-text posts less (Ranking Explained, 31 May 2023)." % (_num(rr), _num(cr)))
+    if k.get("instagram.reels_avg_watch_s") is not None:
+        skip = k.get("instagram.reels_skip_rate")
+        out.append("Reels hold a viewer %s s on average%s — the first 3 seconds decide the second wave."
+                   % (_num(k["instagram.reels_avg_watch_s"]), ("; %s leave inside 3 seconds" % _fmt(skip)) if skip is not None else ""))
+    if k.get("instagram.likes_per_reach") is not None:
+        out.append("Per 100 people reached: %s likes, %s shares — Mosseri's two rates; sends per reach is the one "
+                   "that buys stranger reach." % (_num(round(k["instagram.likes_per_reach"] * 100, 1)),
+                                                 _num(round((k.get("instagram.shares_per_reach") or 0) * 100, 1))))
+    if k.get("instagram.profile_visits_14d") is not None:
+        out.append("Profile visits from posts: %s; follows from posts: %s; website taps this week: %s."
+                   % (_fmt(k["instagram.profile_visits_14d"]), _fmt(k.get("instagram.follows_14d")), _fmt(k.get("instagram.website_clicks_7d"))))
+    return out
+
+
 def kpis(channels, said=None):
     k = {}
     k["learning"] = learning(channels, said)
@@ -541,6 +678,7 @@ def kpis(channels, said=None):
         if online:
             top = sorted(online.items(), key=lambda kv: -kv[1])[:3]
             k["instagram.online_peak_hours_wat"] = [int(h) for h, _ in top]
+        k.update(ig_diagnosis(ig))
     th = channels.get("threads") or {}
     if th:
         posts = th.get("posts") or []
@@ -786,6 +924,11 @@ def orders(k, grades, streak=None):
     if behind("facebook.share_rate") or behind("instagram.send_rate"):
         out.append("Sends are below 1.5% of reach: lead with STAKES and STAT hooks, put one named-person send line in "
                    "every post ('send this to the friend renewing in January'), and use the checklist layout twice this week.")
+    if (k.get("instagram.posts_14d") or 0) >= 4 and (k.get("instagram.reach_7d") or 0) < 100 and not (k.get("instagram.shares_per_reach") or 0):
+        out.append("Instagram reached %s accounts this week and nobody forwarded a post: the Reel is the only format "
+                   "strangers see — open it on the scene, not the title, and end on the one line a tenant sends to "
+                   "a friend; the text card's first line becomes the hook, the search phrase moves to line two."
+                   % _fmt(k.get("instagram.reach_7d")))
     if behind("threads.replies_per_post"):
         out.append("Threads replies are under 3 per post: every Threads post ends with a question answerable in five "
                    "words ('which state are you renting in?'); one opinion post this week.")
@@ -989,6 +1132,9 @@ def summary_md(snap):
             eta = ("%s wk" % _fmt(m["weeks_to_go"])) if m.get("weeks_to_go") is not None else "—"
             lines.append("| %s | %s | %s | %s | %s | %s | %s (due %s) |" % (m["label"], _fmt(m["current"]), _fmt(m["remaining"]),
                          _fmt(m.get("pace_per_week")), _fmt(m.get("needed_per_week")), eta, mark, m.get("due")))
+    verdict = ig_verdict(k)
+    if verdict:
+        lines += ["", "### Instagram diagnosis — is anyone seeing it?"] + ["- " + v for v in verdict]
     if k.get("instagram.online_peak_hours_wat"):
         lines += ["", "Instagram followers online most at: " + ", ".join("%02d:00 WAT" % h for h in k["instagram.online_peak_hours_wat"])]
     for ch in ("facebook", "instagram", "threads"):

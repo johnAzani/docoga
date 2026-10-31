@@ -129,6 +129,20 @@ the pack the brain wrote for that Lagos date (`logs/brain_said.json`, env
 orders name the best hook and reader once there are two or more posts per label and a 1.5×
 gap. `kpis["learning"]` is in `logs/scorecard.json`, so next week's comparison is free.
 
+**Instagram diagnosis (31 Oct 2026).** The owner asked whether anyone sees the 30 uploads
+(1 follower; Account Status: eligible for recommendations, owner-checked). The scorecard now
+answers from the API: `reach` broken down by `follow_type` (strangers vs followers),
+`profile_views` and `website_clicks` for the account, and per post `profile_visits`,
+`follows`, and for Reels `ig_reels_avg_watch_time` and `reels_skip_rate` (each call optional
+— a metric the API version lacks leaves None, never a problem line). `ig_diagnosis` turns
+them into KPIs (`instagram.reach_non_followers_7d`, `reels_reach_per_post` vs
+`cards_reach_per_post`, `reels_avg_watch_s`, `zero_reach_posts`, …); `ig_verdict` prints the
+"### Instagram diagnosis — is anyone seeing it?" section in counts, never percentages for
+per-post reach. When a fortnight of ≥4 posts reaches under 100 accounts with zero shares, the
+orders say so: the Reel is the only format strangers see; the text card's first line becomes
+the hook. Evidence that shaped it: W44 reached 16 accounts; Reels 3.8 per post, text cards 0.7;
+6 of 14 posts reached nobody; 0 shares.
+
 **Weekly issue.** The scorecard keeps **one** open issue titled "📊 Weekly scorecard"
 (label `brain-scorecard`): body replaced with the latest summary, one comment added so the
 owner's phone gets one notification a week. `issues: write` was added to that workflow for
