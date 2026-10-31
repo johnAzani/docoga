@@ -17,6 +17,8 @@ Two outputs, both ₦0:
             post (every legal claim names a shelf fact and appears verbatim). The
             owner pastes it by hand: Nairaland has no posting API and an automated
             account there is a ban, not a channel. The Monday issue carries it.
+            When no thread deserves a reply (most weeks — the Properties board is
+            adverts), it drafts a thread OPENER instead: one state, one topic, cited.
 
 Everything degrades to silence: no network → the brain plans without it; no model
 → no answer file, the lanes are untouched.
@@ -114,11 +116,16 @@ def parse_reddit(raw, board):
     return items
 
 
+# Whole words only (31 Oct 2026): "rent" used to match inside "paRENT" and "diffeRENT", which is
+# how a baby-sleep thread became the week's best rent question.
+_STRONG_RE = {word: re.compile(r"(?<![a-z])" + re.escape(word) + r"(?![a-z])") for word in STRONG}
+
+
 def score(item):
     t = " " + item["title"].lower() + " "
     s = 0
     for word, w in STRONG.items():
-        if word in t:
+        if _STRONG_RE[word].search(t):
             s += w
     if s == 0:
         return 0
@@ -308,6 +315,128 @@ def answer(generate=None, data=None, now=None, log=print, out_dir=None, write=Tr
     return path, result
 
 
+# ───────────────────────────── the thread opener ─────────────────────────────
+# 31 Oct 2026: in two weeks of listening the Properties board never produced a reply-worthy
+# question — its front page is adverts — so the Monday lane never wrote a line, and the owner's
+# first Nairaland post was drafted by hand. When there is no thread to answer, open one: a
+# cited explainer on one state's law, in the form that worked on 30 Oct 2026
+# (https://www.nairaland.com/8774812/before-pay-rent-lagos-5). Nairaland's rules shape the
+# gate: no advert tone, no ALL CAPS, no bold, one link, a subject that fits their box.
+OPENER_SUBJECT_MAX = 70
+OPENER_BOARD = "Properties"
+OPENER_TOPICS = ("receipts", "notice_ladder", "advance_rent", "protections", "caution_fee", "notice_extras",
+                 "increase_challenge", "repairs", "rent_relief")
+OPENER_SYSTEM = ("You are DocOga's editor opening one new topic on Nairaland's Properties board for Nigerian tenants and "
+                 "landlords. Plain Nigerian English, warm, no legalese, no advert tone, no 'as an AI'. Every legal statement "
+                 "must be one of the shelf facts, cited by its section in brackets. Never invent a rule, a number or a "
+                 "case. No ALL CAPS words, no bold, no emoji. One link only, on the last line but one.")
+
+
+def opener_prompt(state_name, topic, facts):
+    shelf = "\n".join("%s | %s | %s" % (f["id"], f["cite"] or "(no section)", f["text"]) for f in facts)
+    return f"""THE TOPIC: {topic.replace('_', ' ')} under the tenancy law of {state_name}.
+
+THE LAW SHELF (fact id | section | fact) — the only law you may state
+{shelf}
+
+OUTPUT — one JSON object:
+{{
+  "subject": "a Nairaland topic title of at most {OPENER_SUBJECT_MAX} characters, Title Case, naming {state_name} and the problem (e.g. 'Before You Pay Rent In Lagos: 5 Things The Tenancy Law Actually Says')",
+  "body": "700 to 1800 characters. First paragraph: the everyday wahala in two sentences. Then 3 to 5 numbered points, each ONE rule with its section in brackets, e.g. (s.5(3)). Then one short paragraph on the ONE thing to do next (keep receipts / count the months / write, do not pack). Then the line: 'I built a free tenancy agreement, quit notice and rent receipt generator for every state: {LINK}'. Last line exactly: 'General information, not legal advice.'",
+  "claims": [{{"text": "a legal sentence exactly as it appears in body", "fact_id": "an id from the shelf"}}],
+  "state": "{state_name}",
+  "why": "one sentence: why this topic now"
+}}"""
+
+
+def opener_gate(result, facts_by_id):
+    problems = []
+    subject = str((result or {}).get("subject") or "").strip()
+    body = str((result or {}).get("body") or "")
+    if not 20 <= len(subject) <= OPENER_SUBJECT_MAX:
+        problems.append("subject length %d is outside 20-%d (Nairaland clips it)" % (len(subject), OPENER_SUBJECT_MAX))
+    if not 700 <= len(body) <= 2200:
+        problems.append("body length %d is outside 700-2200" % len(body))
+    if body.count(LINK) != 1:
+        problems.append("the DocOga link must appear exactly once")
+    if "not legal advice" not in body.lower():
+        problems.append("the 'not legal advice' line is missing")
+    claims = result.get("claims") if isinstance((result or {}).get("claims"), list) else []
+    if len(claims) < 3:
+        problems.append("fewer than 3 cited claims — an opener with no law is an advert")
+    for c in claims:
+        fid = str(c.get("fact_id") or "")
+        text = " ".join(str(c.get("text") or "").split())
+        if fid not in facts_by_id:
+            problems.append("claim cites unknown fact %r" % fid)
+        if text and text not in " ".join(body.split()):
+            problems.append("claim text is not in the body verbatim: %r" % text[:60])
+    if "**" in body or "**" in subject:
+        problems.append("bold markup (Nairaland rule 11)")
+    if re.search(r"\b[A-Z]{5,}\b", body.replace("DOCOGA", "")):
+        problems.append("an ALL CAPS word (Nairaland rule 11)")
+    for bad in ("as an ai", "i am not a lawyer but", "dm me", "whatsapp me", "call me", "promo", "discount"):
+        if bad in body.lower():
+            problems.append("forbidden phrase: %r" % bad)
+    return problems
+
+
+def opener_choice(answered, now=None):
+    """(slug, topic) not yet opened: Tier A states in turn, then the next topic each cycle."""
+    used = {(a.get("state_slug"), a.get("topic")) for a in answered if a.get("kind") == "thread_opener"}
+    states = [s for s, _n, tier in law_index.states() if tier == "A"] or [s for s, _n, _t in law_index.states()]
+    # Lagos last in each cycle: the 30 Oct 2026 hand-made opener already covered Lagos receipts, advance
+    # rent, notice and protections, so the other Tier A states get their turn first.
+    states = sorted(states, key=lambda s: (s == "lagos", s))
+    for topic in OPENER_TOPICS:
+        for slug in states:
+            if (slug, topic) in used:
+                continue
+            facts = [f for f in law_index.facts_for(slug) if f["id"].split(":")[1] == topic]
+            if len(facts) >= 3:
+                return slug, topic, facts
+    return None, None, []
+
+
+def opener(generate=None, data=None, now=None, log=print, out_dir=None, write=True):
+    """Draft one Nairaland thread opener when no open question deserved a reply. (path, result) or (None, why)."""
+    data = data if data is not None else load()
+    answered = data.get("answered") or []
+    slug, topic, facts = opener_choice(answered, now=now)
+    if not slug:
+        return None, "every state and topic has been opened once — nothing new to say"
+    all_facts = law_index.facts_for(slug)
+    facts_by_id = {f["id"]: f for f in all_facts}
+    state_name = all_facts[0]["state"]
+    if generate is None:
+        import gemini_text  # noqa: WPS433
+        generate = lambda prompt, system: gemini_text.generate_json(prompt, system=system, lane="listening",  # noqa: E731
+                                                                    temperature=0.6, max_output_tokens=4096)
+    result = generate(opener_prompt(state_name, topic, facts), OPENER_SYSTEM)
+    problems = opener_gate(result, facts_by_id)
+    if problems:
+        log("listening: opener refused — " + "; ".join(problems))
+        return None, "refused: " + "; ".join(problems)
+    now = now or dt.datetime.now(dt.timezone.utc)
+    day = now.date().isoformat()
+    out_dir = Path(out_dir) if out_dir else ANSWERS
+    path = out_dir / ("%s.md" % day)
+    subject = str(result["subject"]).strip()
+    body = ("# Nairaland thread opener — %s\n\nBoard: %s → Create New Topic. Paste the subject, then the body, then Submit. "
+            "If your account is new and the post is held, repost without the link line and add the link as your first reply.\n"
+            "State: %s · Topic: %s\nWhy: %s\n\nSubject:\n\n```text\n%s\n```\n\nBody:\n\n```text\n%s\n```\n"
+            % (day, OPENER_BOARD, state_name, topic.replace("_", " "), result.get("why", ""), subject, str(result["body"]).strip()))
+    if write:
+        out_dir.mkdir(parents=True, exist_ok=True)
+        path.write_text(body, encoding="utf-8")
+        data.setdefault("answered", []).append({"date": day, "url": "opener:%s:%s:%s" % (slug, topic, day), "title": subject,
+                                                "kind": "thread_opener", "state_slug": slug, "topic": topic, "board": "properties"})
+        OUT.parent.mkdir(parents=True, exist_ok=True)
+        OUT.write_text(json.dumps(data, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+    log("listening: opener written for %s / %s → %s" % (state_name, topic, path))
+    return path, result
+
+
 def latest_answer(out_dir=None, max_age_days=8, now=None):
     out_dir = Path(out_dir) if out_dir else ANSWERS
     if not out_dir.is_dir():
@@ -340,6 +469,9 @@ def main(argv=None):
     if a.command == "answer":
         try:
             path, result = answer()
+            if path is None and str(result).startswith("no open question"):
+                print("listening: no reply-worthy thread this week — opening one instead")
+                path, result = opener()
         except Exception as exc:  # noqa: BLE001 — a missing answer must never fail the brain
             print("listening: answer skipped — %s" % str(exc)[:160])
             print("LISTENING_ANSWER=none")
