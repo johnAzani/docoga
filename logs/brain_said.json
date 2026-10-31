@@ -129,5 +129,23 @@
   "reader": "ngozi",
   "tool": "tenancy-agreement",
   "news_hook": null
+ },
+ {
+  "date": "2026-11-02",
+  "theme": "edo-no-premium-first-six-months-tenancy",
+  "headline": "Edo State: Pay the rent, not the premium",
+  "post_type": "educational",
+  "hook_type": "STAKES",
+  "state": "edo",
+  "fact_ids": [
+   "edo:premium:1",
+   "edo:premium:1",
+   "edo:first_six_months:1"
+  ],
+  "plate": "keys wooden door",
+  "short": true,
+  "reader": "ngozi",
+  "tool": "tenancy-agreement",
+  "news_hook": "Residential rents under fresh upward pressure in Q4 2026 across Lagos, Abuja, Port Harcourt and Ibadan — housing group — Daily Trust / HDAN (2026-10-12)"
  }
 ]

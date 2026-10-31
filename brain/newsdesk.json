@@ -1,5 +1,5 @@
 {
- "fetched": "2026-10-30T06:12:42+00:00",
+ "fetched": "2026-10-31T00:30:49+00:00",
  "sources": [
   "Punch: 30 stories",
   "Vanguard: 20 stories",
@@ -9,28 +9,5 @@
   "The Guardian Nigeria: unreachable (HTTP Error 403: Forbidden)",
   "Nairametrics: 20 stories"
  ],
- "items": [
-  {
-   "title": "World Bank projects Brent oil prices to fall to $79 per barrel in 2027",
-   "link": "https://nairametrics.com/2026/10/29/world-bank-projects-brent-oil-prices-to-fall-to-79-per-barrel-in-2027/",
-   "published": "2026-10-29T16:27:54+00:00",
-   "source": "Nairametrics",
-   "score": 6,
-   "matched": [
-    "rent"
-   ],
-   "summary": "The World Bank projects Brent crude oil prices to decline to an average of $79 per barrel in 2027, down from $91 per barrel in 2026, as rising global supplies are expected to ease market tightness. Th"
-  },
-  {
-   "title": "N70,000 relief: Ajaero blasts TUC over rejection, as OPS sets condition for minimum wage",
-   "link": "https://www.vanguardngr.com/2026/10/n70000-relief-ajaero-blasts-tuc-over-rejection-as-ops-sets-condition-for-minimum-wage/",
-   "published": "2026-10-30T05:16:21+00:00",
-   "source": "Vanguard",
-   "score": 6,
-   "matched": [
-    "minimum wage"
-   ],
-   "summary": "Ajaero warned that the six-month allowance must not expire without a new minimum wage arrangement that reflects prevailing economic realities The post N70,000 relief: Ajaero blasts TUC over rejection,"
-  }
- ]
+ "items": []
 }

@@ -1,0 +1,105 @@
+{
+ "version": 1,
+ "status": "approved",
+ "date": "2026-11-02",
+ "generated_at": "2026-10-31T01:31:17+01:00",
+ "theme": "edo-no-premium-first-six-months-tenancy",
+ "post_type": "educational",
+ "hook_type": "STAKES",
+ "state": "edo",
+ "claims": [
+  {
+   "text": "In Edo State, demanding a 'premium' or 'caution fee' beyond rent for a tenancy is unlawful, according to s.6(4) of the Rent Control and Recovery of Residential Premises Edict 1977.",
+   "fact_id": "edo:premium:1"
+  },
+  {
+   "text": "If a landlord demands such a payment, you can recover it or deduct it from your next rent.",
+   "fact_id": "edo:premium:1"
+  },
+  {
+   "text": "For monthly or quarterly tenancies in Edo, a new tenant who has paid rent in advance has a statutory six-month breathing space before a landlord can give notice to quit, as stated in s.18 proviso of the same Edict.",
+   "fact_id": "edo:first_six_months:1"
+  }
+ ],
+ "post": {
+  "headline": "Edo State: Pay the rent, not the premium",
+  "lines": [
+   "Residential rents are under pressure across Nigeria, but in Edo State, some rules protect you.",
+   "Demanding a 'premium' or 'caution fee' beyond rent for a tenancy is unlawful (s.6(4), Edo Edict 1977).",
+   "You can deduct any such payment from your next rent.",
+   "If you're a new tenant who paid rent in advance for a monthly or quarterly tenancy,",
+   "you get a six-month breathing space before a quit notice (s.18 proviso)."
+  ],
+  "cta": "Send this to a friend renting in Edo State.",
+  "hashtags": [
+   "#DocOga",
+   "#EdoState",
+   "#TenantRights",
+   "#RentControl"
+  ]
+ },
+ "threads": {
+  "text": "Rents are climbing, but know your rights in Edo. It is unlawful for a landlord to demand a 'premium' or 'caution fee' beyond rent. You can actually deduct it from your next rent. Also, new tenants who pay in advance get a six-month grace period before any quit notice. What's your biggest rent worry?",
+  "hashtags": [
+   "#DocOga",
+   "#EdoTenancy"
+  ],
+  "topic": "Tenant Rights Nigeria",
+  "poll": null,
+  "evening": "In Edo, a landlord cannot demand a premium. Any extra fee can be deducted from your rent. New tenants get 6 months protection."
+ },
+ "visual": {
+  "kicker": "Know Your Rights",
+  "layout": "poster",
+  "big": "",
+  "plate": "keys wooden door"
+ },
+ "short": {
+  "title": "Read your tenancy agreement. Or pay twice.",
+  "hook_sub": "Know what you sign",
+  "hook_say": "Before you sign that tenancy agreement, read it. Many tenants sign without understanding the clauses, only to find themselves paying for things they didn't agree to. Don't pay twice for the same thing.",
+  "tips": [
+   {
+    "text": "No premium fees",
+    "sub": "Edo s.6(4) forbids it",
+    "say": "In Edo State, the law (s.6(4) of the Rent Control Edict 1977) makes it unlawful to demand any premium or caution fee beyond the actual rent. Know this to avoid paying extra."
+   },
+   {
+    "text": "Deduct illegal fees",
+    "sub": "From your next rent",
+    "say": "If an illegal premium is demanded and paid in Edo, you have the right to recover that payment. You can even deduct it from your next rent payment without penalty."
+   },
+   {
+    "text": "6-month protection",
+    "sub": "If you paid in advance",
+    "say": "For new tenants in Edo, if you've paid your rent in advance for a monthly or quarterly tenancy, the law gives you a six-month statutory breathing space before a landlord can issue a quit notice (s.18 proviso)."
+   },
+   {
+    "text": "Get an agreement",
+    "sub": "Protect your tenure",
+    "say": "Always get a proper tenancy agreement. It outlines your rights and obligations, ensuring your tenure is protected and preventing future disputes. DocOga helps you make one fast."
+   }
+  ],
+  "hook_text": "READ YOUR TENANCY AGREEMENT.\nOR PAY TWICE.",
+  "series": {
+   "slug": "tenancy-agreement",
+   "name": "Tenancy agreement",
+   "part": 1,
+   "total": 5,
+   "label": "Read before you sign"
+  }
+ },
+ "why": "This post addresses tenant protection in Edo State, focusing on illegal fees and notice periods, which is a high-forward genre, directly applying the 'what a landlord may and may not demand' order from the scorecard, and links to the tenancy agreement tool as part of the 'Read before you sign' Short series.",
+ "tool": "tenancy-agreement",
+ "reader": "ngozi",
+ "news_hook": "Residential rents under fresh upward pressure in Q4 2026 across Lagos, Abuja, Port Harcourt and Ibadan — housing group — Daily Trust / HDAN (2026-10-12)",
+ "quiz": null,
+ "gates": [
+  "citation",
+  "verification",
+  "lint",
+  "repetition",
+  "shape"
+ ],
+ "note": ""
+}
