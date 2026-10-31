@@ -185,6 +185,61 @@ class ListeningTests(unittest.TestCase):
         # the same thread is never answered twice
         self.assertEqual(listening.answer(generate=gen, now=now, log=lambda *a: None), (None, "no open question this week"))
 
+    def test_rent_is_a_whole_word_not_the_tail_of_parent(self):
+        self.assertEqual(listening.score({"title": "Your Baby's Crying Has Patterns: What Different Crying Behaviors Can Tell Parent"}), 0)
+        self.assertEqual(listening.score({"title": "Nigerian Parents: What If My Life Is Meant To Be Different"}), 0)
+        self.assertGreaterEqual(listening.score({"title": "Landlord Increased My Rent By 100%, Is This Legal? Please Advise"}), 9)
+        self.assertGreater(listening.score({"title": "My rent is due, can the landlord lock my door?"}), 0)
+
+    def test_when_no_thread_is_worth_a_reply_an_opener_is_drafted_gated_and_recorded(self):
+        now = dt.datetime(2026, 11, 2, 1, 30, tzinfo=dt.timezone.utc)
+        listening.OUT.parent.mkdir(parents=True, exist_ok=True)
+        listening.OUT.write_text(json.dumps({"pulled_at": now.isoformat(), "items": [], "answered": [
+            {"date": "2026-10-30", "url": "https://www.nairaland.com/8774812/x", "kind": "thread_opener",
+             "state_slug": "lagos", "topic": "receipts"}]}))
+        self.assertEqual(listening.answer(generate=None, now=now, log=lambda *a: None), (None, "no open question this week"))
+        slug, topic, facts = listening.opener_choice(listening.load()["answered"])
+        self.assertNotEqual((slug, topic), ("lagos", "receipts"), "the hand-made Lagos opener is not repeated")
+        self.assertNotEqual(slug, "lagos", "other Tier A states get their turn before Lagos comes round again")
+        self.assertGreaterEqual(len(facts), 3)
+        f1, f2, f3 = facts[0], facts[1], facts[2]
+        claims = [{"text": f["text"].strip().rstrip(".") + ".", "fact_id": f["id"]} for f in (f1, f2, f3)]
+        points = "\n\n".join("%d. %s (%s)" % (i + 1, c["text"], f["cite"] or "the Law") for i, (c, f) in enumerate(zip(claims, (f1, f2, f3))))
+        body = ("Plenty of rent wahala in %s starts with nobody checking what the law already settled. Here it is, section by "
+                "section, so you can check it yourself before you pay or before you pack.\n\n%s\n\nThe one thing to do next: "
+                "write, keep every paper, and count the months on the notice before you move anything.\n\nI built a free "
+                "tenancy agreement, quit notice and rent receipt generator for every state: %s\nGeneral information, not legal advice."
+                % (f1["state"], points, listening.LINK))
+        body = body + ("\n\nKeep your receipts; a receipt is the paper that settles most of these quarrels before they start." * 2)
+        good = {"subject": "Before You Sign In %s: What The Tenancy Law Says On Notice" % f1["state"].split(" (")[0],
+                "body": body, "claims": claims, "state": f1["state"], "why": "no open question this week"}
+        self.assertEqual(listening.opener_gate(good, {f["id"]: f for f in law_index.facts_for(slug)}), [], good["body"][:80])
+        shouting = dict(good, body=good["body"].replace("wahala", "WAHALA EVERYWHERE"))
+        self.assertTrue(any("ALL CAPS" in p for p in listening.opener_gate(shouting, {f["id"]: f for f in facts})))
+        long_subject = dict(good, subject="Before You Pay Rent In Lagos: 5 Things The Tenancy Law Actually Says (With Section Numbers)")
+        self.assertTrue(any("subject length" in p for p in listening.opener_gate(long_subject, {f["id"]: f for f in facts})))
+        thin = dict(good, claims=claims[:2])
+        self.assertTrue(any("fewer than 3" in p for p in listening.opener_gate(thin, {f["id"]: f for f in facts})))
+        two_links = dict(good, body=good["body"] + "\n" + listening.LINK)
+        self.assertTrue(any("exactly once" in p for p in listening.opener_gate(two_links, {f["id"]: f for f in facts})))
+        drafts = iter([shouting, good])
+        gen = lambda prompt, system: next(drafts)  # noqa: E731
+        path, why = listening.opener(generate=gen, now=now, log=lambda *a: None)
+        self.assertIsNone(path)
+        path, result = listening.opener(generate=gen, now=now, log=lambda *a: None)
+        self.assertTrue(path and path.is_file())
+        text = path.read_text()
+        self.assertIn("Subject:", text)
+        self.assertIn(good["subject"], text)
+        self.assertIn(listening.LINK, text)
+        self.assertIn("Create New Topic", text)
+        rec = listening.load()["answered"][-1]
+        self.assertEqual((rec["kind"], rec["state_slug"], rec["topic"]), ("thread_opener", slug, topic))
+        self.assertEqual(listening.latest_answer(now=now), path)
+        # the same state/topic is never opened twice
+        nxt = listening.opener_choice(listening.load()["answered"])
+        self.assertNotEqual((nxt[0], nxt[1]), (slug, topic))
+
     def test_state_is_read_from_the_title_when_it_is_there(self):
         self.assertEqual(listening.state_for({"title": "Abuja landlord quit notice question"}), "abuja")
         self.assertEqual(listening.state_for({"title": "landlord wahala"}), "lagos")

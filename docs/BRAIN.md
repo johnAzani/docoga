@@ -325,7 +325,15 @@ sentence cites a shelf fact and appears verbatim; the DocOga link and the
 the Monday scorecard issue carries it under **✍️ Forum answer — paste this**. The
 owner pastes it by hand — Nairaland has no posting API and an automated account
 there is a ban, not a channel. One thread is never answered twice. Dispatch
-`forum_answer=true` to draft one on any day.
+`forum_answer=true` to draft one on any day. **When no thread deserves a reply**
+(most weeks — the Properties front page is adverts, and in its first two weeks the
+lane never wrote a line), it drafts a **thread opener** instead (`listening.opener`,
+31 Oct 2026): one Tier A state, one shelf topic, 3–5 numbered rules each with its
+section, one link, Nairaland's own rules as the gate (subject ≤ 70 characters, no
+ALL CAPS, no bold, no advert phrases). Each state/topic pair is opened once; Lagos
+comes last in each cycle because the owner's hand-made 30 Oct 2026 opener covered it
+(`nairaland.com/8774812`). The scorer matches whole words only — "rent" is not the
+tail of "parent".
 
 **Guides (`tools/guides_build.py`).** Every approved pack dated today or earlier
 becomes a cited page at `docoga.com.ng/guides/<theme>-<state>.html` — headline,
