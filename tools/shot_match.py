@@ -31,7 +31,10 @@ How "matches what is being said" is enforced, not hoped for:
   3. Every Openverse result is scored against the query's content words (title + tags). A
      result that shares no word with the query is rejected, however pretty. Two misses →
      the next, broader query in the chain (subject → setting → None).
-  4. None is an answer. The renderer keeps its navy/plate fallback; a post is never late and
+  4. Openverse empty → the keyed stock doors (tools/stock_media.py: Pixabay, Pexels, Flickr,
+     Unsplash, Wikimedia Commons), photographs only, people excluded (1 Nov 2026 — the
+     text-only card was the post Instagram showed to nobody).
+  5. None is an answer. The renderer keeps its navy/plate fallback; a post is never late and
      never wrong because of a picture.
 
     DOCOGA_SHOTS=on     the lanes set this (repo variable DOCOGA_SHOTS=off is the kill switch);
@@ -216,7 +219,7 @@ def pick(query, http=None, sleeper=None):
     return chosen, "%d relevant of %s" % (len(kept), note)
 
 
-def photo_for(text, hint=None, size=None, http=None, sleeper=None, treat=None):
+def photo_for(text, hint=None, size=None, http=None, sleeper=None, treat=None, stock_http=None):
     """The matched photograph for what is being said: a PIL RGB image (treated with `treat(img,
     size)` when given, else brain_visual.treat) or None. Never raises."""
     if not enabled():
@@ -235,9 +238,51 @@ def photo_for(text, hint=None, size=None, http=None, sleeper=None, treat=None):
             if size:
                 img = (treat or brain_visual.treat)(img, size)
             return img, {"query": query, **(prov or {})}
+        # 1 Nov 2026 — the second door. Openverse (CC0 only, strict words, no key) left most cards on
+        # the plain navy: of 14 Instagram posts to 27 Oct, the text-only cards reached 0–2 people
+        # each, and Instagram's own ranking note says it shows "majority text" posts less. The
+        # Shorts have been drawing from Pixabay / Unsplash / Commons since v6 (tools/stock_media.py)
+        # with the keys the repo already holds; a card now asks the same doors, photographs only,
+        # with the card's stricter no-people rule kept (brain_visual.EXCLUDE).
+        # (`http` is Openverse's (url, accept) shape; the stock doors take (url, headers, accept, max_bytes),
+        # so they get their own injection point and otherwise their own urllib.)
+        img, prov = stock_photo_for(text, hint=hint, size=size, http=stock_http, sleeper=sleeper, treat=treat)
+        if img is not None:
+            return img, prov
         return None, "nothing matched"
     except Exception as exc:  # a picture must never cost the video
         return None, "error: %s" % exc
+
+
+def stock_photo_for(text, hint=None, size=None, http=None, sleeper=None, treat=None, tries=4):
+    """A photograph from the keyed stock doors (Pixabay, Pexels, Flickr, Unsplash, Commons) for a
+    CARD: no people at all (brain_visual.EXCLUDE), treated like every other plate. (img, prov) or
+    (None, why). Never raises."""
+    try:
+        import brain_visual
+        import stock_media
+        if not stock_media.enabled():
+            return None, "stock off"
+        from PIL import Image
+        used = set()
+        for _ in range(tries):
+            cand, note = stock_media.media_for(text, hint=hint, kinds=("photo",), used=used, http=http, sleeper=sleeper)
+            if cand is None:
+                return None, note
+            words = set(re.findall(r"[a-z]+", " ".join([str(cand.get("title") or ""), str(cand.get("tags_text") or ""),
+                                                         str(cand.get("page") or "")]).lower()))
+            if words & set(brain_visual.EXCLUDE):
+                continue          # `used` already holds it — the next draw is a different picture
+            with Image.open(cand["path"]) as im:
+                img = im.convert("RGB")
+                img.load()
+            if size:
+                img = (treat or brain_visual.treat)(img, size)
+            return img, {"query": cand.get("query") or "", "door": cand.get("door") or note, "id": cand.get("id"),
+                         "page": cand.get("page") or ""}
+        return None, "stock doors offered only pictures with people"
+    except Exception as exc:
+        return None, "stock error: %s" % exc
 
 
 if __name__ == "__main__":

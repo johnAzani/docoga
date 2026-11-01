@@ -130,6 +130,44 @@ class Fetching(unittest.TestCase):
             self.assertEqual([u for u in http.calls if u == "https://x/s.jpg"], ["https://x/s.jpg"])
         self.assertTrue(any(p.suffix == ".json" for p in Path(self.tmp).iterdir()), "provenance (licence, creator) is kept")
 
+    def test_openverse_empty_falls_to_the_stock_doors_photographs_only_and_no_people(self):
+        """1 Nov 2026: the text-only card was the post Instagram showed to nobody. When Openverse has
+        nothing, the card asks the keyed stock doors (photo kind only) and still refuses people."""
+        class FakeHTTP:   # the stock doors' (url, headers, accept, max_bytes) shape
+            def __init__(self, routes):
+                self.routes, self.calls = routes, []
+
+            def __call__(self, url, headers=None, accept="application/json", max_bytes=0):
+                self.calls.append((url, dict(headers or {})))
+                for prefix, body in self.routes.items():
+                    if url.startswith(prefix):
+                        return (json.dumps(body).encode("utf-8") if not isinstance(body, bytes) else body), "application/json"
+                raise OSError("no route for " + url)
+        stock_jpeg = _jpeg
+        pixabay = {"hits": [
+            {"id": 7, "pageURL": "https://pixabay.com/photos/woman-receipt-7/", "tags": "woman, receipt, shop",
+             "largeImageURL": "https://cdn.pixabay.com/p/7.jpg", "imageWidth": 1280, "imageHeight": 1920, "user": "a"},
+            {"id": 201, "pageURL": "https://pixabay.com/photos/paper-receipt-201/", "tags": "paper, receipt, bill",
+             "largeImageURL": "https://cdn.pixabay.com/p/201.jpg", "imageWidth": 1280, "imageHeight": 1920, "user": "a"}]}
+        stock = FakeHTTP({"https://pixabay.com/api/": pixabay, "https://cdn.pixabay.com/": stock_jpeg()})
+        openverse = fake_http([])
+        with mock.patch.dict(os.environ, {"BRAIN_PLATES": "on", "DOCOGA_SHOTS": "on", "STOCK_MEDIA": "on", "BRAIN_PLATE_CACHE": self.tmp,
+                                          "STOCK_MEDIA_CACHE": self.tmp, "PIXABAY_API_KEY": "pk", "PEXELS_API_KEY": "", "FLICKR_API_KEY": "",
+                                          "UNSPLASH_ACCESS_KEY": ""}):
+            import footage_ledger
+            import stock_media
+            stock_media._CACHE.clear()
+            with mock.patch.object(footage_ledger, "LEDGER", Path(self.tmp) / "ledger.json"):
+                img, prov = shot_match.photo_for("Keep your receipt", size=(1080, 1350), http=openverse, sleeper=lambda *a: None, stock_http=stock)
+        self.assertIsNotNone(img, prov)
+        self.assertEqual(img.size, (1080, 1350))
+        self.assertEqual((prov["door"], prov["id"]), ("pixabay", "pixabay:201"), "the picture with a woman in it is passed over")
+        self.assertTrue(all("/videos/" not in u for u, _ in stock.calls), "a card never asks for a clip")
+        with mock.patch.dict(os.environ, {"BRAIN_PLATES": "on", "DOCOGA_SHOTS": "on", "STOCK_MEDIA": "off", "BRAIN_PLATE_CACHE": self.tmp}):
+            img, note = shot_match.photo_for("Keep your receipt", size=(1080, 1350), http=openverse, sleeper=lambda *a: None, stock_http=stock)
+        self.assertIsNone(img)
+        self.assertEqual(note, "nothing matched", "STOCK_MEDIA=off keeps the old behaviour exactly")
+
     def test_errors_never_escape(self):
         def http(url, accept=None):
             raise RuntimeError("boom")
