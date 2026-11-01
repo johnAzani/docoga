@@ -8,6 +8,7 @@ piece of the brain that touches the website; it writes ONLY under site/guides/ a
 never a tool page and never the payment flow. `BRAIN_GUIDES=off` turns it off.
 
     python3 tools/guides_build.py build            # packs dated ≤ today → site/guides/<theme>.html + index + sitemap
+                                                   # (+ the Monday answer page from brain/answers/, 1 Nov 2026)
     python3 tools/guides_build.py build --day 2026-10-20
     python3 tools/guides_build.py ping             # IndexNow (Bing, Yandex, Naver; free) — only with INDEXNOW_KEY set
 
@@ -247,6 +248,22 @@ def packs_through(day, days_back=10, drafts_dir=None):
     return out
 
 
+ANSWERS = Path(os.environ.get("DOCOGA_ANSWERS") or (ROOT / "brain" / "answers"))
+
+
+def answers_through(day, days_back=10, answers_dir=None):
+    """The listening lane's answer-page packs (brain/answers/YYYY-MM-DD.json, 1 Nov 2026) dated in
+    (day-days_back, day] — the Monday page the machine writes instead of a reply for the owner to paste."""
+    folder = Path(answers_dir) if answers_dir else ANSWERS
+    out = []
+    for i in range(days_back, -1, -1):
+        d = day - dt.timedelta(days=i)
+        pack = _draft_in(folder, d)
+        if pack and pack.get("kind") == "answer_page":
+            out.append(pack)
+    return out
+
+
 def _draft_in(folder, d):
     p = Path(folder) / ("%s.json" % d.isoformat())
     try:
@@ -294,7 +311,7 @@ def dedupe_sitemap(text):
     return text, len(drop)
 
 
-def build(day=None, site=None, now=None, log=print, drafts_dir=None):
+def build(day=None, site=None, now=None, log=print, drafts_dir=None, answers_dir=None):
     """Returns the list of URLs written or refreshed this run."""
     site = Path(site) if site else SITE
     now = now or dt.datetime.now(LAGOS)
@@ -304,7 +321,7 @@ def build(day=None, site=None, now=None, log=print, drafts_dir=None):
     manifest = {e["slug"]: e for e in load_manifest(site)}
     facts_by_id = law_index.by_id()
     written = []
-    for pack in packs_through(day, drafts_dir=drafts_dir):
+    for pack in packs_through(day, drafts_dir=drafts_dir) + answers_through(day, answers_dir=answers_dir):
         if not pack.get("claims"):
             # a page with no cited law is an opinion; the site only carries law
             continue
@@ -324,7 +341,8 @@ def build(day=None, site=None, now=None, log=print, drafts_dir=None):
         except Exception as exc:  # the page is the deliverable; the preview image is a bonus
             print("guides: og image skipped for %s: %s" % (slug, str(exc)[:80]))
         manifest[slug] = {"slug": slug, "title": pack["post"]["headline"], "date": pack["date"],
-                          "state": (law_rows(pack, facts_by_id) or [{}])[0].get("state", ""), "theme": pack.get("theme")}
+                          "state": (law_rows(pack, facts_by_id) or [{}])[0].get("state", ""), "theme": pack.get("theme"),
+                          "kind": pack.get("kind") or "guide"}
         written.append("%s/%s/%s" % (HOST, GUIDES_DIRNAME, slug))  # clean URL: Cloudflare 307s /x.html → /x
         log("guide: %s ← %s" % (target.relative_to(site), pack["date"]))
     entries = sorted(manifest.values(), key=lambda e: (e["date"], e["slug"]), reverse=True)

@@ -12,16 +12,20 @@ Two outputs, both ₦0:
   pull    → brain/listening.json  — the top questions (title, url, board, score)
             The brain's prompt carries them as WHAT NIGERIANS ASKED THIS WEEK, so a
             day's post answers a real question in the reader's own words.
-  answer  → brain/answers/YYYY-MM-DD.md — ONE cited, link-carrying reply to the best
-            open thread, drafted by Gemini from the law shelf and gated exactly like a
-            post (every legal claim names a shelf fact and appears verbatim). The
-            owner pastes it by hand: Nairaland has no posting API and an automated
-            account there is a ban, not a channel. The Monday issue carries it.
-            When no thread deserves a reply (most weeks — the Properties board is
-            adverts), it drafts a thread OPENER instead: one state, one topic, cited.
+  answer  → brain/answers/YYYY-MM-DD.json — ONE cited answer PAGE a week (Mondays):
+            the ears pick the state and topic from what was asked (else the next
+            unopened Tier A state/topic pair), Gemini drafts from the law shelf, the
+            gate checks every claim names a shelf fact and appears verbatim, and the
+            file is an approved pack that tools/guides_build.py turns into
+            site/guides/<slug>.html + sitemap + OG card in the same run. The brain's
+            commit publishes it. Start to finish by the machine — the owner's rule
+            (1 Nov 2026): nothing that needs his hands. Nairaland itself is never
+            posted to: no API, and a scripted account there is a ban, not a channel
+            (anti-spam bot since Apr 2025). `answer()` — a reply draft — stays as a
+            library function; no lane calls it.
 
 Everything degrades to silence: no network → the brain plans without it; no model
-→ no answer file, the lanes are untouched.
+→ no page, the lanes are untouched.
 """
 from __future__ import annotations
 
@@ -323,26 +327,39 @@ def answer(generate=None, data=None, now=None, log=print, out_dir=None, write=Tr
 # (https://www.nairaland.com/8774812/before-pay-rent-lagos-5). Nairaland's rules shape the
 # gate: no advert tone, no ALL CAPS, no bold, one link, a subject that fits their box.
 OPENER_SUBJECT_MAX = 70
-OPENER_BOARD = "Properties"
 OPENER_TOPICS = ("receipts", "notice_ladder", "advance_rent", "protections", "caution_fee", "notice_extras",
                  "increase_challenge", "repairs", "rent_relief")
-OPENER_SYSTEM = ("You are DocOga's editor opening one new topic on Nairaland's Properties board for Nigerian tenants and "
-                 "landlords. Plain Nigerian English, warm, no legalese, no advert tone, no 'as an AI'. Every legal statement "
-                 "must be one of the shelf facts, cited by its section in brackets. Never invent a rule, a number or a "
-                 "case. No ALL CAPS words, no bold, no emoji. One link only, on the last line but one.")
+# The DocOga tool a topic's page points to (brain_drafts.link_for resolves state page → national → home).
+TOPIC_TOOL = {"receipts": "rent-receipt", "notice_ladder": "notice-to-quit", "notice_extras": "notice-to-quit",
+              "advance_rent": "tenancy-agreement", "protections": "tenant-rights", "caution_fee": "caution-fee",
+              "increase_challenge": "tenant-rights", "repairs": "tenancy-agreement", "rent_relief": "tenancy-agreement"}
+# What a tenant's question sounds like, per topic — the ears choose the week's page.
+TOPIC_WORDS = {"receipts": ("receipt",), "notice_ladder": ("quit notice", "notice to quit", "notice", "pack out", "eject", "evict"),
+               "caution_fee": ("caution", "deposit"), "increase_challenge": ("increase", "increment", "raise my rent"),
+               "repairs": ("repair", "leak", "fix", "damage"), "advance_rent": ("advance", "two years", "2 years", "upfront"),
+               "protections": ("lock", "harass", "throw", "remove my", "cut my light", "disconnect", "padlock"),
+               "rent_relief": ("tax", "relief")}
+HOST = "https://docoga.com.ng"
+OPENER_SYSTEM = ("You are DocOga's editor writing one short page for docoga.com.ng that answers a question Nigerian "
+                 "tenants and landlords keep asking. Plain Nigerian English, warm, no legalese, no advert tone, no "
+                 "'as an AI'. Every legal statement must be one of the shelf facts, cited by its section in brackets. "
+                 "Never invent a rule, a number or a case. No ALL CAPS words, no bold, no emoji, no links, no sign-off.")
 
 
-def opener_prompt(state_name, topic, facts):
+def opener_prompt(state_name, topic, facts, asked=None):
     shelf = "\n".join("%s | %s | %s" % (f["id"], f["cite"] or "(no section)", f["text"]) for f in facts)
+    heard = ("\nWHAT SOMEONE ASKED THIS WEEK (answer this reader without naming them): %s\n" % asked) if asked else ""
     return f"""THE TOPIC: {topic.replace('_', ' ')} under the tenancy law of {state_name}.
-
+{heard}
 THE LAW SHELF (fact id | section | fact) — the only law you may state
 {shelf}
 
 OUTPUT — one JSON object:
 {{
-  "subject": "a Nairaland topic title of at most {OPENER_SUBJECT_MAX} characters, Title Case, naming {state_name} and the problem (e.g. 'Before You Pay Rent In Lagos: 5 Things The Tenancy Law Actually Says')",
-  "body": "700 to 1800 characters. First paragraph: the everyday wahala in two sentences. Then 3 to 5 numbered points, each ONE rule with its section in brackets, e.g. (s.5(3)). Then one short paragraph on the ONE thing to do next (keep receipts / count the months / write, do not pack). Then the line: 'I built a free tenancy agreement, quit notice and rent receipt generator for every state: {LINK}'. Last line exactly: 'General information, not legal advice.'",
+  "subject": "the page headline, at most {OPENER_SUBJECT_MAX} characters, Title Case, naming {state_name} and the problem (e.g. 'Before You Pay Rent In Lagos: 5 Things The Tenancy Law Actually Says')",
+  "question": "the question a tenant types into Google, under 100 characters, ending with ?",
+  "short_answer": "the answer in one or two sentences, 40 to 200 characters, with the section in brackets",
+  "body": "700 to 1800 characters, paragraphs separated by a blank line. First paragraph: the everyday wahala in two sentences. Then 3 to 5 numbered points, each ONE rule with its section in brackets, e.g. (s.5(3)). Then one short paragraph on the ONE thing to do next (keep receipts / count the months / write, do not pack). No links, no 'not legal advice' line — the page carries both.",
   "claims": [{{"text": "a legal sentence exactly as it appears in body", "fact_id": "an id from the shelf"}}],
   "state": "{state_name}",
   "why": "one sentence: why this topic now"
@@ -353,17 +370,21 @@ def opener_gate(result, facts_by_id):
     problems = []
     subject = str((result or {}).get("subject") or "").strip()
     body = str((result or {}).get("body") or "")
+    question = str((result or {}).get("question") or "").strip()
+    short = str((result or {}).get("short_answer") or "").strip()
     if not 20 <= len(subject) <= OPENER_SUBJECT_MAX:
-        problems.append("subject length %d is outside 20-%d (Nairaland clips it)" % (len(subject), OPENER_SUBJECT_MAX))
+        problems.append("subject length %d is outside 20-%d (a page title Google keeps whole)" % (len(subject), OPENER_SUBJECT_MAX))
     if not 700 <= len(body) <= 2200:
         problems.append("body length %d is outside 700-2200" % len(body))
-    if body.count(LINK) != 1:
-        problems.append("the DocOga link must appear exactly once")
-    if "not legal advice" not in body.lower():
-        problems.append("the 'not legal advice' line is missing")
+    if re.search(r"https?://|www\.|docoga\.com", body, re.I):
+        problems.append("the body carries a link — the page adds the tool link itself")
+    if not (10 <= len(question) <= 100 and question.endswith("?")):
+        problems.append("question must be 10-100 characters and end with ?")
+    if not 40 <= len(short) <= 200:
+        problems.append("short_answer length %d is outside 40-200" % len(short))
     claims = result.get("claims") if isinstance((result or {}).get("claims"), list) else []
     if len(claims) < 3:
-        problems.append("fewer than 3 cited claims — an opener with no law is an advert")
+        problems.append("fewer than 3 cited claims — a page with no law is an opinion")
     for c in claims:
         fid = str(c.get("fact_id") or "")
         text = " ".join(str(c.get("text") or "").split())
@@ -372,77 +393,124 @@ def opener_gate(result, facts_by_id):
         if text and text not in " ".join(body.split()):
             problems.append("claim text is not in the body verbatim: %r" % text[:60])
     if "**" in body or "**" in subject:
-        problems.append("bold markup (Nairaland rule 11)")
+        problems.append("bold markup")
     if re.search(r"\b[A-Z]{5,}\b", body.replace("DOCOGA", "")):
-        problems.append("an ALL CAPS word (Nairaland rule 11)")
+        problems.append("an ALL CAPS word")
     for bad in ("as an ai", "i am not a lawyer but", "dm me", "whatsapp me", "call me", "promo", "discount"):
         if bad in body.lower():
             problems.append("forbidden phrase: %r" % bad)
     return problems
 
 
-def opener_choice(answered, now=None):
-    """(slug, topic) not yet opened: Tier A states in turn, then the next topic each cycle."""
-    used = {(a.get("state_slug"), a.get("topic")) for a in answered if a.get("kind") == "thread_opener"}
+def topic_hint(items):
+    """(state_slug or None, topic, title) from the best-scoring fresh question that names a topic — the
+    ears pointing at this week's page. None when nothing asked this week maps to the shelf."""
+    tier_a = {s for s, _n, tier in law_index.states() if tier == "A"}
+    for it in sorted(items or [], key=lambda x: -(x.get("score") or 0)):
+        title = str(it.get("title") or "")
+        low = title.lower()
+        if not any(a in low for a in ASKING):
+            continue
+        for topic in OPENER_TOPICS:
+            if any(w in low for w in TOPIC_WORDS.get(topic, ())):
+                slug = state_for(it, default="")
+                return (slug if slug in tier_a else None), topic, title
+    return None
+
+
+def opener_choice(answered, now=None, items=None):
+    """(slug, topic, facts) for this week's page: first what someone asked this week (if that state/topic
+    is still unopened), else Tier A states in turn, then the next topic each cycle. Each pair once."""
+    used = {(a.get("state_slug"), a.get("topic")) for a in answered if a.get("kind") in ("thread_opener", "answer_page")}
     states = [s for s, _n, tier in law_index.states() if tier == "A"] or [s for s, _n, _t in law_index.states()]
     # Lagos last in each cycle: the 30 Oct 2026 hand-made opener already covered Lagos receipts, advance
     # rent, notice and protections, so the other Tier A states get their turn first.
     states = sorted(states, key=lambda s: (s == "lagos", s))
+
+    def shelf(slug, topic):
+        return [f for f in law_index.facts_for(slug) if f["id"].split(":")[1] == topic]
+
+    hint = topic_hint(items)
+    if hint:
+        h_slug, h_topic, _title = hint
+        for slug in ([h_slug] if h_slug else []) + states:
+            if (slug, h_topic) not in used and len(shelf(slug, h_topic)) >= 3:
+                return slug, h_topic, shelf(slug, h_topic)
     for topic in OPENER_TOPICS:
         for slug in states:
             if (slug, topic) in used:
                 continue
-            facts = [f for f in law_index.facts_for(slug) if f["id"].split(":")[1] == topic]
+            facts = shelf(slug, topic)
             if len(facts) >= 3:
                 return slug, topic, facts
     return None, None, []
 
 
+def page_slug(subject, state_slug):
+    slug = re.sub(r"[^a-z0-9]+", "-", subject.lower()).strip("-")[:80] or "answer"
+    if state_slug and state_slug not in slug:
+        slug = "%s-%s" % (slug, state_slug)
+    return slug
+
+
 def opener(generate=None, data=None, now=None, log=print, out_dir=None, write=True):
-    """Draft one Nairaland thread opener when no open question deserved a reply. (path, result) or (None, why)."""
+    """One cited answer page a week, start to finish by the machine: choose the state and topic (the ears
+    first), draft from the shelf, gate, write brain/answers/YYYY-MM-DD.json as an approved pack — the
+    guides builder turns it into site/guides/<slug>.html, the sitemap and the OG card in the same run,
+    and the brain's commit publishes it. Nothing is left for the owner's hands (his rule, 1 Nov 2026).
+    Returns (path, result) or (None, why)."""
     data = data if data is not None else load()
     answered = data.get("answered") or []
-    slug, topic, facts = opener_choice(answered, now=now)
+    items = fresh_items(data, now=now)
+    slug, topic, facts = opener_choice(answered, now=now, items=items)
     if not slug:
         return None, "every state and topic has been opened once — nothing new to say"
     all_facts = law_index.facts_for(slug)
     facts_by_id = {f["id"]: f for f in all_facts}
     state_name = all_facts[0]["state"]
+    hint = topic_hint(items)
+    asked = hint[2] if hint and hint[1] == topic else None
     if generate is None:
         import gemini_text  # noqa: WPS433
         generate = lambda prompt, system: gemini_text.generate_json(prompt, system=system, lane="listening",  # noqa: E731
                                                                     temperature=0.6, max_output_tokens=4096)
-    result = generate(opener_prompt(state_name, topic, facts), OPENER_SYSTEM)
+    result = generate(opener_prompt(state_name, topic, facts, asked=asked), OPENER_SYSTEM)
     problems = opener_gate(result, facts_by_id)
     if problems:
-        log("listening: opener refused — " + "; ".join(problems))
+        log("listening: answer page refused — " + "; ".join(problems))
         return None, "refused: " + "; ".join(problems)
     now = now or dt.datetime.now(dt.timezone.utc)
     day = now.date().isoformat()
     out_dir = Path(out_dir) if out_dir else ANSWERS
-    path = out_dir / ("%s.md" % day)
+    path = out_dir / ("%s.json" % day)
     subject = str(result["subject"]).strip()
-    body = ("# Nairaland thread opener — %s\n\nBoard: %s → Create New Topic. Paste the subject, then the body, then Submit. "
-            "If your account is new and the post is held, repost without the link line and add the link as your first reply.\n"
-            "State: %s · Topic: %s\nWhy: %s\n\nSubject:\n\n```text\n%s\n```\n\nBody:\n\n```text\n%s\n```\n"
-            % (day, OPENER_BOARD, state_name, topic.replace("_", " "), result.get("why", ""), subject, str(result["body"]).strip()))
+    paragraphs = [" ".join(x.split()) for x in re.split(r"\n\s*\n", str(result["body"]).strip()) if x.strip()]
+    pslug = page_slug(subject, slug)
+    url = "%s/guides/%s" % (HOST, pslug)
+    pack = {"version": 1, "status": "approved", "source": "listening", "kind": "answer_page", "date": day,
+            "theme": pslug, "state": slug, "tool": TOPIC_TOOL.get(topic, "tenant-rights"), "topic": topic,
+            "post": {"headline": subject, "lines": paragraphs},
+            "quiz": {"question": str(result["question"]).strip(), "explanation": str(result["short_answer"]).strip()},
+            "claims": [{"text": str(c.get("text") or "").strip(), "fact_id": str(c.get("fact_id") or "")} for c in result["claims"]],
+            "why": str(result.get("why") or ""), "asked": asked or "", "url": url}
     if write:
         out_dir.mkdir(parents=True, exist_ok=True)
-        path.write_text(body, encoding="utf-8")
-        data.setdefault("answered", []).append({"date": day, "url": "opener:%s:%s:%s" % (slug, topic, day), "title": subject,
-                                                "kind": "thread_opener", "state_slug": slug, "topic": topic, "board": "properties"})
+        path.write_text(json.dumps(pack, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+        data.setdefault("answered", []).append({"date": day, "url": url, "title": subject, "kind": "answer_page",
+                                                "state_slug": slug, "topic": topic})
         OUT.parent.mkdir(parents=True, exist_ok=True)
         OUT.write_text(json.dumps(data, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
-    log("listening: opener written for %s / %s → %s" % (state_name, topic, path))
-    return path, result
+    log("listening: answer page drafted for %s / %s → %s (%s)" % (state_name, topic, path, url))
+    return path, pack
 
 
 def latest_answer(out_dir=None, max_age_days=8, now=None):
+    """This week's answer-page pack (brain/answers/YYYY-MM-DD.json), or None."""
     out_dir = Path(out_dir) if out_dir else ANSWERS
     if not out_dir.is_dir():
         return None
     now = now or dt.datetime.now(dt.timezone.utc)
-    for p in sorted(out_dir.glob("*.md"), reverse=True):
+    for p in sorted(out_dir.glob("*.json"), reverse=True):
         try:
             day = dt.date.fromisoformat(p.stem)
         except ValueError:
@@ -451,6 +519,13 @@ def latest_answer(out_dir=None, max_age_days=8, now=None):
             return p
         break
     return None
+
+
+def answer_url(path):
+    try:
+        return str(json.loads(Path(path).read_text(encoding="utf-8")).get("url") or "")
+    except (OSError, ValueError, AttributeError):
+        return ""
 
 
 def main(argv=None):
@@ -465,18 +540,21 @@ def main(argv=None):
     if a.command == "latest":
         p = latest_answer()
         print("LISTENING_ANSWER=%s" % (p or "none"))
+        print("LISTENING_URL=%s" % ((answer_url(p) if p else "") or "none"))
         return 0
     if a.command == "answer":
+        # The week's answer PAGE — never a reply for the owner to paste (his rule, 1 Nov 2026: nothing
+        # that needs his hands). The ears (this week's questions) choose the topic; the page is built
+        # by tools/guides_build.py in the same brain run and published by the brain's commit.
         try:
-            path, result = answer()
-            if path is None and str(result).startswith("no open question"):
-                print("listening: no reply-worthy thread this week — opening one instead")
-                path, result = opener()
-        except Exception as exc:  # noqa: BLE001 — a missing answer must never fail the brain
-            print("listening: answer skipped — %s" % str(exc)[:160])
+            path, result = opener()
+        except Exception as exc:  # noqa: BLE001 — a missing page must never fail the brain
+            print("listening: answer page skipped — %s" % str(exc)[:160])
             print("LISTENING_ANSWER=none")
+            print("LISTENING_URL=none")
             return 0
         print("LISTENING_ANSWER=%s" % (path or "none"))
+        print("LISTENING_URL=%s" % ((result or {}).get("url", "none") if path else "none"))
         if not path:
             print("listening: %s" % result)
         return 0

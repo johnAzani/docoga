@@ -45,7 +45,7 @@ on:
         default: false
         type: boolean
       forum_answer:
-        description: 'Also draft this week''s forum answer now (normally Mondays)'
+        description: 'Also draft this week''s answer page now (normally Mondays)'
         required: false
         default: false
         type: boolean
@@ -251,24 +251,25 @@ jobs:
           fi
           if [ "$CODE" != "0" ] && [ "$CODE" != "3" ] && [ "$CODE" != "6" ]; then exit "$CODE"; fi
 
-      - name: Forum answer (Mondays) — one cited reply for the owner to paste
+      - name: Answer page (Mondays) — the week's question, as a cited page the machine publishes
         if: ${{ env.BRAIN_DRY_RUN != 'true' && steps.plan.outputs.code != '6' }}
         run: |
           if [ "$(date +%u)" != "1" ] && [ "$BRAIN_FORUM_ANSWER" != "true" ]; then
-            echo "not Monday and not asked — no forum answer tonight"
+            echo "not Monday and not asked — no answer page tonight"
             exit 0
           fi
           set +e
           python3 tools/listening.py answer 2>&1 | tee /tmp/listening_answer.log
           set -e
           ANSWER=$(sed -n 's/^LISTENING_ANSWER=//p' /tmp/listening_answer.log | tail -1)
+          URL=$(sed -n 's/^LISTENING_URL=//p' /tmp/listening_answer.log | tail -1)
           {
-            echo "### Forum answer"
+            echo "### Answer page"
             echo
             if [ -n "$ANSWER" ] && [ "$ANSWER" != "none" ] && [ -f "$ANSWER" ]; then
-              echo "- ✍️ drafted: \`$ANSWER\` — Monday's scorecard issue carries it; paste it into the thread (2 minutes)"
+              echo "- 📄 drafted: \`$ANSWER\` → the guides step below builds $URL; this run's commit publishes it. Nothing for the owner to do."
             else
-              echo "- no answer this week ($(tail -n 1 /tmp/listening_answer.log))"
+              echo "- no answer page this week ($(tail -n 1 /tmp/listening_answer.log))"
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
