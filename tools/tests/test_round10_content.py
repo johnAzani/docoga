@@ -145,10 +145,121 @@ class SeriesKicker(unittest.TestCase):
         self.assertIn("No.", kicker)
 
 
+class PhotoCover(unittest.TestCase):
+    """1 Nov 2026: the carousel's first slide is the photograph, the hook is ≤8 words on it."""
+
+    def _photo(self):
+        from PIL import Image
+        img = Image.new("RGB", (1600, 1200))
+        px = img.load()
+        for x in range(0, 1600, 8):
+            for y in range(0, 1200, 8):
+                for dx in range(8):
+                    for dy in range(8):
+                        px[x + dx, y + dy] = (180 + (x // 8) % 60, 120 + (y // 8) % 90, 60 + (x // 16) % 100)
+        return img
+
+    def test_the_hook_is_eight_words_or_fewer_and_prefers_the_question(self):
+        ch = social_card.cover_hook
+        self.assertEqual(ch("Did you know that in Cross River State, your landlord can only demand three months' rent "
+                            "in advance? This law protects tenants from huge upfront demands. How many months' rent did you pay?"),
+                         "How many months' rent did you pay?")
+        self.assertEqual(ch("Pay without a receipt. Pay twice.\n\n\u2705 Date"), "Pay without a receipt. Pay twice.")
+        clipped = ch("Your landlord cannot lock you out without a court order, even when the rent is late by a year.")
+        self.assertTrue(clipped.endswith("\u2026") and not clipped.rstrip("\u2026").endswith((" a", " the", " without")), clipped)
+        for text in [RECEIPT, "Did you know that in Lagos, a yearly tenant is owed six months' written notice before "
+                              "any eviction can begin? Many landlords skip it."]:
+            self.assertLessEqual(len(ch(text).split()), social_card.COVER_MAX_WORDS, ch(text))
+        self.assertEqual(ch(""), "")
+
+    def test_the_cover_is_a_photograph_with_the_hook_inside_the_frame(self):
+        from PIL import Image
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "cover.jpg"
+            r = social_card.render_cover(self._photo(), "No rent receipt in Kano? You could pay twice.", str(out),
+                                         kicker="DocOga \u00b7 demand paper", progress=(1, 7))
+            self.assertEqual((r["width"], r["height"]), (1080, 1350))
+            self.assertLessEqual(r["lines"], 3)
+            plan = social_card.LAST_COVER
+            self.assertGreater(plan["rule_y"], 1350 * 0.40, "the hook sits in the lower half, on the scrim")
+            img = Image.open(out).convert("RGB")
+            top = img.crop((0, 200, 1080, 480)).resize((1, 1)).getpixel((0, 0))
+            self.assertGreater(sum(top), 3 * 90, "the upper half is the photograph in its own colours, not navy")
+            self.assertGreater(top[0], top[2], "the warm test photograph survives (no duotone on the cover)")
+            self.assertLess(r["bytes"], 900 * 1024)
+        with self.assertRaises(ValueError):
+            social_card.render_cover(self._photo(), "   ", str(Path(tmp) / "x.jpg"))
+
+    def test_the_carousel_puts_the_photograph_first_and_the_hook_slide_second(self):
+        import io
+        from contextlib import redirect_stdout
+        from unittest import mock
+        import shot_match
+        photo = self._photo()
+
+        def fake_photo_for(text, hint=None, size=None, treat=None, **kw):
+            return (treat or (lambda i, s: i))(photo, size), {"door": "test"}
+
+        with tempfile.TemporaryDirectory() as tmp:
+            blob = Path(tmp) / "threads.json"
+            blob.write_text(json.dumps({"text": RECEIPT, "post_type": "educational"}), encoding="utf-8")
+            for switch, want_cover, want_n in (("on", "photo", 9), ("off", "none", 8)):
+                buf = io.StringIO()
+                with mock.patch.object(shot_match, "photo_for", fake_photo_for), \
+                        mock.patch.dict(os.environ, {"IG_PHOTO_COVER": switch}), redirect_stdout(buf):
+                    rc = social_card.main(["--slides", "--brief", "1999-01-01", "--from-json", str(blob),
+                                           "--out", str(Path(tmp) / ("%s-slide.jpg" % switch)), "--base-url", "https://docoga.com.ng"])
+                self.assertEqual(rc, 0)
+                text = buf.getvalue()
+                self.assertIn("CARD_COVER=%s" % want_cover, text)
+                self.assertIn("CARD_SLIDES=%d" % want_n, text)
+            self.assertIn("CARD_SLIDE=1 ", text)
+            from PIL import Image
+            cover = Image.open(Path(tmp) / "on-slide-1.jpg").convert("RGB")
+            second = Image.open(Path(tmp) / "on-slide-2.jpg").convert("RGB")
+            c = cover.crop((0, 200, 1080, 480)).resize((1, 1)).getpixel((0, 0))
+            s = second.crop((0, 200, 1080, 480)).resize((1, 1)).getpixel((0, 0))
+            self.assertGreater(sum(c), sum(s) + 60, "slide 1 is the photograph; slide 2 is the navy-treated plate")
+
+    def test_ten_slides_is_the_ceiling_even_with_the_cover(self):
+        import io
+        from contextlib import redirect_stdout
+        from unittest import mock
+        import shot_match
+        photo = self._photo()
+        copy = "Your rent receipt needs these 9 things.\n\n" + "\n".join("%d. Item number %d on the receipt" % (i, i) for i in range(1, 10))
+        with tempfile.TemporaryDirectory() as tmp:
+            blob = Path(tmp) / "threads.json"
+            blob.write_text(json.dumps({"text": copy, "post_type": "educational"}), encoding="utf-8")
+            buf = io.StringIO()
+            with mock.patch.object(shot_match, "photo_for", lambda text, hint=None, size=None, treat=None, **kw:
+                                   ((treat or (lambda i, s: i))(photo, size), {})), redirect_stdout(buf):
+                social_card.main(["--slides", "--brief", "1999-01-01", "--from-json", str(blob), "--out", str(Path(tmp) / "s.jpg")])
+            self.assertIn("CARD_SLIDES=10", buf.getvalue())
+            self.assertIn("CARD_COVER=photo", buf.getvalue())
+
+    def test_no_photograph_means_the_carousel_it_always_was(self):
+        import io
+        from contextlib import redirect_stdout
+        with tempfile.TemporaryDirectory() as tmp:
+            blob = Path(tmp) / "threads.json"
+            blob.write_text(json.dumps({"text": RECEIPT, "post_type": "educational"}), encoding="utf-8")
+            buf = io.StringIO()
+            with redirect_stdout(buf):
+                social_card.main(["--slides", "--brief", "1999-01-01", "--from-json", str(blob), "--out", str(Path(tmp) / "s.jpg")])
+            self.assertIn("CARD_COVER=none", buf.getvalue())
+            self.assertIn("CARD_SLIDES=8", buf.getvalue())
+
+
 class Workflow(unittest.TestCase):
+    def test_instagram_carousel_runs_every_day_from_rotation_copy(self):
+        y = (ROOT / ".github/workflows/instagram_autopost.yml").read_text(encoding="utf-8")
+        self.assertIn("IG_PHOTO_COVER: ${{ vars.IG_PHOTO_COVER }}", y)
+        self.assertIn("CARD_COVER=", y)
+
     def test_instagram_carousel_runs_every_weekday_from_rotation_copy(self):
         y = (ROOT / ".github/workflows/instagram_autopost.yml").read_text(encoding="utf-8")
-        self.assertIn('${IG_CAROUSEL_DAYS:-1,2,3,4,5}', y)
+        self.assertIn('${IG_CAROUSEL_DAYS:-1,2,3,4,5,6,7}', y)       # every day since 1 Nov 2026
         self.assertIn('--slides --brief "$DAY" --from-json assets/threads/threads_content_latest.json', y)
 
 
