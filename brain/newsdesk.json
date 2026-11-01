@@ -1,5 +1,5 @@
 {
- "fetched": "2026-11-01T00:30:49+00:00",
+ "fetched": "2026-11-01T06:36:27+00:00",
  "sources": [
   "Punch: 30 stories",
   "Vanguard: 20 stories",
@@ -9,5 +9,29 @@
   "The Guardian Nigeria: unreachable (HTTP Error 403: Forbidden)",
   "Nairametrics: 20 stories"
  ],
- "items": []
+ "items": [
+  {
+   "title": "All you need to know about proposed law to regulate house rent in Abuja",
+   "link": "https://www.premiumtimesng.com/features-and-interviews/921834-all-you-need-to-know-about-proposed-law-to-regulate-house-rent-in-abuja.html",
+   "published": "2026-11-01T04:00:25+00:00",
+   "source": "Premium Times",
+   "score": 6,
+   "matched": [
+    "rent"
+   ],
+   "summary": "The bill seeks to prohibit compulsory payments exceeding 12 months and establish a dedicated rent regulation authority. The post All you need to know about proposed law to regulate house rent in Abuja"
+  },
+  {
+   "title": "Heatwave: Pregnant women, children require extra protection — Experts",
+   "link": "https://punchng.com/heatwave-pregnant-women-children-require-extra-protection-experts/?utm_source=rss.punchng.com&utm_medium=web",
+   "published": "2026-11-01T00:03:36+00:00",
+   "source": "Punch",
+   "score": 4,
+   "matched": [
+    "rent",
+    "rents"
+   ],
+   "summary": "Health experts urge pregnant women and parents to take extra precautions to protect themselves and their children from the ongoing El Niño-linked heatwave. Read More: https://punchng.com/heatwave-preg"
+  }
+ ]
 }
