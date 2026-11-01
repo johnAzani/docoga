@@ -1,5 +1,15 @@
 [
  {
+  "date": "2026-11-03",
+  "at": "2026-11-01T01:33:01+01:00",
+  "short_day": true,
+  "problems": [
+   "verifier: legal statement not on the shelf — 'A landlord cannot issue one month or verbal notice before Christmas and call it lawful.'",
+   "verifier: legal statement not on the shelf — 'A landlord cannot shorten it by word of mouth before Christmas.'",
+   "verifier: legal statement not on the shelf — 'In Kwara State, yearly tenants need six months notice under the law, not sudden eviction.'"
+  ]
+ },
+ {
   "date": "2026-10-29",
   "at": "2026-10-28T07:06:11+01:00",
   "short_day": true,
