@@ -332,22 +332,30 @@ them (problem words up, question words up, adverts down) and keeps the top 12 in
 `brain/listening.json`. The prompt carries them as **WHAT NIGERIANS ASKED THIS
 WEEK**, so a day's post opens by answering a real question in the reader's words.
 
-**The forum answer (Mondays).** `tools/listening.py answer` drafts ONE reply to the
-best open thread from the law shelf, gated exactly like a post (every legal
-sentence cites a shelf fact and appears verbatim; the DocOga link and the
-"not legal advice" line are mandatory), writes `brain/answers/YYYY-MM-DD.md`, and
-the Monday scorecard issue carries it under **✍️ Forum answer — paste this**. The
-owner pastes it by hand — Nairaland has no posting API and an automated account
-there is a ban, not a channel. One thread is never answered twice. Dispatch
-`forum_answer=true` to draft one on any day. **When no thread deserves a reply**
-(most weeks — the Properties front page is adverts, and in its first two weeks the
-lane never wrote a line), it drafts a **thread opener** instead (`listening.opener`,
-31 Oct 2026): one Tier A state, one shelf topic, 3–5 numbered rules each with its
-section, one link, Nairaland's own rules as the gate (subject ≤ 70 characters, no
-ALL CAPS, no bold, no advert phrases). Each state/topic pair is opened once; Lagos
-comes last in each cycle because the owner's hand-made 30 Oct 2026 opener covered it
-(`nairaland.com/8774812`). The scorer matches whole words only — "rent" is not the
-tail of "parent".
+**The forum answer (17–31 Oct 2026, retired).** `tools/listening.py answer` used to draft
+ONE reply to the best open thread (`brain/answers/YYYY-MM-DD.md`) for the owner to paste by
+hand; in two weeks it never wrote a line (the Properties board is adverts) and the owner
+ruled out anything that needs his hands. Dispatch `forum_answer=true` to run the Monday step
+on any day.
+
+**The Monday answer page (1 Nov 2026 — owner: "any ideas you bring should be fully
+automated end to end").** Nothing in this lane asks the owner for a hand any more. Each
+Monday `listening.opener` picks the week's state and topic — first from what someone actually
+asked this week (`topic_hint`: a question title that names a receipt, a quit notice, a caution
+fee, an increase, repairs, advance rent or a lock-out, with its Tier A state when the title
+carries one), else the next unopened Tier A state/topic pair (Lagos last in each cycle; the
+owner's hand-made 30 Oct 2026 Nairaland opener, `nairaland.com/8774812`, counts as Lagos
+receipts). Gemini drafts from the shelf; the gate wants a 20–70-character headline, a 700–2,200
+character body with no link, a Google-style question ending in "?", a 40–200 character short
+answer, ≥3 verbatim claims with known fact ids, no ALL CAPS, no bold, no advert phrases. The
+result is written as an **approved pack** — `brain/answers/YYYY-MM-DD.json` (`kind:
+answer_page`, `tool` from the topic, the question as the FAQ) — and `tools/guides_build.py`
+(`answers_through`) turns it into `site/guides/<slug>.html`, the sitemap entry, the OG card
+and the index in the same run; the brain's commit publishes it; the scorecard issue shows the
+URL under "published, nothing to do". Nairaland itself is never posted to: no API, and a
+scripted account there is a ban, not a channel (anti-spam bot, April 2025). `answer()` — a
+reply draft for a thread — remains a library function no lane calls. The scorer matches whole
+words only — "rent" is not the tail of "parent".
 
 **Guides (`tools/guides_build.py`).** Every approved pack dated today or earlier
 becomes a cited page at `docoga.com.ng/guides/<theme>-<state>.html` — headline,

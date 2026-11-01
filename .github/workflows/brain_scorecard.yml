@@ -131,25 +131,27 @@ jobs:
           sed -n '/^### Token permissions/,$p' /tmp/scopes.log >> "$GITHUB_STEP_SUMMARY"
           exit 0
 
-      # The week's forum answer (tools/listening.py, drafted by the brain on Monday night, 01:30
-      # WAT — this job runs at 06:40 so the file is already on main). The one manual act of the
-      # week: two minutes, a paste, into a thread where a real tenant asked the exact question.
-      - name: This week's forum answer — into the issue
+      # The week's answer page (tools/listening.py, drafted by the brain on Monday 01:30 WAT and
+      # built + committed by the same run — this job runs at 06:40, so it is already live). Since
+      # 1 Nov 2026 nothing here asks the owner for a hand: the issue shows the URL only.
+      - name: This week's answer page — into the issue
         continue-on-error: true
         run: |
           set +e
-          ANSWER="$(python3 tools/listening.py latest 2>/dev/null | sed -n 's/^LISTENING_ANSWER=//p' | tail -1)"
+          LATEST="$(python3 tools/listening.py latest 2>/dev/null)"
+          ANSWER="$(printf '%s\n' "$LATEST" | sed -n 's/^LISTENING_ANSWER=//p' | tail -1)"
+          URL="$(printf '%s\n' "$LATEST" | sed -n 's/^LISTENING_URL=//p' | tail -1)"
           if [ -n "$ANSWER" ] && [ "$ANSWER" != "none" ] && [ -f "$ANSWER" ]; then
             {
               echo
-              echo "### ✍️ Forum answer — paste this (2 minutes)"
+              echo "### 📄 This week's answer page — published, nothing to do"
               echo
-              sed -n '2,$p' "$ANSWER"
+              echo "$URL"
               echo
             } >> /tmp/scorecard.md
-            echo "forum answer attached: $ANSWER"
+            echo "answer page attached: $URL"
           else
-            echo "no forum answer this week"
+            echo "no answer page this week"
           fi
           exit 0
 
