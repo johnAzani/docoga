@@ -270,7 +270,8 @@ jobs:
         env:
           BRANCH: ${{ github.event.repository.default_branch }}
           IG_CAROUSEL: ${{ vars.IG_CAROUSEL }}             # on (default) · off
-          IG_CAROUSEL_DAYS: ${{ vars.IG_CAROUSEL_DAYS }}   # ISO weekdays, default 1-5 (every weekday, 18 Oct 2026)
+          IG_CAROUSEL_DAYS: ${{ vars.IG_CAROUSEL_DAYS }}   # ISO weekdays, default 1-7 (every day since 1 Nov 2026; weekdays from 18 Oct)
+          IG_PHOTO_COVER: ${{ vars.IG_PHOTO_COVER }}       # on (default) · off — slide 1 is the photograph with the ≤8-word hook
         run: |
           set -o pipefail
           DAY=$(date -u +%F)
@@ -297,13 +298,19 @@ jobs:
           # rotation copy's own structure (social_card.rotation_slides). Carousels carry 0.50% ER
           # against 0.33% for a single image and five times the saves (Socialinsider 2026).
           # CARD_SLIDES=0 means the copy had too few lines: the single card posts.
+          # 1 Nov 2026 — every day, photo first: the first Instagram diagnosis showed text-only
+          # cards reaching nobody while the Reels were tested on strangers. Slide 1 is now the
+          # day's photograph full-bleed with a ≤8-word hook (social_card.render_cover) and the
+          # old hook slide is slide 2; Instagram ranks on slide 1 alone, re-serves a carousel
+          # from slide 2 to those who did not swipe, and marks "majority text" media down.
           SLIDE_URLS=""
           DOW=$(date -u +%u)
-          if [ "${IG_CAROUSEL:-on}" != "off" ] && printf ',%s,' "${IG_CAROUSEL_DAYS:-1,2,3,4,5}" | grep -q ",${DOW},"; then
+          if [ "${IG_CAROUSEL:-on}" != "off" ] && printf ',%s,' "${IG_CAROUSEL_DAYS:-1,2,3,4,5,6,7}" | grep -q ",${DOW},"; then
             python3 tools/social_card.py --slides --brief "$DAY" --from-json assets/threads/threads_content_latest.json \
               --out "site/social/${DAY}-instagram-slide.jpg" 2>&1 | tee /tmp/ig_slides.log || true
             SLIDE_URLS=$(sed -n 's/^CARD_URLS=//p' /tmp/ig_slides.log | tail -1)
-            echo "carousel: $(sed -n 's/^CARD_SLIDES=//p' /tmp/ig_slides.log | tail -1) slide(s)"
+            echo "carousel: $(sed -n 's/^CARD_SLIDES=//p' /tmp/ig_slides.log | tail -1) slide(s), cover=$(sed -n 's/^CARD_COVER=//p' /tmp/ig_slides.log | tail -1)"
+            echo "- carousel: $(sed -n 's/^CARD_SLIDES=//p' /tmp/ig_slides.log | tail -1) slide(s), cover=$(sed -n 's/^CARD_COVER=//p' /tmp/ig_slides.log | tail -1)" >> "$GITHUB_STEP_SUMMARY"
           fi
           echo "IG_SLIDE_URLS=${SLIDE_URLS}" >> "$GITHUB_ENV"
           git config user.name "github-actions[bot]"

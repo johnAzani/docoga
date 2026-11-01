@@ -196,9 +196,11 @@ def is_banned_photo(path):
     return any(rel.startswith(prefix) or ("/" + prefix) in rel for prefix in BANNED_PHOTO_PREFIXES)
 
 
-def _brief(visual, post_type, size, said=None):
+def _brief(visual, post_type, size, said=None, raw=False):
     """(kicker, background, layout, big) from the brain's visual brief, or the lane's defaults.
-    `said` is the card's own copy — the words the photograph behind it must match."""
+    `said` is the card's own copy — the words the photograph behind it must match. `raw=True`
+    returns the photograph untreated (the carousel cover shows it as a photograph and treats
+    its own copy for the other slides)."""
     visual = dict(visual or {})
     if said and not visual.get("said"):
         visual["said"] = said
@@ -211,7 +213,8 @@ def _brief(visual, post_type, size, said=None):
         # scores every result against it, so a rotation card gets a photo as surely as a
         # brain card (owner, 17 Oct 2026: "make sure it matches what is being said").
         import shot_match
-        background, _ = shot_match.photo_for(visual.get("said") or visual["plate"], hint=visual.get("plate"), size=size)
+        background, _ = shot_match.photo_for(visual.get("said") or visual["plate"], hint=visual.get("plate"), size=size,
+                                             treat=(lambda img, _size: img) if raw else None)
     layout = visual.get("layout") if visual.get("layout") in ("poster", "stat", "checklist") else "poster"
     return kicker, background, layout, (visual.get("big") or "").strip()
 
@@ -775,19 +778,7 @@ def render(text, out_path, kicker="", quality=88, max_kb=900, footer=FOOTER, siz
         label = ("FREE \u00b7 %s" % footer) if footer == FOOTER else footer
         _chip(draw, W / 2, H - edge_bottom - (60 if four_five else 56) - chip_h / 2, label, ffont)
 
-    if progress and progress[1] > 1:
-        # Carousel furniture (18 Oct 2026): a segmented progress bar under the safe box (this
-        # slide white, the rest royal) and, until the last slide, a swipe cue at the right edge —
-        # the two devices the 2026 carousel studies credit with higher swipe-through.
-        i, n = progress
-        bar_y = H - edge_bottom - 22
-        seg_w = (W - 2 * MARGIN - (n - 1) * 10) / n
-        for k in range(n):
-            x0 = MARGIN + k * (seg_w + 10)
-            draw.rounded_rectangle([x0, bar_y, x0 + seg_w, bar_y + 6], radius=3, fill=WHITE if k + 1 == i else PANEL)
-        if i < n:
-            cue_font, _ = load_font("Black", 44)
-            draw.text((W - MARGIN - draw.textlength("\u2192", font=cue_font), bar_y - 72), "\u2192", font=cue_font, fill=MUTED)
+    _progress_bar(draw, W, H, edge_bottom, progress)
 
     try:
         import blend_image
@@ -806,6 +797,143 @@ def render(text, out_path, kicker="", quality=88, max_kb=900, footer=FOOTER, siz
             "stripped": plain_for_card(text) != (text or "").strip(),
             "layout": layout, "plate": background is not None, "mode": p["mode"],
             "headline_size": p["h_size"], "body_size": p["b_size"] if p["b_lines"] else 0}
+
+
+def _progress_bar(draw, W, H, edge_bottom, progress):
+    """Carousel furniture (18 Oct 2026): a segmented progress bar under the safe box (this slide
+    white, the rest royal) and, until the last slide, a swipe cue at the right edge — the two
+    devices the 2026 carousel studies credit with higher swipe-through."""
+    if not (progress and progress[1] > 1):
+        return
+    i, n = progress
+    bar_y = H - edge_bottom - 22
+    seg_w = (W - 2 * MARGIN - (n - 1) * 10) / n
+    for k in range(n):
+        x0 = MARGIN + k * (seg_w + 10)
+        draw.rounded_rectangle([x0, bar_y, x0 + seg_w, bar_y + 6], radius=3, fill=WHITE if k + 1 == i else PANEL)
+    if i < n:
+        cue_font, _ = load_font("Black", 44)
+        draw.text((W - MARGIN - draw.textlength("\u2192", font=cue_font), bar_y - 72), "\u2192", font=cue_font, fill=MUTED)
+
+
+COVER_MAX_WORDS = 8          # the cover's hook: a billboard, not a brochure
+COVER_SIZES = (112, 104, 96, 88, 80, 72, 64)
+COVER_STOP = {"a", "an", "the", "of", "to", "in", "for", "your", "is", "are", "be", "and", "or", "with", "without",
+              "by", "on", "at", "from", "that", "this", "as", "if", "when", "any", "only", "up", "can", "not"}
+COVER_STRONG = re.compile(r"\d|\u20a6|twice|never|cannot|can't|must|fine|free|illegal|month|notice|receipt|court|lock|evict|refund")
+
+
+def cover_hook(text, max_words=COVER_MAX_WORDS):
+    """The ≤8-word hook for the photograph cover, from the copy the lane already has.
+
+    The headline when it is short enough; else its first sentence; else that sentence clipped at
+    the last clause break before the limit (as `_first_sentence` does for headlines) with an
+    ellipsis — the gap the viewer swipes to close. Empty when the copy has no words."""
+    raw = _drop_hashtags((text or "").replace("**", "").replace("__", "").replace("~~", ""))
+    parts = [b for b in raw.split("\n\n") if b.strip()]
+    para = " ".join(plain_for_card(parts[0]).split()) if parts else ""
+    if not para:
+        return ""
+    if len(para.split()) <= max_words:
+        return para
+    sentences = [s.strip() for s in SENTENCE_END.split(para) if s.strip()]
+    short = [(i, s) for i, s in enumerate(sentences) if 3 <= len(s.split()) <= max_words]
+    if short:
+        # The best short sentence of the opening paragraph: a question first (the gap the
+        # swipe closes), then one with a number, a law word or a consequence; never the
+        # paragraph's own filler ("This law…", "It's a key…").
+        def score(item):
+            i, s = item
+            low = s.lower()
+            pts = 3 if s.endswith("?") else 0
+            pts += 2 if COVER_STRONG.search(low) else 0
+            pts -= 3 if low.startswith(("this law", "this is", "it's ", "it is ", "that is ", "general information")) else 0
+            pts += 1 if i == 0 else 0
+            return (-pts, i)
+        best = sorted(short, key=score)[0]
+        if score(best)[0] < 0:          # a short sentence with nothing in it is not a hook
+            return best[1]
+    first = sentences[0]
+    first = re.sub(r"^(did you know( that)?|do you know( that)?)[,:]?\s+", "", first, flags=re.I)
+    first = re.sub(r"^in [A-Z][\w'\- ]{2,28}?(?: state)?,\s+", "", first)   # "In Cross River State, " — the place is in the caption
+    first = first[:1].upper() + first[1:]
+    words = first.split()
+    if len(words) <= max_words:
+        return first
+    cut = max_words
+    for i in range(max_words, 3, -1):
+        if words[i - 1].endswith((",", ";", ":", "\u2014", "-", "?")):
+            cut = i
+            break
+    while cut > 4 and words[cut - 1].lower().strip(",;:") in COVER_STOP:   # never end on "a", "the", "without"
+        cut -= 1
+    return " ".join(words[:cut]).rstrip(",;:\u2014- ") + "\u2026"
+
+
+def render_cover(photo, hook, out_path, kicker="DocOga", quality=88, max_kb=900, footer=FOOTER, size=None,
+                 progress=None):
+    """The carousel's first slide (1 Nov 2026): a photograph first, a ≤8-word hook second.
+
+    Why a different slide: Instagram ranks on the first slide alone — it is the thumbnail, the
+    feed tile and the one most viewers ever see — and its ranking notes mark "majority text"
+    media down. Every slide of the carousel so far was type on navy (with a duotone plate at
+    best), so the post read as text to the ranker and to the thumb. The cover is BRAND_STYLE §6
+    Style 2: the photograph full-bleed in its own colours under the film treatment
+    (`blend_image.filmify`), a navy scrim melting the lower half into the brand ground, the hook
+    in white display type on that scrim, the masthead, chip and progress bar exactly where
+    every other slide puts them. No slab, no body, no logo-first — the hook is the only words.
+
+    The hook is fitted for width and lines (≤3 lines; COVER_SIZES), so a ≤8-word hook can never
+    leave the frame (29 Oct 2026: "don't allow such overflow to happen ever again")."""
+    import blend_image
+    out = Path(out_path)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    W, H = size or (CARD_W, CARD_H)
+    four_five = abs(W / H - 0.8) < 0.02
+    edge = GRID_SAFE if four_five else 0
+    art = blend_image.crop_aspect(photo.convert("RGB"), W, H).resize((W, H), Image.LANCZOS)
+    art = blend_image.filmify(art, seed=5)
+    art = blend_image.scrim(art, INK_BG, 0, int(H * 0.22), 150, 0)             # the masthead reads
+    art = blend_image.scrim(art, INK_BG, int(H * 0.40), H, 0, 240)            # the hook sits on navy
+    image = art
+    draw = ImageDraw.Draw(image)
+
+    hook = " ".join(plain_for_card(hook or "").split())
+    if not hook:
+        raise ValueError("a cover needs a hook")
+    max_width = W - 2 * MARGIN
+    lines, font, hsize = [hook], None, COVER_SIZES[-1]
+    for hsize in COVER_SIZES:
+        font, _ = load_font("Black", hsize)
+        lines = wrap(draw, hook, font, max_width)
+        if len(lines) <= 3 and all(draw.textlength(ln, font=font) <= max_width for ln in lines):
+            break
+    lh = int(hsize * 1.08)
+    chip_h = 58
+    chip_cy = H - edge - 60 - chip_h / 2
+    block_h = len(lines) * lh
+    y = int(chip_cy - chip_h / 2 - 48 - block_h)
+    rule_y = y - 34
+    draw.rectangle([MARGIN, rule_y, MARGIN + 120, rule_y + 8], fill=ACCENT)
+    for ln in lines:
+        draw.text((MARGIN, y), ln, font=font, fill=WHITE)
+        y += lh
+    if kicker:
+        kfont, _ = load_font("SemiBold", 26)
+        _tracked(draw, (MARGIN, edge + 60), kicker.strip().upper()[:40], kfont, WHITE, tracking=6)
+    if footer:
+        ffont, _ = load_font("SemiBold", 26)
+        label = ("FREE \u00b7 %s" % footer) if footer == FOOTER else footer
+        _chip(draw, W / 2, chip_cy, label, ffont)
+    _progress_bar(draw, W, H, edge, progress)
+    data = _encode(image, quality)
+    while len(data) > max_kb * 1024 and quality > 45:
+        quality -= 7
+        data = _encode(image, quality)
+    out.write_bytes(data)
+    globals()["LAST_COVER"] = {"hook": hook, "lines": lines, "size": hsize, "rule_y": rule_y, "top": edge + 60}
+    return {"path": str(out), "bytes": len(data), "quality": quality, "width": W, "height": H, "ratio": W / H,
+            "cover": True, "hook": hook, "lines": len(lines), "headline_size": hsize}
 
 
 def _encode(image, quality):
@@ -928,10 +1056,27 @@ def render_slides(args):
         return 0
     size = (CARD_W, CARD_H)
     if pack:
-        kicker, background, layout, big = _brief(brain_drafts.visual(pack), brain_drafts.post_type(pack), size)
+        kicker, photo, layout, big = _brief(brain_drafts.visual(pack), brain_drafts.post_type(pack), size, raw=True)
     else:
-        kicker, background, layout, big = _brief({}, post_type, size, said=slides[0][1])
+        kicker, photo, layout, big = _brief({}, post_type, size, said=slides[0][1], raw=True)
+    # Photo first (1 Nov 2026): when the day has a photograph, it IS the first slide — full-bleed,
+    # the ≤8-word hook on it (render_cover) — and the old hook slide becomes slide 2, its own
+    # hook for the viewers Instagram re-serves the carousel to from slide 2. Without a
+    # photograph the carousel is what it was. Ten slides is the API's ceiling: the middle gives.
+    background, cover = None, None
+    hook = cover_hook(slides[0][1]) if photo is not None else ""
+    if photo is not None and hook and os.environ.get("IG_PHOTO_COVER", "on").lower() not in ("off", "0", "false"):
+        import brain_visual
+        background = brain_visual.treat(photo, size)
+        cover = hook
+        while len(slides) + 1 > 10:
+            del slides[len(slides) // 2]
+        slides = [("cover", hook, "")] + slides
+    elif photo is not None:
+        import brain_visual
+        background = brain_visual.treat(photo, size)
     print("CARD_SLIDES_SOURCE=%s" % source)
+    print("CARD_COVER=%s" % ("photo" if cover else "none"))
     stem = re.sub(r"\.jpe?g$", "", args.out, flags=re.I)
     urls, total = [], 0
     for index, (label, text, slide_big) in enumerate(slides, 1):
@@ -939,14 +1084,18 @@ def render_slides(args):
         # The hook and the close carry the plate and the kicker; the points sit on the plain
         # navy so the words, not the picture, are what a thumb stops on. Every slide carries the
         # progress bar and, until the last, the swipe cue at the right edge.
-        first_or_last = index in (1, len(slides))
-        result = render(text, out, kicker=(kicker or label) if index == 1 else label,
-                        quality=args.quality, max_kb=args.max_kb,
-                        footer="" if args.no_footer else FOOTER,
-                        background=background if first_or_last else None,
-                        layout=(layout if first_or_last else "poster") if not slide_big else "stat",
-                        big=(big if index == 1 else "") if not slide_big else slide_big,
-                        progress=(index, len(slides)))
+        if cover and index == 1:
+            result = render_cover(photo, text, out, kicker=kicker or "DocOga", quality=args.quality, max_kb=args.max_kb,
+                                  footer="" if args.no_footer else FOOTER, progress=(index, len(slides)))
+        else:
+            first_or_last = index in (2 if cover else 1, len(slides))
+            result = render(text, out, kicker=(kicker or label) if index == (2 if cover else 1) else label,
+                            quality=args.quality, max_kb=args.max_kb,
+                            footer="" if args.no_footer else FOOTER,
+                            background=background if first_or_last else None,
+                            layout=(layout if first_or_last else "poster") if not slide_big else "stat",
+                            big=(big if index == (2 if cover else 1) else "") if not slide_big else slide_big,
+                            progress=(index, len(slides)))
         urls.append(public_url(result["path"], args.base_url))
         total += result["bytes"]
         print("CARD_SLIDE=%d %s %dx%d %dKB" % (index, out, result["width"], result["height"], result["bytes"] // 1024))

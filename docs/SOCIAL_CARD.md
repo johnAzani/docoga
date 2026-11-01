@@ -108,8 +108,25 @@ Copy with fewer than three marked lines (or ≥ 3 plain sentences under a headli
 card: `CARD_SLIDES=0`, the workflow posts the card as before. `manual` and `deepdive` days are
 never carousels. Nineteen of the 41 rotation templates qualify; at most ten slides (Instagram's
 limit) and seven points. `CARD_SLIDES_SOURCE=brain|rotation` says which path drew the day.
-`IG_CAROUSEL_DAYS` now defaults to **every weekday** (`1,2,3,4,5`); set it back to `2,4` to
-return to Tue/Thu, or `IG_CAROUSEL=off`.
+`IG_CAROUSEL_DAYS` now defaults to **every day** (`1,2,3,4,5,6,7`, since 1 Nov 2026; weekdays
+from 18 Oct); set it to `2,4` to return to Tue/Thu, or `IG_CAROUSEL=off`.
+
+### Photo first (1 Nov 2026)
+
+The first Instagram diagnosis showed the Reels being tested on strangers while the text-only
+cards reached nobody; Instagram's ranking notes mark "majority text" media down, and a carousel
+is ranked — and shown in the feed and the grid — by its first slide alone. So when the day has a
+photograph (`shot_match.photo_for`: Openverse, then the Pixabay / Unsplash / Commons doors), the
+carousel's slide 1 is `render_cover`: the photograph full-bleed **in its own colours** under the
+film treatment (BRAND_STYLE §6 Style 2 — `blend_image.filmify`, a navy scrim melting the lower
+half into the ground), the masthead, the chip and the progress bar where every slide has them,
+and one line of words: the **≤8-word hook** (`cover_hook`: the opening paragraph whole if it is
+short enough, else its best short sentence — a question first, then one with a number, a law
+word or a consequence — else the first sentence clipped at a clause and never on "a" / "the").
+The old hook slide becomes slide 2 — its own hook for the viewers Instagram re-serves the
+carousel to from slide 2 — and the close keeps the treated plate. No photograph = the carousel
+exactly as before (`CARD_COVER=none`). Ten slides stays the ceiling: the middle gives.
+`IG_PHOTO_COVER=off` returns to the old first slide.
 
 ## 4. Checking it
 
