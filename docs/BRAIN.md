@@ -266,6 +266,19 @@ nothing reaches Openverse by accident; repo variable `DOCOGA_SHOTS=off` is the k
 video API needs a key — clips are the next step once a key exists; stills with camera drift
 carry the motion today.
 
+**Cards fall through to the stock doors (1 Nov 2026).** The first Instagram diagnosis showed
+the Reels being tested on strangers while the text-only navy cards reached nobody —
+Instagram's own ranking notes say "majority text" media gets less recommendation. Openverse's
+strict word match had been the cards' only source, so most days it found nothing and the
+card went out as text on navy. `shot_match.photo_for` now ends with
+`stock_photo_for` → `stock_media.media_for(kinds=("photo",))` — the same Pixabay / Unsplash /
+Wikimedia Commons doors the Shorts already use (keys were only ever handed to the Facebook
+and Shorts lanes; the Instagram, Threads and Telegram workflows now pass them too, with
+`STOCK_MEDIA` as the kill switch). Photographs only, no people (any `brain_visual.EXCLUDE`
+word in the title, tags or page URL is passed over), the usual navy treatment, 21-day
+footage ledger, provenance kept. Same day: the Instagram caption opens with the post's hook
+line and carries the search phrase second, since only the first line shows before "more".
+
 **Every Threads post carries a card (17 Oct 2026).** Owner: "the Thread is only text it
 uploads." The evening image used to borrow the Instagram lane's card, which exists only on
 days that lane rendered; Threads went out as words. Now the lane draws its **own** card each

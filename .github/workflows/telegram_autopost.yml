@@ -59,6 +59,11 @@ jobs:
       TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
       TZ: Africa/Lagos
       DOCOGA_SHOTS: ${{ vars.DOCOGA_SHOTS || 'on' }}   # CC0 photograph behind the card, matched to the copy (tools/shot_match.py)
+      # 1 Nov 2026: the card's second photo door — the same free stock keys the Shorts use
+      # (tools/stock_media.py); an empty secret closes that door, Commons needs none.
+      PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
+      UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
+      STOCK_MEDIA: ${{ vars.STOCK_MEDIA || 'on' }}
 
     steps:
       - name: Checkout repository

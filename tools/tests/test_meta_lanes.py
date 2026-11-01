@@ -828,10 +828,13 @@ class InstagramPublisher(unittest.TestCase):
         self.assertEqual(q["alt_text"], ["DocOga navy text card: stamp duty in Lagos."])
         self.assertEqual(q["caption"], [self.CAPTION])
 
-    def test_the_instagram_caption_opens_with_the_search_phrase_and_the_card_has_alt_text(self):
+    def test_the_instagram_caption_opens_with_the_hook_carries_the_search_phrase_and_the_card_has_alt_text(self):
         with mock.patch.dict(os.environ, {"DOCOGA_BRAIN_DRAFTS": os.path.join(self.tmp, "none")}):
             content = gc.generate(datetime.date(2026, 10, 21), write=False)
-        self.assertTrue(content["ig_caption"].startswith("Rent and tenancy documents Nigeria\n\n"), content["ig_caption"])
+        first, second = content["ig_caption"].split("\n\n")[:2]
+        self.assertNotEqual(first, "Rent and tenancy documents Nigeria", "the hook opens the caption, not the search phrase (1 Nov 2026)")
+        self.assertEqual(first, content["text"].split("\n\n")[0], "line one is the post's own first line")
+        self.assertEqual(second, "Rent and tenancy documents Nigeria", "the search phrase is the second paragraph")
         self.assertIn("?s=ig", content["ig_caption"], "Instagram's link carries Instagram's tag")
         self.assertNotIn("?s=th", content["ig_caption"])
         self.assertTrue(content["alt_text"].startswith("DocOga navy text card"), content["alt_text"])

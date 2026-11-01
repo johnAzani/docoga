@@ -409,13 +409,16 @@ def generate(day=None, write=True, slot="lunch"):
 
     post_type, text, notes, extras = build(day, rng, slot)
     pack = brain_drafts.draft_for(day)
-    # Instagram reads the same copy (instagram_autopost.yml): its caption opens with the search
-    # phrase (Google indexes professional posts; Instagram search reads the first line), its link
-    # carries the Instagram tag, and the card gets alt text (≤1,000 chars) — ₦0 SEO, 17 Oct 2026.
+    # Instagram reads the same copy (instagram_autopost.yml): the caption OPENS WITH THE HOOK — the
+    # first line is the only one a stranger sees before "more", and 1 Nov 2026's Insights showed
+    # the search-phrase opener earning 0 shares across 14 posts. The search phrase (Google indexes
+    # professional posts; Instagram search reads the whole caption) rides as the second paragraph,
+    # the link carries the Instagram tag, and the card gets alt text (≤1,000 chars) — ₦0 SEO.
     seo = brain_drafts.seo_line(pack, post_type)
     ig_caption = text.replace("?s=th", "?s=ig")
     if seo.lower() not in ig_caption.lower():
-        ig_caption = seo + "\n\n" + ig_caption
+        head, _, rest = ig_caption.partition("\n\n")
+        ig_caption = head + "\n\n" + seo + (("\n\n" + rest) if rest else "")
     # Saves and sends are what Instagram's 2026 ranking weighs (Mosseri: watch time, likes per
     # reach, sends per reach), so the caption ends by asking for exactly those two things.
     if IG_CLOSE.lower() not in ig_caption.lower():
