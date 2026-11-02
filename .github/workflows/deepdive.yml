@@ -1,5 +1,8 @@
 name: Deep-Dive — produce and publish one long-form episode
 
+# heartbeat-publish-every: 8d — the tick is nightly, the upload is weekly (the brain drafts the
+# next episode only when the queue is empty and the last upload is ≥ 4 days old); the heartbeat
+# judges the ledger on that promise, not on the nightly cron (2 Nov 2026).
 # The long-form lane: words → Gemini voice → Vosk word-sync → nine scenes rendered in
 # parallel → master with the synthesized sound kit (−16 LUFS) → cover → QA → YouTube.
 # Every expensive intermediate is BANKED on a GitHub Release (`deepdive-<episode>`),

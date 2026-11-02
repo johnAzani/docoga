@@ -331,6 +331,21 @@ _ISSUE_LABEL = re.compile(r"--label ([a-z0-9][a-z0-9-]*)")
 # the same reason the cadence is: the day a lane grows a ledger (or renames one), the
 # monitor should notice without anyone editing a list in here.
 _LEDGER_FILE = re.compile(r"\blogs/([A-Za-z0-9_.-]+\.json)")
+# 2 Nov 2026: a lane that RUNS daily but PUBLISHES weekly (the Deep-Dive ticks every night and
+# uploads one episode a week; the boost sweep runs daily and has nothing to write at weekends)
+# was judged "green but quiet" after 2.5 days — twice, on a Sunday. The lane says so itself:
+#   # heartbeat-publish-every: 8d
+# and its ledger is allowed that long before the silence verdict (run cadence still judged).
+_PUBLISH_EVERY = re.compile(r"heartbeat-publish-every:\s*(\d+(?:\.\d+)?)\s*([hd])\b", re.I)
+
+
+def publish_every(text):
+    """Seconds a lane declares between publishes, or None."""
+    m = _PUBLISH_EVERY.search(text or "")
+    if not m:
+        return None
+    n, unit = float(m.group(1)), m.group(2).lower()
+    return int(n * (86400 if unit == "d" else 3600))
 
 
 def _named(names, drop=None):
@@ -400,6 +415,7 @@ def discover_lanes(workflows_dir=WORKFLOWS_DIR):
             # then say "open the lane's issue" instead of guessing from a table.
             "labels": _named(_ISSUE_LABEL.findall(text)),
             "ledgers": _named(_LEDGER_FILE.findall(text)),
+            "publish_every": publish_every(text),
         })
     return lanes
 
@@ -662,6 +678,9 @@ def apply_publish_evidence(verdict, ledgers, now):
         verdict["last_publish"] = iso(newest)
         verdict["publish_age"] = int((now - newest).total_seconds())
         deadline = verdict.get("silent_after")
+        if deadline and verdict.get("publish_every"):
+            # The lane's own publish cadence, with the same slack the run cadence gets.
+            deadline = max(deadline, int(verdict["publish_every"]) + int(verdict.get("jitter_used") or 0))
         if verdict["status"] == "ok" and deadline and verdict["publish_age"] > deadline:
             verdict["status"] = "fail"
             verdict["kind"] = "green-but-quiet"
@@ -712,6 +731,7 @@ def judge(lane, info, runs, lane_since, now, grace=DEFAULT_LANE_GRACE,
         "vars": list(lane.get("vars") or []),
         "labels": list(lane.get("labels") or []),
         "ledgers": list(lane.get("ledgers") or []),
+        "publish_every": lane.get("publish_every"),
         "last_publish": "",
         "publish_age": None,
         "publish_evidence": "",

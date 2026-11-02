@@ -373,7 +373,12 @@ and the index in the same run; the brain's commit publishes it; the scorecard is
 URL under "published, nothing to do". Nairaland itself is never posted to: no API, and a
 scripted account there is a ban, not a channel (anti-spam bot, April 2025). `answer()` — a
 reply draft for a thread — remains a library function no lane calls. The scorer matches whole
-words only — "rent" is not the tail of "parent".
+words only — "rent" is not the tail of "parent". *2 Nov 2026:* the first Monday wrote no page
+and left no reason behind (the step runs after the plan and the Deep-Dive draft have spent the
+key's morning). Now a refused draft is asked for once more with the gate's words in the prompt;
+the outcome (`drafted` / `none: why` / `skipped: error`) is kept in `brain/listening.json`
+under `answer_log`; and Tuesday and Wednesday retry while the week still has no page
+(`listening.py latest --max-age` = days since Monday) — never a second page in one week.
 
 **Guides (`tools/guides_build.py`).** Every approved pack dated today or earlier
 becomes a cited page at `docoga.com.ng/guides/<theme>-<state>.html` — headline,

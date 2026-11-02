@@ -453,7 +453,7 @@ def page_slug(subject, state_slug):
     return slug
 
 
-def opener(generate=None, data=None, now=None, log=print, out_dir=None, write=True):
+def opener(generate=None, data=None, now=None, log=print, out_dir=None, write=True, retry=True):
     """One cited answer page a week, start to finish by the machine: choose the state and topic (the ears
     first), draft from the shelf, gate, write brain/answers/YYYY-MM-DD.json as an approved pack — the
     guides builder turns it into site/guides/<slug>.html, the sitemap and the OG card in the same run,
@@ -474,8 +474,17 @@ def opener(generate=None, data=None, now=None, log=print, out_dir=None, write=Tr
         import gemini_text  # noqa: WPS433
         generate = lambda prompt, system: gemini_text.generate_json(prompt, system=system, lane="listening",  # noqa: E731
                                                                     temperature=0.6, max_output_tokens=4096)
-    result = generate(opener_prompt(state_name, topic, facts, asked=asked), OPENER_SYSTEM)
+    prompt = opener_prompt(state_name, topic, facts, asked=asked)
+    result = generate(prompt, OPENER_SYSTEM)
     problems = opener_gate(result, facts_by_id)
+    if problems and retry:
+        # 2 Nov 2026: the first Monday wrote no page and left no reason behind. One re-ask with the
+        # gate's own words — the brain's packs get the same second chance — before giving up.
+        log("listening: answer page refused once — " + "; ".join(problems) + " — asking again")
+        again = prompt + ("\n\nYOUR PREVIOUS DRAFT WAS REFUSED FOR THESE REASONS — fix every one:\n- "
+                          + "\n- ".join(problems))
+        result = generate(again, OPENER_SYSTEM)
+        problems = opener_gate(result, facts_by_id)
     if problems:
         log("listening: answer page refused — " + "; ".join(problems))
         return None, "refused: " + "; ".join(problems)
@@ -502,6 +511,22 @@ def opener(generate=None, data=None, now=None, log=print, out_dir=None, write=Tr
         OUT.write_text(json.dumps(data, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
     log("listening: answer page drafted for %s / %s → %s (%s)" % (state_name, topic, path, url))
     return path, pack
+
+
+ANSWER_LOG_KEEP = 12
+
+
+def note_answer(data, outcome, reason="", now=None, path=None):
+    """Leave the week's outcome where the commit carries it (brain/listening.json → `answer_log`),
+    so a Monday that wrote no page says why on Tuesday's scorecard instead of saying nothing."""
+    now = now or dt.datetime.now(dt.timezone.utc)
+    log_ = [e for e in (data.get("answer_log") or []) if isinstance(e, dict)]
+    log_.append({"at": now.isoformat(timespec="seconds"), "outcome": outcome, "reason": str(reason or "")[:300]})
+    data["answer_log"] = log_[-ANSWER_LOG_KEEP:]
+    path = Path(path) if path else OUT
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+    return data["answer_log"][-1]
 
 
 def latest_answer(out_dir=None, max_age_days=8, now=None):
@@ -532,13 +557,14 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description="what Nigerians are asking about rent")
     ap.add_argument("command", choices=("pull", "show", "answer", "latest"))
     ap.add_argument("--out", default=str(OUT))
+    ap.add_argument("--max-age", type=int, default=8, help="latest: how old (days) a page may be and still count")
     a = ap.parse_args(argv)
     if a.command == "show":
         for it in fresh_items():
             print("%2d  %s — %s" % (it.get("score", 0), it["title"], it.get("board", "")))
         return 0
     if a.command == "latest":
-        p = latest_answer()
+        p = latest_answer(max_age_days=a.max_age)
         print("LISTENING_ANSWER=%s" % (p or "none"))
         print("LISTENING_URL=%s" % ((answer_url(p) if p else "") or "none"))
         return 0
@@ -546,10 +572,12 @@ def main(argv=None):
         # The week's answer PAGE — never a reply for the owner to paste (his rule, 1 Nov 2026: nothing
         # that needs his hands). The ears (this week's questions) choose the topic; the page is built
         # by tools/guides_build.py in the same brain run and published by the brain's commit.
+        data = load()
         try:
-            path, result = opener()
+            path, result = opener(data=data)
         except Exception as exc:  # noqa: BLE001 — a missing page must never fail the brain
             print("listening: answer page skipped — %s" % str(exc)[:160])
+            note_answer(data, "skipped", "%s: %s" % (type(exc).__name__, str(exc)[:200]))
             print("LISTENING_ANSWER=none")
             print("LISTENING_URL=none")
             return 0
@@ -557,6 +585,9 @@ def main(argv=None):
         print("LISTENING_URL=%s" % ((result or {}).get("url", "none") if path else "none"))
         if not path:
             print("listening: %s" % result)
+            note_answer(data, "none", result)
+        else:
+            note_answer(data, "drafted", (result or {}).get("url", ""))
         return 0
     data = pull()
     Path(a.out).parent.mkdir(parents=True, exist_ok=True)
