@@ -61,6 +61,7 @@ import brain_drafts as drafts  # noqa: E402
 import events_calendar  # noqa: E402
 import gemini_text  # noqa: E402
 import law_index  # noqa: E402
+import competitor_watch  # noqa: E402
 import newsdesk  # noqa: E402
 import listening  # noqa: E402
 import series_week  # noqa: E402
@@ -260,6 +261,7 @@ def day_context(day, said=None):
                 recent=recent, feedback=read(FEEDBACK).strip(),
                 strategy=read(STRATEGY).strip(), audience=read(AUDIENCE).strip(),
                 news=newsdesk.fresh_items(), search=search_demand(), asked=listening.fresh_items(),
+                field=competitor_watch.fresh_items(),
                 hook=hook, hook_why=hook_why, hook_binding=hook_binding)
 
 
@@ -432,6 +434,8 @@ fact id. If no story fits today's lead and state, set news_hook to null — do n
 
 WHAT NIGERIANS ASKED THIS WEEK (thread titles on Nairaland and r/Nigeria — real people, real trouble)
 {listening.prompt_block(ctx.get('asked') or [])}
+
+{competitor_watch.prompt_block(ctx.get('field') or [])}
 When one of these is today's lead, the FIRST LINE answers it in their words ("Your landlord gave you
 one month to leave after a year of rent?"). Answer the question; never quote the thread or name the poster.
 
