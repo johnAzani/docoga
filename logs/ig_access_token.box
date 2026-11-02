@@ -2,8 +2,8 @@
   "v": 1,
   "alg": "A256GCM",
   "name": "IG_ACCESS_TOKEN",
-  "nonce": "dIomau9PDEkQhNki",
-  "ciphertext": "0s7VZcSsojwoLLCipimO3yu/KoY+n0cMfJ5INspa4ZJSXxcDb+fGT7/16kOc0FBLhuZhmE+CPxOSXD8ZNMV1W6I1jVqUnG4jKYPF1E+U5OxN6EIiw5yfJ6ndPPZJk+kbkwofqPIh3Aw2jiETPh408Nxixzio9r/GlydjlU3PM6LS62goVhSG8FZA0dyebk8HB5w43YR7Mc1qKRB95fS5gxQ+bKiM3IDnD7IWr/G0AxaanI9QOg==",
-  "minted_at": "2026-11-01T18:14:48+00:00",
+  "nonce": "TpH7lXl+RxBnp+uE",
+  "ciphertext": "/GLz0RwmrlPFwsJmx4Msr5RXz1NYxRUWT8Yahiv77DOiJBTkW4EmqEoPGqW91N0K8S+7Lrce94btkO7dcqfg85jAJtJZX/YjMoNAyDFrWpBMStcBT/bd3aCTWXrY/V0WnEHZ4UT4icGW6+KjpnoqGW8jJFwTWW9V2qnj5MCnPveSPls/tQp4QIQtIb9lRe+8IHbR4XHqjKAZ7YD8+nXkYqhBiGNA0QkeEoUEFrzy4A==",
+  "minted_at": "2026-11-02T18:13:38+00:00",
   "expires_at": "2026-12-31T18:14:48+00:00"
 }
