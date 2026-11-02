@@ -1041,6 +1041,19 @@ def render_slides(args):
     """
     import brain_drafts
     pack = brain_drafts.draft_for(args.brief) if args.brief else None
+    # 2 Nov 2026, 7:13pm: on a Deep-Dive recap day the caption is the recap ("In case you missed
+    # it: Advance Rent in Lagos and Kwara…") while the brain pack of the day was Edo premium — the
+    # slides followed the pack and the carousel contradicted its own caption. The copy file is the
+    # lane's source of truth: when it is a recap or a manual dispatch, the pack's slides stay home
+    # and the single card (rendered from the same file) posts.
+    if pack and args.from_json:
+        try:
+            lead_type = str(json.loads(Path(args.from_json).read_text(encoding="utf-8")).get("post_type") or "")
+        except (OSError, ValueError):
+            lead_type = ""
+        if lead_type in ("manual", "deepdive"):
+            print("carousel: the day's copy is a %s post — the brain pack's slides would not match its caption" % lead_type)
+            pack = None
     slides = [(label, text, "") for label, text in brain_drafts.carousel_slides(pack)] if pack else []
     source = "brain"
     if not slides and args.from_json:

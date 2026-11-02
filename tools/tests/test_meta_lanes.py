@@ -2176,6 +2176,20 @@ class RenderRetention(unittest.TestCase):
                 with contextlib.redirect_stdout(buf):
                     code = social_card.main(["--slides", "--brief", "2026-10-21", "--out", str(out / "x.jpg")])
                 self.assertEqual((code, "CARD_SLIDES=0" in buf.getvalue()), (0, True))
+                # 2 Nov 2026, 7:13pm: a Deep-Dive recap day — the copy file says post_type=deepdive and
+                # the caption is the recap; the pack's slides (another state, another topic) must stay
+                # home so the carousel never contradicts its own caption. Same for a manual dispatch.
+                for lead_type in ("deepdive", "manual"):
+                    blob = out / ("%s.json" % lead_type)
+                    blob.write_text(json.dumps({"post_type": lead_type, "text": "In case you missed it: Advance Rent (Deep-Dive 4)"}),
+                                    encoding="utf-8")
+                    buf = io.StringIO()
+                    with contextlib.redirect_stdout(buf):
+                        code = social_card.main(["--slides", "--brief", "2026-10-20", "--from-json", str(blob),
+                                                 "--out", str(out / "y.jpg")])
+                    self.assertEqual(code, 0)
+                    self.assertIn("CARD_SLIDES=0", buf.getvalue(), lead_type)
+                    self.assertIn("would not match its caption", buf.getvalue())
 
     def test_todays_own_card_cannot_be_pruned(self):
         """`keep` is floored at 1: pruning the file about to be handed to Meta is a 404 that
