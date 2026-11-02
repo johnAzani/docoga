@@ -303,6 +303,95 @@ def search_block(rows):
                         (" → " + r["page"].replace("https://docoga.com.ng", "")) if r.get("page") else "") for r in rows)
 
 
+# ── lessons: the brain learns from its own refusals across nights (2 Nov 2026) ──────────────
+# Owner, 2 Nov 2026: "always improve on the brain — I want it to always get smarter. Lock it in."
+# (docs/BRAIN_GROWTH.md). Until now a refusal taught the model for one retry and was forgotten by
+# the next night; the refusal log showed the same families every week (news_hook not from the
+# desk ×11, invented prices, section numbers in copy, long lines). Each family becomes one plain
+# lesson, counted over the last LESSON_DAYS, and the top ones ride in every drafting prompt.
+LESSON_DAYS = 30
+LESSON_TOP = 6
+LESSON_FAMILIES = (
+    ("news_hook", re.compile(r"news_hook is not one of", re.I),
+     "news_hook is copied word for word from THIS WEEK'S NEWSDESK list, or is null — never a headline of your own."),
+    ("line_length", re.compile(r"a body line is \d+ characters; max", re.I),
+     "every body line stays under 100 characters — split a long point into two lines."),
+    ("section_in_copy", re.compile(r"names the section number", re.I),
+     "no 's.5' or 'Section 44' in the post copy — the section lives only in `claims`."),
+    ("price", re.compile(r"price .* is neither ours nor in a cited fact", re.I),
+     "the only naira figures are DocOga's own prices or numbers inside a cited shelf fact."),
+    ("statistic", re.compile(r"statistic .* is not in a cited fact|percent|%", re.I),
+     "no percentage, 'N in M' or million/billion figure unless it is inside a cited shelf fact."),
+    ("not_on_shelf", re.compile(r"legal statement not on the shelf", re.I),
+     "every sentence that states what the law says must be a shelf fact in its own words, with its id in `claims`."),
+    ("claim_overreach", re.compile(r"claim \[.*\] not supported", re.I),
+     "state a shelf fact only as far as its own words go — never extend it to a tenancy type, section or state it does not name."),
+    ("headline_length", re.compile(r"headline is \d+ characters; max", re.I),
+     "the headline stays under 70 characters."),
+    ("short_shape", re.compile(r"^short\.", re.I),
+     "the Short's title is 1–64 characters and each tip is 1–5 words, 30 characters at most."),
+    ("word_budget", re.compile(r"WORD BUDGET|hook_say|says together", re.I),
+     "count the Short's spoken words: hook_say plus the four says must stay under the budget."),
+    ("beats", re.compile(r"\d+-\d+ beats", re.I),
+     "a Deep-Dive runs 36 to 48 beats — count them before answering."),
+    ("unknown_fact", re.compile(r"unknown fact id", re.I),
+     "a claim's fact_id is copied exactly from the shelf list — never a date or an invented id."),
+    ("style", re.compile(r"banned|style word|game-changer|delve", re.I),
+     "none of the banned style words; plain Nigerian English."),
+    ("repeat", re.compile(r"repeat|said before|too close to|cooldown", re.I),
+     "a theme or headline used in the last 60 days is not used again — pick the next angle."),
+)
+
+
+def _lesson_family(problem):
+    text = str(problem or "")
+    for key, rx, lesson in LESSON_FAMILIES:
+        if rx.search(text):
+            return key, lesson
+    return None, None
+
+
+def lessons(now=None, days=LESSON_DAYS, refused_path=None, deepdive_path=None, top=LESSON_TOP):
+    """[{family, count, lesson}] — the refusal families of the last `days`, most frequent first,
+    from the packs' refusal log and the Deep-Dive attempt ledger. Never raises; [] when quiet."""
+    now = now or datetime.now(LAGOS)
+    since = (now - timedelta(days=days)).date().isoformat()
+    counts, text = {}, {}
+
+    def count(problems):
+        for problem in problems or []:
+            key, lesson = _lesson_family(problem)
+            if key:
+                counts[key] = counts.get(key, 0) + 1
+                text[key] = lesson
+
+    try:
+        rows = json.loads(Path(refused_path or REFUSED).read_text(encoding="utf-8"))
+        for row in rows if isinstance(rows, list) else []:
+            if str(row.get("at") or row.get("date") or "")[:10] >= since:
+                count(row.get("problems"))
+    except (OSError, ValueError, AttributeError):
+        pass
+    try:
+        data = json.loads(Path(deepdive_path or DD_LEDGER).read_text(encoding="utf-8"))
+        for row in (data.get("attempts") if isinstance(data, dict) else []) or []:
+            if str(row.get("at") or "")[:10] >= since and row.get("outcome") != "written":
+                count(row.get("problems"))
+    except (OSError, ValueError, AttributeError):
+        pass
+    out = [{"family": k, "count": n, "lesson": text[k]} for k, n in counts.items()]
+    out.sort(key=lambda item: (-item["count"], item["family"]))
+    return out[:top]
+
+
+def lessons_block(items):
+    """The prompt paragraph; '' when there is nothing to learn from."""
+    if not items:
+        return ""
+    return ("\n\nLESSONS FROM YOUR OWN REFUSALS (last %d days — the gate WILL refuse these again):\n"
+            % LESSON_DAYS) + "\n".join("- (%d×) %s" % (i["count"], i["lesson"]) for i in items)
+
+
 def prompt_for(ctx, problems=None):
     recent_lines = ["- %s | %s | %s" % (e.get("date"), e.get("theme"), e.get("headline"))
                     for e in sorted(ctx["recent"], key=lambda e: e.get("date", ""))[-60:]]
@@ -312,9 +401,9 @@ def prompt_for(ctx, problems=None):
     series_block = series_week.brief(ctx.get("series"))
     series_block = ("\n\n" + series_block) if series_block else ""
     series_block += rent_monitor.prompt_block(ctx.get("monitor") or [])
-    retry = ""
+    retry = lessons_block(ctx["lessons"] if "lessons" in ctx else lessons())
     if problems:
-        retry = "\n\nYOUR PREVIOUS DRAFT WAS REFUSED FOR THESE REASONS — fix every one:\n- " + "\n- ".join(problems)
+        retry += "\n\nYOUR PREVIOUS DRAFT WAS REFUSED FOR THESE REASONS — fix every one:\n- " + "\n- ".join(problems)
     return f"""BUSINESS MEMORY
 {read(BUSINESS).strip()}
 
@@ -1038,7 +1127,8 @@ def next_episode_number():
 def deepdive_prompt(number, states, facts, previous, problems=None):
     shelf = "\n".join("%s | %s | %s | %s" % (f["id"], f["state"], f["cite"] or "(no section)", f["text"]) for f in facts)
     prev = "\n".join("- %s" % t for t in previous) or "(none)"
-    retry = ("\n\nYOUR PREVIOUS DRAFT WAS REFUSED — fix every point:\n- " + "\n- ".join(problems)) if problems else ""
+    retry = lessons_block(lessons())
+    retry += ("\n\nYOUR PREVIOUS DRAFT WAS REFUSED — fix every point:\n- " + "\n- ".join(problems)) if problems else ""
     return f"""BUSINESS MEMORY
 {read(BUSINESS).strip()}
 
