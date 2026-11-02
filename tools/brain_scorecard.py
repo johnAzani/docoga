@@ -1068,6 +1068,10 @@ def build(http=None, env=None, now=None, history=None, goals=None, stats_path=YT
         "search": pull_search(problems, env),
     }
     k = kpis(channels, said)
+    try:
+        k["brain_iq"] = brain_iq(now=now)
+    except Exception as exc:  # noqa: BLE001 — the IQ block must never cost the scorecard
+        problems.append("brain IQ not measured: %s" % str(exc)[:120])
     prev = previous_week(history, now)
     grades = grade(k, prev, goals)
     strk = streaks(history, grades)
@@ -1077,6 +1081,129 @@ def build(http=None, env=None, now=None, history=None, goals=None, stats_path=YT
             "channels": channels, "kpis": k, "grades": grades, "streaks": strk,
             "orders": orders(k, grades, strk), "problems": problems}
     return snap
+
+
+# ── Brain IQ: is the editor getting smarter? (2 Nov 2026) ──────────────────────────────────
+# Owner: "always improve on the brain — I want it to always get smarter. Lock it in." The lock is
+# docs/BRAIN_GROWTH.md and tools/tests/test_brain_growth_lock.py; this is the measurement. Every
+# Monday the scorecard compares this week with last on what the brain itself controls: how often
+# a night's pack passed the gates first time, how often the Deep-Dive draft passed, whether the
+# week's answer page was written, how many lessons it is carrying, how big its law shelf is, and
+# how long since the brain last got a real improvement (the changelog in BRAIN_GROWTH.md).
+GROWTH_DOC = ROOT / "docs" / "BRAIN_GROWTH.md"
+IQ_STALE_DAYS = 14
+
+
+def _iq_window(rows, key, lo, hi):
+    out = []
+    for row in rows:
+        stamp = str(row.get(key) or "")[:10]
+        if lo <= stamp < hi:
+            out.append(row)
+    return out
+
+
+def last_brain_improvement(doc=None):
+    """(date_iso, title) of the newest changelog line in docs/BRAIN_GROWTH.md, or (None, '')."""
+    import re
+    try:
+        text = Path(doc or GROWTH_DOC).read_text(encoding="utf-8")
+    except OSError:
+        return None, ""
+    rows = re.findall(r"^- \*\*(\d{4}-\d{2}-\d{2})\*\*\s*[—-]\s*(.+)$", text, flags=re.M)
+    if not rows:
+        return None, ""
+    rows.sort(key=lambda r: r[0], reverse=True)
+    return rows[0][0], rows[0][1].strip()
+
+
+def brain_iq(now=None, said_path=None, refused_path=None, deepdive_path=None, answers_dir=None, doc=None):
+    """The week's brain numbers against last week's. Never raises — a missing file is a 0, not a crash."""
+    now = now or datetime.now(timezone.utc)
+    today = now.date()
+    w1_lo, w1_hi = (today - timedelta(days=7)).isoformat(), today.isoformat()
+    w0_lo, w0_hi = (today - timedelta(days=14)).isoformat(), w1_lo
+
+    def read_json(path, default):
+        try:
+            return json.loads(Path(path).read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return default
+
+    said = read_json(said_path or (ROOT / "logs" / "brain_said.json"), [])
+    said = said if isinstance(said, list) else []
+    refused = read_json(refused_path or (ROOT / "logs" / "brain_refused.json"), [])
+    refused = refused if isinstance(refused, list) else []
+    dd = read_json(deepdive_path or (ROOT / "logs" / "brain_deepdive.json"), {})
+    attempts = (dd.get("attempts") if isinstance(dd, dict) else []) or []
+    answers = Path(answers_dir or (ROOT / "brain" / "answers"))
+
+    def week(lo, hi):
+        approved = len(_iq_window(said, "date", lo, hi))
+        refused_days = len({str(r.get("date") or "")[:10] for r in _iq_window(refused, "at", lo, hi)})
+        dd_rows = _iq_window(attempts, "at", lo, hi)
+        dd_written = sum(1 for r in dd_rows if r.get("outcome") == "written")
+        pages = 0
+        if answers.is_dir():
+            pages = sum(1 for p in answers.glob("*.json") if lo <= p.stem[:10] < hi)
+        total = approved + refused_days
+        return {"packs_approved": approved, "nights_refused": refused_days,
+                "first_pass_rate": round(approved / total, 2) if total else None,
+                "deepdive_attempts": len(dd_rows), "deepdive_written": dd_written, "answer_pages": pages}
+
+    this_week, last_week = week(w1_lo, w1_hi), week(w0_lo, w0_hi)
+    shelf_facts = shelf_states = None
+    try:
+        sys.path.insert(0, str(ROOT / "tools"))
+        import law_index
+        shelf_facts, shelf_states = len(law_index.by_id()), len(law_index.states())
+    except Exception:  # noqa: BLE001 — the shelf is a bonus number here
+        pass
+    active = []
+    try:
+        import brain
+        active = brain.lessons(refused_path=refused_path, deepdive_path=deepdive_path)
+    except Exception:  # noqa: BLE001
+        pass
+    last_day, last_title = last_brain_improvement(doc)
+    days_since = (today - datetime.strptime(last_day, "%Y-%m-%d").date()).days if last_day else None
+    return {"this_week": this_week, "last_week": last_week, "shelf_facts": shelf_facts, "shelf_states": shelf_states,
+            "lessons": [{"family": a["family"], "count": a["count"]} for a in active],
+            "last_improvement": last_day, "last_improvement_title": last_title, "days_since_improvement": days_since,
+            "stale": bool(days_since is not None and days_since > IQ_STALE_DAYS)}
+
+
+def iq_lines(iq):
+    """The scorecard block, as bullet lines."""
+    if not iq:
+        return []
+    a, b = iq.get("this_week") or {}, iq.get("last_week") or {}
+
+    def arrow(key, pct=False):
+        x, y = a.get(key), b.get(key)
+        fx = ("%d%%" % round(x * 100)) if (pct and x is not None) else _fmt(x)
+        fy = ("%d%%" % round(y * 100)) if (pct and y is not None) else _fmt(y)
+        if x is None or y is None:
+            return "%s (last week %s)" % (fx, fy)
+        mark = "▲" if x > y else "▼" if x < y else "="
+        return "%s %s (last week %s)" % (fx, mark, fy)
+
+    lines = ["- packs passed the gates first time: %s — %s approved, %s night(s) refused"
+             % (arrow("first_pass_rate", pct=True), _fmt(a.get("packs_approved")), _fmt(a.get("nights_refused"))),
+             "- Deep-Dive drafts: %s written of %s attempt(s) (last week %s of %s)"
+             % (_fmt(a.get("deepdive_written")), _fmt(a.get("deepdive_attempts")), _fmt(b.get("deepdive_written")), _fmt(b.get("deepdive_attempts"))),
+             "- answer page this week: %s" % ("yes" if a.get("answer_pages") else "no")]
+    if iq.get("shelf_facts") is not None:
+        lines.append("- law shelf: %s facts across %s states" % (_fmt(iq["shelf_facts"]), _fmt(iq["shelf_states"])))
+    if iq.get("lessons"):
+        lines.append("- lessons it is carrying into every prompt: " + ", ".join("%s ×%d" % (l["family"], l["count"]) for l in iq["lessons"]))
+    else:
+        lines.append("- lessons it is carrying into every prompt: none — no refusals in 30 days")
+    if iq.get("last_improvement"):
+        flag = " — ⚠️ past %d days: the brain is owed an improvement" % IQ_STALE_DAYS if iq.get("stale") else ""
+        lines.append("- last brain improvement: %s (%s day(s) ago) — %s%s"
+                     % (iq["last_improvement"], _fmt(iq.get("days_since_improvement")), iq.get("last_improvement_title") or "", flag))
+    return lines
 
 
 def _fmt(v):
@@ -1148,6 +1275,8 @@ def summary_md(snap):
     if rows:
         lines += ["", "### What the brain's choices earned (avg engagement score, posts)", "| Dimension | Choice | Avg | n |", "|---|---|---|---|"]
         lines += ["| %s | %s | %s | %d |" % (dim, label, b.get("avg"), b.get("n")) for dim, label, b in rows]
+    if k.get("brain_iq"):
+        lines += ["", "### Brain IQ — is the editor getting smarter?"] + iq_lines(k["brain_iq"])
     lines += ["", "### Orders for the coming week"] + ["- " + o for o in snap.get("orders") or []]
     if snap.get("problems"):
         lines += ["", "### Not measured (and why)"] + ["- " + p for p in snap["problems"]]

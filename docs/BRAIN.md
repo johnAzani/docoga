@@ -5,6 +5,16 @@ brain that can think like you, understands content creation and my business, so
 that it works autonomously — everything automated. It only handles the social
 media."*
 
+## 🔒 THE BRAIN GETS SMARTER — a standing order (owner, 2 Nov 2026)
+*"I want you to always improve on the brain. I want it to always get smarter. Lock it in."*
+The charter, the measures (the Monday scorecard's **Brain IQ** block), the learning loops and
+the dated changelog live in **`docs/BRAIN_GROWTH.md`**, pinned by
+`tools/tests/test_brain_growth_lock.py`. First loop shipped the same morning: **lessons** —
+the refusal families of the last 30 days (`brain.lessons()`, counted from
+`logs/brain_refused.json` and `logs/brain_deepdive.json`) ride in every drafting prompt as
+`LESSONS FROM YOUR OWN REFUSALS`, so a mistake refused on Tuesday is a rule the model is told
+on Wednesday. One real improvement at least every 14 days; the scorecard flags it when owed.
+
 ## 🔒 THE BRAIN IS LOCKED — Gemini only (owner, 17 Oct 2026)
 *"I don't want the gpt-oss. Use only Gemini and plan with it. Lock it in."*
 Every model the brain, the replies lane, the weekly forum answer and the Deep-Dive
