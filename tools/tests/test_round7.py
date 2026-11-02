@@ -241,15 +241,26 @@ class ListeningTests(unittest.TestCase):
                 (dict(good, question="Notice in Abuja"), "end with ?"),
                 (dict(good, short_answer="Six months."), "short_answer length")):
             self.assertTrue(any(needle in p for p in listening.opener_gate(broken, facts_by_id)), needle)
-        drafts = iter([dict(good, claims=good["claims"][:2]), good])
-        gen = lambda prompt, system: next(drafts)  # noqa: E731
+        broken = dict(good, claims=good["claims"][:2])
+        drafts = iter([broken, broken, good])
         prompts = []
-        path, why = listening.opener(generate=lambda p, s: (prompts.append(p), next(drafts))[1], now=now, log=lambda *a: None)
+        gen = lambda p, s: (prompts.append(p), next(drafts))[1]  # noqa: E731
+        path, why = listening.opener(generate=gen, now=now, log=lambda *a: None, retry=False)
         self.assertIsNone(path, why)
         self.assertIn("WHAT SOMEONE ASKED THIS WEEK", prompts[0], "the question heard is in the prompt")
         self.assertNotIn("https://www.nairaland.com", prompts[0], "the asker is not named or linked")
+        # 2 Nov 2026: a refused draft is asked for once more, with the gate's words in the prompt
         path, pack = listening.opener(generate=gen, now=now, log=lambda *a: None)
+        self.assertEqual(len(prompts), 3)
+        self.assertIn("PREVIOUS DRAFT WAS REFUSED", prompts[2])
+        self.assertIn("fewer than 3", prompts[2])
         self.assertTrue(path and path.is_file() and path.suffix == ".json")
+        entry = listening.note_answer(listening.load(), "drafted", pack["url"], now=now)
+        self.assertEqual((entry["outcome"], listening.load()["answer_log"][-1]["reason"]), ("drafted", pack["url"]))
+        self.assertEqual(listening.latest_answer(max_age_days=0, now=now), path, "Monday's page counts on Monday")
+        self.assertIsNone(listening.latest_answer(max_age_days=0, now=now + dt.timedelta(days=1)))
+        self.assertIn("listening.py latest --max-age $((DOW - 1))", (WF / "brain.yml").read_text(),
+                      "Tuesday and Wednesday retry only while the week has no page")
         self.assertEqual((pack["status"], pack["kind"], pack["state"], pack["topic"], pack["tool"]),
                          ("approved", "answer_page", slug, topic, "notice-to-quit"))
         self.assertEqual(pack["post"]["headline"], good["subject"])

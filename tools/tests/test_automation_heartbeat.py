@@ -412,6 +412,23 @@ class PublishEvidenceTests(unittest.TestCase):
         self.assertIn("`logs/telegram_sent.json`", verdict["reason"])
         self.assertIn("without recording a publish", verdict["reason"])
 
+    def test_a_lane_that_publishes_weekly_says_so_and_is_judged_on_that(self):
+        # 2 Nov 2026: the Deep-Dive ticks nightly and uploads weekly; the boost sweep is idle at weekends
+        self.assertEqual(hb.publish_every("# heartbeat-publish-every: 8d"), 8 * 86400)
+        self.assertEqual(hb.publish_every("x\n  # heartbeat-publish-every: 36h\n"), 36 * 3600)
+        self.assertIsNone(hb.publish_every("no declaration"))
+        verdict = judge(runs=[run(hours_ago=3)])
+        verdict["publish_every"] = 8 * 86400
+        self.apply(verdict, [self.ledger(age=timedelta(days=4))])
+        self.assertEqual((verdict["status"], verdict["kind"]), ("ok", "ok"), "four quiet days are inside a weekly promise")
+        verdict = judge(runs=[run(hours_ago=3)])
+        verdict["publish_every"] = 8 * 86400
+        self.apply(verdict, [self.ledger(age=timedelta(days=9))])
+        self.assertEqual((verdict["status"], verdict["kind"]), ("fail", "green-but-quiet"), "nine days is past it")
+        for name, want in (("deepdive.yml", 8 * 86400), ("youtube_boost.yml", 4 * 86400)):
+            text = (ROOT / ".github" / "workflows" / name).read_text(encoding="utf-8")
+            self.assertEqual(hb.publish_every(text), want, name)
+
     def test_a_fresh_ledger_makes_a_green_lane_boringly_correct(self):
         verdict = judge(runs=[run(hours_ago=3)])
         self.apply(verdict, [self.ledger(age=timedelta(hours=2))])

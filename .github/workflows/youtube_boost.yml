@@ -1,5 +1,7 @@
 name: YouTube boost — playlist + first comment sweep
 
+# heartbeat-publish-every: 4d — the sweep runs nightly but only writes when a video still lacks
+# something; Shorts publish Mon–Fri, so a weekend writes nothing (2 Nov 2026).
 # Twenty minutes after the public slot (19:00 WAT, vars.YT_PUBLISH_HOUR_WAT), every video the
 # publish ledgers know gets what it still lacks (tools/yt_boost.py): its series playlist, and —
 # now that it is public — the channel's first comment with the question and the Deep-Dive link.

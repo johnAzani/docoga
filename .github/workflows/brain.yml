@@ -254,8 +254,16 @@ jobs:
       - name: Answer page (Mondays) — the week's question, as a cited page the machine publishes
         if: ${{ env.BRAIN_DRY_RUN != 'true' && steps.plan.outputs.code != '6' }}
         run: |
-          if [ "$(date +%u)" != "1" ] && [ "$BRAIN_FORUM_ANSWER" != "true" ]; then
-            echo "not Monday and not asked — no answer page tonight"
+          # Monday writes the week's page. 2 Nov 2026: the first Monday wrote none (the step ran
+          # after the plan and the Deep-Dive had spent the key's morning), so Tuesday and
+          # Wednesday now try again until the week has its page — never a second one.
+          DOW=$(date +%u)
+          if [ "$DOW" -gt 3 ] && [ "$BRAIN_FORUM_ANSWER" != "true" ]; then
+            echo "not Monday to Wednesday and not asked — no answer page tonight"
+            exit 0
+          fi
+          if [ "$BRAIN_FORUM_ANSWER" != "true" ] && [ "$(python3 tools/listening.py latest --max-age $((DOW - 1)) | sed -n 's/^LISTENING_ANSWER=//p')" != "none" ]; then
+            echo "this week's answer page is already written — nothing to add"
             exit 0
           fi
           set +e
