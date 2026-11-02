@@ -209,11 +209,74 @@ def prompt_block(items, field=None):
     return "\n".join(lines)
 
 
-def scorecard_lines(data=None, now=None):
+# ── Research freshness: the lock's measurement (docs/DOMINANCE.md §3) ───────────────────────────
+DOMINANCE_DOC = ROOT / "docs" / "DOMINANCE.md"
+DIVE_STALE_DAYS = 14      # a new dated research dive at least this often
+MAP_STALE_DAYS = 45       # the field map re-verified at least this often
+
+
+def last_research_dive(doc=None):
+    """(date_iso, title) of the newest ledger line in docs/DOMINANCE.md, or (None, '')."""
+    try:
+        text = Path(doc or DOMINANCE_DOC).read_text(encoding="utf-8")
+    except OSError:
+        return None, ""
+    rows = re.findall(r"^- \*\*(\d{4}-\d{2}-\d{2})\*\*\s*[—-]\s*(.+)$", text, flags=re.M)
+    if not rows:
+        return None, ""
+    rows.sort(key=lambda r: r[0], reverse=True)
+    return rows[0][0], rows[0][1].strip()
+
+
+def map_verified(path=None):
+    try:
+        data = json.loads(Path(path or FIELD).read_text(encoding="utf-8"))
+        return str(data.get("verified") or "")[:10] or None
+    except (OSError, ValueError, AttributeError):
+        return None
+
+
+def _days_since(stamp, now):
+    when = newsdesk._when(stamp)
+    return (now - when).days if when else None
+
+
+def research_status(now=None, doc=None, field_path=None):
+    """How fresh the research is: the last dive, the field map's verification, and ⚠️ flags."""
+    now = now or datetime.now(timezone.utc)
+    dive_date, dive_title = last_research_dive(doc)
+    verified = map_verified(field_path)
+    dive_days = _days_since(dive_date, now) if dive_date else None
+    map_days = _days_since(verified, now) if verified else None
+    return {"last_dive": dive_date, "last_dive_title": dive_title, "dive_days": dive_days,
+            "dive_stale": dive_days is None or dive_days > DIVE_STALE_DAYS,
+            "map_verified": verified, "map_days": map_days,
+            "map_stale": map_days is None or map_days > MAP_STALE_DAYS}
+
+
+def research_lines(status):
+    lines = []
+    if status.get("last_dive"):
+        lines.append("- last deep research: %s (%s day(s) ago) — %s%s"
+                     % (status["last_dive"], status["dive_days"], status["last_dive_title"][:90],
+                        " ⚠️ past %d days — a new dive is owed" % DIVE_STALE_DAYS if status["dive_stale"] else ""))
+    else:
+        lines.append("- last deep research: none on the ledger ⚠️ — docs/DOMINANCE.md §5")
+    if status.get("map_verified"):
+        lines.append("- field map verified: %s (%s day(s) ago)%s"
+                     % (status["map_verified"], status["map_days"],
+                        " ⚠️ past %d days — re-verify every rival" % MAP_STALE_DAYS if status["map_stale"] else ""))
+    else:
+        lines.append("- field map verified: never ⚠️")
+    return lines
+
+
+def scorecard_lines(data=None, now=None, status=None):
     data = data if data is not None else load()
     items = fresh_items(data, now=now)
+    head = research_lines(status if status is not None else research_status(now=now))
     if not data.get("pulled_at"):
-        return ["- not pulled yet — the brain's Monday run writes logs/competitor_watch.json"]
+        return head + ["- not pulled yet — the brain's Monday run writes logs/competitor_watch.json"]
     by = {}
     for it in items:
         by.setdefault(it["competitor"], []).append(it)
@@ -223,7 +286,7 @@ def scorecard_lines(data=None, now=None):
         lines.append("- %s — %s" % (name, "; ".join(r["title"][:70] for r in rows[:3])))
     if not items:
         lines.append("- nothing new on the field this window — DocOga posted every day of it")
-    return lines
+    return head + lines
 
 
 def main(argv=None):

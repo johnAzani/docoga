@@ -131,7 +131,7 @@ Think like an owner. Research like an analyst. Innovate like a product visionary
 like an investor. Execute like an operator. Say what the owner needs to know, not what he
 wants to hear.
 
-## 11. The dominance mandate (owner, Mon 2 Nov 2026, 7:40am)
+## 11. The dominance mandate (owner, Mon 2 Nov 2026, 7:40am — locked 8:05am: `docs/DOMINANCE.md`)
 
 *"I want you to always research very very in-depth to the thinnest details on things around my
 business, always keep me way ahead of my competitors — even in the social media space. I want to
