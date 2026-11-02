@@ -1,0 +1,111 @@
+{
+ "version": 1,
+ "status": "approved",
+ "date": "2026-11-03",
+ "generated_at": "2026-11-02T01:33:38+01:00",
+ "theme": "kwara-rent-book-duty-high-density",
+ "post_type": "state_spotlight",
+ "hook_type": "STAT",
+ "state": "kwara",
+ "claims": [
+  {
+   "text": "In Kwara high-density areas, landlords must issue a prescribed rent book in addition to a receipt.",
+   "fact_id": "kwara:rent_book:1"
+  },
+  {
+   "text": "A Kwara landlord who fails to issue the rent book faces a ₦2,000 fine or three months imprisonment under s.32.",
+   "fact_id": "kwara:rent_book:2"
+  }
+ ],
+ "post": {
+  "headline": "Kwara law penalises landlords who skip the rent book",
+  "lines": [
+   "A standard bank transfer or receipt is not the only paper Kwara demands.",
+   "In Kwara high-density areas, landlords must issue a prescribed rent book in addition to a receipt.",
+   "A Kwara landlord who fails to issue the rent book faces a ₦2,000 fine or three months imprisonment under s.32.",
+   "Keep proper paper for every tenant so your rentals stay strictly lawful."
+  ],
+  "cta": "Send this to a landlord renting property in Kwara. Follow for the next rule.",
+  "hashtags": [
+   "#DocOga",
+   "#KwaraState",
+   "#NigerianLandlords",
+   "#RentReceipt"
+  ]
+ },
+ "threads": {
+  "text": "In Kwara high-density areas, landlords must issue a rent book beside the receipt under s.32. Skipping it carries a ₦2,000 fine or up to three months in prison. Do you keep a rent book?",
+  "hashtags": [
+   "#DocOga",
+   "#KwaraState"
+  ],
+  "topic": "Tenant Rights Nigeria",
+  "poll": null,
+  "evening": "In Kwara, a bank alert alone does not meet the law in high-density areas. Issue proper paper for every unit."
+ },
+ "visual": {
+  "kicker": "State spotlight: Kwara",
+  "layout": "stat",
+  "big": "₦2,000 FINE",
+  "plate": "keys wooden table ledger"
+ },
+ "short": {
+  "title": "Five clauses every tenancy agreement needs.",
+  "hook_sub": "Check your contract before signing.",
+  "hook_say": "Before you pay rent or sign any tenancy agreement, open the document and confirm these five core clauses exist right now.",
+  "tips": [
+   {
+    "text": "Confirm exact rent and period",
+    "sub": "Spell out dates clearly.",
+    "say": "Your agreement must clearly state the exact rent amount and the precise dates the tenancy begins and ends."
+   },
+   {
+    "text": "Verify the notice length",
+    "sub": "State notice terms in writing.",
+    "say": "Ensure the required quit notice is written plainly so neither side cuts statutory periods short when ending the lease."
+   },
+   {
+    "text": "Identify who pays repairs",
+    "sub": "Divide major and minor fixes.",
+    "say": "Spell out who handles structural defects versus daily maintenance to prevent bitter arguments when pipes burst or roofs leak."
+   },
+   {
+    "text": "Define the caution deposit",
+    "sub": "State conditions for full refund.",
+    "say": "Name what damages the caution fee covers and the exact conditions for a refund when you pack out peacefully."
+   }
+  ],
+  "hook_text": "FIVE CLAUSES EVERY TENANCY AGREEMENT NEEDS.",
+  "series": {
+   "slug": "tenancy-agreement",
+   "name": "Tenancy agreement",
+   "part": 2,
+   "total": 5,
+   "label": "The five clauses to find"
+  }
+ },
+ "why": "Tuesday spotlight covers Kwara's unique rent book statutory requirement, using the STAT hook archetype and pairing with part 2 of the Tenancy Agreement Short series.",
+ "tool": "rent-receipt",
+ "reader": "okafor",
+ "news_hook": null,
+ "quiz": {
+  "question": "What penalty faces a landlord who skips the rent book in Kwara high-density areas?",
+  "options": [
+   "₦2,000 fine or 3 months jail",
+   "₦50,000 fine automatically",
+   "Forfeiture of the property",
+   "No penalty exists in law"
+  ],
+  "correct": 0,
+  "explanation": "₦2,000 fine or up to three months imprisonment — s.32(3), Kwara Rent Control Law 1995.",
+  "fact_id": "kwara:rent_book:2"
+ },
+ "gates": [
+  "citation",
+  "verification",
+  "lint",
+  "repetition",
+  "shape"
+ ],
+ "note": ""
+}

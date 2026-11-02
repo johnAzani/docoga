@@ -1,44 +1,58 @@
 [
  {
+  "slug": "edo-no-premium-first-six-months-tenancy",
+  "title": "Edo State: Pay the rent, not the premium",
+  "date": "2026-11-02",
+  "state": "Edo",
+  "theme": "edo-no-premium-first-six-months-tenancy",
+  "kind": "guide"
+ },
+ {
   "slug": "cross-river-rent-control-advance-rent-limits-question",
   "title": "How many months' rent can your landlord demand in Cross River?",
   "date": "2026-11-01",
   "state": "Cross River",
-  "theme": "cross-river-rent-control-advance-rent-limits-question"
+  "theme": "cross-river-rent-control-advance-rent-limits-question",
+  "kind": "guide"
  },
  {
   "slug": "abuja-quit-notice-checklist",
   "title": "Abuja quit notice checklist: 4 rules your landlord must meet",
   "date": "2026-10-31",
   "state": "Abuja (FCT)",
-  "theme": "abuja-quit-notice-checklist"
+  "theme": "abuja-quit-notice-checklist",
+  "kind": "guide"
  },
  {
   "slug": "kano-rent-receipt-demand-it",
   "title": "No rent receipt in Kano? You could pay twice.",
   "date": "2026-10-30",
   "state": "Kano",
-  "theme": "kano-rent-receipt-demand-it"
+  "theme": "kano-rent-receipt-demand-it",
+  "kind": "guide"
  },
  {
   "slug": "agent-transfer-alert-not-receipt-rivers",
   "title": "Transfer alert to an agent is not a rent receipt",
   "date": "2026-10-29",
   "state": "Rivers",
-  "theme": "agent-transfer-alert-not-receipt-rivers"
+  "theme": "agent-transfer-alert-not-receipt-rivers",
+  "kind": "guide"
  },
  {
   "slug": "edo-tribunal-dispute-protects-tenant",
   "title": "A dispute at the tribunal pauses your quit notice",
   "date": "2026-10-25",
   "state": "Edo",
-  "theme": "edo-tribunal-dispute-protects-tenant"
+  "theme": "edo-tribunal-dispute-protects-tenant",
+  "kind": "guide"
  },
  {
   "slug": "cross-river-advance-rent-limit-checklist",
   "title": "Did your Cross River landlord demand a full year upfront?",
   "date": "2026-10-24",
   "state": "Cross River",
-  "theme": "cross-river-advance-rent-limit-checklist"
+  "theme": "cross-river-advance-rent-limit-checklist",
+  "kind": "guide"
  }
 ]

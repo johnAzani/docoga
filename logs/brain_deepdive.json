@@ -214,6 +214,76 @@
     "description: tool link appended"
    ],
    "run_id": "40641354273"
+  },
+  {
+   "at": "2026-11-02T01:37:34+01:00",
+   "episode": "dd6",
+   "attempt": 1,
+   "outcome": "refused",
+   "title": "Unlawful Eviction in Lagos and Anambra: Know Your Rights",
+   "problems": [
+    "verifier: claim [lagos:protections:5] not supported — The fact only mentions section 41 running for three months with up to three renewals; it says nothing about section 42 or prohibitions on executin",
+    "verifier: claim [lagos:protections:2] not supported — The fact supports section 6(2) of the Lagos Tenancy Law 2011 for compensation on quitting, but does not state or support any rule regarding Anambr",
+    "verifier: legal statement not on the shelf — 'Under section 144 of the Anambra Law, recovery matters are channelled downward to the Magistrate Court, while the High C'",
+    "verifier: legal statement not on the shelf — 'In Lagos, an identical seven-day statutory notice is required before any plaint can be entered in court.'",
+    "verifier: legal statement not on the shelf — 'Under section 41 and section 42 of the Lagos Tenancy Law 2011, a warrant for possession runs for three months and cannot'",
+    "verifier: legal statement not on the shelf — \"Under section 6(2) in Lagos and general principles in Anambra, improvements made with the landlord's written consent ent\""
+   ],
+   "healed": [
+    "beat 6 dropped: trigger 'fine of 250000 naira' not spoken in section 2 after word 0",
+    "beat 18 dropped: trigger 'thirtyfirst of december if' not spoken in section 5 after word 0",
+    "beat 19 dropped: trigger 'tenancy law 2011 threemonth' not spoken in section 5 after word 0",
+    "beat 31 shot 'signing tenancy document with pen' dropped",
+    "beat 33 shot 'person holding modern smartphone' dropped"
+   ],
+   "run_id": "41367525579"
+  },
+  {
+   "at": "2026-11-02T01:41:54+01:00",
+   "episode": "dd6",
+   "attempt": 2,
+   "outcome": "refused",
+   "title": "Notice to Quit: Your Rights When The Landlord Serves Paper",
+   "problems": [
+    "verifier: claim [lagos:protections:5] not supported — This claim is not mentioned or stated anywhere in the episode narration text.",
+    "verifier: claim [lagos:protections:6] not supported — This claim is not mentioned or stated anywhere in the episode narration text."
+   ],
+   "healed": [
+    "beat 12 dropped: trigger 's134 of the lagos' not spoken in section 4 after word 0",
+    "beat 14 dropped: trigger 'fixedterm tenancies no quit' not spoken in section 4 after word 74",
+    "beat 15 shot 'man working tools' dropped",
+    "beat 22 shot 'calendar with 7 days marked' dropped",
+    "beat 28 dropped: trig ['no', 'rent', 'tribunal', 'in', 'lagos'] is not 2-4 words",
+    "beat 29 dropped: trig ['high', 'court', 'retains', 'its', 'jurisdiction'] is not 2-4 words",
+    "beat 35 dropped: trig ['oga', 'pass', 'for', 'just', 'two', 'thousand'] is not 2-4 words"
+   ],
+   "run_id": "41367525579"
+  },
+  {
+   "at": "2026-11-02T01:43:29+01:00",
+   "episode": "dd6",
+   "attempt": 3,
+   "outcome": "refused",
+   "title": "Illegal Eviction and Notice: The Rules in Lagos and Anambra",
+   "problems": [
+    "verifier: claim [lagos:notice_ladder:5] not supported — The fact only specifies 'Yearly tenant: six months' for Lagos s.13(1)(e), not the full ladder of notice periods claimed.",
+    "verifier: legal statement not on the shelf — 'Possession of a residential property is protected by law from the very day you enter.'",
+    "verifier: legal statement not on the shelf — 'The law requires strict paperwork, precise calendars, and formal judicial processes before anyone can touch your door.'",
+    "verifier: legal statement not on the shelf — 'If a landlord locks you out, removes your roof, or dumps your property on the pavement, you have the right to file an ac'",
+    "verifier: legal statement not on the shelf — 'The appellate courts have made it clear that taking the law into your own hands is an illegal act that exposes the prope'",
+    "verifier: legal statement not on the shelf — 'The state statute lays down a methodical, step-by-step route that every landlord must walk before taking back premises.'",
+    "verifier: legal statement not on the shelf — 'Before a landlord can ever ask a court for an eviction order, the tenancy must be properly terminated through a written,'",
+    "verifier: legal statement not on the shelf — 'If you pay your rent every twelve months, your landlord cannot hand you a one-month quit notice and claim that he wants '",
+    "verifier: legal statement not on the shelf — 'Unless you signed an agreement that clearly accepts a shorter notice, you are entitled to six full months.'",
+    "verifier: legal statement not on the shelf — 'Furthermore, a verbal message, a WhatsApp chat, or a phone call does not count as a valid notice to quit.'",
+    "verifier: legal statement not on the shelf — 'The document must be written, properly addressed to you, and physically served as required by law.'",
+    "verifier: legal statement not on the shelf — 'Across most of Nigeria, the traditional common law rule demands that a notice to quit must terminate on the eve of the a'"
+   ],
+   "healed": [
+    "beat 20 dropped: trigger 'in lagos fixedterm' not spoken in section 5 after word 98",
+    "beat 29 shot 'person holding phone' dropped"
+   ],
+   "run_id": "41367525579"
   }
  ]
 }

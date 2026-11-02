@@ -1,11 +1,11 @@
-# What the numbers said — written 2026-10-27 by tools/brain.py feedback
+# What the numbers said — written 2026-11-02 by tools/brain.py feedback
 
 ## Scorecard 2026-W44 (taken 2026-10-27 15:13)
 
 **Money:** 0 passes / ₦0 this week · 0 passes / ₦0 in 28 days
 **Traffic:** 40 visits to the site this week (Nigeria 40.0%) — facebook 20, direct 13, google 7
 **Sold by channel (28 days):** none tagged yet · checkout taps: none yet
-**Google (28 days):** 12 clicks / 430 impressions, CTR 2.8% — 'quit notice' (0 clicks, pos 1.0), 'notice to quit' (0 clicks, pos 4.3), 'notice to quit' (0 clicks, pos 4.8), 'quit notice letter from landlord to tenant in nigeria' (0 clicks, pos 6.3)
+**Google (28 days, pulled ?):** 12 clicks / 430 impressions, CTR 2.8% — 'quit notice' (0 clicks, pos 1.0), 'notice to quit' (0 clicks, pos 4.3), 'notice to quit' (0 clicks, pos 4.8), 'quit notice letter from landlord to tenant in nigeria' (0 clicks, pos 6.3)
 
 | Channel | Followers | 7-day views | Signal |
 |---|---|---|---|
@@ -36,6 +36,10 @@
 | YouTube 500 subscribers — fan-funding tier of the Partner Program | 49 | 451 | 42.9 | 20.5 | 10.5 wk | ✅ on pace (due 2027-03-31) |
 | Instagram 1,000 followers — subscriptions/gifts eligibility | 1 | 999 | 0.0% | 38.0 | — | 🔻 behind pace (due 2027-04-30) |
 | Telegram 1,000 members — channel ads/stars eligibility | 2 | 998 | 0.0% | 38.0 | — | 🔻 behind pace (due 2027-04-30) |
+
+### Instagram diagnosis — is anyone seeing it?
+- Accounts reached this week: 16 (1 follower, so nearly all of it was strangers).
+- Posts shown to nobody (reach 0) this fortnight: None of 14.
 Facebook engagement by posting hour (WAT): 14:00 → 154.0, 13:00 → 139.0, 5:00 → 121.0
 Instagram engagement by posting hour (WAT): 21:00 → 2.0, 19:00 → 1.75, 18:00 → 1.67
 Threads engagement by posting hour (WAT): 20:00 → 3.0, 13:00 → 0.86, 7:00 → 0.0
@@ -83,8 +87,8 @@ In Lagos a tenancy' (3); 'In case you missed it: Rent Receipt in Nigeria: The 7 
 - Top longform: 'Notice to Quit in Nigeria: The Legal Timeline Every Tenant & Landlord Must Know' 4 views; 'The Rent Receipt: The ₦50 Paper That Wins Cases' 2 views; 'Tenancy Agreement in Nigeria: The 8 Clauses That Decide Everything' 2 views
 
 ## Last 28 days of the brain's own output
-- post types: engagement ×2, checklist ×1, pidgin ×1
-- hooks: STAT ×2, QUESTION ×1, CLAIM ×1
-- states: edo ×2, cross-river ×1, anambra ×1
+- post types: engagement ×3, checklist ×2, pidgin ×1, promo ×1, story ×1, educational ×1
+- hooks: STAT ×3, STAKES ×3, QUESTION ×1, CLAIM ×1, CURIOSITY ×1
+- states: edo ×3, cross-river ×2, anambra ×1, kano ×1, rivers ×1, abuja ×1
 
 Rotate away from the most-used type and hook above; the least-used state is overdue.

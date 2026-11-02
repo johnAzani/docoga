@@ -374,5 +374,11 @@
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
+  <url>
+    <loc>https://docoga.com.ng/guides/edo-no-premium-first-six-months-tenancy</loc>
+    <lastmod>2026-11-02</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
 </urlset>
 <!-- Add one <url> block per SEO content page as you publish them (see PLAN.md keyword cluster). -->

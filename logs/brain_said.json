@@ -147,5 +147,22 @@
   "reader": "ngozi",
   "tool": "tenancy-agreement",
   "news_hook": "Residential rents under fresh upward pressure in Q4 2026 across Lagos, Abuja, Port Harcourt and Ibadan — housing group — Daily Trust / HDAN (2026-10-12)"
+ },
+ {
+  "date": "2026-11-03",
+  "theme": "kwara-rent-book-duty-high-density",
+  "headline": "Kwara law penalises landlords who skip the rent book",
+  "post_type": "state_spotlight",
+  "hook_type": "STAT",
+  "state": "kwara",
+  "fact_ids": [
+   "kwara:rent_book:1",
+   "kwara:rent_book:2"
+  ],
+  "plate": "keys wooden table ledger",
+  "short": true,
+  "reader": "okafor",
+  "tool": "rent-receipt",
+  "news_hook": null
  }
 ]

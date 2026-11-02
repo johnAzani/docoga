@@ -1,5 +1,14 @@
 [
  {
+  "date": "2026-11-04",
+  "at": "2026-11-02T01:35:30+01:00",
+  "short_day": true,
+  "problems": [
+   "a body line is 184 characters; max 110: 'For Lagos, under Section 4(5) of the Ten'",
+   "a body line is 147 characters; max 110: 'Under Section 44(1), to demolish house o'"
+  ]
+ },
+ {
   "date": "2026-11-03",
   "at": "2026-11-01T07:39:48+01:00",
   "short_day": true,
