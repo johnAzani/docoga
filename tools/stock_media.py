@@ -77,7 +77,12 @@ NIGERIA_WORDS = ("nigeria", "nigerian", "lagos", "abuja", "naija", "yoruba", "ig
 AFRICA_WORDS = ("africa", "african", "ghana", "accra", "kenya", "nairobi", "senegal", "dakar", "benin",
                 "togo", "lome", "cameroon", "douala", "west")
 EXCLUDE = ("portrait", "selfie", "headshot", "face", "faces", "closeup", "close-up", "close", "model", "models",
-           "logo", "poster", "sign", "text", "nude", "bikini")
+           "logo", "poster", "sign", "text", "nude", "bikini",
+           # 2 Nov 2026: the first photo-first carousel went out on an Alipay QR-code phone screen
+           # (query "rent payment receipt nigeria"). Readable screens, barcodes and foreign money are
+           # signage by another name (BRAND_STYLE §6: never readable signage; Nigerian feel).
+           "qr", "qr-code", "qrcode", "barcode", "scan", "screenshot", "alipay", "wechat", "paypal", "venmo",
+           "bitcoin", "crypto", "cryptocurrency", "dollar", "dollars", "euro", "euros", "yuan", "rmb", "rupee", "pound")
 
 PACE = {"pixabay": 0.7, "pexels": 1.0, "commons": 1.0, "flickr": 1.0, "unsplash": 1.5}
 _last = {}

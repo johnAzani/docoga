@@ -146,6 +146,10 @@ class Words(unittest.TestCase):
     def test_no_close_faces_and_nothing_irrelevant(self):
         self.assertTrue(sm.excluded("woman portrait face market"))
         self.assertFalse(sm.excluded("lagos market street crowd"))
+        # 2 Nov 2026: the Alipay QR-code phone screen that fronted the first photo-first carousel
+        self.assertTrue(sm.excluded("alipay, qr code, payment, phone, scan"))
+        self.assertTrue(sm.excluded("dollar bills money cash"))
+        self.assertFalse(sm.excluded("naira notes money cash nigeria"))
         cands = [{"id": "x", "url": "u", "title": "sunset beach", "tags_text": "", "kind": "video"},
                  {"id": "y", "url": "u", "title": "woman portrait market", "tags_text": "", "kind": "video"}]
         self.assertIsNone(sm.choose(cands, "market stall", 4.0))
