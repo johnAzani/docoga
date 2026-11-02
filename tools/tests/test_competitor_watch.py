@@ -83,10 +83,11 @@ class Pull(unittest.TestCase):
         self.assertIn("1 document tools", block)
         self.assertIn("lead, do not follow", cw.prompt_block([], field=FIELD))
         lines = cw.scorecard_lines(data, now=NOW)
-        self.assertIn("3 item(s) from 3 competitor(s)", lines[0])
-        self.assertIn("TikTok lawyer", lines[0])
+        self.assertTrue(lines[0].startswith("- last deep research:"), lines[0])
+        self.assertIn("3 item(s) from 3 competitor(s)", lines[2])
+        self.assertIn("TikTok lawyer", lines[2])
         self.assertTrue(any("Rival blog" in l for l in lines))
-        self.assertEqual(cw.scorecard_lines({"items": []}, now=NOW)[0][:16], "- not pulled yet")
+        self.assertEqual(cw.scorecard_lines({"items": []}, now=NOW)[2][:16], "- not pulled yet")
 
     def test_the_cli_writes_the_file_and_the_real_field_map_is_well_formed(self):
         with tempfile.TemporaryDirectory() as tmp, mock.patch.object(cw, "_http", fake_http), \
@@ -111,7 +112,7 @@ class Pull(unittest.TestCase):
         self.assertIn("python3 tools/competitor_watch.py pull", wf)
         self.assertIn("logs/competitor_watch.json", wf.split("Commit what the brain decided", 1)[1])
         sc = (ROOT / "tools" / "brain_scorecard.py").read_text(encoding="utf-8")
-        self.assertIn("### Competitor watch — the field this week", sc)
+        self.assertIn("### Competitor watch — the field this week (🔒 docs/DOMINANCE.md)", sc)
 
 
 if __name__ == "__main__":

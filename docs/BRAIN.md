@@ -354,7 +354,8 @@ the `YT_REFRESH_TOKEN` secret. Next Monday 06:00 WAT the stats lane prints `SEAR
 ## The seventh round (17 Oct 2026 — "every channel growing, the account getting fat, ₦0")
 
 **The field (`tools/competitor_watch.py`, 2 Nov 2026).** Owner: "keep me way ahead of my
-competitors — I want to dominate." `brain/competitors.json` is the verified map of who else sells
+competitors — I want to dominate. Lock it in." 🔒 Charter and research ledger: `docs/DOMINANCE.md`,
+pinned by `tools/tests/test_dominance_lock.py`. `brain/competitors.json` is the verified map of who else sells
 tenancy documents or teaches tenancy law to Nigerians (`docs/COMPETITOR_WATCH.md`); every Brain
 run reads their public RSS/sitemap/YouTube feeds at ₦0, writes `logs/competitor_watch.json`, and
 the pack prompt carries THE FIELD — titles only, with the rule *say it better, cite the section

@@ -1279,7 +1279,7 @@ def summary_md(snap):
         lines += ["", "### Brain IQ — is the editor getting smarter?"] + iq_lines(k["brain_iq"])
     try:
         import competitor_watch
-        lines += ["", "### Competitor watch — the field this week"] + competitor_watch.scorecard_lines()
+        lines += ["", "### Competitor watch — the field this week (🔒 docs/DOMINANCE.md)"] + competitor_watch.scorecard_lines()
     except Exception:  # noqa: BLE001 — the field is a bonus block
         pass
     lines += ["", "### Orders for the coming week"] + ["- " + o for o in snap.get("orders") or []]
