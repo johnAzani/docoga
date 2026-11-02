@@ -75,19 +75,32 @@
       "run_id": "41094989569",
       "series": "Part 5 of 5 · Rent receipt law",
       "series_topic": "Rent receipt law"
+    },
+    {
+      "date": "2026-11-02",
+      "video_id": "BYFumuso2pM",
+      "title": "Read your tenancy agreement. Or pay twice (part 1 of 5) #Shorts",
+      "url": "https://docoga-pass.johnazani.workers.dev/m/NO3qEKtoPQ98ra7aSG3WPIixb7hsRnjo.mp4",
+      "name": "NO3qEKtoPQ98ra7aSG3WPIixb7hsRnjo",
+      "bytes": 44630065,
+      "hosted_at": "2026-11-02T17:18:39+00:00",
+      "expires_at": "2026-11-03T23:18:39+00:00",
+      "run_id": "41486964273",
+      "series": "Part 1 of 5 · Tenancy agreement",
+      "series_topic": "Tenancy agreement"
     }
   ],
   "latest": {
-    "date": "2026-10-30",
-    "video_id": "pS6CpDKlzTc",
-    "title": "Pay without a receipt? Pay twice. Demand it in writing (part 5 of 5) #Shorts",
-    "url": "https://docoga-pass.johnazani.workers.dev/m/9vuzA-6X_ACGdfWhye8RbolWwniFtKux.mp4",
-    "name": "9vuzA-6X_ACGdfWhye8RbolWwniFtKux",
-    "bytes": 40284512,
-    "hosted_at": "2026-10-30T17:16:34+00:00",
-    "expires_at": "2026-10-31T23:16:34+00:00",
-    "run_id": "41094989569",
-    "series": "Part 5 of 5 · Rent receipt law",
-    "series_topic": "Rent receipt law"
+    "date": "2026-11-02",
+    "video_id": "BYFumuso2pM",
+    "title": "Read your tenancy agreement. Or pay twice (part 1 of 5) #Shorts",
+    "url": "https://docoga-pass.johnazani.workers.dev/m/NO3qEKtoPQ98ra7aSG3WPIixb7hsRnjo.mp4",
+    "name": "NO3qEKtoPQ98ra7aSG3WPIixb7hsRnjo",
+    "bytes": 44630065,
+    "hosted_at": "2026-11-02T17:18:39+00:00",
+    "expires_at": "2026-11-03T23:18:39+00:00",
+    "run_id": "41486964273",
+    "series": "Part 1 of 5 · Tenancy agreement",
+    "series_topic": "Tenancy agreement"
   }
 }

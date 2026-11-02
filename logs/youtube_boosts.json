@@ -251,5 +251,28 @@
     "series_playlist_id": "PLLZmwnofoLMs",
     "series_item_id": "UExMWm13bm9mb0xNcy4wMTcyMDhGQUE4NTIzM0Y5",
     "commented_at": "2026-10-30T18:20:50+00:00"
+  },
+  {
+    "video_id": "BYFumuso2pM",
+    "kind": "short",
+    "title": "Read your tenancy agreement. Or pay twice.",
+    "date": "2026-11-02",
+    "comment_text": "Full episode (free, 9 minutes): Advance Rent in Lagos and Kwara: What the Law Forbids (Deep-Dive 4) — https://www.youtube.com/watch?v=tEicM9au4hE\nPart 1 of 5 · Tenancy agreement.\nPart 2 tomorrow, 7:00pm.\n\nWhich of these do you already do — and which one have you been skipping? Tell me below 👇\n\nFree receipt, tenancy agreement and notice templates (no sign-up): https://docoga.com.ng/?s=yt",
+    "comment_id": "",
+    "playlist_id": "PLGn3YRk7msT0",
+    "playlist_item_id": "UExHbjNZUms3bXNUMC5GNjNDRDREMDQxOThCMDQ2",
+    "planned_at": "2026-11-02T17:17:33+00:00",
+    "notes": [
+      "2026-11-02T17:17:35+00:00: series playlistItems.insert HTTP 409 (SERVICE_UNAVAILABLE)"
+    ],
+    "series": {
+      "slug": "tenancy-agreement",
+      "name": "Tenancy agreement",
+      "part": 1,
+      "total": 5,
+      "week_start": "2026-11-02"
+    },
+    "series_playlist_id": "",
+    "series_item_id": ""
   }
 ]
