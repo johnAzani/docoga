@@ -130,3 +130,30 @@ constraints; confuse activity with progress; keep defending what the evidence ha
 Think like an owner. Research like an analyst. Innovate like a product visionary. Evaluate
 like an investor. Execute like an operator. Say what the owner needs to know, not what he
 wants to hear.
+
+## 11. The dominance mandate (owner, Mon 2 Nov 2026, 7:40am)
+
+*"I want you to always research very very in-depth to the thinnest details on things around my
+business, always keep me way ahead of my competitors — even in the social media space. I want to
+dominate."*
+
+What this adds to the charter, permanently:
+
+- **The field is named and watched by the machine, every week.** `brain/competitors.json` is the
+  verified map of who else sells tenancy documents to Nigerians and who else teaches tenancy law
+  on the feeds (docs/COMPETITOR_WATCH.md — every row from a source that was read; a guess is never
+  a competitor). `tools/competitor_watch.py` reads their public feeds at ₦0 on every Brain run and
+  hands the Brain THE FIELD: what they published, with the rule *say it better, cite the section
+  they did not, take the angle they missed, never copy, never name a rival*. The Monday scorecard
+  prints **"Competitor watch — the field this week"**. TikTok and Instagram publish no feed at ₦0;
+  those rows say so rather than pretend.
+- **Dominance is measured on the platforms' own ranking signals**, not on volume: sends and saves
+  per reach (Instagram), shares and comments per post (Facebook), replies and reposts (Threads),
+  watch time and subscribers (YouTube), clicks and position (Google). "Ahead" means those rising
+  while the field's output is known and answered the same week.
+- **Research cadence:** every Monday brief carries at least one *verified* thing the field did,
+  one law or platform change that moved (e.g. the Lagos State Tenancy and Recovery of Premises
+  Bill — second reading passed, committee stage as of Aug 2026, not law), and what DocOga does
+  about it — labelled fact / estimate / hypothesis as §3 requires.
+- **₦0 and the locks stand.** No paid intelligence tools, no scraping behind logins, no second
+  model. The owner is never asked to watch a rival by hand on a schedule.

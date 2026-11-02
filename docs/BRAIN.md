@@ -353,6 +353,15 @@ the `YT_REFRESH_TOKEN` secret. Next Monday 06:00 WAT the stats lane prints `SEAR
 
 ## The seventh round (17 Oct 2026 — "every channel growing, the account getting fat, ₦0")
 
+**The field (`tools/competitor_watch.py`, 2 Nov 2026).** Owner: "keep me way ahead of my
+competitors — I want to dominate." `brain/competitors.json` is the verified map of who else sells
+tenancy documents or teaches tenancy law to Nigerians (`docs/COMPETITOR_WATCH.md`); every Brain
+run reads their public RSS/sitemap/YouTube feeds at ₦0, writes `logs/competitor_watch.json`, and
+the pack prompt carries THE FIELD — titles only, with the rule *say it better, cite the section
+they did not, take the angle they missed, never copy a headline, never name a rival*. Mondays the
+scorecard prints "Competitor watch — the field this week". TikTok/Instagram creators publish no
+feed at ₦0 and are listed as unwatchable rather than guessed.
+
 **Listening (`tools/listening.py`).** The newsdesk hears the papers; this hears the
 people. Every night the brain GETs the thread titles on Nairaland's Properties,
 Family and Politics boards and r/Nigeria (no API, no login, no posting), scores

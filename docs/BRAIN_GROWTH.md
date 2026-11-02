@@ -59,6 +59,11 @@ scorecard flags (⚠️) and I act on in the next brief — without being asked.
 
 ## 4. Changelog (newest first — the scorecard reads the top date)
 
+- **2026-11-02** — The field: the Brain plans knowing what competitors published this week
+  (`tools/competitor_watch.py`, verified map `brain/competitors.json`, public feeds at ₦0, THE
+  FIELD block in every pack prompt, "Competitor watch" on the Monday scorecard). Owner's dominance
+  mandate, `docs/STRATEGY_OFFICE.md` §11. Measure: the scorecard shows the field's items and
+  DocOga's sends/saves per reach the same week.
 - **2026-11-02** — Lessons: the Brain learns from its own refusals across nights (top families of
   the last 30 days in every prompt); Brain IQ block on the Monday scorecard; this charter locked
   (`test_brain_growth_lock.py`).

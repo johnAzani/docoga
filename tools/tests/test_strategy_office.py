@@ -50,6 +50,16 @@ class StrategyOfficeLock(unittest.TestCase):
         self.assertIn("docoga-private", self.text)       # money/strategy writing lives privately
         self.assertIn("silence = go", self.text)          # the owner still charts direction
 
+    def test_the_dominance_mandate_of_2_nov_2026_never_drops(self):
+        for needle in ("dominate", "brain/competitors.json", "tools/competitor_watch.py", "Competitor watch",
+                       "never copy, never name a rival", "sends and saves", "no scraping behind logins"):
+            self.assertIn(needle, self.text, needle)
+        import json
+        rows = json.loads((ROOT / "brain" / "competitors.json").read_text(encoding="utf-8"))["competitors"]
+        self.assertGreaterEqual(len(rows), 8)
+        for row in rows:
+            self.assertTrue(row.get("name") and row.get("url") and row.get("note") and row.get("kind") in ("tool", "content", "creator"), row)
+
 
 if __name__ == "__main__":
     unittest.main()

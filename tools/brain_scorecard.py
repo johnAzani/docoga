@@ -1277,6 +1277,11 @@ def summary_md(snap):
         lines += ["| %s | %s | %s | %d |" % (dim, label, b.get("avg"), b.get("n")) for dim, label, b in rows]
     if k.get("brain_iq"):
         lines += ["", "### Brain IQ — is the editor getting smarter?"] + iq_lines(k["brain_iq"])
+    try:
+        import competitor_watch
+        lines += ["", "### Competitor watch — the field this week"] + competitor_watch.scorecard_lines()
+    except Exception:  # noqa: BLE001 — the field is a bonus block
+        pass
     lines += ["", "### Orders for the coming week"] + ["- " + o for o in snap.get("orders") or []]
     if snap.get("problems"):
         lines += ["", "### Not measured (and why)"] + ["- " + p for p in snap["problems"]]
