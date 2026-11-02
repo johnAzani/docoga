@@ -1,0 +1,45 @@
+{
+ "version": 1,
+ "status": "approved",
+ "source": "listening",
+ "kind": "answer_page",
+ "date": "2026-11-02",
+ "theme": "abuja-fct-notice-periods-how-long-before-you-pack-your-bags",
+ "state": "abuja",
+ "tool": "notice-to-quit",
+ "topic": "notice_ladder",
+ "post": {
+  "headline": "Abuja (FCT) Notice Periods: How Long Before You Pack Your Bags?",
+  "lines": [
+   "Many tenants and landlords in Abuja (FCT) often disagree on how much notice to give before someone moves out or is asked to leave. This misunderstanding can lead to serious wahala, leaving people confused about their rights and responsibilities.",
+   "When it comes to ending a tenancy in Abuja, the law is clear about the notice period needed. This is what the tenancy law says:",
+   "1. Tenant at will or weekly tenancy: one week (s.8) 2. Monthly tenancy: one month — and it must be one calendar month (s.8) 3. Quarterly tenancy: a quarter (three months) (s.8) 4. Yearly tenancy: half a year (six calendar months) (s.8)",
+   "Always make sure you count the months correctly and put your notice in writing. It helps to avoid any future wahala."
+  ]
+ },
+ "quiz": {
+  "question": "How much notice does a landlord need to give in Abuja (FCT) before I move out?",
+  "explanation": "The notice period depends on your tenancy type in Abuja (FCT), ranging from one week for weekly tenancies to six months for yearly ones (s.8)."
+ },
+ "claims": [
+  {
+   "text": "Tenant at will or weekly tenancy: one week (s.8)",
+   "fact_id": "abuja:notice_ladder:1"
+  },
+  {
+   "text": "Monthly tenancy: one month — and it must be one calendar month (s.8)",
+   "fact_id": "abuja:notice_ladder:2"
+  },
+  {
+   "text": "Quarterly tenancy: a quarter (three months) (s.8)",
+   "fact_id": "abuja:notice_ladder:3"
+  },
+  {
+   "text": "Yearly tenancy: half a year (six calendar months) (s.8)",
+   "fact_id": "abuja:notice_ladder:4"
+  }
+ ],
+ "why": "Tenancy notice periods are a frequent cause of disputes between landlords and tenants in Abuja (FCT).",
+ "asked": "",
+ "url": "https://docoga.com.ng/guides/abuja-fct-notice-periods-how-long-before-you-pack-your-bags"
+}

@@ -1,0 +1,105 @@
+{
+ "version": 1,
+ "status": "approved",
+ "date": "2026-11-04",
+ "generated_at": "2026-11-02T07:42:32+01:00",
+ "theme": "tenancy-agreement-clauses-lagos",
+ "post_type": "pidgin",
+ "hook_type": "HOWTO",
+ "state": "lagos",
+ "claims": [
+  {
+   "text": "In Lagos, if your tenancy agreement says you cannot challenge a rent increase, the law still allows you to apply to the Court to declare it unreasonable.",
+   "fact_id": "lagos:increase_challenge:1"
+  },
+  {
+   "text": "A landlord cannot eject you while your application against an unreasonable rent increase is pending in Lagos.",
+   "fact_id": "lagos:increase_challenge:2"
+  },
+  {
+   "text": "The Lagos Tenancy Law also says a landlord must issue a receipt for every rent payment.",
+   "fact_id": "lagos:receipts:1"
+  }
+ ],
+ "post": {
+  "headline": "Some clauses no gree with Lagos law",
+  "lines": [
+   "Ngozi, if your landlord puts for your tenancy agreement say you no fit challenge rent increase,",
+   "that clause no hold water. Lagos Tenancy Law get power pass wetin person write for paper.",
+   "You get right to go court make dem declare any increase unreasonable (lagos:increase_challenge:1).",
+   "And dem no fit pursue you commot while your case still dey pending (lagos:increase_challenge:2).",
+   "Always demand your rent receipt too (lagos:receipts:1)."
+  ],
+  "cta": "Send this to the friend whose landlord wants to increase their rent without reason.",
+  "hashtags": [
+   "#DocOga",
+   "#LagosTenancy",
+   "#KnowYourRights",
+   "#RentIncrease"
+  ]
+ },
+ "threads": {
+  "text": "Ngozi, your tenancy agreement fit get clauses wey no match Lagos law. For example, if dem write say you no fit challenge rent increase, that part no valid. You get right to go court make dem check am. Dem no fit push you out while your case still dey. Which kind clause you don see?",
+  "hashtags": [
+   "#DocOga",
+   "#Lagos"
+  ],
+  "topic": "Tenant Rights Lagos",
+  "poll": null,
+  "evening": "Dem no fit put for your agreement say you no fit challenge rent increase in Lagos. The law gives you the right to apply to court."
+ },
+ "visual": {
+  "kicker": "Know your rights",
+  "layout": "poster",
+  "big": "",
+  "plate": "pen on document"
+ },
+ "short": {
+  "title": "Your agreement may be wrong. Lagos law overrides.",
+  "hook_sub": "Know what's enforceable.",
+  "hook_say": "Tenancy agreements in Lagos State often contain clauses that are simply not valid under the law. Don't assume everything written in your agreement can be enforced.",
+  "tips": [
+   {
+    "text": "Rent increase challenge",
+    "sub": "Law overrides agreement",
+    "say": "If your agreement says you can't challenge a rent increase, Lagos law still lets you apply to the Court (lagos:increase_challenge:1). You have the right."
+   },
+   {
+    "text": "No eviction during case",
+    "sub": "Court protects you",
+    "say": "While your application against an unreasonable rent increase is pending in Lagos, your landlord cannot legally eject you (lagos:increase_challenge:2)."
+   },
+   {
+    "text": "Always get a receipt",
+    "sub": "It's a statutory duty",
+    "say": "No matter what your agreement says, a Lagos landlord must issue a receipt for every rent payment. It's the law (lagos:receipts:1)."
+   },
+   {
+    "text": "Get a clean agreement",
+    "sub": "DocOga for peace of mind",
+    "say": "Make sure your tenancy agreement reflects the actual law. Get a standard, clean agreement from DocOga, free to start."
+   }
+  ],
+  "hook_text": "YOUR AGREEMENT MAY BE WRONG.\nLAGOS LAW OVERRIDES.",
+  "series": {
+   "slug": "tenancy-agreement",
+   "name": "Tenancy agreement",
+   "part": 3,
+   "total": 5,
+   "label": "Clauses the law overrides"
+  }
+ },
+ "why": "Today is a pidgin explainer, and addresses Ngozi's pain point of rent increases with a HOWTO hook, also incorporating the short's theme and the need for document sales.",
+ "tool": "tenancy-agreement",
+ "reader": "ngozi",
+ "news_hook": null,
+ "quiz": null,
+ "gates": [
+  "citation",
+  "verification",
+  "lint",
+  "repetition",
+  "shape"
+ ],
+ "note": ""
+}

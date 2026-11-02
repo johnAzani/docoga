@@ -164,5 +164,23 @@
   "reader": "okafor",
   "tool": "rent-receipt",
   "news_hook": null
+ },
+ {
+  "date": "2026-11-04",
+  "theme": "tenancy-agreement-clauses-lagos",
+  "headline": "Some clauses no gree with Lagos law",
+  "post_type": "pidgin",
+  "hook_type": "HOWTO",
+  "state": "lagos",
+  "fact_ids": [
+   "lagos:increase_challenge:1",
+   "lagos:increase_challenge:2",
+   "lagos:receipts:1"
+  ],
+  "plate": "pen on document",
+  "short": true,
+  "reader": "ngozi",
+  "tool": "tenancy-agreement",
+  "news_hook": null
  }
 ]

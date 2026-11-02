@@ -1,5 +1,5 @@
 {
- "pulled_at": "2026-11-02T00:30:53+00:00",
+ "pulled_at": "2026-11-02T06:36:18+00:00",
  "items": [],
  "answered": [
   {
@@ -13,11 +13,26 @@
    "link": "https://docoga.com.ng/?s=nl",
    "state_slug": "lagos",
    "topic": "receipts"
+  },
+  {
+   "date": "2026-11-02",
+   "url": "https://docoga.com.ng/guides/abuja-fct-notice-periods-how-long-before-you-pack-your-bags",
+   "title": "Abuja (FCT) Notice Periods: How Long Before You Pack Your Bags?",
+   "kind": "answer_page",
+   "state_slug": "abuja",
+   "topic": "notice_ladder"
   }
  ],
  "sources": [
   "Nairaland Properties: 66",
   "Nairaland Family: 57",
-  "Nairaland Politics: 64"
+  "Nairaland Politics: 65"
+ ],
+ "answer_log": [
+  {
+   "at": "2026-11-02T06:51:09+00:00",
+   "outcome": "drafted",
+   "reason": "https://docoga.com.ng/guides/abuja-fct-notice-periods-how-long-before-you-pack-your-bags"
+  }
  ]
 }

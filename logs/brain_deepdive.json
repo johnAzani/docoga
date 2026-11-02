@@ -284,6 +284,101 @@
     "beat 29 shot 'person holding phone' dropped"
    ],
    "run_id": "41367525579"
+  },
+  {
+   "at": "2026-11-02T07:43:30+01:00",
+   "episode": "dd6",
+   "attempt": 1,
+   "outcome": "refused",
+   "title": "Tenancy Rights in Anambra and Lagos: The Real Court Rules",
+   "problems": [
+    "36-48 beats (got 9)",
+    "section 1 needs at least two beats",
+    "section 2 needs at least two beats",
+    "section 3 needs at least two beats",
+    "section 4 needs at least two beats",
+    "section 5 needs at least two beats",
+    "section 6 needs at least two beats",
+    "section 7 needs at least two beats",
+    "section 8 needs at least two beats",
+    "section 9 needs at least two beats"
+   ],
+   "healed": [
+    "beat 1 shot 'wooden apartment door with heavy lock' dropped",
+    "beat 2 shot 'lagos residential buildings view at dusk' dropped",
+    "beat 2 dropped: trig 'mercy of their landlords' is not 2-4 words",
+    "beat 3 shot 'empty courtroom wooden benches and podium' dropped",
+    "beat 4 shot 'official legal paper with stamp' dropped",
+    "beat 4 dropped: trig 'magistrate court has full' is not 2-4 words",
+    "beat 5 shot 'suburban street with residential flats' dropped",
+    "beat 6 shot 'gavel sitting on polished desk' dropped",
+    "beat 6 dropped: trig 'real burden of proof' is not 2-4 words",
+    "beat 7 shot 'wall calendar showing year end date' dropped",
+    "beat 8 shot 'dated notice document on wooden table' dropped",
+    "beat 8 dropped: trig 'seven clear days' is not 2-4 words"
+   ],
+   "run_id": "41400929293"
+  },
+  {
+   "at": "2026-11-02T07:46:20+01:00",
+   "episode": "dd6",
+   "attempt": 2,
+   "outcome": "refused",
+   "title": "Tenant Rights in Anambra and Lagos: The Real Eviction Rules",
+   "problems": [
+    "section 8: 82 words; need 120-200",
+    "section 9: 86 words; need 120-200",
+    "total narration 890 words; need 1,100-1,800",
+    "36-48 beats (got 9)",
+    "section 1 needs at least two beats",
+    "section 2 needs at least two beats",
+    "section 3 needs at least two beats",
+    "section 4 needs at least two beats",
+    "section 5 needs at least two beats",
+    "section 6 needs at least two beats",
+    "section 7 needs at least two beats",
+    "section 8 needs at least two beats"
+   ],
+   "healed": [
+    "beat 2 dropped: trig 'heart drops' is not 2-4 words",
+    "beat 3 dropped: trig 'protects your possession' is not 2-4 words",
+    "beat 4 dropped: trig 'simple verbal demand' is not 2-4 words",
+    "beat 6 dropped: trig 'amah v ozouli' is not 2-4 words",
+    "beat 7 dropped: trig 'structured procedures' is not 2-4 words",
+    "beat 8 dropped: trig 'firm ground' is not 2-4 words",
+    "beat 10 dropped: trig 'satisfied that suitable' is not 2-4 words",
+    "beat 11 dropped: trig 'major safeguard' is not 2-4 words",
+    "beat 12 dropped: trig 'shelter options' is not 2-4 words",
+    "beat 14 dropped: trig 'eve of the anniversary' is not 2-4 words",
+    "beat 15 dropped: trig 'agreed period binds' is not 2-4 words",
+    "beat 16 dropped: trig 'seven clear days' is not 2-4 words"
+   ],
+   "run_id": "41400929293"
+  },
+  {
+   "at": "2026-11-02T07:48:56+01:00",
+   "episode": "dd6",
+   "attempt": 3,
+   "outcome": "refused",
+   "title": "Eviction in Anambra: The Alternative Accommodation Rule",
+   "problems": [
+    "36-48 beats (got 25)",
+    "section 5 needs at least two beats"
+   ],
+   "healed": [
+    "section 2: style word rewritten",
+    "beat 5 plate 'house' → letter",
+    "beat 6 dropped: trigger 'not just a suggestion' not spoken in section 2 after word 61",
+    "beat 7 plate 'house' → letter",
+    "beat 14 dropped: trigger 'architecture as kwara' not spoken in section 5 after word 0",
+    "beat 15 dropped: trigger 'statespecific modifications' not spoken in section 5 after word 0",
+    "beat 17 dropped: trigger 'sevenday notice of intention' not spoken in section 6 after word 0",
+    "beat 20 dropped: trigger 'forcibly eject you' not spoken in section 7 after word 0",
+    "beat 24 dropped: trigger 'landlords written consent' not spoken in section 8 after word 26",
+    "beat 25 plate 'receipt' → letter",
+    "cover plate 'house' → letter"
+   ],
+   "run_id": "41400929293"
   }
  ]
 }
