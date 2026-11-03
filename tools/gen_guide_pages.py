@@ -56,6 +56,7 @@ import io, json, os, sys
 from urllib.parse import quote
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from clean_urls import clean_text  # Cloudflare 307s /x.html → /x: canonicals, links and sitemap locs are bare
+import sample_docs  # the sample documents (HTML + PDF from one source) — 🔒 docs/GROWTH.md, 3 Nov 2026
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 SITE = os.path.join(ROOT, "site")
@@ -87,6 +88,15 @@ NOTICE_TABLE = '''<table>
 agreement stipulates a notice period, that stipulation generally governs — so the notice you
 actually want must be written into the agreement.</p>'''
 
+def download_block(slug, make_hash, make_label):
+    """Answer-first block under a sample: the PDF to download and the generator one tap away.
+    HTML is the search destination (the PDFs are noindex in site/_headers); the PDF is the thing
+    people asked for when they typed 'pdf' or 'download'."""
+    return ('<p class="dl"><a class="cta" href="%s" download>Download this sample as PDF — free, no signup</a> '
+            '<a class="cta alt" href="%s/#%s">%s</a></p>'
+            % (sample_docs.pdf_url(slug), DOMAIN, make_hash, make_label))
+
+
 SAMPLE_QUIT_NOTICE = '''<p>For a <b>yearly</b> tenant in Lagos where the agreement is silent (six months). Change the
 tenancy type and the period for a monthly (1 month) or quarterly (3 months) tenant — the table below.</p>
 <div style="background:#fff;border:1px solid #DCE4F0;border-radius:10px;padding:18px 20px;margin:10px 0;font-size:14.5px;line-height:1.75;color:#111">
@@ -104,7 +114,7 @@ together with any arrears of rent and mesne profits.</p>
 <span style="font-size:12.5px;color:#5B6B85">or: [Agent / solicitor's name], for the landlord, under written authority dated [date before this notice]</span></p>
 </div>
 <p class="law">Copy it, or let the generator fill the names, the period and the expiry date for you and give you a
-clean PDF or a WhatsApp-ready copy — free. <a href="https://docoga.com.ng/#notice"><b>Make your quit notice free →</b></a></p>'''
+clean PDF or a WhatsApp-ready copy — free. <a href="https://docoga.com.ng/#notice"><b>Make your quit notice free →</b></a></p>''' + download_block("quit-notice-letter-sample-nigeria", "notice", "Make yours with the dates filled in →")
 
 LAGOS_SCOPE = ('<b>Where the Lagos law applies:</b> the Lagos Tenancy Law 2011 covers most of '
                'Lagos State, but <b>s.1(3) excludes four areas: Apapa, Ikeja GRA, Ikoyi and '
@@ -202,9 +212,96 @@ PAGES["tenancy-agreement-nigeria.html"] = dict(
          "See our guide to shop and business tenancy agreements before you sign."),
     ],
     cta=("agreement", "Create your tenancy agreement free →"),
-    related=["notice-to-quit-nigeria.html", "caution-fee-nigeria.html",
+    related=["tenancy-agreement-sample-nigeria.html", "notice-to-quit-nigeria.html", "caution-fee-nigeria.html",
              "rent-receipt-format-nigeria.html", "tenant-rights-nigeria.html",
              "shop-tenancy-agreement-nigeria.html"],
+    priority="0.9",
+)
+
+# 1b ── tenancy agreement SAMPLE (3 Nov 2026, 🔒 docs/GROWTH.md first dive) ------------------
+# Search Console: we rank only for the quit-notice cluster; "tenancy agreement sample in nigeria pdf
+# free download" is served by Scribd uploads of private agreements and template farms. This page
+# is the full sample, visible, with the state law beside it and the PDF one tap away. The clauses
+# are the thirteen the generator writes — nothing on this page is wording the tool does not produce.
+CLAUSE_NOTES = [
+    ("Term", "the length of the tenancy and its start and end dates — a fixed term ends by itself; what follows is renewal, not holding over by default."),
+    ("Rent", "the figure in numbers <i>and</i> words, the period it buys, and that it is paid in advance. In Lagos, s.4 of the Tenancy Law 2011 caps the advance at one year (yearly tenant) or six months (monthly tenant)."),
+    ("Caution fee / deposit", "names the deposit as refundable and says what may be deducted — the clause that makes a refund arguable at the end."),
+    ("Use of premises", "residential only; no illegal, immoral or hazardous use."),
+    ("No assignment or subletting", "no handing the flat to someone else without the landlord's written consent."),
+    ("Repairs and maintenance", "the usual split: landlord — roof and external walls; tenant — interior, fittings and damage by his own people."),
+    ("Utilities", "who pays electricity, water and waste — the tenant, for what is consumed during the tenancy."),
+    ("Quiet enjoyment", "the landlord's promise not to interfere while the tenant pays and keeps the covenants — the clause self-help breaches."),
+    ("Alterations", "no structural changes without written consent."),
+    ("Inspection", "the landlord may inspect on reasonable prior notice — not walk in."),
+    ("Notice to quit", "the notice either side must give to end the tenancy. Where the agreement is silent the statutory minimums apply (table below); what you write here governs instead."),
+    ("Renewal and rent review", "renewal and any new rent are by agreement — there is no automatic increase."),
+    ("Governing law and jurisdiction", "the laws of Nigeria and the tenancy law of the state where the premises sit; disputes go to that state's courts."),
+]
+
+PAGES["tenancy-agreement-sample-nigeria.html"] = dict(
+    title="Tenancy Agreement Sample in Nigeria (2026): Full Text + Free PDF Download",
+    h1="Tenancy agreement sample in Nigeria — the full text, clause by clause, free PDF",
+    desc="A complete Nigerian tenancy agreement sample you can read in full: 13 standard clauses, the state notice table, a free PDF download (no signup) and a generator that fills your names in 2 minutes.",
+    lead="This is a full residential tenancy agreement in the standard Nigerian form — the parties, the "
+         "premises, thirteen covenants, signatures and witnesses — with square brackets where your details "
+         "go. Read it here, download it as a PDF, or let the generator fill it in and give you a clean copy "
+         "for any state in about two minutes. Below the sample: what each clause does, the rules that "
+         "decide whether it holds up, and the notice periods the law applies when an agreement is silent.",
+    widget=('<div class="box">\n<h2>The sample (residential, yearly tenant, Lagos wording)</h2>\n'
+            + sample_docs.html_sample("tenancy-agreement-sample-nigeria")
+            + download_block("tenancy-agreement-sample-nigeria", "agreement", "Fill it in free — any state →")
+            + '\n</div>'),
+    boxes=[
+        ("What each clause does — and why it is there", ul([
+            "<b>%s</b> — %s" % (name, note) for name, note in CLAUSE_NOTES
+        ])),
+        ("Before you sign: the three rules that decide whether it holds up", ul([
+            "<b>The advance-rent cap.</b> Section 4 of the Lagos Tenancy Law 2011 makes it unlawful for a "
+            "landlord or agent to demand or receive more than <b>one year's rent in advance</b> from a yearly "
+            "tenant, or <b>six months</b> from a monthly tenant — and for the tenant to pay it.",
+            "<b>Notice is what you write.</b> The statutory minimums apply only where the agreement is silent. "
+            "If you want three months' notice on a yearly tenancy, clause 11 must say three months.",
+            "<b>State law, not one national law.</b> Lagos runs the Tenancy Law 2011; the FCT the Recovery of "
+            "Premises Act; Rivers, Edo, Kwara, Cross River, Kano and the rest their own recovery or rent-control "
+            "laws. Clause 13 names the state; the state guides below give the sections. " + LAGOS_SCOPE,
+        ])),
+        ("Notice-to-quit minimums where the agreement is silent", NOTICE_TABLE),
+        ("How this sample compares with what else is online", ul([
+            "<b>Uploaded private agreements</b> (document-sharing sites) carry someone else's names, dates and "
+            "terms — and often a clause that was wrong for <i>their</i> state. This sample is blank where it "
+            "should be blank.",
+            "<b>Generic \u201cNigeria-compliant\u201d templates</b> name no section of any law. Here the advance "
+            "cap, the receipt duty and the notice ladder each carry their section, and the state guides carry "
+            "the rest.",
+            "<b>A lawyer-drafted agreement</b> (commonly \u20a620,000\u2013\u20a650,000) is the right choice for "
+            "unusual terms, commercial premises or a dispute already brewing. For a standard flat, the standard "
+            "form is what the lawyer would write.",
+        ])),
+    ],
+    faq=[
+        ("Is this tenancy agreement sample valid in Nigeria?",
+         "A tenancy agreement becomes binding when it is properly filled, signed by both landlord and tenant, "
+         "and witnessed. The sample follows standard Nigerian practice and names the state law in clause 13. "
+         "DocOga is not a law firm and this is not legal advice."),
+        ("Can I download the sample as a PDF for free?",
+         "Yes — the PDF above is free and needs no signup. It carries the square brackets; the generator fills "
+         "them in and gives you a clean copy, free with a small banner or without one on the Oga Pass."),
+        ("Which state is the sample written for?",
+         "The wording is the standard form used across Nigeria; the bracketed state is Lagos because the Lagos "
+         "Tenancy Law 2011 is the most detailed. Change the state in clause 11 and clause 13 — or pick your state "
+         "in the generator and it sets the notice period and the governing law for you."),
+        ("Do I need a lawyer to use it?",
+         "Not for a standard residential letting. Use a lawyer for commercial premises, unusual terms, a very "
+         "high rent, or where a dispute is already under way."),
+        ("Does the sample include a caution fee clause?",
+         "Yes, clause 3 — it names the deposit as refundable and limits deductions to damage beyond normal wear "
+         "and tear. Receipt the caution fee separately from the rent; the receipt guide explains why."),
+    ],
+    cta=("agreement", "Create your tenancy agreement free →"),
+    related=["tenancy-agreement-nigeria.html", "notice-to-quit-nigeria.html",
+             "rent-receipt-format-nigeria.html", "caution-fee-nigeria.html",
+             "tenant-rights-nigeria.html"],
     priority="0.9",
 )
 
@@ -299,7 +396,7 @@ PAGES["notice-to-quit-nigeria.html"] = dict(
          "months' imprisonment. Only the court can order possession."),
     ],
     cta=("notice", "Create your notice to quit free →"),
-    related=["tenancy-agreement-nigeria.html", "tenant-rights-nigeria.html",
+    related=["tenancy-agreement-sample-nigeria.html", "tenancy-agreement-nigeria.html", "tenant-rights-nigeria.html",
              "caution-fee-nigeria.html", "rent-receipt-format-nigeria.html"],
     priority="0.9",
 )
@@ -406,8 +503,9 @@ PAGES["rent-receipt-format-nigeria.html"] = dict(
             "<b>the period the payment covers</b> (for example, one year from 1 October 2026).",
          ]) + "<p class=\"law\">A landlord who fails to issue a rent payment receipt is liable on "
               "conviction to a fine of <b>₦100,000</b> (s.5(3)).</p>"),
-        ("A receipt that holds up looks like this",
-         '<pre class="sample">RENT RECEIPT — No. 0142\n\nDate received:   1 October 2026\nReceived from:   Chinedu Okafor, 12 Bode Thomas St, Surulere, Lagos\nOf:              Landlord — Mrs A. Bello, 4 Adeola St, Ikeja, Lagos\nThe sum of:      One Million Five Hundred Thousand Naira only (₦1,500,000)\nBeing:           Rent for the self-contained apartment at Flat 2, 12 Bode\n                 Thomas Street, Surulere, Lagos\nPeriod covered:  1 October 2026 to 30 September 2027 (one year)\nPaid by:         Bank transfer — ref 90827364\n\nSigned:  ______________________   (landlord or authorised agent)\n         Mrs A. Bello</pre>'),
+        ("A receipt that holds up looks like this (sample — download it as PDF)",
+         sample_docs.html_sample("rent-receipt-sample-nigeria")
+         + download_block("rent-receipt-sample-nigeria", "receipt", "Make yours with your details →")),
         ("Other money needs its own receipt", ul([
             "<b>Caution fee / security deposit</b> — a <i>separate</i> receipt, never folded into the "
             "rent figure. This is what makes the deposit refundable in practice.",
@@ -448,7 +546,7 @@ PAGES["rent-receipt-format-nigeria.html"] = dict(
          "raise with the Rent Tribunal or a lawyer."),
     ],
     cta=("receipt", "Create your rent receipt free →"),
-    related=["caution-fee-nigeria.html", "tenancy-agreement-nigeria.html",
+    related=["caution-fee-nigeria.html", "tenancy-agreement-sample-nigeria.html",
              "tenant-rights-nigeria.html", "invoice-format-nigeria.html"],
     priority="0.8",
 )
@@ -999,6 +1097,8 @@ li{margin:8px 0;font-size:15px}
 .law{font-size:13px;color:#5B6B85}
 pre.sample{background:#F7F9FC;border:1px dashed #C6D2E6;border-radius:10px;padding:14px;font-size:12.5px;line-height:1.55;overflow-x:auto;white-space:pre-wrap;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
 .cta{display:inline-block;background:#0040E0;color:#fff;font-weight:800;text-decoration:none;border-radius:10px;padding:14px 24px;font-size:16px;margin:14px 0}
+.cta.alt{background:#fff;color:#0040E0;border:2px solid #0040E0}
+.dl{display:flex;flex-wrap:wrap;gap:10px;align-items:center}.dl .cta{margin:6px 0;font-size:15px;padding:12px 18px}
 details{background:#fff;border:1px solid #DCE4F0;border-radius:12px;padding:14px 18px;margin:10px 0}
 summary{font-weight:700;cursor:pointer}
 p{margin:8px 0}
@@ -1253,6 +1353,7 @@ def main():
     # short labels for the "More guides" block
     navtitles = {
         "tenancy-agreement-nigeria.html": "Tenancy agreement format",
+        "tenancy-agreement-sample-nigeria.html": "Tenancy agreement sample + free PDF",
         "notice-to-quit-nigeria.html": "Notice to quit: how many months",
         "caution-fee-nigeria.html": "Is the caution fee refundable?",
         "rent-receipt-format-nigeria.html": "Rent receipt format",
