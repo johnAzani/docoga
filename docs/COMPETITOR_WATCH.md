@@ -23,7 +23,7 @@ DocOga's own money, pricing reasoning and plans stay in `docoga-private`.
 | Homz.ng | Property-management dashboard with agreements, quit notices, receipts | subscription | sitemap |
 
 **Where DocOga is already different (facts, not claims):** every clause and every post cites the state's
-own section from the law shelf (262 facts, 8 states, Tier A: Abuja, Cross River, Edo, Kwara, Lagos);
+own section from the law shelf (298 facts, 9 states as of 3 Nov 2026, Tier A: Abuja, Cross River, Edo, Kwara, Lagos);
 Nigerian English; no watermark; no account; one price for 30 days; a verified receipt ledger and a
 paid-rent index nobody else publishes. Nobody on this table writes to tenants *and* landlords every day
 on five platforms with a cited law behind each post.

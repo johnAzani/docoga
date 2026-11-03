@@ -183,3 +183,75 @@ class RiversShelfTests(unittest.TestCase):
         for needle in ("Form B", "Form E", "s.6(1)(a)", "Anyaehie v. Ongolo", "ss.20–22"):
             self.assertIn(needle, texts)
         self.assertIn("rivers:who_is_a_tenant:1", law_index.by_id())
+
+
+class EnuguShelfTests(unittest.TestCase):
+    """3 Nov 2026: the second research target (Enugu) was read — and a wrong national sentence came off
+    the shelf. Enugu's Landlord and Tenant (Amendment) Law 2008 (s.3(b), replacing s.109 of Cap. 101)
+    caps a rent review at 15% after every second anniversary (docs/STATE_TENANCY_RESEARCH.md §14)."""
+
+    def test_enugu_is_on_the_shelf_with_the_2008_cap_and_its_worked_example(self):
+        import law_index
+        import state_law_data as S
+        self.assertIn("enugu", S.STATE_LAW)
+        self.assertEqual(S.LAW_REVIEWED["enugu"], "2026-11-03")
+        self.assertNotIn("enugu", S.NEEDS_CONFIRMATION, "a state on the shelf is not also 'awaiting confirmation'")
+        own = [f for f in law_index.facts_for("enugu") if f["slug"] == "enugu"]
+        self.assertGreaterEqual(len(own), 20)
+        by = {f["id"]: f for f in own}
+        cap = by["enugu:increase_challenge:1"]
+        self.assertIn("15%", cap["text"])
+        self.assertIn("second anniversary", cap["text"])
+        self.assertIn("s.3(b)", cap["cite"])
+        texts = " ".join(f["text"] for f in own)
+        for needle in ("₦460,000", "27 August 1991", "Chicason", "Jovinco", "13 August 2008"):
+            self.assertIn(needle, texts)
+
+    def test_the_bill_is_written_as_a_bill_and_the_negatives_carry_a_read_mark(self):
+        import law_index
+        by = {f["id"]: f for f in law_index.facts_for("enugu") if f["slug"] == "enugu"}
+        bill = " ".join(by[k]["text"] for k in by if k.startswith("enugu:caution_fee:"))
+        self.assertIn("not law", bill)
+        self.assertIn("26 October 2026", bill)
+        for key in ("enugu:receipts:1", "enugu:advance_rent:1", "enugu:caution_fee:1"):
+            self.assertRegex(by[key]["text"], brain.READ_MARK, key)
+        self.assertIn("Lagos s.5", by["enugu:receipts:1"]["text"], "the ₦100,000 receipt penalty is Lagos law, not Enugu")
+
+    def test_no_shelf_entry_still_claims_there_is_no_cap_anywhere_in_nigeria(self):
+        import law_index
+        for f in law_index.all_facts():
+            low = f["text"].lower()
+            if "percentage cap" in low and "anywhere" in low:
+                self.assertIn("enugu has one", low, f["id"])   # only the correction note may say it, in the past tense
+
+    def test_a_refused_enugu_receipt_sentence_is_settled_not_a_research_target(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            refused = Path(tmp) / "refused.json"
+            refused.write_text(json.dumps([{"date": "2026-11-02", "at": "2026-11-02T01:00:00+01:00", "state": "enugu", "problems": [
+                "verifier: legal statement not on the shelf — 'In Enugu the landlord must issue a receipt or pay ₦100,000.'",
+                "verifier: legal statement not on the shelf — 'In Enugu rent cannot be increased by more than 15%.'"]}]), encoding="utf-8")
+            dd = Path(tmp) / "dd.json"
+            dd.write_text(json.dumps({"attempts": []}), encoding="utf-8")
+            gaps = brain.shelf_gaps(now=datetime(2026, 11, 3, tzinfo=timezone.utc), days=30, refused_path=refused, deepdive_path=dd)
+        by = {(g["state"], g["topic"]): g for g in gaps}
+        self.assertEqual(by[("enugu", "receipts")]["kind"], "settled")
+        self.assertEqual(by[("enugu", "receipts")]["read"], "3 Nov 2026")
+        self.assertEqual(by[("enugu", "increase_challenge")]["kind"], "recall", "the 15% cap is on the shelf — recall it")
+
+    def test_the_enugu_pages_lead_with_the_statute_and_every_state_page_shows_rent_increases(self):
+        site = ROOT / "site"
+        law = (site / "tenancy-law-enugu.html").read_text(encoding="utf-8")
+        self.assertIn("What the law actually says in Enugu", law)
+        self.assertIn("Cap. 101, Revised Laws of Enugu State 2004", law)
+        self.assertIn(">Rent increases</h3>", law)
+        self.assertIn("15% of the existing rent", law)
+        self.assertIn("law shelf reviewed 3 November 2026", law)
+        caution = (site / "caution-fee-enugu.html").read_text(encoding="utf-8")
+        self.assertIn("A bill would change this", caution)
+        self.assertIn("Agents&rsquo; and legal fees", caution)
+        lagos = (site / "tenancy-law-lagos.html").read_text(encoding="utf-8")
+        self.assertIn(">Rent increases</h3>", lagos)
+        self.assertNotIn("anywhere else in Nigeria", lagos)
+        rights = (site / "tenant-rights-nigeria.html").read_text(encoding="utf-8")
+        self.assertIn('href="https://docoga.com.ng/tenancy-law-enugu"', rights)
+        self.assertNotIn("Lagos or anywhere in Nigeria", rights)

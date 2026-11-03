@@ -611,8 +611,11 @@ PAGES["tenant-rights-nigeria.html"] = dict(
          'monthly tenant six months behind, or a quarterly/half-yearly tenant a year behind, loses the '
          'right to a quit notice (s.13(2)–(3)).</p>'),
         ("Rent increase: what the law actually gives you", ul([
-            "<b>There is no percentage cap</b> on rent increases in Lagos or anywhere in Nigeria. Any "
-            "page that quotes one is wrong.",
+            "<b>There is no percentage cap</b> on rent increases in Lagos, the FCT or any other state we "
+            "have verified except one: <b>Enugu</b>, where the Landlord and Tenant (Amendment) Law 2008 "
+            "(s.3(b)) allows a review only after every second anniversary and caps it at 15% of the existing "
+            "rent — see <a href=\"https://docoga.com.ng/tenancy-law-enugu\">tenancy law in Enugu</a>. A page "
+            "that quotes a percentage for Lagos is wrong.",
             "<b>Mid-term, the agreement governs.</b> If the rent is fixed for the term, it cannot be "
             "raised before the term ends; an increase properly takes effect at renewal, on notice.",
             "<b>Your remedy is s.37.</b> Apply to the court on Form TL11 for an order that the increase "
@@ -673,9 +676,10 @@ PAGES["tenant-rights-nigeria.html"] = dict(
          "online is foreign law. Put the inspection notice period in your tenancy agreement."),
         ("Can my landlord increase my rent at any time?",
          "Not mid-term if the agreement fixes the rent for the term; increases properly take effect "
-         "at renewal, on notice. There is no statutory percentage cap, but a sitting tenant can ask the "
+         "at renewal, on notice. There is no statutory percentage cap in Lagos, but a sitting tenant can ask the "
          "court under s.37 to declare an increase unreasonable, and cannot be ejected while that "
-         "application is pending."),
+         "application is pending. Enugu is the one state with a cap we have verified: 15%, and only after "
+         "every second anniversary (Landlord and Tenant (Amendment) Law 2008, s.3(b))."),
         ("How many months' notice must my landlord give me?",
          "Where the agreement is silent: one week for a tenant at will, one month for a monthly tenant, "
          "three months for a quarterly or half-yearly tenant, six months for a yearly tenant (Lagos "

@@ -467,6 +467,9 @@ def law_block(slug, tslug):
                          ('distress', 'Seizing a tenant&rsquo;s property'),
                          ('excluded_areas', 'Where this law does <i>not</i> apply'),
                          ('application', 'What the law covers'),
+                         # 3 Nov 2026: rent increases were on the Brain's shelf but never on the page;
+                         # Enugu's 2008 15%/second-anniversary cap made the omission visible.
+                         ('increase_challenge', 'Rent increases'),
                          ('related', 'A related jurisdiction')):
         if law.get(key):
             blk = law[key] or {}
@@ -476,11 +479,11 @@ def law_block(slug, tslug):
                 parts.append('<p class="law">%s</p>' % blk['text'])
             if blk.get('summary'):
                 parts.append('<p class="law">%s</p>' % blk['summary'])
-            for sub in ('why', 'why_it_matters', 'plain', 'detail', 'definitions', 'definition',
+            for sub in ('why', 'why_it_matters', 'section', 'plain', 'worked', 'detail', 'definitions', 'definition',
                         'protection', 'supersedes', 'exception', 'contrast', 'penalty',
                         'must_state', 'also_excluded', 'arrears', 'secondary_conflict',
                         'stale_warning', 'how_to_read', 'grandfather', 'caution',
-                        'statute', 'enugu', 'important'):
+                        'statute', 'enugu', 'important', 'false_claim'):
                 if law[key].get(sub):
                     v = law[key][sub]
                     if isinstance(v, list):
@@ -619,6 +622,11 @@ def tool_block(law, tslug):
             out.append('<p class="law">%s</p>' % c['text'])
             if c.get('warning'):
                 out.append('<p class="law">%s</p>' % c['warning'])
+            if c.get('timeline'):
+                out.append('<ul>' + ''.join('<li>%s</li>' % i for i in c['timeline']) + '</ul>')
+        if law.get('agency_fee'):
+            out.append('<h3 style="font-size:15px;margin:14px 0 6px">Agents&rsquo; and legal fees</h3>')
+            out.append('<p class="law">%s</p>' % law['agency_fee']['text'])
         if law.get('improvements'):
             out.append('<h3 style="font-size:15px;margin:14px 0 6px">Improvements you make</h3>')
             out.append('<p class="law">%s</p>' % law['improvements']['text'])
