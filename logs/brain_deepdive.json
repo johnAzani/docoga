@@ -379,6 +379,78 @@
     "cover plate 'house' → letter"
    ],
    "run_id": "41400929293"
+  },
+  {
+   "at": "2026-11-03T01:34:01+01:00",
+   "episode": "dd6",
+   "attempt": 1,
+   "outcome": "refused",
+   "title": "Tax Savings for Tenants: Claim Your Rent Relief!",
+   "problems": [
+    "36-48 beats (got 23)",
+    "section 3 needs at least two beats",
+    "banned phrase in narration: 'unlock'"
+   ],
+   "healed": [
+    "beat 3 dropped: trigger 'new law' not spoken in section 1 after word 117",
+    "beat 5 dropped: trigger 'in force from' not spoken in section 2 after word 0",
+    "beat 9 dropped: trigger 'maximum five hundred' not spoken in section 3 after word 0",
+    "beat 10 dropped: trigger 'replaces consolidated relief' not spoken in section 3 after word 0",
+    "beat 13 dropped: trigger 'reduces taxable income' not spoken in section 4 after word 67",
+    "beat 14 dropped: trigger 'twentyfive percent' not spoken in section 4 after word 67",
+    "beat 15 shot 'person working alone' dropped",
+    "beat 16 dropped: trigger 'claimed not given' not spoken in section 5 after word 0",
+    "beat 17 shot 'person using phone for form' dropped",
+    "beat 18 dropped: trigger 'selfemployed person' not spoken in section 5 after word 35",
+    "beat 22 plate 'receipt' → letter",
+    "beat 24 dropped: trigger \"employer's annual\" not spoken in section 7 after word 0"
+   ],
+   "run_id": "41553352298"
+  },
+  {
+   "at": "2026-11-03T01:36:44+01:00",
+   "episode": "dd6",
+   "attempt": 2,
+   "outcome": "refused",
+   "title": "Your Quit Notice Rights: Lagos vs. Anambra",
+   "problems": [
+    "verifier: legal statement not on the shelf — 'If there’s a conflict between your agreement and the law, and your agreement offers less protection than the law, the la'"
+   ],
+   "healed": [
+    "beat 2 sub cut at a word: \"Don't panic; know the law to protect yourself from unlawful\"",
+    "beat 5 dropped: trigger 'tenant at will' not spoken in section 2 after word 0",
+    "beat 11 dropped: trigger 'for fixedterm tenancies' not spoken in section 3 after word 54",
+    "beat 33 dropped: trigger '2000 for 30 days' not spoken in section 9 after word 66",
+    "beat 34 dropped: trigger 'lawyer typically 50000' not spoken in section 9 after word 66"
+   ],
+   "run_id": "41553352298"
+  },
+  {
+   "at": "2026-11-03T01:37:36+01:00",
+   "episode": "dd6",
+   "attempt": 3,
+   "outcome": "refused",
+   "title": "Quit Notice Rules in Anambra and Lagos: What the Law Requires",
+   "problems": [
+    "section 4: 89 words; need 120-200",
+    "section 5: 88 words; need 120-200",
+    "total narration 883 words; need 1,100-1,800"
+   ],
+   "healed": [
+    "beat 1 shot 'paper letter under wooden door' dropped",
+    "beat 7 shot 'fountain pen pointing at date' dropped",
+    "beat 9 shot 'calendar marked december thirty first' dropped",
+    "beat 11 shot 'law books on court table' dropped",
+    "beat 12 shot 'rejected letter paper on table' dropped",
+    "beat 15 shot 'person reading document on phone screen' dropped",
+    "beat 18 shot 'seven days circled on calendar' dropped",
+    "beat 19 shot 'pen calculating dates on pad' dropped",
+    "beat 20 shot 'door with posted court notice' dropped",
+    "beat 21 shot 'aerial view of lagos mainland' dropped",
+    "beat 23 shot 'calendar with flexible date markers' dropped",
+    "beat 24 shot 'yellow lagos bus on road' dropped"
+   ],
+   "run_id": "41553352298"
   }
  ]
 }

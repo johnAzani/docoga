@@ -1,5 +1,5 @@
 {
- "fetched": "2026-11-02T06:36:18+00:00",
+ "fetched": "2026-11-03T00:30:51+00:00",
  "sources": [
   "Punch: 30 stories",
   "Vanguard: 20 stories",
@@ -9,30 +9,5 @@
   "The Guardian Nigeria: unreachable (HTTP Error 403: Forbidden)",
   "Nairametrics: 20 stories"
  ],
- "items": [
-  {
-   "title": "10-year-old found wandering in Anambra, police seek parents",
-   "link": "https://punchng.com/10-year-old-found-wandering-in-anambra-police-seek-parents/?utm_source=rss.punchng.com&utm_medium=web",
-   "published": "2026-11-02T05:53:24+00:00",
-   "source": "Punch",
-   "score": 13,
-   "matched": [
-    "rent",
-    "rents",
-    "lease"
-   ],
-   "summary": "The Anambra State Police Command has rescued a 10-year-old boy, identified as Chinecherem Onuwasoanya, who lost his way home after going out to play in Okpoko, Ogbaru Local Government Area of the stat"
-  },
-  {
-   "title": "Senate Roundup: Tinubu’s fresh loan request, convict transfer, Abuja tenancy rules, others",
-   "link": "https://www.premiumtimesng.com/news/top-news/921989-senate-roundup-tinubus-fresh-loan-request-convict-transfer-abuja-tenancy-rules-others.html",
-   "published": "2026-11-02T04:31:04+00:00",
-   "source": "Premium Times",
-   "score": 9,
-   "matched": [
-    "tenancy"
-   ],
-   "summary": "The Senate adjourned plenary on Wednesday. The post Senate Roundup: Tinubu’s fresh loan request, convict transfer, Abuja tenancy rules, others appeared first on Premium Times Nigeria."
-  }
- ]
+ "items": []
 }

@@ -1,0 +1,105 @@
+{
+ "version": 1,
+ "status": "approved",
+ "date": "2026-11-05",
+ "generated_at": "2026-11-03T01:31:25+01:00",
+ "theme": "anambra-alternative-accommodation-landlord-self-help",
+ "post_type": "story",
+ "hook_type": "STORY",
+ "state": "anambra",
+ "claims": [
+  {
+   "text": "In Anambra, a court will not order a tenant to leave unless suitable alternative accommodation is available for them.",
+   "fact_id": "anambra:alternative_accommodation:1"
+  },
+  {
+   "text": "A landlord may not resort to self-help to evict a tenant in Anambra.",
+   "fact_id": "anambra:protections:1"
+  },
+  {
+   "text": "Unlawful eviction in Anambra is actionable in damages.",
+   "fact_id": "anambra:protections:1"
+  }
+ ],
+ "post": {
+  "headline": "Your landlord wants you out by Christmas in Anambra",
+  "lines": [
+   "This week, a Lagos landlord reportedly faced trouble after a huge rent increase.",
+   "In Anambra, if your landlord wants you out, the court must be satisfied you have a place to go.",
+   "No order for recovery of possession may be made unless alternative accommodation is available",
+   "(anambra:alternative_accommodation:1).",
+   "Landlords cannot use self-help, and unlawful eviction means damages (anambra:protections:1)."
+  ],
+  "cta": "Send this to a friend whose landlord is giving them trouble in Anambra.",
+  "hashtags": [
+   "#DocOga",
+   "#AnambraTenancy",
+   "#TenantRights",
+   "#QuitNotice"
+  ]
+ },
+ "threads": {
+  "text": "A tenant in Anambra was asked to pack out before Christmas. Her landlord says 'my house, my rules'. But in Anambra, the law says a court cannot order you out unless suitable alternative accommodation is available. Landlords cannot use self-help. Unlawful eviction leads to damages. What is your biggest rent fear?",
+  "hashtags": [
+   "#DocOga",
+   "#Anambra"
+  ],
+  "topic": "Tenant Rights Nigeria",
+  "poll": null,
+  "evening": "A landlord in Anambra cannot just force you out. The law requires a court to verify alternative accommodation is available before an eviction order. Self-help is unlawful and carries damages."
+ },
+ "visual": {
+  "kicker": "Know Your Rights",
+  "layout": "poster",
+  "big": "",
+  "plate": "keys wooden door"
+ },
+ "short": {
+  "title": "Don't let your landlord keep your tenancy agreement copy.",
+  "hook_sub": "You need it for proof.",
+  "hook_say": "Your landlord gave you a Tenancy Agreement to sign, but kept all the copies. Why? Because a signed copy is your proof of rent paid and rights. Don't let them deny you this.",
+  "tips": [
+   {
+    "text": "Demand a copy",
+    "sub": "It's your legal right",
+    "say": "Always demand a signed copy of your Tenancy Agreement. It is your right and crucial proof of your tenancy terms in Anambra."
+   },
+   {
+    "text": "Proof of payment",
+    "sub": "Matches your receipts",
+    "say": "Your agreement supports your rent receipts. Both documents work together to prove your payments and tenancy details."
+   },
+   {
+    "text": "Key clauses",
+    "sub": "Know your rights",
+    "say": "The agreement outlines vital clauses: your notice period, rent amount, and any specific terms that protect you as a tenant."
+   },
+   {
+    "text": "Avoid disputes",
+    "sub": "Paper beats memory",
+    "say": "Having your own copy helps avoid future disputes. Paper beats memory every time. Make your free Tenancy Agreement today."
+   }
+  ],
+  "hook_text": "DON'T LET YOUR LANDLORD KEEP YOUR TENANCY AGREEMENT COPY.",
+  "series": {
+   "slug": "tenancy-agreement",
+   "name": "Tenancy agreement",
+   "part": 4,
+   "total": 5,
+   "label": "Who keeps the copy"
+  }
+ },
+ "why": "Today is a story-style scenario day, addressing Ngozi's pain points around eviction and landlord demands, while also incorporating the Short series theme of tenancy agreement copies and addressing the Anambra state law and the need for sends/shares.",
+ "tool": "notice-to-quit",
+ "reader": "ngozi",
+ "news_hook": "Viral video: Lagos landlord reportedly punched by tenant after proposing a ₦200k → ₦350k rent jump on a self-contain he had rented for six years — The Trumpet / Linda Ikeji's Blog",
+ "quiz": null,
+ "gates": [
+  "citation",
+  "verification",
+  "lint",
+  "repetition",
+  "shape"
+ ],
+ "note": ""
+}

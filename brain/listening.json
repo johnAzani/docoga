@@ -1,6 +1,15 @@
 {
- "pulled_at": "2026-11-02T06:36:18+00:00",
- "items": [],
+ "pulled_at": "2026-11-03T00:31:06+00:00",
+ "items": [
+  {
+   "title": "Before You Pay Rent In Lagos: 5 Things The Tenancy Law Actually Says",
+   "url": "https://www.nairaland.com/8774812/before-pay-rent-lagos-5",
+   "board": "properties",
+   "source": "Nairaland",
+   "order": 8774812,
+   "score": 7
+  }
+ ],
  "answered": [
   {
    "date": "2026-10-30",
@@ -26,13 +35,6 @@
  "sources": [
   "Nairaland Properties: 66",
   "Nairaland Family: 57",
-  "Nairaland Politics: 65"
- ],
- "answer_log": [
-  {
-   "at": "2026-11-02T06:51:09+00:00",
-   "outcome": "drafted",
-   "reason": "https://docoga.com.ng/guides/abuja-fct-notice-periods-how-long-before-you-pack-your-bags"
-  }
+  "Nairaland Politics: 64"
  ]
 }

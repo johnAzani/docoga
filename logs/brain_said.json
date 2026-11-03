@@ -182,5 +182,23 @@
   "reader": "ngozi",
   "tool": "tenancy-agreement",
   "news_hook": null
+ },
+ {
+  "date": "2026-11-05",
+  "theme": "anambra-alternative-accommodation-landlord-self-help",
+  "headline": "Your landlord wants you out by Christmas in Anambra",
+  "post_type": "story",
+  "hook_type": "STORY",
+  "state": "anambra",
+  "fact_ids": [
+   "anambra:alternative_accommodation:1",
+   "anambra:protections:1",
+   "anambra:protections:1"
+  ],
+  "plate": "keys wooden door",
+  "short": true,
+  "reader": "ngozi",
+  "tool": "notice-to-quit",
+  "news_hook": "Viral video: Lagos landlord reportedly punched by tenant after proposing a ₦200k → ₦350k rent jump on a self-contain he had rented for six years — The Trumpet / Linda Ikeji's Blog"
  }
 ]
