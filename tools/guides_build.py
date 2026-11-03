@@ -45,6 +45,16 @@ LAGOS = ZoneInfo("Africa/Lagos")
 MANIFEST = "guides.json"
 MAX_INDEX = 400
 INDEXNOW = "https://api.indexnow.org/indexnow"
+# The IndexNow key is public by design — the engines prove ownership by reading it at
+# https://docoga.com.ng/<key>.txt, so it is committed as site/<key>.txt (3 Nov 2026). Before this
+# the key lived only in a repository variable and the key file never reached main, so every
+# ping since 17 Oct was refused. INDEXNOW_KEY still overrides it (and must then be committed too).
+DEFAULT_KEY = "fd3b05b91d082a9156b8ebc9e0777af2"
+
+
+def indexnow_key():
+    key = os.environ.get("INDEXNOW_KEY", "").strip()
+    return key if re.fullmatch(r"[A-Za-z0-9\-]{8,128}", key) else DEFAULT_KEY
 
 CSS = """*{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;color:#141F33;background:#F5F7FB;line-height:1.6}
@@ -359,9 +369,9 @@ def build(day=None, site=None, now=None, log=print, drafts_dir=None, answers_dir
 
 def ping(urls, key=None, http=None, log=print):
     """IndexNow — one POST tells Bing/Yandex/Naver the pages exist. Free. Needs the key file on the site."""
-    key = key or os.environ.get("INDEXNOW_KEY", "").strip()
-    if not key or not urls:
-        log("indexnow: %s" % ("no key (set the INDEXNOW_KEY variable and commit site/<key>.txt)" if not key else "nothing to ping"))
+    key = key or indexnow_key()
+    if not urls:
+        log("indexnow: nothing to ping")
         return False
     body = json.dumps({"host": HOST.split("//")[1], "key": key, "keyLocation": "%s/%s.txt" % (HOST, key), "urlList": list(urls)[:100]}).encode()
     req = urllib.request.Request(INDEXNOW, data=body, headers={"Content-Type": "application/json; charset=utf-8"}, method="POST")
@@ -382,8 +392,8 @@ def ping(urls, key=None, http=None, log=print):
 
 
 def ensure_key_file(site=None, key=None):
-    key = key or os.environ.get("INDEXNOW_KEY", "").strip()
-    if not key or not re.fullmatch(r"[A-Za-z0-9\-]{8,128}", key):
+    key = key or indexnow_key()
+    if not re.fullmatch(r"[A-Za-z0-9\-]{8,128}", key):
         return None
     p = (Path(site) if site else SITE) / ("%s.txt" % key)
     if not p.is_file():

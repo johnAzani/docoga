@@ -670,7 +670,7 @@ check('support.html makes NO fixed REFUND-window promise (§11 pending; the 14-d
 check('privacy.html: Business Teams section (account data spelled out) + dated 13 Oct',
       /<h2>5\. Business teams<\/h2>/.test(fs.readFileSync(path.join(ROOT, 'site', 'privacy.html'), 'utf8')) &&
       /13 October 2026/.test(fs.readFileSync(path.join(ROOT, 'site', 'privacy.html'), 'utf8')));
-check('footer links the public support page', !!dom.window.document.querySelector('footer a[href="support.html"]'));
+check('footer links the public support page', !!dom.window.document.querySelector('footer a[href="/support"], footer a[href="support.html"]'));  // clean URL since 29 Oct 2026
 
 /* ============================ AUTONOMY (PHASE 4) ============================ */
 section('Autonomy — renewal + usage metering (Phase 4)');

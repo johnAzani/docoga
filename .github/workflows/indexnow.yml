@@ -1,0 +1,74 @@
+name: IndexNow — tell Bing which pages changed
+
+# Not a publisher of content; a messenger. When a push to main changes pages under site/,
+# this tells the IndexNow engines (Bing — and through its index Copilot, DuckDuckGo, Yahoo —
+# plus Yandex, Naver, Seznam) exactly which URLs to fetch again, instead of waiting weeks for
+# a crawler to notice. Google does not take IndexNow; it reads the sitemap. ₦0 (tools/indexnow_push.py).
+#
+# Only sitemap URLs are ever submitted, so /admin, /success and the noindex sample PDFs cannot
+# be pinged. A refused or unreachable endpoint is printed, never a red run — the next change
+# will say it again, and the same URL is accepted at most once every 24 hours anyway.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - "!site/social/**"
+      - "!site/videos/**"
+      - "!site/og/**"
+      - "!site/samples/**"
+      - "!site/_headers"
+  workflow_dispatch: {}   # by hand = submit every URL in the sitemap (first run, or after a key change)
+
+permissions:
+  contents: read
+
+# Two pushes in quick succession: let both tell their own story — the engines de-duplicate.
+concurrency:
+  group: indexnow-${{ github.sha }}
+  cancel-in-progress: false
+
+env:
+  TZ: Africa/Lagos
+
+jobs:
+  ping:
+    name: Submit the changed URLs
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout (with enough history to diff the push)
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 50
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      # Cloudflare builds the site from the same push; give it a head start so the engines fetch
+      # the new page, not the old one. A squash-merge build has measured 1–2 minutes.
+      - name: Let Cloudflare finish deploying first
+        if: ${{ github.event_name == 'push' }}
+        run: sleep 150
+
+      - name: Ping IndexNow
+        env:
+          INDEXNOW_BEFORE: ${{ github.event.before }}
+          INDEXNOW_AFTER: ${{ github.sha }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          set -uo pipefail
+          EXTRA=()
+          [ "${EVENT}" = "workflow_dispatch" ] && EXTRA+=(--all)
+          python3 tools/indexnow_push.py "${EXTRA[@]}" 2>&1 | tee /tmp/indexnow.log
+          {
+            echo "### IndexNow"
+            echo
+            echo '```'
+            cat /tmp/indexnow.log
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -64,6 +64,61 @@ platforms; nothing the owner must do on a schedule.
 
 ## 5. Growth ledger (newest first — the scorecard reads the top date)
 
+- **2026-11-03** — **Third pass (same afternoon, owner: "research very very very in-depth to the
+  thinnest details … continue"): the signals the page sends, and the messenger.** Three findings.
+  **(1) "quit notice" is a news query.** The bare query we hold at position 1.0 with 48 impressions
+  and 0 clicks is, in Nigeria, dominated by government quit notices — Lagos Taskforce's 72-hour
+  notice to Alaba Rago traders (Vanguard, Daily Post, 24 Jun 2026), FAAN's quit notice to freight
+  forwarders at MMA (Jan 2026). Those searchers are reading news, not ending a tenancy; the
+  impression is worthless and the rule in §1 stands: **never chase the bare "quit notice"**; the
+  transactional phrasings ("quit notice letter", "notice to quit sample") are the ones to hold.
+  **(2) Rich results and dates.** Google retired FAQ rich results for every site on 7 May 2026
+  (Search Console FAQ report gone June, API August — quattr.com 8 Jul 2026, axiobyte 5 Aug 2026);
+  HowTo has no surface left. Google's first official guide to generative AI features (Search
+  Central, 15 May 2026) says plainly: same index, no special markup, no `llms.txt`, do not rewrite
+  headings as questions, do not spin a page per query variation — and it keeps structured data
+  "valuable for rich results" with the one standing condition that it **match the visible page**.
+  What still earns a rich result and a freshness signal is Article (headline, dateModified, author,
+  publisher) and BreadcrumbList. Our 60 state pages carried **no structured data and no date**;
+  the guide pages carried only FAQPage. **(3) The messenger never spoke.** The site has had an
+  IndexNow routine since 17 Oct, but it ran only for the Brain's guide pages, only with a repository
+  variable set, and the key file that proves ownership (`site/<key>.txt`) had never reached main —
+  so every ping was refused. IndexNow is free, takes 10,000 URLs a POST, and feeds Bing, which is
+  what Copilot, DuckDuckGo, Yahoo and in part ChatGPT search read (7insider Aug 2026: Copilot 3.5%
+  of AI referrals, ChatGPT 74.8%; indexnowtool.com Apr 2026: key 8–128 chars, same URL at most
+  once a day). Google does not take IndexNow; for Google the equivalent is a sitemap `<lastmod>`
+  that is actually true. **Shipped:** `tools/freshness.py` — every generated page (60 state + 10
+  guide) now carries one visible line under its title ("Updated 3 November 2026 · law shelf
+  reviewed 8 October 2026 · DocOga"), an Article JSON-LD whose `dateModified` is that same date,
+  `author`/`publisher` DocOga, the canonical as `mainEntityOfPage`, the OG card as `image`,
+  `inLanguage` en-NG, the primary-source URLs as `citation` and the statute as `about`
+  (Legislation + jurisdiction) — only where the shelf is verified; a BreadcrumbList (Home → national
+  guide → page); and a sitemap `<lastmod>` equal to the page's date. **The date is honest by
+  construction:** a rebuild compares the new page with the one on disk (dates masked) and keeps
+  the old date unless the words changed — sixty pages rebuilt with nothing changed keep sixty old
+  dates; the test `test_freshness_indexnow` forbids any page whose three dates disagree or whose
+  date is in the future. `LAW_REVIEWED` in the law shelf prints when each state was last checked
+  against its sources (dossier 8 Oct 2026; Rivers re-read 3 Nov 2026) and moves only after a real
+  re-verification. **IndexNow fixed:** the key is public by design (the engines read it at the site
+  root), so it is committed as `site/<key>.txt` and `guides_build.DEFAULT_KEY`; a new lane
+  `.github/workflows/indexnow.yml` runs on every push to main that touches `site/**`, waits 150 s
+  for Cloudflare's build, diffs the push and submits exactly the changed sitemap URLs (new pages
+  included; `/admin`, `/success`, the noindex PDFs can never be submitted because only sitemap
+  URLs qualify); run by hand it submits the whole sitemap. The Brain's own guide ping now works
+  too. **Measure:** Bing Webmaster is not connected (₦0, no owner tap wanted) — so the measure is
+  the lane's step summary (HTTP 200/202 per push) and, in Search Console, whether the state
+  pages' rich-result eligibility and the "Updated" line change CTR on the state queries by 1 Dec.
+  **Decisions.** DO NOW: shipped above. TEST NEXT: Sitelinks-search-box/Organization on the home
+  page once the state pages' breadcrumbs show in results; a `datePublished` for state pages if a
+  trustworthy first-publish date can be recovered (not invented). LATER: WebSite + Organization
+  `sameAs` to the verified social profiles. REJECT: rewriting headings as questions (Google says
+  no); FAQ blocks added for markup's sake; any dateModified that is not the day the words changed;
+  Bing Webmaster connection that needs the owner's hands. Sources: vanguardngr.com 24 Jun 2026,
+  dailypost.ng 24 Jun 2026, justnetnews.com 30 Jan 2026, quattr.com 8 Jul 2026, axiobyte.online
+  5 Aug 2026, yositeup.com 30 May 2026, launchcodex.com 6 Aug 2026, swotdigital.com 19 May 2026,
+  withsurface.com 10 Jun 2026, marwickmarketing.co.uk 22 May 2026, indexnowtool.com 27 Apr 2026,
+  7insider.com 6 Aug 2026, rankcart.io 22 Jul 2026.
+
 - **2026-11-03** — **Second dive (same day, owner: "research very very in-depth … what next"): the
   shape of the page that wins the transactional query.** Read Google's own guidance for AI
   features in Search (May 2025, as reported Aug–Sep 2026): AI Overviews draw from the ordinary

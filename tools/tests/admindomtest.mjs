@@ -219,6 +219,9 @@ console.log('— Social tab: the day’s plan, in the owner’s clock —');
   const realFetch = globalThis.fetch; const outbound = [];
   // Freeze the worker's clock (Node's Date, not the page's): Saturday 17 Oct 2026, 8:30pm Lagos.
   const realNow = Date.now; const FIXED = Date.parse('2026-10-17T19:30:00Z'); Date.now = () => FIXED;
+  // …and the page's own clock: jsdom's window is a separate realm with its own Date, so freezing
+  // Node's alone left admin.html reading the real month (3 Nov 2026: "0 this month" once October ended).
+  const realWinNow = win.Date.now; win.Date.now = () => FIXED;
   const nowUTC = new Date(FIXED);
   // 7:10pm Lagos failed · 10:10pm Lagos still to come · 1:10pm Lagos ran clean
   const table = [
@@ -320,7 +323,7 @@ console.log('— Social tab: the day’s plan, in the owner’s clock —');
     check('…and that TikTok is connected, with the date', /TikTok/.test(txt('social-health')) && /connected · since Sun, 18 Oct/.test(txt('social-health')), txt('social-health'));
     check('a TikTok inbox draft is listed as waiting in the app, not as a link', /TikTok/.test(posted) && /waiting in your TikTok inbox/.test(posted) && !doc.querySelector('#posted a[href=""]'), posted.slice(-200));
     check('no page error was thrown while painting the new tabs', pageErrors.length === 0, pageErrors.join(' | '));
-  } finally { globalThis.fetch = realFetch; Date.now = realNow; }
+  } finally { globalThis.fetch = realFetch; Date.now = realNow; win.Date.now = realWinNow; }
 }
 
 console.log('— security tab —');
