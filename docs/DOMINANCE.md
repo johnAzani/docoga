@@ -73,7 +73,12 @@ without the signal that says so.
   research target (shelf holds only a "not verified" placeholder — the Rivers State Recovery of
   Premises Law's receipt position is next to read). Shipped as shelf recall + shelf gaps on the
   scorecard. Also: first competitor-watch pull audited — 17 of 18 items were sitemap noise; filters
-  tightened (#184).
+  tightened (#184). **Same day, the target was read:** Rivers Recovery of Premises Law = No. 16 of
+  1991, in force 2 Jan 1992, Cap. 109 of 1999 (Court of Appeal, *Anyaehie v. Ongolo* 2022); s.5 Forms
+  B/C/D, s.6(1)(a) one week, s.8 Form E, s.29 "tenant" includes a rent-free occupier, ss.20–22 court
+  order or nothing. No receipt duty in any section map → the shelf keeps an honest negative and the
+  Rivers shelf grows 20 → 25 facts (`tools/state_law_data.py`; pages regenerated). Beats rivals
+  because no template site publishes Rivers at section level at all.
 - **2026-11-02** — The field: 7 document tools (prices, free tiers, watermarks), 3 content rivals,
   4 creators; Lagos Tenancy and Recovery of Premises Bill status (second reading, committee, not law
   as of Aug 2026; 5% fee caps, LASRERA, ≤1 year advance rent, mandatory receipts). Shipped as the

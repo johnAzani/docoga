@@ -158,3 +158,22 @@ class Gaps(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class RiversShelfTests(unittest.TestCase):
+    """3 Nov 2026: the first research target (`rivers:receipts`) was read — the shelf must carry it."""
+
+    def test_the_rivers_shelf_carries_the_dive_and_the_receipt_entry_reasons_its_negative(self):
+        import law_index
+        own = [f for f in law_index.facts_for("rivers") if f["slug"] == "rivers"]
+        self.assertGreaterEqual(len(own), 25)
+        by = {f["id"]: f for f in own}
+        self.assertIn("rivers:who_is_a_tenant:1", by)
+        self.assertIn("s.29", by["rivers:who_is_a_tenant:1"]["cite"])
+        receipts = by["rivers:receipts:1"]["text"]
+        self.assertIn("none is claimed", receipts)
+        self.assertIn("ss.5–8", receipts)
+        texts = " ".join(f["text"] for f in own)
+        for needle in ("Form B", "Form E", "s.6(1)(a)", "Anyaehie v. Ongolo", "ss.20–22"):
+            self.assertIn(needle, texts)
+        self.assertIn("rivers:who_is_a_tenant:1", law_index.by_id())

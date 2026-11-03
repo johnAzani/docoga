@@ -219,6 +219,22 @@ Two statutes coexist, and this trips people up:
 - "In Rivers State and most other states, **except Lagos State**, Notice to Quit
   must terminate on … the Eve of the Anniversary of the current term."
   ([BarristerNG][bng])
+- **3 Nov 2026 dive (the Brain's first research target, `rivers:receipts`):**
+  the Law is **No. 16 of 1991, in force 2 January 1992**, rendered as Cap. 109 of
+  the 1999 Laws — so dated by the Court of Appeal in *Anyaehie v. Ongolo* (2022)
+  LPELR-58620(CA), which also holds that a notice to quit under ss.5–7 is "a
+  process of court addressed to a known tenant, not a notice at large and not a
+  letter" ([TheNigeriaLawyer, 16 Aug 2026][tnl-rop]). A Rivers practitioner
+  lecture gives **s.5** Forms B (landlord), C (agent/solicitor), D (lodgings);
+  **s.6(1)(a)** one week for a tenant at will or weekly tenant; **s.8** Form E for
+  the seven-day owner's-intention notice; **s.29** definitions — *tenant*
+  includes an occupier "whether on payment of rent or otherwise" but not a bona
+  fide owner-claimant; *rent* includes crops, kind or labour ([Awunde,
+  2016][awunde]). **Rent receipts: no duty found.** Every commentator's section
+  map of Cap. 109 (ss.5–8 notices, ss.20–22 unlawful ejection, s.29 definitions)
+  is silent on receipts — it is a recovery statute, not a rent-control law. The
+  shelf entry stays a *verified negative* ("not verified … none claimed") until
+  Cap. 75 (Landlord and Tenant Law) is read; recorded as an open question.
 
 ### Edo (A — primary text from the state judiciary)
 **Rent Control and Recovery of Residential Premises Edict 1977** (Edict No. 4,
@@ -364,6 +380,8 @@ legislation was found", never as "there is no law".
 [edo]: https://edojudiciary.gov.ng/wp-content/uploads/2016/10/Rent-Control-And-Recovery-Of-residential-Premises-Edict-1977.pdf
 [abuad]: https://journals.abuad.edu.ng/alj/article/view/1791
 [crs]: https://crsida.crossriverstate.gov.ng/CRS%20Laws%202004%20Vol%206_120056.pdf
+[tnl-rop]: https://thenigerialawyer.com/the-law-on-recovery-of-premises-in-nigeria/
+[awunde]: https://www.slideshare.net/JohnAwunde/the-concept-of-landlord-and-tenant-57286133
 [kwara]: https://kwaralaws.ng/product/r2rent-control-and-recovery-of-residential-premises-law/
 [oyo]: https://tolegalgroup.com/wp-content/uploads/2020/05/AN-EVALUATION-OF-CONFLICT-IN-LANDLORD-AND-TENANT-RELATIONSHIP-ON-RESIDENTIAL-PROPERTY-IN-IBADAN-OYO-STATE.pdf
 [rsis]: https://rsisinternational.org/journals/ijriss/Digital-Library/volume-3-issue-1/262-269.pdf

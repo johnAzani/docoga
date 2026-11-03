@@ -1184,10 +1184,10 @@ RIVERS = dict(
     statutes=[
         dict(
             title="Recovery of Premises Law",
-            citation="Cap. 109, Laws of Rivers State of Nigeria, 1999",
-            commenced="1999",
-            note="Governsquit notices and the procedure for recovering possession.",
-            source="https://barristerng.com/expiration-of-rent-does-not-determine-a-tenancy-relationship-c-s-onyimah-esq/",
+            citation="No. 16 of 1991; Cap. 109, Laws of Rivers State of Nigeria, 1999",
+            commenced="2 January 1992",
+            note="Governs quit notices and the procedure for recovering possession. The Court of Appeal in Anyaehie v. Ongolo (2022) LPELR-58620(CA) dates it: No. 16 of 1991, in force 2 January 1992, rendered as Chapter 109 of the 1999 Laws.",
+            source="https://thenigerialawyer.com/the-law-on-recovery-of-premises-in-nigeria/",
         ),
         dict(
             title="Landlord and Tenant Law",
@@ -1251,7 +1251,25 @@ RIVERS = dict(
         "the owner’s intention to apply to court to recover possession, of not less than "
         "<b>seven days</b>. That notice cannot be issued before the quit notice expires.",
         "<b>Seven clear days:</b> the day of service is excluded and the day of expiry included.",
+        "<b>s.5 — the Law’s own forms.</b> A notice to quit is given in Form B when the landlord signs it himself, "
+        "Form C when his agent or solicitor signs, and Form D for lodgings; the seven-day notice of the owner’s "
+        "intention to apply to court (s.8) is Form E. (Rivers practitioner lecture, 2016; primary text unread.)",
+        "<b>A quit notice is a court process, not a letter.</b> The Court of Appeal in <i>Anyaehie v. Ongolo</i> "
+        "(2022) LPELR-58620(CA), on ss.5–7 of the Rivers Law: a notice to quit is a process of court addressed to "
+        "a known tenant — not a notice at large and not a letter.",
+        "<b>s.6(1)(a) — tenant at will or weekly tenant: one week’s notice.</b> Stated by a Rivers practitioner "
+        "(2016); the monthly and quarterly tiers are still not published pending the primary text.",
     ],
+
+    who_is_a_tenant=dict(
+        cite="s.29",
+        text=(
+            "<b>s.29 (interpretation):</b> a <b>tenant</b> includes any person occupying premises, whether on "
+            "payment of rent or otherwise — but not a person occupying under a bona fide claim to be the owner. "
+            "<b>Rent</b> includes any part of a crop rendered, or an equivalent given in kind or in labour. So a "
+            "relative or caretaker who pays nothing is still a tenant for the notice rules, and must be served."
+        ),
+    ),
 
     rent_in_arrears=dict(
         cite="Landlord and Tenant Law, Cap. 75, s.75(1)",
@@ -1283,9 +1301,13 @@ RIVERS = dict(
         cite="not verified",
         text=(
             "We have not verified a Rivers statutory duty to issue a rent receipt with prescribed "
-            "contents, so none is claimed. The ordinary position still applies: a receipt is the "
-            "evidence that rent was paid, and whoever asserts payment bears the burden of "
-            "proving it."
+            "contents, so none is claimed. Read so far (3 Nov 2026): the Recovery of Premises Law "
+            "Cap. 109 is a notices-and-procedure statute — every commentator maps its sections to "
+            "notices (ss.5–8), unlawful ejection (ss.20–22) and definitions (s.29), and none "
+            "reports a receipt duty; the Landlord and Tenant Law Cap. 75 has not been read on the "
+            "point. The ordinary position still applies: a receipt is the evidence that rent was "
+            "paid, and whoever asserts payment bears the burden of proving it — in a Rivers "
+            "possession claim built on arrears, the tenant’s receipts are the answer."
         ),
     ),
 
@@ -1313,9 +1335,14 @@ RIVERS = dict(
         "disconnection. Unlawful eviction sounds in damages.",
         "A defect in the issue, content or service of a notice vitiates the whole proceeding.",
         "The date of <b>service</b> is the material date, not the date written on the notice.",
+        "<b>ss.20–22:</b> an occupier whose tenancy has ended can be put out only in pursuance of a "
+        "court order obtained after the Law’s notices — the landlord who simply retakes possession "
+        "is the one breaking the law (Wigwe, mapping ss.20–22 to Abuja ss.22–24 and Lagos ss.25–27).",
     ],
 
     sources=[
+        "TheNigeriaLawyer, “The Law on Recovery of Premises in Nigeria” (16 Aug 2026), quoting Anyaehie & Ors v. Ongolo & Ors (2022) LPELR-58620(CA) on ss.5–7 of the Rivers Law, No. 16 of 1991, in force 2 Jan 1992, Cap. 109 of 1999: https://thenigerialawyer.com/the-law-on-recovery-of-premises-in-nigeria/",
+        "J. Awunde, “The Concept of Landlord and Tenant” (lecture, Jan 2016) — Rivers Cap. 109 ss.5 (Forms B, C, D), 6(1)(a), 8 (Form E), 29 (definitions): https://www.slideshare.net/JohnAwunde/the-concept-of-landlord-and-tenant-57286133",
         "C.S. Onyimah, “Expiration of Rent does not Determine a Tenancy Relationship”, BarristerNG — Rivers State Recovery of Premises Law Cap. 109, ss.6(1)(d), 6(2), 7: https://barristerng.com/expiration-of-rent-does-not-determine-a-tenancy-relationship-c-s-onyimah-esq/",
         "Dr Chris Wigwe, “Recovery of Premises in Nigeria: An Assessment of the Relationship of Landlord and Tenant Law”, Journal of Commercial and Contemporary Law — section-by-section mapping of the Rivers Law (ss.6(2), 7, 8, 17, 18, 20–22) against the Abuja Act and the Lagos Rent Control Law: https://www.researchgate.net/profile/Dr-Christian-Wigwe/publication/274377789",
         "https://lawgivernigeria.blogspot.com/2016/07/recovery-of-premises-in-nigeria-drafts.html — Rivers Magistrate Court forms and procedure",
@@ -1327,6 +1354,7 @@ RIVERS = dict(
         "Whether Rivers has a Rent Tribunal in operation, and if so its composition and jurisdiction.",
         "The full wording of Landlord and Tenant Law Cap. 75 s.75(1).",
         "Whether Rivers has a rent-control or standard-rent regime in addition to the recovery law.",
+        "Rent receipts: whether the Landlord and Tenant Law Cap. 75 imposes any receipt duty — Cap. 109 shows none in any commentator’s section map; Cap. 75 unread (3 Nov 2026).",
     ],
 )
 
