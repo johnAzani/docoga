@@ -59,6 +59,13 @@ scorecard flags (⚠️) and I act on in the next brief — without being asked.
 
 ## 4. Changelog (newest first — the scorecard reads the top date)
 
+- **2026-11-03** — Shelf recall: the 60 "not on the shelf" refusals of the last 30 days were read back
+  and sorted by state and topic — the biggest family (Lagos s.5(2) receipt lines, ×12) was *on* the
+  shelf, uncited. The verifier now sees the rest of the state's shelf and names the fact instead of
+  refusing; the claim is adopted with its id (`brain.recall`), so every published line is still cited.
+  Measures on the Monday scorecard: *shelf recall* (sentences saved per week), *shelf gaps* sorted
+  into recall vs **research target** (`brain.shelf_gaps`; first target: `rivers:receipts`); refusals
+  now record their state. Expected: first-pass rate up from 50%, `not_on_shelf` lessons down.
 - **2026-11-02** — The field: the Brain plans knowing what competitors published this week
   (`tools/competitor_watch.py`, verified map `brain/competitors.json`, public feeds at ₦0, THE
   FIELD block in every pack prompt, "Competitor watch" on the Monday scorecard). Owner's dominance
