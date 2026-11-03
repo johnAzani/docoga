@@ -197,8 +197,10 @@ LAGOS = dict(
             "is pending.</b>"
         ),
         false_claim=(
-            "There is <b>no statutory percentage cap</b> on rent increases in Lagos or anywhere "
-            "else in Nigeria. Any page or article claiming a fixed percentage limit is wrong."
+            "There is <b>no statutory percentage cap</b> on rent increases in Lagos. The one Nigerian "
+            "cap we have verified is Enugu’s — 15% of the existing rent, and only after every second "
+            "anniversary (Landlord and Tenant (Amendment) Law 2008, s.3(b)) — and it does not apply in "
+            "Lagos. A page quoting a percentage limit for Lagos is wrong."
         ),
     ),
 
@@ -373,7 +375,7 @@ ABUJA = dict(
             "is silent, the landlord’s ability to raise the rent and the notice required are "
             "matters of negotiation and, ultimately, of the Court."
         ),
-        false_claim="No percentage cap on rent increases exists in the FCT or anywhere in Nigeria.",
+        false_claim="No percentage cap on rent increases exists in the FCT. The one Nigerian cap we have verified is Enugu’s (15%, only after every second anniversary; Landlord and Tenant (Amendment) Law 2008, s.3(b)) and it does not apply in the FCT.",
     ),
 
     service=dict(
@@ -1327,7 +1329,7 @@ RIVERS = dict(
             "We have not verified a Rivers equivalent of the Lagos s.37 application to have an "
             "increase declared unreasonable."
         ),
-        false_claim="No percentage cap on rent increases exists in Rivers or anywhere in Nigeria.",
+        false_claim="No percentage cap on rent increases exists in Rivers. The one Nigerian cap we have verified is Enugu’s (15%, only after every second anniversary; Landlord and Tenant (Amendment) Law 2008, s.3(b)) and it does not apply in Rivers.",
     ),
 
     protections=[
@@ -1503,7 +1505,7 @@ ANAMBRA = dict(
     increase_challenge=dict(
         cite="not verified",
         text="We have not verified an Anambra equivalent of the Lagos s.37 unreasonable-increase application.",
-        false_claim="No percentage cap on rent increases exists in Anambra or anywhere in Nigeria.",
+        false_claim="No percentage cap on rent increases exists in Anambra. Its neighbour Enugu has one (15%, only after every second anniversary; Landlord and Tenant (Amendment) Law 2008, s.3(b)) — that is Enugu’s law, not Anambra’s.",
     ),
 
     related=dict(
@@ -1538,6 +1540,272 @@ ANAMBRA = dict(
         "Whether the proposed Rent and Tenancy Law has been passed — treat as pending until confirmed.",
     ],
 )
+
+# ---------------------------------------------------------------------------
+# ENUGU — Tier B. Principal law dated by the Court of Appeal; the 2008 rent-
+# review amendment confirmed by two independent sources (the contemporaneous
+# report of its passage and a practitioner quoting the section). The 2025/2026
+# amendment is a BILL and is written up as one. Researched 3 Nov 2026.
+# ---------------------------------------------------------------------------
+ENUGU = dict(
+    slug="enugu",
+    name="Enugu",
+    place="Enugu State",
+    full="Enugu State",
+    tier="B",
+    tier_note=(
+        "Principal law named and dated by the Court of Appeal; the 2008 amendment's rent-review rule "
+        "confirmed by two independent sources (the Assembly's own announcement of its passage, 13 Aug "
+        "2008, and a practitioner quoting s.3(b) in 2021). Primary text of Cap. 101 not yet read. "
+        "Researched 3 Nov 2026."
+    ),
+
+    correction=dict(
+        summary="<b>A correction to our own earlier pages.</b>",
+        detail=(
+            "Until 3 November 2026 our pages said there was no percentage cap on rent increases "
+            "<i>anywhere</i> in Nigeria. <b>Enugu has one.</b> The Landlord and Tenant (Amendment) "
+            "Law 2008 caps any rent review at 15% of the existing rent and allows a review only after "
+            "every second anniversary of the tenancy. The national sentence has been corrected on every "
+            "page that carried it; Lagos, the FCT, Rivers, Anambra and Kano still have no such cap."
+        ),
+    ),
+
+    statutes=[
+        dict(
+            title="Landlord and Tenant Law",
+            citation="Cap. 101, Revised Laws of Enugu State 2004",
+            commenced="27 August 1991",
+            note=(
+                "The principal law. The Court of Appeal in <i>Amah v. Ozouli</i> [2010] NGCA 6 holds that "
+                "the law applicable in Enugu is the Landlord and Tenant Law, Cap. 101, Revised Laws of Enugu "
+                "State, which came into operation on 27 August 1991 — 1991 is the commencement, 2004 the "
+                "revised edition. It is the Enugu sibling of Anambra’s Cap. 76, from the state Enugu was "
+                "carved out of in 1991."
+            ),
+            source="https://nigerialii.org/akn/ng/judgment/ngca/2010/6/eng@2010-05-20",
+        ),
+        dict(
+            title="Landlord and Tenant (Amendment) Law 2008",
+            citation="passed by the Enugu State House of Assembly on 13 August 2008",
+            note=(
+                "s.3(b) replaced s.109 of the principal law with the rent-review rule below (review only "
+                "after every second anniversary; increase capped at 15% of the existing rent, replacing the "
+                "former law’s 25%). The 2025 bill’s sponsor describes his bill as the <i>second</i> amendment "
+                "to the 2004 law “as amended in 2008”, which is how we know the 2008 law is still the one in force."
+            ),
+            source="https://barristerng.com/tenancy-laws-vs-practice-and-procedure-the-need-for-a-rethink/",
+        ),
+        dict(
+            title="Landlord and Tenant (Amendment) Bill (2025 private member bill; executive bill announced 26 October 2026)",
+            citation="—",
+            status="A BILL, NOT LAW. Do not describe its contents as current rules.",
+            note=(
+                "Would cap agency and legal fees at 10% of rent, bar every other premium (the sponsor and the press "
+                "call this the abolition of caution fees) and license agents through the Enugu State Housing "
+                "Development Corporation, with a ₦500,000 fine or six months for breach. Not passed as at 3 November 2026."
+            ),
+            source="https://thenigerialawyer.com/wp-content/uploads/2025/02/A-bill-to-amend-Landlord-and-Tenant-Law-of-Enugu-State.pdf",
+        ),
+    ],
+
+    forum=dict(
+        name="the courts of Enugu State (the Law’s own forum section has not been read)",
+        text=(
+            "Recovery of possession in Enugu runs through the courts under the Landlord and Tenant Law, "
+            "Cap. 101. <b>We have not read the section that names the forum</b>, so we do not say whether "
+            "it is the Magistrates’ Court, a Rent Tribunal or both. The Assembly’s 2008 announcement of the "
+            "amendment said the law lets landlords and tenants “seek redress at the Rent Tribunal” — a single "
+            "source, recorded here and not asserted. The High Court retains jurisdiction in every state "
+            "(s.272 of the 1999 Constitution)."
+        ),
+    ),
+
+    notice_ladder=[],
+    notice_ladder_note=(
+        "<b>The Enugu ladder is not published.</b> We have not read the notice sections of Cap. 101, so the "
+        "table above is the general Nigerian position — tenant at will one week, monthly one month, quarterly "
+        "a quarter, yearly six months — not a citation to an Enugu section. The 2025 bill promised “a legally "
+        "defined duration for eviction and other relevant notices”; that is a bill, not law."
+    ),
+    notice_extras=[
+        "<b>Expiry must fall on the eve of the anniversary.</b> A quit notice must terminate at midnight on "
+        "the last day of the current term — for a yearly tenancy running 1 January to 31 December, a "
+        "six-month notice must expire on that 31 December. This is the general Nigerian rule "
+        "(<i>African Petroleum Ltd v. Owodunni</i>); Lagos s.13(4) is the statutory exception.",
+        "<b>Rent running out does not end the tenancy.</b> A tenancy ends by a valid notice or by the "
+        "expiry of a fixed term, not by the paid period ending. A landlord who treats the end of the paid "
+        "rent as the end of the tenancy and moves to eject is acting unlawfully — notice first, then the "
+        "seven-day notice, then court.",
+        "<b>The statutory periods are minimums.</b> Longer is valid; shorter by a day is not.",
+        "<b>What the parties agree governs first.</b> Where the tenancy agreement fixes the notice, that "
+        "period binds; the statutory ladder applies only where the agreement is silent.",
+        "<b>A month means a calendar month</b> (Interpretation Act s.18).",
+        "<b>After the quit notice expires</b>, a further written notice of the owner’s intention to apply "
+        "to court, of not less than <b>seven clear days</b> — the day of service excluded, the day of "
+        "expiry included — and it cannot be issued before the quit notice expires. Only then court.",
+        "<b>No eviction without a court order, whatever the tenant’s status.</b> The Court of Appeal in "
+        "<i>Chicason Group of Co. Ltd v. Otero</i> [2021] 6 NWLR (Pt. 1772) 222: a tenant, lawful or "
+        "illegal, cannot be ejected contrary to legal process, and the landlord or agent who does so is "
+        "liable in damages — even a trespasser must be dealt with according to law.",
+    ],
+
+    increase_challenge=dict(
+        cite="Landlord and Tenant (Amendment) Law 2008, s.3(b), replacing s.109 of Cap. 101",
+        text=(
+            "<b>In Enugu a rent increase may not exceed 15% of the existing rent, and rent may be reviewed only "
+            "after every second anniversary of the tenancy</b> — s.3(b) of the Landlord and Tenant (Amendment) "
+            "Law 2008, which replaced s.109 of Cap. 101. Enugu is the one Nigerian state where we have verified a "
+            "statutory cap on rent increases."
+        ),
+        section=(
+            "<b>The section as quoted:</b> “rent chargeable for letting of any accommodation within the State "
+            "shall be as agreed between the landlord and the tenant, and may be reviewed by the parties after "
+            "every second anniversary of the tenancy created … PROVIDED that the difference between the new and "
+            "the existing rent shall not exceed 15% of the existing rent”."
+        ),
+        worked=(
+            "<b>Worked example:</b> a flat let at ₦400,000 a year from 1 January 2025 cannot be reviewed before "
+            "1 January 2027, and the new rent may not exceed ₦460,000 (₦400,000 plus 15%). A demand to move from "
+            "₦400,000 to ₦600,000 at a review — a 50% rise of the kind reported from Amechi in 2025 — breaches "
+            "the 15% ceiling even where the second anniversary has passed."
+        ),
+        plain=(
+            "<b>Three conditions, all from the section:</b> (1) the review is <i>by the parties</i> — a "
+            "unilateral increase is ineffective (<i>Jovinco Nigeria Ltd v. Ibeozimako</i> (2014) LPELR-23599(CA): "
+            "rent increment must be supported by an agreement; <i>Cobra Ltd v. Omole Estate</i> (2000) 1 NWLR "
+            "(Pt. 655) 1); (2) not before the second anniversary; (3) not more than 15% above the existing rent."
+        ),
+        contrast=(
+            "Lagos has no cap: its remedy is the s.37 application to have an increase declared unreasonable. "
+            "The FCT, Rivers, Anambra and Kano have neither a cap nor a verified s.37 equivalent. Enugu’s cap "
+            "applies to a sitting tenancy being reviewed; it says nothing about the rent a landlord may ask of a "
+            "<i>new</i> tenant, which remains “as agreed”."
+        ),
+        caution=(
+            "<b>How we know it, and what we have not seen.</b> The section is quoted in full by a Lagos "
+            "practitioner (2021) and the Assembly announced the same two-year/15% rule, replacing a 25% ceiling, "
+            "when it passed the amendment on 13 August 2008. We have not read the enrolled 2008 Law or a reported "
+            "judgment applying the 15% figure. Two independent sources agree; it is published as tier B."
+        ),
+    ),
+
+    advance_rent=dict(
+        cite="not verified",
+        text=(
+            "We have not verified an Enugu advance-rent cap of the Lagos s.4 kind. Read so far (3 Nov 2026): "
+            "the 2008 amendment as quoted regulates <i>reviews</i>, not advance rent; the 2025 bill text regulates "
+            "agents’ and legal fees, not advance rent; Cap. 101 itself has not been read. Record whatever advance "
+            "is agreed in the tenancy agreement before money moves."
+        ),
+    ),
+
+    receipts=dict(
+        cite="not verified",
+        text=(
+            "We have not verified an Enugu statutory duty to issue a rent receipt with prescribed contents, so "
+            "none is claimed. Read so far (3 Nov 2026): the ₦100,000-or-three-months receipt penalty that appears "
+            "in articles discussing Enugu alongside the 2008 amendment is <b>Lagos s.5 of the Tenancy Law 2011, "
+            "not Enugu law</b>; neither the 2008 amendment nor the 2025 bill text mentions receipts; Cap. 101 unread."
+        ),
+        extra=(
+            "The ordinary position applies: the receipt is the evidence that rent was paid, and in a possession "
+            "claim built on arrears the tenant’s receipts are the answer — insist on one for every payment, and "
+            "for every fee."
+        ),
+    ),
+
+    dates=dict(
+        text=(
+            "Cap. 101 came into operation on 27 August 1991 (Court of Appeal, Amah v. Ozouli, 2010); the Landlord "
+            "and Tenant (Amendment) Law was passed by the Enugu State House of Assembly on 13 August 2008; the "
+            "amendment bill of 2025 had its first reading on 25 February 2025 and was still a bill on 3 November 2026."
+        ),
+    ),
+
+    caution_fee=dict(
+        cite="not verified in the law in force",
+        text=(
+            "<b>Today, no Enugu statute we have read bans or caps a caution fee.</b> Read so far (3 Nov 2026): the "
+            "2008 amendment as quoted and the full text of the 2025 bill — neither bans a deposit in the law in force; "
+            "Cap. 101 itself has not been read on premiums or deposits, so no rule is stated for the law in force. "
+            "The deposit is a matter of contract — "
+            "write down the amount, its purpose and the refund terms, and receipt it separately from rent. "
+            "Reported practice in Enugu (ICIR, December 2025) is caution fees of ₦50,000–₦200,000 that are "
+            "rarely refunded, on top of legal, management and agent fees that can add up to half the rent again."
+        ),
+        warning=(
+            "<b>A bill would change this — it is a bill, not law, as at 3 November 2026.</b> The Landlord and "
+            "Tenant (Amendment) Bill 2025 (sponsor Okey Mbah, Nkanu East) bars any premium beyond a legal fee of "
+            "up to 10% of rent paid to a qualified lawyer — read by its sponsor and the press as abolishing caution "
+            "fees — caps the agent’s fee at 10% of rent, licenses agents, and punishes breach with a ₦500,000 fine "
+            "or six months or both."
+        ),
+        timeline=[
+            "<b>Bill timeline:</b> first reading 25 February 2025; second reading 11 March 2025; public hearing "
+            "26 March 2025; then sent to the executive, where it sat with the Attorney-General through November 2025.",
+            "<b>26 October 2026:</b> the Speaker, Uche Ugwu, announced an <i>executive</i> bill to the same "
+            "end — fee limits, agent regulation, “a structured mechanism for handling caution fees and refunds”, joint "
+            "inventories — and Governor Peter Mbah pledged passage within four weeks and prompt assent. Still a bill, "
+            "not law, as at 3 November 2026.",
+            "<b>What that means today:</b> a landlord who says “the law has banned caution fees in Enugu” is ahead of "
+            "the law, and one who demands a fee is not yet breaking it. If you are reading this after late November "
+            "2026, check whether the bill has passed.",
+        ],
+    ),
+
+    agency_fee=dict(
+        cite="no cap in force; 10% proposed",
+        text=(
+            "There is <b>no Enugu cap on agents’ or legal fees in force</b> that we have verified. The 2025 "
+            "Landlord and Tenant (Amendment) Bill would cap the agent’s fee at 10% of rent and the legal fee at "
+            "10%, payable only to a qualified legal practitioner — a bill, not law, as at 3 November 2026. "
+            "Reported practice (ICIR, December 2025) is agent commissions of 15–20% of annual rent plus an "
+            "inspection fee of ₦2,000 or more. Lagos’s 10% letting fee under its Estate Agency Regulatory "
+            "Authority Law is Lagos law and does not apply in Enugu."
+        ),
+    ),
+
+    protections=[
+        "A landlord may not resort to self-help — no lock-outs, no removal of goods or roofs, no disconnection. "
+        "Unlawful eviction sounds in damages (<i>Ihenacho v. Uzochukwu</i> (1997) 1 SCNJ 117; <i>Chicason Group "
+        "v. Otero</i> [2021] 6 NWLR (Pt. 1772) 222).",
+        "A rent increase that ignores the 2008 section — before the second anniversary, above 15%, or imposed "
+        "without agreement — is an unlawful increment, and a court will not enforce the increased figure.",
+        "A defect in the issue, content or service of a notice vitiates the whole proceeding; the date of "
+        "<b>service</b> is the material date, not the date written on the notice.",
+    ],
+
+    related=dict(
+        enugu=(
+            "<b>Anambra’s Cap. 76 is the sibling statute.</b> Enugu was carved out of Anambra in 1991 and its "
+            "Cap. 101 descends from the same Landlord and Tenant Law; the Court of Appeal in <i>Amah v. Ozouli</i> "
+            "dealt with both. Anambra’s s.173 alternative-accommodation rule is Anambra’s and is not attributed "
+            "to Enugu here until Cap. 101 is read."
+        ),
+    ),
+
+    sources=[
+        "Court of Appeal, Amah v. Ozouli (CA/E/298/2006) [2010] NGCA 6 — the law applicable in Enugu is the Landlord and Tenant Law, Cap. 101, Revised Laws of Enugu State, in operation from 27 August 1991: https://nigerialii.org/akn/ng/judgment/ngca/2010/6/eng@2010-05-20",
+        "Vanguard/NAN report of the Assembly passing the Landlord and Tenant Amendment Bill, 13 August 2008 (Speaker Eugene Odo: rent review only after two years; no increase above 15%, against 25% in the former law; redress at the Rent Tribunal): https://www.nairaland.com/159797/enugu-assembly-passes-landlord-tenant",
+        "Nnaemeka Uzunwezea Eze, “Tenancy Laws Vs. Practice and Procedure: The Need for a Rethink”, BarristerNG (11 Jul 2021) — quotes s.3(b) of the Landlord and Tenant (Amendment) Law 2008 replacing s.109 of Cap. 101; Jovinco v. Ibeozimako; Chicason v. Otero: https://barristerng.com/tenancy-laws-vs-practice-and-procedure-the-need-for-a-rethink/",
+        "The Guardian (15 Apr 2022), “How estate agents make tenancy difficult for Lagos residents” — the same s.3(b) text, quoted: https://guardian.ng/saturday-magazine/how-estate-agents-make-tenancy-difficult-for-lagos-residents/",
+        "Landlord and Tenant (Amendment) Bill 2025 — the bill’s own text (s.3: new s.108(1)–(5); agent fee ≤10%; no other premium except a legal fee ≤10%; ₦500,000 or six months): https://thenigerialawyer.com/wp-content/uploads/2025/02/A-bill-to-amend-Landlord-and-Tenant-Law-of-Enugu-State.pdf",
+        "Punch (11 Mar 2025), second reading — the sponsor: “this second amendment bill is proposed to alter the provisions of the 2004 Landlord and Tenant Bill as amended in 2008”: https://punchng.com/?p=1813797",
+        "ICIR (15 Dec 2025), “In Enugu, cut-throat fees by agents, lawyers, landlords deepen housing crisis” — public hearing 26 Mar 2025, bill with the Attorney-General as of November 2025; reported fee levels: https://www.icirnigeria.org/in-enugu-cut-throat-fees-by-agents-lawyers-landlords-deepen-housing-crisis/",
+        "The Advocate (26 Oct 2026), “Mbah Vows to Sign Bill Curbing Excessive Agency, Lawyers’ Fees in Enugu” — executive bill announced by the Speaker; governor’s four-week pledge: https://advocatengr.com/2026/10/26/mbah-vows-to-sign-bill-curbing-excessive-agency-lawyers-fees-in-enugu/",
+        "Enugu Metro (26 Feb 2025), first reading and the four provisions of the private member bill: https://enugumetro.ng/2025/02/26/enugu-assembly-to-save-tenants-from-landlord-exploitation/",
+    ],
+
+    open_questions=[
+        "The full text of Cap. 101 — not read. The notice ladder, the forum section, any receipt duty and any premium rule are all unpublished pending it.",
+        "Whether an Enugu Rent Tribunal exists and sits — mentioned once, in the 2008 announcement; not confirmed.",
+        "The enrolled text of the Landlord and Tenant (Amendment) Law 2008 — the s.3(b) wording is as quoted by a practitioner and matches the Assembly’s announcement, but we have not seen the gazette.",
+        "Whether any reported judgment has applied the 15% cap, and whether it binds a new letting as well as a review.",
+        "The text of the executive amendment bill announced on 26 October 2026, and whether it has been passed — check after late November 2026.",
+    ],
+)
+
 
 # ---------------------------------------------------------------------------
 # KANO — Tier D for rent control (a verified negative, twice) with a
@@ -1648,7 +1916,7 @@ KANO = dict(
             "application to have an increase declared unreasonable, and no tribunal to apply "
             "to. Rent increases are governed entirely by the tenancy agreement."
         ),
-        false_claim="No percentage cap on rent increases exists in Kano or anywhere in Nigeria.",
+        false_claim="No percentage cap on rent increases exists in Kano. The one Nigerian cap we have verified is Enugu’s (15%, only after every second anniversary; Landlord and Tenant (Amendment) Law 2008, s.3(b)) and it does not apply in Kano.",
     ),
 
     protections=[
@@ -1682,6 +1950,7 @@ STATE_LAW = {
     "lagos": LAGOS,
     "rivers": RIVERS,
     "anambra": ANAMBRA,
+    "enugu": ENUGU,
     "kano": KANO,
     "abuja": ABUJA,
     "edo": EDO,
@@ -1696,10 +1965,11 @@ TIER_E_PUBLISHED = ["ogun", "plateau"]
 # When the shelf for each published state was last checked against its sources (3 Nov 2026).
 # Printed on every state page ("law shelf reviewed …") and nowhere invented: the dossier
 # docs/STATE_TENANCY_RESEARCH.md was compiled 8 Oct 2026 for all of them; Rivers was re-read on
-# 3 Nov 2026 (the Brain's first research target). Move a date only after a real re-verification.
+# 3 Nov 2026 (the Brain's first research target) and Enugu was researched the same day (the 2008
+# rent-review amendment, the 2025/2026 bill). Move a date only after a real re-verification.
 LAW_REVIEWED = {
     "lagos": "2026-10-08", "abuja": "2026-10-08", "rivers": "2026-11-03", "oyo": "2026-10-08",
-    "kano": "2026-10-08", "enugu": "2026-10-08", "delta": "2026-10-08", "kaduna": "2026-10-08",
+    "kano": "2026-10-08", "enugu": "2026-11-03", "delta": "2026-10-08", "kaduna": "2026-10-08",
     "anambra": "2026-10-08", "edo": "2026-10-08", "cross-river": "2026-10-08", "kwara": "2026-10-08",
     "ogun": "2026-10-08", "plateau": "2026-10-08",
 }
@@ -1707,7 +1977,6 @@ LAW_REVIEWED = {
 # States we publish that sit below tier A and still need primary confirmation.
 NEEDS_CONFIRMATION = {
     "oyo": "B/C — Recovery of Premises Law Cap 144 and a Rent (Increase Restriction) Law; two sources disagree on the chapter number (Cap 144 vs Cap 71).",
-    "enugu": "B — Landlord and Tenant Law, Cap. 101, Laws of Enugu State 2004. An amendment BILL would abolish caution fees; it has NOT passed (ICIR, Dec 2025).",
     "delta": "C — Rent Control and Recovery of Residential Premises Law, Cap. R5, Laws of Delta State. A 2026 Tenancy Bill is at second reading; not law.",
     "kaduna": "C — Landlord and Tenant Law 2018, single source.",
 }

@@ -32,8 +32,10 @@ import law_index  # noqa: E402
 import newsdesk  # noqa: E402
 import listening  # noqa: E402
 
-MONDAY = date(2026, 10, 19)      # a Reel day: the pack must carry a Short
-SUNDAY = date(2026, 10, 18)      # no Short rendered
+# 3 Nov 2026: the shelf grew to nine states (Enugu), so the rotation moved; these two dates keep the
+# fixture on the Lagos shelf (MONDAY → lagos, the day after → anambra) exactly as the 8-state dates did.
+MONDAY = date(2026, 10, 5)       # a Reel day: the pack must carry a Short
+SUNDAY = date(2026, 10, 4)       # no Short rendered
 
 
 def good_pack(day=MONDAY, **over):
@@ -156,7 +158,7 @@ class LawShelfTests(unittest.TestCase):
         self.assertEqual(len(ids), len(set(ids)))
 
     def test_state_rotation_covers_every_state(self):
-        slugs = {brain.state_for(date(2026, 10, 1 + i)) for i in range(8)}
+        slugs = {brain.state_for(date(2026, 10, 1 + i)) for i in range(len(law_index.states()))}
         self.assertEqual(slugs, {s for s, _, _ in law_index.states()})
 
 
@@ -387,7 +389,7 @@ class HookBanditTests(Sandbox):
 
     def test_yesterdays_hook_is_never_todays_even_when_it_is_the_best(self):
         history = self.history(STAT=(9, 80.0), QUESTION=(5, 10.0), CLAIM=(5, 10.0))
-        said = [{"date": "2026-10-18", "hook_type": "STAT"}]
+        said = [{"date": SUNDAY.isoformat(), "hook_type": "STAT"}]
         hook, _, _ = brain.hook_order(MONDAY, said, history=history)
         self.assertNotEqual(hook, "STAT")
 

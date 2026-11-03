@@ -312,7 +312,7 @@ commencement 21 September 1995):
   State 2000" among the state landlord/tenant laws — note the two different caps
   cited for Oyo; unresolved, see §9)
 
-### Enugu (A for the bill, B for the principal law)
+### Enugu (A for the bill, B for the principal law) — superseded by §14 (3 Nov 2026)
 - A **Landlord and Tenant Law, Cap. 101, Laws of Enugu State** is the principal
   law — the amending bill's own text cites it as "**Cap. 101, Laws of Enugu State,
   2004**", while press reports of the same bill say **2024**. The bill PDF is the
@@ -401,7 +401,7 @@ legislation was found", never as "there is no law".
 
 | Bill | Status | Trap |
 |---|---|---|
-| Enugu Landlord & Tenant (Amendment) Bill, 2025 | First reading Feb 2025; **not passed** as of Dec 2025 | Would abolish caution fees — publishing it as law would tell Enugu tenants their caution fee is banned. It is not. |
+| Enugu Landlord & Tenant (Amendment) Bill, 2025 → executive bill announced 26 Oct 2026 | First reading 25 Feb 2025; second reading 11 Mar 2025; public hearing 26 Mar 2025; with the Attorney-General through Nov 2025; executive bill announced 26 Oct 2026 with a four-week pledge — **not passed** as of 3 Nov 2026 (§14) | Would abolish caution fees — publishing it as law would tell Enugu tenants their caution fee is banned. It is not. Re-check after late Nov 2026. |
 | Anambra Rent and Tenancy Law | Legislative process begun March 2026; backed July 2026 | Anambra has **no** rent control in force today. |
 | Lagos Tenancy and Recovery of Premises Bill, 2025/2026 | Pending | Would cut the monthly advance cap 6 → 3 months. Current law is still 6 (sitting) / 12 (new). |
 
@@ -673,3 +673,92 @@ Unverified states were still asserting specific forums and statutes — the
 Ogun page said "Disputes go to the Magistrates' Courts in Ogun State" directly
 above its own tier-E disclaimer. The overlay now replaces those strings with
 an explicit "not yet verified" for any state whose law we cannot cite.
+
+## 14. The Enugu pass (3 Nov 2026) — a cap on rent increases does exist in Nigeria
+
+Second research target after Rivers. `notice-to-quit-enugu` is one of the few state
+pages Search Console shows a real query for ("enugu", position 2), and the Enugu
+entry was an undated placeholder. Read this pass: the 2025 bill's own text, the
+Assembly's 2008 announcement, a 2021 practitioner article quoting the 2008 section,
+the Guardian (2022) repeating it, Punch on the second reading, the ICIR investigation
+(Dec 2025) and The Advocate on the executive bill (26 Oct 2026).
+
+### 14.1 A correction to our own pages
+
+Every page and the Brain's shelf said "no percentage cap on rent increases exists
+anywhere in Nigeria". **Enugu has one, since 2008.** Two independent sources agree:
+
+- **Vanguard/NAN, 13 Aug 2008** — the Enugu State House of Assembly passed the
+  Landlord and Tenant Amendment Bill; Speaker Eugene Odo: an offence to increase
+  rent without two years' notice to the tenant, and no increment above **15 per
+  cent** of the existing rent, against **25 per cent** in the former law; parties may
+  seek redress at the Rent Tribunal. ([Nairaland mirror of the report][enugu2008])
+- **Nnaemeka Uzunwezea Eze, BarristerNG, 11 Jul 2021** — quotes **s.3(b) of the
+  Landlord and Tenant (Amendment) Law 2008**, which replaced **s.109 of Cap. 101,
+  Laws of Enugu State 2004**: rent "shall be as agreed between the landlord and the
+  tenant, and may be reviewed by the parties after every second anniversary of the
+  tenancy created … PROVIDED that the difference between the new and the existing
+  rent shall not exceed 15% of the existing rent". Also cites *Jovinco Nigeria Ltd
+  v. Ibeozimako* (2014) LPELR-23599(CA) — a rent increment must be supported by an
+  agreement — and *Chicason Group v. Otero* [2021] 6 NWLR (Pt. 1772) 222 on
+  eviction without process. ([BarristerNG][eze2021]; repeated in [The Guardian,
+  15 Apr 2022][guardian2022])
+- **Punch, 11 Mar 2025** — the 2025 sponsor calls his bill "this second amendment
+  bill … to alter the provisions of the 2004 Landlord and Tenant Bill as amended in
+  2008", which is how we know the 2008 law is the one still in force. ([Punch][punch2025])
+
+Not seen: the enrolled 2008 Law, or a judgment applying the 15% figure. Published as
+**tier B** with that said. The national sentence was corrected on
+`tenant-rights-nigeria`, in the Lagos, FCT, Rivers, Anambra and Kano shelf entries,
+and `increase_challenge` — which had been on the Brain's shelf but never on a page
+— now renders on every state page under "Rent increases".
+
+### 14.2 What is in the 2025 bill, from its own text
+
+The [bill PDF][enugubill] is one page of substance: s.3(a) moves s.108 into s.2;
+s.3(b) re-enacts s.108 — (1) agents must obtain an annual permit from the **Enugu
+State Housing Development Corporation**; (2) the MD makes the regulations; (3) agent
+fee "shall not exceed 10% of rent paid by the prospective tenant"; (4) "no tenant
+shall be caused to pay any further premium in acquiring any accommodation except
+legal fee payable to a qualified legal practitioner … and such fee shall not exceed
+10% of the rent"; (5) ₦500,000 fine or six months or both. The word "caution" does
+not appear — the "abolition of caution fees" is the sponsor's and the press's reading
+of sub-s.(4). Our pages say so.
+
+### 14.3 Where the bill stands (and why the date matters)
+
+First reading 25 Feb 2025; second reading 11 Mar 2025 (committees told to report by
+25 Mar); public hearing 26 Mar 2025 (NIESV wanted certification kept away from the
+government agency; the NBA said lawyers charge 3–5%); then, as a private member bill,
+sent to the executive and sitting with the Attorney-General as of Nov 2025
+([ICIR, 15 Dec 2025][icir]). On **26 Oct 2026** the Speaker, Rt. Hon. Uche Ugwu,
+announced an **executive** bill to amend Cap. 101 — fee limits, agent regulation,
+"a structured mechanism for handling caution fees and refunds" (note: handling, not
+abolition), joint inventories, checks on arbitrary increases — and Governor Peter
+Mbah pledged passage "within the next four weeks" and prompt assent
+([The Advocate][advocate2026]). **As of 3 Nov 2026 nothing is passed.** The Enugu
+pages carry the date and tell the reader to re-check after late November 2026.
+
+### 14.4 Verified negatives recorded with a read mark
+
+- **Receipts** — the ₦100,000-or-three-months receipt penalty that sits next to the
+  Enugu material in the 2021 article is **Lagos s.5**, not Enugu; nothing on receipts
+  in the 2008 section or the 2025 bill. Cap. 101 unread. (`Read so far (3 Nov 2026)`)
+- **Advance rent** — nothing in either text; Cap. 101 unread.
+- **Caution fee** — no ban in the law in force in anything read; the bill would change
+  it. Cap. 101 unread.
+- **Notice ladder and forum** — not read; the general ladder is shown as the general
+  position, not as Enugu sections. The 2008 report's "Rent Tribunal" is a single
+  source and is recorded, not asserted.
+
+### 14.5 Still open
+
+The text of Cap. 101 (notice sections, forum, receipts, premiums); the gazetted 2008
+Law; whether the 15% cap has been applied in a reported judgment; the executive
+bill's text and fate.
+
+[enugu2008]: https://www.nairaland.com/159797/enugu-assembly-passes-landlord-tenant
+[eze2021]: https://barristerng.com/tenancy-laws-vs-practice-and-procedure-the-need-for-a-rethink/
+[guardian2022]: https://guardian.ng/saturday-magazine/how-estate-agents-make-tenancy-difficult-for-lagos-residents/
+[punch2025]: https://punchng.com/?p=1813797
+[advocate2026]: https://advocatengr.com/2026/10/26/mbah-vows-to-sign-bill-curbing-excessive-agency-lawyers-fees-in-enugu/

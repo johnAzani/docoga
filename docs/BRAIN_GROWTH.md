@@ -59,6 +59,16 @@ scorecard flags (⚠️) and I act on in the next brief — without being asked.
 
 ## 4. Changelog (newest first — the scorecard reads the top date)
 
+- **2026-11-03** — Second research target read, and a wrong fact removed from the shelf: Enugu
+  (`docs/STATE_TENANCY_RESEARCH.md` §14). The shelf said "no percentage cap on rent increases exists
+  anywhere in Nigeria" in five states' entries; Enugu's Landlord and Tenant (Amendment) Law 2008
+  (s.3(b), replacing s.109 of Cap. 101) caps a review at 15% and allows one only after every second
+  anniversary — two independent sources. Enugu joins the shelf at tier B (25 facts: the 2008 rule with a
+  worked example, the Court of Appeal's dating of Cap. 101, *Chicason v. Otero*, *Jovinco v. Ibeozimako*,
+  dated verified negatives on receipts, advance rent and caution fees, and the 2025/2026 amendment bill
+  written up as a bill with its timeline to 26 Oct 2026). The state rotation is now nine states, so
+  Enugu gets its own pack nights; `increase_challenge` facts now also render on every state page.
+  Measure: `enugu:*` claims cited in packs; no refusal may ever again quote "anywhere in Nigeria" on caps.
 - **2026-11-03** — Shelf recall: the 60 "not on the shelf" refusals of the last 30 days were read back
   and sorted by state and topic — the biggest family (Lagos s.5(2) receipt lines, ×12) was *on* the
   shelf, uncited. The verifier now sees the rest of the state's shelf and names the fact instead of

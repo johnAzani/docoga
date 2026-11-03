@@ -138,6 +138,19 @@ platforms; nothing the owner must do on a schedule.
   pages up to the four national guides. REJECT: `@id` fragments on the home page (the SPA lint
   reads `#org` as a route) — the publisher is inlined instead; any `sameAs` to LinkedIn, TikTok or
   X, which the machine cannot vouch for.
+  **Follow-through (same evening, fifth pass — the content itself).** The only state query Search
+  Console shows us ranking for is "enugu" (position 2, `notice-to-quit-enugu`, 0 clicks) — and the
+  Enugu pages were the thin, unverified version. Researched Enugu to the primary texts available
+  (`docs/STATE_TENANCY_RESEARCH.md` §14: the 2025 bill PDF, the Assembly's 13 Aug 2008 announcement,
+  a 2021 practitioner quoting s.3(b) of the 2008 amendment, Punch 11 Mar 2025, ICIR 15 Dec 2025, The
+  Advocate 26 Oct 2026). Finding that no rival page carries correctly: Enugu is the one Nigerian state
+  with a statutory cap on rent increases (15%, review only after every second anniversary) — and our
+  own pages had been saying "no cap anywhere in Nigeria". Corrected on `tenant-rights-nigeria` and on
+  five states' shelf entries; Enugu's five pages now lead with its own statute, a worked ₦400,000 →
+  ₦460,000 example, a dated status of the caution-fee bill (executive bill announced 26 Oct 2026,
+  governor's four-week pledge — still not law) and dated verified negatives. "Rent increases" now
+  renders on all 60 state pages (it had been shelf-only). This is the paragraph-level specificity the
+  15 May 2026 AI guidance rewards, on the page that already has the impressions.
 
 - **2026-11-03** — **Second dive (same day, owner: "research very very in-depth … what next"): the
   shape of the page that wins the transactional query.** Read Google's own guidance for AI
