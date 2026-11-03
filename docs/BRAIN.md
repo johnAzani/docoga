@@ -358,7 +358,11 @@ claims the writer declared; a legal sentence that a shelf fact says — same sta
 period or amount — is *recalled* (`brain.recall`): the claim is adopted with that fact's id instead
 of the pack being refused, so the page still cites every line. What no fact says is still refused.
 The Monday scorecard prints *shelf recall* (sentences saved) and *shelf gaps* — refused pairs sorted
-into recall vs research target (`brain.shelf_gaps`); refusals record their state.
+into recall vs research target (`brain.shelf_gaps`); refusals record their state. A target is
+closed by reading it: when the shelf's "not verified" entry carries a dated read ("Read so far
+(3 Nov 2026): …") the pair is *settled* — a verified negative the verifier may recall ("no such
+rule in this state"), and the scorecard lists it as settled by research, not as a target. An
+undated placeholder stays a target (first closed: `rivers:receipts`, 3 Nov 2026).
 
 **The field (`tools/competitor_watch.py`, 2 Nov 2026).** Owner: "keep me way ahead of my
 competitors — I want to dominate. Lock it in." 🔒 Charter and research ledger: `docs/DOMINANCE.md`,
