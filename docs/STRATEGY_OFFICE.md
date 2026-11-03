@@ -157,3 +157,21 @@ What this adds to the charter, permanently:
   about it — labelled fact / estimate / hypothesis as §3 requires.
 - **₦0 and the locks stand.** No paid intelligence tools, no scraping behind logins, no second
   model. The owner is never asked to watch a rival by hand on a schedule.
+
+## 12. The growth mandate (owner, Tue 3 Nov 2026, 12:10pm — locked: `docs/GROWTH.md`)
+
+*"The same way I want you to always always research as frequently as possible very very in-depth
+to the thinnest details on how to make more success more than what we are making now, and make
+sure it can be fully automated, and remember the ₦0."* — said on handing the company over to be
+run ("manage it to greatness").
+
+What this adds, permanently:
+
+- **A growth dive at least every 7 days**, dated in the `docs/GROWTH.md` ledger with sources and
+  DO NOW / TEST NEXT / LATER / REJECT; the Monday scorecard flags ⚠️ when the top date is older.
+- **"More success" is three numbers**: naira net, documents made, and the money-page share of
+  Google impressions (`tools/growth.py`; 15% on 3 Nov 2026, target 40%). Every dive names the
+  number it will move; the next dive reads whether it moved.
+- **Every DO NOW is automated end to end and ₦0.** The owner mints a token once at most; nothing
+  asks him to post, paste or watch on a schedule. The Monday scorecard prints **"Growth — where
+  the next naira is"** with the week's one order.

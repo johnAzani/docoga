@@ -364,6 +364,13 @@ closed by reading it: when the shelf's "not verified" entry carries a dated read
 rule in this state"), and the scorecard lists it as settled by research, not as a target. An
 undated placeholder stays a target (first closed: `rivers:receipts`, 3 Nov 2026).
 
+**Growth (`tools/growth.py`, 3 Nov 2026).** Owner: "always research as frequently as possible … how
+to make more success than what we are making now … fully automated … ₦0." 🔒 Charter and weekly
+ledger: `docs/GROWTH.md`, pinned by `tools/tests/test_growth_lock.py`. The Monday scorecard prints
+**"Growth — where the next naira is"**: money-page share of Google impressions (target 40%),
+zero-click top spots, striking distance and the week's one order, read from the Search Console
+pull at ₦0.
+
 **The field (`tools/competitor_watch.py`, 2 Nov 2026).** Owner: "keep me way ahead of my
 competitors — I want to dominate. Lock it in." 🔒 Charter and research ledger: `docs/DOMINANCE.md`,
 pinned by `tools/tests/test_dominance_lock.py`. `brain/competitors.json` is the verified map of who else sells

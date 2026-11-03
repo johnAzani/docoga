@@ -1298,6 +1298,11 @@ def summary_md(snap):
         lines += ["", "### Competitor watch — the field this week (🔒 docs/DOMINANCE.md)"] + competitor_watch.scorecard_lines()
     except Exception:  # noqa: BLE001 — the field is a bonus block
         pass
+    try:
+        import growth
+        lines += ["", "### Growth — where the next naira is (🔒 docs/GROWTH.md)"] + growth.scorecard_lines()
+    except Exception:  # noqa: BLE001 — never breaks the scorecard
+        pass
     lines += ["", "### Orders for the coming week"] + ["- " + o for o in snap.get("orders") or []]
     if snap.get("problems"):
         lines += ["", "### Not measured (and why)"] + ["- " + p for p in snap["problems"]]
