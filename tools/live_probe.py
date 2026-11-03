@@ -26,6 +26,8 @@ What it checks (read-only GETs only — nothing here can verify a code, move mon
       says it expires, more than 10 days remain; plus proof of life — some lane was
       dispatched by the clock in the last 6 hours
     * the domain itself: NiRA's whois says docoga.com.ng has more than 30 days to run
+    * the sample PDF (3 Nov 2026): /samples/tenancy-agreement-sample-nigeria.pdf is 200, a real
+      PDF, and served with X-Robots-Tag: noindex — the HTML sample page must be the one that ranks
 
 Flapping guard: anything that fails is tried again after a pause before it counts, so a
 single Cloudflare hiccup is not an alarm. The workflow files ONE issue under the label
@@ -164,6 +166,29 @@ def check_page(url):
         problems.append("no <title> in the first 20 KB")
     name = url.replace(SITE, "") or "/"
     return Result(name, url, not problems, status, ms, "; ".join(problems))
+
+
+SAMPLE_PDF = "/samples/tenancy-agreement-sample-nigeria.pdf"   # tools/sample_docs.py, PR #190 (3 Nov 2026)
+
+
+def check_sample_pdf(path=SAMPLE_PDF):
+    """The sample PDF is served, is a real PDF, and carries the noindex the growth plan rests on:
+    docs/GROWTH.md ranks the HTML sample page and keeps the file out of the index (site/_headers
+    `/samples/*`). If Cloudflare ever stops honouring _headers the file would start competing with
+    its own page — that is a finding, not a blip."""
+    status, final, hdrs, body, ms = fetch(SITE + path)
+    low = {k.lower(): v for k, v in (hdrs or {}).items()}
+    ctype = (low.get("content-type") or "").lower()
+    problems = []
+    if status != 200:
+        problems.append("status %s" % status)
+    if status == 200 and "pdf" not in ctype:
+        problems.append("content-type %r" % ctype)
+    if status == 200 and not body.startswith(b"%PDF"):
+        problems.append("body is not a PDF")
+    if status == 200 and "noindex" not in (low.get("x-robots-tag") or "").lower():
+        problems.append("X-Robots-Tag noindex missing — site/_headers /samples/* not applied; the PDF will rank against its own page")
+    return Result("sample PDF (served, noindex)", SITE + path, not problems, status, ms, "; ".join(problems))
 
 
 def check_pass():
@@ -358,6 +383,7 @@ def run_once(quick=False, log=print):
     pages = locs if not quick else locs[:5]
     for loc in pages:
         results.append(check_page(loc))
+    results.append(check_sample_pdf())
     results.append(check_pass())
     results.extend(check_ledger())
     results.append(check_clock())
@@ -368,7 +394,7 @@ def run_once(quick=False, log=print):
     return results
 
 
-RETRYABLE = {"home page", "sitemap.xml", "robots.txt", "og/home.jpg", "docoga-pass (payments)",
+RETRYABLE = {"home page", "sitemap.xml", "robots.txt", "og/home.jpg", "sample PDF (served, noindex)", "docoga-pass (payments)",
              "docoga-ledger /health", "docoga-ledger /api/stats (Rent Monitor)", "docoga-clock (the schedule)",
              "TLS certificate", "clock credential (GH_DISPATCH_TOKEN)",
              "clock pulse (a lane dispatched in the last %d h)" % 6, "domain registration (docoga.com.ng)"}
@@ -386,6 +412,8 @@ def retry(failed, log=print):
             again = check_static("/robots.txt", "text/plain", "Sitemap:")[0]
         elif r.name == "og/home.jpg":
             again = check_static("/og/home.jpg", "image/jpeg")[0]
+        elif r.name.startswith("sample PDF"):
+            again = check_sample_pdf()
         elif r.name.startswith("docoga-pass"):
             again = check_pass()
         elif r.name.startswith("docoga-ledger /health"):
