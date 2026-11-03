@@ -14,6 +14,13 @@ code change: install `deploy/live/install.sh` on any Ubuntu 24.04 machine with t
 next control run makes the broadcast and takes it live. Candidate boxes and their prices are in
 "Choosing the machine" below; the first spend waits for the app's own fund, on the owner's word.
 
+**Install watchdog — 3 Nov 2026, 12:00pm: REJECTED while parked (owner: "your call, do we need
+it").** The watchdog proposed on 23 Oct was a lane to watch the streaming machine's install —
+`install.sh` healthy, the loop process alive, the key still valid — and to Telegram the owner when
+it died. With no machine there is nothing to watch, and a lane that can only ever report "no box"
+is noise against the ₦0 rule. It is not forgotten: it is the **first** thing to build the day a
+box is bought from the app's fund, because a 24/7 stream that dies silently earns nothing.
+
 ## What a viewer sees
 
 A public live video on the channel, 24 hours a day: **"DocOga Live 24/7 — Nigerian rent &
