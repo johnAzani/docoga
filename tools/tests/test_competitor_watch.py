@@ -26,12 +26,17 @@ RSS = b"""<?xml version="1.0"?><rss version="2.0"><channel><title>x</title>
 </channel></rss>"""
 
 INDEX = b"""<?xml version="1.0"?><sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<sitemap><loc>https://tool.ng/listing-sitemap.xml</loc></sitemap>
 <sitemap><loc>https://tool.ng/post-sitemap.xml</loc></sitemap></sitemapindex>"""
 URLSET = b"""<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-<url><loc>https://tool.ng/rent-receipt-generator</loc><lastmod>2026-10-28</lastmod></url>
+<url><loc>https://tool.ng/free-rent-receipt-generator-nigeria</loc><lastmod>2026-10-28</lastmod></url>
+<url><loc>https://tool.ng/rent</loc><lastmod>2026-10-28</lastmod></url>
+<url><loc>https://tool.ng/propertypro-1qlct-rent-flat-lekki</loc><lastmod>2026-10-28</lastmod></url>
+<url><loc>https://tool.ng/bill-of-quantities-template-excel</loc><lastmod>2026-10-28</lastmod></url>
 <url><loc>https://tool.ng/about-us</loc><lastmod>2026-10-28</lastmod></url>
 <url><loc>https://tool.ng/tenancy-agreement</loc><lastmod>2026-06-01</lastmod></url></urlset>"""
-YT_PAGE = b'<html>..."channelId":"UCabcdefghijklmnop1234"...</html>'
+YT_PAGE = (b'<html><meta itemprop="channelId" content="UCabcdefghijklmnop1234">...'
+           b'"channelId":"UCrelatedvideo000000000"...</html>')
 YT_FEED = b"""<feed xmlns="http://www.w3.org/2005/Atom"><entry><title>Landlord locked me out: the law</title>
 <link href="https://www.youtube.com/watch?v=abc"/><published>2026-10-29T10:00:00+00:00</published></entry></feed>"""
 
@@ -63,10 +68,17 @@ class Pull(unittest.TestCase):
         self.assertIn(("Rival blog", "Lagos Tenancy Bill 2026: what changes for tenants"), titles)
         self.assertNotIn(("Rival blog", "Our office party photos"), titles, "off-topic is not the field")
         self.assertNotIn(("Rival blog", "Quit notice periods explained"), titles, "September is outside the window")
-        self.assertIn(("Tool", "Rent receipt generator"), titles, "a sitemap index is followed; lastmod inside the window")
+        self.assertIn(("Tool", "Free rent receipt generator nigeria"), titles, "a sitemap index is followed; lastmod inside the window")
         self.assertNotIn(("Tool", "About us"), titles)
+        self.assertNotIn(("Tool", "Rent"), titles, "a menu page is not a publication")
+        self.assertFalse(any("1qlct" in t for _, t in titles), "a listing id is not a publication")
+        self.assertNotIn(("Tool", "Bill of quantities template excel"), titles, "not tenancy")
+        self.assertFalse(any("listing-sitemap" in s for s in data["sources"]), "an index with a post sitemap skips the listing one")
         self.assertNotIn(("Tool", "Tenancy agreement"), titles, "June lastmod is old")
         self.assertIn(("Lawyer on YouTube", "Landlord locked me out: the law"), titles, "channel id read from the page → Atom feed")
+        self.assertEqual(cw.youtube_feed_for("https://www.youtube.com/@lawyer", http=fake_http),
+                         "https://www.youtube.com/feeds/videos.xml?channel_id=UCabcdefghijklmnop1234",
+                         "the page's own channel (itemprop), not the first related video's")
         self.assertEqual(data["unwatchable"], ["TikTok lawyer"])
         self.assertTrue(any("unreachable" in s for s in data["sources"]), "a dead feed is reported, never fatal")
         self.assertEqual(data["items"][0]["published"][:10], "2026-10-30", "newest first")

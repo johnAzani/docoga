@@ -94,9 +94,43 @@ jobs:
             echo 'Nothing was rendered, uploaded or recorded by this run.' >> "$GITHUB_STEP_SUMMARY"
           } >> "$GITHUB_STEP_SUMMARY"
 
+  # 3 Nov 2026, 12:46am: GitHub's own cron fired the "Monday 6pm" run six hours and forty-six
+  # minutes late — after midnight Lagos — so it tried to make TUESDAY's Short at 00:46, failed, and
+  # opened issue #183 while the clock worker's 6pm dispatch had already published Monday's. A raw
+  # cron run now posts only inside its window (the cron hour and the next, Lagos); the clock's
+  # dispatch and the narrator's "owed" resume are workflow_dispatch and always proceed.
+  window:
+    name: Is this still the 6pm slot?
+    if: github.event.inputs.probe_only != 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      go: ${{ steps.gate.outputs.go }}
+    steps:
+      - name: Window gate
+        id: gate
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          NOW=$(TZ=Africa/Lagos date +%-H)
+          if [ "$EVENT" != "schedule" ] || [ "$NOW" = "18" ] || [ "$NOW" = "19" ]; then
+            echo "go=true" >> "$GITHUB_OUTPUT"
+            echo "SHORT_WINDOW=go hour=${NOW}"
+          else
+            echo "go=false" >> "$GITHUB_OUTPUT"
+            echo "SHORT_WINDOW=skipped hour=${NOW}"
+            echo "::notice title=Late cron, nothing rendered::GitHub fired the 6pm cron at ${NOW}:00 Lagos; the clock's dispatch owns this slot, so this run stands down (no quota spent, no issue opened)."
+            {
+              echo "### Shorts window"
+              echo
+              echo "- Lagos hour now: ${NOW} · slot: 18:00 WAT — late cron, stood down"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
   generate-and-publish:
     name: Generate and publish one Short
-    if: github.event.inputs.probe_only != 'true' || github.event_name == 'schedule'
+    needs: window
+    if: needs.window.outputs.go == 'true' && (github.event.inputs.probe_only != 'true' || github.event_name == 'schedule')
 
     runs-on: ubuntu-24.04
     timeout-minutes: 30
