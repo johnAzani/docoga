@@ -1091,6 +1091,7 @@ h1{font-size:26px;line-height:1.25;margin:10px 0 14px}
 .lead{font-size:16px;color:#37455E}
 .updated{font-size:13px;color:#6B7A90;margin:-4px 0 12px}
 .updated a{color:#6B7A90}
+.crumbs{font-size:13px;color:#6B7A90;margin:0 0 10px}.crumbs a{color:#6B7A90}.crumbs span{color:#37455E}
 .box{background:#fff;border:1px solid #DCE4F0;border-radius:14px;padding:18px 20px;margin:20px 0}
 h2{font-size:19px;margin-bottom:10px}
 table{width:100%;border-collapse:collapse;font-size:14.5px;margin:8px 0}
@@ -1279,8 +1280,9 @@ def render(fname, p):
     crumbs = [("Home", DOMAIN + "/")]
     if p.get("parent"):
         crumbs.append((p["parent"][1], "%s/%s" % (DOMAIN, p["parent"][0][:-5])))
-    crumbs.append((p["h1"].replace("&amp;", "&"), url))
+    crumbs.append((p["navtitle"].replace("&amp;", "&"), url))   # short, as shown on the page
     blocks.append(freshness.breadcrumbs(crumbs))
+    crumbs_nav = freshness.breadcrumb_nav(crumbs)
     ld = "\n".join(json.dumps(b, ensure_ascii=False, indent=1) + "\n</script>\n<script type=\"application/ld+json\">" for b in blocks[:-1]) \
         + "\n" + json.dumps(blocks[-1], ensure_ascii=False, indent=1)
     updated = freshness.updated_line(None)
@@ -1312,6 +1314,7 @@ def render(fname, p):
 <body>
 <div class="wrap">
 <a class="brand" href="%(domain)s/">DocOga</a>
+%(crumbs)s
 <h1>%(h1)s</h1>
 %(updated)s
 <p class="lead">%(lead)s</p>
@@ -1362,7 +1365,7 @@ your case with a qualified Nigerian lawyer or your accountant.
            bare=bare, share_id=bare, share_text=quote("%s \u2014 %s/%s" % (p["title"].replace("&amp;", "&"), DOMAIN, bare), safe=""),
            faq=faq_block(p["faq"]), related=related, state_links=state_links,
            tool_links=tool_links, cta_hash=cta_hash, cta_label=cta_label,
-           fname=fname, domain=DOMAIN, css=CSS, ld=ld, as_at=AS_AT, widget=widget, updated=updated)
+           fname=fname, domain=DOMAIN, css=CSS, ld=ld, as_at=AS_AT, widget=widget, updated=updated, crumbs=crumbs_nav)
 
 
 def main():

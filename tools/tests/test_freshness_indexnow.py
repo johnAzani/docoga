@@ -115,8 +115,7 @@ class GeneratedPagesTests(unittest.TestCase):
             url = "https://docoga.com.ng/%s" % p.name[:-5]
             self.assertEqual(art["mainEntityOfPage"]["@id"], url, p.name)
             self.assertEqual(art["author"]["name"], "DocOga")
-            self.assertEqual(art["publisher"]["logo"]["url"], "https://docoga.com.ng/logo-mark.png")
-            self.assertTrue((SITE / "logo-mark.png").is_file())
+            self.assertEqual(art["publisher"]["logo"]["url"], "https://docoga.com.ng/apple-touch-icon.png")
             self.assertEqual(art["inLanguage"], "en-NG")
             self.assertLessEqual(len(art["headline"]), 110, p.name)
             og = art["image"].replace("https://docoga.com.ng/", "")
@@ -138,6 +137,23 @@ class GeneratedPagesTests(unittest.TestCase):
         edo = (SITE / "notice-to-quit-edo.html").read_text(encoding="utf-8")
         mid = [b for b in blocks(edo) if b.get("@type") == "BreadcrumbList"][0]["itemListElement"][1]
         self.assertEqual(mid["item"], "https://docoga.com.ng/notice-to-quit-nigeria")
+
+    def test_the_breadcrumb_trail_is_visible_and_says_exactly_what_the_markup_says(self):
+        """Google shows breadcrumbs from markup only for a trail the page really carries, and its
+        general rule is that structured data describes what the reader can see (3 Nov 2026)."""
+        import html as H
+        for p in GEN_STATE + [SITE / g for g in GUIDES]:
+            text = p.read_text(encoding="utf-8")
+            navs = re.findall(r'<nav class="crumbs" aria-label="Breadcrumb">(.*?)</nav>', text)
+            self.assertEqual(len(navs), 1, p.name)
+            shown = [(H.unescape(n), u) for u, n in re.findall(r'<a href="([^"]+)">([^<]+)</a>', navs[0])]
+            cur = re.findall(r'<span aria-current="page">([^<]+)</span>', navs[0])
+            self.assertEqual(len(cur), 1, p.name)
+            items = [b for b in blocks(text) if b.get("@type") == "BreadcrumbList"][0]["itemListElement"]
+            self.assertEqual([(i["name"], i["item"]) for i in items[:-1]], shown, p.name)
+            self.assertEqual(items[-1]["name"], H.unescape(cur[0]), p.name)
+            self.assertLess(text.index('class="crumbs"'), text.index("<h1>"), "%s: the trail sits above the title" % p.name)
+            self.assertLessEqual(len(items[-1]["name"]), 60, "%s: the last crumb is a short label, not the title" % p.name)
 
     def test_state_pages_say_when_the_law_shelf_was_reviewed_and_cite_the_primary_text(self):
         for p in GEN_STATE:
@@ -167,6 +183,68 @@ class GeneratedPagesTests(unittest.TestCase):
         self.assertEqual(LAW_REVIEWED["lagos"], "2026-10-08")
         for iso in LAW_REVIEWED.values():
             dt.date.fromisoformat(iso)
+
+
+class HomeEntityTests(unittest.TestCase):
+    """Site name + owner entity on the home page (Google: WebSite and Organization belong on the
+    home page only; logo ≥112×112, crawlable; sameAs = the real profiles)."""
+
+    def setUp(self):
+        self.html = (SITE / "index.html").read_text(encoding="utf-8")
+        self.b = blocks(self.html)
+
+    def test_one_website_and_one_organization_block_on_the_home_page_only(self):
+        types = [x.get("@type") for x in self.b]
+        self.assertEqual(types.count("WebSite"), 1, types)
+        self.assertEqual(types.count("Organization"), 1, types)
+        web = [x for x in self.b if x["@type"] == "WebSite"][0]
+        org = [x for x in self.b if x["@type"] == "Organization"][0]
+        self.assertEqual((web["name"], web["url"]), ("DocOga", "https://docoga.com.ng/"))
+        self.assertEqual(web["alternateName"][-1], "docoga.com.ng", "Google: end the list with the domain in lowercase")
+        self.assertEqual(web["publisher"]["name"], org["name"])
+        self.assertEqual((org["name"], org["url"]), ("DocOga", "https://docoga.com.ng/"))
+        self.assertIn('<meta property="og:site_name" content="DocOga">', self.html)
+        self.assertIn("<title>DocOga", self.html, "the visible title must agree with the site name")
+        for g in GUIDES:
+            other = blocks((SITE / g).read_text(encoding="utf-8"))
+            self.assertNotIn("WebSite", [x.get("@type") for x in other], g)
+
+    def test_the_logo_is_square_at_least_112px_and_on_disk(self):
+        org = [x for x in self.b if x["@type"] == "Organization"][0]
+        rel = org["logo"]["url"].replace("https://docoga.com.ng/", "")
+        f = SITE / rel
+        self.assertTrue(f.is_file(), rel)
+        try:
+            from PIL import Image
+        except ImportError:
+            self.skipTest("Pillow not installed")
+        w, h = Image.open(f).size
+        self.assertEqual(w, h, "square")
+        self.assertGreaterEqual(w, 112)
+        self.assertEqual((org["logo"]["width"], org["logo"]["height"]), (w, h))
+        robots = (SITE / "robots.txt").read_text(encoding="utf-8")
+        self.assertNotIn(rel, robots)
+
+    def test_same_as_names_only_profiles_the_machine_has_actually_used(self):
+        org = [x for x in self.b if x["@type"] == "Organization"][0]
+        same = org["sameAs"]
+        self.assertEqual(len(same), len(set(same)))
+        scorecard = (ROOT / "logs" / "scorecard.json").read_text(encoding="utf-8")
+        self.assertIn('"username": "docoga.ng"', scorecard, "the Instagram handle comes from the API, not from memory")
+        self.assertIn("https://www.instagram.com/docoga.ng/", same)
+        threads = (ROOT / "logs" / "threads_sent.json").read_text(encoding="utf-8")
+        self.assertIn("https://www.threads.com/@docoga.ng", threads)
+        self.assertIn("https://www.threads.com/@docoga.ng", same)
+        self.assertIn("https://t.me/docogadaily", same)
+        self.assertIn("https://www.youtube.com/channel/UCeOzX7F7sYX-WchNJyBM2qA", same)
+        self.assertIn('"id": "102466208923830_', scorecard, "the Page id comes back in every post id the API returned")
+        self.assertIn("https://www.facebook.com/102466208923830", same)
+        self.assertIn("UCeOzX7F7sYX-WchNJyBM2qA", (ROOT / "tools" / "video_pages.py").read_text(encoding="utf-8"))
+        for u in same:
+            self.assertTrue(u.startswith("https://"), u)
+            self.assertNotIn("linkedin", u, "no LinkedIn profile is connected — never list one")
+            self.assertNotIn("tiktok", u, "TikTok is a draft inbox, not a public profile we can vouch for")
+            self.assertNotIn("x.com", u)
 
 
 class IndexNowTests(unittest.TestCase):
