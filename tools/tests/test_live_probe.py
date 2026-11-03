@@ -25,6 +25,8 @@ def healthy(url, follow=True, timeout=0):
         return 200, url, {"Content-Type": "text/plain"}, b"Sitemap: x", 50
     if url.endswith("/og/home.jpg"):
         return 200, url, {"Content-Type": "image/jpeg"}, b"\xff\xd8", 50
+    if url.endswith(".pdf"):
+        return 200, url, {"Content-Type": "application/pdf", "X-Robots-Tag": "noindex"}, b"%PDF-1.4 sample", 60
     if url.startswith(lp.SITE + "/p"):
         return 200, url, {}, b"<title>p</title>", 70
     if url == lp.PASS + "/":
@@ -77,11 +79,28 @@ class ProbeTests(unittest.TestCase):
         self.assertEqual(rep["failing"], [])
         names = [c["name"] for c in rep["checks"]]
         self.assertEqual(sum(1 for n in names if n.startswith("/p")), 25)
-        for must in ("home page", "sitemap.xml", "robots.txt", "og/home.jpg", "docoga-pass (payments)",
+        for must in ("home page", "sitemap.xml", "robots.txt", "og/home.jpg", "sample PDF (served, noindex)", "docoga-pass (payments)",
                      "docoga-ledger /health", "docoga-ledger /api/stats (Rent Monitor)",
                      "docoga-clock (the schedule)", "TLS certificate", "clock credential (GH_DISPATCH_TOKEN)",
                      "clock pulse (a lane dispatched in the last 6 h)", "domain registration (docoga.com.ng)"):
             self.assertIn(must, names)
+
+    def test_the_sample_pdf_must_be_a_served_pdf_that_is_kept_out_of_the_index(self):
+        """3 Nov 2026 (PR #190/#191): the HTML sample page is the search destination, the PDF the
+        download. The probe fails the PDF if it is missing, not a PDF, or served without noindex."""
+        ok = lp.check_sample_pdf()
+        self.assertTrue(ok.ok, ok.note)
+        self.assertEqual(ok.name, "sample PDF (served, noindex)")
+        self.assertIn("sample PDF (served, noindex)", lp.RETRYABLE)
+        lp.fetch = lambda url, follow=True, timeout=0: (200, url, {"Content-Type": "application/pdf"}, b"%PDF-1.4", 5)
+        self.assertFalse(lp.check_sample_pdf().ok)
+        self.assertIn("noindex missing", lp.check_sample_pdf().note)
+        lp.fetch = lambda url, follow=True, timeout=0: (200, url, {"Content-Type": "application/pdf", "X-Robots-Tag": "noindex"}, b"<html>", 5)
+        self.assertIn("not a PDF", lp.check_sample_pdf().note)
+        lp.fetch = lambda url, follow=True, timeout=0: (404, url, {}, b"", 5)
+        self.assertIn("status 404", lp.check_sample_pdf().note)
+        self.assertTrue((ROOT / "site" / lp.SAMPLE_PDF.lstrip("/")).is_file(), "the probed file must exist in site/")
+        self.assertIn("/samples/*", (ROOT / "site" / "_headers").read_text())
 
     def test_the_clocks_credential_and_pulse_and_the_domain_are_judged(self):
         self.assertFalse(lp.check_clock_token("t", gh=lambda u, k: (401, {}, b"")).ok)

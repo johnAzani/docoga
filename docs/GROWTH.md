@@ -89,7 +89,7 @@ platforms; nothing the owner must do on a schedule.
   `rent-receipt-format-nigeria` (shared sample, s.5(2) fields) and `notice-to-quit-nigeria`;
   internal links from the pages that already rank and the home guides block; sitemap + OG card;
   `tools/tests/test_sample_docs.py` pins that the sample wording is the generator's wording.
-  Follow-through the same afternoon: the 36 state pages of the three sampled tools (12 states ×
+  Follow-through the same afternoon: the 36 state pages of the three sampled tools (12 states × The live probe (five times a day) now also fails if the sample PDF is missing, is not a PDF, or is served without `X-Robots-Tag: noindex` — the one header the "HTML page ranks, PDF downloads" decision depends on; a Cloudflare `_headers` regression would file an issue by itself instead of being found in Search Console weeks later.
   tenancy agreement, rent receipt, notice to quit) offer "see one first" — the sample page and the
   PDF — beside their generator button (`gen_state_pages.SAMPLE_FOR`), which also gives the new
   sample page 36 internal links from pages Google already ranks for state queries.
