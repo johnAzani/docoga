@@ -197,6 +197,7 @@ TPL = '''<!DOCTYPE html>
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="{title}">
 <meta name="twitter:card" content="summary_large_image">
+{jsonld}
 <style>
 *{{box-sizing:border-box;margin:0;padding:0}}
 body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;color:#141F33;background:#F5F7FB;line-height:1.6}}
@@ -204,6 +205,8 @@ body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-
 .brand{{display:inline-block;font-weight:900;font-size:20px;color:#0040E0;text-decoration:none;padding:10px 0}}
 h1{{font-size:26px;line-height:1.25;margin:10px 0 14px}}
 .lead{{font-size:16px;color:#37455E}}
+.updated{{font-size:13px;color:#6B7A90;margin:-4px 0 12px}}
+.updated a{{color:#6B7A90}}
 .box{{background:#fff;border:1px solid #DCE4F0;border-radius:14px;padding:18px 20px;margin:20px 0}}
 h2{{font-size:19px;margin-bottom:10px}}
 table{{width:100%;border-collapse:collapse;font-size:14.5px;margin:8px 0}}
@@ -232,6 +235,7 @@ footer{{margin-top:34px;border-top:1px solid #DCE4F0;padding-top:16px;font-size:
 <div class="wrap">
 <a class="brand" href="https://docoga.com.ng/">DocOga</a>
 <h1>{title}</h1>
+{updated_line}
 <p class="lead">{lead}</p>
 
 <div class="box">
@@ -300,9 +304,11 @@ footer{{margin-top:34px;border-top:1px solid #DCE4F0;padding-top:16px;font-size:
 # statement that we have not verified their own statute.
 # ---------------------------------------------------------------------------
 try:
-    from state_law_data import STATE_LAW, NEEDS_CONFIRMATION, TIER_E_PUBLISHED
+    from state_law_data import STATE_LAW, NEEDS_CONFIRMATION, TIER_E_PUBLISHED, LAW_REVIEWED
+    import freshness
 except ImportError:  # only when run from outside tools/
-    from tools.state_law_data import STATE_LAW, NEEDS_CONFIRMATION, TIER_E_PUBLISHED
+    from tools.state_law_data import STATE_LAW, NEEDS_CONFIRMATION, TIER_E_PUBLISHED, LAW_REVIEWED
+    from tools import freshness
 
 # The general ladder, WITHOUT a half-yearly tier. Lagos is the only
 # jurisdiction we have verified that legislates for a half-yearly tenant
@@ -694,8 +700,38 @@ def share_text(title, bare):
     return quote("%s \u2014 https://docoga.com.ng/%s" % (title.replace('&amp;', '&'), bare), safe='')
 
 
+NATIONAL_GUIDE = {  # the breadcrumb's middle step; only used when the page exists in site/
+    'tenancy-agreement': ('tenancy-agreement-nigeria.html', 'Tenancy agreement in Nigeria'),
+    'notice-to-quit': ('notice-to-quit-nigeria.html', 'Notice to quit in Nigeria'),
+    'rent-receipt': ('rent-receipt-format-nigeria.html', 'Rent receipt format in Nigeria'),
+    'caution-fee': ('caution-fee-nigeria.html', 'Caution fee in Nigeria'),
+}
+
+
+def page_jsonld(slug, tslug, d):
+    """Article (dated like the visible line) + BreadcrumbList. docs/GROWTH.md, 3 Nov 2026."""
+    law = STATE_LAW.get(slug)
+    cites, about = [], ''
+    if law:
+        for src in law.get('sources', []):
+            cites.extend(freshness.urls_from_file(str(src)))
+        st0 = (law.get('statutes') or [{}])[0]
+        about = st0.get('title', '') if isinstance(st0, dict) else str(st0)
+    url = 'https://docoga.com.ng/%s' % d['fname'][:-5]
+    art = freshness.article(url=url, headline=d['title'].replace('&amp;', '&'), description=d['desc'],
+                            image='https://docoga.com.ng/og/%s.jpg' % d['og_slug'], citations=cites,
+                            about=about, jurisdiction=d['full'] if about else '')
+    crumbs = [('Home', 'https://docoga.com.ng/')]
+    nat = NATIONAL_GUIDE.get(tslug)
+    if nat and os.path.isfile('site/' + nat[0]):
+        crumbs.append((nat[1], 'https://docoga.com.ng/' + nat[0][:-5]))
+    crumbs.append((d['title'].replace('&amp;', '&'), url))
+    return freshness.jsonld(art, freshness.breadcrumbs(crumbs))
+
+
 def main():
     made = 0
+    dates = {}
     sitemap_add = []
     for slug, st in STATES.items():
         for tslug, t in TOOLS.items():
@@ -719,10 +755,13 @@ def main():
             d['law_block'] = law_block(slug, tslug)
             d['sample_block'] = sample_block(tslug)
             d['sources_block'] = sources_block(slug)
+            d['updated_line'] = freshness.updated_line(LAW_REVIEWED.get(slug))
+            d['jsonld'] = page_jsonld(slug, tslug, d)
             d['same_state_links'] = '\n'.join(f'<a href="https://docoga.com.ng/{ts2}-{slug}.html">{t2.get("label", t2["tool"])} \u2014 {st["name"]}</a>' for ts2, t2 in TOOLS.items() if ts2 != tslug)
             d['other_states_links'] = '\n'.join(f'<a href="https://docoga.com.ng/{tslug}-{s2}.html">{st2["name"]}</a>' for s2, st2 in STATES.items() if s2 != slug)
             html = TPL.format(**d)
-            io.open('site/' + fname, 'w', encoding='utf-8').write(clean_text(html, relative=True))
+            html, dates[fname], _changed = freshness.stamp('site/' + fname, clean_text(html, relative=True))
+            io.open('site/' + fname, 'w', encoding='utf-8').write(html)
             sitemap_add.append(fname)
             made += 1
     print(f"generated {made} state pages")
@@ -737,7 +776,11 @@ def main():
         entries = ''.join(f'  <url>\n    <loc>https://docoga.com.ng/{f[:-5]}</loc>\n    <priority>0.7</priority>\n  </url>\n' for f in missing)
         s = s.replace('</urlset>', entries + '</urlset>')
         io.open('site/sitemap.xml', 'w', encoding='utf-8').write(s)
-    print(f"sitemap: +{len(missing)} URLs ({len(sitemap_add)} state pages)")
+    # <lastmod> = the page's own honest date (freshness.stamp); Google reads lastmod when it is consistent
+    for f in sitemap_add:
+        s = freshness.sitemap_lastmod(s, f'https://docoga.com.ng/{f[:-5]}', dates[f])
+    io.open('site/sitemap.xml', 'w', encoding='utf-8').write(s)
+    print(f"sitemap: +{len(missing)} URLs ({len(sitemap_add)} state pages); lastmod set on {len(sitemap_add)}; newest {max(dates.values())}")
 
     s = io.open('site/index.html', encoding='utf-8').read()
     anchor = '''    <p>DocOga puts a standard, fill-in-the-blanks document generator in every pocket — from Lagos to Kano to Port Harcourt. Answer simple questions, and your document is ready to print, save as PDF, or share on WhatsApp. The free version carries a small DocOga banner; the <b>Oga Pass (₦2,000)</b> removes it and unlocks unlimited clean copies for 30 days.</p>

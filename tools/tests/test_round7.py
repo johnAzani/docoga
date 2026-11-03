@@ -442,8 +442,16 @@ class GuidesTests(unittest.TestCase):
             with redirect_stdout(out):
                 guides_build.main(["build", "--site", str(self.site)])
             self.assertIn("GUIDES_WRITTEN=0", out.getvalue())
+        # 3 Nov 2026: the key is committed (public by design), so an empty variable no longer silences
+        # the ping — it falls back to guides_build.DEFAULT_KEY; INDEXNOW_KEY=off is the switch.
         with patch.dict(os.environ, {"INDEXNOW_KEY": ""}):
-            self.assertFalse(guides_build.ping(["https://docoga.com.ng/guides/x.html"], log=lambda *a: None))
+            sent0 = []
+            self.assertTrue(guides_build.ping(["https://docoga.com.ng/guides/x.html"],
+                                              http=lambda req: sent0.append(json.loads(req.data)) or 202, log=lambda *a: None))
+            self.assertEqual(sent0[0]["key"], guides_build.DEFAULT_KEY)
+        with patch.dict(os.environ, {"INDEXNOW_KEY": "off"}):
+            self.assertFalse(guides_build.ping(["https://docoga.com.ng/guides/x.html"],
+                                               http=lambda req: self.fail("off must not post"), log=lambda *a: None))
         sent = []
         self.assertTrue(guides_build.ping(["https://docoga.com.ng/guides/x.html"], key="abcdef123456",
                                           http=lambda req: sent.append(json.loads(req.data)) or 202, log=lambda *a: None))

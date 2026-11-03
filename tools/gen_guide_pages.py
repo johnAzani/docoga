@@ -57,6 +57,7 @@ from urllib.parse import quote
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from clean_urls import clean_text  # Cloudflare 307s /x.html → /x: canonicals, links and sitemap locs are bare
 import sample_docs  # the sample documents (HTML + PDF from one source) — 🔒 docs/GROWTH.md, 3 Nov 2026
+import freshness  # honest Updated dates, Article + BreadcrumbList, sitemap lastmod (docs/GROWTH.md, 3 Nov 2026)
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 SITE = os.path.join(ROOT, "site")
@@ -240,6 +241,7 @@ CLAUSE_NOTES = [
 ]
 
 PAGES["tenancy-agreement-sample-nigeria.html"] = dict(
+    published="2026-11-03", parent=("tenancy-agreement-nigeria.html", "Tenancy agreement in Nigeria"),
     title="Tenancy Agreement Sample in Nigeria (2026): Full Text + Free PDF Download",
     h1="Tenancy agreement sample in Nigeria — the full text, clause by clause, free PDF",
     desc="A complete Nigerian tenancy agreement sample you can read in full: 13 standard clauses, the state notice table, a free PDF download (no signup) and a generator that fills your names in 2 minutes.",
@@ -1087,6 +1089,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-s
 .brand{display:inline-block;font-weight:900;font-size:20px;color:#0040E0;text-decoration:none;padding:10px 0}
 h1{font-size:26px;line-height:1.25;margin:10px 0 14px}
 .lead{font-size:16px;color:#37455E}
+.updated{font-size:13px;color:#6B7A90;margin:-4px 0 12px}
+.updated a{color:#6B7A90}
 .box{background:#fff;border:1px solid #DCE4F0;border-radius:14px;padding:18px 20px;margin:20px 0}
 h2{font-size:19px;margin-bottom:10px}
 table{width:100%;border-collapse:collapse;font-size:14.5px;margin:8px 0}
@@ -1268,7 +1272,18 @@ def render(fname, p):
         '<a href="%s/#%s">%s</a>' % (DOMAIN, h, n) for h, n in TOOLS
     )
     cta_hash, cta_label = p["cta"]
-    ld = json.dumps(faq_jsonld(p["faq"]), ensure_ascii=False, indent=1)
+    url = "%s/%s" % (DOMAIN, bare)
+    blocks = [faq_jsonld(p["faq"]),
+              freshness.article(url=url, headline=p["h1"].replace("&amp;", "&"), description=p["desc"].replace("&amp;", "&"),
+                                image="%s/og/%s.jpg" % (DOMAIN, bare), date_published=p.get("published"))]
+    crumbs = [("Home", DOMAIN + "/")]
+    if p.get("parent"):
+        crumbs.append((p["parent"][1], "%s/%s" % (DOMAIN, p["parent"][0][:-5])))
+    crumbs.append((p["h1"].replace("&amp;", "&"), url))
+    blocks.append(freshness.breadcrumbs(crumbs))
+    ld = "\n".join(json.dumps(b, ensure_ascii=False, indent=1) + "\n</script>\n<script type=\"application/ld+json\">" for b in blocks[:-1]) \
+        + "\n" + json.dumps(blocks[-1], ensure_ascii=False, indent=1)
+    updated = freshness.updated_line(None)
     widget = ("\n" + p["widget"] + "\n") if p.get("widget") else ""
     return """<!DOCTYPE html>
 <html lang="en">
@@ -1298,6 +1313,7 @@ def render(fname, p):
 <div class="wrap">
 <a class="brand" href="%(domain)s/">DocOga</a>
 <h1>%(h1)s</h1>
+%(updated)s
 <p class="lead">%(lead)s</p>
 %(widget)s
 %(boxes)s
@@ -1346,7 +1362,7 @@ your case with a qualified Nigerian lawyer or your accountant.
            bare=bare, share_id=bare, share_text=quote("%s \u2014 %s/%s" % (p["title"].replace("&amp;", "&"), DOMAIN, bare), safe=""),
            faq=faq_block(p["faq"]), related=related, state_links=state_links,
            tool_links=tool_links, cta_hash=cta_hash, cta_label=cta_label,
-           fname=fname, domain=DOMAIN, css=CSS, ld=ld, as_at=AS_AT, widget=widget)
+           fname=fname, domain=DOMAIN, css=CSS, ld=ld, as_at=AS_AT, widget=widget, updated=updated)
 
 
 def main():
@@ -1366,10 +1382,12 @@ def main():
     for f, p in PAGES.items():
         p["navtitle"] = navtitles[f]
 
-    made = []
+    made, dates = [], {}
     for fname, p in PAGES.items():
         html = render(fname, p)
-        io.open(os.path.join(SITE, fname), "w", encoding="utf-8").write(clean_text(html, relative=True))
+        path = os.path.join(SITE, fname)
+        html, dates[fname], _changed = freshness.stamp(path, clean_text(html, relative=True))
+        io.open(path, "w", encoding="utf-8").write(html)
         made.append(fname)
     sizes = [os.path.getsize(os.path.join(SITE, f)) for f in made]
     print("generated %d guide pages" % len(made))
@@ -1392,6 +1410,11 @@ def main():
         print("sitemap: +%d URLs (%d total)" % (len(missing), s.count("<loc>")))
     else:
         print("sitemap: already up to date")
+    # <lastmod> = each page's own honest date (freshness.stamp)
+    for f in made:
+        s = freshness.sitemap_lastmod(s, "%s/%s" % (DOMAIN, f[:-5]), dates[f])
+    io.open(smap_path, "w", encoding="utf-8").write(s)
+    print("sitemap: lastmod set on %d guide pages; newest %s" % (len(made), max(dates.values())))
 
     # --- homepage guides block (idempotent) -----------------------------------
     idx_path = os.path.join(SITE, "index.html")

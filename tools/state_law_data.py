@@ -1693,6 +1693,17 @@ STATE_LAW = {
 # Per the publication rule these get no four-tool pages until something is found.
 TIER_E_PUBLISHED = ["ogun", "plateau"]
 
+# When the shelf for each published state was last checked against its sources (3 Nov 2026).
+# Printed on every state page ("law shelf reviewed …") and nowhere invented: the dossier
+# docs/STATE_TENANCY_RESEARCH.md was compiled 8 Oct 2026 for all of them; Rivers was re-read on
+# 3 Nov 2026 (the Brain's first research target). Move a date only after a real re-verification.
+LAW_REVIEWED = {
+    "lagos": "2026-10-08", "abuja": "2026-10-08", "rivers": "2026-11-03", "oyo": "2026-10-08",
+    "kano": "2026-10-08", "enugu": "2026-10-08", "delta": "2026-10-08", "kaduna": "2026-10-08",
+    "anambra": "2026-10-08", "edo": "2026-10-08", "cross-river": "2026-10-08", "kwara": "2026-10-08",
+    "ogun": "2026-10-08", "plateau": "2026-10-08",
+}
+
 # States we publish that sit below tier A and still need primary confirmation.
 NEEDS_CONFIRMATION = {
     "oyo": "B/C — Recovery of Premises Law Cap 144 and a Rent (Increase Restriction) Law; two sources disagree on the chapter number (Cap 144 vs Cap 71).",

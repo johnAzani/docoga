@@ -45,6 +45,19 @@ LAGOS = ZoneInfo("Africa/Lagos")
 MANIFEST = "guides.json"
 MAX_INDEX = 400
 INDEXNOW = "https://api.indexnow.org/indexnow"
+# The IndexNow key is public by design — the engines prove ownership by reading it at
+# https://docoga.com.ng/<key>.txt, so it is committed as site/<key>.txt (3 Nov 2026). Before this
+# the key lived only in a repository variable and the key file never reached main, so every
+# ping since 17 Oct was refused. INDEXNOW_KEY still overrides it (and must then be committed too).
+DEFAULT_KEY = "fd3b05b91d082a9156b8ebc9e0777af2"
+
+
+def indexnow_key():
+    """The committed key unless the variable overrides it; INDEXNOW_KEY=off silences every ping."""
+    key = os.environ.get("INDEXNOW_KEY", "").strip()
+    if key.lower() in ("off", "0", "no", "false", "none"):
+        return ""
+    return key if re.fullmatch(r"[A-Za-z0-9\-]{8,128}", key) else DEFAULT_KEY
 
 CSS = """*{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;color:#141F33;background:#F5F7FB;line-height:1.6}
@@ -359,9 +372,9 @@ def build(day=None, site=None, now=None, log=print, drafts_dir=None, answers_dir
 
 def ping(urls, key=None, http=None, log=print):
     """IndexNow — one POST tells Bing/Yandex/Naver the pages exist. Free. Needs the key file on the site."""
-    key = key or os.environ.get("INDEXNOW_KEY", "").strip()
+    key = key or indexnow_key()
     if not key or not urls:
-        log("indexnow: %s" % ("no key (set the INDEXNOW_KEY variable and commit site/<key>.txt)" if not key else "nothing to ping"))
+        log("indexnow: %s" % ("off (INDEXNOW_KEY=off)" if not key else "nothing to ping"))
         return False
     body = json.dumps({"host": HOST.split("//")[1], "key": key, "keyLocation": "%s/%s.txt" % (HOST, key), "urlList": list(urls)[:100]}).encode()
     req = urllib.request.Request(INDEXNOW, data=body, headers={"Content-Type": "application/json; charset=utf-8"}, method="POST")
@@ -382,7 +395,7 @@ def ping(urls, key=None, http=None, log=print):
 
 
 def ensure_key_file(site=None, key=None):
-    key = key or os.environ.get("INDEXNOW_KEY", "").strip()
+    key = key or indexnow_key()
     if not key or not re.fullmatch(r"[A-Za-z0-9\-]{8,128}", key):
         return None
     p = (Path(site) if site else SITE) / ("%s.txt" % key)
@@ -412,9 +425,11 @@ def main(argv=None):
     print("GUIDES_WRITTEN=%d" % len(written))
     for u in written:
         print("GUIDE_URL=%s" % u)
-    if written:
+    if written and Path(a.site).resolve() == SITE.resolve():
         ensure_key_file(a.site)
         ping(written)
+    elif written:
+        print("indexnow: %s is not the live site directory — no ping" % a.site)
     return 0
 
 
