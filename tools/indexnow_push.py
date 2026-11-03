@@ -107,6 +107,11 @@ def main(argv=None) -> int:
     root = Path(a.root)
 
     key = guides_build.indexnow_key()
+    if not key:
+        print("indexnow: off (INDEXNOW_KEY=off)")
+        print("INDEXNOW=skipped")
+        print("INDEXNOW_URLS=0")
+        return 0
     key_file = root / "site" / ("%s.txt" % key)
     if not key_file.is_file() or key_file.read_text(encoding="utf-8").strip() != key:
         print("indexnow: key file site/%s.txt missing or wrong — commit it; engines verify the key there" % key)

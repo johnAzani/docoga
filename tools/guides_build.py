@@ -53,7 +53,10 @@ DEFAULT_KEY = "fd3b05b91d082a9156b8ebc9e0777af2"
 
 
 def indexnow_key():
+    """The committed key unless the variable overrides it; INDEXNOW_KEY=off silences every ping."""
     key = os.environ.get("INDEXNOW_KEY", "").strip()
+    if key.lower() in ("off", "0", "no", "false", "none"):
+        return ""
     return key if re.fullmatch(r"[A-Za-z0-9\-]{8,128}", key) else DEFAULT_KEY
 
 CSS = """*{box-sizing:border-box;margin:0;padding:0}
@@ -370,8 +373,8 @@ def build(day=None, site=None, now=None, log=print, drafts_dir=None, answers_dir
 def ping(urls, key=None, http=None, log=print):
     """IndexNow — one POST tells Bing/Yandex/Naver the pages exist. Free. Needs the key file on the site."""
     key = key or indexnow_key()
-    if not urls:
-        log("indexnow: nothing to ping")
+    if not key or not urls:
+        log("indexnow: %s" % ("off (INDEXNOW_KEY=off)" if not key else "nothing to ping"))
         return False
     body = json.dumps({"host": HOST.split("//")[1], "key": key, "keyLocation": "%s/%s.txt" % (HOST, key), "urlList": list(urls)[:100]}).encode()
     req = urllib.request.Request(INDEXNOW, data=body, headers={"Content-Type": "application/json; charset=utf-8"}, method="POST")
@@ -393,7 +396,7 @@ def ping(urls, key=None, http=None, log=print):
 
 def ensure_key_file(site=None, key=None):
     key = key or indexnow_key()
-    if not re.fullmatch(r"[A-Za-z0-9\-]{8,128}", key):
+    if not key or not re.fullmatch(r"[A-Za-z0-9\-]{8,128}", key):
         return None
     p = (Path(site) if site else SITE) / ("%s.txt" % key)
     if not p.is_file():
@@ -422,9 +425,11 @@ def main(argv=None):
     print("GUIDES_WRITTEN=%d" % len(written))
     for u in written:
         print("GUIDE_URL=%s" % u)
-    if written:
+    if written and Path(a.site).resolve() == SITE.resolve():
         ensure_key_file(a.site)
         ping(written)
+    elif written:
+        print("indexnow: %s is not the live site directory — no ping" % a.site)
     return 0
 
 

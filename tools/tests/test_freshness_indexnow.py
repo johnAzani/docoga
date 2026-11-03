@@ -183,6 +183,9 @@ class IndexNowTests(unittest.TestCase):
             self.assertEqual(guides_build.indexnow_key(), key, "a malformed variable must not break the ping")
             os.environ["INDEXNOW_KEY"] = "abcdefgh12345678"
             self.assertEqual(guides_build.indexnow_key(), "abcdefgh12345678")
+            os.environ["INDEXNOW_KEY"] = "off"
+            self.assertEqual(guides_build.indexnow_key(), "", "INDEXNOW_KEY=off is the kill switch")
+            self.assertFalse(guides_build.ping(["https://docoga.com.ng/"], http=lambda r: self.fail("off must not post"), log=lambda *a: None))
         finally:
             os.environ.pop("INDEXNOW_KEY", None)
             if old is not None:
