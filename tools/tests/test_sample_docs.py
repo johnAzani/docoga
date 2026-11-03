@@ -97,6 +97,21 @@ class PageTests(unittest.TestCase):
         for page in ("index.html", "tenancy-agreement-nigeria.html", "notice-to-quit-nigeria.html", "rent-receipt-format-nigeria.html"):
             self.assertIn("/tenancy-agreement-sample-nigeria", (SITE / page).read_text(encoding="utf-8"), page)
 
+    def test_every_state_page_of_a_sampled_tool_offers_the_sample_and_the_pdf(self):
+        """36 state pages already rank for state queries ('edo state tenancy law'); each now puts the
+        sample and the download one tap away. Tools without a sample stay untouched."""
+        import gen_state_pages as gsp
+        for tool, (page, pdf, _) in gsp.SAMPLE_FOR.items():
+            pages = sorted(SITE.glob("%s-*.html" % tool))
+            pages = [p for p in pages if p.name not in ("%s-nigeria.html" % tool, "%s-sample-nigeria.html" % tool)]
+            self.assertGreaterEqual(len(pages), 12, tool)
+            for sp in pages:
+                html = sp.read_text(encoding="utf-8")
+                self.assertIn("https://docoga.com.ng/%s" % page, html, sp.name)
+                self.assertIn("/samples/%s.pdf" % pdf, html, sp.name)
+        for sp in SITE.glob("caution-fee-*.html"):
+            self.assertNotIn("/samples/", sp.read_text(encoding="utf-8"), sp.name)
+
     def test_the_sample_wording_is_the_generators_wording(self):
         """Every clause body in the sample appears, placeholders aside, in site/index.html's renderAgreement."""
         index = (SITE / "index.html").read_text(encoding="utf-8")
