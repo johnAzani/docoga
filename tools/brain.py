@@ -345,6 +345,107 @@ LESSON_FAMILIES = (
 )
 
 
+# ── shelf gaps: where the Brain keeps getting blocked, sorted into "recall" and "research" ──────
+# 3 Nov 2026 (docs/DOMINANCE.md ledger). Every refused sentence names a state and a topic; when the
+# shelf already holds facts for that pair the cure is recall (above); when it holds none, that pair
+# is a research target — the law to read next. The Monday scorecard prints the list.
+GAP_TOPICS = (
+    ("receipts", re.compile(r"receipt|rent book", re.I)),
+    ("notice_ladder", re.compile(r"notice|quit", re.I)),
+    ("advance_rent", re.compile(r"advance|years? rent|two years|in advance", re.I)),
+    ("caution_fee", re.compile(r"caution|deposit|refund", re.I)),
+    ("increase_challenge", re.compile(r"increase|raise the rent|hike", re.I)),
+    ("protections", re.compile(r"evict|lock|self-help|force|harass|remove the roof|possession", re.I)),
+    ("premium", re.compile(r"premium|key money|goodwill", re.I)),
+    ("repairs", re.compile(r"repair|maintain|habitable", re.I)),
+    ("agency_fee", re.compile(r"agent|agency|commission|lasrera", re.I)),
+    ("forum", re.compile(r"court|magistrate|tribunal", re.I)),
+)
+
+
+def _gap_state(text, states):
+    low = str(text or "").lower()
+    if "fct" in low:
+        return "abuja"
+    for slug, name, _ in states:
+        if str(name).lower() in low or slug.replace("-", " ") in low:
+            return slug
+    return None
+
+
+def shelf_gaps(now=None, days=60, refused_path=None, deepdive_path=None, top=8):
+    """[{state, topic, count, shelf_facts, kind, example}] — refused "not on the shelf" sentences of
+    the last `days`, grouped by (state, topic); kind is 'recall' when the shelf already has facts for
+    the pair, 'research' when it has none (or only a 'not verified' placeholder). Never raises."""
+    now = now or datetime.now(LAGOS)
+    since = (now - timedelta(days=days)).date().isoformat()
+    try:
+        states = law_index.states()
+        shelf = law_index.by_id()
+    except Exception:  # noqa: BLE001
+        states, shelf = [], {}
+    sentences = []
+
+    def take(rows, stamp_key):
+        for row in rows or []:
+            if not isinstance(row, dict) or str(row.get(stamp_key) or "")[:10] < since:
+                continue
+            for problem in row.get("problems") or []:
+                m = re.search(r"not on the shelf — ['\"](.+?)['\"]\s*$", str(problem))
+                if m:
+                    hint = row.get("state")
+                    if not hint and stamp_key == "at" and re.match(r"\d{4}-\d{2}-\d{2}$", str(row.get("date") or "")):
+                        try:
+                            hint = state_for(date.fromisoformat(row["date"]))  # pack nights rotate by date
+                        except ValueError:
+                            hint = None
+                    sentences.append((m.group(1), hint))
+
+    try:
+        rows = json.loads(Path(refused_path or REFUSED).read_text(encoding="utf-8"))
+        take(rows if isinstance(rows, list) else [], "at")
+    except (OSError, ValueError):
+        pass
+    try:
+        dd = json.loads(Path(deepdive_path or DD_LEDGER).read_text(encoding="utf-8"))
+        take((dd.get("attempts") if isinstance(dd, dict) else []) or [], "at")
+    except (OSError, ValueError):
+        pass
+    groups = {}
+    for sentence, hint in sentences:
+        state = _gap_state(sentence, states) or (str(hint) if hint else None) or "unknown"
+        topic = next((name for name, rx in GAP_TOPICS if rx.search(sentence)), "other")
+        g = groups.setdefault((state, topic), {"state": state, "topic": topic, "count": 0, "example": sentence[:110]})
+        g["count"] += 1
+    out = []
+    for g in groups.values():
+        facts = [f for k, f in shelf.items() if k.startswith("%s:%s:" % (g["state"], g["topic"]))]
+        real = [f for f in facts if "not verified" not in str(f.get("text", "")).lower()
+                and "not verified" not in str(f.get("cite", "")).lower() and "no statutory" not in str(f.get("text", "")).lower()]
+        g["shelf_facts"] = len(facts)
+        g["kind"] = "unclear" if (g["state"] == "unknown" or g["topic"] == "other") else ("recall" if real else "research")
+        out.append(g)
+    out.sort(key=lambda g: (-g["count"], g["state"], g["topic"]))
+    return out[:top]
+
+
+def shelf_gap_lines(gaps):
+    if not gaps:
+        return ["- no refused legal sentences in the window — the shelf covered everything asked of it"]
+    lines = []
+    for g in gaps:
+        if g["kind"] == "recall":
+            lines.append("- %s:%s — %d refused sentence(s); the shelf has %d fact(s) → recall, not research (e.g. “%s”)"
+                         % (g["state"], g["topic"], g["count"], g["shelf_facts"], g["example"][:70]))
+        elif g["kind"] == "unclear":
+            lines.append("- %s:%s — %d refused sentence(s) the sorter could not place (e.g. “%s”)"
+                         % (g["state"], g["topic"], g["count"], g["example"][:70]))
+        else:
+            lines.append("- %s:%s — %d refused sentence(s); shelf has no verified fact → RESEARCH TARGET (e.g. “%s”)"
+                         % (g["state"], g["topic"], g["count"], g["example"][:70]))
+    return lines
+
+
 def _lesson_family(problem):
     text = str(problem or "")
     for key, rx, lesson in LESSON_FAMILIES:
@@ -497,17 +598,30 @@ with a fact are part of that fact: naming them, or restating the fact in plainer
 same number, period or amount, is supported. Answer with one JSON object only."""
 
 
-def verify_prompt(pack, facts_by_id):
+def _fact_lines(facts_by_id):
+    return "\n".join("%s | %s %s | %s" % (f["id"], f.get("statute") or "", f["cite"], f["text"]) for f in facts_by_id.values())
+
+
+def verify_prompt(pack, facts_by_id, shelf=None):
     # statute name on every line: the verifier was refusing claims that named "the Lagos Tenancy
     # Law 2011" because the fact line showed only "s.5" (25–27 Oct 2026, six refusals, no Short)
-    facts = "\n".join("%s | %s %s | %s" % (f["id"], f.get("statute") or "", f["cite"], f["text"]) for f in facts_by_id.values())
+    facts = _fact_lines(facts_by_id)
     claims = "\n".join("- [%s] %s" % (c.get("fact_id"), c.get("text")) for c in pack.get("claims") or [])
     text = drafts.post_text(pack) + "\n\nTHREADS VERSION:\n" + drafts.threads_text(pack)
     short = pack.get("short")
     if short:
         text += "\n\nSHORT VIDEO LINES:\n" + json.dumps(short, ensure_ascii=False)
+    # Shelf recall (3 Nov 2026, docs/BRAIN_GROWTH.md): 58 "not on the shelf" refusals in 30 days were
+    # read back — most of the refused sentences WERE on the shelf (Lagos s.5(2): the receipt names the
+    # parties, the premises, the amount, the period — facts lagos:receipts:2–6), the writer had simply
+    # not declared the id. The verifier now sees the rest of the state's shelf and names the fact
+    # instead of refusing; the claim is adopted with its id, so the page still cites every line.
+    rest = ("\n\nTHE REST OF THE SHELF (verified facts the writer did not cite)\n" + _fact_lines(shelf)) if shelf else ""
+    recall_rule = ("""
+  "recalled": [{{"statement": "a legal sentence in the post that is NOT in FACTS but IS said by one fact in THE
+                 REST OF THE SHELF — same state, same number, period or amount", "fact_id": "that fact's id"}}],""") if shelf else ""
     return f"""FACTS (the only law that may be relied on)
-{facts}
+{facts}{rest}
 
 THE POST
 {text}
@@ -517,12 +631,43 @@ CLAIMS THE WRITER DECLARED
 
 Answer:
 {{
-  "verdicts": [{{"fact_id": "...", "claim": "...", "supported": true or false, "reason": "short"}}],
+  "verdicts": [{{"fact_id": "...", "claim": "...", "supported": true or false, "reason": "short"}}],{recall_rule}
   "unsupported_statements": ["any sentence in the post or Short that states a legal rule, period, amount,
-                              duty or right that is NOT in the facts above — empty list if none. Questions,
+                              duty or right that is NOT in the facts above{' and not in the rest of the shelf' if shelf else ''} — empty list if none. Questions,
                               calls to action ('make yours at DocOga'), and practical tips that state no rule
                               ('keep the receipt', 'ask for a signed copy') are NOT legal statements"]
 }}"""
+
+
+def recall(holder, verdict, facts_by_id, log=print):
+    """Adopt the verifier's `recalled` matches as claims on `holder` (a pack or an episode): each
+    statement gains the shelf id that says it. Returns the adopted ids; the statements are then not
+    "unsupported". Only ids on the shelf and not already cited are taken; nothing is invented."""
+    cited = {str(c.get("fact_id")) for c in holder.get("claims") or [] if isinstance(c, dict)}
+    adopted, texts = [], []
+    for row in verdict.get("recalled") or []:
+        if not isinstance(row, dict):
+            continue
+        fid, statement = str(row.get("fact_id") or "").strip(), str(row.get("statement") or "").strip()
+        if not fid or not statement or fid not in facts_by_id:
+            continue
+        holder.setdefault("claims", []).append({"text": statement[:200], "fact_id": fid, "recalled": True})
+        texts.append(statement)
+        if fid not in cited:
+            cited.add(fid)
+            adopted.append(fid)
+    if texts:
+        holder["recalled"] = sorted(set((holder.get("recalled") or []) + adopted))
+        log("brain: shelf recall — %d statement(s) matched to uncited facts (%s)" % (len(texts), ", ".join(adopted) or "already cited"))
+    return texts
+
+
+def _unsupported(verdict, recalled_texts):
+    """The verifier's unsupported list minus anything it also recalled (it sometimes lists both)."""
+    def norm(s):
+        return re.sub(r"[^a-z0-9]+", " ", str(s).lower()).strip()
+    done = {norm(s) for s in recalled_texts}
+    return [s for s in verdict.get("unsupported_statements") or [] if str(s).strip() and norm(s) not in done]
 
 
 # ───────────────────────────── the gates ─────────────────────────────
@@ -889,8 +1034,9 @@ def verify(pack, ctx, http=None, sleep=None, log=print):
     if not pack.get("claims"):
         return []
     facts = {c["fact_id"]: ctx["facts_by_id"][c["fact_id"]] for c in pack["claims"]}
+    shelf = {k: f for k, f in ctx["facts_by_id"].items() if k not in facts}
     try:
-        verdict = gemini_text.generate_json(verify_prompt(pack, facts), system=VERIFY_SYSTEM,
+        verdict = gemini_text.generate_json(verify_prompt(pack, facts, shelf=shelf), system=VERIFY_SYSTEM,
                                             http=http, sleep=sleep, temperature=0.1, log=log,
                                             max_output_tokens=2048)
     except gemini_text.Exhausted:
@@ -901,9 +1047,9 @@ def verify(pack, ctx, http=None, sleep=None, log=print):
     for v in verdict.get("verdicts") or []:
         if isinstance(v, dict) and v.get("supported") is False:
             problems.append("verifier: claim [%s] not supported — %s" % (v.get("fact_id"), v.get("reason", "")))
-    for s in verdict.get("unsupported_statements") or []:
-        if str(s).strip():
-            problems.append("verifier: legal statement not on the shelf — %r" % str(s)[:120])
+    recalled = recall(pack, verdict, ctx["facts_by_id"], log=log)
+    for s in _unsupported(verdict, recalled):
+        problems.append("verifier: legal statement not on the shelf — %r" % str(s)[:120])
     return problems
 
 
@@ -919,6 +1065,7 @@ def approve(pack, ctx, model_note=""):
         "generated_at": datetime.now(LAGOS).isoformat(timespec="seconds"),
         "theme": pack["theme"], "post_type": pack["post_type"], "hook_type": pack["hook_type"],
         "state": pack.get("state"), "claims": pack.get("claims") or [],
+        "recalled": list(pack.get("recalled") or []),
         "post": {"headline": pack["post"]["headline"].strip(),
                  "lines": [str(x).strip() for x in pack["post"]["lines"] if str(x).strip()],
                  "cta": str(pack["post"].get("cta") or "").strip(),
@@ -954,6 +1101,7 @@ def remember(said, approved):
     said.append({"date": approved["date"], "theme": approved["theme"], "headline": approved["post"]["headline"],
                  "post_type": approved["post_type"], "hook_type": approved["hook_type"],
                  "state": approved.get("state"), "fact_ids": [c.get("fact_id") for c in approved["claims"]],
+                 "recalled": len(approved.get("recalled") or []),
                  "plate": approved["visual"].get("plate", ""), "short": bool(approved.get("short")),
                  "reader": approved.get("reader") or "", "tool": approved.get("tool"),
                  "news_hook": approved.get("news_hook") or None})
@@ -983,11 +1131,11 @@ def plan_day(day, said, http=None, sleep=None, log=print, dry_run=False):
             return approved, []
         log("brain: %s attempt %d refused: %s" % (day, attempt, "; ".join(problems)[:600]))
     if not dry_run:
-        remember_refusal(day, problems)
+        remember_refusal(day, problems, state=ctx.get("state"))
     return None, problems
 
 
-def remember_refusal(day, problems, path=None, now=None):
+def remember_refusal(day, problems, path=None, now=None, state=None):
     """Append why a day stayed on the rotation (newest first, REFUSED_KEEP rows). Never raises."""
     path = Path(path or REFUSED)
     try:
@@ -996,7 +1144,7 @@ def remember_refusal(day, problems, path=None, now=None):
     except (OSError, ValueError):
         rows = []
     rows.insert(0, {"date": day.isoformat(), "at": (now or datetime.now(LAGOS)).isoformat(timespec="seconds"),
-                    "short_day": day.weekday() in SHORT_DAYS,
+                    "short_day": day.weekday() in SHORT_DAYS, "state": state or state_for(day),
                     "problems": [str(p)[:200] for p in (problems or [])][:12]})
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -1412,9 +1560,10 @@ def deepdive_problems(ep, facts_by_id):
 
 def deepdive_verify(ep, facts_by_id, http=None, sleep=None, log=print):
     facts = {c["fact_id"]: facts_by_id[c["fact_id"]] for c in ep["claims"] if c.get("fact_id") in facts_by_id}
+    shelf = {k: f for k, f in facts_by_id.items() if k not in facts}
     narration = "\n\n".join("--- C%d --- %s\n%s" % (s["n"], s["title"], s["narration"]) for s in ep["sections"])
     fake = {"claims": ep["claims"], "post": {"headline": ep["title"], "lines": [narration]}, "threads": {"text": ""}}
-    prompt = verify_prompt(fake, facts).replace("THE POST", "THE EPISODE NARRATION")
+    prompt = verify_prompt(fake, facts, shelf=shelf).replace("THE POST", "THE EPISODE NARRATION")
     try:
         verdict = gemini_text.generate_json(prompt, system=VERIFY_SYSTEM, http=http, sleep=sleep,
                                             temperature=0.1, log=log, max_output_tokens=4096)
@@ -1426,9 +1575,9 @@ def deepdive_verify(ep, facts_by_id, http=None, sleep=None, log=print):
     for v in verdict.get("verdicts") or []:
         if isinstance(v, dict) and v.get("supported") is False:
             out.append("verifier: claim [%s] not supported — %s" % (v.get("fact_id"), v.get("reason", "")))
-    for s in verdict.get("unsupported_statements") or []:
-        if str(s).strip():
-            out.append("verifier: legal statement not on the shelf — %r" % str(s)[:120])
+    recalled = recall(ep, verdict, facts_by_id, log=log)
+    for s in _unsupported(verdict, recalled):
+        out.append("verifier: legal statement not on the shelf — %r" % str(s)[:120])
     return out
 
 

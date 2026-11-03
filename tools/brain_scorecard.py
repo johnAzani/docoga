@@ -1151,6 +1151,9 @@ def brain_iq(now=None, said_path=None, refused_path=None, deepdive_path=None, an
                 "first_pass_rate": round(approved / total, 2) if total else None,
                 "deepdive_attempts": len(dd_rows), "deepdive_written": dd_written, "answer_pages": pages}
 
+    def recalls(lo, hi):  # shelf recall (3 Nov 2026): sentences matched to an uncited fact instead of refused
+        return sum(int(r.get("recalled") or 0) for r in _iq_window(said, "date", lo, hi) if isinstance(r, dict))
+
     this_week, last_week = week(w1_lo, w1_hi), week(w0_lo, w0_hi)
     shelf_facts = shelf_states = None
     try:
@@ -1159,16 +1162,19 @@ def brain_iq(now=None, said_path=None, refused_path=None, deepdive_path=None, an
         shelf_facts, shelf_states = len(law_index.by_id()), len(law_index.states())
     except Exception:  # noqa: BLE001 — the shelf is a bonus number here
         pass
-    active = []
+    active, gaps = [], []
     try:
         import brain
         active = brain.lessons(refused_path=refused_path, deepdive_path=deepdive_path)
+        gaps = brain.shelf_gaps(refused_path=refused_path, deepdive_path=deepdive_path)
     except Exception:  # noqa: BLE001
         pass
     last_day, last_title = last_brain_improvement(doc)
     days_since = (today - datetime.strptime(last_day, "%Y-%m-%d").date()).days if last_day else None
     return {"this_week": this_week, "last_week": last_week, "shelf_facts": shelf_facts, "shelf_states": shelf_states,
             "lessons": [{"family": a["family"], "count": a["count"]} for a in active],
+            "shelf_recalls": {"this_week": recalls(w1_lo, w1_hi), "last_week": recalls(w0_lo, w0_hi)},
+            "shelf_gaps": gaps,
             "last_improvement": last_day, "last_improvement_title": last_title, "days_since_improvement": days_since,
             "stale": bool(days_since is not None and days_since > IQ_STALE_DAYS)}
 
@@ -1195,8 +1201,16 @@ def iq_lines(iq):
              "- answer page this week: %s" % ("yes" if a.get("answer_pages") else "no")]
     if iq.get("shelf_facts") is not None:
         lines.append("- law shelf: %s facts across %s states" % (_fmt(iq["shelf_facts"]), _fmt(iq["shelf_states"])))
+    rc = iq.get("shelf_recalls") or {}
+    if rc:
+        lines.append("- shelf recall: %s legal sentence(s) matched to an uncited fact instead of refused (last week %s)"
+                     % (_fmt(rc.get("this_week")), _fmt(rc.get("last_week"))))
     if iq.get("lessons"):
         lines.append("- lessons it is carrying into every prompt: " + ", ".join("%s ×%d" % (l["family"], l["count"]) for l in iq["lessons"]))
+    if iq.get("shelf_gaps") is not None:
+        research = [g for g in iq["shelf_gaps"] if g.get("kind") == "research"]
+        lines.append("- shelf gaps (60 days): %d pair(s) blocked; research targets: %s"
+                     % (len(iq["shelf_gaps"]), ", ".join("%s:%s ×%d" % (g["state"], g["topic"], g["count"]) for g in research[:4]) or "none — every blocked pair is already on the shelf"))
     else:
         lines.append("- lessons it is carrying into every prompt: none — no refusals in 30 days")
     if iq.get("last_improvement"):

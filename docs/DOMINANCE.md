@@ -67,6 +67,13 @@ without the signal that says so.
 
 ## 5. Research ledger (newest first — the scorecard reads the top date)
 
+- **2026-11-03** — Refusal audit: every "not on the shelf" sentence of the last 60 days read against
+  the law shelf by state and topic. Finding: `lagos:receipts` ×12 refused yet present on the shelf
+  (s.5(2) contents, facts 2–6) → a recall problem, not a law gap; `rivers:receipts` the one true
+  research target (shelf holds only a "not verified" placeholder — the Rivers State Recovery of
+  Premises Law's receipt position is next to read). Shipped as shelf recall + shelf gaps on the
+  scorecard. Also: first competitor-watch pull audited — 17 of 18 items were sitemap noise; filters
+  tightened (#184).
 - **2026-11-02** — The field: 7 document tools (prices, free tiers, watermarks), 3 content rivals,
   4 creators; Lagos Tenancy and Recovery of Premises Bill status (second reading, committee, not law
   as of Aug 2026; 5% fee caps, LASRERA, ≤1 year advance rent, mandatory receipts). Shipped as the

@@ -353,6 +353,13 @@ the `YT_REFRESH_TOKEN` secret. Next Monday 06:00 WAT the stats lane prints `SEAR
 
 ## The seventh round (17 Oct 2026 — "every channel growing, the account getting fat, ₦0")
 
+**Shelf recall (3 Nov 2026).** The verifier is shown the rest of the state's shelf besides the
+claims the writer declared; a legal sentence that a shelf fact says — same state, same number,
+period or amount — is *recalled* (`brain.recall`): the claim is adopted with that fact's id instead
+of the pack being refused, so the page still cites every line. What no fact says is still refused.
+The Monday scorecard prints *shelf recall* (sentences saved) and *shelf gaps* — refused pairs sorted
+into recall vs research target (`brain.shelf_gaps`); refusals record their state.
+
 **The field (`tools/competitor_watch.py`, 2 Nov 2026).** Owner: "keep me way ahead of my
 competitors — I want to dominate. Lock it in." 🔒 Charter and research ledger: `docs/DOMINANCE.md`,
 pinned by `tools/tests/test_dominance_lock.py`. `brain/competitors.json` is the verified map of who else sells
