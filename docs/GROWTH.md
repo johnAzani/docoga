@@ -64,6 +64,17 @@ platforms; nothing the owner must do on a schedule.
 
 ## 5. Growth ledger (newest first — the scorecard reads the top date)
 
+- **2026-11-03** — **Sixth pass (same evening, same order): the news the pages did not know.**
+  Finding: the FCT Advance Rent Regulation and Tenants' Protection Bill (HB.2839) passed first
+  reading on 22 Oct 2026 and ran in five papers 26 Oct–1 Nov; "Abuja rent bill" is this fortnight's
+  query and our five Abuja pages said nothing about it.
+  Shipped: dated `pending_bill` blocks on all 20 Abuja/Lagos/Anambra/Enugu pages (stage, what it
+  would change, what it does not, "what that means today"), 19 Brain facts, and `tools/law_watch.py`
+  so the sentence "a bill, not law, as at 3 November 2026" cannot quietly rot: Thursdays, ₦0 news
+  RSS, an issue on a passage headline, never a page edit (`docs/STATE_TENANCY_RESEARCH.md` §15).
+  Beats the field because no competitor page in the 2 Nov map dates its bill claims or re-checks
+  them; measure on the 9 Nov and 16 Nov scorecards: Abuja-page impressions and any "rent bill" /
+  "new rent law" query entering the GSC top 50.
 - **2026-11-03** — **Third pass (same afternoon, owner: "research very very very in-depth to the
   thinnest details … continue"): the signals the page sends, and the messenger.** Three findings.
   **(1) "quit notice" is a news query.** The bare query we hold at position 1.0 with 48 impressions

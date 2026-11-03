@@ -59,6 +59,15 @@ scorecard flags (⚠️) and I act on in the next brief — without being asked.
 
 ## 4. Changelog (newest first — the scorecard reads the top date)
 
+- **2026-11-03** — The shelf learns the bills, and a machine keeps them honest: `pending_bill`
+  blocks for Abuja (HB.2839 — first reading 22 Oct 2026, the FCT advance-rent bill our pages did not
+  know about), Lagos (second reading 10 Jul 2025, committee), Anambra (announced 26 Mar / 21 Jun 2026)
+  and Enugu (executive bill 26 Oct 2026) — 19 new dated facts (`<state>:pending_bill:n`, 317 total),
+  every one opening "a bill, not law, as at 3 November 2026", so a pack can answer "is the new rent law
+  out?" with the stage and the date instead of refusing. `tools/law_watch.py` (Thursdays 11:15 am,
+  ₦0 news RSS) reads the news for each bill and files a `law-watch` issue on a passage headline; it
+  never edits a page (`docs/STATE_TENANCY_RESEARCH.md` §15). Measure: `pending_bill` facts cited when
+  a reader asks about "the new law"; zero days between a passage report and the issue.
 - **2026-11-03** — Second research target read, and a wrong fact removed from the shelf: Enugu
   (`docs/STATE_TENANCY_RESEARCH.md` §14). The shelf said "no percentage cap on rent increases exists
   anywhere in Nigeria" in five states' entries; Enugu's Landlord and Tenant (Amendment) Law 2008

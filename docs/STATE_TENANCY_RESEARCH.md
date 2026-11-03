@@ -402,15 +402,25 @@ legislation was found", never as "there is no law".
 | Bill | Status | Trap |
 |---|---|---|
 | Enugu Landlord & Tenant (Amendment) Bill, 2025 → executive bill announced 26 Oct 2026 | First reading 25 Feb 2025; second reading 11 Mar 2025; public hearing 26 Mar 2025; with the Attorney-General through Nov 2025; executive bill announced 26 Oct 2026 with a four-week pledge — **not passed** as of 3 Nov 2026 (§14) | Would abolish caution fees — publishing it as law would tell Enugu tenants their caution fee is banned. It is not. Re-check after late Nov 2026. |
-| Anambra Rent and Tenancy Law | Legislative process begun March 2026; backed July 2026 | Anambra has **no** rent control in force today. |
-| Lagos Tenancy and Recovery of Premises Bill, 2025/2026 | Pending | Would cut the monthly advance cap 6 → 3 months. Current law is still 6 (sitting) / 12 (new). |
+| Anambra Rent and Tenancy Law | Assembly said it had begun the process 26 Mar 2026 (Vanguard); Governor Soludo 21 Jun 2026: "laws on rents and tenancy will soon be out" — no reading reported as of 3 Nov 2026 | Anambra has **no** rent control in force today; the permitted agency commission the Governor cited is 10%. |
+| Lagos Tenancy and Recovery of Premises Bill, 2025 | Second reading **10 Jul 2025**, referred to the House Committee on Housing (three-week deadline given, never met); still "a draft" Nov–Dec 2025 (Premium Times, Vanguard) and still a bill Aug 2026 (Legal500) — **not law** as of 3 Nov 2026 | Would cut the monthly advance cap 6 → 3 months, write the 5% agency cap (today LASRERA's rule) into statute, add ₦1m/6 months for self-help eviction. Current law is still the 2011 Law. May 2025: Lagos disowned a viral "law updated" post. |
+| **FCT Advance Rent Regulation and Tenants' Protection Bill, 2026 (HB.2839)** | **First reading, House of Representatives, 22 Oct 2026** (Paul Nnamchi APC-Enugu; Ahmed Doro PDP-Katsina). Needs second reading, committee + hearing, third reading, Senate concurrence, assent, and a Gazette commencement notice | Would cap *compulsory* advance rent at 12 months (cl. 4(1)), fines ₦500k–₦5m / ₦5m–₦20m, refund orders in 30 days from a new FCT Rent Regulation and Tenants' Protection Authority (cl. 7–8); **no rent ceiling, no increase limit**. The 2022 Senate bill (3 months then monthly) died with the 9th Assembly. Abuja pages carry it as a bill (3 Nov 2026). |
+| Abia Property and Tenancy Bill | Passed by the Abia Assembly (reported 6 Aug 2026, Lawyard; Guardian 12 Oct 2026: "subject to the governor's assent") | Would create a Property and Tenancy Regulatory Authority, agency fee ≤5%, unlicensed agents ₦1m–₦10m. Assent not confirmed. No Abia pages yet — a tier-B candidate once the gazetted text is read. |
+| Ebonyi Bill Regulating House Rent, Agent Fees and Scrap Trade | "Recently passed" per Guardian 12 Oct 2026 | Agency fee ≤2% of gross transaction value as reported. Assent and text unread. No Ebonyi pages. |
+| Kogi Tenancy Law 2025 | Proposed (Guardian 12 Oct 2026) | Rent increases, agency charges, agent regulation. No Kogi pages. |
+| Ogun "Tenancy Law of Ogun State, 2018" (HB 037/OG/2018) | Scaled second reading Nov 2018 (Gateway Reporters); fate unknown | The one lead for Ogun, which we publish at tier E ("nothing verified"). Find the Assembly's Hansard or the gazette before a word goes on the Ogun pages. |
+
+Every row with a page behind it (Enugu, Anambra, Lagos, Abuja) is carried on the shelf as `pending_bill`
+with a `watch` block, and `tools/law_watch.py` reads the news for it every Thursday (§15).
 
 ---
 
 ## 7. National claims that are FALSE and must not creep in
 
-- "Rent increases are capped at X%." **No state or federal law fixes a
-  percentage.** Lagos gives a *court* remedy (s.37, Form TL11) instead.
+- "Rent increases are capped at X% everywhere." **Only Enugu fixes a percentage**
+  (Landlord and Tenant (Amendment) Law 2008, s.3(b): 15%, and only after every
+  second anniversary — §14). No other state and no federal law does. Lagos gives a
+  *court* remedy (s.37, Form TL11) instead.
 - "Rent must always be paid in advance." **Rivers law defaults to rent in
   arrears** (Cap 75, s.75(1)) unless agreed otherwise.
 - "A quit notice always needs six months." Depends on the tenancy type, and on
@@ -762,3 +772,56 @@ bill's text and fate.
 [guardian2022]: https://guardian.ng/saturday-magazine/how-estate-agents-make-tenancy-difficult-for-lagos-residents/
 [punch2025]: https://punchng.com/?p=1813797
 [advocate2026]: https://advocatengr.com/2026/10/26/mbah-vows-to-sign-bill-curbing-excessive-agency-lawyers-fees-in-enugu/
+
+---
+
+## 15. The law watch (3 Nov 2026) — "a bill, not law, as at …" must not outlive the bill
+
+Every page in §6 says "a bill, not law, as at 3 November 2026". That sentence is true today and
+becomes a published falsehood the morning after assent — and nobody was reading four states' news
+every week. Two findings from the pass that built the watch:
+
+### 15.1 The FCT bill our Abuja pages did not know about
+
+HB.2839 — the Federal Capital Territory Advance Rent Regulation and Tenants' Protection Bill, 2026 —
+passed **first reading on 22 October 2026**, twelve days before this pass, and was in five papers
+(Premium Times 26 Oct, Daily Trust 27 Oct, Prestige Real Estate News, HousingTV Africa and Ghanamma
+1 Nov 2026). Our Abuja `advance_rent` block ("a genuine gap in the law, and we say so") was correct
+and silent about the bill. The Abuja shelf now carries it as `pending_bill` (seven Brain facts,
+`abuja:pending_bill:1–7`), every Abuja page prints it under "A bill that would change this — not law
+yet", and the block says in its first sentence that nothing in it can be enforced today. What is
+**not** in the bill matters as much as what is: no rent ceiling and no limit on increases; a full
+year's advance stays lawful. The 2022 Senate bill (three months, then monthly) is the one people
+remember and the one that died in May 2023 — they are not the same bill.
+
+### 15.2 Dates the shelf had been carrying without a date
+
+Lagos: "a bill" since October — now "second reading 10 July 2025; with the House Committee on
+Housing" with three sources. Anambra: "proposed" — now "Assembly 26 March 2026; Governor 21 June
+2026; no reading reported". Enugu: the 26 October 2026 executive bill with the four-week pledge, so
+the window to watch is late November 2026.
+
+### 15.3 How the watch works, and what it refuses to do
+
+`tools/law_watch.py` (workflow `law_watch.yml`, Thursdays 11:15 am Lagos) reads the shelf's
+`pending_bill.watch.queries` for each state, asks two free news indexes (Google News RSS in the
+Nigeria edition and Bing News RSS — public, no key, ₦0, stdlib only), keeps the last 14 days of
+headlines that are about tenancy *and* about that place, and classifies each: **passed** (assent,
+signed into law, third reading, "Assembly passes … bill"), **moving** (readings, hearings,
+committee) or **mention**. A passage headline newer than `watch.verified` is an alert: one issue
+labelled `law-watch`, a `::warning` on the run, a red line on Monday's scorecard. The ledger is
+`logs/law_watch.json` (heartbeat shape; the Thursday run is judged like every other lane).
+
+It never edits a page, a shelf text or a `verified` date. Rule Zero stands: a headline is a
+signal; the gazette or the Assembly's own notice is the source; a person moves `verified`, rewrites
+the block from the text of the law, regenerates the pages and runs the tests. Until then the pages
+keep saying "as at 3 November 2026" — which is the truth about when we last looked, printed in the
+block itself ("Stage checked against the sources on …").
+
+### 15.4 Candidates the watch does not yet cover
+
+Abia (passed, awaiting assent), Ebonyi (passed as reported), Kogi (proposed) and the 2018 Ogun bill
+have no pages, so no `pending_bill` block. When Abia's law is gazetted it is the first new tier-B
+state to add — the Guardian's summary (agency ≤5%, a regulatory authority, ₦1m–₦10m for unlicensed
+agents) is a lead, not a citation.
+

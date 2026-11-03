@@ -470,16 +470,23 @@ def law_block(slug, tslug):
                          # 3 Nov 2026: rent increases were on the Brain's shelf but never on the page;
                          # Enugu's 2008 15%/second-anniversary cap made the omission visible.
                          ('increase_challenge', 'Rent increases'),
+                         # 3 Nov 2026: the bill that would change the page, dated and staged, so a reader who
+                         # has heard "the new rent law" sees in one block that it is a bill, where it sits and
+                         # when we last checked (tools/law_watch.py re-reads the news for it every week).
+                         ('pending_bill', 'A bill that would change this &mdash; not law yet'),
                          ('related', 'A related jurisdiction')):
         if law.get(key):
             blk = law[key] or {}
-            head = blk.get('title') or heading
+            head = heading if key == 'pending_bill' else (blk.get('title') or heading)
             parts.append('<h3 style="font-size:15px;margin:14px 0 6px">%s</h3>' % head)
+            if key == 'pending_bill' and blk.get('title'):
+                parts.append('<p class="law"><b>%s</b></p>' % blk['title'])
             if blk.get('text'):
                 parts.append('<p class="law">%s</p>' % blk['text'])
             if blk.get('summary'):
                 parts.append('<p class="law">%s</p>' % blk['summary'])
-            for sub in ('why', 'why_it_matters', 'section', 'plain', 'worked', 'detail', 'definitions', 'definition',
+            for sub in ('why', 'why_it_matters', 'section', 'plain', 'worked', 'detail', 'stage', 'would',
+                        'definitions', 'definition',
                         'protection', 'supersedes', 'exception', 'contrast', 'penalty',
                         'must_state', 'also_excluded', 'arrears', 'secondary_conflict',
                         'stale_warning', 'how_to_read', 'grandfather', 'caution',
@@ -490,6 +497,11 @@ def law_block(slug, tslug):
                         parts.append('<ul>' + ''.join('<li>%s</li>' % i for i in v) + '</ul>')
                     else:
                         parts.append('<p class="law">%s</p>' % v)
+            if key == 'pending_bill' and (blk.get('watch') or {}).get('verified'):
+                parts.append('<p class="law"><small>Stage checked against the sources on %s: %s. '
+                             'The watch re-reads the news for this bill every week and this date moves only '
+                             'when a person re-verifies.</small></p>'
+                             % (freshness.human(blk["watch"]["verified"]), blk['watch'].get('stage', '')))
             if law[key].get('rows'):
                 parts.append('<table>\n<tr><th>Who</th><th>Rule</th></tr>' +
                              '\n'.join('<tr><td>%s</td><td>%s</td></tr>' % (a, b)

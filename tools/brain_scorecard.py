@@ -1299,6 +1299,11 @@ def summary_md(snap):
     except Exception:  # noqa: BLE001 — the field is a bonus block
         pass
     try:
+        import law_watch
+        lines += ["", "### Law watch — are the bills on our pages still bills"] + law_watch.scorecard_lines()
+    except Exception:  # noqa: BLE001 — a missing ledger must not break Monday
+        pass
+    try:
         import growth
         lines += ["", "### Growth — where the next naira is (🔒 docs/GROWTH.md)"] + growth.scorecard_lines()
     except Exception:  # noqa: BLE001 — never breaks the scorecard

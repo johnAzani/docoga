@@ -1,0 +1,64 @@
+{
+ "pulled_at": "2026-11-03T16:00:00+00:00",
+ "days": 14,
+ "alerts": 0,
+ "bills": [
+  {
+   "slug": "abuja",
+   "state": "Abuja (FCT)",
+   "title": "Federal Capital Territory Advance Rent Regulation and Tenants’ Protection Bill, 2026 (HB.2839)",
+   "verified": "2026-11-03",
+   "stage": "first reading, House of Representatives, 22 October 2026",
+   "signal": "quiet",
+   "alerts": 0,
+   "items": []
+  },
+  {
+   "slug": "anambra",
+   "state": "Anambra",
+   "title": "Anambra State Rent and Tenancy Law (proposed, 2026)",
+   "verified": "2026-11-03",
+   "stage": "announced by the Assembly 26 March 2026 and the Governor 21 June 2026; no reading reported",
+   "signal": "quiet",
+   "alerts": 0,
+   "items": []
+  },
+  {
+   "slug": "enugu",
+   "state": "Enugu",
+   "title": "Enugu State Landlord and Tenant (Amendment) Bill (2025 private member bill; executive bill announced 26 October 2026)",
+   "verified": "2026-11-03",
+   "stage": "executive bill announced 26 October 2026; four-week pledge",
+   "signal": "quiet",
+   "alerts": 0,
+   "items": []
+  },
+  {
+   "slug": "lagos",
+   "state": "Lagos",
+   "title": "Lagos State Tenancy and Recovery of Premises Bill, 2025",
+   "verified": "2026-11-03",
+   "stage": "second reading 10 July 2025; with the House Committee on Housing as at August 2026",
+   "signal": "quiet",
+   "alerts": 0,
+   "items": []
+  }
+ ],
+ "entries": [
+  {
+   "recorded_at": "2026-11-03T16:00:00+00:00",
+   "alerts": 0,
+   "signals": {
+    "abuja": "quiet",
+    "anambra": "quiet",
+    "enugu": "quiet",
+    "lagos": "quiet"
+   },
+   "note": "seeded at build"
+  }
+ ],
+ "sources": [
+  "seeded 3 Nov 2026 when the lane was built; the first real pull is Thursday 6 Nov 2026"
+ ],
+ "seeded": true
+}
