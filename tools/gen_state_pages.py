@@ -5,6 +5,24 @@ Recovery of Premises Act s.8 (FCT). Other states: honest general framing."""
 import io, os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from clean_urls import clean_text  # Cloudflare 307s /x.html → /x: canonicals, links and sitemap locs are bare
+import sample_docs  # the free sample + PDF beside the generator (🔒 docs/GROWTH.md, 3 Nov 2026)
+
+# "See one first": the sample people search for, one tap from every state page of that tool. The
+# sample page is the transactional destination; the PDF is the download (noindex, site/_headers).
+SAMPLE_FOR = {
+    'tenancy-agreement': ('tenancy-agreement-sample-nigeria', 'tenancy-agreement-sample-nigeria',
+                          'Read the full sample agreement (13 clauses)'),
+    'rent-receipt': ('rent-receipt-format-nigeria', 'rent-receipt-sample-nigeria', 'See the sample receipt'),
+    'notice-to-quit': ('notice-to-quit-nigeria', 'quit-notice-letter-sample-nigeria', 'See the sample quit notice'),
+}
+
+
+def sample_block(tslug):
+    if tslug not in SAMPLE_FOR:
+        return ''
+    page, pdf, label = SAMPLE_FOR[tslug]
+    return ('\n<p style="font-size:14.5px;margin-top:8px">Want to see one first? <a class="cta2" href="https://docoga.com.ng/%s">%s \u2192</a>'
+            ' \u00b7 <a class="cta2" href="%s" download>Download the sample PDF (free)</a></p>' % (page, label, sample_docs.pdf_url(pdf)))
 
 STATES = {
  'lagos': dict(name='Lagos', place='Lagos', full='Lagos State',
@@ -237,7 +255,7 @@ footer{{margin-top:34px;border-top:1px solid #DCE4F0;padding-top:16px;font-size:
 <div class="box">
 <h2>Make it in 2 minutes \u2014 free</h2>
 <p>DocOga\u2019s {tool} generator works on your phone: answer simple questions, get a clean, standard Nigerian document. Free version carries a small banner; the Oga Pass (\u20a62,000/30 days) unlocks unlimited clean copies \u2014 all 10 tools.</p>
-<a class="cta" href="https://docoga.com.ng/{hash}">Create your {verb} free \u2192</a>
+<a class="cta" href="https://docoga.com.ng/{hash}">Create your {verb} free \u2192</a>{sample_block}
 <p style="font-size:14.5px;margin-top:2px">Need it clean \u2014 no banner, unlimited copies? <a class="cta2" href="https://docoga.com.ng/#pricing">Get the Oga Pass, \u20a62,000 for 30 days \u2192</a></p>
 </div>
 
@@ -699,6 +717,7 @@ def main():
             d['arrears_block'] = ('<p class="law">' + st['arrears'] + '</p>' if st['arrears'] else '')
             d['notice_table'] = notice_table(slug, st['place'])
             d['law_block'] = law_block(slug, tslug)
+            d['sample_block'] = sample_block(tslug)
             d['sources_block'] = sources_block(slug)
             d['same_state_links'] = '\n'.join(f'<a href="https://docoga.com.ng/{ts2}-{slug}.html">{t2.get("label", t2["tool"])} \u2014 {st["name"]}</a>' for ts2, t2 in TOOLS.items() if ts2 != tslug)
             d['other_states_links'] = '\n'.join(f'<a href="https://docoga.com.ng/{tslug}-{s2}.html">{st2["name"]}</a>' for s2, st2 in STATES.items() if s2 != slug)

@@ -89,6 +89,10 @@ platforms; nothing the owner must do on a schedule.
   `rent-receipt-format-nigeria` (shared sample, s.5(2) fields) and `notice-to-quit-nigeria`;
   internal links from the pages that already rank and the home guides block; sitemap + OG card;
   `tools/tests/test_sample_docs.py` pins that the sample wording is the generator's wording.
+  Follow-through the same afternoon: the 36 state pages of the three sampled tools (12 states ×
+  tenancy agreement, rent receipt, notice to quit) offer "see one first" — the sample page and the
+  PDF — beside their generator button (`gen_state_pages.SAMPLE_FOR`), which also gives the new
+  sample page 36 internal links from pages Google already ranks for state queries.
   **Measure:** money-page share 15% → 25% by 1 Dec; the sample page's first impressions for
   "tenancy agreement sample" within 3 weeks (Search Console pull). **TEST NEXT:** a
   state-by-state sample variant only if the national page earns impressions (no thin
