@@ -1,5 +1,5 @@
 {
- "fetched": "2026-11-03T00:30:51+00:00",
+ "fetched": "2026-11-03T07:06:23+00:00",
  "sources": [
   "Punch: 30 stories",
   "Vanguard: 20 stories",
@@ -9,5 +9,18 @@
   "The Guardian Nigeria: unreachable (HTTP Error 403: Forbidden)",
   "Nairametrics: 20 stories"
  ],
- "items": []
+ "items": [
+  {
+   "title": "Procurement knowledge gap shuts small businesses out of FG contracts — Minister",
+   "link": "https://www.vanguardngr.com/2026/11/procurement-knowledge-gap-shuts-small-businesses-out-of-fg-contracts-minister/",
+   "published": "2026-11-03T06:13:48+00:00",
+   "source": "Vanguard",
+   "score": 4,
+   "matched": [
+    "sme",
+    "small business"
+   ],
+   "summary": "By Yinka Kolawole Many small businesses in Nigeria are missing out on Federal Government contracts due to inadequate knowledge of public procurement procedures, Minister of State for Industry, Senator"
+  }
+ ]
 }

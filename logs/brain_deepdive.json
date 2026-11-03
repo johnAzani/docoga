@@ -451,6 +451,98 @@
     "beat 24 shot 'yellow lagos bus on road' dropped"
    ],
    "run_id": "41553352298"
+  },
+  {
+   "at": "2026-11-03T08:07:16+01:00",
+   "episode": "dd6",
+   "attempt": 1,
+   "outcome": "refused",
+   "title": "Anambra Rent Law: The Eviction Rules and Notice Expiry",
+   "problems": [
+    "section 6: 87 words; need 120-200",
+    "section 8: 85 words; need 120-200",
+    "total narration 879 words; need 1,100-1,800",
+    "36-48 beats (got 9)",
+    "section 1 needs at least two beats",
+    "section 2 needs at least two beats",
+    "section 3 needs at least two beats",
+    "section 4 needs at least two beats",
+    "section 5 needs at least two beats",
+    "section 6 needs at least two beats",
+    "section 7 needs at least two beats",
+    "section 8 needs at least two beats"
+   ],
+   "healed": [
+    "beat 1 shot 'written notice letter resting on table' dropped",
+    "beat 2 dropped: trig 'lock the gate' is not 2-4 words",
+    "beat 3 shot 'gavel sitting on legal document' dropped",
+    "beat 3 dropped: trig 'rules before anyone' is not 2-4 words",
+    "beat 4 shot 'fountain pen signing formal paper' dropped",
+    "beat 4 dropped: trig 'paper beats memory' is not 2-4 words",
+    "beat 5 shot 'bound law books on desk' dropped",
+    "beat 6 shot 'legal scale in court room' dropped",
+    "beat 6 dropped: trig 'court of appeal confirmed' is not 2-4 words",
+    "beat 7 dropped: trig 'taking back a room' is not 2-4 words",
+    "beat 8 shot 'person viewing legal text on phone' dropped",
+    "beat 8 dropped: trig 'first line of defence' is not 2-4 words"
+   ],
+   "run_id": "41594060527"
+  },
+  {
+   "at": "2026-11-03T08:07:50+01:00",
+   "episode": "dd6",
+   "attempt": 2,
+   "outcome": "refused",
+   "title": "Tenant Rights in Anambra and Lagos Rent Tax Relief",
+   "problems": [
+    "36-48 beats (got 9)",
+    "section 1 needs at least two beats",
+    "section 2 needs at least two beats",
+    "section 3 needs at least two beats",
+    "section 4 needs at least two beats",
+    "section 5 needs at least two beats",
+    "section 6 needs at least two beats",
+    "section 7 needs at least two beats",
+    "section 8 needs at least two beats",
+    "section 9 needs at least two beats"
+   ],
+   "healed": [
+    "beat 1 shot 'padlocked wooden door with paper notice' dropped",
+    "beat 2 shot 'hand holding written notice paper' dropped",
+    "beat 2 dropped: trig 'bluff every single month' is not 2-4 words",
+    "beat 3 dropped: trig 'law steps in to protect' is not 2-4 words",
+    "beat 4 shot 'stack of naira banknotes on table' dropped",
+    "beat 4 dropped: trig 'federal tax law now pays' is not 2-4 words",
+    "beat 5 shot 'law books on library shelf' dropped",
+    "beat 6 shot 'legal court document text' dropped",
+    "beat 6 dropped: trig 'amah versus ozouli' is not 2-4 words",
+    "beat 7 shot 'fountain pen pointing at legal statute' dropped",
+    "beat 7 dropped: trig 'chapter 76 remains the actual' is not 2-4 words",
+    "beat 8 shot 'smartphone displaying legal text' dropped"
+   ],
+   "run_id": "41594060527"
+  },
+  {
+   "at": "2026-11-03T08:11:32+01:00",
+   "episode": "dd6",
+   "attempt": 3,
+   "outcome": "refused",
+   "title": "Quit Notice Rules in Anambra and Lagos",
+   "problems": [
+    "verifier: legal statement not on the shelf — 'For a yearly tenant in Lagos, six months notice is required by section thirteen sub-section one, but the landlord has mo'"
+   ],
+   "healed": [
+    "beat 5 shot 'pen resting on agreement document' dropped",
+    "beat 9 shot 'calendar showing end of month' dropped",
+    "beat 10 shot 'dusk skyline late night view' dropped",
+    "beat 14 shot 'lagos magistrate court sign' dropped",
+    "beat 16 shot 'aerial view of residential homes' dropped",
+    "beat 18 shot 'calendar page highlighting seven days' dropped",
+    "beat 29 shot 'paper rent receipt payment slip' dropped",
+    "beat 35 shot 'mobile screen docoga home page' dropped",
+    "beat 36 shot 'naira two thousand bill note' dropped"
+   ],
+   "run_id": "41594060527"
   }
  ]
 }
