@@ -26,3 +26,10 @@
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   Content-Security-Policy: default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; font-src 'none'; connect-src https:; worker-src 'none'; manifest-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+
+# Sample documents (tools/sample_docs.py). The HTML guide page is the search destination; the PDF
+# is the download. noindex keeps Google from ranking the file against its own page (docs/GROWTH.md).
+/samples/*
+  X-Robots-Tag: noindex
+  Cache-Control: public, max-age=86400
+  Content-Disposition: inline

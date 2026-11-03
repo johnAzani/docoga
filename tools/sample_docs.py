@@ -1,0 +1,287 @@
+#!/usr/bin/env python3
+"""sample_docs.py — the sample documents people search for, as text they can read and a PDF they
+can download, from the product's own wording (🔒 docs/GROWTH.md, first dive, 3 Nov 2026).
+
+Why this exists: Search Console shows DocOga ranking only for the informational quit-notice
+cluster, while the demand that sells — "tenancy agreement sample in nigeria pdf free download",
+"rent receipt sample nigeria", "quit notice letter sample" — is served by Scribd uploads of
+strangers' private agreements and by generic template farms. Google's own guidance (Search
+Central, May 2025) and the 2026 citation studies agree on the shape that wins: the answer first,
+real headings, lists and tables, the full sample visible on the HTML page, sources named, and a PDF
+only as a download (HTML is the search destination; the PDFs are `noindex` in site/_headers).
+
+Nothing here is invented. The agreement clauses are the thirteen the DocOga generator writes
+(site/index.html, renderAgreement); the receipt fields are the five Lagos s.5(2) requires plus the
+reference and signature every good receipt carries; the quit-notice wording is the generator's.
+Placeholders are shown in square brackets — a sample, not a stranger's private contract.
+
+    python3 tools/sample_docs.py          # write site/samples/*.pdf (idempotent, deterministic)
+    python3 tools/sample_docs.py --check  # exit 1 if a PDF is missing or stale
+
+The PDF writer below is deliberately dependency-free (PDF 1.4, Helvetica, WinAnsi) so the build
+runs anywhere at ₦0 — Pillow is not needed and no font file is read.
+"""
+from __future__ import annotations
+
+import sys
+import textwrap
+import zlib
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+OUT = ROOT / "site" / "samples"
+DOMAIN = "https://docoga.com.ng"
+FOOTER = "Free sample from DocOga — make yours in 2 minutes at docoga.com.ng. General information, not legal advice."
+
+# ----------------------------------------------------------------------------- the samples
+# Each sample is a list of blocks: ("h", heading) | ("p", paragraph) | ("c", number, title, text)
+# | ("kv", label, value) | ("sig", [labels]) | ("gap",). The HTML and the PDF are rendered from the
+# same blocks so the page never says something the download does not.
+
+AGREEMENT_CLAUSES = [
+    ("TERM", "The Landlord agrees to let and the Tenant agrees to take the Demised Premises for a term of "
+             "[12] months certain, commencing on [1 January 2027] and ending on [31 December 2027], renewable by "
+             "mutual agreement of the parties."),
+    ("RENT", "The Tenant shall pay to the Landlord a rent of [₦850,000 (Eight Hundred and Fifty Thousand Naira)] "
+             "per annum, payable in advance, without deduction except as may be permitted by law."),
+    ("CAUTION FEE / DEPOSIT", "The Tenant has paid a caution fee (security deposit) of [₦100,000 (One Hundred "
+             "Thousand Naira)], refundable at the expiration or earlier termination of the tenancy, subject to "
+             "deductions for any damage to the Demised Premises beyond normal wear and tear."),
+    ("USE OF PREMISES", "The Tenant shall use the Demised Premises for residential purposes only and shall not use "
+             "the Premises or permit it to be used for any illegal, immoral or hazardous purpose."),
+    ("NO ASSIGNMENT OR SUBLETTING", "The Tenant shall not assign, sublet, or part with possession of the Demised "
+             "Premises or any part thereof without the prior written consent of the Landlord."),
+    ("REPAIRS AND MAINTENANCE", "The Landlord shall keep the roof and external walls of the Demised Premises in good "
+             "structural repair. The Tenant shall keep the interior, sanitary fittings and installations in good and "
+             "tenantable condition, and shall be liable for any damage caused by the negligence of the Tenant, his "
+             "guests or invitees."),
+    ("UTILITIES", "The Tenant shall pay all charges for electricity, water, waste disposal and other utilities consumed "
+             "on the Demised Premises during the tenancy."),
+    ("QUIET ENJOYMENT", "The Landlord covenants that the Tenant, upon paying the rent and observing the covenants "
+             "herein, shall peacefully hold and enjoy the Demised Premises during the tenancy without any interruption "
+             "by the Landlord or any person lawfully claiming under him."),
+    ("ALTERATIONS", "The Tenant shall not make any structural alteration or addition to the Demised Premises without "
+             "the prior written consent of the Landlord."),
+    ("INSPECTION", "The Landlord or his authorised agent may enter the Demised Premises to inspect its condition upon "
+             "giving the Tenant reasonable prior notice."),
+    ("NOTICE TO QUIT", "Either party may terminate this tenancy by serving on the other party written notice to quit "
+             "of [six months], in accordance with the Tenancy Law applicable in [Lagos] State."),
+    ("RENEWAL AND RENT REVIEW", "The parties may renew this tenancy upon terms to be agreed, and the rent may be "
+             "reviewed upon renewal by mutual agreement."),
+    ("GOVERNING LAW AND JURISDICTION", "This agreement shall be governed by the laws of the Federal Republic of "
+             "Nigeria and the tenancy law applicable in [Lagos] State, and the parties submit to the jurisdiction of "
+             "the courts of that state."),
+]
+
+TENANCY_AGREEMENT = [
+    ("h", "RESIDENTIAL TENANCY AGREEMENT"),
+    ("p", "Made this [1st] day of [January 2027]"),
+    ("p", "THIS TENANCY AGREEMENT is made between"),
+    ("p", "[LANDLORD'S FULL NAME] of [landlord's address] (Tel: [phone]) (hereinafter called \"the Landlord\", "
+          "which expression shall where the context so admits include the Landlord's heirs, successors-in-title "
+          "and assigns)"),
+    ("p", "AND"),
+    ("p", "[TENANT'S FULL NAME] of [tenant's address] (Tel: [phone]) (hereinafter called \"the Tenant\")."),
+    ("p", "WHEREAS the Landlord is the owner or is lawfully entitled to grant a tenancy of all that property known, "
+          "described and situate at [2-bedroom flat, first floor], [12 Example Street, Surulere], [Lagos] State "
+          "(hereinafter called \"the Demised Premises\")."),
+    ("p", "NOW THIS AGREEMENT WITNESSES as follows:"),
+] + [("c", i + 1, t, body) for i, (t, body) in enumerate(AGREEMENT_CLAUSES)] + [
+    ("p", "IN WITNESS WHEREOF the parties have executed this agreement on the date first above written."),
+    ("sig", ["LANDLORD — Signature / Date", "TENANT — Signature / Date", "WITNESS 1 — Name / Signature / Date",
+             "WITNESS 2 — Name / Signature / Date"]),
+]
+
+RENT_RECEIPT = [
+    ("h", "RENT RECEIPT — No. [0142]"),
+    ("kv", "Date received", "[1 October 2026]"),
+    ("kv", "Received from (tenant)", "[Tenant's full name], [tenant's address]"),
+    ("kv", "By (landlord / agent)", "[Landlord's full name], [landlord's address]"),
+    ("kv", "For the premises", "[2-bedroom flat, first floor, 12 Example Street, Surulere, Lagos]"),
+    ("kv", "Amount received", "[₦850,000] ([Eight Hundred and Fifty Thousand Naira] only)"),
+    ("kv", "Period covered", "[1 October 2026 to 30 September 2027] (12 months)"),
+    ("kv", "Being", "Rent — caution fee and service charge are receipted separately"),
+    ("kv", "Payment method", "[Bank transfer, reference 000123456789]"),
+    ("kv", "Balance outstanding", "[Nil]"),
+    ("sig", ["Received by — Signature / Name / Date"]),
+    ("p", "Lagos Tenancy Law 2011, s.5(2): a rent receipt states the date, the names and addresses of landlord and "
+          "tenant, the description and location of the premises, the amount paid and the period it covers. "
+          "Failure to issue one is an offence — fine of ₦100,000 on conviction (s.5(3))."),
+]
+
+QUIT_NOTICE = [
+    ("h", "NOTICE TO QUIT"),
+    ("p", "[Date of service]"),
+    ("p", "To: [Tenant's full name], [flat / shop / house and full address of the premises]"),
+    ("p", "I, [Landlord's full name], the landlord of the premises you occupy as a yearly tenant at [address of "
+          "the premises], hereby give you six months' notice to quit and deliver up possession of the said "
+          "premises to me on or before [expiry date]."),
+    ("p", "Take notice that if you remain in possession after that date, I shall serve on you the seven days' "
+          "notice of owner's intention to recover possession and apply to the court for an order of possession, "
+          "together with any arrears of rent and mesne profits."),
+    ("p", "Dated this ____ day of ______________ 20____."),
+    ("sig", ["[Landlord's name, signature and phone number]  -  or: [Agent / solicitor's name], for the landlord, "
+             "under written authority dated [date before this notice]"]),
+    ("p", "For a yearly tenant in Lagos where the agreement is silent (six months). Change the tenancy type and "
+          "the period for a monthly (one month) or quarterly (three months) tenant; a weekly tenant or tenant at "
+          "will gets one week (Lagos Tenancy Law 2011, s.13(1)). The notice written into a tenancy agreement "
+          "governs instead."),
+]
+
+SAMPLES = {
+    "tenancy-agreement-sample-nigeria": ("Tenancy Agreement — sample (Nigeria)", TENANCY_AGREEMENT),
+    "rent-receipt-sample-nigeria": ("Rent Receipt — sample (Nigeria)", RENT_RECEIPT),
+    "quit-notice-letter-sample-nigeria": ("Notice to Quit — sample letter (Nigeria)", QUIT_NOTICE),
+}
+
+
+# ----------------------------------------------------------------------------- HTML
+def _esc(s):
+    return str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+def html_sample(slug):
+    """The sample as a <pre class="sample"> block the guide pages print above the fold."""
+    _, blocks = SAMPLES[slug]
+    out = []
+    for b in blocks:
+        kind = b[0]
+        if kind == "h":
+            out.append(_esc(b[1]))
+            out.append("")
+        elif kind == "p":
+            out.append(textwrap.fill(_esc(b[1]), 78))
+            out.append("")
+        elif kind == "c":
+            out.append(textwrap.fill("%d. %s. %s" % (b[1], _esc(b[2]), _esc(b[3])), 78))
+            out.append("")
+        elif kind == "kv":
+            out.append("%-24s %s" % (_esc(b[1]) + ":", _esc(b[2])))
+        elif kind == "sig":
+            out.append("")
+            for label in b[1]:
+                out.append("______________________________")
+                out.append(_esc(label))
+                out.append("")
+    return '<pre class="sample">' + "\n".join(out).rstrip() + "</pre>"
+
+
+# ----------------------------------------------------------------------------- PDF
+PAGE_W, PAGE_H, MARGIN, LEADING, SIZE = 595, 842, 56, 14.5, 10.5
+CHARS = 92   # Helvetica 10.5pt across 483pt: ~92 average characters
+
+
+def _pdf_text(s):
+    s = str(s).replace("₦", "NGN ").replace("—", "-").replace("–", "-")
+    return s.encode("cp1252", "replace").decode("cp1252")
+
+
+def _lines(blocks, title):
+    """(font, text) pairs, already wrapped; 'B' = bold."""
+    lines = [("B", _pdf_text(title)), ("R", "")]
+    for b in blocks:
+        kind = b[0]
+        if kind == "h":
+            lines += [("B", _pdf_text(b[1])), ("R", "")]
+        elif kind == "p":
+            lines += [("R", l) for l in textwrap.wrap(_pdf_text(b[1]), CHARS)] + [("R", "")]
+        elif kind == "c":
+            lines += [("B", _pdf_text("%d. %s" % (b[1], b[2])))]
+            lines += [("R", l) for l in textwrap.wrap(_pdf_text(b[3]), CHARS)] + [("R", "")]
+        elif kind == "kv":
+            lines += [("R", l) for l in textwrap.wrap(_pdf_text("%s: %s" % (b[1], b[2])), CHARS, subsequent_indent="    ")]
+        elif kind == "sig":
+            lines.append(("R", ""))
+            for label in b[1]:
+                lines += [("R", "_" * 34), ("R", _pdf_text(label)), ("R", "")]
+    return lines
+
+
+def _escape_pdf(s):
+    return s.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
+
+
+def render_pdf(slug):
+    """The sample as PDF bytes — PDF 1.4, two standard fonts, deterministic (no dates, no ids)."""
+    title, blocks = SAMPLES[slug]
+    lines = _lines(blocks, title)
+    per_page = int((PAGE_H - 2 * MARGIN - 2 * LEADING) // LEADING)
+    pages = [lines[i:i + per_page] for i in range(0, len(lines), per_page)] or [[]]
+    objs = []  # list of bytes; object n = index + 1
+
+    def add(body):
+        objs.append(body)
+        return len(objs)
+
+    font_r = add(b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>")
+    font_b = add(b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>")
+    pages_id = len(objs) + 1 + 2 * len(pages)   # the Pages object comes after all page+content pairs
+    page_ids = []
+    for n, page in enumerate(pages, 1):
+        parts = ["BT", "/F1 %s Tf" % SIZE, "%d %d Td" % (MARGIN, PAGE_H - MARGIN), "%s TL" % LEADING]
+        for font, text in page:
+            parts.append("/%s %s Tf" % ("F2" if font == "B" else "F1", SIZE))
+            parts.append("(%s) Tj T*" % _escape_pdf(text))
+        parts.append("ET")
+        foot = "%s  -  page %d of %d" % (_pdf_text(FOOTER), n, len(pages))
+        parts += ["BT", "/F1 8 Tf", "%d %d Td" % (MARGIN, MARGIN - 20), "(%s) Tj" % _escape_pdf(foot), "ET"]
+        stream = zlib.compress("\n".join(parts).encode("cp1252", "replace"))
+        content = add(b"<< /Length %d /Filter /FlateDecode >>\nstream\n" % len(stream) + stream + b"\nendstream")
+        page_id = add(("<< /Type /Page /Parent %d 0 R /MediaBox [0 0 %d %d] /Resources << /Font << /F1 %d 0 R /F2 %d 0 R >> >> "
+                       "/Contents %d 0 R >>" % (pages_id, PAGE_W, PAGE_H, font_r, font_b, content)).encode())
+        page_ids.append(page_id)
+    real_pages = add(("<< /Type /Pages /Kids [%s] /Count %d >>" % (" ".join("%d 0 R" % p for p in page_ids), len(page_ids))).encode())
+    assert real_pages == pages_id
+    catalog = add(b"<< /Type /Catalog /Pages %d 0 R >>" % pages_id)
+    info = add(("<< /Title (%s) /Author (DocOga) /Subject (Free sample - docoga.com.ng) >>" % _escape_pdf(_pdf_text(title))).encode("cp1252", "replace"))
+
+    out = bytearray(b"%PDF-1.4\n%\xe2\xe3\xcf\xd3\n")
+    offsets = []
+    for i, body in enumerate(objs, 1):
+        offsets.append(len(out))
+        out += b"%d 0 obj\n" % i + body + b"\nendobj\n"
+    xref = len(out)
+    out += b"xref\n0 %d\n0000000000 65535 f \n" % (len(objs) + 1)
+    for off in offsets:
+        out += b"%010d 00000 n \n" % off
+    out += b"trailer\n<< /Size %d /Root %d 0 R /Info %d 0 R >>\nstartxref\n%d\n%%%%EOF\n" % (len(objs) + 1, catalog, info, xref)
+    return bytes(out)
+
+
+def pdf_url(slug):
+    return "%s/samples/%s.pdf" % (DOMAIN, slug)
+
+
+def write_all(out_dir=None):
+    out_dir = Path(out_dir or OUT)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    written = []
+    for slug in SAMPLES:
+        data = render_pdf(slug)
+        path = out_dir / ("%s.pdf" % slug)
+        if not path.is_file() or path.read_bytes() != data:
+            path.write_bytes(data)
+            written.append(path.name)
+    return written
+
+
+def check(out_dir=None):
+    out_dir = Path(out_dir or OUT)
+    stale = [slug for slug in SAMPLES if not (out_dir / ("%s.pdf" % slug)).is_file()
+             or (out_dir / ("%s.pdf" % slug)).read_bytes() != render_pdf(slug)]
+    return stale
+
+
+def main(argv=None):
+    argv = list(sys.argv[1:] if argv is None else argv)
+    if "--check" in argv:
+        stale = check()
+        print("sample_docs: %s" % ("current" if not stale else "STALE " + ", ".join(stale)))
+        return 1 if stale else 0
+    written = write_all()
+    print("sample_docs: wrote %d PDF(s)%s" % (len(written), (" — " + ", ".join(written)) if written else " (all current)"))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

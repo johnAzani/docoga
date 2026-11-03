@@ -64,6 +64,41 @@ platforms; nothing the owner must do on a schedule.
 
 ## 5. Growth ledger (newest first — the scorecard reads the top date)
 
+- **2026-11-03** — **Second dive (same day, owner: "research very very in-depth … what next"): the
+  shape of the page that wins the transactional query.** Read Google's own guidance for AI
+  features in Search (May 2025, as reported Aug–Sep 2026): AI Overviews draw from the ordinary
+  index — no AI index, no `llms.txt`, no special markup; what gets lifted is a self-contained
+  passage that answers first, under real headings, with lists or tables, on a page that is
+  indexable and matches its structured data; E-E-A-T (named sources, visible freshness) is the
+  nearest thing to a stated factor. Citation studies agree: most lifted passages come from the top
+  third of a page; pages with tables or lists are cited several times more often than prose.
+  **PDF vs HTML (ighenatt.es Jul 2026, aamax.co Aug 2026, bangaree.com Oct 2026):** Google indexes
+  PDFs, but HTML is the destination for anything with a conversion path; where both exist, pick one
+  — a PDF that ranks instead of the page is a dead end with no generator on it. So: the sample
+  lives *on the page*, the PDF is a download, and `site/_headers` marks `/samples/*` noindex.
+  **Who ranks for the sample queries:** receipts — Wonder.Legal ("FREE basic template, Word and
+  PDF"), two Scribd uploads (7K and 4K views: an Abia landlord's receipt, a Lagos consultant's
+  form), Genie AI's generic "Nigeria-compliant" list, a 2022 Word-template blog; quit notice —
+  infoguidenigeria (2016, a sample that insults the tenant), nigerianlawguru (a solicitor's PDF),
+  levi.ng (court heading + ₦90 fee), Wonder.Legal's form, woodwill.i.ng (2020). None cites a
+  section beyond "s.13"; none is state-aware; none offers the generator next to the sample.
+  **Shipped (this PR):** `tools/sample_docs.py` — one source renders the HTML sample and a
+  dependency-free text PDF (₦0, no Pillow, deterministic); new page
+  `tenancy-agreement-sample-nigeria` (full 13-clause sample above the fold, clause notes, s.4 cap,
+  notice table, FAQ, free PDF, generator one tap away); download blocks on
+  `rent-receipt-format-nigeria` (shared sample, s.5(2) fields) and `notice-to-quit-nigeria`;
+  internal links from the pages that already rank and the home guides block; sitemap + OG card;
+  `tools/tests/test_sample_docs.py` pins that the sample wording is the generator's wording.
+  **Measure:** money-page share 15% → 25% by 1 Dec; the sample page's first impressions for
+  "tenancy agreement sample" within 3 weeks (Search Console pull). **TEST NEXT:** a
+  state-by-state sample variant only if the national page earns impressions (no thin
+  duplicates — Google's guidance is explicit). **REJECT:** indexable PDFs; sample pages with
+  invented names. Sources: stackmatix.com (20 Aug 2026) and agentixly.com (23 Sep 2026) on the
+  Search Central guidance; proxiumdigital.com (12 Aug 2026); searchengineinfo.org (24 Jul 2026);
+  ighenatt.es (31 Jul 2026); aamax.co (25 Aug 2026); bangaree.com (16 Oct 2026); wonder.legal/ng
+  rent-receipt-ng and notice-quit; scribd.com 689119774 and 513920349; genieai.co en-ng;
+  newslodge.com.ng (16 Feb 2022); infoguidenigeria.com (7 Nov 2016); nigerianlawguru.com PDF
+  (Jun 2024); levi.ng (28 Jun 2023); woodwill.i.ng (14 Feb 2020).
 - **2026-11-03** — **First dive: where does the next naira come from?** Read the 28-day Search
   Console pull (2–30 Oct: 20 clicks / 659 impressions / CTR 3.0%; 19 of 20 clicks from Nigeria).
   **Finding 1 — the footprint is one cluster.** All 27 distinct queries we rank for are the
