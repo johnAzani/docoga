@@ -118,6 +118,26 @@ platforms; nothing the owner must do on a schedule.
   5 Aug 2026, yositeup.com 30 May 2026, launchcodex.com 6 Aug 2026, swotdigital.com 19 May 2026,
   withsurface.com 10 Jun 2026, marwickmarketing.co.uk 22 May 2026, indexnowtool.com 27 Apr 2026,
   7insider.com 6 Aug 2026, rankcart.io 22 Jul 2026.
+  **Follow-through (same afternoon, fourth pass — entity and hierarchy).** Read Google's site-name
+  and Organization rules as reported Jul–Oct 2026 (patrickstox.com 18 Jul, hirebalzac.ai 7 Oct,
+  dev.to 16 Oct, palai.media 14 Oct, clickforest.com 28 Oct, nadiamohamed.me 2 Oct): the bolded
+  site name over a home-page result comes from one `WebSite` block on the home page (`name` +
+  `url`, `alternateName` list ending with the lowercase domain, consistent with `og:site_name` and
+  the `<title>`); the owner entity is one `Organization` block on the home page with `logo` ≥112×112
+  crawlable and `sameAs` to the real profiles; the sitelinks search box has been gone since 29 Nov
+  2024 so no `potentialAction`; breadcrumbs show (desktop only since 22 Jan 2025) only for a trail
+  the page actually carries, and the standing rule is that markup describes what the reader sees.
+  Favicon: square, ≥8 px, >48 px recommended — ours is a 64 px PNG linked from the home page, fine.
+  Shipped: `WebSite` + `Organization` + `og:site_name` on the home page — the five `sameAs` are the
+  profiles the machine itself has posted to (Instagram handle and Facebook Page id as returned by
+  the Graph API in `logs/scorecard.json`, the Threads permalink in `logs/threads_sent.json`, the
+  YouTube channel the video pages publish, the Telegram channel), nothing from memory; a **visible
+  breadcrumb trail** above the title of all 70 generated pages (Home › Notice to quit in Nigeria ›
+  Edo) whose names and URLs are byte-equal to the `BreadcrumbList`; the Article publisher logo
+  moved to the 180×180 square icon. Side effect worth having: 60 more internal links from state
+  pages up to the four national guides. REJECT: `@id` fragments on the home page (the SPA lint
+  reads `#org` as a route) — the publisher is inlined instead; any `sameAs` to LinkedIn, TikTok or
+  X, which the machine cannot vouch for.
 
 - **2026-11-03** — **Second dive (same day, owner: "research very very in-depth … what next"): the
   shape of the page that wins the transactional query.** Read Google's own guidance for AI

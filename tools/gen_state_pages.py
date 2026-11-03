@@ -207,6 +207,7 @@ h1{{font-size:26px;line-height:1.25;margin:10px 0 14px}}
 .lead{{font-size:16px;color:#37455E}}
 .updated{{font-size:13px;color:#6B7A90;margin:-4px 0 12px}}
 .updated a{{color:#6B7A90}}
+{crumbs_css}
 .box{{background:#fff;border:1px solid #DCE4F0;border-radius:14px;padding:18px 20px;margin:20px 0}}
 h2{{font-size:19px;margin-bottom:10px}}
 table{{width:100%;border-collapse:collapse;font-size:14.5px;margin:8px 0}}
@@ -234,6 +235,7 @@ footer{{margin-top:34px;border-top:1px solid #DCE4F0;padding-top:16px;font-size:
 <body>
 <div class="wrap">
 <a class="brand" href="https://docoga.com.ng/">DocOga</a>
+{crumbs}
 <h1>{title}</h1>
 {updated_line}
 <p class="lead">{lead}</p>
@@ -725,8 +727,9 @@ def page_jsonld(slug, tslug, d):
     nat = NATIONAL_GUIDE.get(tslug)
     if nat and os.path.isfile('site/' + nat[0]):
         crumbs.append((nat[1], 'https://docoga.com.ng/' + nat[0][:-5]))
-    crumbs.append((d['title'].replace('&amp;', '&'), url))
-    return freshness.jsonld(art, freshness.breadcrumbs(crumbs))
+    # the leaf is the state when the trail already names the tool (Home › Notice to quit in Nigeria › Edo)
+    crumbs.append((d['name'] if len(crumbs) > 1 else '%s — %s' % (d.get('label') or d['tool'], d['name']), url))
+    return freshness.jsonld(art, freshness.breadcrumbs(crumbs)), freshness.breadcrumb_nav(crumbs)
 
 
 def main():
@@ -756,7 +759,8 @@ def main():
             d['sample_block'] = sample_block(tslug)
             d['sources_block'] = sources_block(slug)
             d['updated_line'] = freshness.updated_line(LAW_REVIEWED.get(slug))
-            d['jsonld'] = page_jsonld(slug, tslug, d)
+            d['crumbs_css'] = freshness.CRUMBS_CSS
+            d['jsonld'], d['crumbs'] = page_jsonld(slug, tslug, d)
             d['same_state_links'] = '\n'.join(f'<a href="https://docoga.com.ng/{ts2}-{slug}.html">{t2.get("label", t2["tool"])} \u2014 {st["name"]}</a>' for ts2, t2 in TOOLS.items() if ts2 != tslug)
             d['other_states_links'] = '\n'.join(f'<a href="https://docoga.com.ng/{tslug}-{s2}.html">{st2["name"]}</a>' for s2, st2 in STATES.items() if s2 != slug)
             html = TPL.format(**d)

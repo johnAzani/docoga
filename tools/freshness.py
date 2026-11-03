@@ -103,7 +103,7 @@ def article(*, url: str, headline: str, description: str, image: str, citations=
         "isAccessibleForFree": True,
         "author": org,
         "publisher": {"@type": "Organization", "name": "DocOga", "url": HOST + "/",
-                      "logo": {"@type": "ImageObject", "url": HOST + "/logo-mark.png"}},
+                      "logo": {"@type": "ImageObject", "url": HOST + "/apple-touch-icon.png"}},
         "dateModified": ISO,
     }
     if date_published:
@@ -129,6 +129,24 @@ def breadcrumbs(items) -> dict:
             for i, (name, url) in enumerate(items)
         ],
     }
+
+
+def breadcrumb_nav(items) -> str:
+    """The visible trail the BreadcrumbList describes — same names, same URLs, current page unlinked.
+    Google shows breadcrumbs from markup only when the page actually carries them (desktop results
+    since Jan 2025), and its general rule is that markup must describe what the reader can see."""
+    parts = []
+    for i, (name, url) in enumerate(items):
+        last = i == len(items) - 1
+        parts.append('<span aria-current="page">%s</span>' % _esc(name) if last else '<a href="%s">%s</a>' % (url, _esc(name)))
+    return '<nav class="crumbs" aria-label="Breadcrumb">%s</nav>' % " › ".join(parts)
+
+
+def _esc(text: str) -> str:
+    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+CRUMBS_CSS = ".crumbs{font-size:13px;color:#6B7A90;margin:0 0 10px}.crumbs a{color:#6B7A90}.crumbs span{color:#37455E}"
 
 
 def jsonld(*blocks) -> str:
