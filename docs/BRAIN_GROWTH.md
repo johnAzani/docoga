@@ -68,7 +68,10 @@ scorecard flags (⚠️) and I act on in the next brief — without being asked.
   now record their state. Expected: first-pass rate up from 50%, `not_on_shelf` lessons down.
   Same day the first research target was read (`docs/STATE_TENANCY_RESEARCH.md`, Rivers): the shelf
   gains the Law's dates, s.5 forms, s.6(1)(a), s.8, s.29 and ss.20–22, and the receipt entry becomes
-  a reasoned negative — Rivers shelf 20 → 25 facts.
+  a reasoned negative — Rivers shelf 20 → 25 facts. The loop closes itself: a target whose shelf entry
+  carries a dated read ("Read so far (3 Nov 2026)") is *settled* (`brain.shelf_gaps` kind
+  `settled`, `read` date) — recalled as a verified negative, listed on the scorecard as "settled by
+  research", never re-queued; undated placeholders stay targets.
 - **2026-11-02** — The field: the Brain plans knowing what competitors published this week
   (`tools/competitor_watch.py`, verified map `brain/competitors.json`, public feeds at ₦0, THE
   FIELD block in every pack prompt, "Competitor watch" on the Monday scorecard). Owner's dominance

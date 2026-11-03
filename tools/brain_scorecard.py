@@ -1209,8 +1209,10 @@ def iq_lines(iq):
         lines.append("- lessons it is carrying into every prompt: " + ", ".join("%s ×%d" % (l["family"], l["count"]) for l in iq["lessons"]))
     if iq.get("shelf_gaps") is not None:
         research = [g for g in iq["shelf_gaps"] if g.get("kind") == "research"]
-        lines.append("- shelf gaps (60 days): %d pair(s) blocked; research targets: %s"
-                     % (len(iq["shelf_gaps"]), ", ".join("%s:%s ×%d" % (g["state"], g["topic"], g["count"]) for g in research[:4]) or "none — every blocked pair is already on the shelf"))
+        settled = [g for g in iq["shelf_gaps"] if g.get("kind") == "settled"]
+        lines.append("- shelf gaps (60 days): %d pair(s) blocked; research targets: %s%s"
+                     % (len(iq["shelf_gaps"]), ", ".join("%s:%s ×%d" % (g["state"], g["topic"], g["count"]) for g in research[:4]) or "none — every blocked pair is already on the shelf",
+                        "; settled by research: " + ", ".join("%s:%s (read %s)" % (g["state"], g["topic"], g.get("read", "")) for g in settled[:4]) if settled else ""))
     else:
         lines.append("- lessons it is carrying into every prompt: none — no refusals in 30 days")
     if iq.get("last_improvement"):

@@ -105,7 +105,8 @@ class Gaps(unittest.TestCase):
                         "verifier: legal statement not on the shelf — 'In Lagos the receipt must state the amount of rent paid.'",
                         "verifier: legal statement not on the shelf — 'In Lagos the receipt must name the premises.'"]},
                     {"date": "2026-10-30", "at": "2026-10-30T01:00:00+01:00", "problems": [
-                        "verifier: legal statement not on the shelf — 'In Rivers a receipt signed by the agent is required by law.'"]},
+                        "verifier: legal statement not on the shelf — 'In Rivers a receipt signed by the agent is required by law.'",
+                        "verifier: legal statement not on the shelf — 'In Rivers the caution deposit is capped by law.'"]},
                     {"date": "2026-10-29", "at": "2026-10-29T01:00:00+01:00", "problems": [
                         "verifier: legal statement not on the shelf — 'Possession is protected from the very first day.'",
                         "a body line is 140 characters; max 110"]},
@@ -120,12 +121,15 @@ class Gaps(unittest.TestCase):
         self.assertEqual(by[("lagos", "receipts")]["count"], 3, "two from the pack log plus one from the Deep-Dive ledger; January is outside the window")
         self.assertEqual(by[("lagos", "receipts")]["kind"], "recall")
         self.assertGreaterEqual(by[("lagos", "receipts")]["shelf_facts"], 5)
-        self.assertEqual(by[("rivers", "receipts")]["kind"], "research", "Rivers holds only a 'not verified' placeholder")
+        self.assertEqual(by[("rivers", "receipts")]["kind"], "settled", "read 3 Nov 2026: a dated verified negative is an answer, not a target")
+        self.assertEqual(by[("rivers", "receipts")]["read"], "3 Nov 2026")
+        self.assertEqual(by[("rivers", "caution_fee")]["kind"], "research", "an undated 'not verified' placeholder is still a target")
         protections = [g for g in gaps if g["topic"] == "protections"][0]
         self.assertIn(protections["kind"], ("recall", "research"), "a row with no state falls back to that date's rotation state")
         self.assertNotEqual(protections["state"], "unknown")
         lines = brain.shelf_gap_lines(gaps)
-        self.assertTrue(any("RESEARCH TARGET" in l and "rivers:receipts" in l for l in lines))
+        self.assertTrue(any("RESEARCH TARGET" in l and "rivers:caution_fee" in l for l in lines))
+        self.assertTrue(any("recall the negative, not research" in l and "rivers:receipts" in l and "3 Nov 2026" in l for l in lines))
         self.assertTrue(any("recall, not research" in l and "lagos:receipts" in l for l in lines))
         self.assertEqual(brain.shelf_gap_lines([]), ["- no refused legal sentences in the window — the shelf covered everything asked of it"])
 
@@ -145,15 +149,17 @@ class Gaps(unittest.TestCase):
                                         {"date": "2026-10-25", "recalled": 4}]), encoding="utf-8")
             refused = Path(tmp) / "refused.json"
             refused.write_text(json.dumps([{"date": "2026-11-01", "at": "2026-11-01T01:00:00+01:00", "problems": [
-                "verifier: legal statement not on the shelf — 'In Rivers a receipt signed by the agent is required by law.'"]}]), encoding="utf-8")
+                "verifier: legal statement not on the shelf — 'In Rivers a receipt signed by the agent is required by law.'",
+                "verifier: legal statement not on the shelf — 'In Rivers the caution deposit is capped by law.'"]}]), encoding="utf-8")
             iq = sc.brain_iq(now=datetime(2026, 11, 3, tzinfo=timezone.utc), said_path=said, refused_path=refused,
                              deepdive_path=Path(tmp) / "none.json", answers_dir=Path(tmp) / "none")
         self.assertEqual(iq["shelf_recalls"], {"this_week": 3, "last_week": 4})
         self.assertNotIn("shelf_recalls", iq["this_week"], "the Brain Growth lock pins the week dicts; the new measure sits beside them")
-        self.assertEqual([(g["state"], g["topic"], g["kind"]) for g in iq["shelf_gaps"]], [("rivers", "receipts", "research")])
+        self.assertEqual(sorted((g["state"], g["topic"], g["kind"]) for g in iq["shelf_gaps"]),
+                         [("rivers", "caution_fee", "research"), ("rivers", "receipts", "settled")])
         lines = sc.iq_lines(iq)
         self.assertTrue(any(l.startswith("- shelf recall: 3 legal sentence(s)") and "(last week 4)" in l for l in lines))
-        self.assertTrue(any("research targets: rivers:receipts ×1" in l for l in lines))
+        self.assertTrue(any("research targets: rivers:caution_fee ×1; settled by research: rivers:receipts (read 3 Nov 2026)" in l for l in lines))
 
 
 if __name__ == "__main__":

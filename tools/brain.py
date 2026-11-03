@@ -373,10 +373,17 @@ def _gap_state(text, states):
     return None
 
 
+# A "not verified" entry that has actually been researched says so with a date — "Read so far (3 Nov
+# 2026): …" — and is then a verified negative the Brain may recall ("no such rule in this state"),
+# not a research target. An undated placeholder is still a target.
+READ_MARK = re.compile(r"\bread so far \((\d{1,2} \w+ \d{4})\)", re.I)
+
+
 def shelf_gaps(now=None, days=60, refused_path=None, deepdive_path=None, top=8):
     """[{state, topic, count, shelf_facts, kind, example}] — refused "not on the shelf" sentences of
     the last `days`, grouped by (state, topic); kind is 'recall' when the shelf already has facts for
-    the pair, 'research' when it has none (or only a 'not verified' placeholder). Never raises."""
+    the pair, 'settled' when it holds only a dated verified negative (`read` = that date), 'research'
+    when it has none (or only an undated 'not verified' placeholder). Never raises."""
     now = now or datetime.now(LAGOS)
     since = (now - timedelta(days=days)).date().isoformat()
     try:
@@ -423,7 +430,15 @@ def shelf_gaps(now=None, days=60, refused_path=None, deepdive_path=None, top=8):
         real = [f for f in facts if "not verified" not in str(f.get("text", "")).lower()
                 and "not verified" not in str(f.get("cite", "")).lower() and "no statutory" not in str(f.get("text", "")).lower()]
         g["shelf_facts"] = len(facts)
-        g["kind"] = "unclear" if (g["state"] == "unknown" or g["topic"] == "other") else ("recall" if real else "research")
+        read = [m for f in facts for m in [READ_MARK.search(str(f.get("text", "")))] if m]
+        if g["state"] == "unknown" or g["topic"] == "other":
+            g["kind"] = "unclear"
+        elif real:
+            g["kind"] = "recall"
+        elif read:
+            g["kind"], g["read"] = "settled", read[0].group(1)   # a dated verified negative: the answer is "no such rule"
+        else:
+            g["kind"] = "research"
         out.append(g)
     out.sort(key=lambda g: (-g["count"], g["state"], g["topic"]))
     return out[:top]
@@ -440,6 +455,9 @@ def shelf_gap_lines(gaps):
         elif g["kind"] == "unclear":
             lines.append("- %s:%s — %d refused sentence(s) the sorter could not place (e.g. “%s”)"
                          % (g["state"], g["topic"], g["count"], g["example"][:70]))
+        elif g["kind"] == "settled":
+            lines.append("- %s:%s — %d refused sentence(s); read %s: no such rule verified → recall the negative, not research (e.g. “%s”)"
+                         % (g["state"], g["topic"], g["count"], g.get("read", ""), g["example"][:70]))
         else:
             lines.append("- %s:%s — %d refused sentence(s); shelf has no verified fact → RESEARCH TARGET (e.g. “%s”)"
                          % (g["state"], g["topic"], g["count"], g["example"][:70]))
