@@ -37,7 +37,11 @@ CITE_IN_TEXT = re.compile(r"^\s*(s\.\s*[0-9][0-9A-Za-z().,–\- ]{0,40}?)\s*[—
 # Topics that are notes about the file itself, not law a post may lean on.
 SKIP_KEYS = {"slug", "name", "place", "full", "tier", "tier_note", "sources", "open_questions",
              "statutes", "source", "citation", "signed_by", "commenced", "how_to_read",
-             "schedules_omitted", "stale_warning", "status", "_comment"}
+             "schedules_omitted", "stale_warning", "status", "_comment",
+             # 3 Nov 2026: a pending bill's `watch` block (news queries, the date a human last verified the
+             # stage, source URLs) is the law-watch lane's handle, not a fact a post may lean on; the bill's
+             # `title` is a label the page prints, not a claim.
+             "watch", "title"}
 MAX_TEXT = 420
 
 

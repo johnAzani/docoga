@@ -182,6 +182,52 @@ LAGOS = dict(
         ),
     ),
 
+    # 3 Nov 2026: the Lagos bill the shelf has called "a bill" since October, now with its stage and date
+    # (Nigeria Info 11 Jul 2025; Premium Times 30 Nov 2025; Vanguard 1 Dec 2025; Legal500 26 Aug 2026 still "a bill").
+    pending_bill=dict(
+        cite="Tenancy and Recovery of Premises Bill 2025 — a bill, not law",
+        title="Lagos State Tenancy and Recovery of Premises Bill, 2025",
+        text=(
+            "<b>A bill, not law, as at 3 November 2026.</b> The Lagos State Tenancy and Recovery of Premises Bill, "
+            "2025 passed <b>second reading</b> on 10 July 2025 and went to the House Committee on Housing, where it still "
+            "sat in August 2026. The Tenancy Law of 2011 remains the law of Lagos until the Assembly passes the bill "
+            "and the Governor assents."
+        ),
+        stage=(
+            "<b>Where it stands:</b> committee stage after second reading. In May 2025 the Lagos State Government "
+            "publicly disowned a viral post that claimed the tenancy law had already been “updated” — a reminder "
+            "that a screenshot is not a statute."
+        ),
+        would=[
+            "As reported: a new yearly tenant could not be asked for more than one year’s rent in advance and a "
+            "monthly tenant for more than three months — the s.4 limits of the 2011 Law restated and extended to "
+            "commercial premises and to Apapa, Ikeja GRA, Ikoyi and Victoria Island, which the 2011 Law excludes.",
+            "As reported: self-help eviction (locking out, removing doors or roofs, cutting power or water) would "
+            "attract a fine of ₦1 million or six months’ imprisonment.",
+            "As reported (clause 3): every agent must register with LASRERA and may charge no more than 5% of the annual "
+            "rent, must remit the landlord’s money within seven working days and issue receipts — up to ₦1 million or "
+            "two years for breach. Today the 5% figure is LASRERA’s rule for registered practitioners, not a section "
+            "of the Tenancy Law.",
+            "As reported (clause 33): the s.37 right to ask the court to call an increase unreasonable survives, with "
+            "no eviction while the application is pending; the bill still sets no rent ceiling.",
+        ],
+        caution=(
+            "<b>What that means today:</b> cite the Tenancy Law 2011 by section, not the bill. A landlord or agent "
+            "who says “the new Lagos tenancy law” is describing a bill. DocOga’s law watch reads the news for this "
+            "bill every week."
+        ),
+        watch=dict(
+            verified="2026-11-03",
+            stage="second reading 10 July 2025; with the House Committee on Housing as at August 2026",
+            queries=["Lagos Tenancy and Recovery of Premises Bill", "Lagos tenancy bill House of Assembly passed"],
+            sources=[
+                "https://www.premiumtimesng.com/news/top-news/839588-what-new-lagos-tenancy-bill-means-for-landlords-tenants-and-agents-and-why-it-matters.html",
+                "https://www.vanguardngr.com/2025/12/new-lagos-tenancy-bill-what-landlords-tenants-and-agents-should-know/",
+                "https://www.nigeriainfo.fm/news/homepage/lagos-tenancy-bill-passes-second-reading-in-house-of-assembly/",
+            ],
+        ),
+    ),
+
     increase_challenge=dict(
         cite="s.37",
         text=(
@@ -342,6 +388,54 @@ ABUJA = dict(
             "attaches no penalty to demanding more than a year. Unlike a Lagos tenant, an Abuja "
             "tenant asked for two or three years’ rent up front has no statutory cap to point to. "
             "Whatever is agreed should be recorded in the tenancy agreement before money moves."
+        ),
+    ),
+
+    # 3 Nov 2026: a federal bill for the FCT, read in five reports (Premium Times 26 Oct, Daily Trust 27 Oct,
+    # Prestige/HousingTV/Ghanamma 1 Nov 2026). It is a bill. The `watch` block is what tools/law_watch.py
+    # reads the news for every week; `verified` moves only when a human re-reads the sources.
+    pending_bill=dict(
+        cite="HB.2839 — a bill, not law",
+        title="Federal Capital Territory Advance Rent Regulation and Tenants’ Protection Bill, 2026 (HB.2839)",
+        text=(
+            "<b>A bill, not law, as at 3 November 2026.</b> The Federal Capital Territory Advance Rent Regulation "
+            "and Tenants’ Protection Bill, 2026 (HB.2839) passed <b>first reading</b> in the House of Representatives "
+            "on 22 October 2026, sponsored by Paul Nnamchi (Enugu) with Ahmed Doro (Katsina). Nothing in it can be "
+            "enforced against an Abuja landlord or agent today."
+        ),
+        stage=(
+            "<b>Where it stands:</b> first reading only. It still needs a second reading, committee stage and public "
+            "hearing, third reading, Senate concurrence and presidential assent, and it commences only on a date the "
+            "President names in the Federal Gazette. The 2022 Senate attempt (three months’ advance, then monthly) "
+            "died with the Ninth Assembly in May 2023."
+        ),
+        would=[
+            "Clause 4(1) as reported: no landlord, estate agent or property manager may demand, receive or compel "
+            "more than <b>twelve months’ rent in advance</b> as a condition of granting, renewing or continuing a "
+            "tenancy — residential or commercial, satellite towns included.",
+            "A tenant could still offer more than a year voluntarily if the tenant initiates it, is not coerced and "
+            "it is in writing; compulsory service charges, side agreements and artificial renewals used to get "
+            "round the limit would be caught.",
+            "Penalties as reported: individuals ₦500,000–₦5 million, corporate bodies ₦5 million–₦20 million; "
+            "clause 7 would let a tenant apply to a new FCT Rent Regulation and Tenants’ Protection Authority for "
+            "a refund order within thirty days, with an appeal to the FCT High Court.",
+            "Not in the bill: no rent ceiling and no limit on rent increases. A full year’s rent in advance would "
+            "remain lawful if it passed.",
+        ],
+        caution=(
+            "<b>What that means today:</b> an Abuja landlord asking for two years’ rent on 3 November 2026 is not "
+            "breaking any law, and no authority exists to order a refund. A notice that says “the new FCT rent law” "
+            "is describing a bill. DocOga’s law watch reads the news for this bill every week."
+        ),
+        watch=dict(
+            verified="2026-11-03",
+            stage="first reading, House of Representatives, 22 October 2026",
+            queries=["HB.2839 advance rent bill FCT", "Abuja advance rent bill House of Representatives tenants protection"],
+            sources=[
+                "https://www.premiumtimesng.com/news/top-news/920324-nass-roundup-ebola-corps-members-death-abuja-rent-other-stories-from-the-house-of-reps.html",
+                "https://dailytrust.com/bill-to-regulate-rent-payment-in-fct-raises-hope/",
+                "https://prestigerealestatenews.com/2026/11/01/new-bill-regulate-house-rent-abuja-ban-12-months-advance/",
+            ],
         ),
     ),
 
@@ -1502,6 +1596,37 @@ ANAMBRA = dict(
         ),
     ),
 
+    # 3 Nov 2026: the "proposed Rent and Tenancy Law" the shelf mentions, given its dates (Vanguard 26 Mar 2026;
+    # Pulse 21–23 Jun 2026). Nothing has passed; nothing is attributed.
+    pending_bill=dict(
+        cite="Rent and Tenancy Law (proposed) — not law",
+        title="Anambra State Rent and Tenancy Law (proposed, 2026)",
+        text=(
+            "<b>Not law as at 3 November 2026.</b> After student protests over rents, the Anambra State House of "
+            "Assembly said on 26 March 2026 that it had begun the legislative process for a rent and tenancy law, "
+            "and on 21 June 2026 Governor Chukwuma Soludo said “laws on rents and tenancy will soon be out”, aimed at "
+            "agents who collect fees beyond the permitted 10% commission. No bill text has been published that we have read."
+        ),
+        stage=(
+            "<b>Where it stands:</b> announced by the Assembly (26 March 2026) and the Governor (21 June 2026); no reading, "
+            "no passage and no assent that any source we trust has reported."
+        ),
+        caution=(
+            "<b>What that means today:</b> the Landlord and Tenant Law, Cap. 76 and the rules on this page are the "
+            "law of Anambra. An agent who says “Soludo has banned agency fees” is describing an intention, not a "
+            "statute. DocOga’s law watch reads the news for this law every week."
+        ),
+        watch=dict(
+            verified="2026-11-03",
+            stage="announced by the Assembly 26 March 2026 and the Governor 21 June 2026; no reading reported",
+            queries=["Anambra rent and tenancy law Soludo", "Anambra House of Assembly tenancy bill passed"],
+            sources=[
+                "https://www.vanguardngr.com/2026/03/anambra-assembly-to-enact-law-on-house-rents/",
+                "https://www.thegeniusmedia.com.ng/2026/06/21/breaking-governor-soludo-declares-war-on-house-agents-over-extortion-of-tenants-in-anambra/",
+            ],
+        ),
+    ),
+
     increase_challenge=dict(
         cite="not verified",
         text="We have not verified an Anambra equivalent of the Lagos s.37 unreasonable-increase application.",
@@ -1754,6 +1879,38 @@ ENUGU = dict(
         ],
     ),
 
+    # 3 Nov 2026: the one bill the owner asked to be watched. The substance (fee caps, the 2008 cap it would sit
+    # beside, the timeline) is in caution_fee and agency_fee above; this block is the watch handle.
+    pending_bill=dict(
+        cite="Landlord and Tenant (Amendment) Bill — a bill, not law",
+        title="Enugu State Landlord and Tenant (Amendment) Bill (2025 private member bill; executive bill announced 26 October 2026)",
+        text=(
+            "<b>A bill, not law, as at 3 November 2026.</b> Two bills would amend the Landlord and Tenant Law, "
+            "Cap. 101: the 2025 private member bill (first reading 25 February 2025, public hearing 26 March 2025, "
+            "then with the Attorney-General) and the executive bill the Speaker announced on 26 October 2026, which "
+            "Governor Peter Mbah pledged to see passed within four weeks. Neither had passed on 3 November 2026."
+        ),
+        stage=(
+            "<b>Where it stands:</b> executive bill announced 26 October 2026 with a four-week pledge — so the "
+            "window to watch is late November 2026. Until the Governor assents and the law is gazetted, the 2008 "
+            "amendment (rent review only after every second anniversary, no more than 15%) is the newest Enugu law."
+        ),
+        caution=(
+            "<b>What that means today:</b> a landlord who says “Enugu has banned caution fees” is ahead of the law; "
+            "one who demands a fee is not yet breaking it. DocOga’s law watch reads the news for this bill every week "
+            "and flags a passage report the day it appears."
+        ),
+        watch=dict(
+            verified="2026-11-03",
+            stage="executive bill announced 26 October 2026; four-week pledge",
+            queries=["Enugu landlord and tenant amendment bill", "Enugu House of Assembly tenancy bill agency fees Mbah"],
+            sources=[
+                "https://advocatengr.com/2026/10/26/mbah-vows-to-sign-bill-curbing-excessive-agency-lawyers-fees-in-enugu/",
+                "https://www.icirnigeria.org/in-enugu-cut-throat-fees-by-agents-lawyers-landlords-deepen-housing-crisis/",
+            ],
+        ),
+    ),
+
     agency_fee=dict(
         cite="no cap in force; 10% proposed",
         text=(
@@ -1981,6 +2138,16 @@ NEEDS_CONFIRMATION = {
     "kaduna": "C — Landlord and Tenant Law 2018, single source.",
 }
 
+
+
+def pending_bills():
+    """Every bill the shelf carries as `pending_bill`, oldest-verified first: [(slug, bill_dict)].
+
+    tools/law_watch.py reads the news for each one every week and the state pages print the block;
+    `watch.verified` is the date a human last re-read the sources — the lane never moves it.
+    """
+    rows = [(slug, s["pending_bill"]) for slug, s in STATE_LAW.items() if s.get("pending_bill")]
+    return sorted(rows, key=lambda r: (r[1].get("watch", {}).get("verified", ""), r[0]))
 
 def stats():
     """Summary used by tools/audit_state_pages.py and by the QA report."""

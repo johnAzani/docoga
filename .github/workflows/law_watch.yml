@@ -1,0 +1,114 @@
+name: Law watch — are the bills on our pages still bills
+
+# Every state page that mentions a pending bill says "a bill, not law, as at <date>". That sentence is
+# true until the Assembly passes it and the Governor (or President) assents — and nobody was reading
+# four states' news to notice. This lane reads it: once a week it asks two free news indexes for each
+# bill in the shelf's `pending_bill.watch` block (tools/state_law_data.py), classifies the headlines
+# (passed / moving / mention), writes logs/law_watch.json and, when a PASSAGE headline is newer than
+# the day a person last verified the stage, files ONE issue labelled `law-watch`.
+#
+# It never edits a page, a shelf text or a `verified` date. A passage headline is a signal to a
+# person who then reads the law and rewrites the block from its text (docs/STATE_TENANCY_RESEARCH.md,
+# Rule Zero). ₦0: stdlib only, public RSS, no key, no login. See tools/law_watch.py.
+
+on:
+  schedule:
+    # Thursdays 10:15 UTC = 11:15 am Lagos — between the 09:30 am Facebook post and the 11:40 am reply
+    # sweep, never on a posting minute; and before Monday's 06:40 am scorecard, which prints the result.
+    - cron: '15 10 * * 4'
+  workflow_dispatch:
+    inputs:
+      days:
+        description: 'How many days of news to read'
+        required: false
+        default: '14'
+        type: string
+      dry_run:
+        description: 'Report only — no ledger commit, no issue'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write    # the ledger logs/law_watch.json
+  issues: write      # one tracked issue per alert set, commented rather than duplicated
+
+concurrency:
+  group: law-watch
+  cancel-in-progress: false
+
+env:
+  TZ: Africa/Lagos
+
+jobs:
+  watch:
+    name: Read the news for the bills
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Pull the headlines
+        id: pull
+        env:
+          DAYS: ${{ inputs.days }}
+        run: |
+          set -o pipefail
+          python3 tools/law_watch.py pull --days "${DAYS:-14}" --summary /tmp/law_watch.md 2>&1 | tee /tmp/law_watch.log
+          ALERTS=$(grep -oE '^LAW_WATCH_ALERTS=[0-9]+' /tmp/law_watch.log | tail -n1 | cut -d= -f2)
+          SIG=$(grep -oE '^LAW_WATCH_SIGNATURE=[0-9a-f]+' /tmp/law_watch.log | tail -n1 | cut -d= -f2)
+          echo "alerts=${ALERTS:-0}" >> "$GITHUB_OUTPUT"
+          echo "signature=${SIG:-none}" >> "$GITHUB_OUTPUT"
+
+      - name: Put the table in the run summary
+        if: always()
+        run: cat /tmp/law_watch.md >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || tail -n 30 /tmp/law_watch.log >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit the ledger
+        if: ${{ inputs.dry_run != true }}
+        continue-on-error: true
+        env:
+          BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git pull --rebase --autostash origin "$BRANCH" || { echo "::warning title=Ledger not committed::could not rebase on $BRANCH"; exit 1; }
+          git add logs/law_watch.json
+          git diff --staged --quiet || { git commit -m "Auto: law watch $(date +%F) [skip ci]" && git push origin "HEAD:$BRANCH"; }
+
+      - name: File or update the alert issue
+        if: ${{ steps.pull.outputs.alerts != '0' && inputs.dry_run != true }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ALERTS: ${{ steps.pull.outputs.alerts }}
+          SIGNATURE: ${{ steps.pull.outputs.signature }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -uo pipefail
+          gh label create law-watch --color d93f0b \
+            --description "a bill on our pages was reported passed — re-verify and rewrite the block" >/dev/null 2>&1 || true
+          {
+            echo "The law watch read a PASSAGE headline for a bill our pages still call a bill ($(date +'%a %-d %b %-I:%M %p') Lagos)."
+            echo
+            echo "Run: $RUN_URL · alert set \`${SIGNATURE}\`"
+            echo
+            grep '^ALERT ' /tmp/law_watch.log | sed 's/^ALERT /- /' || true
+            echo
+            echo "What to do (a person, not the machine): open the headline, find the gazette or the Assembly's own notice, then in \`tools/state_law_data.py\` move that state's \`pending_bill.watch.verified\`, rewrite the block from the text of the law, regenerate the pages and run the tests. Nothing on the site changes until that is done — by design."
+            echo
+            cat /tmp/law_watch.md
+          } > /tmp/issue_body.md
+          NUMBER=$(gh issue list --label law-watch --state open --json number --jq '.[0].number // empty')
+          if [ -n "$NUMBER" ] && gh issue view "$NUMBER" --json body -q .body | grep -q "$SIGNATURE"; then
+            gh issue comment "$NUMBER" --body "Still reported at $(date +'%-I:%M %p') Lagos, same alert set \`${SIGNATURE}\`. Run: $RUN_URL" >/dev/null || true
+          elif [ -n "$NUMBER" ]; then
+            gh issue edit "$NUMBER" --body-file /tmp/issue_body.md >/dev/null || echo "::warning title=Edit failed::could not update #${NUMBER}"
+          else
+            gh issue create --label law-watch \
+              --title "⚖️ Law watch: ${ALERTS} passage headline(s) for a bill our pages still call a bill" \
+              --body-file /tmp/issue_body.md >/dev/null || echo "::warning title=Issue not created::gh issue create failed"
+          fi
+          echo "::warning title=A watched bill was reported passed::${ALERTS} headline(s) — see the issue labelled law-watch. Pages are unchanged until a person re-verifies."

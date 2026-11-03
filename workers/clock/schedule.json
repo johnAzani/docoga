@@ -106,6 +106,12 @@
       "inputs": {}
     },
     {
+      "workflow": "law_watch.yml",
+      "name": "Law watch — are the bills on our pages still bills",
+      "cron": "15 10 * * 4",
+      "inputs": {}
+    },
+    {
       "workflow": "linkedin_autopost.yml",
       "name": "DocOga LinkedIn Auto-Post",
       "cron": "30 7 * * 1,3,5",
