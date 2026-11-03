@@ -40,12 +40,18 @@ import newsdesk  # noqa: E402 — the feed parser is the same one the papers are
 FIELD = Path(os.environ.get("DOCOGA_COMPETITORS") or (ROOT / "brain" / "competitors.json"))
 OUT = Path(os.environ.get("DOCOGA_COMPETITOR_WATCH") or (ROOT / "logs" / "competitor_watch.json"))
 TIMEOUT = 20
-MAX_PER_COMPETITOR = 6
+MAX_PER_COMPETITOR = 4
 MAX_TOTAL = 30
 # Only what touches the business: a competitor's cookie recipe is not the field.
+# 3 Nov 2026, first real pull: "property", "house", "flat" and "bill" let in listing pages, a bill-of-
+# quantities template and a "Rent" menu page — the field is tenancy, so the words are tenancy words.
 TOPIC = re.compile(r"\b(rent|tenan|landlord|lease|quit|evict|agent|agency|caution|deposit|receipt|agreement|"
-                   r"premises|housing|property|propert|apartment|flat|house|lagos|abuja|tenancy|lasrera|bill)\w*",
-                   re.I)
+                   r"premises|housing|apartment|lagos|abuja|tenancy|lasrera)\w*", re.I)
+# A sitemap slug that is a listing id ("propertypro-1qlct") or a menu page ("rent", "list a property")
+# is not something the competition *published*.
+TOKEN = re.compile(r"\b(?=[a-z0-9]*\d)(?=[a-z0-9]*[a-z])[a-z0-9]{4,}\b", re.I)
+MIN_SLUG_WORDS = 4
+ARTICLE_SITEMAP = re.compile(r"(post|blog|news|article|guide|insight|resource|story|stories)", re.I)
 UA = "DocOga-field/1.0 (+https://docoga.com.ng)"
 
 
@@ -83,8 +89,9 @@ def parse_sitemap(source, raw, now, days):
     tag = root.tag.rsplit("}", 1)[-1]
     since = now - timedelta(days=days)
     if tag == "sitemapindex":
-        children = [newsdesk._text(n, "loc") for n in root if n.tag.rsplit("}", 1)[-1] == "sitemap"]
-        return [], [c for c in children if c]
+        children = [c for c in (newsdesk._text(n, "loc") for n in root if n.tag.rsplit("}", 1)[-1] == "sitemap") if c]
+        articles = [c for c in children if ARTICLE_SITEMAP.search(c.rsplit("/", 1)[-1])]
+        return [], (articles or children)
     items = []
     for node in root:
         if node.tag.rsplit("}", 1)[-1] != "url":
@@ -93,8 +100,10 @@ def parse_sitemap(source, raw, now, days):
         when = newsdesk._when(newsdesk._text(node, "lastmod"))
         if not loc or not when or when < since:
             continue
-        items.append({"title": _slug_title(loc), "link": loc, "published": when.isoformat(timespec="seconds"),
-                      "source": source})
+        title = _slug_title(loc)
+        if len(title.split()) < MIN_SLUG_WORDS or TOKEN.search(title):
+            continue
+        items.append({"title": title, "link": loc, "published": when.isoformat(timespec="seconds"), "source": source})
     return items, []
 
 
@@ -111,7 +120,13 @@ def youtube_feed_for(url, http=None):
         return None
     if status != 200:
         return None
-    m = re.search(rb'"channelId":"(UC[A-Za-z0-9_-]{10,})"', raw) or re.search(rb"channel_id=(UC[A-Za-z0-9_-]{10,})", raw)
+    # 3 Nov 2026: the first "channelId" in a watch page belonged to a related video and the feed
+    # 404ed — the page's own channel is the itemprop/externalChannelId one; the bare key comes last.
+    m = (re.search(rb'itemprop="channelId"\s+content="(UC[A-Za-z0-9_-]{10,})"', raw)
+         or re.search(rb'"externalChannelId":"(UC[A-Za-z0-9_-]{10,})"', raw)
+         or re.search(rb'"externalId":"(UC[A-Za-z0-9_-]{10,})"', raw)
+         or re.search(rb'"channelId":"(UC[A-Za-z0-9_-]{10,})"', raw)
+         or re.search(rb"channel_id=(UC[A-Za-z0-9_-]{10,})", raw))
     return ("https://www.youtube.com/feeds/videos.xml?channel_id=" + m.group(1).decode()) if m else None
 
 

@@ -76,6 +76,14 @@ items sit on the same page so the two can be read together.
 
 ## 6. Rules the watch keeps
 
+- **Only what they published.** The first real pull (Tue 3 Nov 2026, 1:30am) brought back 18 items of
+  which 17 were listing pages ("Propertypro 1qlct"), menu pages ("Rent", "List a property") and a
+  bill-of-quantities template — pages a sitemap dates, not things a rival said. Since then a sitemap
+  entry counts only if its slug has four or more words, carries no listing token, and uses a tenancy
+  word (rent, tenant, landlord, lease, quit, eviction, agent, caution, deposit, receipt, agreement,
+  premises, housing, apartment, Lagos, Abuja, LASRERA); a sitemap index is followed into its
+  post/blog/news children only; four items per rival at most.
+
 - ₦0: stdlib only, public feeds, one request per feed, 20 s each, never fatal to the Brain run.
 - Never copy a headline; never name a rival or a rival's price in copy (the prompt says so every run).
 - Never scrape behind a login; never a second model; the owner is never asked to watch a rival by hand.
