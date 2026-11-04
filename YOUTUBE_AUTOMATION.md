@@ -396,9 +396,13 @@ ducked bed and the effects, and a silent file is refused. The full description l
 carries `GEMINI_API_KEY` and `SHORTS_VOICE=required`: **no voice → no Short**. When the
 narrator's free bucket is empty the run *pauses* (exit 6, green, summary row
 `⏸️ Paused — no voice, no Short … Resumes 08:00 WAT`) and
-`.github/workflows/narrator_resume.yml` finishes it minutes after the Pacific-midnight
-reset, for the owed date (`for_date` dispatch input). The same resumer warms the day's
-lines into the shared cache every morning, so the 18:00 run normally needs no fresh quota.
+`.github/workflows/narrator_resume.yml` finishes it — since 4 Nov 2026 **at the evening
+make-up slot, 5:30pm WAT the next day** (public on YouTube at 6:00pm, an hour before that
+day's own Short, so a series stays in order), for the owed date (`for_date` + `publish_at`
+dispatch inputs). The reset run itself only reports the debt: when it dispatched at once,
+the 3 Nov Short went out at 9:16am on 4 Nov and its Reel cost the Page the 9:30am card. The
+same resumer warms the day's lines into the shared cache every morning, so the 18:00 run
+normally needs no fresh quota.
 The summary table carries `Soundtrack` (`voice Orus · 6 lines · bed 14 dB(A) under speech ·
 11 cues`) and `Narrator` (`narrator bucket: 6 of 10 used this Pacific day · resets …`) rows.
 Details: `FACEBOOK_AUTOMATION.md` §9 "The narrator's bucket".

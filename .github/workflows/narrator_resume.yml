@@ -19,15 +19,25 @@ name: Narrator — warm up and resume at the quota reset
 # in winter. `tools/gemini_quota.py just-reset` computes the real reset from the
 # America/Los_Angeles zone and lets exactly one of the two runs proceed; the other
 # stands down in seconds. No hour is hard-coded in the code.
+#
+# 4 Nov 2026 — the Short waits for the evening. The reset run used to dispatch an
+# owed Short at once: the 3 Nov Short (lost to a render fault) went out at 9:16am on
+# 4 Nov as a Reel on the Page fourteen minutes before the 9:30am card, which then
+# stood down as "already posted today". Now the reset run only REPORTS an owed
+# Short; the third cron line (5:30pm WAT, every day) makes it up — rendered then,
+# public on YouTube at 6:00pm, one hour before the day's own Short so a series stays
+# in order, and never in the morning card's hour. A Reel owed (its slot IS the
+# morning) is still resumed at the reset.
 
 on:
   schedule:
     - cron: '12 7 * * *'    # 00:12 Pacific daylight time (= 08:12 WAT)
     - cron: '12 8 * * *'    # 00:12 Pacific standard time (= 09:12 WAT)
+    - cron: '30 16 * * *'   # 5:30pm WAT daily — make up an owed Short at the evening slot
   workflow_dispatch:
     inputs:
       force:
-        description: 'Run even if a Pacific midnight did not just pass (warm the cache now; resume anything owed)'
+        description: 'Run even if a Pacific midnight did not just pass (warm the cache now; resume anything owed — the Short too, at once)'
         required: false
         default: false
         type: boolean
@@ -54,6 +64,10 @@ jobs:
         with:
           python-version: '3.12'
 
+      # Which run is this? `go=yes` = the reset minute (warm the lines, resume a Reel);
+      # `makeup=yes` = the 5:30pm make-up slot (resume a Short, public at 6pm). The clock
+      # worker dispatches both lines as workflow_dispatch, so the minute is read from the
+      # clock, never from `github.event.schedule`.
       - name: Did a Pacific midnight just pass?
         id: reset
         env:
@@ -62,12 +76,21 @@ jobs:
           set +e
           python3 tools/gemini_quota.py just-reset --window 45
           code=$?
+          python3 tools/gemini_quota.py makeup-slot --window 45
+          mcode=$?
           set -e
           if [ "$code" -eq 0 ] || [ "$IN_FORCE" = "true" ]; then
             echo "go=yes" >> "$GITHUB_OUTPUT"
           else
             echo "go=no" >> "$GITHUB_OUTPUT"
-            echo "not the reset minute for this season's clocks — the other cron line is. Standing down."
+          fi
+          if [ "$mcode" -eq 0 ] || [ "$IN_FORCE" = "true" ]; then
+            echo "makeup=yes" >> "$GITHUB_OUTPUT"
+          else
+            echo "makeup=no" >> "$GITHUB_OUTPUT"
+          fi
+          if [ "$code" -ne 0 ] && [ "$mcode" -ne 0 ] && [ "$IN_FORCE" != "true" ]; then
+            echo "neither the reset minute for this season's clocks nor the 5:30pm make-up slot. Standing down."
           fi
 
       - name: Install MotionStudio deps (ffmpeg + Inter) and the renderer's libraries
@@ -112,18 +135,26 @@ jobs:
 
       - name: What is owed? (a slot passed, nothing published since)
         id: owed
-        if: steps.reset.outputs.go == 'yes'
+        if: steps.reset.outputs.go == 'yes' || steps.reset.outputs.makeup == 'yes'
         run: python3 tools/gemini_quota.py owed | tee /tmp/owed.log
 
+      # The reset run only says so; the 5:30pm run (or a forced dispatch) does it.
+      - name: An owed Short waits for the evening slot
+        if: steps.reset.outputs.go == 'yes' && steps.reset.outputs.makeup != 'yes' && steps.owed.outputs.owed_shorts == 'yes'
+        run: |
+          FOR_DATE=$(sed -n 's/^shorts //p' /tmp/owed.log | tail -1)
+          echo "::notice title=Short owed — made up this evening::The Short of $FOR_DATE has no publish. It is rendered at 5:30pm WAT and goes public at 6:00pm, an hour before today's own — not now, in the morning card's hour."
+
       - name: Resume the Short that is owed
-        if: steps.reset.outputs.go == 'yes' && steps.owed.outputs.owed_shorts == 'yes'
+        if: steps.reset.outputs.makeup == 'yes' && steps.owed.outputs.owed_shorts == 'yes'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH: ${{ github.event.repository.default_branch }}
+          PUBLISH_AT: ${{ steps.reset.outputs.publish_at }}
         run: |
           FOR_DATE=$(sed -n 's/^shorts //p' /tmp/owed.log | tail -1)
-          gh workflow run youtube_scheduled.yml --ref "$BRANCH" -f for_date="$FOR_DATE"
-          echo "dispatched youtube_scheduled.yml for the Short of $FOR_DATE"
+          gh workflow run youtube_scheduled.yml --ref "$BRANCH" -f for_date="$FOR_DATE" -f publish_at="${PUBLISH_AT:-18:00}"
+          echo "dispatched youtube_scheduled.yml for the Short of $FOR_DATE — public at ${PUBLISH_AT:-18:00} WAT"
 
       - name: Resume the Reel that is owed
         if: steps.reset.outputs.go == 'yes' && steps.owed.outputs.owed_reel == 'yes'
@@ -139,6 +170,7 @@ jobs:
         if: always()
         env:
           GO: ${{ steps.reset.outputs.go }}
+          MAKEUP: ${{ steps.reset.outputs.makeup }}
           WARM_OK: ${{ steps.warm.outputs.ok }}
           OWED_SHORTS: ${{ steps.owed.outputs.owed_shorts }}
           OWED_REEL: ${{ steps.owed.outputs.owed_reel }}
@@ -146,11 +178,14 @@ jobs:
           {
             echo "## Narrator — $(date -u +%FT%TZ)"
             echo
-            if [ "$GO" != "yes" ]; then
-              echo "- ⏭ not the reset minute for this season's clocks — stood down (the other cron line runs it)"
+            if [ "$GO" != "yes" ] && [ "$MAKEUP" != "yes" ]; then
+              echo "- ⏭ neither the reset minute for this season's clocks nor the 5:30pm make-up slot — stood down"
+            elif [ "$GO" != "yes" ]; then
+              echo "- 🌆 5:30pm make-up slot · owed Short: ${OWED_SHORTS:-no}$([ "$OWED_SHORTS" = "yes" ] && echo ' — dispatched, public at 6:00pm WAT; see the Shorts lane'"'"'s own run')"
             else
               echo "- $(python3 tools/gemini_quota.py status 2>/dev/null || echo 'narrator bucket: unknown')"
               echo "- warm-up: $([ "$WARM_OK" = "yes" ] && echo '✅ today'"'"'s lines are cached' || echo '⚠️ could not speak — see the warning')"
-              echo "- owed Short: ${OWED_SHORTS:-no} · owed Reel: ${OWED_REEL:-no}$([ "$OWED_SHORTS" = "yes" ] || [ "$OWED_REEL" = "yes" ] && echo ' — dispatched; see the lane'"'"'s own run')"
+              echo "- owed Reel: ${OWED_REEL:-no}$([ "$OWED_REEL" = "yes" ] && echo ' — dispatched; see the lane'"'"'s own run')"
+              echo "- owed Short: ${OWED_SHORTS:-no}$([ "$OWED_SHORTS" = "yes" ] && [ "$MAKEUP" != "yes" ] && echo ' — waits for the 5:30pm make-up slot (public 6:00pm), never the morning')$([ "$OWED_SHORTS" = "yes" ] && [ "$MAKEUP" = "yes" ] && echo ' — dispatched now (forced)')"
             fi
           } >> "$GITHUB_STEP_SUMMARY"

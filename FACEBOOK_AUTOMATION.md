@@ -485,12 +485,16 @@ silent picture only (tests, a laptop without ffmpeg audio).
   (default 20 — the lane jobs time out at 30) the run simply **sleeps until that minute and continues**.
 * **The resumer** — `.github/workflows/narrator_resume.yml`, cron `12 7` and `12 8`
   UTC (one per season; `gemini_quota.py just-reset --window 45` lets exactly one
-  proceed): (1) **warms** today's six lines into the cache while the bucket is full
+  proceed) **and `30 16` UTC (5:30pm WAT, daily — the make-up slot)**: (1) at the reset,
+  **warms** today's six lines into the cache while the bucket is full
   (`shorts_sound.py warm`), so the 09:30 Reel and the 18:00 Short need no fresh
   quota; (2) asks `gemini_quota.py owed` — a Short/Reel whose slot passed with no
-  publish since — and **dispatches that lane for the owed date**
-  (`for_date` input → `RUN_FOR_DATE` / `--date`). The duplicate guards keep it to
-  one publish per slot.
+  publish since. An owed **Reel** is dispatched at the reset (its slot is the morning;
+  `mode=reel`, `for_date`). An owed **Short** waits: the reset run prints a notice, and
+  the 5:30pm run (`gemini_quota.py makeup-slot`) dispatches the Shorts lane with
+  `for_date` and `publish_at=18:00` — rendered then, public at 6:00pm, an hour before the
+  day's own, never in the 9:30am card's hour (4 Nov 2026: the make-up Reel at 9:16am
+  cost the card). The duplicate guards keep it to one publish per slot.
 * **Deep-Dive** spends the night bucket (03:00 WAT) and names the refill time in its
   pause notice; its requests count in the same ledger.
 * A person pressing `mode=reel` when the bucket is empty gets a named error with the

@@ -209,6 +209,33 @@ class CliTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertIn("+01:00", out, "the reset is printed in Lagos time")
 
+    def test_the_make_up_slot_is_half_past_five_lagos_every_day(self):
+        """4 Nov 2026: an owed Short is made up at 5:30pm WAT, public at 6pm — never at the
+        reset, which is the morning card's hour."""
+        self.assertTrue(q.makeup_slot(datetime(2026, 11, 7, 16, 30, tzinfo=UTC)))     # Saturday too
+        self.assertTrue(q.makeup_slot(datetime(2026, 11, 4, 17, 14, tzinfo=UTC)))     # a late cron, inside 45 min
+        self.assertFalse(q.makeup_slot(datetime(2026, 11, 4, 17, 15, tzinfo=UTC)))    # the 6pm Short owns the hour now
+        self.assertFalse(q.makeup_slot(datetime(2026, 11, 4, 8, 16, tzinfo=UTC)))     # 9:16am — where the 4 Nov Reel landed
+        self.assertFalse(q.makeup_slot(datetime(2026, 11, 4, 16, 29, tzinfo=UTC)))
+        self.assertEqual(q.MAKEUP_PUBLISH_AT, "18:00")
+        self.assertLess(int(q.MAKEUP_PUBLISH_AT[:2]), 19, "an hour before the day's own Short keeps a series in order")
+
+    def test_makeup_slot_writes_the_step_outputs_the_resumer_reads(self):
+        with tempfile.NamedTemporaryFile("w+", delete=False) as fh:
+            path = fh.name
+        with patch.dict(os.environ, {"GITHUB_OUTPUT": path}), \
+                patch.object(q, "now_utc", lambda: datetime(2026, 11, 4, 16, 31, tzinfo=UTC)):
+            code, out = self.run_cli("makeup-slot", "--window", "45")
+        self.assertEqual(code, 0, out)
+        self.assertIn("yes", out)
+        self.assertIn("17:30 WAT", out)
+        text = Path(path).read_text()
+        self.assertIn("makeup=yes", text)
+        self.assertIn("publish_at=18:00", text)
+        with patch.object(q, "now_utc", lambda: datetime(2026, 11, 4, 8, 16, tzinfo=UTC)):
+            code, out = self.run_cli("makeup-slot")
+        self.assertEqual(code, 1)
+
     def test_just_reset_writes_a_step_output(self):
         with tempfile.NamedTemporaryFile("w+", delete=False) as fh:
             path = fh.name
@@ -223,17 +250,47 @@ class ResumerWorkflowTests(unittest.TestCase):
         self.doc = yaml.safe_load((ROOT / ".github" / "workflows" / "narrator_resume.yml").read_text(encoding="utf-8"))
         self.steps = {s.get("name"): s for s in self.doc["jobs"]["resume"]["steps"]}
 
-    def test_two_cron_lines_one_per_season(self):
+    def test_two_cron_lines_one_per_season_and_the_evening_make_up(self):
         crons = [c["cron"] for c in self.doc[True]["schedule"]]
-        self.assertEqual(crons, ["12 7 * * *", "12 8 * * *"])
+        self.assertEqual(crons, ["12 7 * * *", "12 8 * * *", "30 16 * * *"],
+                         "the two reset minutes, and 5:30pm WAT for the make-up Short (4 Nov 2026)")
 
     def test_the_reset_check_gates_everything_and_has_a_tight_window(self):
         check = self.steps["Did a Pacific midnight just pass?"]
         self.assertIn("just-reset --window 45", check["run"])
+        self.assertIn("makeup-slot --window 45", check["run"])
         for name, step in self.steps.items():
             if name in ("Check out the repository", "Set up Python", "Did a Pacific midnight just pass?", "Run summary"):
                 continue
-            self.assertIn("steps.reset.outputs.go == 'yes'", step.get("if", ""), name)
+            cond = step.get("if", "")
+            self.assertTrue("steps.reset.outputs.go == 'yes'" in cond or "steps.reset.outputs.makeup == 'yes'" in cond, name)
+
+    def test_an_owed_short_is_made_up_in_the_evening_never_at_the_reset(self):
+        """4 Nov 2026: the reset's make-up became a Reel at 9:16am and cost the 9:30am card."""
+        short = self.steps["Resume the Short that is owed"]
+        self.assertIn("steps.reset.outputs.makeup == 'yes'", short["if"])
+        self.assertNotIn("steps.reset.outputs.go == 'yes'", short["if"], "the reset run must not dispatch the Short")
+        self.assertIn('-f publish_at="${PUBLISH_AT:-18:00}"', short["run"], "public at 6pm, an hour before the day's own")
+        waits = self.steps["An owed Short waits for the evening slot"]
+        self.assertIn("steps.reset.outputs.go == 'yes'", waits["if"])
+        self.assertIn("steps.reset.outputs.makeup != 'yes'", waits["if"])
+        self.assertNotIn("gh workflow run", waits["run"])
+        # The Reel's slot IS the morning — still resumed at the reset, and only there.
+        reel = self.steps["Resume the Reel that is owed"]
+        self.assertIn("steps.reset.outputs.go == 'yes'", reel["if"])
+        self.assertNotIn("makeup", reel["if"])
+        # The make-up run reads the ledgers only — no deps, no warm-up, no cache save.
+        for name in ("Install MotionStudio deps (ffmpeg + Inter) and the renderer's libraries",
+                     "Warm up — today's narration into the cache (no render, no publish)",
+                     "Save the narrator's cached clips and the quota ledger"):
+            self.assertEqual(self.steps[name]["if"], "steps.reset.outputs.go == 'yes'", name)
+
+    def test_the_shorts_lane_accepts_publish_at_and_hands_it_to_the_uploader(self):
+        path = ROOT / ".github" / "workflows" / "youtube_scheduled.yml"
+        doc = yaml.safe_load(path.read_text(encoding="utf-8"))
+        self.assertIn("publish_at", doc[True]["workflow_dispatch"]["inputs"])
+        self.assertEqual(doc[True]["workflow_dispatch"]["inputs"]["publish_at"]["default"], "")
+        self.assertIn("YT_PUBLISH_AT: ${{ inputs.publish_at }}", path.read_text(encoding="utf-8"))
 
     def test_warm_up_then_save_then_dispatch_in_that_order(self):
         names = list(self.steps)

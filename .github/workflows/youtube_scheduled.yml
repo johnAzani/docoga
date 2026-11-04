@@ -49,6 +49,11 @@ on:
         required: false
         default: ''
         type: string
+      publish_at:
+        description: "When the public upload goes live, WAT: 'HH:MM' today, 'YYYY-MM-DD' (that day at the slot hour), or 'off' (at once). Empty = today at the slot hour (19:00). The narrator-resume's evening make-up passes 18:00 so the owed Short lands an hour before the day's own."
+        required: false
+        default: ''
+        type: string
 
 permissions:
   contents: write   # the publish ledger is committed back after a successful upload
@@ -362,6 +367,8 @@ jobs:
           # (default 19:00 WAT today; the Short renders at 18:00). YT_SCHEDULE=off = publish at once.
           YT_PUBLISH_HOUR_WAT: ${{ vars.YT_PUBLISH_HOUR_WAT }}
           YT_SCHEDULE: ${{ vars.YT_SCHEDULE }}
+          # 4 Nov 2026: the evening make-up (narrator_resume.yml, 5:30pm WAT) passes 18:00.
+          YT_PUBLISH_AT: ${{ inputs.publish_at }}
         run: |
           # The uploader exits 2 for "a human with a browser must fix this" and 1 for "the code
           # or the network failed". Both are red here, but only one is a Google-account

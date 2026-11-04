@@ -25,6 +25,7 @@ CLI (used by the workflows):
   status                      one line: used / limit / resets at
   just-reset [--window MIN]   exit 0 if a Pacific midnight passed within MIN minutes
   owed [--date YYYY-MM-DD]    which scheduled Shorts/Reels have no publish yet
+  makeup-slot [--window N]   is it the evening make-up slot (5:30pm WAT) right now?
   resets-at                   the next reset, ISO, Lagos time
 """
 from __future__ import annotations
@@ -273,6 +274,25 @@ def _ledger_dates(path, keys=("date", "run_date", "day", "recorded_at")):
     return out
 
 
+# 4 Nov 2026: a Short owed from an earlier day is made up at the EVENING slot, not at the
+# Pacific reset. The 3 Nov Short (lost to a render fault) was made up at 9:16am on 4 Nov —
+# a Reel on the Page fourteen minutes before the 9:30am card, which then stood down as
+# "already posted today". The reset still warms the lines and still resumes a Reel (its slot
+# is the morning); the Short waits for 5:30pm WAT, renders, and goes public at 6:00pm — one
+# hour before the day's own Short, so a series stays in order. No weekday is needed: a
+# Friday miss is made up on Saturday evening, when the channel is otherwise quiet.
+MAKEUP_SLOT = {"utc_hour": 16, "utc_minute": 30}      # 5:30pm WAT every day (WAT has no DST)
+MAKEUP_PUBLISH_AT = "18:00"                             # the Short goes public at 6:00pm WAT
+MAKEUP_WINDOW_MIN = 45                                  # a late cron past 6:15pm stands down
+
+
+def makeup_slot(now=None, window_min=MAKEUP_WINDOW_MIN):
+    """True inside [5:30pm, 5:30pm + window) WAT — the make-up Short's dispatch minute."""
+    now = (now or now_utc()).astimezone(timezone.utc)
+    at = now.replace(hour=MAKEUP_SLOT["utc_hour"], minute=MAKEUP_SLOT["utc_minute"], second=0, microsecond=0)
+    return at <= now < at + timedelta(minutes=window_min)
+
+
 def owed(now=None, root=ROOT):
     """Lanes whose most recent scheduled slot has passed with no publish on or after it."""
     now = now or now_utc()
@@ -298,6 +318,8 @@ def main(argv=None):
     jr.add_argument("--window", type=int, default=JUST_RESET_WINDOW_MIN)
     ow = sub.add_parser("owed")
     ow.add_argument("--date", help="ISO date (judged at 23:00 UTC that day) or ISO datetime")
+    ms = sub.add_parser("makeup-slot")
+    ms.add_argument("--window", type=int, default=MAKEUP_WINDOW_MIN)
     args = ap.parse_args(argv)
     now = now_utc()
     if args.cmd == "status":
@@ -313,6 +335,16 @@ def main(argv=None):
         if gh:
             with open(gh, "a", encoding="utf-8") as fh:
                 fh.write("just_reset=%s\n" % ("yes" if ok else "no"))
+        return 0 if ok else 1
+    if args.cmd == "makeup-slot":
+        ok = makeup_slot(now, args.window)
+        print("%s — the make-up slot is %02d:%02d WAT daily, now %s" % (
+            "yes" if ok else "no", (MAKEUP_SLOT["utc_hour"] + 1) % 24, MAKEUP_SLOT["utc_minute"], lagos(now)))
+        gh = os.environ.get("GITHUB_OUTPUT")
+        if gh:
+            with open(gh, "a", encoding="utf-8") as fh:
+                fh.write("makeup=%s\n" % ("yes" if ok else "no"))
+                fh.write("publish_at=%s\n" % MAKEUP_PUBLISH_AT)
         return 0 if ok else 1
     if args.cmd == "owed":
         at = (datetime.fromisoformat(args.date).replace(tzinfo=timezone.utc) if "T" in args.date
