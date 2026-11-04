@@ -123,6 +123,46 @@ def place_link_after(token, post_id, body, link, line=None, kind="post"):
     return " · ⚠️ link lost"
 
 
+def _pack_for(day):
+    try:
+        import brain_drafts
+        return brain_drafts.draft_for(day)
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def first_question(day, pack=None):
+    """The one answerable question for the Page's first comment on `day` (4 Nov 2026).
+
+    The brain's `cta` wins when it is a question; otherwise the dated rotation Instagram's
+    first comment uses (tools/reel_caption.QUESTIONS), offset so the two Pages never ask the
+    same thing on the same day. Never fails the publish — a missing module means no question."""
+    try:
+        import reel_caption
+        cta = str(((pack or {}).get("post") or {}).get("cta") or "").strip()
+        if cta.endswith("?") and len(cta) <= 140:
+            return cta
+        return reel_caption.QUESTIONS[(day.timetuple().tm_yday + 5) % len(reel_caption.QUESTIONS)]
+    except Exception:  # noqa: BLE001
+        return ""
+
+
+def reel_first_comment(token, video_id, day, pack=None):
+    """Under the Reel: the question and the templates line — Instagram has had this since 22 Oct.
+    Prints FB_FIRST_COMMENT=posted|refused; never fatal."""
+    try:
+        import reel_caption
+        text = "%s\n\n%s" % (first_question(day, pack), reel_caption.TEMPLATES_LINE)
+    except Exception:  # noqa: BLE001
+        text = first_question(day, pack)
+    if not text.strip() or not video_id:
+        return
+    ok, detail = fb_publish.comment(token, video_id, text)
+    print("FB_FIRST_COMMENT=%s" % ("posted" if ok else "refused"))
+    if not ok:
+        print("::notice title=Reel first comment refused::%s" % str(detail)[:200])
+
+
 def publish_native_video(token, page_id, video, day):
     """The Deep-Dive as the Page's own video (feature day, 4 Nov 2026). → (ok, note).
 
@@ -225,6 +265,8 @@ def main(argv=None):
             link = result.get("permalink") or ""
             print("✅ reel %s: video_id %s%s" % (result.get("state", "published"),
                                                  result.get("video_id"), " " + link if link else ""))
+            if not args.reel_draft:
+                reel_first_comment(token, result.get("video_id"), day, _pack_for(day))
             # Machine-readable lines for the workflow, because the ledger must
             # record what was actually published and a human line is not a
             # contract. Same shape as tools/yt_publish.py's VIDEO_ID= line — the
@@ -240,21 +282,26 @@ def main(argv=None):
         summary("| Facebook reel %s | ❌ failed — `%s` |" % (day.isoformat(), str(result)[:200]))
         return fb_publish.reel_exit_code(result)
 
-    if not (args.text or args.force):
-        guard, detail = fb_publish.posted_on_date(token, page_id)
-        if guard is True:
-            print("⏭ skipped — the Page already has a post today (%s)." % detail)
-            summary("| Facebook post %s | ⏭ skipped — already posted today |" % day.isoformat())
-            return 0
-        if guard is None:
-            log("⚠️  the duplicate guard could not read the feed (%s) — continuing" % detail)
-
     if args.text:
         content = {"message": args.text, "send_photo": bool(args.photo_file),
                    "photo_path": args.photo_file, "post_type": "manual"}
     else:
         content, source = load_today(day)
         log("using %s" % source)
+
+    if not (args.text or args.force):
+        # The card's guard looks past Reels (4 Nov 2026: a made-up Short at 9:16am cost the day's
+        # card); a native Deep-Dive is guarded by its title on the videos edge.
+        guard, detail = fb_publish.posted_on_date(token, page_id, ignore_videos=True)
+        plan = content.get("video") if isinstance(content.get("video"), dict) else None
+        if guard is False and plan and plan.get("title"):
+            guard, detail = fb_publish.posted_on_date(token, page_id, edge="videos", want_title=plan["title"])
+        if guard is True:
+            print("⏭ skipped — the Page already has a post today (%s)." % detail)
+            summary("| Facebook post %s | ⏭ skipped — already posted today |" % day.isoformat())
+            return 0
+        if guard is None:
+            log("⚠️  the duplicate guard could not read the feed (%s) — continuing" % detail)
 
     # Deep-Dive feature day: the episode itself, natively (4 Nov 2026). Falls through to the card on any refusal.
     video = content.get("video") if isinstance(content.get("video"), dict) else None
@@ -271,6 +318,8 @@ def main(argv=None):
     body_text, link = (fb_publish.split_link(message) if link_in_comment else (message, None))
     if link:
         message = body_text
+    question = first_question(day, _pack_for(day)) if link else ""
+    comment_line = fb_publish.link_line(link, question) if link else None
     # An explicit --photo-file wins (that is the manual override); otherwise the
     # generator's decision is honoured, including its "no photo" answer.
     photo_rel = args.photo_file or (content.get("photo_path") if content.get("send_photo") else None)
@@ -287,7 +336,7 @@ def main(argv=None):
         ok, result = fb_publish.post_photo_file(token, page_id, photo_abs, message)
         if ok:
             print("✅ photo post published: %s" % result)
-            where = place_link_after(token, result, message, link)
+            where = place_link_after(token, result, message, link, line=comment_line)
             summary("| Facebook post %s | ✅ published (photo) `%s`%s |" % (day.isoformat(), result, where))
             return 0
         log("❌ photo post refused — %s" % result)
@@ -296,7 +345,7 @@ def main(argv=None):
     ok, result = fb_publish.post_text(token, page_id, message)
     if ok:
         print("✅ text post published: %s" % result)
-        where = place_link_after(token, result, message, link)
+        where = place_link_after(token, result, message, link, line=comment_line)
         summary("| Facebook post %s | ✅ published (text) `%s`%s |" % (day.isoformat(), result, where))
         return 0
 

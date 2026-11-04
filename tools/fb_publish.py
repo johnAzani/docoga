@@ -185,7 +185,7 @@ def whoami(token, page_id=None):
     return _ok(r)
 
 
-def posted_on_date(token, page_id, when=None, limit=10, edge="feed", want_title=None):
+def posted_on_date(token, page_id, when=None, limit=10, edge="feed", want_title=None, ignore_videos=False):
     """True if the Page already has a *published* post on `when` (default today,
     Africa/Lagos).
 
@@ -200,12 +200,17 @@ def posted_on_date(token, page_id, when=None, limit=10, edge="feed", want_title=
     a local file: GitHub Actions runners are disposable, so a marker written in
     the workspace would be forgotten by the next run and a re-run of a failed
     job would post the same copy twice on the same day.
+
+    `ignore_videos` (4 Nov 2026): a Reel is a feed item too (`status_type` =
+    `added_video`), and on 4 Nov a made-up Short published at 9:16am made the
+    9:30am card stand down as "already posted today". The card's guard now
+    looks past videos; the video's own guard is the `videos` edge by title.
     """
     when = when or datetime.now(LAGOS)
     try:
         r = requests.get("%s/%s/%s" % (GRAPH, page_id, edge),
-                         params={"fields": "id,created_time,status,title", "limit": limit,
-                                  "access_token": token}, timeout=TIMEOUT)
+                         params={"fields": "id,created_time,status,title" + (",status_type" if edge == "feed" else ""),
+                                 "limit": limit, "access_token": token}, timeout=TIMEOUT)
     except requests.RequestException as e:
         return None, "%s: %s" % (type(e).__name__, e)
     ok, body = _ok(r)
@@ -226,6 +231,8 @@ def posted_on_date(token, page_id, when=None, limit=10, edge="feed", want_title=
         if item.get("status") not in (None, "published", "scheduled"):
             continue
         if want_title and (item.get("title") or "").strip() != want_title.strip():
+            continue
+        if ignore_videos and item.get("status_type") == "added_video":
             continue
         return True, item.get("id")
     return False, None
@@ -255,11 +262,17 @@ def post_text(token, page_id, message):
 _LINK_LINE = re.compile(r"^\s*(?:👉\s*)?(https://(?:docoga\.com\.ng|www\.youtube\.com|youtu\.be|youtube\.com)\S*)\s*$", re.M)
 
 
-def link_line(link):
-    """The first comment's words for a link: the tool page, or the episode when it is YouTube."""
+def link_line(link, question=None):
+    """The first comment's words for a link: the tool page, or the episode when it is YouTube.
+
+    `question` (4 Nov 2026): one answerable question under the link — the Page's own first
+    comment is the conversation starter Instagram has had since 22 Oct and Facebook never did;
+    the replies lane answers whoever answers it, and that back-and-forth is the Feed signal."""
     if "youtube.com" in link or "youtu.be" in link:
-        return "▶ The full episode, free (9 minutes): %s" % link
-    return "The page, free to start: %s" % link
+        line = "▶ The full episode, free (9 minutes): %s" % link
+    else:
+        line = "The page, free to start: %s" % link
+    return "%s\n\n%s" % (question.strip(), line) if question and question.strip() else line
 
 
 def split_link(message):

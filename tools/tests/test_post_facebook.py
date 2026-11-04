@@ -223,6 +223,28 @@ class DuplicateGuardTests(Base):
         self.assertIn("skipped", log)
         self.assertFalse([u for u in graph.urls("POST")], "nothing may be published")
 
+    def test_a_reel_earlier_today_does_not_cost_the_card(self):
+        """4 Nov 2026: a made-up Short became a Reel at 9:16am and the 9:30am card stood down."""
+        today = date.today().isoformat()
+        graph = Graph({"/photos": ok({"id": "p1", "post_id": "PAGE_p1"}), "/comments": ok({"id": "c"}),
+                       "/feed": lambda url, data, files, method:
+                       ok({"data": [{"id": "x", "created_time": today + "T08:16:00+0000", "status": "published",
+                                     "status_type": "added_video"}]}) if method == "GET" else ok({"id": "new"})})
+        code, log = self.run_poster(graph, ["--date", today])
+        self.assertEqual(code, 0, log)
+        self.assertNotIn("skipped", log)
+        self.assertTrue(any(u.endswith("/photos") for u in graph.urls("POST")), "the card still goes out")
+        feed_reads = [c for c in graph.calls if c["method"] == "GET" and c["url"].endswith("/feed")]
+        self.assertIn("status_type", feed_reads[0]["params"]["fields"])
+        # …but a card already there today still stands the run down.
+        graph = Graph({"/feed": lambda url, data, files, method:
+                       ok({"data": [{"id": "x", "created_time": today + "T08:31:00+0000", "status": "published",
+                                     "status_type": "added_photos"}]}) if method == "GET" else ok()})
+        code, log = self.run_poster(graph, ["--date", today])
+        self.assertEqual(code, 0)
+        self.assertIn("skipped", log)
+        self.assertFalse(graph.urls("POST"))
+
     def test_force_overrides_the_guard(self):
         today = date.today().isoformat()
         graph = Graph({"/feed": lambda url, data, files, method:
@@ -407,6 +429,12 @@ class LinkInFirstCommentTests(Base):
         self.assertIn("https://docoga.com.ng", comments[0]["data"]["message"])
         self.assertIn("?s=fb", comments[0]["data"]["message"], "the link keeps its channel tag")
         self.assertIn("FB_LINK=comment", log)
+        # 4 Nov 2026: the first comment opens with one answerable question — the conversation
+        # starter — and the link line follows it.
+        first = comments[0]["data"]["message"]
+        self.assertTrue(first.split("\n")[0].rstrip().endswith("?"), first)
+        self.assertLess(first.index("?"), first.index("https://"), "question first, link second")
+        self.assertNotRegex(first.lower(), r"\b(like|share|follow)\b.*\bif\b", "never bait")
 
     def test_without_the_comment_permission_the_post_is_edited_to_carry_the_link(self):
         graph = Graph({"/comments": api_error(200, "(#200) Requires pages_manage_engagement", status=403),
@@ -437,6 +465,19 @@ class LinkInFirstCommentTests(Base):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class FirstQuestionTests(unittest.TestCase):
+    def test_the_brains_question_wins_else_the_rotation_offset_from_instagrams(self):
+        import reel_caption
+        day = date(2026, 11, 4)
+        self.assertEqual(post_facebook.first_question(day, {"post": {"cta": "Which state is your rent in?"}}), "Which state is your rent in?")
+        self.assertIn(post_facebook.first_question(day, {"post": {"cta": "Send this to a friend."}}), reel_caption.QUESTIONS)
+        self.assertNotEqual(post_facebook.first_question(day, None), reel_caption.first_comment(day).split("\n")[0],
+                            "Facebook and Instagram never ask the same question on the same day")
+        self.assertEqual(fb_publish.link_line("https://docoga.com.ng/x?s=fb", "Who collected your last rent?"),
+                         "Who collected your last rent?\n\nThe page, free to start: https://docoga.com.ng/x?s=fb")
+        self.assertEqual(fb_publish.link_line("https://docoga.com.ng/x?s=fb", ""), "The page, free to start: https://docoga.com.ng/x?s=fb")
 
 
 class NativeVideoTests(Base):

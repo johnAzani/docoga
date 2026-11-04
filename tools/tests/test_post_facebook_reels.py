@@ -656,6 +656,35 @@ class PosterCliTests(unittest.TestCase):
         self.assertEqual(graph.calls[0]["method"], "GET")   # nothing was posted
         self.assertNotIn("rupload", str(graph.calls))
 
+    def test_a_published_reel_gets_the_pages_first_comment_with_a_question(self):
+        """4 Nov 2026: the Page's own first comment under the Reel — an answerable question and
+        the templates line (Instagram has had it since 22 Oct). Never fails the publish."""
+        comments = []
+
+        def responder(call):
+            if call["method"] == "POST" and call["url"].endswith("/987654321/comments"):
+                comments.append(call["data"]["message"])
+                return FakeResponse({"id": "987654321_c1"})
+            return reel_responder()(call)
+
+        code, text, graph = self.drive(["--reel", str(self.path), "--title", "Rent Receipt", "--force", "--date", "2026-11-04"], responder)
+        self.assertEqual(code, 0, text)
+        self.assertEqual(len(comments), 1, text)
+        self.assertIn("?", comments[0])
+        self.assertIn("docoga.com.ng", comments[0])
+        self.assertIn("FB_FIRST_COMMENT=posted", text)
+
+    def test_a_refused_first_comment_never_fails_the_reel(self):
+        def responder(call):
+            if call["method"] == "POST" and call["url"].endswith("/comments"):
+                return api_error(200, "(#200) Requires pages_manage_engagement", status=403)
+            return reel_responder()(call)
+
+        code, text, graph = self.drive(["--reel", str(self.path), "--title", "Rent Receipt", "--force"], responder)
+        self.assertEqual(code, 0, text)
+        self.assertIn("FB_FIRST_COMMENT=refused", text)
+        self.assertNotIn(TOKEN, text)
+
     def test_a_probe_flag_never_publishes_even_when_told_to(self):
         code, text, graph = self.drive(["--probe-reels"], reel_responder())
         self.assertEqual(code, 0, text)

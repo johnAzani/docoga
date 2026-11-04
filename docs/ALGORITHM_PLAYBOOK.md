@@ -91,9 +91,13 @@ the first few hundred views. Three changes, all ₦0, all on the account's own p
 2. **The Short in both Stories trays** (`youtube_scheduled.yml` → `fb_story`, `ig_story`).
    Stories sit at the top of the app through the 7–9pm peak and are the one surface where
    a tap goes straight to the video. Same `SHORT_REELS` switch, warnings never red.
-3. **Replies within 30–45 minutes of every slot** (`brain_replies.yml`: 8:00am, 11:40am,
-   2:40pm, 7:40pm, 8:40pm WAT — was 3 runs, 90 minutes behind). Replies to the first
-   comments decide a post's second wave of distribution.
+3. **Replies within 30–45 minutes of every slot** (`brain_replies.yml`: 8:00am, 10:15am,
+   11:40am, 2:40pm, 6:50pm, 7:40pm, 8:40pm WAT — was 3 runs, 90 minutes behind; the 10:15am
+   and 6:50pm passes were added 4 Nov 2026 for the Facebook post and Reel). Replies to the
+   first comments decide a post's second wave of distribution.
+4. **Facebook's own first comment** (4 Nov 2026, `FACEBOOK_AUTOMATION.md` §4d): the same
+   answerable question under the daily post (above the link) and under every Reel — Facebook
+   had only the bare link until then.
 
 Measurement for all three is already in place — `tools/yt_stats.py` pulls average
 percentage viewed and shares per Short; `tools/brain_scorecard.py` reads saves and shares
@@ -255,6 +259,15 @@ Facebook post, Reel and native video; the follow row in every page footer; the p
 profile audit that fills About/website itself and names the taps it cannot; fact ids stripped
 on read and at the source. Measure: `followers_count` on the Monday scorecards (1 today), and
 the audit line `FB_PAGE_AUDIT=` in the next Facebook run's log.
+
+## 7⅞c. Shipped 4 Nov 2026, third pass — Facebook's first hour
+
+Found: the Facebook first comment was a bare link, the Reel had no comment, and the first
+replies pass came 2 h 10 min after the 9:30am post. Also found, live: the 4 Nov card was lost
+because a made-up Reel at 9:16am counted as "today's post". Shipped (§4d above in
+`FACEBOOK_AUTOMATION.md`): the question-first comment on the post and the Reel, replies passes
+at 10:15am and 6:50pm, the guard that looks past Reels. Measure: comments per Facebook post
+(60 % of posts today, almost all our own link comment) and `FB_FIRST_COMMENT=` in the Reel log.
 
 ## 8. Next levers, in order of expected effect (Founder's brief items)
 

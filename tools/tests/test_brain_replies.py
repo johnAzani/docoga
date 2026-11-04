@@ -356,8 +356,10 @@ class WorkflowContractTests(unittest.TestCase):
         import yaml
         wf = yaml.safe_load((ROOT / ".github" / "workflows" / "brain_replies.yml").read_text(encoding="utf-8"))
         crons = sorted(c["cron"] for c in wf[True]["schedule"])
-        self.assertEqual(crons, ["0 7 * * *", "40 10 * * *", "40 13 * * *", "40 18 * * *", "40 19 * * *"],
-                         "8:00 / 11:40 / 2:40 / 7:40 / 8:40 WAT — within 30-45 minutes of every posting slot (22 Oct 2026)")
+        self.assertEqual(crons, ["0 7 * * *", "15 9 * * *", "40 10 * * *", "40 13 * * *", "40 18 * * *",
+                                 "40 19 * * *", "50 17 * * *"],
+                         "8:00 / 10:15 / 11:40 / 2:40 / 6:50 / 7:40 / 8:40 WAT — within 30-45 minutes of every "
+                         "posting slot (22 Oct 2026; 10:15 and 6:50 for the Facebook post and Reel, 4 Nov 2026)")
         self.assertEqual(wf["permissions"], {"contents": "write"})
         self.assertEqual(wf["concurrency"]["group"], "docoga-brain")
         text = (ROOT / ".github" / "workflows" / "brain_replies.yml").read_text(encoding="utf-8")

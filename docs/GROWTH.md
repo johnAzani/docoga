@@ -64,6 +64,16 @@ platforms; nothing the owner must do on a schedule.
 
 ## 5. Growth ledger (newest first — the scorecard reads the top date)
 
+- **2026-11-04** — **Third Facebook pass (owner, 10:14am, the same order).** Found: Facebook's
+  first comment was a bare link and the Reel had none (Instagram has had the question-first comment
+  since 22 Oct); the first replies pass came 2 h 10 min after the 9:30am post; and this morning's
+  card was lost — the narrator-resume made up the 3 Nov Short at 9:16am, its Reel counted as
+  "today's post" and the 9:30am card stood down. **DO NOW (shipped):** question-first comment under
+  the post and the Reel (`FB_FIRST_COMMENT=`), replies passes at 10:15am and 6:50pm, the card's
+  guard looks past Reels. **TEST NEXT:** comments per Facebook post that are not our own, 9 and
+  16 Nov. **LATER:** a resume dispatch that waits for the slot instead of publishing at 9:16am.
+  **REJECT:** nothing new. Sources: Meta Transparency Center, Feed AI system (6 Oct 2026); Meta
+  Newsroom 13 Oct 2026; `docs/ALGORITHM_PLAYBOOK.md` §4; run 41798288694 / 41800039608.
 - **2026-11-04** — **Second Facebook pass (owner, 8:35am, the same order again).** Found: the Page
   never asked for a follow in five weeks; the site's 85 weekly visits met no visible channel link;
   nobody audits the Page profile; and the 4–6 Nov brain packs carried fact ids inline in the copy
