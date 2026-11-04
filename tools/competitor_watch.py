@@ -23,6 +23,7 @@ Usage
 from __future__ import annotations
 
 import argparse
+import html
 import json
 import os
 import re
@@ -53,6 +54,13 @@ TOKEN = re.compile(r"\b(?=[a-z0-9]*\d)(?=[a-z0-9]*[a-z])[a-z0-9]{4,}\b", re.I)
 MIN_SLUG_WORDS = 4
 ARTICLE_SITEMAP = re.compile(r"(post|blog|news|article|guide|insight|resource|story|stories)", re.I)
 UA = "DocOga-field/1.0 (+https://docoga.com.ng)"
+# 4 Nov 2026: the closest rival added a ₦500 seven-day pass under its ₦4,000 one and the watch, which
+# reads only what is *published*, never saw a price move. A row may now carry
+#   "prices": {"url": <public pricing page>, "seen": ["₦4,000", "₦500"]}
+# and the pull re-reads that one page, lists every naira figure on it and flags any figure the map
+# does not know (or one that vanished). The scorecard shows the flag; the prompt never carries a price.
+PRICE = re.compile(r"(?:₦|NGN\s?)\s?(\d{1,3}(?:,\d{3})+|\d{3,7})(?!\d)")
+PRICE_MIN, PRICE_MAX = 100, 5_000_000   # ₦0 "free" tiers and bare years/ids are not prices
 
 
 def _http(url, timeout=TIMEOUT):
@@ -130,6 +138,45 @@ def youtube_feed_for(url, http=None):
     return ("https://www.youtube.com/feeds/videos.xml?channel_id=" + m.group(1).decode()) if m else None
 
 
+def price_figures(raw):
+    """Every distinct naira figure on a public page, as the map writes them ("₦4,000"), page order."""
+    text = raw.decode("utf-8", "replace") if isinstance(raw, (bytes, bytearray)) else str(raw or "")
+    text = html.unescape(re.sub(r"<(script|style)\b.*?</\1>", " ", text, flags=re.S | re.I))
+    text = re.sub(r"<[^>]+>", " ", text)
+    out = []
+    for m in PRICE.finditer(text):
+        n = int(m.group(1).replace(",", ""))
+        fig = "₦{:,}".format(n)
+        if PRICE_MIN <= n <= PRICE_MAX and fig not in out:
+            out.append(fig)
+    return out
+
+
+def watch_prices(field, http=None, log=print):
+    """Rows with a `prices` block: re-read the pricing page, compare to what the map has `seen`."""
+    http = http or _http
+    rows = []
+    for comp in field:
+        spec = comp.get("prices")
+        if not isinstance(spec, dict) or not str(spec.get("url") or "").startswith("https://"):
+            continue
+        seen = [str(x) for x in (spec.get("seen") or [])]
+        row = {"competitor": comp["name"], "url": spec["url"], "seen": seen, "found": [], "new": [], "gone": []}
+        try:
+            status, raw = http(spec["url"])
+            if status != 200:
+                raise ValueError("HTTP %s" % status)
+            row["found"] = price_figures(raw)
+            row["new"] = [f for f in row["found"] if f not in seen]
+            row["gone"] = [f for f in seen if f not in row["found"]]
+        except (urllib.error.URLError, OSError, ValueError) as exc:
+            row["error"] = str(exc)[:60]
+        log("prices: %s — found %s; new %s; gone %s%s" % (comp["name"], row["found"], row["new"], row["gone"],
+                                                        (" (" + row["error"] + ")") if row.get("error") else ""))
+        rows.append(row)
+    return rows
+
+
 def _read_feed(source, url, http, now, days, depth=0):
     try:
         status, raw = http(url)
@@ -154,8 +201,10 @@ def pull(http=None, now=None, days=14, log=print, field=None):
     http = http or _http
     now = now or datetime.now(timezone.utc)
     items, report, unwatchable = [], [], []
-    for comp in (field if field is not None else load_field()):
+    field = field if field is not None else load_field()
+    for comp in field:
         feeds = list(comp.get("feeds") or [])
+        paths = [p for p in (comp.get("paths") or []) if p]   # e.g. ["/blog/"] — the rest of a marketplace sitemap is listings
         if not feeds and "youtube.com" in (comp.get("url") or ""):
             yt = youtube_feed_for(comp["url"], http=http)
             if yt:
@@ -172,6 +221,8 @@ def pull(http=None, now=None, days=14, log=print, field=None):
         for r in sorted(mine, key=lambda r: r.get("published") or "", reverse=True):
             if r["link"] in seen or not TOPIC.search((r.get("title") or "") + " " + (r.get("summary") or "")):
                 continue
+            if paths and not any(p in r["link"] for p in paths):
+                continue
             seen.add(r["link"])
             fresh.append({"competitor": comp["name"], "kind": comp.get("kind", ""), "title": r["title"][:160],
                           "link": r["link"], "published": r.get("published")})
@@ -183,8 +234,9 @@ def pull(http=None, now=None, days=14, log=print, field=None):
         log("field: " + line)
     log("field: %d fresh item(s) from %d feed(s); not watchable at ₦0: %s"
         % (len(items), len(report), ", ".join(unwatchable) or "none"))
+    prices = watch_prices(field, http=http, log=log)
     return {"pulled_at": now.isoformat(timespec="seconds"), "days": days, "items": items[:MAX_TOTAL],
-            "sources": report, "unwatchable": unwatchable}
+            "sources": report, "unwatchable": unwatchable, "prices": prices}
 
 
 def load(path=None):
@@ -301,7 +353,23 @@ def scorecard_lines(data=None, now=None, status=None):
         lines.append("- %s — %s" % (name, "; ".join(r["title"][:70] for r in rows[:3])))
     if not items:
         lines.append("- nothing new on the field this window — DocOga posted every day of it")
+    lines += price_lines(data.get("prices") or [])
     return head + lines
+
+
+def price_lines(rows):
+    """One scorecard line per watched pricing page; ⚠️ only when a figure moved against the map."""
+    out = []
+    for p in rows:
+        seen = ", ".join(p.get("seen") or []) or "nothing"
+        if p.get("error"):
+            out.append("- rival prices: %s — pricing page unreadable (%s); the map says %s" % (p["competitor"], p["error"], seen))
+        elif p.get("new") or p.get("gone"):
+            out.append("- ⚠️ rival price moved: %s — new %s; gone %s (map said %s) → re-verify brain/competitors.json"
+                       % (p["competitor"], ", ".join(p.get("new") or []) or "none", ", ".join(p.get("gone") or []) or "none", seen))
+        else:
+            out.append("- rival prices: %s — %s, as mapped" % (p["competitor"], ", ".join(p.get("found") or []) or seen))
+    return out
 
 
 def main(argv=None):

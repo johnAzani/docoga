@@ -37,6 +37,10 @@ cite, the same week.
 - **The watch** — `tools/competitor_watch.py` runs on every Brain run: public RSS, sitemap `lastmod`
   and YouTube channel feeds, topic-filtered, last 14 days → `logs/competitor_watch.json`. TikTok and
   Instagram publish no feed at ₦0; their rows are reported **unwatchable**, never guessed.
+  A row may also carry a `paths` list (a marketplace sitemap is watched on its `/blog/` paths only)
+  and a `prices` block — the one public pricing page a rival has, with the figures the map has
+  `seen`; the pull re-reads it and the scorecard flags ⚠️ any naira figure the map does not know
+  (added 4 Nov 2026 after a rival's new ₦500 pass went unseen for days).
 - **The prompt** — every pack prompt carries THE FIELD: titles only, with the rule *say it better,
   cite the section they did not, take the angle they missed; never copy a headline; never name a rival
   or a rival's price in copy.*
@@ -67,6 +71,26 @@ without the signal that says so.
 
 ## 5. Research ledger (newest first — the scorecard reads the top date)
 
+- **2026-11-04** — Field re-verified (map `verified` 2026-11-04) and the fortnight read. **What moved:**
+  the closest tool rival (NigeriaBuildingCost) now sells a **₦500 seven-day pass** under its ₦4,000
+  ninety-day one, opened a 48-document sample library on 30 Oct with a filled-in sample tenancy
+  agreement at the top (preview free, download behind a free account — 122 downloads by 4 Nov), and
+  writes agency 10% / legal 10% into its default agreement; its blog stays construction (survey plans,
+  rebar, wiring — 26 Oct). The strongest content rival (Mushrooms.ng) published about fifteen
+  tenancy-law explainers in three days (20–22 Oct: quit notice and rent increases step by step, Lagos
+  tenant rights, agency fee and the 5% bill, subletting with a consent letter to copy, a rent-increase
+  letter) and the watch missed every one — its `/feed/` is 404 and the sitemap items it did pass were
+  TikTok listing noise. AALAWSNG's channel id confirmed from its own Posts tab; its last tenancy video
+  is from 2022 (2026 output is wills, consent, company law). Legalnaija's one fortnight post is a
+  governance colloquium; SabiLaw's two and Lexpraxis's two were filtered as off-topic by title.
+  LawDepot NG, Genie AI (en-ng, "free to generate via subscription") and Wonder.Legal unchanged.
+  **Shipped:** `paths` filter (Mushrooms watched on `/blog/` only, dead feed dropped) and a **price
+  sentinel** — `prices{url, seen}` on a map row, re-read every Brain run, ⚠️ on the Monday scorecard
+  when a figure appears or vanishes (`tools/competitor_watch.py`, tests). **Beats rivals because** the
+  machine now sees a price move and a blog burst the week they happen, while DocOga's answer to both
+  already stands: samples with no account and no invented names (3 Nov), a demand letter nobody else
+  has state-aware (4 Nov), and every clause cited to the section. Pricing itself is the owner's call;
+  the brief carries the figure, the copy never does.
 - **2026-11-03** — Refusal audit: every "not on the shelf" sentence of the last 60 days read against
   the law shelf by state and topic. Finding: `lagos:receipts` ×12 refused yet present on the shelf
   (s.5(2) contents, facts 2–6) → a recall problem, not a law gap; `rivers:receipts` the one true

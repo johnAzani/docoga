@@ -127,5 +127,80 @@ class Pull(unittest.TestCase):
         self.assertIn("### Competitor watch — the field this week (🔒 docs/DOMINANCE.md)", sc)
 
 
+# ── 4 Nov 2026: paths filter + price sentinel ────────────────────────────────────────────────────
+MARKET = b"""<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<url><loc>https://market.ng/blog/quit-notice-and-rent-increases-in-nigeria</loc><lastmod>2026-10-21</lastmod></url>
+<url><loc>https://market.ng/listing/sourced/social-tiktok-rent-house-surulere-video-clip</loc><lastmod>2026-10-27</lastmod></url>
+</urlset>"""
+PRICING = ("<html><head><style>.x{content:'₦77'}</style><script>var a='₦9,999';</script></head><body>"
+           "<h2>Free</h2><p>&#8358;0 — create and print</p><h2>90-day pass</h2><p>&#x20a6;4,000 one payment</p>"
+           "<h2>7-day pass</h2><p>₦500 one-time</p><p>Ref TEN-20261104-2415 · NGN 25,000 deposit example</p></body></html>").encode()
+
+
+def market_http(url, timeout=0):
+    if url == "https://market.ng/sitemap.xml":
+        return 200, MARKET
+    if url == "https://tool.ng/pricing":
+        return 200, PRICING
+    if url == "https://gone.ng/pricing":
+        return 503, b""
+    return 404, b""
+
+
+class PathsAndPrices(unittest.TestCase):
+    def test_a_marketplace_is_watched_on_its_blog_paths_only(self):
+        field = [{"name": "Market", "kind": "content", "url": "https://market.ng", "feeds": ["https://market.ng/sitemap.xml"],
+                  "paths": ["/blog/"], "note": "x"}]
+        data = cw.pull(http=market_http, now=NOW, days=14, log=lambda *a: None, field=field)
+        links = [it["link"] for it in data["items"]]
+        self.assertEqual(links, ["https://market.ng/blog/quit-notice-and-rent-increases-in-nigeria"])
+        field[0].pop("paths")
+        data = cw.pull(http=market_http, now=NOW, days=14, log=lambda *a: None, field=field)
+        self.assertEqual(len(data["items"]), 2, "without paths the listing clip passes the topic filter — that is the bug")
+
+    def test_price_figures_read_the_page_not_the_scripts_and_skip_free_and_ids(self):
+        self.assertEqual(cw.price_figures(PRICING), ["₦4,000", "₦500", "₦25,000"])
+        self.assertEqual(cw.price_figures(b"no money here 2026"), [])
+
+    def test_the_sentinel_flags_a_moved_price_and_never_a_matching_one(self):
+        field = [{"name": "Tool", "kind": "tool", "url": "https://tool.ng", "feeds": [], "note": "x",
+                  "prices": {"url": "https://tool.ng/pricing", "seen": ["₦4,000", "₦500", "₦25,000"]}},
+                 {"name": "Moved", "kind": "tool", "url": "https://tool.ng", "feeds": [], "note": "x",
+                  "prices": {"url": "https://tool.ng/pricing", "seen": ["₦4,000", "₦3,000"]}},
+                 {"name": "Gone", "kind": "tool", "url": "https://gone.ng", "feeds": [], "note": "x",
+                  "prices": {"url": "https://gone.ng/pricing", "seen": ["₦1,000"]}},
+                 {"name": "Plain", "kind": "tool", "url": "https://x.ng", "feeds": [], "note": "no prices block"},
+                 {"name": "Bad", "kind": "tool", "url": "https://x.ng", "feeds": [], "note": "x", "prices": {"url": "http://x"}}]
+        rows = cw.watch_prices(field, http=market_http, log=lambda *a: None)
+        self.assertEqual([r["competitor"] for r in rows], ["Tool", "Moved", "Gone"], "no block or a non-https url → not watched")
+        self.assertEqual((rows[0]["new"], rows[0]["gone"]), ([], []))
+        self.assertEqual((rows[1]["new"], rows[1]["gone"]), (["₦500", "₦25,000"], ["₦3,000"]))
+        self.assertEqual(rows[2]["error"], "HTTP 503")
+        lines = cw.price_lines(rows)
+        self.assertEqual(lines[0], "- rival prices: Tool — ₦4,000, ₦500, ₦25,000, as mapped")
+        self.assertTrue(lines[1].startswith("- ⚠️ rival price moved: Moved — new ₦500, ₦25,000; gone ₦3,000 (map said ₦4,000, ₦3,000)"), lines[1])
+        self.assertIn("unreadable (HTTP 503)", lines[2])
+        data = cw.pull(http=market_http, now=NOW, days=14, log=lambda *a: None, field=field[:1])
+        self.assertEqual(data["prices"][0]["found"], ["₦4,000", "₦500", "₦25,000"], "the pull carries the sentinel")
+        self.assertTrue(any("as mapped" in l for l in cw.scorecard_lines(data, now=NOW)))
+        self.assertNotIn("₦", cw.prompt_block(cw.fresh_items(data, now=NOW), field=field[:1]).split("THE FIELD", 1)[1].split("standing edge")[0],
+                         "a rival's price never reaches the brain's prompt")
+
+    def test_the_real_map_watches_the_closest_rival_price_and_the_marketplace_blog(self):
+        rows = {r["name"]: r for r in cw.load_field()}
+        nbc = rows["NigeriaBuildingCost — tenancy agreement generator"]
+        self.assertTrue(nbc["prices"]["url"].startswith("https://nigeriabuildingcost.ng/"))
+        self.assertIn("₦4,000", nbc["prices"]["seen"])
+        self.assertIn("₦500", nbc["prices"]["seen"])
+        mush = rows["Mushrooms.ng blog"]
+        self.assertEqual(mush["paths"], ["/blog/"])
+        self.assertNotIn("https://mushrooms.ng/feed/", mush["feeds"], "404 since 4 Nov 2026")
+        for r in rows.values():
+            if "prices" in r:
+                self.assertTrue(r["prices"]["url"].startswith("https://") and r["prices"]["seen"], r["name"])
+            for pth in r.get("paths") or []:
+                self.assertTrue(pth.startswith("/"), r["name"])
+
+
 if __name__ == "__main__":
     unittest.main()
