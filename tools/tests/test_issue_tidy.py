@@ -35,6 +35,10 @@ class FakeApi:
         m = re.search(r"/actions/workflows/(\d+)/runs$", path)
         if m:
             return 200, {"workflow_runs": self.healing.get(int(m.group(1)), [])}
+        m = re.search(r"/actions/runs/(\d+)/jobs$", path)
+        if m and getattr(self, "jobs", None) is not None:
+            jobs = self.jobs.get(int(m.group(1)))
+            return (200, {"jobs": jobs}) if jobs is not None else (404, {"message": "Not Found"})
         if method in ("POST", "PATCH"):
             return 200, {}
         return 500, {}
@@ -56,6 +60,26 @@ class Tidy(unittest.TestCase):
         self.assertIn("https://x/runs/1", comment)
         self.assertIn("a new failure opens a new issue", comment)
         self.assertIn("ISSUE_TIDY_CLOSED=1", out[-1])
+
+    def test_a_green_run_that_skipped_the_failed_job_does_not_heal_the_alert(self):
+        # 3 Nov 2026: the 6pm Short failed in "Generate and publish one Short"; the 11:10pm misfire
+        # passed the slot gate, skipped the publish job, ended green, and closed #183 by mistake.
+        alert = issue(183, "2026-11-03T17:29:00Z", "Run: https://github.com/johnAzani/docoga/actions/runs/41679933899", ["youtube-automation"])
+        api = FakeApi([alert], {41679933899: {"workflow_id": 9, "created_at": "2026-11-03T17:00:00Z"}},
+                      {9: [{"id": 41728498376, "created_at": "2026-11-03T22:10:00Z", "conclusion": "success",
+                            "name": "YouTube Shorts Auto-Generate and Publish", "html_url": "https://x/runs/misfire"}]})
+        api.jobs = {41679933899: [{"name": "Is this still the 6pm slot?", "conclusion": "success"},
+                                  {"name": "Generate and publish one Short", "conclusion": "failure"}],
+                    41728498376: [{"name": "Is this still the 6pm slot?", "conclusion": "success"},
+                                  {"name": "Generate and publish one Short", "conclusion": "skipped"}]}
+        out = []
+        self.assertEqual(it.tidy("johnAzani/docoga", "t", http=api, now=NOW, log=out.append), 0)
+        self.assertFalse([c for c in api.calls if c[0] in ("POST", "PATCH")])
+        self.assertIn("#183 open", out[0])
+        # the same candidate with the publish job green DOES heal
+        api.jobs[41728498376][1]["conclusion"] = "success"
+        api.calls.clear()
+        self.assertEqual(it.tidy("johnAzani/docoga", "t", http=api, now=NOW, log=lambda *a: None), 1)
 
     def test_an_alert_whose_lane_has_not_succeeded_since_stays_open(self):
         th = issue(98, "2026-10-18T12:12:01Z", "- Run: https://github.com/johnAzani/docoga/actions/runs/39126200072", ["threads-automation"])
