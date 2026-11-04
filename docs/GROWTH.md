@@ -64,6 +64,32 @@ platforms; nothing the owner must do on a schedule.
 
 ## 5. Growth ledger (newest first — the scorecard reads the top date)
 
+- **2026-11-04** — **Fourth dive (owner, 11:35am: "build the Growth dive"): the generator that had
+  no door.** Read the generators against the pages: the app has written demand letters since launch
+  (`renderDemand`) and had no page for them, while every other tenancy tool has a sample page that
+  Google can rank. **The field for "demand letter for unpaid rent Nigeria":** Genie AI's auto-generated
+  outlines (what a "letter for non-payment of rent" should contain; no letter, no section of any law),
+  a US "demand letter to tenant" (justicedirect), a UK arrears letter (bindlegal, May 2026) and a Kenyan
+  sample — nobody puts the Nigerian letter, a free PDF and the arrears rule of each state's law on one
+  page. **Also read and rejected:** payslip pages (notchhr, anoorehr, finora, staffpay — HR-software
+  blogs with their own generators; off the rent brand) and a rent-increase letter page (mushrooms.ng
+  published a sound one on 20 Oct 2026 citing s.37; apartments.ng; no generator of ours behind it).
+  **Shipped:** `demand-letter-rent-arrears-nigeria` — the generator's exact sentences as the sample
+  (`sample_docs.DEMAND_LETTER`, pinned to `renderDemand` by test), free PDF, generator one tap away,
+  and an arrears table from the Brain's shelf: Lagos s.13(2)–(3) (six months / one year, no quit
+  notice), FCT (no shortcut, s.7 Form E), Cross River s.15 proviso, Kwara s.17 proviso and Ch. L4,
+  Edo (one month), Rivers s.75(1) (rent in arrears unless agreed), the seven-clear-days notice for
+  Anambra/Enugu/Kano; the ladder after the letter and the s.44 self-help offence; a tenant's section.
+  Linked from the quit-notice and receipt pages and the home guides block; `growth.MONEY_PAGE` counts
+  it. **Measure:** money-page share (15% → 25% by 1 Dec); first impressions for "demand letter" /
+  "unpaid rent" / "rent arrears" queries within 3 weeks (Search Console pull). **TEST NEXT:** a
+  rent-increase notice page only if a generator is built for it (the sample-page rule: nothing on a
+  page the tool does not write). **LATER:** employment-letter and warning-letter pages, same rule.
+  **REJECT:** an editable Word template of any paid document (it is the product); payslip SEO.
+  Sources: genieai.co/en-ng letter-for-non-payment-of-rent; justicedirect.com (13 Mar 2025);
+  bindlegal.com (25 May 2026); kenyanlaw.com (15 Jul 2021); mushrooms.ng rent-increase-letter-nigeria
+  (20 Oct 2026); apartments.ng b1130; notchhr.io (9 Mar 2026); anoorehr.com (16 Jul 2026);
+  finorabusiness.com (24 Jan 2025); smartsmssolutions.com (15 Jan 2026).
 - **2026-11-04** — **Third Facebook pass (owner, 10:14am, the same order).** Found: Facebook's
   first comment was a bare link and the Reel had none (Instagram has had the question-first comment
   since 22 Oct); the first replies pass came 2 h 10 min after the 9:30am post; and this morning's

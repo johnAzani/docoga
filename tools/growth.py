@@ -46,7 +46,7 @@ STRIKING_MIN_IMPR = 10
 
 # Pages that make the documents people pay for (the pass is sold on the receipt/agreement lanes).
 MONEY_PAGE = re.compile(r"docoga\.com\.ng/(?:$|index(?:\.html)?$|rent-receipt|tenancy-agreement|shop-tenancy-agreement|"
-                        r"invoice|caution-fee|rent-index-nigeria)")
+                        r"invoice|caution-fee|rent-index-nigeria|demand-letter)")
 # Query wording that already carries the intent to make or download a document.
 TRANSACTIONAL = re.compile(r"\b(sample|template|format|pdf|download|generator|make|create|write|letter|form)\b", re.I)
 

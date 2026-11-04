@@ -494,6 +494,18 @@ the day rather than publish a repeat. `tidy()` also heals a reflow that lands on
 six or seven lines by joining short neighbours — layout only — which was the
 commonest refusal on Short days.
 
+### Two gates added 4 Nov 2026 (🔒 docs/BRAIN_GROWTH.md)
+
+* **Fact ids in the copy are refused, not erased.** `brain.inline_fact_ids(raw)` reads
+  `(lagos:receipts:1)`-style ids out of every string a reader would see *before* `tidy()` strips
+  them; the gate adds "fact id typed into the copy: …" to the problems, the model is asked again, and
+  the refusal is counted under the lesson family `fact_id_in_copy`. The publishing lanes still strip
+  on read (`brain_drafts.clean_words`) — belt and braces.
+* **The reply lane answers "is the new rent law real?" from the shelf.** `brain_replies.bill_facts`
+  brings the state's dated `pending_bill` facts (and any other named state's) into the prompt when a
+  comment talks of a bill, a passage, a signing or a ban; `lint_reply` refuses a reply that calls the
+  bill law. No bill on the shelf → nothing invented, the reply asks which state.
+
 ## Quota (free plan, forever)
 Research of 16 Oct 2026: Google no longer publishes free-tier limits; projects
 have seen the Flash daily bucket at **20 requests** since December 2025, and the

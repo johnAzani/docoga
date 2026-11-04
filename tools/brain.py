@@ -338,6 +338,8 @@ LESSON_FAMILIES = (
      "a Deep-Dive runs 36 to 48 beats — count them before answering."),
     ("unknown_fact", re.compile(r"unknown fact id", re.I),
      "a claim's fact_id is copied exactly from the shelf list — never a date or an invented id."),
+    ("fact_id_in_copy", re.compile(r"fact id typed into the copy", re.I),
+     "fact ids such as lagos:receipts:1 live only in `claims[].fact_id` — never inside the headline, a line, the caption or any words a reader sees."),
     ("style", re.compile(r"banned|style word|game-changer|delve", re.I),
      "none of the banned style words; plain Nigerian English."),
     ("repeat", re.compile(r"repeat|said before|too close to|cooldown", re.I),
@@ -708,6 +710,35 @@ def _wrap_line(text, width):
             head, tail = text[:best].rstrip(), text[best:].strip()
             return [head] + _wrap_line(tail, width)
     return [text]
+
+
+def inline_fact_ids(pack):
+    """The fact ids the model typed into words a reader sees — '…unreasonable (lagos:increase_challenge:1).'
+    Read BEFORE tidy() strips them, so the gate can refuse and the refusal becomes a lesson (4 Nov 2026:
+    three packs in a row carried them, were silently cleaned, and the model never heard about it)."""
+    found = []
+    if not isinstance(pack, dict):
+        return found
+    try:
+        import brain_drafts
+        rx = brain_drafts.FACT_ID
+        skip = ("claims", "id", "fact_id", "theme", "state", "tool", "date", "status")
+    except Exception:  # noqa: BLE001
+        return found
+
+    def walk(obj):
+        if isinstance(obj, dict):
+            for k, v in obj.items():
+                if k not in skip:
+                    walk(v)
+        elif isinstance(obj, list):
+            for v in obj:
+                walk(v)
+        elif isinstance(obj, str) and ":" in obj:
+            for m in rx.finditer(obj):
+                found.append(m.group(0).strip(" ()"))
+    walk(pack)
+    return found
 
 
 def tidy(pack):
@@ -1144,9 +1175,16 @@ def plan_day(day, said, http=None, sleep=None, log=print, dry_run=False):
     ctx["facts_by_id"] = {f["id"]: f for f in ctx["facts"]}
     problems = []
     for attempt in range(1, MAX_ATTEMPTS + 1):
-        pack = tidy(gemini_text.generate_json(prompt_for(ctx, problems or None), system=SYSTEM, http=http,
-                                              sleep=sleep, log=log))
+        raw = gemini_text.generate_json(prompt_for(ctx, problems or None), system=SYSTEM, http=http,
+                                        sleep=sleep, log=log)
+        leaked = inline_fact_ids(raw)
+        pack = tidy(raw)
         problems = lint(pack, ctx, said)
+        if leaked:
+            # Refused, not just cleaned: the id in the copy is the model's habit, and a refusal is
+            # the only thing the lessons loop can count (🔒 docs/BRAIN_GROWTH.md, 4 Nov 2026).
+            problems.append("fact id typed into the copy: %s — ids live only in `claims`, never in words a reader sees"
+                            % ", ".join(sorted(set(leaked))[:3]))
         if not problems:
             problems = verify(pack, ctx, http=http, sleep=sleep, log=log)
         if not problems:
