@@ -199,6 +199,28 @@ variable `FB_NATIVE_VIDEO=off`. First real run: **Sun 8 Nov 2026, 9:30am** (dd5 
 public Sat 7 Nov, 7:00pm). Proof of effect: the scorecard's `posts[].views` for that
 post against the 8 views the 1 Nov card earned.
 
+## 4c. The follow loop (4 Nov 2026, second pass)
+
+A Page at 1 follower that never asked. Research the same morning (audience.my, krumzi, orichi,
+crescitaly, rafflepress — 2026 guides that agree): a **specific** follow line converts, a
+generic one does not; the profile must convert the visit (About, website, photo, cover,
+username); the owned surfaces must point at the Page. `tools/fb_follow.py` is the one place
+that knows the Page's address and the asks:
+
+* every feed post ends `…<follow ask>\n\n#hashtags` — a dated rotation of six specific lines
+  ("Follow DocOga for one rent rule for your state, every morning at 9:30"); the Reel caption
+  and the native Deep-Dive carry their own; never "follow for more", never bait phrasing;
+* the site footer on index, the 60 state pages, the guide pages and the power-of-attorney
+  page carries `Follow DocOga for one rent rule a day: Facebook · YouTube · Telegram ·
+  Instagram · Threads` (Facebook first);
+* `tools/fb_page_audit.py` runs as preflight step 6 on every Facebook run: reads
+  `username, about, description, website, picture{is_silhouette}, cover, is_published`,
+  **fills an empty About/website/description** from `DESIRED` when the token may
+  (`pages_manage_metadata`; a refusal becomes the paste instruction), names the one-time
+  taps in ONE warning while they are missing, and catches a renamed username — every link we
+  have ever published prints `facebook.com/docoga.com.ng`. Prints `FB_PAGE_AUDIT=ok|N
+  problem(s)|unread`; never fatal. `FB_PAGE_FIX=off` makes it read-only.
+
 ## 5. The four rules the failure handling obeys
 
 Inherited from the Telegram rewrite (four silent failed days, 7–10 Oct 2026):
@@ -513,6 +535,8 @@ say what happened). Switch: repository variable **`FB_STORIES`** = `on` (default
 | the card's look | `tools/social_card.py` (palette, type, kicker names in `KICKER_NAMES`) — it is shared with Instagram and Telegram, so a change there changes all three; preview with `python3 scripts/generate_facebook_content.py --print` and open `assets/facebook/facebook_card_<date>.jpg` |
 | photo frequency | every day is a card; there is no odds knob any more |
 | whether Reels publish at all | repository **variable** `FB_REELS` = `probe` (default) / `on` / `off` |
+| whether the preflight may fill an empty About/website (§4c) | repository **variable** `FB_PAGE_FIX` = `on` (default) / `off` (read-only audit) |
+| the follow asks / the site footer row | `LINES`, `REEL_LINE`, `VIDEO_LINE`, `CHANNELS` in `tools/fb_follow.py`, then regenerate the pages (`gen_state_pages.py`, `gen_guide_pages.py`) |
 | whether the Deep-Dive is uploaded natively on its feature day (§4b) | repository **variable** `FB_NATIVE_VIDEO` = `on` (default) / `off` — `off` restores the card + YouTube link in the first comment |
 | whether Stories publish | repository **variable** `FB_STORIES` = `on` (default) / `off`; the afternoon time is the cron in `facebook_story_afternoon.yml` |
 | which days get a Reel | `REEL_WEEKDAYS` in `scripts/facebook_reel_daily.py` (keep it off YouTube's Tue/Fri — the collision rule is in that file's header) |

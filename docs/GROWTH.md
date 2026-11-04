@@ -64,6 +64,18 @@ platforms; nothing the owner must do on a schedule.
 
 ## 5. Growth ledger (newest first — the scorecard reads the top date)
 
+- **2026-11-04** — **Second Facebook pass (owner, 8:35am, the same order again).** Found: the Page
+  never asked for a follow in five weeks; the site's 85 weekly visits met no visible channel link;
+  nobody audits the Page profile; and the 4–6 Nov brain packs carried fact ids inline in the copy
+  (caught 45 minutes before the 9:30am post). **DO NOW (shipped, #199):** `tools/fb_follow.py` —
+  specific dated follow asks on every Facebook post, Reel and native video; the follow row in every
+  page footer; `tools/fb_page_audit.py` in the preflight (fills About/website, names the taps,
+  catches a renamed username); fact ids stripped on read and before the brain's gates.
+  **TEST NEXT:** `followers_count` on 9 and 16 Nov; the `FB_PAGE_AUDIT=` line of the next run.
+  **LATER:** a pinned post (no API — one tap, named only if the audit shows the profile otherwise
+  complete). **REJECT:** invite-to-follow automation (no API; the owner's own tap, never a bot).
+  Sources: audience.my 10 May 2026; krumzi 11 Sep 2026; orichi 12 Oct 2026; crescitaly 6 Jun 2026;
+  rafflepress 28 Jul 2026; Graph API Page reference (fields, `pages_manage_metadata`).
 - **2026-11-04** — **Facebook pass (owner, 6:35am: "research very very very in-depth … more
   guaranteed results on Facebook … automated … ₦0").** Where the Page stands: 1 follower, 2–14
   views a post, the first-comment link the only "comment" on most days; yet facebook sent 69 of
