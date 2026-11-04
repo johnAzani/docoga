@@ -398,7 +398,8 @@ PAGES["notice-to-quit-nigeria.html"] = dict(
          "months' imprisonment. Only the court can order possession."),
     ],
     cta=("notice", "Create your notice to quit free →"),
-    related=["tenancy-agreement-sample-nigeria.html", "tenancy-agreement-nigeria.html", "tenant-rights-nigeria.html",
+    related=["demand-letter-rent-arrears-nigeria.html", "tenancy-agreement-sample-nigeria.html",
+             "tenancy-agreement-nigeria.html", "tenant-rights-nigeria.html",
              "caution-fee-nigeria.html", "rent-receipt-format-nigeria.html"],
     priority="0.9",
 )
@@ -549,7 +550,132 @@ PAGES["rent-receipt-format-nigeria.html"] = dict(
     ],
     cta=("receipt", "Create your rent receipt free →"),
     related=["caution-fee-nigeria.html", "tenancy-agreement-sample-nigeria.html",
-             "tenant-rights-nigeria.html", "invoice-format-nigeria.html"],
+             "demand-letter-rent-arrears-nigeria.html", "tenant-rights-nigeria.html", "invoice-format-nigeria.html"],
+    priority="0.8",
+)
+
+# 4b ── demand letter for unpaid rent (4 Nov 2026, 🔒 docs/GROWTH.md fourth dive) -----------------
+# The generator has written demand letters since launch (renderDemand) and had no page. The Nigerian
+# field for "demand letter for unpaid rent" is Genie AI's auto-generated outlines (no letter text, no
+# section of any law) and foreign pages (US, UK, Kenya). Nobody puts the letter, the free PDF and the
+# arrears rule of each state's law on one page. Every rule below is a cited fact on the Brain's shelf.
+ARREARS_TABLE = '''<table>
+<tr><th>State</th><th>What the law says about rent in arrears</th><th>Section</th></tr>
+<tr><td><b>Lagos</b></td><td>A <b>monthly</b> tenant <b>six months</b> in arrears: the tenancy lapses and the court makes an order for possession and arrears on proof — <b>no quit notice needed</b>. A <b>quarterly or half-yearly</b> tenant <b>one year</b> in arrears: the same.</td><td>Tenancy Law 2011, s.13(2), s.13(3)</td></tr>
+<tr><td><b>FCT Abuja</b></td><td><b>No arrears shortcut.</b> The Recovery of Premises Act has no equivalent of the Lagos rule — serve the notice to quit, then the seven-day Form E notice, then the court.</td><td>Recovery of Premises Act, s.7</td></tr>
+<tr><td><b>Cross River</b></td><td>A <b>monthly</b> tenant <b>three months</b> in arrears: the tenancy determines and the court shall, on the landlord’s application, make an order for possession and arrears.</td><td>Rent Control and Recovery of Premises Law, s.15 proviso; Schedule 3(a)</td></tr>
+<tr><td><b>Kwara</b></td><td>A <b>monthly</b> tenant <b>three months</b> in arrears: the same. And under Chapter L4, rent may be demanded or recovered <b>only once it is in arrear</b>.</td><td>Rent Control and Recovery of Residential Premises Law 1995, s.17 proviso; Landlord and Tenant Law, Ch. L4</td></tr>
+<tr><td><b>Edo</b></td><td>Rent lawfully due and in arrear for <b>one month</b> after it became due is a ground on which the tribunal may order possession — the shortest trigger on the shelf.</td><td>Rent Control and Recovery of Residential Premises Edict 1977</td></tr>
+<tr><td><b>Rivers</b></td><td>Rent is payable <b>in arrears</b> — at the end of the period — unless the parties agree otherwise. Advance rent is whatever the agreement says.</td><td>Landlord and Tenant Law, Cap. 75, s.75(1)</td></tr>
+<tr><td><b>Anambra · Enugu · Kano</b></td><td>No arrears shortcut verified. After the quit notice expires, a further written notice of the owner’s intention to apply to court of <b>not less than seven clear days</b> — and it cannot be issued before the quit notice expires.</td><td>Landlord and Tenant Law (Anambra, Enugu); Kano recovery law</td></tr>
+</table>
+<p class="muted">Where a state is not in the table, the ordinary rule applies: the demand letter, then the notice to quit your agreement or the state law requires, then the seven-day notice, then the court. Every section here is on the <a href="%s/tenancy-law-lagos">state tenancy-law pages</a>, with the date it was checked.</p>''' % DOMAIN
+
+PAGES["demand-letter-rent-arrears-nigeria.html"] = dict(
+    published="2026-11-04", parent=("notice-to-quit-nigeria.html", "Notice to quit in Nigeria"),
+    title="Demand Letter for Unpaid Rent in Nigeria (2026): Sample + Free PDF + What Each State\u2019s Law Says",
+    h1="Demand letter for unpaid rent in Nigeria \u2014 the sample letter, free PDF, and the arrears rule in your state",
+    desc="A demand letter for rent arrears in Nigeria you can read in full and download free: the sum in words, the due date, the days to pay, what follows if it is ignored \u2014 and the arrears rule of Lagos, Abuja, Edo, Cross River, Kwara and Rivers law, section by section.",
+    lead="Before a quit notice, before a lawyer, before anything the court will look at, there is one "
+         "letter: the written demand for the rent that fell due and was not paid. This is that letter in "
+         "the standard Nigerian form \u2014 the sum in figures and words, the period it covers, the date it "
+         "fell due, the days given to pay and what follows if it is ignored \u2014 with square brackets where "
+         "your details go. Read it, download it, or let the generator fill it in and give you a clean copy "
+         "in two minutes. Below the letter: what each line is for, the arrears rule in each state\u2019s law "
+         "(some let a tenancy lapse on arrears with no quit notice at all; Abuja does not), and what a "
+         "tenant who receives one should do.",
+    widget=('<div class="box">\n<h2>The sample (landlord to tenant, rent in arrears, Lagos premises)</h2>\n'
+            + sample_docs.html_sample("demand-letter-rent-arrears-nigeria")
+            + download_block("demand-letter-rent-arrears-nigeria", "demand", "Fill it in free \u2014 any debt, any state \u2192")
+            + '\n</div>'),
+    boxes=[
+        ("What each line of the letter is for", ul([
+            "<b>The sum, in figures and in words.</b> A demand that names a different figure in the heading and "
+            "the body is the first thing a tenant\u2019s lawyer attacks. The generator writes both from one number.",
+            "<b>What the money is for and when it fell due.</b> \u201cThe rent of \u20a6\u2026 for the period \u2026 in respect of \u2026, "
+            "which fell due on \u2026\u201d \u2014 the period and the due date are what turn a complaint into arrears that a "
+            "court can count.",
+            "<b>The demand itself.</b> One sentence, in capitals, asking for immediate payment of the amount "
+            "outstanding \u2014 the sentence the court reads as the demand.",
+            "<b>The days to pay.</b> Fourteen days is the usual figure; seven is common where the agreement says "
+            "rent is due on a fixed day. The letter must give <i>a</i> period \u2014 a demand with no deadline is a "
+            "reminder.",
+            "<b>What follows.</b> Proceedings for the debt, interest and costs \u2014 the recovery of the <i>money</i>. "
+            "Recovering the <i>premises</i> is a separate ladder: the notice to quit, the seven-day notice, the "
+            "court order. The letter says so and promises nothing it cannot do.",
+            "<b>Who signs.</b> The landlord, or an agent or solicitor <i>for</i> the landlord. Keep a copy and proof "
+            "of delivery \u2014 a WhatsApp photo of the signed letter with the tenant\u2019s reply is proof.",
+        ])),
+        ("Rent in arrears, state by state \u2014 when the law lets a tenancy lapse without a quit notice", ARREARS_TABLE),
+        ("The ladder after the letter (and the step that is an offence)", ul([
+            "<b>1. The demand letter</b> \u2014 this page. It recovers the money, or it becomes the first exhibit.",
+            "<b>2. The notice to quit</b> \u2014 the period your agreement names or, where it is silent, the state "
+            "minimum (<a href=\"%s/notice-to-quit-nigeria\">one week to six months, by tenancy type</a>). In Lagos, "
+            "Cross River and Kwara the arrears rules in the table skip this step once the arrears reach the "
+            "statutory period; in the FCT they never do." % DOMAIN,
+            "<b>3. The seven-day notice</b> of the owner\u2019s intention to apply to court to recover possession "
+            "(Form E in the FCT, Edo, Cross River and Kwara; Form TL5 in Lagos) \u2014 and it cannot be served "
+            "before the quit notice expires.",
+            "<b>4. The court order.</b> A landlord may not resort to self-help: no changed locks, no removed roof, "
+            "no thugs. In the FCT, once the seven days expire the occupier is a statutory tenant removable only "
+            "by a lawful court order; in Lagos, forcible ejection is an offence under s.44 of the Tenancy Law "
+            "2011 \u2014 fine up to \u20a6250,000 or up to six months\u2019 imprisonment.",
+        ])),
+        ("If you are the tenant who received one", ul([
+            "<b>Check the figure against your receipts.</b> In a possession claim built on arrears, the tenant\u2019s "
+            "receipts are the answer \u2014 in Lagos a landlord who did not issue one has committed an offence "
+            "(s.5(3), fine \u20a6100,000). If you paid and have no receipt, your bank transfer narration and your "
+            "messages are the next best evidence.",
+            "<b>A demand letter is not an eviction.</b> It does not end the tenancy and it does not shorten the "
+            "notice you are owed. Reply in writing \u2014 pay, propose dates, or dispute the figure \u2014 and keep "
+            "the reply.",
+            "<b>In Rivers and Kwara, check when rent is even due.</b> Rent is payable in arrears unless your "
+            "agreement says otherwise; a demand for rent that is not yet due is not a demand for arrears.",
+            "<b>Watch the statutory periods.</b> Six months\u2019 arrears for a monthly tenant in Lagos, three in "
+            "Cross River and Kwara, one in Edo: at those points the law stops requiring a quit notice. Pay "
+            "something, in writing, before you reach them.",
+        ])),
+        ("How this sample compares with what else is online", ul([
+            "<b>Template catalogues</b> list what a \u201cletter for non-payment of rent\u201d should contain and "
+            "sell the text. This page shows the whole letter and gives it away.",
+            "<b>Foreign templates</b> (US \u201cpay or quit\u201d notices, UK arrears letters, Kenyan samples) cite "
+            "laws that do not run here and periods no Nigerian court recognises. Every section on this page "
+            "is a Nigerian section, with its state.",
+            "<b>A solicitor\u2019s letter</b> carries the firm\u2019s letterhead and, in practice, more weight with a "
+            "difficult tenant. For the first demand, the landlord\u2019s own letter in this form is what the "
+            "solicitor would send \u2014 and it costs nothing.",
+        ])),
+    ],
+    faq=[
+        ("How do I write a demand letter for unpaid rent in Nigeria?",
+         "Name the premises, the period the rent covers and the date it fell due; state the sum in figures and "
+         "words; demand immediate payment; give a number of days (fourteen is usual); say that proceedings for "
+         "the debt, interest and costs follow if it is not paid; sign and date it, and keep proof of delivery. "
+         "The sample above is that letter; the generator fills it in free."),
+        ("Is a demand letter the same as a notice to quit?",
+         "No. A demand letter asks for money and records that it was asked for. A notice to quit ends the "
+         "tenancy after the period your agreement or the state law requires. One can follow the other; neither "
+         "replaces the other \u2014 except where a state\u2019s arrears rule (Lagos s.13(2)\u2013(3), the Cross River "
+         "and Kwara provisos) lets the tenancy lapse on the arrears themselves."),
+        ("How many days should I give the tenant to pay?",
+         "The letter must give a period; fourteen days is the common figure and seven is used where the agreement "
+         "fixes a rent day. The period in the letter does not shorten any notice period the tenancy itself "
+         "requires."),
+        ("Can I lock the tenant out if the demand is ignored?",
+         "No. Self-help is unlawful in every state on this page \u2014 in Lagos it is an offence under s.44 of the "
+         "Tenancy Law 2011. The route is the notice to quit (where still required), the seven-day notice, and a "
+         "court order for possession and arrears."),
+        ("Does a demand letter need a lawyer?",
+         "Not for the first demand on a residential tenancy. A solicitor\u2019s letter adds weight and is the right "
+         "step when the sum is large, the tenant disputes it, or the court is the next stop. DocOga is not a law "
+         "firm and this page is general information, not legal advice."),
+        ("Can I download the demand letter as a PDF for free?",
+         "Yes \u2014 the PDF above is free and needs no signup. It carries the square brackets; the generator fills "
+         "them in and gives you a clean copy, free with a small banner or without one on the Oga Pass."),
+    ],
+    cta=("demand", "Create your demand letter free \u2192"),
+    related=["notice-to-quit-nigeria.html", "rent-receipt-format-nigeria.html", "tenancy-agreement-sample-nigeria.html",
+             "tenant-rights-nigeria.html"],
     priority="0.8",
 )
 
@@ -1381,6 +1507,7 @@ def main():
         "notice-to-quit-nigeria.html": "Notice to quit: how many months",
         "caution-fee-nigeria.html": "Is the caution fee refundable?",
         "rent-receipt-format-nigeria.html": "Rent receipt format",
+        "demand-letter-rent-arrears-nigeria.html": "Demand letter for unpaid rent + free PDF",
         "tenant-rights-nigeria.html": "Tenant rights &amp; landlord duties",
         "shop-tenancy-agreement-nigeria.html": "Shop &amp; business tenancy",
         "invoice-format-nigeria.html": "Invoice format + 7.5% VAT",

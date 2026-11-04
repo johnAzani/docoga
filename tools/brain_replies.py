@@ -522,6 +522,39 @@ def collect(platforms, ledger, log, max_per_run=MAX_PER_RUN):
 
 
 # ───────────────────────────── drafting ─────────────────────────────
+# 4 Nov 2026 (🔒 docs/BRAIN_GROWTH.md): the commonest wrong belief under our posts is that a rent
+# bill is already law — "Lagos don ban yearly rent", "the new tenancy law says…". The shelf has
+# carried dated `pending_bill` facts since 3 Nov; the reply lane only saw the facts the day's post
+# cited. A comment that talks of a bill or a new law now brings that state's pending_bill facts
+# (and, when it names another state with a bill, that state's too), so the reply can say "a bill,
+# not law, as at <date>" in the shelf's own words instead of guessing or going quiet.
+BILL_TALK = re.compile(r"\b(bill|new (?:\w+ ){0,2}law|passed|assembly|assented?|signed into|"
+                       r"ban(?:ned)?|abolish(?:ed)?|outlaw(?:ed)?|governor|sanwo|wike|otti|mbah|soludo|"
+                       r"one year rent|yearly rent|advance rent|rent control)\b", re.I)
+BILL_STATE_WORDS = {"lagos": ("lagos", "eko"), "abuja": ("abuja", "fct", "federal capital"), "anambra": ("anambra", "awka", "onitsha"),
+                    "enugu": ("enugu",), "abia": ("abia", "aba", "umuahia"), "ebonyi": ("ebonyi", "abakaliki"), "kogi": ("kogi", "lokoja")}
+# A reply must never promote a bill to law. Checked only when the comment is bill talk.
+BILL_AS_LAW = re.compile(r"\b(is|are|was|now|already|don|has been|have been)\s+(the\s+)?(law|signed|passed into law|in force|"
+                         r"effective|legal now|illegal now)\b|\bnew law (says|states|provides|requires)\b|\bsigned into law\b", re.I)
+
+
+def bill_facts(state, text):
+    """The dated `pending_bill` facts a bill-talk comment needs: the post's state first, then any other
+    state the comment names. [] when the comment is not about a bill or no state carries one."""
+    if not BILL_TALK.search(text or ""):
+        return []
+    low = (text or "").lower()
+    slugs = [state] if state else []
+    for slug, words in BILL_STATE_WORDS.items():
+        if slug not in slugs and any(w in low for w in words):
+            slugs.append(slug)
+    out = []
+    for slug in slugs:
+        if slug in law_index.law.STATE_LAW:
+            out.extend(f for f in law_index.facts_for(slug) if f["key"].split(".")[0] == "pending_bill")
+    return out
+
+
 def context_for(comment, packs_by_date):
     day = _date_wat(comment.get("post_at"))
     pack = packs_by_date.get(day) if day else None
@@ -529,8 +562,11 @@ def context_for(comment, packs_by_date):
     facts = law_index.facts_for(state) if state and state in law_index.law.STATE_LAW else []
     cited = {c.get("fact_id") for c in (pack or {}).get("claims") or []}
     shelf = [f for f in facts if f["id"] in cited] or facts[:12]
+    bills = bill_facts(state, comment.get("text"))
+    seen = {f["id"] for f in shelf}
+    shelf = shelf + [f for f in bills if f["id"] not in seen]
     return {"pack": pack, "state": state, "facts": shelf, "reader": (pack or {}).get("reader"),
-            "tool": (pack or {}).get("tool"),
+            "tool": (pack or {}).get("tool"), "bill_talk": bool(bills),
             "link": drafts.tag_links(drafts.link_for(pack or {}), comment.get("platform"))}
 
 
@@ -554,6 +590,7 @@ HOUSE RULES
 - Never legal advice to their own case ("you should sue", "you will win"), never "stop paying rent", never a court outcome, never a price other than ₦2,000 / free to start. Never argue; if the comment is abuse or bait, skip.
 - A question deserves an answer first, then (optionally) the document and the link. Praise deserves one warm line and a question back. Someone sharing a story deserves acknowledgement and the one rule that protects them.
 - Links: only the LINK WE MAY GIVE, and only when it helps.
+- Bills: when a comment says a rent law has been passed, signed or banned something, answer from the pending_bill facts listed — it is a bill, not law, as at the date the fact names; say what it would change and what applies today. Never call a bill law, never guess its stage.
 
 COMMENTS
 %s
@@ -596,6 +633,8 @@ def lint_reply(text, ctx):
                 p.append("section %s is not on the shelf for %s" % (c, ctx.get("state") or "this post"))
     if "*" in t or "#" in t:
         p.append("markdown or hashtag")
+    if ctx.get("bill_talk") and BILL_AS_LAW.search(t) and "not law" not in low and "not yet law" not in low:
+        p.append("calls a bill law — the shelf says it is a bill, not law")
     return p
 
 

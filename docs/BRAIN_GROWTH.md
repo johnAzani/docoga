@@ -59,6 +59,20 @@ scorecard flags (⚠️) and I act on in the next brief — without being asked.
 
 ## 4. Changelog (newest first — the scorecard reads the top date)
 
+- **2026-11-04** — Two habits corrected at the source. **(1) The reply lane knows the bills.** The
+  commonest wrong belief under our posts is that a rent bill is already law ("Lagos don ban yearly
+  rent"); the shelf has carried dated `pending_bill` facts since 3 Nov but the reply lane only saw the
+  facts the day's post cited. `brain_replies.bill_facts` — a comment that talks of a bill, a "new law",
+  a passage, a signing or a ban now brings that state's `pending_bill` facts (and any other state the
+  comment names that carries one) into the prompt, with a house rule to answer "a bill, not law, as at
+  <date>", and `lint_reply` refuses a reply that promotes the bill to law. Rivers, with no bill on the
+  shelf, gets nothing invented. **(2) Inline fact ids are a refusal, not a silent clean.** The 4/5/6 Nov
+  packs carried `(lagos:receipts:1)` inside the copy; `tidy()` erased them and the model never heard.
+  `brain.inline_fact_ids(raw)` reads the leak before the pencil, the gate names it ("fact id typed into
+  the copy: …"), and a new lesson family `fact_id_in_copy` rides in every drafting prompt once it
+  recurs. Measure: `fact_id_in_copy` refusals per week on the Brain IQ block (expect >0 then 0), and
+  bill-talk replies answered rather than skipped. Tests: `test_brain_replies.BillTalkTests`,
+  `test_brain_tidy`.
 - **2026-11-03** — The shelf learns the bills, and a machine keeps them honest: `pending_bill`
   blocks for Abuja (HB.2839 — first reading 22 Oct 2026, the FCT advance-rent bill our pages did not
   know about), Lagos (second reading 10 Jul 2025, committee), Anambra (announced 26 Mar / 21 Jun 2026)

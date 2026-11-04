@@ -112,6 +112,36 @@ class PageTests(unittest.TestCase):
         for sp in SITE.glob("caution-fee-*.html"):
             self.assertNotIn("/samples/", sp.read_text(encoding="utf-8"), sp.name)
 
+    def test_the_demand_letter_page_is_answer_first_state_aware_and_the_generators_words(self):
+        """4 Nov 2026 (🔒 docs/GROWTH.md fourth dive): the generator wrote demand letters with no page."""
+        html = (SITE / "demand-letter-rent-arrears-nigeria.html").read_text(encoding="utf-8")
+        self.assertIn("Demand Letter for Unpaid Rent in Nigeria (2026)", html)
+        self.assertLess(html.index("DEMAND LETTER — UNPAID RENT"), html.index("What each line of the letter is for"),
+                        "the letter comes before the explanation — answer first")
+        self.assertIn('href="https://docoga.com.ng/samples/demand-letter-rent-arrears-nigeria.pdf" download', html)
+        self.assertIn('href="https://docoga.com.ng/#demand"', html)
+        self.assertIn('rel="canonical" href="https://docoga.com.ng/demand-letter-rent-arrears-nigeria"', html)
+        for needle in ("s.13(2), s.13(3)", "No arrears shortcut", "s.15 proviso", "s.17 proviso", "s.75(1)", "s.44"):
+            self.assertIn(needle, html, needle)
+        self.assertNotIn("Chinedu", html)
+        index = re.sub(r"<[^>]+>", "", (SITE / "index.html").read_text(encoding="utf-8"))   # renderDemand bolds words
+        for sentence in sample_docs.DEMAND_SENTENCES:
+            # the generator's sentence, minus the bracketed details and the sentence that carries them
+            for piece in re.split(r"\[[^\]]*\]", sentence):
+                piece = piece.strip(" .,")
+                if len(piece) > 25:
+                    self.assertIn(piece, index, piece)
+        pdf = pdf_text(sample_docs.render_pdf("demand-letter-rent-arrears-nigeria"))
+        self.assertIn("DEMAND is hereby made", pdf)
+        for page in ("index.html", "notice-to-quit-nigeria.html", "rent-receipt-format-nigeria.html"):
+            self.assertIn("/demand-letter-rent-arrears-nigeria", (SITE / page).read_text(encoding="utf-8"), page)
+        self.assertIn("<loc>https://docoga.com.ng/demand-letter-rent-arrears-nigeria</loc>",
+                      (SITE / "sitemap.xml").read_text(encoding="utf-8"))
+        self.assertTrue((SITE / "og" / "demand-letter-rent-arrears-nigeria.jpg").is_file())
+        import growth
+        self.assertTrue(growth.MONEY_PAGE.search("https://docoga.com.ng/demand-letter-rent-arrears-nigeria"),
+                        "a page with a generator on it is a money page")
+
     def test_the_sample_wording_is_the_generators_wording(self):
         """Every clause body in the sample appears, placeholders aside, in site/index.html's renderAgreement."""
         index = (SITE / "index.html").read_text(encoding="utf-8")

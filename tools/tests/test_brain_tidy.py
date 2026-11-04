@@ -62,7 +62,32 @@ class TidyTests(unittest.TestCase):
 
     def test_plan_day_runs_the_pencil_before_the_gates(self):
         src = Path(brain.__file__).read_text(encoding="utf-8")
-        self.assertIn("pack = tidy(gemini_text.generate_json(", src)
+        self.assertIn("raw = gemini_text.generate_json(", src)
+        self.assertIn("leaked = inline_fact_ids(raw)", src)
+        self.assertIn("pack = tidy(raw)", src)
+        self.assertLess(src.index("leaked = inline_fact_ids(raw)"), src.index("pack = tidy(raw)"),
+                        "the leak is read before the pencil erases it")
+        self.assertLess(src.index("pack = tidy(raw)"), src.index("problems = lint(pack, ctx, said)"))
+
+    def test_a_fact_id_typed_into_the_copy_is_a_refusal_and_a_lesson_not_a_silent_clean(self):
+        """4 Nov 2026 (🔒 docs/BRAIN_GROWTH.md): the 4/5/6 Nov packs carried ids inline; tidy cleaned
+        them and the model never heard. Now the gate names them and the lessons loop counts them."""
+        raw = {"post": {"headline": "Ask for the receipt (lagos:receipts:1)",
+                        "lines": ["It is the law (lagos:receipts:2; lagos:receipts:3).", "Clean line."]},
+               "threads": {"text": "fine"},
+               "claims": [{"text": "x", "fact_id": "lagos:receipts:1"}]}
+        leaked = brain.inline_fact_ids(raw)
+        self.assertEqual(sorted(set(leaked)), ["lagos:receipts:1", "lagos:receipts:2; lagos:receipts:3"])
+        self.assertEqual(brain.inline_fact_ids({"post": {"lines": ["no ids here"]}, "claims": [{"fact_id": "lagos:receipts:1"}]}), [],
+                         "ids in `claims` are where they belong")
+        pack = brain.tidy(raw)
+        self.assertNotIn("lagos:", pack["post"]["headline"] + " ".join(pack["post"]["lines"]), "still cleaned for the reader")
+        src = Path(brain.__file__).read_text(encoding="utf-8")
+        self.assertIn('"fact id typed into the copy: %s', src)
+        self.assertIn("fact_id_in_copy", [k for k, _, _ in brain.LESSON_FAMILIES])
+        family, lesson = brain._lesson_family("fact id typed into the copy: lagos:receipts:1 — ids live only in `claims`")
+        self.assertEqual(family, "fact_id_in_copy")
+        self.assertIn("claims[].fact_id", lesson)
 
 
 if __name__ == "__main__":

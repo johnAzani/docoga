@@ -351,6 +351,43 @@ class ContextTests(unittest.TestCase):
                                                                        "author": "a", "text": "t"}], [ctx]))
 
 
+class BillTalkTests(unittest.TestCase):
+    """4 Nov 2026 (🔒 docs/BRAIN_GROWTH.md): a comment that believes a rent bill is already law gets the
+    shelf's dated pending_bill facts — and a reply that calls the bill law is refused."""
+
+    def test_bill_talk_brings_the_states_pending_bill_facts_and_other_named_states(self):
+        lagos = br.bill_facts("lagos", "Abeg is it true Lagos don ban yearly rent? Sanwo-Olu signed am?")
+        self.assertTrue(lagos)
+        self.assertTrue(all(f["id"].startswith("lagos:pending_bill:") for f in lagos))
+        self.assertTrue(any("not law" in f["text"] for f in lagos), "the dated 'a bill, not law' sentence rides first")
+        both = br.bill_facts("lagos", "and the Abuja rent bill — has it passed?")
+        self.assertTrue(any(f["id"].startswith("abuja:pending_bill:") for f in both))
+        self.assertEqual(br.bill_facts("rivers", "My landlord dey collect two years"), [], "no bill talk, no bill facts")
+        self.assertEqual(br.bill_facts("rivers", "is the bill real?"), [], "Rivers carries no pending bill — nothing invented")
+
+    def test_the_context_adds_bill_facts_without_dropping_the_cited_ones_even_on_a_rotation_day(self):
+        ctx = br.context_for({"text": "Is the new Lagos law real? I heard two years rent is banned",
+                              "post_at": "2026-11-04T09:30:00+01:00", "platform": "facebook"}, {})
+        self.assertTrue(ctx["bill_talk"])
+        self.assertTrue(ctx["facts"] and all("pending_bill" in f["id"] for f in ctx["facts"]))
+        plain = br.context_for({"text": "How many months notice?", "post_at": "2026-11-04T09:30:00+01:00",
+                                "platform": "facebook"}, {})
+        self.assertFalse(plain["bill_talk"])
+        self.assertEqual(plain["facts"], [])
+        self.assertIn("it is a bill, not law", br.prompt_for([{"platform": "facebook", "comment_id": "1", "post_text": "x",
+                                                                "author": "a", "text": "bill?"}], [ctx]))
+
+    def test_a_reply_that_promotes_the_bill_to_law_is_refused(self):
+        ctx = {"bill_talk": True, "facts": br.bill_facts("lagos", "bill")}
+        self.assertIn("calls a bill law — the shelf says it is a bill, not law",
+                      br.lint_reply("Yes o, it is now the law in Lagos, two years rent is illegal now.", ctx))
+        self.assertEqual([], br.lint_reply("Not yet — it is a bill, not law, as at 3 November 2026. It would cap advance rent "
+                                           "at one year for a new yearly tenant. Which state are you renting in?", ctx))
+        # the same sentence under a comment that is not bill talk is not judged by this gate
+        self.assertNotIn("calls a bill law", " ".join(br.lint_reply("It is now the law in Lagos: s.5 says a receipt.",
+                                                                     {"bill_talk": False, "facts": ctx["facts"]})))
+
+
 class WorkflowContractTests(unittest.TestCase):
     def test_the_replies_workflow_runs_after_each_posting_slot_with_write_only_to_contents(self):
         import yaml

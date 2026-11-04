@@ -128,10 +128,43 @@ QUIT_NOTICE = [
           "governs instead."),
 ]
 
+# 4 Nov 2026 (🔒 docs/GROWTH.md, fourth dive): the demand letter the generator writes (renderDemand),
+# shown for its commonest Nigerian use — rent that fell due and was not paid. Every sentence below is
+# the generator's sentence; the brackets are the user's details.
+DEMAND_SENTENCES = [
+    "We refer to [the rent of ₦425,000 for the period 1 July 2026 to 30 June 2027 in respect of the "
+    "two-bedroom flat at 12 Example Street, Surulere, Lagos], which fell due on [1 July 2026]. Despite "
+    "the passage of time, the said sum remains wholly unpaid.",
+    "DEMAND is hereby made for the immediate payment of the sum of [Four Hundred and Twenty-Five Thousand "
+    "(₦425,000) Naira Only], being the amount outstanding and owed to us.",
+    "TAKE NOTICE that if the said sum is not paid within [14] days of the date of this letter, we shall, "
+    "without further reference to you, instruct our solicitors to commence legal proceedings for the "
+    "recovery of the debt, plus interest and costs, to the full extent permitted by law.",
+    "We look forward to your prompt settlement.",
+]
+
+DEMAND_LETTER = [
+    ("h", "DEMAND LETTER — UNPAID RENT"),
+    ("p", "[LANDLORD'S FULL NAME], [landlord's address]"),
+    ("p", "[Date]"),
+    ("p", "[TENANT'S FULL NAME], [the flat / shop / house and full address of the premises]"),
+    ("p", "Dear Sir/Madam,"),
+    ("p", "RE: DEMAND FOR PAYMENT OF [FOUR HUNDRED AND TWENTY-FIVE THOUSAND (₦425,000) NAIRA ONLY]"),
+] + [("p", t) for t in DEMAND_SENTENCES] + [
+    ("p", "Yours faithfully,"),
+    ("sig", ["[Landlord's full name, signature and phone number]  -  or: [Agent / solicitor's name], for the "
+             "landlord"]),
+    ("p", "A demand letter is the written record that the rent was asked for before anything else was done. "
+          "It is not a notice to quit: ending the tenancy still takes the notice your agreement or your "
+          "state's law requires, then the seven days' notice of the owner's intention to recover possession, "
+          "then the court. Keep a copy and proof of delivery."),
+]
+
 SAMPLES = {
     "tenancy-agreement-sample-nigeria": ("Tenancy Agreement — sample (Nigeria)", TENANCY_AGREEMENT),
     "rent-receipt-sample-nigeria": ("Rent Receipt — sample (Nigeria)", RENT_RECEIPT),
     "quit-notice-letter-sample-nigeria": ("Notice to Quit — sample letter (Nigeria)", QUIT_NOTICE),
+    "demand-letter-rent-arrears-nigeria": ("Demand Letter for Unpaid Rent — sample (Nigeria)", DEMAND_LETTER),
 }
 
 
