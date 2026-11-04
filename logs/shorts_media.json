@@ -88,19 +88,32 @@
       "run_id": "41486964273",
       "series": "Part 1 of 5 · Tenancy agreement",
       "series_topic": "Tenancy agreement"
+    },
+    {
+      "date": "2026-11-04",
+      "video_id": "2HvHM0Z1J-E",
+      "title": "Five clauses every tenancy agreement needs (part 2 of 5) #Shorts",
+      "url": "https://docoga-pass.johnazani.workers.dev/m/7Kn6s6h5iEVkiJyZLEydb6qFHmFPoqfE.mp4",
+      "name": "7Kn6s6h5iEVkiJyZLEydb6qFHmFPoqfE",
+      "bytes": 31505788,
+      "hosted_at": "2026-11-04T08:29:50+00:00",
+      "expires_at": "2026-11-05T14:29:50+00:00",
+      "run_id": "41798288694",
+      "series": "Part 2 of 5 · Tenancy agreement",
+      "series_topic": "Tenancy agreement"
     }
   ],
   "latest": {
-    "date": "2026-11-02",
-    "video_id": "BYFumuso2pM",
-    "title": "Read your tenancy agreement. Or pay twice (part 1 of 5) #Shorts",
-    "url": "https://docoga-pass.johnazani.workers.dev/m/NO3qEKtoPQ98ra7aSG3WPIixb7hsRnjo.mp4",
-    "name": "NO3qEKtoPQ98ra7aSG3WPIixb7hsRnjo",
-    "bytes": 44630065,
-    "hosted_at": "2026-11-02T17:18:39+00:00",
-    "expires_at": "2026-11-03T23:18:39+00:00",
-    "run_id": "41486964273",
-    "series": "Part 1 of 5 · Tenancy agreement",
+    "date": "2026-11-04",
+    "video_id": "2HvHM0Z1J-E",
+    "title": "Five clauses every tenancy agreement needs (part 2 of 5) #Shorts",
+    "url": "https://docoga-pass.johnazani.workers.dev/m/7Kn6s6h5iEVkiJyZLEydb6qFHmFPoqfE.mp4",
+    "name": "7Kn6s6h5iEVkiJyZLEydb6qFHmFPoqfE",
+    "bytes": 31505788,
+    "hosted_at": "2026-11-04T08:29:50+00:00",
+    "expires_at": "2026-11-05T14:29:50+00:00",
+    "run_id": "41798288694",
+    "series": "Part 2 of 5 · Tenancy agreement",
     "series_topic": "Tenancy agreement"
   }
 }
