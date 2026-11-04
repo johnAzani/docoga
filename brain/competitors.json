@@ -1,6 +1,6 @@
 {
  "_comment": "The field DocOga plays on — verified by web research on 2 Nov 2026 (docs/COMPETITOR_WATCH.md). tools/competitor_watch.py reads the public feeds here every Monday (₦0: RSS, sitemaps, YouTube channel feeds; nothing that needs a login) and hands the brain what the field published, so every DocOga post is written knowing what the others said — to say it better, cite the section they did not, and take the angle they missed. Never to copy. Add a competitor only with a source you read; never a guess.",
- "verified": "2026-11-02",
+ "verified": "2026-11-04",
  "competitors": [
   {
    "name": "NigeriaBuildingCost — tenancy agreement generator",
@@ -9,7 +9,14 @@
    "feeds": [
     "https://nigeriabuildingcost.ng/sitemap.xml"
    ],
-   "note": "Free generator, 36 states + FCT, printed copy watermarked; ₦4,000 one-time pass removes watermarks on all six tools for 90 days (site, read 2 Nov 2026). Closest direct rival to the pass model."
+   "note": "Free generator, 36 states + FCT, printed copy watermarked; ₦4,000 one-time pass removes watermarks on all six tools for 90 days and — new on the page by 4 Nov 2026 — a ₦500 seven-day pass 'for a one-off job'. Agreement defaults write agency 10% / legal 10% into the document; 'send to your tenant' by email or link needs a login. 30 Oct 2026: a 48-document sample library (mostly construction takeoffs) opened with a filled-in 'Sample Tenancy Agreement (Nigeria Format)' PDF at the top — preview free, download behind a free account (122 downloads by 4 Nov). Closest direct rival to the pass model (pages read 2 and 4 Nov 2026).",
+   "prices": {
+    "url": "https://nigeriabuildingcost.ng/tenancy-agreement",
+    "seen": [
+     "₦4,000",
+     "₦500"
+    ]
+   }
   },
   {
    "name": "Wonder.Legal Nigeria",
@@ -70,10 +77,12 @@
    "kind": "content",
    "url": "https://mushrooms.ng/blog",
    "feeds": [
-    "https://mushrooms.ng/feed/",
     "https://mushrooms.ng/sitemap.xml"
    ],
-   "note": "The strongest 2026 explainers on renting in Lagos (fee stack, the 2026 Tenancy Bill explained, scripts to negotiate agents) — SEO competitor for every 'Lagos rent' query."
+   "note": "The strongest 2026 explainers on renting in Lagos and Abuja — and from 20 to 22 Oct 2026 a burst of about fifteen tenancy-law posts in three days (quit notice and rent increases step by step citing Lagos s.13, Lagos tenant rights, agency fee and the 5% bill, subletting rules with a consent letter to copy, a rent-increase letter, shortlet guides), then moving-out checklists on 2 Nov. Copy-and-fill letters inside blog posts are their answer to generators. No RSS (/feed/ is 404, read 4 Nov 2026) — watched through the sitemap, /blog/ paths only; the rest is listings.",
+   "paths": [
+    "/blog/"
+   ]
   },
   {
    "name": "Lexpraxis Solicitors blog",
@@ -96,9 +105,11 @@
   {
    "name": "AALAWSNG — Adeola Kolawole (YouTube)",
    "kind": "creator",
-   "url": "https://www.youtube.com/watch?v=SEPJ8ANzUuA",
-   "feeds": [],
-   "note": "Law-talk videos on notice to quit; long-form, lawyer-to-camera. Channel feed to be added once its channel id is read from the page. One 2022 explainer on notice to quit; low activity — watched via the channel feed when the page names it."
+   "url": "https://www.youtube.com/channel/UCa158r8OZoEia4z2DhPg2LA",
+   "feeds": [
+    "https://www.youtube.com/feeds/videos.xml?channel_id=UCa158r8OZoEia4z2DhPg2LA"
+   ],
+   "note": "Aviel Avenante Law Practice's channel (id read from its own Posts tab, 4 Nov 2026). Law-talk videos, lawyer-to-camera; the one tenancy explainer ('Nigerian Tenancy Law: Notice to Quit', Nov 2022, 1,625 views) is old — 2026 output is wills, medical consent, company law, land titles. Low priority; the Atom feed answered 404 on the 4 Nov pull though the id is the channel's own, so the source line may read 'unreachable' until YouTube serves it."
   },
   {
    "name": "@legalfriendng — Real Estate Lawyer (TikTok)",

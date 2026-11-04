@@ -12,9 +12,9 @@ DocOga's own money, pricing reasoning and plans stay in `docoga-private`.
 
 ## 1. Document tools — who else sells the paper
 
-| Who | What they sell | Price (public, 2 Nov 2026) | Watchable feed |
+| Who | What they sell | Price (public, re-read 4 Nov 2026) | Watchable feed |
 |---|---|---|---|
-| NigeriaBuildingCost — tenancy agreement generator | Free generator, all 36 states + FCT, state notice clauses, agency/legal fee fields (10%/10% defaults); printout watermarked | ₦4,000 one-time 90-day pass removes the watermark on all 6 tools; a 7-day pass exists | sitemap |
+| NigeriaBuildingCost — tenancy agreement generator | Free generator, all 36 states + FCT, state notice clauses, agency/legal fee fields (10%/10% defaults); printout watermarked; "send to your tenant" needs a login; 30 Oct 2026 sample library (48 files, a filled-in sample tenancy agreement first; download behind a free account) | ₦4,000 one-time 90-day pass removes the watermark on all 6 tools; **₦500 7-day pass** ("for a one-off job") | sitemap + price sentinel on `/tenancy-agreement` |
 | Wonder.Legal Nigeria | 14 housing documents (rent receipt, notice to quit, late-rent notice, deposit-return letter, rent-change notice, sublet request…); basic rent receipt free, customised paid | per document | sitemap |
 | DIYLaw | Lawyer-drafted documents, paid per document, account needed | per document | RSS + sitemap |
 | SabiLaw Solutions | One-time Word template of a tenancy agreement | per template | sitemap |
@@ -32,7 +32,7 @@ on five platforms with a cited law behind each post.
 
 | Who | Why they matter | Feed |
 |---|---|---|
-| Mushrooms.ng blog | Strong Lagos-renting SEO ("true cost of renting in Lagos — budget 130–150% of rent", "Lagos Tenancy Bill 2026 explained") | RSS + sitemap |
+| Mushrooms.ng blog | Strong Lagos/Abuja-renting SEO; 20–22 Oct 2026 burst of ~15 tenancy-law explainers (quit notice and rent increases step by step, Lagos tenant rights, agency fee and the 5% bill, subletting with a consent letter to copy, rent-increase letter); copy-and-fill letters inside posts | sitemap, `/blog/` paths only (`/feed/` is 404) |
 | Lexpraxis Solicitors | Law-firm explainer on the Lagos Tenancy and Recovery of Premises Bill (27 Aug 2026) | RSS |
 | Olamide Oyetayo Legal | Eviction-process explainers (29 Apr 2026) | RSS |
 
@@ -44,7 +44,7 @@ template sources" (24 Nov 2025) — the list buyers read before they choose.
 
 | Who | Platform | What works for them | Feed |
 |---|---|---|---|
-| AALAWSNG — Adeola Kolawole | YouTube | Long explainers ("Nigerian Tenancy Law: Notice to Quit", 2022) | YouTube Atom (channel id read from the page) |
+| AALAWSNG — Adeola Kolawole | YouTube | Long explainers ("Nigerian Tenancy Law: Notice to Quit", 2022, 1,625 views); 2026 output is wills, consent, company law | YouTube Atom, channel `UCa158r8OZoEia4z2DhPg2LA` (read from its Posts tab, 4 Nov 2026) |
 | @legalfriendng — "Real Estate Lawyer" | TikTok | Reacts to viral tenant stories citing the Lagos Tenancy Law (ss.6–7 improvements need written consent; Oct 2026) | none at ₦0 |
 | @talk360law — KING, ESQ. (Benin) | TikTok | Short rulings on landlord/tenant fights; hundreds of comments per post | none at ₦0 |
 | @theonlybusayoadesanya | TikTok | Quit-notice timing explainers (covered by Legit.ng, 8 Sep 2025) | none at ₦0 |
@@ -84,6 +84,12 @@ items sit on the same page so the two can be read together.
   premises, housing, apartment, Lagos, Abuja, LASRERA); a sitemap index is followed into its
   post/blog/news children only; four items per rival at most.
 
+- **Paths and prices (4 Nov 2026).** A marketplace sitemap dates thousands of listings; a row may name
+  `paths` (Mushrooms: `/blog/`) and only links on those paths count. A row may name one public pricing
+  page in `prices{url, seen}`; every pull re-reads it, lists each naira figure between ₦100 and ₦5m
+  (₦0 "free" and bare years are not prices) and the Monday scorecard prints ⚠️ when a figure the map
+  never saw appears or a known one vanishes. Found because a ₦500 seven-day pass appeared under a
+  rival's ₦4,000 one and nothing on the watch could have said so.
 - ₦0: stdlib only, public feeds, one request per feed, 20 s each, never fatal to the Brain run.
 - Never copy a headline; never name a rival or a rival's price in copy (the prompt says so every run).
 - Never scrape behind a login; never a second model; the owner is never asked to watch a rival by hand.
