@@ -1,0 +1,138 @@
+{
+ "version": 1,
+ "status": "approved",
+ "date": "2026-11-06",
+ "generated_at": "2026-11-04T07:51:17+01:00",
+ "theme": "abuja-tenancy-agreement-renewal-rent-relief-ready",
+ "post_type": "promo",
+ "hook_type": "QUESTION",
+ "state": "abuja",
+ "claims": [
+  {
+   "text": "The Recovery of Premises Act sets no limit on how much rent a landlord may demand in advance in the FCT, and attaches no penalty to demanding more than a year.",
+   "fact_id": "abuja:advance_rent:1"
+  },
+  {
+   "text": "Whatever is agreed should be recorded in the tenancy agreement before money moves.",
+   "fact_id": "abuja:advance_rent:1"
+  },
+  {
+   "text": "s.30(2)(a)(vi) Nigeria Tax Act 2025 (in force 1 January 2026): in computing the taxable income of an individual, a rent relief of 20% of the annual rent paid, subject to a maximum of ₦500,000, is deducted — provided the individual accurately declares the actual amount of rent paid and other relevant information the relevant tax authority prescribes.",
+   "fact_id": "nigeria:rent_relief:1"
+  },
+  {
+   "text": "In Abuja, your landlord can ask for any amount of advance rent, but whatever you agree, put it in writing before you pay.",
+   "fact_id": "abuja:advance_rent:1",
+   "recalled": true
+  },
+  {
+   "text": "From 2026, you can claim 20% rent relief on your taxes (up to ₦500k) with a proper receipt and agreement.",
+   "fact_id": "nigeria:rent_relief:1",
+   "recalled": true
+  },
+  {
+   "text": "What if your landlord asks for two years upfront? It's lawful in Abuja, but put it in your agreement to protect yourself.",
+   "fact_id": "abuja:advance_rent:1",
+   "recalled": true
+  },
+  {
+   "text": "In Abuja, what's written protects you.",
+   "fact_id": "abuja:advance_rent:1",
+   "recalled": true
+  },
+  {
+   "text": "With a proper tenancy agreement and receipt, you can claim up to ₦500,000 in rent relief on your taxes from 2026.",
+   "fact_id": "nigeria:rent_relief:1",
+   "recalled": true
+  },
+  {
+   "text": "In Abuja, there's no cap on increases, but agreement is key.",
+   "fact_id": "abuja:increase_challenge:2",
+   "recalled": true
+  }
+ ],
+ "recalled": [
+  "abuja:increase_challenge:2"
+ ],
+ "post": {
+  "headline": "Abuja tenant: Your renewal agreement ready?",
+  "lines": [
+   "This week, talk of rent relief reminds us: paper beats memory.",
+   "In Abuja, your landlord can ask for any amount of advance rent, but whatever you agree,",
+   "put it in writing before you pay (abuja:advance_rent:1).",
+   "From 2026, you can claim 20% rent relief on your taxes (up to ₦500k) with a proper receipt and agreement",
+   "(nigeria:rent_relief:1). Don't leave money on the table. Your tenancy agreement is the first step."
+  ],
+  "cta": "Send this to the friend renewing their rent in Abuja.",
+  "hashtags": [
+   "#DocOga",
+   "#AbujaTenancy",
+   "#RentRelief",
+   "#TenancyAgreement"
+  ]
+ },
+ "threads": {
+  "text": "Abuja tenant, is your tenancy agreement still a handshake? Without a written agreement, you're leaving your rent relief on the table. What if your landlord asks for two years upfront? It's lawful in Abuja, but put it in your agreement to protect yourself.\n\nWhat does your agreement say?",
+  "hashtags": [
+   "#DocOga",
+   "#Abuja"
+  ],
+  "topic": "Tenant Rights Nigeria",
+  "poll": null,
+  "evening": "An Abuja landlord can legally ask for two years' rent upfront, but it's essential to get it in writing. A solid tenancy agreement protects both sides."
+ },
+ "visual": {
+  "kicker": "Know your rights",
+  "layout": "poster",
+  "big": "",
+  "plate": "keys wooden door"
+ },
+ "short": {
+  "title": "Renewing your tenancy? Do it right.",
+  "hook_sub": "Avoid disputes, get relief",
+  "hook_say": "Don't let your rent renewal be a fight. Understand what changes, what stays, and how to protect yourself. A new agreement can save you stress and money.",
+  "tips": [
+   {
+    "text": "Check old agreement",
+    "sub": "What was agreed last time?",
+    "say": "Always review your previous tenancy agreement. Note any clauses about renewal, rent increases, or notice periods. This sets the baseline for your new terms."
+   },
+   {
+    "text": "Discuss increases early",
+    "sub": "Negotiate before it's set",
+    "say": "Talk to your landlord about any proposed rent increases. In Abuja, there's no cap on increases, but agreement is key. A clear discussion prevents surprises."
+   },
+   {
+    "text": "Get new agreement",
+    "sub": "Paper protects both sides",
+    "say": "A new tenancy agreement is vital. It formalises the new terms, including rent, duration, and any changes. In Abuja, what's written protects you (abuja:advance_rent:1)."
+   },
+   {
+    "text": "Claim rent relief",
+    "sub": "Save ₦500k on taxes",
+    "say": "With a proper tenancy agreement and receipt, you can claim up to ₦500,000 in rent relief on your taxes from 2026 (nigeria:rent_relief:1). Ensure your documents are ready."
+   }
+  ],
+  "hook_text": "RENEWING YOUR TENANCY?\nDO IT RIGHT.",
+  "series": {
+   "slug": "tenancy-agreement",
+   "name": "Tenancy agreement",
+   "part": 5,
+   "total": 5,
+   "label": "Renewal without a fight"
+  }
+ },
+ "why": "Today is a promo day, so the post highlights the tenancy agreement tool, linking it to the federal rent relief news and Abuja's specific tenancy rules for Ngozi, the renewing tenant.",
+ "tool": "tenancy-agreement",
+ "reader": "ngozi",
+ "news_hook": "Rent relief season: from 2026 tenants deduct 20% of rent (max ₦500,000) — only with a receipt in their name",
+ "quiz": null,
+ "gates": [
+  "citation",
+  "verification",
+  "lint",
+  "repetition",
+  "shape"
+ ],
+ "note": ""
+}

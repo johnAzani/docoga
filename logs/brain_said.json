@@ -200,5 +200,30 @@
   "reader": "ngozi",
   "tool": "notice-to-quit",
   "news_hook": "Viral video: Lagos landlord reportedly punched by tenant after proposing a ₦200k → ₦350k rent jump on a self-contain he had rented for six years — The Trumpet / Linda Ikeji's Blog"
+ },
+ {
+  "date": "2026-11-06",
+  "theme": "abuja-tenancy-agreement-renewal-rent-relief-ready",
+  "headline": "Abuja tenant: Your renewal agreement ready?",
+  "post_type": "promo",
+  "hook_type": "QUESTION",
+  "state": "abuja",
+  "fact_ids": [
+   "abuja:advance_rent:1",
+   "abuja:advance_rent:1",
+   "nigeria:rent_relief:1",
+   "abuja:advance_rent:1",
+   "nigeria:rent_relief:1",
+   "abuja:advance_rent:1",
+   "abuja:advance_rent:1",
+   "nigeria:rent_relief:1",
+   "abuja:increase_challenge:2"
+  ],
+  "recalled": 1,
+  "plate": "keys wooden door",
+  "short": true,
+  "reader": "ngozi",
+  "tool": "tenancy-agreement",
+  "news_hook": "Rent relief season: from 2026 tenants deduct 20% of rent (max ₦500,000) — only with a receipt in their name"
  }
 ]

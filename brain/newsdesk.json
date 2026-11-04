@@ -1,5 +1,5 @@
 {
- "fetched": "2026-11-04T00:30:56+00:00",
+ "fetched": "2026-11-04T06:50:46+00:00",
  "sources": [
   "Punch: 30 stories",
   "Vanguard: 20 stories",
@@ -11,15 +11,16 @@
  ],
  "items": [
   {
-   "title": "Sanwo-Olu: One week and the different faces of a single development challenge",
-   "link": "https://www.vanguardngr.com/2026/11/sanwo-olu-one-week-and-the-different-faces-of-a-single-development-challenge/",
-   "published": "2026-11-03T23:53:07+00:00",
-   "source": "Vanguard",
-   "score": 6,
+   "title": "Lagos extends financial aid, healthcare to elderly caregivers",
+   "link": "https://punchng.com/lagos-extends-financial-aid-healthcare-to-elderly-caregivers/?utm_source=rss.punchng.com&utm_medium=web",
+   "published": "2026-11-04T00:52:42+00:00",
+   "source": "Punch",
+   "score": 4,
    "matched": [
-    "rent"
+    "rent",
+    "rents"
    ],
-   "summary": "By DAVID OWENS There was a common thread running through several of Governor Babajide Sanwo-Olu’s engagements in the last week of October: the future of Lagos and the resources required to build it. I"
+   "summary": "The Lagos State Government has extended financial aid and free healthcare to older persons with disabilities and elderly parents caring for children with d Read More: https://punchng.com/lagos-extends"
   }
  ]
 }
