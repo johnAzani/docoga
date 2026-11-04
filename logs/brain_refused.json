@@ -1,5 +1,16 @@
 [
  {
+  "date": "2026-11-06",
+  "at": "2026-11-04T01:31:46+01:00",
+  "short_day": true,
+  "state": "abuja",
+  "problems": [
+   "verifier: legal statement not on the shelf — 'Many tenants pay without updating their paperwork and lose their rights.'",
+   "verifier: legal statement not on the shelf — 'A standard Tenancy Agreement makes sure your renewal goes smooth, no wahala.'",
+   "verifier: legal statement not on the shelf — 'A proper Tenancy Agreement protects both you and your landlord.'"
+  ]
+ },
+ {
   "date": "2026-11-04",
   "at": "2026-11-02T01:35:30+01:00",
   "short_day": true,

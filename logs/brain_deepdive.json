@@ -543,6 +543,23 @@
     "beat 36 shot 'naira two thousand bill note' dropped"
    ],
    "run_id": "41594060527"
+  },
+  {
+   "at": "2026-11-04T01:34:39+01:00",
+   "episode": "dd6",
+   "attempt": 1,
+   "outcome": "written",
+   "title": "Your Rent Can Reduce Your Tax: The New Federal Law",
+   "problems": [],
+   "healed": [
+    "section 4: style word rewritten",
+    "beat 8 sub cut at a word: 'Replaces Consolidated Relief Allowance from Personal Income'",
+    "beat 18 sub cut at a word: 'JRB Guidelines: tenant name, rent, landlord details'",
+    "beat 26 dropped: trigger 'up to the 500000' not spoken in section 7 after word 0",
+    "beat 27 dropped: trigger 'actualyear basis meaning rent' not spoken in section 7 after word 0",
+    "beat 36 sub cut at a word: 'Free to start, Oga Pass for ₦2,000 for 30 days for'"
+   ],
+   "run_id": "41747348211"
   }
  ]
 }

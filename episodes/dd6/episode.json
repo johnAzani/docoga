@@ -1,0 +1,545 @@
+{
+ "id": "dd6",
+ "number": 6,
+ "title": "Your Rent Can Reduce Your Tax: The New Federal Law",
+ "kicker": "DOCOGA — DEEP-DIVE · EPISODE 6",
+ "disclaimer": "GENERAL INFORMATION · NOT LEGAL ADVICE · RULES VARY BY STATE AND AGREEMENT",
+ "voice": {
+  "_locked": "LOCKED by the owner 14 Oct 2026 — must equal tools/deepdive.py LOCKED_VOICE_*; the engine refuses anything else",
+  "name": "Orus",
+  "instruction": "Narrate this in a natural Nigerian English accent, like a confident Lagos radio presenter:"
+ },
+ "audio": {
+  "_comment": "Sound plan — synthesized by tools/soundkit.py, cued from the beats (python3 tools/deepdive.py dd2 cues). Bed levels are dB(A) relative to the narrator's speech; SFX are dB below the voice peak. Run #1 (-27 raw) was inaudible on phones — these are broadcast-documentary levels.",
+  "bed": true,
+  "bpm": 72,
+  "seed": 7,
+  "bed_gap_db": -8,
+  "bed_speech_db": -16,
+  "sfx_db": -12,
+  "hit_db": -9,
+  "tick_db": -16,
+  "riser_db": -14,
+  "stinger_db": -9,
+  "tail_fade_s": 4
+ },
+ "youtube": {
+  "title": "Your Rent Can Reduce Your Tax: The New Federal Law (Deep-Dive 6)",
+  "description": "Attention, Nigerian tenants! Did you know there’s a new federal law that allows your rent payments to reduce your taxable income? From January 1, 2026, the Nigeria Tax Act of 2025 introduces a rent relief of 20% of your annual rent, capped at ₦500,000. This Deep-Dive explains exactly what this means for you, who can claim it, the essential documents you need, and how to declare your rent to benefit from this significant tax saving. Don't miss out on this opportunity to lighten your financial burden. Watch now to understand the process and prepare your documents. Get your Rent Receipt or Tenancy Agreement on DocOga in two minutes. General information, not legal advice. https://docoga.com.ng",
+  "tags": [
+   "Rent Relief Nigeria",
+   "Nigeria Tax Act 2025",
+   "Tax Savings Nigeria",
+   "Tenant Rights Nigeria",
+   "DocOga",
+   "Nigerian Tenants",
+   "Federal Tax Law",
+   "Rent Deduction",
+   "PAYE Nigeria",
+   "Self-Employed Tax",
+   "Rent Receipt",
+   "Tenancy Agreement",
+   "Lagos Rent",
+   "Abuja Rent",
+   "Taxable Income"
+  ]
+ },
+ "cover": {
+  "img": "naira",
+  "kicker": "KNOW YOUR RIGHTS",
+  "line1": "NEW FEDERAL",
+  "highlight": "TAX",
+  "label": "LAW 2026",
+  "line2": "YOUR RENT CAN REDUCE",
+  "line3": "YOUR TAX BILL",
+  "sub": "UP TO ₦500,000 IN RELIEF"
+ },
+ "sections": [
+  {
+   "n": 1,
+   "title": "The Hook"
+  },
+  {
+   "n": 2,
+   "title": "What is Rent Relief?"
+  },
+  {
+   "n": 3,
+   "title": "How Much Can You Save?"
+  },
+  {
+   "n": 4,
+   "title": "Who Can Claim It and How?"
+  },
+  {
+   "n": 5,
+   "title": "The Documents You MUST Have"
+  },
+  {
+   "n": 6,
+   "title": "Important Dates and Deadlines"
+  },
+  {
+   "n": 7,
+   "title": "Shared Tenancies and Other Rules"
+  },
+  {
+   "n": 8,
+   "title": "Why This Matters to You, The Tenant"
+  },
+  {
+   "n": 9,
+   "title": "The Law, and DocOga"
+  }
+ ],
+ "beats": [
+  {
+   "sec": 1,
+   "trig": null,
+   "head": "Rent dey vex person",
+   "sub": "Landlords dey increase rent, e fit feel like nothing dey work",
+   "img": "rooftops",
+   "shot": "urban rooftops skyline"
+  },
+  {
+   "sec": 1,
+   "trig": [
+    "good",
+    "news",
+    "for",
+    "you"
+   ],
+   "head": "Good news for you",
+   "sub": "There's a new federal law to help ease that burden a bit",
+   "img": "naira",
+   "shot": "naira banknotes spread"
+  },
+  {
+   "sec": 1,
+   "trig": [
+    "reduce",
+    "the",
+    "tax",
+    "you"
+   ],
+   "head": "Rent can reduce tax",
+   "sub": "Money you pay for rent can reduce tax to government",
+   "img": "calendar",
+   "shot": "calendar with dates"
+  },
+  {
+   "sec": 1,
+   "trig": [
+    "new",
+    "provision",
+    "in",
+    "the"
+   ],
+   "head": "New Tax Act provision",
+   "sub": "Nigeria Tax Act from January 1, 2026 gives breathing room",
+   "img": "letter",
+   "shot": "official letter document"
+  },
+  {
+   "sec": 2,
+   "trig": null,
+   "head": "What is rent relief?",
+   "sub": "Nigeria Tax Act 2025 allows deducting annual rent",
+   "img": "naira",
+   "shot": "naira notes stack"
+  },
+  {
+   "sec": 2,
+   "trig": [
+    "20",
+    "of",
+    "the",
+    "annual"
+   ],
+   "head": "20% of annual rent",
+   "sub": "Section 30(2)(a)(vi) allows 20% relief up to ₦500,000",
+   "img": "phone",
+   "shot": "smartphone screen tax"
+  },
+  {
+   "sec": 2,
+   "trig": [
+    "maximum",
+    "cap",
+    "of",
+    "five"
+   ],
+   "head": "₦500,000 maximum",
+   "sub": "The relief is capped at five hundred thousand naira",
+   "img": "naira",
+   "shot": "large naira coin"
+  },
+  {
+   "sec": 2,
+   "trig": [
+    "replaces",
+    "the",
+    "old",
+    "consolidated"
+   ],
+   "head": "Replaces old allowance",
+   "sub": "Replaces Consolidated Relief Allowance from Personal Income",
+   "img": "calendar",
+   "shot": "calendar year 2026"
+  },
+  {
+   "sec": 3,
+   "trig": null,
+   "head": "How much can you save?",
+   "sub": "20% of annual rent, up to ₦500,000 maximum",
+   "img": "naira",
+   "shot": "naira bills close up"
+  },
+  {
+   "sec": 3,
+   "trig": [
+    "if",
+    "your",
+    "annual",
+    "rent"
+   ],
+   "head": "Example: ₦1.2M rent",
+   "sub": "₦1,200,000 rent gives ₦240,000 relief",
+   "img": "naira",
+   "shot": "naira bundle stack"
+  },
+  {
+   "sec": 3,
+   "trig": [
+    "rent",
+    "from",
+    "two",
+    "million"
+   ],
+   "head": "₦2.5M+ rent = ₦500K",
+   "sub": "₦2,500,000 or more gives maximum ₦500,000 relief",
+   "img": "naira",
+   "shot": "naira notes on table"
+  },
+  {
+   "sec": 3,
+   "trig": [
+    "reduces",
+    "your",
+    "taxable",
+    "income"
+   ],
+   "head": "Reduces taxable income",
+   "sub": "Relief reduces income, actual saving depends on your tax rate",
+   "img": "letter",
+   "shot": "tax form document"
+  },
+  {
+   "sec": 4,
+   "trig": null,
+   "head": "Who can claim?",
+   "sub": "For individuals: employees under PAYE, or self-employed",
+   "img": "artisan",
+   "shot": "artisan working hands"
+  },
+  {
+   "sec": 4,
+   "trig": [
+    "claimed",
+    "not",
+    "automatically",
+    "given"
+   ],
+   "head": "Claim it, not given",
+   "sub": "You must declare your rent; no declaration means zero deduction",
+   "img": "phone",
+   "shot": "hand holding smartphone"
+  },
+  {
+   "sec": 4,
+   "trig": [
+    "declare",
+    "to",
+    "your",
+    "employer"
+   ],
+   "head": "Declare to employer",
+   "sub": "Employees declare to employer for PAYE deductions",
+   "img": "letter",
+   "shot": "official letter receipt"
+  },
+  {
+   "sec": 4,
+   "trig": [
+    "annual",
+    "tax",
+    "return",
+    "to"
+   ],
+   "head": "Self-employed claim",
+   "sub": "Self-employed claim in annual return to State tax authority",
+   "img": "court",
+   "shot": "courtroom empty seats"
+  },
+  {
+   "sec": 5,
+   "trig": null,
+   "head": "Documents you MUST have",
+   "sub": "Proper documentation is key to claim this relief",
+   "img": "pen",
+   "shot": "pen signing document"
+  },
+  {
+   "sec": 5,
+   "trig": [
+    "minimum",
+    "information",
+    "required",
+    "you"
+   ],
+   "head": "Minimum info required",
+   "sub": "JRB Guidelines: tenant name, rent, landlord details",
+   "img": "letter",
+   "shot": "checklist on paper"
+  },
+  {
+   "sec": 5,
+   "trig": [
+    "landlord's",
+    "full",
+    "name",
+    "along"
+   ],
+   "head": "Landlord details",
+   "sub": "Landlord's name, mobile number, Tax ID or NIN",
+   "img": "phone",
+   "shot": "contact information phone"
+  },
+  {
+   "sec": 5,
+   "trig": [
+    "proper",
+    "rent",
+    "receipt",
+    "in"
+   ],
+   "head": "Get a rent receipt",
+   "sub": "Receipt in your name, signed agreement, and proof of payment",
+   "img": "naira",
+   "shot": "naira payment receipt"
+  },
+  {
+   "sec": 6,
+   "trig": null,
+   "head": "Dates and deadlines",
+   "sub": "Timing is important for your tax claims",
+   "img": "calendar",
+   "shot": "calendar with red circle"
+  },
+  {
+   "sec": 6,
+   "trig": [
+    "paye",
+    "returns",
+    "by",
+    "january"
+   ],
+   "head": "PAYE returns: Jan 31",
+   "sub": "Employers submit 2026 PAYE returns by January 31, 2027",
+   "img": "calendar",
+   "shot": "january 2027 calendar"
+  },
+  {
+   "sec": 6,
+   "trig": [
+    "annual",
+    "return",
+    "for",
+    "2026"
+   ],
+   "head": "Individual: Mar 31",
+   "sub": "Individual tax return for 2026 due by March 31, 2027",
+   "img": "calendar",
+   "shot": "march 2027 calendar"
+  },
+  {
+   "sec": 6,
+   "trig": [
+    "rent",
+    "that",
+    "covers",
+    "periods"
+   ],
+   "head": "Rent straddling years",
+   "sub": "Rent covering two years is apportioned to each year",
+   "img": "naira",
+   "shot": "naira and calendar"
+  },
+  {
+   "sec": 7,
+   "trig": null,
+   "head": "Shared tenancies",
+   "sub": "Each tenant claims relief on their portion of rent",
+   "img": "door",
+   "shot": "apartment building entrance"
+  },
+  {
+   "sec": 7,
+   "trig": [
+    "federal",
+    "law",
+    "applying",
+    "nationwide"
+   ],
+   "head": "Federal law, nationwide",
+   "sub": "This rent relief is a federal provision, uniform across Nigeria",
+   "img": "court",
+   "shot": "courtroom gavel desk"
+  },
+  {
+   "sec": 8,
+   "trig": null,
+   "head": "Why this matters",
+   "sub": "New rent relief is a big deal for tenants across Nigeria",
+   "img": "keke",
+   "shot": "keke napep street"
+  },
+  {
+   "sec": 8,
+   "trig": [
+    "reported",
+    "rents",
+    "in",
+    "places"
+   ],
+   "head": "Rents are rising",
+   "sub": "Rents in Lagos have risen 25-40%; every kobo saved counts",
+   "img": "rooftops",
+   "shot": "lagos city view"
+  },
+  {
+   "sec": 8,
+   "trig": [
+    "empowers",
+    "you",
+    "it",
+    "turns"
+   ],
+   "head": "Empowers you",
+   "sub": "Turns your rent payment into a tax advantage",
+   "img": "phone",
+   "shot": "hand holding phone"
+  },
+  {
+   "sec": 8,
+   "trig": [
+    "declare",
+    "and",
+    "document",
+    "properly"
+   ],
+   "head": "Document properly",
+   "sub": "The power is in your hands to declare and document properly",
+   "img": "pen",
+   "shot": "pen and checklist"
+  },
+  {
+   "sec": 9,
+   "trig": null,
+   "head": "The Law, and DocOga",
+   "sub": "You have the right to claim this rent relief",
+   "img": "court",
+   "shot": "legal document desk"
+  },
+  {
+   "sec": 9,
+   "trig": [
+    "paper",
+    "beats",
+    "memory",
+    "every"
+   ],
+   "head": "Paper beats memory",
+   "sub": "Proper receipt and agreement essential for tax benefit",
+   "img": "letter",
+   "shot": "rent receipt paper"
+  },
+  {
+   "sec": 9,
+   "trig": [
+    "docoga",
+    "comes",
+    "in",
+    "docoga"
+   ],
+   "head": "DocOga for documents",
+   "sub": "DocOga is Nigeria’s document engine, make docs in two minutes",
+   "img": "phone",
+   "shot": "phone generating document"
+  },
+  {
+   "sec": 9,
+   "trig": [
+    "two",
+    "thousand",
+    "naira",
+    "for"
+   ],
+   "head": "Oga Pass ₦2,000/month",
+   "sub": "Free to start, Oga Pass for ₦2,000 for 30 days for",
+   "img": "naira",
+   "shot": "naira notes pass"
+  },
+  {
+   "sec": 9,
+   "trig": [
+    "your",
+    "tax",
+    "savings"
+   ],
+   "head": "DOCOGA",
+   "sub": "docoga.com.ng — link in the description",
+   "img": "celebration",
+   "shot": null,
+   "endcard": true
+  }
+ ],
+ "brain": {
+  "written": "2026-11-04T01:34:38+01:00",
+  "theme": "rent-relief-tax-act",
+  "claims": [
+   {
+    "text": "s.30(2)(a)(vi) Nigeria Tax Act 2025 (in force 1 January 2026): in computing the taxable income of an individual, a rent relief of 20% of the annual rent paid, subject to a maximum of ₦500,000, is deducted — provided the individual accurately declares the actual amount of rent paid and other relevant information the relevant tax authority prescribes.",
+    "fact_id": "nigeria:rent_relief:1"
+   },
+   {
+    "text": "Rent relief replaces the Consolidated Relief Allowance of the Personal Income Tax Act from the 2026 year of assessment; a person who pays no rent has no rent relief.",
+    "fact_id": "nigeria:rent_relief:2"
+   },
+   {
+    "text": "The relief is claimed, not given: with no declaration the deduction is ₦0. An employee declares to the employer, who applies it through PAYE from the month the evidence is submitted; a self-employed person or anyone outside PAYE claims it in the annual return to the State tax authority (the Nigeria Revenue Service for FCT residents and others it assesses).",
+    "fact_id": "nigeria:rent_relief:3"
+   },
+   {
+    "text": "Joint Revenue Board PIT Guidelines 2026, para 9.6 — minimum information for rent relief: (i) the legal tenant's name; (ii) actual rent paid and the period covered; (iii) the landlord's full name and one of mobile number, Tax ID or NIN; (iv) the property address. A receipt in the tenant's own name with all four, the signed agreement and proof of payment is what HR and tax offices ask for.",
+    "fact_id": "nigeria:rent_relief:4"
+   },
+   {
+    "text": "Employer's annual PAYE return for the 2026 year: 31 January 2027. Individual annual return for 2026: 31 March 2027. Rent that straddles two years is apportioned to each.",
+    "fact_id": "nigeria:rent_relief:5"
+   },
+   {
+    "text": "Worked figures: ₦1,200,000 rent → ₦240,000 relief; ₦1,500,000 → ₦300,000; ₦2,500,000 or more → the ₦500,000 cap. The relief reduces taxable income, not the tax bill: the naira saved is the relief multiplied by the person's top rate.",
+    "fact_id": "nigeria:rent_relief:6"
+   },
+   {
+    "text": "Fourth Schedule, Nigeria Tax Act 2025 — rates on taxable income from 2026: 0% on the first ₦800,000; 15% on the next ₦2,200,000; 18% on the next ₦9,000,000; 21% on the next ₦13,000,000; 23% on the next ₦25,000,000; 25% above ₦50,000,000.",
+    "fact_id": "nigeria:rent_relief:7"
+   },
+   {
+    "text": "Joint Revenue Board PIT Guidelines 2026, paras 9.3–9.5: in a shared tenancy each tenant claims up to ₦500,000 on the portion of rent they bear; the relief is on an actual-year basis (rent paid in 2026 relieves 2026); rent spanning years is apportioned — the Board's own example: ₦2,000,000 for 24 months counts ₦1,000,000 for 2026, relief ₦200,000.",
+    "fact_id": "nigeria:rent_relief:8"
+   }
+  ]
+ }
+}
