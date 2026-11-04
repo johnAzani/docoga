@@ -64,6 +64,25 @@ platforms; nothing the owner must do on a schedule.
 
 ## 5. Growth ledger (newest first — the scorecard reads the top date)
 
+- **2026-11-04** — **Facebook pass (owner, 6:35am: "research very very very in-depth … more
+  guaranteed results on Facebook … automated … ₦0").** Where the Page stands: 1 follower, 2–14
+  views a post, the first-comment link the only "comment" on most days; yet facebook sent 69 of
+  the site's 85 visits last week. Findings, Meta's own words: every video on Facebook is a Reel of
+  any length or orientation since 17 Jun 2025 (the "plain video post reaches only followers"
+  reasoning in our docs predates it); original video watch time doubled in H2 2025 (13 Mar 2026);
+  same-day Reels get 50 % more recommendation slots (Oct 2025); "Your algorithm" (13 Oct 2026)
+  lets people name topics, so every post must say its topic in words; back-and-forth comments and
+  private shares are the heaviest Feed signals; Pages reach ~2–5 % of followers; the Reels API
+  still refuses anything not 9:16 / 3–90 s. **DO NOW (shipped):** the Deep-Dive uploaded natively on
+  P+1 from the repo's own release (`/videos`, cover thumbnail, link-free words with one question,
+  YouTube + transcript in the first comment, card fallback, `FB_NATIVE_VIDEO`); the Page likes every
+  comment it answers. **TEST NEXT:** Sun 8 Nov's dd5 post views against the 1 Nov card's 8; a
+  text-only question post as a third daily shape if the native video's comments beat the cards.
+  **LATER:** topic words as the first line of every Facebook caption for "Your algorithm".
+  **REJECT:** a Facebook Group (no API — owner's taps), Live (parked), buying reach. Sources:
+  about.fb.com 17 Jun 2025 (TechCrunch, Engadget same day), 13 Mar 2026; Meta Newsroom 13 Oct 2026;
+  developers.facebook.com Reels Publishing API (video specifications, error 1363128);
+  `logs/scorecard.json` W45 facebook posts.
 - **2026-11-03** — **Sixth pass (same evening, same order): the news the pages did not know.**
   Finding: the FCT Advance Rent Regulation and Tenants' Protection Bill (HB.2839) passed first
   reading on 22 Oct 2026 and ran in five papers 26 Oct–1 Nov; "Abuja rent bill" is this fortnight's

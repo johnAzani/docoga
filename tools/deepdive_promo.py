@@ -28,6 +28,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -45,6 +46,11 @@ FOOTER_DAYS = 14
 HOOK_MAX = 230
 CHUNK = re.compile(r"^--- C(\d+) ---\s*$", re.M)
 DISCLAIMER = "General information, not legal advice."
+# The master lives on the repo's own release (deepdive.yml banks `<ep>-episode.mp4` and
+# `<ep>-cover.jpg` on `deepdive-<ep>`) — a public URL at ₦0, so the Facebook lane can carry the
+# episode natively instead of a card pointing at YouTube (4 Nov 2026, see native_video()).
+RELEASE_ASSET = "https://github.com/%s/releases/download/deepdive-%s/%s"
+DEFAULT_REPO = "johnAzani/docoga"
 HASHTAGS = {"telegram": "#DocOga #DeepDive #TenantRights #Nigeria",
             "facebook": "#DocOga #DeepDive #TenantRights #Nigeria",
             "threads": "#TenantRightsNigeria",
@@ -234,6 +240,47 @@ def card_text(ep):
     return "\n".join(lines)
 
 
+def release_url(ep_id, name, repo=None):
+    """The public URL of one banked file of an episode (no token needed; the repo is public)."""
+    repo = repo or os.environ.get("GITHUB_REPOSITORY") or DEFAULT_REPO
+    return RELEASE_ASSET % (repo, ep_id, name)
+
+
+def native_video_text(ep):
+    """The words under the episode when the Facebook Page carries the video itself.
+
+    4 Nov 2026 research: since June 2025 every video on Facebook is a Reel, of any length or
+    orientation (about.fb.com, 17 Jun 2025), and native video is ranked above a card that
+    links out — a body link costs 60–80 % of the reach, and the YouTube link was the only
+    reason the feature post was a card. So on P+1 the Page gets the 9-minute master, link-free,
+    with one question that invites a comment (back-and-forth comments are the heaviest Feed
+    signal Meta names), and the YouTube/transcript links go to the first comment."""
+    body = ["🎬 Deep-Dive %s (9 minutes): %s" % (ep["number"], ep.get("short_title") or ep["title"]) if ep.get("number")
+            else "🎬 Deep-Dive (9 minutes): %s" % ep["title"]]
+    if ep["hook"]:
+        body.append(ep["hook"])
+    if ep["learn"]:
+        body.append("In this episode:\n" + _learn_lines(ep))
+    body.append("Send this to someone who pays rent in cash.")
+    body.append("Which part should I break down in a post this week? Tell me in the comments.")
+    body.append(DISCLAIMER + " " + HASHTAGS["facebook"])
+    return "\n\n".join(body)
+
+
+def native_video_comment(ep):
+    """The first comment under the native video: the same episode on YouTube, and the transcript."""
+    return "▶ Also on YouTube: %s\n📄 Prefer reading? The full transcript, free: %s" % (ep["url"], _page(ep, "facebook"))
+
+
+def native_video(ep, repo=None):
+    """What the Facebook lane needs to publish the episode as the Page's own video on P+1."""
+    return {"episode": ep["id"], "title": ep["title"][:255],
+            "file_url": release_url(ep["id"], "%s-episode.mp4" % ep["id"], repo),
+            "cover_url": release_url(ep["id"], "%s-cover.jpg" % ep["id"], repo),
+            "description": native_video_text(ep), "comment": native_video_comment(ep),
+            "youtube": ep["url"]}
+
+
 def telegram_button(ep):
     return [{"text": "▶ This week's Deep-Dive (9 min)", "url": ep["url"]}]
 
@@ -254,6 +301,8 @@ def pack_for(day, channel, now=None, ep=_UNSET):
            "card_text": card_text(ep), "reply_text": reply_text(ep), "buttons": [telegram_button(ep)]}
     if stage == "feature":
         out["text"] = feature_text(ep, channel)
+        if channel == "facebook":
+            out["video"] = native_video(ep)   # the lane uploads the master; the card is its fallback
     elif stage == "launch":
         out["text"] = launch_text(ep)
     elif stage == "recap":

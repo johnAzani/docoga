@@ -210,7 +210,13 @@ class FacebookInstagramShapeTests(unittest.TestCase):
         self.assertEqual([c["comment_id"] for c in pending], ["c1"])
         self.assertEqual(skipped["ours_or_answered"], 1, "the Page's own comment is dropped on read; Dayo's already-answered one is counted")
         self.assertEqual(pf.reply(pending[0], "No stamp needed."), "c1_reply")
-        self.assertEqual(net.posts[-1][1]["message"], "No stamp needed.")
+        replies = [p for p in net.posts if p[0].endswith("/c1/comments")]
+        self.assertEqual(replies[-1][1]["message"], "No stamp needed.")
+        # 4 Nov 2026: the Page likes the comment it answers (one more touch between the same two
+        # accounts — the relationship signal Meta names). The like's refusal above (no route →
+        # 404) did not take the reply down with it.
+        self.assertTrue(any(p[0].endswith("/c1/likes") for p in net.posts), net.posts)
+        self.assertEqual(pf.capability, "ok", "a refused like is not a lost permission")
 
     def test_facebook_without_pages_manage_engagement_says_so(self):
         net = FakeNet([(("POST", "/c1/comments"), (403, {"error": {"message": "(#200) Requires pages_manage_engagement", "code": 200}}))])

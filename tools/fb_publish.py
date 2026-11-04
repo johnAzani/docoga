@@ -292,14 +292,17 @@ def edit_message(token, post_id, message):
     return (True, post_id) if ok else (False, body)
 
 
-def place_link(token, post_id, body, link, line=None):
-    """First comment with the link; else edit the post to carry it. → (where, detail)."""
+def place_link(token, post_id, body, link, line=None, kind="post"):
+    """First comment with the link; else edit the post to carry it. → (where, detail).
+
+    `kind="video"` edits `description` instead of `message` — a video post's words live there."""
     text = line or link_line(link)
     ok, detail = comment(token, post_id, text)
     if ok:
         return "comment", detail
     first = detail
-    ok, detail = edit_message(token, post_id, body.rstrip() + "\n\n" + ("👉 " + link))
+    editor = edit_description if kind == "video" else edit_message
+    ok, detail = editor(token, post_id, body.rstrip() + "\n\n" + ("👉 " + link))
     if ok:
         return "body", "comment refused (%s) — link appended to the post" % str(first)[:120]
     return "lost", "comment refused (%s); edit refused (%s)" % (str(first)[:100], str(detail)[:100])
@@ -368,6 +371,107 @@ def post_video(token, page_id, video_url, title="", description=""):
     if not ok:
         return False, body
     return True, body.get("id")
+
+
+# ── Native video from a file: the Deep-Dive on its feature day (4 Nov 2026) ──
+#
+# Since 17 Jun 2025 every video on Facebook is a Reel, "of any length or
+# orientation … a 30-second vertical clip or a 20-minute horizontal episode"
+# (about.fb.com). The Reels *API* still refuses anything that is not 9:16 and
+# 3–90 s (error 1363128), so the 16:9, nine-minute master goes through the
+# classic `/{page}/videos` edge — the non-resumable upload, which Meta caps at
+# 1 GB and 20 minutes; a Deep-Dive is ~65 MB and 9 minutes. The file comes from
+# the repo's own release (deepdive.yml banks it), fetched by the runner at ₦0.
+MAX_VIDEO_BYTES = 1024 * 1024 * 1024
+MAX_FETCH_BYTES = 900 * 1024 * 1024
+VIDEO_TIMEOUT = 900
+
+
+def fetch_file(url, dest, max_bytes=MAX_FETCH_BYTES, http=None):
+    """Stream a public file to `dest` (redirects followed — GitHub releases 302 to their CDN).
+
+    → (True, path) or (False, why). Never raises; a partial file is removed."""
+    http = http or requests
+    dest = str(dest)
+    try:
+        os.makedirs(os.path.dirname(dest) or ".", exist_ok=True)
+        with http.get(url, stream=True, allow_redirects=True, timeout=(30, 120)) as r:
+            if r.status_code != 200:
+                return False, "HTTP %s fetching %s" % (r.status_code, url)
+            size = 0
+            with open(dest, "wb") as handle:
+                for chunk in r.iter_content(chunk_size=1024 * 1024):
+                    if not chunk:
+                        continue
+                    size += len(chunk)
+                    if size > max_bytes:
+                        raise OverflowError("more than %d bytes" % max_bytes)
+                    handle.write(chunk)
+        if size == 0:
+            os.unlink(dest)
+            return False, "empty file at %s" % url
+        return True, dest
+    except (OSError, OverflowError, requests.RequestException) as e:
+        try:
+            os.unlink(dest)
+        except OSError:
+            pass
+        return False, "%s: %s" % (type(e).__name__, e)
+
+
+def post_video_file(token, page_id, path, title="", description=""):
+    """Upload a local .mp4 as a Page video post (multipart `source`, non-resumable).
+
+    → (True, video_id) or (False, why). `description` is the post's words; `title`
+    is what the Page's video list and the duplicate guard (`posted_on_date(edge=
+    "videos", want_title=…)`) see."""
+    if not os.path.exists(path):
+        return False, "video file not found: %s" % path
+    size = os.path.getsize(path)
+    if size > MAX_VIDEO_BYTES:
+        return False, "video is %d bytes; the non-resumable `/videos` upload is capped at 1 GB" % size
+    data = {"access_token": token, "published": "true"}
+    if title:
+        data["title"] = title[:255]
+    if description:
+        data["description"] = description[:MAX_MESSAGE_CHARS]
+    try:
+        with open(path, "rb") as handle:
+            r = requests.post("%s/%s/videos" % (GRAPH_VIDEO, page_id), data=data,
+                              files={"source": (os.path.basename(path), handle, "video/mp4")},
+                              timeout=VIDEO_TIMEOUT)
+    except requests.RequestException as e:
+        return False, "%s: %s" % (type(e).__name__, e)
+    ok, body = _ok(r)
+    if not ok:
+        return False, body
+    return True, body.get("id")
+
+
+def set_video_thumbnail(token, video_id, path):
+    """Make a local image the video's preferred thumbnail (`POST /{video}/thumbnails`). Never fatal."""
+    if not path or not os.path.exists(path):
+        return False, "thumbnail file not found: %s" % path
+    try:
+        with open(path, "rb") as handle:
+            r = requests.post("%s/%s/thumbnails" % (GRAPH, video_id),
+                              data={"is_preferred": "true", "access_token": token},
+                              files={"source": (os.path.basename(path), handle, "image/jpeg")},
+                              timeout=TIMEOUT)
+    except requests.RequestException as e:
+        return False, "%s: %s" % (type(e).__name__, e)
+    ok, body = _ok(r)
+    return (True, video_id) if ok else (False, body)
+
+
+def edit_description(token, video_id, description):
+    """A video post's words live in `description`, not `message` (the edit fallback of place_link)."""
+    try:
+        r = requests.post("%s/%s" % (GRAPH, video_id), data={"description": description[:MAX_MESSAGE_CHARS], "access_token": token}, timeout=TIMEOUT)
+    except requests.RequestException as e:
+        return False, "%s: %s" % (type(e).__name__, e)
+    ok, body = _ok(r)
+    return (True, video_id) if ok else (False, body)
 
 
 # ── Reels: the three-phase `video_reels` protocol ───────────────────────────

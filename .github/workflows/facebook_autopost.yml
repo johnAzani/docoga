@@ -28,6 +28,12 @@ name: Facebook Page Autopost
 # publishes nothing) and becomes `on` with one repository variable, `FB_REELS`.
 # See FACEBOOK_AUTOMATION.md §9.
 #
+# The day after a Deep-Dive goes public, the daily post is the episode itself —
+# the banked 16:9 master from the repo's release through `/{page}/videos` (every
+# Facebook video is a Reel since June 2025; the Reels API only takes 9:16 ≤ 90 s),
+# cover as thumbnail, YouTube link in the first comment, card as the fallback.
+# Variable `FB_NATIVE_VIDEO=off` restores the card. FACEBOOK_AUTOMATION.md §4b.
+#
 # Inputs are passed to the shell through `env:` — never interpolated into the
 # command line. GitHub substitutes an unquoted `${{ }}` before the shell sees
 # it, so a dispatch message containing `"` or `$(…)` would have executed on the

@@ -163,6 +163,42 @@ system being up. Every day gets the card; the lane only drops to a text post if
 the render itself fails (missing Pillow, a font regression) — the day is never lost
 to the picture.
 
+## 4b. Deep-Dive feature day — the episode itself, natively (4 Nov 2026)
+
+The day after a Deep-Dive goes public on YouTube (P+1, `tools/deepdive_promo.py`), the
+09:30 post used to be a card with the YouTube link in the first comment. Research on
+4 Nov 2026, from Meta's own words:
+
+* **17 Jun 2025** (about.fb.com): *all* videos on Facebook are shared as Reels, "of any
+  length or orientation … a quick 30-second vertical clip or an in-depth 20-minute
+  horizontal episode". There is no plain "video post" any more — the nine-minute 16:9
+  master is a Reel the moment it is on the Page.
+* **13 Mar 2026**: original video is rewarded; watch time on original Reels doubled in
+  H2 2025. A card that points at YouTube earns none of that watch time.
+* The Reels **API** still refuses anything that is not 9:16 and 3–90 s (error 1363128),
+  so the master goes through the classic `/{page}/videos` edge (non-resumable multipart
+  upload; Meta's cap is 1 GB and 20 minutes — an episode is ~65 MB, 9 minutes).
+
+So on P+1 `scripts/post_facebook.py` now:
+
+1. fetches `<ep>-episode.mp4` from the repo's own release `deepdive-<ep>` (the bank
+   `deepdive.yml` already keeps — a public URL, ₦0, no second host);
+2. uploads it with `title` = the episode title and `description` =
+   `deepdive_promo.native_video_text()` — hook, chapter list, the send line, **one
+   question** ("Which part should I break down this week?") and no link at all;
+3. sets `<ep>-cover.jpg` as the preferred thumbnail (`POST /{video}/thumbnails`);
+4. puts the YouTube link and the transcript page in the **first comment**
+   (`FB_LINK=comment`; without `pages_manage_engagement` the `description` is edited
+   instead — never `message`, which a video object does not have);
+5. prints `FB_VIDEO_ID=…` and the summary row `published (native video dd5)`.
+
+Any refusal — fetch, size, upload — logs `native video not published — …` and the run
+falls back to the card + first-comment link exactly as before, so the day is never lost
+to the new path. The morning Story still carries the card. Opt out with the repository
+variable `FB_NATIVE_VIDEO=off`. First real run: **Sun 8 Nov 2026, 9:30am** (dd5 goes
+public Sat 7 Nov, 7:00pm). Proof of effect: the scorecard's `posts[].views` for that
+post against the 8 views the 1 Nov card earned.
+
 ## 5. The four rules the failure handling obeys
 
 Inherited from the Telegram rewrite (four silent failed days, 7–10 Oct 2026):
@@ -222,10 +258,11 @@ fails if a literal `vNN.0` reappears in a URL in `tools/*.py`.
   breaks the reel fails on a lane that was working. This file's §9
   publishes to Facebook only; cross-posting gets its own decision when the IG
   lane (`instagram_autopost.yml`) has a schedule it can honour.
-* **Feed video that is not a Reel.** `--video-url` (mode `video`) exists for a clip
-  that is already public, and the render is deliberately not uploaded to
-  `/{page}/videos` as well — a plain Page video post on a Page this size reaches
-  almost nobody, which is §9's whole argument for the Reels surface.
+* **The daily Short through `/{page}/videos` as well as `video_reels`.** `--video-url`
+  (mode `video`) exists for a clip that is already public; the 9:16 render goes through
+  the Reels API only (§9). Since June 2025 every Facebook video is a Reel, so `/videos`
+  is now the door for what the Reels API refuses — the 16:9 nine-minute Deep-Dive, §4b
+  — not a second copy of the Short.
 * ~~2–3 Stories/day~~ — **built 15 Oct 2026**, see §9b.
 * **Comment replies.** Phase ⓷ in `docs/GROWTH_ENGINE.md`, still unbuilt. It needs
   a webhook or a poller plus `pages_manage_engagement`; a reply that misfires on
@@ -476,6 +513,7 @@ say what happened). Switch: repository variable **`FB_STORIES`** = `on` (default
 | the card's look | `tools/social_card.py` (palette, type, kicker names in `KICKER_NAMES`) — it is shared with Instagram and Telegram, so a change there changes all three; preview with `python3 scripts/generate_facebook_content.py --print` and open `assets/facebook/facebook_card_<date>.jpg` |
 | photo frequency | every day is a card; there is no odds knob any more |
 | whether Reels publish at all | repository **variable** `FB_REELS` = `probe` (default) / `on` / `off` |
+| whether the Deep-Dive is uploaded natively on its feature day (§4b) | repository **variable** `FB_NATIVE_VIDEO` = `on` (default) / `off` — `off` restores the card + YouTube link in the first comment |
 | whether Stories publish | repository **variable** `FB_STORIES` = `on` (default) / `off`; the afternoon time is the cron in `facebook_story_afternoon.yml` |
 | which days get a Reel | `REEL_WEEKDAYS` in `scripts/facebook_reel_daily.py` (keep it off YouTube's Tue/Fri — the collision rule is in that file's header) |
 | the reel's words | `VIDEO_SCRIPTS` in `scripts/generate_short_video.py` — both the 3–90 s window and the 30-day window apply |
