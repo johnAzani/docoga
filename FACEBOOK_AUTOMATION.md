@@ -221,6 +221,28 @@ that knows the Page's address and the asks:
   have ever published prints `facebook.com/docoga.com.ng`. Prints `FB_PAGE_AUDIT=ok|N
   problem(s)|unread`; never fatal. `FB_PAGE_FIX=off` makes it read-only.
 
+## 4d. The first hour (4 Nov 2026, third pass)
+
+Every 2026 ranking note Meta has published weighs what happens in a post's first hour —
+back-and-forth comments above all. Instagram has had the account's own first-comment
+question and a replies pass 30–45 minutes after each slot since 22 Oct; **Facebook had
+neither**: the first comment was the bare link, the Reel had no comment at all, and the
+first replies pass came 2 h 10 min after the 9:30am post and 85 minutes after the Reel.
+
+* **The first comment asks.** `scripts/post_facebook.py first_question()` — the brain's
+  `cta` when it is a question, else the dated rotation Instagram uses
+  (`reel_caption.QUESTIONS`), offset so the two never ask the same thing on one day —
+  rides above the link line (`fb_publish.link_line(link, question)`) under the daily post,
+  and with the templates line under every Reel (`reel_first_comment`, `FB_FIRST_COMMENT=
+  posted|refused`, never fatal). The replies lane answers whoever answers.
+* **Replies inside the hour.** `brain_replies.yml` gained `15 9` (10:15am WAT) and `50 17`
+  (6:50pm WAT): 45 minutes after the morning post, 35 after the Reel. Seven passes a day;
+  Gemini is only spent when a comment is waiting.
+* **The card's guard looks past Reels.** On 4 Nov a made-up Short (the 3 Nov part the
+  narrator-resume owed) became a Reel at 9:16am and the 9:30am card stood down as
+  "already posted today". `posted_on_date(ignore_videos=True)` skips `status_type ==
+  added_video`; a native Deep-Dive is guarded by its title on the `videos` edge instead.
+
 ## 5. The four rules the failure handling obeys
 
 Inherited from the Telegram rewrite (four silent failed days, 7–10 Oct 2026):

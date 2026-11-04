@@ -24,6 +24,12 @@
     {
       "workflow": "brain_replies.yml",
       "name": "Brain replies",
+      "cron": "15 9 * * *",
+      "inputs": {}
+    },
+    {
+      "workflow": "brain_replies.yml",
+      "name": "Brain replies",
       "cron": "40 10 * * *",
       "inputs": {}
     },
@@ -31,6 +37,12 @@
       "workflow": "brain_replies.yml",
       "name": "Brain replies",
       "cron": "40 13 * * *",
+      "inputs": {}
+    },
+    {
+      "workflow": "brain_replies.yml",
+      "name": "Brain replies",
+      "cron": "50 17 * * *",
       "inputs": {}
     },
     {
