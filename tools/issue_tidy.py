@@ -87,6 +87,34 @@ def decide(issue, run, healing_runs, now):
     return False, "waiting"
 
 
+def _jobs(repo, token, http, run_id):
+    st, data = http("GET", "/repos/%s/actions/runs/%d/jobs" % (repo, int(run_id)), token, params={"per_page": 50})
+    if st != 200 or not isinstance(data, dict):
+        return None
+    return [j for j in (data.get("jobs") or []) if isinstance(j, dict)]
+
+
+def did_the_work(repo, token, http, failed_run_id, candidate):
+    """A green run only heals an alert if the job that failed actually RAN and passed in it.
+
+    3 Nov 2026: the 6pm Short failed in "Generate and publish one Short"; a cron misfire at
+    11:10pm passed the slot gate, skipped every other job, ended green — and closed the alert as
+    "run successfully since". A skipped job is not a success. When the jobs cannot be read the old
+    rule stands (a green run heals), so an API hiccup never leaves alerts open forever.
+    """
+    failed_jobs = _jobs(repo, token, http, failed_run_id)
+    if failed_jobs is None:
+        return True
+    names = {j.get("name") for j in failed_jobs if j.get("conclusion") == "failure"}
+    if not names:
+        return True
+    cand_jobs = _jobs(repo, token, http, candidate.get("id") or 0)
+    if cand_jobs is None:
+        return True
+    by_name = {j.get("name"): j.get("conclusion") for j in cand_jobs}
+    return all(by_name.get(name) == "success" for name in names)
+
+
 def tidy(repo, token, http=_http, dry_run=False, now=None, log=print):
     now = now or datetime.now(timezone.utc)
     st, issues = http("GET", "/repos/%s/issues" % repo, token, params={"state": "open", "per_page": 100})
@@ -113,6 +141,8 @@ def tidy(repo, token, http=_http, dry_run=False, now=None, log=print):
                                 params={"status": "success", "per_page": 20, "created": ">=" + issue["created_at"][:10]})
                 healing = [r for r in (runs.get("workflow_runs") or []) if st == 200
                            and _when(r["created_at"]) > _when(issue["created_at"]) and r.get("conclusion") == "success"]
+        if run_id and healing:
+            healing = [r for r in healing if did_the_work(repo, token, http, run_id, r)]
         close, reason = decide(issue, run, healing, now)
         n = issue["number"]
         if not close:

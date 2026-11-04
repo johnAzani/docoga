@@ -145,16 +145,42 @@ def masthead(series):
     return text if len(text) <= LABEL_MAX else "%s · %d OF %d" % ("PART", series["part"], series["total"])
 
 
+# A settled kicker at 26px with 6px tracking fits 44 characters in the 920px safe band once the solver has shrunk it to the 24px floor.
+POINTER_MAX = 44
+
+
 def pointer(series, next_title=""):
     """The end-card line: tomorrow's part by name, or the series' close on Friday.
     `next_title` (tomorrow's approved Short, when the brain already wrote it) wins over the plan."""
     if series["part"] >= series["total"]:
         return "SERIES COMPLETE · ALL %d ON THE CHANNEL" % series["total"]
     name = " ".join(str(next_title or series["next_label"]).split()).rstrip(".")
-    text = "PART %d TOMORROW · %s" % (series["part"] + 1, name.upper())
-    if len(text) > 44:
-        text = "PART %d TOMORROW · %s" % (series["part"] + 1, series["next_label"].upper())
-    return text[:44]
+    nxt = series["part"] + 1
+    # 3 Nov 2026: "PART 3 TOMORROW · CLAUSES THE LAW OVERRIDES" (43 chars) rendered 26px wider than
+    # the safe zone once the kicker's 6px tracking was added, and the Short never published. The
+    # candidates are tried against the real settled width when the brand font is installed (the
+    # runner), by character count when it is not; the day word goes before the name does.
+    candidates = ["PART %d TOMORROW · %s" % (nxt, name.upper()),
+                  "PART %d TOMORROW · %s" % (nxt, series["next_label"].upper()),
+                  "PART %d · %s" % (nxt, name.upper()),
+                  "PART %d · %s" % (nxt, series["next_label"].upper())]
+    for text in candidates:
+        if kicker_fits(text):
+            return text
+    return candidates[-1][:POINTER_MAX]
+
+
+def kicker_fits(text, size=None):
+    """Does this end-card kicker settle inside MotionStudio's safe band? Measured with the font and
+    the renderer's tracking when Inter is installed (at the 24px floor the solver may shrink it to —
+    the solver measures tracked width since 3 Nov 2026); a character budget otherwise."""
+    try:
+        import motionstudio as ms
+        if not ms.check_environment():
+            return ms.kicker_w(text, size or ms.KICKER_FLOOR) <= ms.SAFE_W
+    except Exception:  # noqa: BLE001 — no PIL/numpy here: fall back to the budget
+        pass
+    return len(text) <= POINTER_MAX
 
 
 def fits(series, script):

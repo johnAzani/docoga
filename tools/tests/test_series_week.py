@@ -58,7 +58,10 @@ class SpineTests(unittest.TestCase):
     def test_masthead_pointer_and_sentence(self):
         s = sw.series_for(TUE)
         self.assertEqual(sw.masthead(s), "RENT RECEIPT LAW · 2 OF 5")
+        # 44 characters: 943px tracked at 26px, 891px at the 24px floor the solver shrinks it to
+        # (3 Nov 2026 — the Short that never published because the solver ignored the tracking).
         self.assertEqual(sw.pointer(s), "PART 3 TOMORROW · PAID, NO RECEIPT. NOW WHAT")
+        self.assertTrue(sw.kicker_fits(sw.pointer(s)))
         self.assertEqual(sw.pointer(s, "Paid cash, no paper?"), "PART 3 TOMORROW · PAID CASH, NO PAPER?")
         self.assertEqual(sw.pointer(s, "You paid. No receipt. Do this today, not next week."),
                          "PART 3 TOMORROW · PAID, NO RECEIPT. NOW WHAT", "a title too long for one glance line → the plan's label")

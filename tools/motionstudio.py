@@ -135,6 +135,36 @@ def tw(text, w, sz):
     return _scratch.textbbox((0, 0), text, font=font(w, sz))[2]
 
 
+# Kickers settle with 6px of tracking between every glyph (r_kicker: 18→6). The solver used to
+# measure them untracked, so a 43-character series pointer passed the solver at 26px and failed
+# the QA safe-zone check by 26px on 3 Nov 2026 — twice, and the day's Short never published.
+KICKER_TRACK = 6
+KICKER_FLOOR = 24          # the QA engine's own legibility floor
+
+
+def kicker_w(text, sz):
+    """What a settled kicker really measures: glyph widths plus the tracking the renderer adds."""
+    f = font('SemiBold', sz)
+    return int(sum(_scratch.textlength(ch, font=f) + KICKER_TRACK for ch in text) - KICKER_TRACK)
+
+
+def fit_kicker(b):
+    """Shrink a kicker to the safe width (never below the floor); at the floor, drop trailing words
+    rather than let the frame fail. Returns a log line or ''."""
+    want, s = b['size'], b['size']
+    while s > KICKER_FLOOR and kicker_w(b['text'], s) > SAFE_W:
+        s -= 2
+    if kicker_w(b['text'], s) > SAFE_W and ' ' in b['text']:
+        words = b['text'].split()
+        while len(words) > 2 and kicker_w(' '.join(words).rstrip(' ·'), s) > SAFE_W:
+            words.pop()
+        b['text'] = ' '.join(words).rstrip(' ·')
+        b['size'] = s
+        return f"  KICKER TRIMMED → '{b['text'][:30]}' @ {s}px"
+    b['size'] = s
+    return f"  KICKER '{b['text'][:20]}' {want}px → {s}px (tracked width)" if s != want else ''
+
+
 # ═══════════════════════ 1. CONTENT ═══════════════════════
 def Beat(kind, role, text='', **kw):
     b = dict(kind=kind, role=role, text=text, t0=None, exempt=False, why='', lines=None)
@@ -249,6 +279,11 @@ def solve_sizes(reel):
     for sc in reel['scenes']:
         for b in sc['beats']:
             if b['kind'] not in ('cascade', 'headline', 'wordpop', 'kicker', 'support', 'odometer') or not b['text']:
+                continue
+            if b['kind'] == 'kicker':
+                line = fit_kicker(b)
+                if line:
+                    log.append(line)
                 continue
             want, s = b['size'], b['size']
             # Display text wraps before it shrinks below DISPLAY_FLOOR — a four-word
@@ -1284,6 +1319,10 @@ def autofix(violations, reel):
                         if b['kind'] in ('cascade', 'wordpop', 'odometer') and b['size'] > 40:
                             b['size'] -= 16
                             applied.append(f"  AUTO-FIX resize: scene {sid}")
+                        elif b['kind'] == 'kicker' and b['text'] and kicker_w(b['text'], b['size']) > SAFE_W - 8:
+                            # the solver measures tracked width now; this is the belt to its braces
+                            b['size'] = max(KICKER_FLOOR, b['size'] - 2)
+                            applied.append(fit_kicker(b) or f"  AUTO-FIX kicker: scene {sid}")
         elif 'OUR OWN' in msg:
             sid = msg.split('scene ')[1][0]
             for sc in reel['scenes']:
