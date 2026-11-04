@@ -246,6 +246,16 @@ and that card sent its viewers *away* to YouTube.
   Reel to Instagram (own decision, §8 of `FACEBOOK_AUTOMATION.md`).
 * Proof: the scorecard's `posts[].views` on Sun 8 Nov's post (dd5) against 8.
 
+## 7⅞b. Shipped 4 Nov 2026, second pass — the follow loop
+
+Same order, same morning. Found: the Page never asked for a follow; the site had no visible
+link to any channel; nobody audited the profile; and three brain packs carried fact ids inside
+the sentences. Shipped (`FACEBOOK_AUTOMATION.md` §4c): a specific, dated follow ask on every
+Facebook post, Reel and native video; the follow row in every page footer; the preflight
+profile audit that fills About/website itself and names the taps it cannot; fact ids stripped
+on read and at the source. Measure: `followers_count` on the Monday scorecards (1 today), and
+the audit line `FB_PAGE_AUDIT=` in the next Facebook run's log.
+
 ## 8. Next levers, in order of expected effect (Founder's brief items)
 
 1. **Hook bans from the swipe test** — once two Monday pulls have filled
