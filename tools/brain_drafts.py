@@ -81,6 +81,31 @@ def path_for(day):
     return drafts_dir() / ("%s.json" % _iso(day))
 
 
+# A fact id is the brain's bookkeeping — "(lagos:receipts:1)" belongs in `claims`, never in a
+# sentence a reader sees. Found 4 Nov 2026, 8:45am: the 4, 5 and 6 Nov packs carried them inline
+# in post.lines and no lane noticed. Stripped on read, for every lane, whatever the pack holds;
+# tools/brain.py also strips them before its gates so new packs are clean at the source.
+FACT_ID = re.compile(r"\s*\(\s*[a-z][a-z0-9-]*:[a-z0-9_]+:\d+\s*(?:[,;]\s*[a-z][a-z0-9-]*:[a-z0-9_]+:\d+\s*)*\)")
+_SPACE_BEFORE_PUNCT = re.compile(r"\s+([.,;:!?])")
+
+
+def strip_fact_ids(text):
+    """'…declare it unreasonable (lagos:increase_challenge:1).' → '…declare it unreasonable.'"""
+    if not isinstance(text, str) or ":" not in text:
+        return text
+    out = FACT_ID.sub("", text)
+    return _SPACE_BEFORE_PUNCT.sub(r"\1", out) if out != text else text
+
+
+def clean_words(obj, _skip=("claims", "id", "fact_id", "theme", "state", "tool", "date", "status")):
+    """The pack with fact ids removed from every published string (claims untouched)."""
+    if isinstance(obj, dict):
+        return {k: (v if k in _skip else clean_words(v)) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [clean_words(v) for v in obj]
+    return strip_fact_ids(obj)
+
+
 def draft_for(day):
     """The approved pack for `day`, or None. Never raises."""
     if not enabled():
@@ -98,7 +123,7 @@ def draft_for(day):
         return None
     if not (pack.get("post") or {}).get("headline"):
         return None
-    return pack
+    return clean_words(pack)
 
 
 def has_claims(pack):

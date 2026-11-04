@@ -201,6 +201,29 @@ def main(argv=None):
                      "The Page already has %d post(s) dated %s (Africa/Lagos), so the scheduled run will skip. "
                      "Use --force on a manual dispatch to post again." % (len(posted), now.strftime("%Y-%m-%d")))
 
+    # 6 — does the Page convert a visit into a follow? (4 Nov 2026, tools/fb_page_audit.py)
+    # Filling an empty About/website is the point, so it is on by default and `FB_PAGE_FIX=off`
+    # makes it read-only. Never fatal: a thin profile is a
+    # warning with the tap, not a reason to skip the day's post.
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import fb_page_audit
+        result = fb_page_audit.audit(token, page_id.strip(), fix=os.environ.get("FB_PAGE_FIX", "on").lower() != "off")
+        if result.get("detail"):
+            annotate("notice", "Page profile not audited", result["detail"])
+        else:
+            if result.get("filled"):
+                print("✍️  Page profile: filled %s from tools/fb_page_audit.py DESIRED" % ", ".join(result["filled"]))
+            if result["problems"]:
+                annotate("warning", "Page profile loses followers",
+                         "%d thing(s) the Page cannot fix by itself: %s" % (len(result["problems"]), " | ".join(result["problems"])))
+            elif not quiet:
+                print("✅ Page profile complete — username %s, %s follower(s)"
+                      % (result["page"].get("username"), result["page"].get("followers_count")))
+        print("FB_PAGE_AUDIT=%s" % ("ok" if result.get("ok") else ("unread" if result.get("detail") else "%d problem(s)" % len(result["problems"]))))
+    except Exception as exc:  # noqa: BLE001 — the audit must never take the preflight down
+        annotate("notice", "Page profile audit skipped", "%s: %s" % (type(exc).__name__, exc))
+
     if not quiet:
         print("✅ Preflight complete — a post may be attempted.")
     return 0
