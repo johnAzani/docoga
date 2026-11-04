@@ -221,6 +221,9 @@ def generate(day=None, write=True):
         "generated_at": datetime.now(LAGOS).isoformat(),
         "source": "facebook",
         "brain": pack.get("theme") if pack else None,
+        # Deep-Dive feature day (4 Nov 2026): the episode itself, natively, from the repo's own
+        # release — scripts/post_facebook.py uploads it and keeps the card as the fallback.
+        "video": promo.get("video") if promo else None,
     }
 
     if write:

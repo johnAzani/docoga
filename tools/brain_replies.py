@@ -406,7 +406,26 @@ class Facebook(Platform):
         if st != 200 or not body.get("id"):
             self._fail(st, body, self.write_scope, "posting the reply")
             return None
+        self.like(comment)
         return body["id"]
+
+    def like(self, comment):
+        """The Page likes the comment it answers (4 Nov 2026).
+
+        A like from the Page notifies the commenter a second time and is the cheapest of the
+        "repeated interactions between the same two accounts" Meta's Feed ranking counts as a
+        relationship signal; it costs one call under the scope we already hold
+        (pages_manage_engagement). Best effort: a refusal is logged by the caller's log line
+        only, never a failed reply."""
+        try:
+            st, body = self.http("POST", "%s/%s/likes" % (GRAPH, _cid(comment)),
+                                 data={"access_token": self.token()})
+        except Exception:  # noqa: BLE001 — a like must never take the reply down with it
+            return False
+        ok = st == 200 and bool(body.get("success", True))
+        if not ok:
+            self.log("facebook: like on %s refused (HTTP %s) — reply still posted" % (_cid(comment), st))
+        return ok
 
 
 PLATFORMS = {"threads": Threads, "instagram": Instagram, "facebook": Facebook}

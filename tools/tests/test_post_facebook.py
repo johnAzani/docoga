@@ -437,3 +437,164 @@ class LinkInFirstCommentTests(Base):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class NativeVideoTests(Base):
+    """4 Nov 2026: the Deep-Dive feature day uploads the episode itself (`/videos`, multipart
+    `source`), sets the cover as the thumbnail, puts the links in the first comment — and any
+    refusal falls back to the card, so the day is never lost to the new path."""
+
+    VIDEO = {"episode": "dd3", "title": "T (Deep-Dive 3)", "youtube": "https://www.youtube.com/watch?v=NEW",
+             "file_url": "https://github.com/johnAzani/docoga/releases/download/deepdive-dd3/dd3-episode.mp4",
+             "cover_url": "https://github.com/johnAzani/docoga/releases/download/deepdive-dd3/dd3-cover.jpg",
+             "description": "🎬 Deep-Dive 3 (9 minutes): T\n\nHook.\n\nWhich part should I break down? #DocOga",
+             "comment": "▶ Also on YouTube: https://www.youtube.com/watch?v=NEW\n📄 Transcript: https://docoga.com.ng/videos/dd3.html?s=fb"}
+
+    def content(self, day="2026-10-20"):
+        card = self.card("T\n• a")
+        return {"date": day, "post_type": "deepdive", "send_photo": True, "photo_path": str(card),
+                "message": "🎬 New Deep-Dive (9 minutes): T\n\nWatch the full episode on YouTube:\nhttps://www.youtube.com/watch?v=NEW\n\n#DocOga",
+                "video": dict(self.VIDEO)}
+
+    def run_native(self, graph, content, fetch_ok=True, env=None, argv=("--date", "2026-10-20", "--force")):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+
+        def fetch(url, dest, max_bytes=None, http=None):
+            if not fetch_ok:
+                return False, "HTTP 404 fetching %s" % url
+            Path(dest).parent.mkdir(parents=True, exist_ok=True)
+            Path(dest).write_bytes(b"\x00" * 2048)
+            return True, str(dest)
+
+        with patch.object(post_facebook, "load_today", lambda day: (content, "test")), \
+             patch.object(post_facebook, "ASSETS_DIR", Path(tmp.name)), \
+             patch.object(fb_publish, "fetch_file", fetch), \
+             patch.dict(os.environ, env or {}, clear=False):
+            return self.run_poster(graph, argv)
+
+    def test_the_feature_day_uploads_the_episode_natively_with_cover_and_first_comment(self):
+        graph = Graph({"/videos": lambda url, data, files, method: ok({"data": []}) if method == "GET" else ok({"id": "V1"}),
+                       "/V1/thumbnails": ok({"success": True}),
+                       "/comments": ok({"id": "V1_c1"}),
+                       "/feed": lambda url, data, files, method: ok({"data": []}) if method == "GET" else ok({"id": "PAGE_t1"})})
+        code, log = self.run_native(graph, self.content())
+        self.assertEqual(code, 0, log)
+        uploads = [c for c in graph.calls if c["method"] == "POST" and c["url"].endswith("/%s/videos" % PAGE)]
+        self.assertEqual(len(uploads), 1, log)
+        up = uploads[0]
+        self.assertTrue(up["url"].startswith(fb_publish.GRAPH_VIDEO), "uploads go to graph-video.facebook.com")
+        self.assertIn("source", up["files"], "the bytes travel as multipart `source`")
+        self.assertEqual(up["data"]["title"], "T (Deep-Dive 3)")
+        self.assertEqual(up["data"]["description"], self.VIDEO["description"])
+        self.assertNotIn("http", up["data"]["description"], "no link in the body")
+        self.assertNotIn("/photos", "".join(graph.urls("POST")), "the card was not posted as well")
+        thumbs = [c for c in graph.calls if c["url"].endswith("/V1/thumbnails")]
+        self.assertEqual(len(thumbs), 1, "the episode cover becomes the preferred thumbnail")
+        self.assertEqual(thumbs[0]["data"]["is_preferred"], "true")
+        self.assertIn("source", thumbs[0]["files"])
+        comments = [c for c in graph.calls if c["method"] == "POST" and c["url"].endswith("/V1/comments")]
+        self.assertEqual(len(comments), 1, log)
+        self.assertEqual(comments[0]["data"]["message"], self.VIDEO["comment"])
+        self.assertIn("FB_VIDEO_ID=V1", log)
+        self.assertIn("FB_LINK=comment", log)
+        self.assertIn("native video: deepdive_dd3.mp4", log)
+        self.assertIn("episode cover set", log)
+
+    def test_a_refused_upload_falls_back_to_the_card_and_the_youtube_link_in_the_comment(self):
+        graph = Graph({"/videos": lambda url, data, files, method: ok({"data": []}) if method == "GET"
+                       else api_error(100, "Invalid parameter", status=400),
+                       "/photos": ok({"id": "p1", "post_id": "PAGE_p1"}), "/comments": ok({"id": "PAGE_p1_c1"}),
+                       "/feed": lambda url, data, files, method: ok({"data": []}) if method == "GET" else ok({"id": "PAGE_t1"})})
+        code, log = self.run_native(graph, self.content())
+        self.assertEqual(code, 0, log)
+        self.assertTrue(any(c["url"].endswith("/photos") for c in graph.calls if c["method"] == "POST"), "the card went out instead")
+        comments = [c for c in graph.calls if c["method"] == "POST" and c["url"].endswith("/comments")]
+        self.assertEqual(len(comments), 1)
+        self.assertIn("https://www.youtube.com/watch?v=NEW", comments[0]["data"]["message"])
+        self.assertIn("native video not published", log)
+
+    def test_a_master_that_cannot_be_fetched_is_not_a_lost_day(self):
+        graph = Graph({"/photos": ok({"id": "p1", "post_id": "PAGE_p1"}), "/comments": ok({"id": "c"}),
+                       "/feed": lambda url, data, files, method: ok({"data": []}) if method == "GET" else ok({"id": "PAGE_t1"})})
+        code, log = self.run_native(graph, self.content(), fetch_ok=False)
+        self.assertEqual(code, 0, log)
+        self.assertFalse(any(c["url"].endswith("/videos") for c in graph.calls if c["method"] == "POST"))
+        self.assertTrue(any(c["url"].endswith("/photos") for c in graph.calls if c["method"] == "POST"))
+        self.assertIn("could not fetch the master", log)
+
+    def test_the_switch_restores_the_card(self):
+        graph = Graph({"/photos": ok({"id": "p1", "post_id": "PAGE_p1"}), "/comments": ok({"id": "c"}),
+                       "/feed": lambda url, data, files, method: ok({"data": []}) if method == "GET" else ok({"id": "PAGE_t1"})})
+        code, log = self.run_native(graph, self.content(), env={"FB_NATIVE_VIDEO": "off"})
+        self.assertEqual(code, 0, log)
+        self.assertFalse(any(c["url"].endswith("/videos") for c in graph.calls if c["method"] == "POST"))
+        self.assertTrue(any(c["url"].endswith("/photos") for c in graph.calls if c["method"] == "POST"))
+
+    def test_a_video_post_without_the_comment_scope_is_edited_in_description_not_message(self):
+        graph = Graph({"/videos": lambda url, data, files, method: ok({"data": []}) if method == "GET" else ok({"id": "V1"}),
+                       "/V1/thumbnails": ok({"success": True}),
+                       "/comments": api_error(200, "(#200) Requires pages_manage_engagement", status=403),
+                       "/feed": lambda url, data, files, method: ok({"data": []}) if method == "GET" else ok({"id": "PAGE_t1"})})
+        code, log = self.run_native(graph, self.content())
+        self.assertEqual(code, 0, log)
+        edits = [c for c in graph.calls if c["method"] == "POST" and c["url"].endswith("/V1")]
+        self.assertEqual(len(edits), 1, log)
+        self.assertIn("description", edits[0]["data"], "a video's words live in `description`")
+        self.assertNotIn("message", edits[0]["data"])
+        self.assertIn("https://www.youtube.com/watch?v=NEW", edits[0]["data"]["description"])
+        self.assertIn("FB_LINK=body", log)
+
+    def test_the_generator_hands_the_video_plan_to_the_poster(self):
+        feature = {"stage": "feature", "post_type": "deepdive", "episode": "dd3", "title": "T", "url": "https://www.youtube.com/watch?v=NEW",
+                   "text": "🎬 New Deep-Dive (9 minutes): T\n\nWatch the full episode on YouTube:\nhttps://www.youtube.com/watch?v=NEW\n\n#DocOga",
+                   "card_text": "T\n• a", "reply_text": "▶", "buttons": [], "video": dict(self.VIDEO)}
+        import deepdive_promo
+        with patch.object(deepdive_promo, "pack_for", lambda day, channel, **k: feature if channel == "facebook" else None), \
+             patch.dict(os.environ, {"DOCOGA_BRAIN_DRAFTS": tempfile.mkdtemp() + "/none"}):
+            content = generate_facebook_content.generate(date(2026, 10, 20), write=False)
+        self.assertEqual(content["video"]["file_url"], self.VIDEO["file_url"])
+        with patch.dict(os.environ, {"DOCOGA_BRAIN_DRAFTS": tempfile.mkdtemp() + "/none"}), \
+             patch.object(deepdive_promo, "pack_for", lambda day, channel, **k: None):
+            self.assertIsNone(generate_facebook_content.generate(date(2026, 10, 21), write=False)["video"], "an ordinary day carries no video")
+
+
+class FetchFileTests(unittest.TestCase):
+    def test_a_streamed_fetch_follows_redirects_caps_size_and_removes_a_partial_file(self):
+        class R:
+            status_code = 200
+
+            def __init__(self, chunks):
+                self.chunks = chunks
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *a):
+                return False
+
+            def iter_content(self, chunk_size=0):
+                return iter(self.chunks)
+
+        class Net:
+            def __init__(self, chunks):
+                self.chunks, self.kw = chunks, None
+
+            def get(self, url, **kw):
+                self.kw = kw
+                return R(self.chunks)
+
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        dest = Path(tmp.name) / "a" / "ep.mp4"
+        net = Net([b"ab", b"cd"])
+        ok_, got = fb_publish.fetch_file("https://github.com/x/releases/download/t/ep.mp4", dest, http=net)
+        self.assertTrue(ok_, got)
+        self.assertEqual(dest.read_bytes(), b"abcd")
+        self.assertTrue(net.kw["allow_redirects"], "GitHub releases 302 to their CDN")
+        self.assertTrue(net.kw["stream"])
+        big = Path(tmp.name) / "big.mp4"
+        ok_, got = fb_publish.fetch_file("https://x/big.mp4", big, max_bytes=3, http=Net([b"ab", b"cd"]))
+        self.assertFalse(ok_)
+        self.assertIn("OverflowError", got)
+        self.assertFalse(big.exists(), "a partial file is removed")

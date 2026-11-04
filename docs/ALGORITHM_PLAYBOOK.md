@@ -17,7 +17,7 @@ estimate it says so.
 | Platform | The ranking signals they named | Source |
 | --- | --- | --- |
 | **Instagram** (Feed, Reels, Explore) | **Watch time**, **likes per reach**, **sends per reach** — sends weigh more for reaching non-followers. Since 30 Apr 2026 accounts that mostly post unoriginal photos/carousels/Reels lose recommendations; eligibility returns when most posts in a rolling 30 days are original. Smaller accounts' originals are now tested on non-followers. | Mosseri, 22 Jan 2025; Instagram creators blog, 30 Apr 2026; Mosseri ranking videos, 24 Sep 2026 |
-| **Facebook** (Feed, Reels) | Original content preferred; Reels views and time spent on *original* Reels roughly doubled in H2 2025; duplicates and minor edits of others' posts deprioritised; low-effort reaction/stitch content demoted. | about.fb.com, 14 Jul 2025 and 13 Mar 2026 |
+| **Facebook** (Feed, Reels) | Original content preferred; Reels views and time spent on *original* Reels roughly doubled in H2 2025; duplicates and minor edits of others' posts deprioritised; low-effort reaction/stitch content demoted. Since 17 Jun 2025 **every video is a Reel, of any length or orientation** ("a 30-second vertical clip or a 20-minute horizontal episode"); Oct 2025: recommendations surface 50 % more Reels published the same day; 13 Oct 2026 "Your algorithm": people name the topics they want, so a post must map to a nameable interest in words; meaningful back-and-forth comments and private shares are the heaviest Feed signals. | about.fb.com, 17 Jun 2025, 14 Jul 2025, 13 Mar 2026; Meta Newsroom 13 Oct 2026; Meta Transparency Center, Feed AI system (6 Oct 2026) |
 | **YouTube Shorts** | The feed is a swipe test: **viewed vs. swiped away** is the first filter, then **average percentage viewed**, then genuine rewatches; a Short stops when its seed audience does not respond. A view counts from the first frame (31 Mar 2025); "engaged views" is the stricter metric. Mass-produced, templated content is "inauthentic" (15 Jul 2025) — AI narration itself is not disqualifying, a fixed formula is. | Todd Sherman / Creator Insider; YouTube Help, Shorts views; YouTube monetisation policies |
 | **Threads** | Replies are the currency: "the sum of your replies is about as valuable as the sum of your posts"; longer replies count more; one **topic tag** per post places it in a topic feed; connected reach (followers) was re-weighted up in Nov 2024; engagement bait is penalised; explicit topic preferences ("Dear Algo", Feb 2026; "Your Algo", Jun 2026) make niche consistency matter. | Mosseri (Platformer); Meta Transparency Center |
 | **TikTok** | Completion and rewatch, then shares; unaudited apps can only post to the owner's inbox as a draft, so the owner's one tap stays. | TikTok Content Posting API docs |
@@ -224,6 +224,27 @@ minimum.
 What it will not do: archive (YouTube keeps no VOD past 12 hours — a window, not a video),
 re-encode while live, push a byte from a GitHub runner, or use anything but the channel's own
 published episodes. Runbook: `docs/LIVE.md`.
+
+## 7⅞. Shipped 4 Nov 2026 — the Deep-Dive is native on Facebook; the Page likes what it answers
+
+Owner, 4 Nov 2026: "research very in-depth … improve on what you think I have not added to
+get more guaranteed results on Facebook … automated … ₦0." The Page had 1 follower and
+2–14 views a post; the only post above the line was the 1 Nov Deep-Dive card (8 views) —
+and that card sent its viewers *away* to YouTube.
+
+* **The episode itself, on the Page** (`FACEBOOK_AUTOMATION.md` §4b). Every Facebook video
+  is a Reel since June 2025, so the nine-minute 16:9 master is uploaded natively on P+1
+  from the repo's own release — link-free words, one question, cover as thumbnail, the
+  YouTube + transcript links in the first comment, card fallback. It earns the one signal
+  a card cannot: watch time on original video. ₦0: the file is already banked.
+* **The Page likes every comment it answers** (`tools/brain_replies.py` `Facebook.like`).
+  One extra touch between the same two accounts under the scope the replies lane already
+  holds; a refusal never fails the reply.
+* Not done, and why: a Facebook Group (Groups API is gone — would need the owner's taps);
+  Live (stream parked, "A"); text-only posts as a type (the morning post already leads
+  with the words and carries no link — measured first, not guessed); crossposting the
+  Reel to Instagram (own decision, §8 of `FACEBOOK_AUTOMATION.md`).
+* Proof: the scorecard's `posts[].views` on Sun 8 Nov's post (dd5) against 8.
 
 ## 8. Next levers, in order of expected effect (Founder's brief items)
 

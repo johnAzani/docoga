@@ -125,6 +125,30 @@ class Schedule(Fixture):
         self.assertEqual(fb_publish.link_line(link), "▶ The full episode, free (9 minutes): https://www.youtube.com/watch?v=NEW")
         self.assertEqual(fb_publish.link_line("https://docoga.com.ng/?s=fb"), "The page, free to start: https://docoga.com.ng/?s=fb")
 
+    def test_facebook_feature_day_carries_the_episode_itself_from_the_release(self):
+        """4 Nov 2026: every Facebook video is a Reel of any length (about.fb.com, 17 Jun 2025) —
+        the feature post is the 9-minute master from the repo's release, words link-free, the
+        YouTube + transcript links in the first comment, one question to invite a comment."""
+        pack = dp.pack_for(self.P + dt.timedelta(days=1), "facebook", ep=self.ep)
+        video = pack["video"]
+        self.assertEqual(video["episode"], "dd3")
+        self.assertEqual(video["file_url"], "https://github.com/johnAzani/docoga/releases/download/deepdive-dd3/dd3-episode.mp4")
+        self.assertEqual(video["cover_url"], "https://github.com/johnAzani/docoga/releases/download/deepdive-dd3/dd3-cover.jpg")
+        self.assertEqual(video["youtube"], "https://www.youtube.com/watch?v=NEW")
+        self.assertNotIn("http", video["description"], "the video's words are native — no link in the body")
+        self.assertNotIn("YouTube", video["description"], "the Page carries the episode; it does not send people away")
+        self.assertIn("?", video["description"], "one question — back-and-forth comments are the heaviest Feed signal")
+        self.assertIn("In this episode:", video["description"])
+        self.assertLessEqual(video["description"].count("#"), 4)
+        self.assertIn("https://www.youtube.com/watch?v=NEW", video["comment"])
+        self.assertIn("docoga.com.ng/videos/dd3.html", video["comment"])
+        self.assertLessEqual(len(video["title"]), 255)
+        # Other channels and other days do not carry a video plan.
+        self.assertNotIn("video", dp.pack_for(self.P + dt.timedelta(days=1), "telegram", ep=self.ep))
+        self.assertIsNone(dp.pack_for(self.P + dt.timedelta(days=2), "facebook", ep=self.ep))
+        with mock.patch.dict(os.environ, {"GITHUB_REPOSITORY": "someone/fork"}):
+            self.assertTrue(dp.native_video(self.ep)["file_url"].startswith("https://github.com/someone/fork/releases/"))
+
     def test_telegram_words_escape_to_valid_markdownv2_with_both_links_and_the_button(self):
         pack = dp.pack_for(self.P + dt.timedelta(days=1), "telegram", ep=self.ep)
         self.assertIn("▶ Watch on YouTube: https://www.youtube.com/watch?v=NEW", pack["text"])

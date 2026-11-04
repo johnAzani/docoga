@@ -107,11 +107,11 @@ def load_today(day):
     return generate_facebook_content.generate(day), "generated in-process"
 
 
-def place_link_after(token, post_id, body, link):
+def place_link_after(token, post_id, body, link, line=None, kind="post"):
     """The first comment carries the link (or the post is edited to). Prints FB_LINK=…; never fatal."""
     if not link or not post_id:
         return ""
-    where, detail = fb_publish.place_link(token, post_id, body, link)
+    where, detail = fb_publish.place_link(token, post_id, body, link, line=line, kind=kind)
     print("FB_LINK=%s" % where)
     if where == "comment":
         print("🔗 link placed in the first comment (%s)" % detail)
@@ -121,6 +121,44 @@ def place_link_after(token, post_id, body, link):
         return " · link in body"
     print("::warning title=Link not placed::%s — the post is live without its link" % detail)
     return " · ⚠️ link lost"
+
+
+def publish_native_video(token, page_id, video, day):
+    """The Deep-Dive as the Page's own video (feature day, 4 Nov 2026). → (ok, note).
+
+    Fetch the banked master from the repo's release, upload it through `/videos`, set the
+    episode cover as its thumbnail, put the YouTube + transcript links in the first comment.
+    Any refusal returns (False, why) and the caller posts the card instead — the day is never
+    lost to the new path. Switch: repository variable FB_NATIVE_VIDEO=off."""
+    episode = str(video.get("episode") or "episode")
+    ASSETS_DIR.mkdir(parents=True, exist_ok=True)
+    dest = ASSETS_DIR / ("deepdive_%s.mp4" % episode)
+    if not dest.exists():
+        ok, got = fb_publish.fetch_file(video.get("file_url") or "", dest)
+        if not ok:
+            return False, "could not fetch the master — %s" % got
+    size_mb = os.path.getsize(dest) / (1024 * 1024)
+    log("🎬 native video: %s (%.1f MB) — %s" % (dest.name, size_mb, video.get("title", "")[:80]))
+    ok, video_id = fb_publish.post_video_file(token, page_id, str(dest), title=video.get("title") or "",
+                                              description=video.get("description") or "")
+    if not ok:
+        return False, "upload refused — %s" % video_id
+    print("✅ video post published: %s" % video_id)
+    print("FB_VIDEO_ID=%s" % video_id)
+    cover = ASSETS_DIR / ("deepdive_%s_cover.jpg" % episode)
+    if video.get("cover_url"):
+        ok_c, got = fb_publish.fetch_file(video["cover_url"], cover, max_bytes=4 * 1024 * 1024)
+        if ok_c:
+            ok_t, detail = fb_publish.set_video_thumbnail(token, video_id, str(cover))
+            print("%s thumbnail: %s" % ("🖼" if ok_t else "⚠️", "episode cover set" if ok_t else detail))
+        else:
+            print("⚠️ thumbnail skipped — %s" % got)
+    where = ""
+    if video.get("comment") and video.get("youtube"):
+        where = place_link_after(token, video_id, video.get("description") or "", video["youtube"],
+                                 line=video["comment"], kind="video")
+    summary("| Facebook post %s | ✅ published (native video %s) `%s`%s |" % (day.isoformat(), episode, video_id, where))
+    return True, video_id
 
 
 def main(argv=None):
@@ -217,6 +255,15 @@ def main(argv=None):
     else:
         content, source = load_today(day)
         log("using %s" % source)
+
+    # Deep-Dive feature day: the episode itself, natively (4 Nov 2026). Falls through to the card on any refusal.
+    video = content.get("video") if isinstance(content.get("video"), dict) else None
+    if video and not args.text and os.environ.get("FB_NATIVE_VIDEO", "on").lower() != "off":
+        ok, note = publish_native_video(token, page_id, video, day)
+        if ok:
+            return 0
+        log("⚠️  native video not published — %s" % note)
+        log("↩︎ falling back to the card post so the day is not lost")
 
     message = content["message"]
     # The link goes in the first comment (reach), the words stay native. Variable FB_LINK_IN_COMMENT=off restores the old shape.
