@@ -148,6 +148,12 @@
       "inputs": {}
     },
     {
+      "workflow": "narrator_resume.yml",
+      "name": "Narrator — warm up and resume at the quota reset",
+      "cron": "30 16 * * *",
+      "inputs": {}
+    },
+    {
       "workflow": "telegram_autopost.yml",
       "name": "DocOga Telegram Auto-Post",
       "cron": "0 8 * * *",
