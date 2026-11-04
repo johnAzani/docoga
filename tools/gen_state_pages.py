@@ -284,6 +284,7 @@ footer{{margin-top:34px;border-top:1px solid #DCE4F0;padding-top:16px;font-size:
 <footer>
 <b>DocOga</b> \u2014 free Nigerian document tools: tenancy agreement, notice to quit, rent receipt, invoice, employment contract, caution fee receipt, letter of demand, payslip, warning letter and power of attorney.
 <br><br>This page is general information about Nigerian tenancy practice, current as at September 2026 \u2014 it is not legal advice.
+<div class="follow" style="margin-top:12px">Follow DocOga for one rent rule a day: <a href="https://www.facebook.com/docoga.com.ng" target="_blank" rel="noopener">Facebook</a> · <a href="https://www.youtube.com/channel/UCeOzX7F7sYX-WchNJyBM2qA" target="_blank" rel="noopener">YouTube</a> · <a href="https://t.me/docogadaily" target="_blank" rel="noopener">Telegram</a> · <a href="https://www.instagram.com/docoga.ng/" target="_blank" rel="noopener">Instagram</a> · <a href="https://www.threads.com/@docoga.ng" target="_blank" rel="noopener">Threads</a></div>
 </footer>
 </div>
 

@@ -717,6 +717,16 @@ def tidy(pack):
     is touched — never a word; if the reflow would push the post past 5 lines it is left for lint."""
     if not isinstance(pack, dict) or not isinstance(pack.get("post"), dict):
         return pack
+    # Fact ids typed into the words — "(lagos:receipts:1)" — are bookkeeping, not copy (4 Nov
+    # 2026: three packs in a row carried them inline). Removed from every published string here,
+    # so the claims still cite them and the reader never sees them; brain_drafts strips on read too.
+    try:
+        import brain_drafts
+        cleaned = brain_drafts.clean_words(pack)
+        pack.clear()
+        pack.update(cleaned)
+    except Exception:  # noqa: BLE001 — never let a tidy-up refuse the day
+        pass
     post = pack["post"]
     lines = [str(x).strip() for x in (post.get("lines") or []) if str(x).strip()]
     if not lines or all(len(ln) <= LINE_MAX for ln in lines):

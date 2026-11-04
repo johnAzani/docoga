@@ -1356,6 +1356,7 @@ and power of attorney.
 <br><br>This page is general information about Nigerian law and practice, current as at %(as_at)s \u2014
 it is not legal advice. Laws differ by state and change over time; confirm the current position for
 your case with a qualified Nigerian lawyer or your accountant.
+<div class="follow" style="margin-top:12px">Follow DocOga for one rent rule a day: <a href="https://www.facebook.com/docoga.com.ng" target="_blank" rel="noopener">Facebook</a> · <a href="https://www.youtube.com/channel/UCeOzX7F7sYX-WchNJyBM2qA" target="_blank" rel="noopener">YouTube</a> · <a href="https://t.me/docogadaily" target="_blank" rel="noopener">Telegram</a> · <a href="https://www.instagram.com/docoga.ng/" target="_blank" rel="noopener">Instagram</a> · <a href="https://www.threads.com/@docoga.ng" target="_blank" rel="noopener">Threads</a></div>
 </footer>
 </div>
 <div class="stickycta">

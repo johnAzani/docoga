@@ -263,6 +263,11 @@ def native_video_text(ep):
         body.append("In this episode:\n" + _learn_lines(ep))
     body.append("Send this to someone who pays rent in cash.")
     body.append("Which part should I break down in a post this week? Tell me in the comments.")
+    try:
+        import fb_follow
+        body.append(fb_follow.video_line())   # the specific follow ask (4 Nov 2026)
+    except Exception:  # noqa: BLE001
+        pass
     body.append(DISCLAIMER + " " + HASHTAGS["facebook"])
     return "\n\n".join(body)
 

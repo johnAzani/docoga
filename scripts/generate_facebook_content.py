@@ -65,6 +65,7 @@ LAGOS = timezone(timedelta(hours=1))
 # and post_facebook.py refuses such a path even if one is handed to it.
 import social_card  # noqa: E402  (the one card renderer for every static social post)
 import brain_drafts  # noqa: E402  (the brain's pack for the day, when there is one)
+import fb_follow  # noqa: E402  (the specific follow ask on every post, 4 Nov 2026)
 import deepdive_promo  # noqa: E402  (the Deep-Dive's week in this channel, 17 Oct 2026)
 
 # tools/fb_publish.py refuses a `source` upload above 4 MB; the card renderer
@@ -208,7 +209,13 @@ def generate(day=None, write=True):
         message = brain_drafts.tag_links(build_message(post_type, rng, template), "facebook")
         visual = None
 
-    photo = render_card(card_text or message, day, post_type, visual) if write else None
+    # The specific follow ask, before the hashtags (4 Nov 2026, tools/fb_follow.py): a Page at
+    # 1 follower that never asked. The card keeps the words above it (card_text or the message
+    # as it was), so the ask is read, not painted.
+    card_source = card_text or message
+    message = fb_follow.append(message, day)
+
+    photo = render_card(card_source, day, post_type, visual) if write else None
 
     content = {
         "date": day.isoformat(),

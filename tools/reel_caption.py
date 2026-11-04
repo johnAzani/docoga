@@ -275,6 +275,11 @@ def caption(platform, topic, description, day, pack=None):
     parts.append(send_line(day, pack))
     if platform == "facebook":
         parts.append("Free receipt, agreement and notice templates: %s" % SITE)
+        try:
+            import fb_follow
+            parts.append(fb_follow.reel_line())   # the specific follow ask (4 Nov 2026)
+        except Exception:  # noqa: BLE001
+            pass
     else:
         parts.append("Free receipt, agreement and notice templates — link in bio (docoga.com.ng).")
     parts.append(HASHTAGS[platform])
