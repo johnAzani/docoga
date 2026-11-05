@@ -12,10 +12,10 @@ set -uo pipefail
 MODEL_DIR="${VOSK_MODEL_DIR:-/tmp/vosk/vosk-model-small-en-us-0.15}"
 MODEL_URL="https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip"
 
-python3 -m pip install --quiet vosk || echo "::warning title=wordsync::pip install vosk failed — captions will use estimated word times"
+timeout "${INSTALL_STEP_TIMEOUT:-240}" python3 -m pip install --quiet --timeout 60 --retries 2 vosk || echo "::warning title=wordsync::pip install vosk failed — captions will use estimated word times"
 if [ ! -d "$MODEL_DIR" ]; then
   mkdir -p "$(dirname "$MODEL_DIR")"
-  if curl -fsSL --retry 2 -o "$(dirname "$MODEL_DIR")/model.zip" "$MODEL_URL"; then
+  if curl -fsSL --connect-timeout 20 --max-time "${INSTALL_STEP_TIMEOUT:-240}" --retry 2 --retry-delay 5 -o "$(dirname "$MODEL_DIR")/model.zip" "$MODEL_URL"; then
     (cd "$(dirname "$MODEL_DIR")" && unzip -q -o model.zip && rm -f model.zip)
   else
     echo "::warning title=wordsync::Vosk model download failed — captions will use estimated word times"

@@ -170,6 +170,23 @@ class PageTests(unittest.TestCase):
         pdf = pdf_text(sample_docs.render_pdf("rent-increase-notice-nigeria"))
         self.assertIn("NOTICE OF RENT REVIEW", pdf)
         self.assertIn("not a demand for the present one", pdf)
+        # 5 Nov evening: the tenant's reply — a second output of the same tool, on the same page
+        self.assertIn('href="https://docoga.com.ng/samples/rent-increase-reply-nigeria.pdf" download', html)
+        self.assertLess(html.index("NOTICE OF RENT REVIEW"), html.index("REPLY TO A NOTICE OF RENT REVIEW"))
+        self.assertFalse((SITE / "rent-increase-reply-nigeria.html").exists(), "one page, two outputs — no thin duplicate")
+        for sentence in sample_docs.RENT_REPLY_SENTENCES:
+            for piece in re.split(r"\[[^\]]*\]", sentence):
+                piece = piece.strip(" .,;")
+                if len(piece) > 25:
+                    self.assertIn(piece, index, piece)
+        for needle in ('id="v_role"', 'id="v_answer"', 'id="v_offer"', "function renderRentReply", "function rrReplyLawText",
+                       "I reserve my right under section 37", "Nothing in this letter is a notice to quit",
+                       "the figure you propose exceeds that limit and I am not able to agree to it",
+                       "the most that section 3(b) of the Landlord and Tenant (Amendment) Law 2008 permits"):
+            self.assertIn(needle, index_html, needle)
+        reply_pdf = pdf_text(sample_docs.render_pdf("rent-increase-reply-nigeria"))
+        self.assertIn("REPLY TO A NOTICE OF RENT REVIEW", reply_pdf)
+        self.assertIn("I reserve my right under section 37", reply_pdf)
         for page in ("index.html", "tenant-rights-nigeria.html", "notice-to-quit-nigeria.html",
                      "demand-letter-rent-arrears-nigeria.html"):
             self.assertIn("/rent-increase-notice-nigeria", (SITE / page).read_text(encoding="utf-8"), page)

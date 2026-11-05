@@ -445,8 +445,8 @@ body.has-pass .buy-only{display:none !important}
     <div class="card">
       <div class="ico"><svg aria-hidden="true"><use href="#i-file"/></svg></div><span class="chip">FREE</span>
       <h3>Rent Review Notice</h3>
-      <p>Raising the rent? A notice of rent review for the next term that says what your state&rsquo;s law says &mdash; Lagos s.37, the Enugu 15% cap &mdash; and asks for an answer in writing.</p>
-      <a href="#rentreview">Create notice →</a>
+      <p>Raising the rent, or answering a landlord who is? The landlord&rsquo;s notice for the next term and the tenant&rsquo;s reply &mdash; accept, decline or counter-offer &mdash; with what your state&rsquo;s law says: Lagos s.37, the Enugu 15% cap.</p>
+      <a href="#rentreview">Create notice or reply →</a>
     </div>
     <div class="card">
       <div class="ico"><svg aria-hidden="true"><use href="#i-receipt"/></svg></div><span class="chip">FREE</span>
@@ -818,11 +818,16 @@ body.has-pass .buy-only{display:none !important}
 <!-- ======================= RENT REVIEW NOTICE (5 Nov 2026) ======================= -->
 <section id="page-rentreview">
   <h2 class="page-title">Notice of Rent Review</h2>
-  <p class="page-sub">Raising the rent at renewal? A notice that proposes the new rent for the next term, keeps the current rent until it ends, and says what your state&rsquo;s law actually says.</p>
+  <p class="page-sub">Raising the rent at renewal &mdash; or answering a landlord who is? One tool writes both: the landlord&rsquo;s notice of rent review, and the tenant&rsquo;s reply that accepts, declines or counter-offers, with what your state&rsquo;s law actually says.</p>
   <div class="tool-grid">
     <div class="panel">
       <h3>📝 Notice details</h3>
       <form id="form-rentreview" oninput="renderRentReview()">
+        <div class="fieldset"><legend>Who is writing?</legend>
+          <div class="form-grid">
+            <div class="full"><select id="v_role" onchange="rrRole()"><option value="landlord">The landlord &mdash; a notice of rent review to the tenant</option><option value="tenant">The tenant &mdash; a reply to the landlord&rsquo;s notice</option></select></div>
+          </div>
+        </div>
         <div class="fieldset"><legend>Landlord</legend>
           <div class="form-grid">
             <div class="full"><label>Landlord / agent name</label><input id="v_from" placeholder="e.g. Mr. Tunde Bakare"></div>
@@ -845,6 +850,13 @@ body.has-pass .buy-only{display:none !important}
             <div><label>Date of this notice</label><input id="v_date" type="date"></div>
             <div><label>Reply in writing by</label><input id="v_reply" type="date"></div>
             <div class="full"><label>Reason (optional)</label><input id="v_reason" placeholder="e.g. the new borehole and the rewiring completed in 2026"></div>
+          </div>
+        </div>
+        <div class="fieldset" id="rr-reply-box" style="display:none"><legend>Your answer</legend>
+          <div class="form-grid">
+            <div><label>Date of the landlord&rsquo;s notice</label><input id="v_ndate" type="date"></div>
+            <div><label>Your answer</label><select id="v_answer"><option value="counter">Counter-offer</option><option value="decline">Decline &mdash; stay at the current rent</option><option value="accept">Accept</option></select></div>
+            <div><label>Your offer (₦)</label><input id="v_offer" inputmode="numeric" placeholder="e.g. 900000"><div class="amount-hint" id="hint-v_offer"></div></div>
           </div>
         </div>
       </form>
@@ -1787,14 +1799,58 @@ if(state==='Enugu') return 'Under section 3(b) of the Landlord and Tenant (Amend
 if(state==='FCT (Abuja)') return 'No law of the Federal Capital Territory fixes a notice period or a limit for a rent review; the tenancy agreement governs, and this notice follows it.';
 return 'No law of '+(state||'the state')+' that we have verified fixes a notice period or a percentage limit for a rent review; the tenancy agreement governs, and this notice follows it.';
 }
+function rrReplyLawText(state,cur,nw){
+if(state==='Lagos') return 'I reserve my right under section 37 of the Lagos State Tenancy Law 2011 to apply to the court for an order declaring the proposed increase unreasonable, and I note that by section 37(4) no tenant may be ejected while such an application is pending.';
+if(state==='Enugu') return 'Under section 3(b) of the Landlord and Tenant (Amendment) Law 2008 of Enugu State, rent may be reviewed by the parties only after every second anniversary of the tenancy, and the new rent may not exceed the existing rent by more than 15%'+((cur>0&&nw>rrCap(cur))?', which on the present rent is '+fmtN(rrCap(cur))+'; the figure you propose exceeds that limit and I am not able to agree to it.':'; any review must stay within that limit.');
+if(state==='FCT (Abuja)') return 'No law of the Federal Capital Territory fixes a limit for a rent review; the tenancy agreement governs, and I ask that any review follow the terms it sets.';
+return 'No law of '+(state||'the state')+' that we have verified fixes a limit for a rent review; the tenancy agreement governs, and I ask that any review follow the terms it sets.';
+}
+function rrRole(){
+const t=$('v_role').value==='tenant';
+$('rr-reply-box').style.display=t?'':'none';
+$('hint-v_offer').textContent='';
+}
+function rrChange(cur,nw){ const diff=nw-cur, pct=(cur>0&&nw>0)?Math.round(diff/cur*1000)/10:0; return {diff,pct,txt:(cur>0&&nw>0?', a change of '+fmtN(diff)+' ('+pct+'%)':'')}; }
 function collectRentReview(){
-return { v_from:$('v_from').value, v_addr:$('v_addr').value, v_to:$('v_to').value, v_prop:$('v_prop').value, v_state:$('v_state').value, v_type:$('v_type').value,
-v_cur:$('v_cur').value, v_new:$('v_new').value, v_end:$('v_end').value, v_date:$('v_date').value, v_reply:$('v_reply').value, v_reason:$('v_reason').value };
+return { v_role:$('v_role').value, v_from:$('v_from').value, v_addr:$('v_addr').value, v_to:$('v_to').value, v_prop:$('v_prop').value, v_state:$('v_state').value, v_type:$('v_type').value,
+v_cur:$('v_cur').value, v_new:$('v_new').value, v_end:$('v_end').value, v_date:$('v_date').value, v_reply:$('v_reply').value, v_reason:$('v_reason').value,
+v_ndate:$('v_ndate').value, v_answer:$('v_answer').value, v_offer:$('v_offer').value };
 }
 function applyRentReview(p){
-[['v_from','v_from'],['v_addr','v_addr'],['v_to','v_to'],['v_prop','v_prop'],['v_cur','v_cur'],['v_new','v_new'],['v_end','v_end'],['v_date','v_date'],['v_reply','v_reply'],['v_reason','v_reason']].forEach(([k,id])=>{ $(id).value=p[k]||''; });
+[['v_from','v_from'],['v_addr','v_addr'],['v_to','v_to'],['v_prop','v_prop'],['v_cur','v_cur'],['v_new','v_new'],['v_end','v_end'],['v_date','v_date'],['v_reply','v_reply'],['v_reason','v_reason'],['v_ndate','v_ndate'],['v_offer','v_offer']].forEach(([k,id])=>{ $(id).value=p[k]||''; });
 if(p.v_state!=null) $('v_state').value=p.v_state;
 if(p.v_type) $('v_type').value=p.v_type;
+$('v_role').value=p.v_role==='tenant'?'tenant':'landlord';
+$('v_answer').value=p.v_answer||'counter';
+rrRole();
+}
+function renderRentReply(d,cur,nw,tname,per,from){
+const ch=rrChange(cur,nw), offer=Number(d.v_offer)||0, oc=rrChange(cur,offer);
+let oh=(offer>0?'= '+numWords(offer)+' Naira':'');
+if(cur>0&&offer>0) oh+=(oc.diff>=0?' · +':' · ')+fmtN(oc.diff)+' ('+oc.pct+'%)';
+if(d.v_state==='Enugu'&&cur>0&&offer>rrCap(cur)) oh+=' · ⚠ above the Enugu 15% cap — maximum '+fmtN(rrCap(cur));
+$('hint-v_offer').textContent=oh;
+let answer;
+if(d.v_answer==='accept'&&d.v_state==='Enugu'&&cur>0&&nw>rrCap(cur)) answer='I am willing to renew, but the figure you propose exceeds the limit the law of Enugu State sets. I accept a rent of <b>'+nairaWords(rrCap(cur))+'</b> '+per+' from <b>'+fmtDateLong(from)+'</b>, the most that section 3(b) of the Landlord and Tenant (Amendment) Law 2008 permits (15% above the existing rent), and I ask that the renewal be put in writing and signed by both of us before that date.';
+else if(d.v_answer==='accept') answer='I accept the proposed rent of <b>'+nairaWords(nw)+'</b> '+per+' from <b>'+fmtDateLong(from)+'</b>, and I ask that the renewal be put in writing and signed by both of us before that date, with a receipt for every payment as the law requires.';
+else if(d.v_answer==='decline') answer='I do not accept the proposed rent. I wish to remain in the premises and I am willing to renew at the current rent of <b>'+nairaWords(cur)+'</b> '+per+'; please confirm in writing whether you agree.';
+else answer='I do not accept the proposed rent, but I wish to remain in the premises and I am willing to agree a rent of <b>'+nairaWords(offer)+'</b> '+per+' from <b>'+fmtDateLong(from)+'</b>'+oc.txt.replace(', a change of',', a change on the present rent of')+'; please confirm in writing whether you agree.';
+const open='<p style="margin:10px 0">I refer to your notice dated <b>'+fmtDateLong(d.v_ndate)+'</b> proposing that the rent of the above premises, which is <b>'+nairaWords(cur)+'</b> '+per+' under my '+tname+' tenancy running to <b>'+fmtDateLong(d.v_end)+'</b>, should be <b>'+nairaWords(nw)+'</b> '+per+' from <b>'+fmtDateLong(from)+'</b>'+ch.txt+'.</p>';
+const tail=(d.v_answer==='accept')?'':
+'<p style="margin:10px 0">Until a rent is agreed in writing, the tenancy continues on its present terms, and I will go on paying the current rent on the day it falls due. Nothing in this letter is a notice to quit or a surrender of the tenancy.</p>'+
+'<p style="margin:10px 0">'+rrReplyLawText(d.v_state,cur,nw)+'</p>';
+return '<div class="'+sheetClass()+'">'+
+'<p style="margin:0"><b>'+esc(d.v_to||'________________')+'</b><br>'+esc(d.v_prop||'')+'</p>'+
+'<p class="right" style="margin:8px 0">'+fmtDateLong(d.v_date)+'</p>'+
+'<p style="margin:8px 0"><b>'+esc(d.v_from||'________________')+'</b><br>'+esc(d.v_addr||'')+'</p>'+
+'<p style="margin:14px 0 4px"><b>Dear '+esc(d.v_from||'Sir/Madam')+',</b></p>'+
+'<p style="margin:10px 0"><u><b>RE: YOUR NOTICE OF RENT REVIEW — '+esc((d.v_prop||'THE PREMISES').toUpperCase())+'</b></u></p>'+
+open+'<p style="margin:10px 0">'+answer+'</p>'+tail+
+'<p style="margin:22px 0 4px">Yours faithfully,</p>'+
+'<div class="sig-line" style="max-width:280px"></div>'+
+'<p style="margin:0"><b>'+esc(d.v_to||'________________')+'</b><br><span style="font-size:12px;color:#444">Tenant</span></p>'+
+freeBanner()+
+'</div>';
 }
 function renderRentReview(){
 const d=collectRentReview();
@@ -1807,6 +1863,7 @@ if(cur>0&&nw>0) hint+=(diff>=0?' · +':' · ')+fmtN(diff)+' ('+pct+'%)';
 if(d.v_state==='Enugu'&&cur>0&&nw>rrCap(cur)) hint+=' · ⚠ above the Enugu 15% cap — maximum '+fmtN(rrCap(cur));
 $('hint-v_new').textContent=hint;
 const from=d.v_end?addDaysISO(d.v_end,1):'';
+if(d.v_role==='tenant'){ const h=renderRentReply(d,cur,nw,tname,per,from); $('preview-rentreview').innerHTML=h; return h; }
 const html =
 '<div class="'+sheetClass()+'">'+
 '<p style="margin:0"><b>'+esc(d.v_from||'________________')+'</b><br>'+esc(d.v_addr||'')+'</p>'+
@@ -1855,7 +1912,7 @@ invoice:'Creating clean naira invoices with DocOga 💼 — free Nigerian docume
 employment:'Hiring properly with a clean employment contract from DocOga 💼 — free Nigerian document maker',
 caution:'Documenting caution fees properly with DocOga 🇳🇬 — free Nigerian document maker',
 demand:'Sent a firm letter of demand with DocOga ⚖ — free Nigerian document maker',
-rentreview:'Served a proper notice of rent review with DocOga 🏠 — the law of my state on it, free Nigerian document maker',
+rentreview:'Wrote a proper rent review letter with DocOga 🏠 — the law of my state on it, free Nigerian document maker',
 payslip:'Paying my staff properly with clean payslips from DocOga 🧾 — free Nigerian document maker',
 warning:'Issued a formal written warning the right way with DocOga 🇳🇬 — free Nigerian document maker',
 poa:'Drafted a Power of Attorney for my Nigerian property with DocOga — from abroad, in minutes 🇳🇬'
@@ -1955,7 +2012,7 @@ if(type==='invoice'&&payload.i_client) title='Invoice — '+payload.i_client;
 if(type==='employment'&&payload.e_emp) title='Contract — '+payload.e_emp;
 if(type==='caution'&&payload.c_from) title='Caution Fee — '+payload.c_from;
 if(type==='demand'&&payload.d_to) title='Demand — '+payload.d_to;
-if(type==='rentreview'&&payload.v_to) title='Rent review — '+payload.v_to;
+if(type==='rentreview'&&payload.v_to) title=(payload.v_role==='tenant'?'Rent review reply — '+(payload.v_from||payload.v_to):'Rent review — '+payload.v_to);
 if(type==='payslip'&&payload.p_emp) title='Payslip — '+payload.p_emp;
 if(type==='warning'&&payload.w_emp) title='Warning — '+payload.w_emp;
 if(type==='poa'&&payload.poa_donee) title='Power of Attorney — '+payload.poa_donee;

@@ -205,8 +205,8 @@ check('team boot picks up ?team_token= magic link and stores the session',
       /team_token/.test(HTML) && /docoga_team/.test(HTML));
 check('sign-out clears the stored session and re-renders',
       /docoga_team/.test(lex(dom, 'teamSignOut.toString()')) && /renderAll/.test(lex(dom, 'teamSignOut.toString()')));
-check('all 11 renderers still route through freeBanner()',
-      (HTML.match(/freeBanner\(\)\+/g) || []).length === 11);
+check('all 11 renderers (and the tenant-reply branch of the rent-review tool) still route through freeBanner()',
+      (HTML.match(/freeBanner\(\)\+/g) || []).length === 12);
 
 // The buy button must still be wired.
 check('Oga Pass buy button present and wired',
@@ -335,6 +335,14 @@ for (const t of RENDERERS) {
 }
 check('all 11 tools render documents with hostile input inert', renderOk === 11, renderBad.join(' ; '));
 check('XSS payload did not execute anywhere', !win.__xss);
+// 5 Nov 2026: the rent-review tool writes the tenant's reply too — same hostile input, same banner, no live nodes.
+{
+  $(dom, 'v_role').value = 'tenant'; win.rrRole(); $(dom, 'v_answer').value = 'counter'; $(dom, 'v_offer').value = HOSTILE;
+  win.renderRentReview();
+  const el = $(dom, 'preview-rentreview');
+  check('the tenant reply renders inert with the free banner', el.innerHTML.length > 400 && el.querySelectorAll('script,img,[onerror],[onload]').length === 0 && el.innerHTML.includes('free-banner') && /YOUR NOTICE OF RENT REVIEW/.test(el.textContent));
+  $(dom, 'v_role').value = 'landlord'; win.rrRole(); win.renderRentReview();
+}
 check('hostile text is escaped in output', $(dom, PREVIEW.agreement).innerHTML.includes('&lt;img') && !$(dom, PREVIEW.agreement).innerHTML.includes('<img'));
 
 /* free banner present while on FREE plan, and prints into every doc */

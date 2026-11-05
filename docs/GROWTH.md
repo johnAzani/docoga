@@ -87,9 +87,16 @@ platforms; nothing the owner must do on a schedule.
   section + comparison; linked from tenant-rights, quit-notice, agreement-sample, demand pages and the
   home guides block; `growth.MONEY_PAGE` counts it; footers now say 11 tools. **Measure:** first
   impressions for "rent increase"/"rent review"/"increment letter" queries within 3 weeks; money-page
-  share (15% → 25% by 1 Dec); rentreview drafts in the Oga Pass funnel. **TEST NEXT:** a tenant's reply
-  to a rent review (counter-offer, s.37 reserved) as a second output of the same tool, if the page
-  draws tenant queries. **LATER:** employment-letter and warning-letter pages, same rule. **REJECT:**
+  share (15% → 25% by 1 Dec); rentreview drafts in the Oga Pass funnel. **DO NOW (owner, 7:35pm:
+  "build"; shipped the same evening):** the tenant's reply as a second output of the same tool — "Who is
+  writing?" switch; accept / decline / counter-offer with the offer in words and percent; "the tenancy
+  continues on its present terms … not a notice to quit"; Lagos s.37 + s.37(4) reserved; Enugu: an
+  over-cap figure is declined by name, and the tool will not write an acceptance above the cap (it accepts
+  the cap instead); FCT/others: the agreement governs. The reply sample + free PDF sit in the tenant
+  section of the same page — one page, two outputs (no thin duplicate; `test_sample_docs` pins that no
+  `rent-increase-reply-nigeria.html` exists). Why a tenant letter on a landlord page: the query
+  "rent increase letter Nigeria" is typed by both sides and the ranking pages serve only the landlord.
+  **TEST NEXT:** nothing new until the 3-week Search Console read. **LATER:** employment-letter and warning-letter pages, same rule. **REJECT:**
   a "notice period by state" table with invented months (the rivals' error); an Enugu notice that
   prints an over-cap figure as lawful; a Word template.
   Sources: tools/state_law_data.py (Lagos s.37, s.37(4), s.13(1), s.44; Enugu L&T (Amendment) Law

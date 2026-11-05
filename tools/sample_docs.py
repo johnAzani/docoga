@@ -197,12 +197,50 @@ RENT_REVIEW_NOTICE = [
           "for a rent review — the quit-notice periods are a different question."),
 ]
 
+# 5 Nov 2026 evening (owner: "build"): the tenant's reply the same tool writes (renderRentReply,
+# "Who is writing? — the tenant"). Shown for Lagos with a counter-offer; the generator also writes a
+# plain decline and an acceptance. The sample lives on the rent-increase page beside the notice — a
+# second output of one tool, not a second page (the Growth lock forbids thin duplicates).
+RENT_REPLY_SENTENCES = [
+    "I refer to your notice dated [1 November 2026] proposing that the rent of the above premises, which is "
+    "[Eight Hundred and Fifty Thousand (₦850,000) Naira Only] [per annum] under my [yearly] tenancy running to "
+    "[31 December 2026], should be [Nine Hundred and Fifty Thousand (₦950,000) Naira Only] [per annum] from "
+    "[1 January 2027], a change of [₦100,000 (11.8%)].",
+    "I do not accept the proposed rent, but I wish to remain in the premises and I am willing to agree a rent of "
+    "[Nine Hundred Thousand (₦900,000) Naira Only] [per annum] from [1 January 2027], a change on the present rent of "
+    "[₦50,000 (5.9%)]; please confirm in writing whether you agree.",
+    "Until a rent is agreed in writing, the tenancy continues on its present terms, and I will go on paying the "
+    "current rent on the day it falls due. Nothing in this letter is a notice to quit or a surrender of the tenancy.",
+    "I reserve my right under section 37 of the Lagos State Tenancy Law 2011 to apply to the court for an order "
+    "declaring the proposed increase unreasonable, and I note that by section 37(4) no tenant may be ejected while "
+    "such an application is pending.",
+]
+
+RENT_REPLY_LETTER = [
+    ("h", "REPLY TO A NOTICE OF RENT REVIEW"),
+    ("p", "[TENANT'S FULL NAME], [the flat / shop / house and full address of the premises]"),
+    ("p", "[Date]"),
+    ("p", "[LANDLORD'S FULL NAME], [landlord's address]"),
+    ("p", "Dear [Landlord's name],"),
+    ("p", "RE: YOUR NOTICE OF RENT REVIEW — [2-BEDROOM FLAT, FIRST FLOOR, 12 EXAMPLE STREET, SURULERE, LAGOS]"),
+] + [("p", t) for t in RENT_REPLY_SENTENCES] + [
+    ("p", "Yours faithfully,"),
+    ("sig", ["[Tenant's full name, signature and phone number]  -  Tenant"]),
+    ("p", "A counter-offer from a yearly tenant in Lagos. The generator also writes a plain decline (renew at "
+          "the current rent) and an acceptance, and swaps the last paragraph for the chosen state: in Enugu it "
+          "cites s.3(b) of the Landlord and Tenant (Amendment) Law 2008 and, where the landlord's figure is more "
+          "than 15% above the present rent, says so and declines it; in the FCT and the other states it asks that "
+          "the review follow the tenancy agreement. Refusing an increase is not arrears — keep paying the current "
+          "rent on the day it falls due and keep the receipts."),
+]
+
 SAMPLES = {
     "tenancy-agreement-sample-nigeria": ("Tenancy Agreement — sample (Nigeria)", TENANCY_AGREEMENT),
     "rent-receipt-sample-nigeria": ("Rent Receipt — sample (Nigeria)", RENT_RECEIPT),
     "quit-notice-letter-sample-nigeria": ("Notice to Quit — sample letter (Nigeria)", QUIT_NOTICE),
     "demand-letter-rent-arrears-nigeria": ("Demand Letter for Unpaid Rent — sample (Nigeria)", DEMAND_LETTER),
     "rent-increase-notice-nigeria": ("Notice of Rent Review — sample (Nigeria)", RENT_REVIEW_NOTICE),
+    "rent-increase-reply-nigeria": ("Reply to a Notice of Rent Review — tenant's sample (Nigeria)", RENT_REPLY_LETTER),
 }
 
 
