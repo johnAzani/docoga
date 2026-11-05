@@ -1,48 +1,62 @@
 {
- "pulled_at": "2026-11-05T00:30:53+00:00",
+ "pulled_at": "2026-11-05T07:10:31+00:00",
  "days": 14,
  "items": [
   {
    "competitor": "NigeriaBuildingCost — tenancy agreement generator",
    "kind": "tool",
-   "title": "Landscaping and beautification of ict and skill acquisition centre premises at awka north lga secretariat anambra",
-   "link": "https://nigeriabuildingcost.ng/construction-tenders/landscaping-and-beautification-of-ict-and-skill-acquisition-centre-premises-at-awka-north-lga-secretariat-anambra",
-   "published": "2026-11-04T23:09:40+00:00"
-  },
-  {
-   "competitor": "NigeriaBuildingCost — tenancy agreement generator",
-   "kind": "tool",
    "title": "Remodelling of anambra state housing corporation office building in awka",
    "link": "https://nigeriabuildingcost.ng/construction-tenders/remodelling-of-anambra-state-housing-corporation-office-building-in-awka",
-   "published": "2026-11-04T23:06:15+00:00"
+   "published": "2026-11-05T03:15:05+00:00"
   },
   {
    "competitor": "NigeriaBuildingCost — tenancy agreement generator",
    "kind": "tool",
-   "title": "Flood and gully erosion control site works at gwagwalada abuja fct",
-   "link": "https://nigeriabuildingcost.ng/construction-tenders/flood-and-gully-erosion-control-site-works-at-gwagwalada-abuja-fct",
-   "published": "2026-11-04T23:05:26+00:00"
+   "title": "Remodelling of spin project head office in abuja fct",
+   "link": "https://nigeriabuildingcost.ng/construction-tenders/remodelling-of-spin-project-head-office-in-abuja-fct",
+   "published": "2026-11-05T01:31:10+00:00"
   },
   {
    "competitor": "NigeriaBuildingCost — tenancy agreement generator",
    "kind": "tool",
-   "title": "Construction of a mini fire station at lagos state university of education otto ijanikin",
-   "link": "https://nigeriabuildingcost.ng/construction-tenders/construction-of-a-mini-fire-station-at-lagos-state-university-of-education-otto-ijanikin",
-   "published": "2026-11-04T23:03:55+00:00"
+   "title": "Premises asphalting and re roofing works at university of benin edo state",
+   "link": "https://nigeriabuildingcost.ng/construction-tenders/premises-asphalting-and-re-roofing-works-at-university-of-benin-edo-state",
+   "published": "2026-11-05T01:30:57+00:00"
+  },
+  {
+   "competitor": "NigeriaBuildingCost — tenancy agreement generator",
+   "kind": "tool",
+   "title": "Landscaping and beautification of ict and skill acquisition centre premises at awka north lga secretariat anambra",
+   "link": "https://nigeriabuildingcost.ng/construction-tenders/landscaping-and-beautification-of-ict-and-skill-acquisition-centre-premises-at-awka-north-lga-secretariat-anambra",
+   "published": "2026-11-05T01:30:50+00:00"
   },
   {
    "competitor": "Mushrooms.ng blog",
    "kind": "content",
-   "title": "Where to sell fairly used items abuja",
-   "link": "https://mushrooms.ng/blog/where-to-sell-fairly-used-items-abuja",
-   "published": "2026-11-02T00:00:00+00:00"
+   "title": "7 days notice to quit nigeria",
+   "link": "https://mushrooms.ng/blog/7-days-notice-to-quit-nigeria",
+   "published": "2026-11-05T00:00:00+00:00"
   },
   {
    "competitor": "Mushrooms.ng blog",
    "kind": "content",
-   "title": "Where to sell used furniture lagos",
-   "link": "https://mushrooms.ng/blog/where-to-sell-used-furniture-lagos",
-   "published": "2026-11-02T00:00:00+00:00"
+   "title": "House for rent captions nigeria",
+   "link": "https://mushrooms.ng/blog/house-for-rent-captions-nigeria",
+   "published": "2026-11-05T00:00:00+00:00"
+  },
+  {
+   "competitor": "Mushrooms.ng blog",
+   "kind": "content",
+   "title": "How much can landlord increase rent nigeria",
+   "link": "https://mushrooms.ng/blog/how-much-can-landlord-increase-rent-nigeria",
+   "published": "2026-11-05T00:00:00+00:00"
+  },
+  {
+   "competitor": "Mushrooms.ng blog",
+   "kind": "content",
+   "title": "How to advertise house for rent nigeria",
+   "link": "https://mushrooms.ng/blog/how-to-advertise-house-for-rent-nigeria",
+   "published": "2026-11-05T00:00:00+00:00"
   }
  ],
  "sources": [
@@ -53,7 +67,7 @@
   "https://legalnaija.com/feed/: 1 fresh post(s)",
   "https://rently.ng/sitemap.xml: 0 changed page(s)",
   "https://homz.ng/sitemap.xml: 0 changed page(s)",
-  "https://mushrooms.ng/sitemap.xml: 49 changed page(s)",
+  "https://mushrooms.ng/sitemap.xml: 57 changed page(s)",
   "https://lexpraxisng.com/feed/: 2 fresh post(s)",
   "https://olamideoyetayolegal.com/feed/: 0 fresh post(s)",
   "https://www.youtube.com/feeds/videos.xml?channel_id=UCa158r8OZoEia4z2DhPg2LA: unreachable (HTTP Error 404: Not Found)"

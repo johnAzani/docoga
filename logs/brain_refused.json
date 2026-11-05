@@ -1,6 +1,18 @@
 [
  {
   "date": "2026-11-07",
+  "at": "2026-11-05T08:13:16+01:00",
+  "short_day": false,
+  "state": "cross-river",
+  "problems": [
+   "the disclaimer is added by the renderer — remove it from the copy",
+   "claim cites unknown fact id ''",
+   "claim cites unknown fact id ''",
+   "fact id typed into the copy: cross-river:notice_extras:1, cross-river:notice_extras:4, cross-river:notice_ladder:4, cross-river:notice_ladder:2 — ids live only in `claims`, never in words a reader see"
+  ]
+ },
+ {
+  "date": "2026-11-07",
   "at": "2026-11-05T01:33:37+01:00",
   "short_day": false,
   "state": "cross-river",
