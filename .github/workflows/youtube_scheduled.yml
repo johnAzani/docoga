@@ -668,7 +668,10 @@ jobs:
             if grep -q 'already on the Page today' /tmp/fb_short_reel.log; then
               echo "result=duplicate" >> "$GITHUB_OUTPUT"; exit 0
             fi
-            echo "::warning title=Facebook Reel not published::scripts/post_facebook.py exited $STATUS — see the lines above; the YouTube publish is unaffected"
+            # 5 Nov 2026: the run log is unreadable from the agent's sandbox, the annotation is not —
+            # so the last refusal line rides on the warning (tokens scrubbed), and the reason is known.
+            REASON=$(grep -E '^(❌|⚠️)' /tmp/fb_short_reel.log | tail -1 | sed -E 's/EAA[A-Za-z0-9]+/<token>/g; s/access_token=[^&" ]+/access_token=<token>/g' | cut -c1-320)
+            echo "::warning title=Facebook Reel not published::scripts/post_facebook.py exited $STATUS — ${REASON:-no refusal line printed}; the YouTube publish is unaffected"
             echo "result=failed" >> "$GITHUB_OUTPUT"; exit 0
           fi
           python3 tools/youtube_ledger.py --ledger logs/facebook_reels.json record \
@@ -770,7 +773,8 @@ jobs:
           STATUS=${PIPESTATUS[0]}
           set -e
           if [ "$STATUS" -eq 0 ]; then echo "result=sent" >> "$GITHUB_OUTPUT"; else
-            echo "::warning title=Facebook Story not posted::scripts/facebook_story_daily.py exited $STATUS — see the lines above; the publish is unaffected"
+            REASON=$(grep -E '^(❌|⚠️)' /tmp/fb_short_story.log | tail -1 | sed -E 's/EAA[A-Za-z0-9]+/<token>/g; s/access_token=[^&" ]+/access_token=<token>/g' | cut -c1-320)
+            echo "::warning title=Facebook Story not posted::scripts/facebook_story_daily.py exited $STATUS — ${REASON:-no refusal line printed}; the publish is unaffected"
             echo "result=failed" >> "$GITHUB_OUTPUT"; fi
 
       - name: Instagram Story — the Short in the tray

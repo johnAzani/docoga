@@ -158,6 +158,16 @@ class PathsAndPrices(unittest.TestCase):
         data = cw.pull(http=market_http, now=NOW, days=14, log=lambda *a: None, field=field)
         self.assertEqual(len(data["items"]), 2, "without paths the listing clip passes the topic filter — that is the bug")
 
+    def test_a_public_tender_is_not_a_publication_even_when_it_says_housing(self):
+        raw = b"""<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<url><loc>https://tool.ng/tenders/remodelling-of-anambra-state-housing-corporation-office-building</loc><lastmod>2026-10-30</lastmod></url>
+<url><loc>https://tool.ng/tenders/premises-asphalting-and-re-roofing-works-at-university</loc><lastmod>2026-10-30</lastmod></url>
+<url><loc>https://tool.ng/blog/notice-to-quit-nigeria-rules-by-tenancy-type-state</loc><lastmod>2026-10-30</lastmod></url>
+</urlset>"""
+        field = [{"name": "Tool", "kind": "tool", "url": "https://tool.ng", "feeds": ["https://tool.ng/sitemap.xml"], "note": "x"}]
+        data = cw.pull(http=lambda u, timeout=0: (200, raw), now=NOW, days=14, log=lambda *a: None, field=field)
+        self.assertEqual([it["title"] for it in data["items"]], ["Notice to quit nigeria rules by tenancy type state"])
+
     def test_price_figures_read_the_page_not_the_scripts_and_skip_free_and_ids(self):
         self.assertEqual(cw.price_figures(PRICING), ["₦4,000", "₦500", "₦25,000"])
         self.assertEqual(cw.price_figures(b"no money here 2026"), [])
