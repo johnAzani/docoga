@@ -219,7 +219,7 @@ def page_html(meta, row, now=None, build=None):
     parts.append("<footer><b>DocOga</b> — free Nigerian document tools.<br><br>General information about Nigerian law and practice, "
                  "current as at %s — not legal advice. Laws differ by state and change over time; confirm the position for your "
                  "case with a qualified Nigerian lawyer.</footer></div>" % esc(dt.date.fromisoformat(day).strftime("%B %Y")))
-    parts.append('<div class="stickycta"><span><b>Oga Pass</b> — ₦2,000 · 30 days · all 10 tools · no banner</span>'
+    parts.append('<div class="stickycta"><span><b>Oga Pass</b> — ₦2,000 · 30 days · all 11 tools · no banner</span>'
                  '<a href="%s/#pricing">Get the Pass</a></div>' % HOST)
     parts.append('<script src="/analytics-consent.js" data-track-page="true" defer></script></body></html>')
     return "\n".join(parts) + "\n"

@@ -58,7 +58,7 @@ Rules:
 
 1. `docoga.com.ng` → pricing → Business card → **“Already part of a DocOga team?”**
 2. Enter the seat email → a sign-in link is emailed (works once, 10 minutes).
-3. Click it → signed in. Every one of the 10 tools now renders the **firm
+3. Click it → signed in. Every one of the 11 tools now renders the **firm
    name + logo in place of the DocOga banner**, and the toolbar badge shows
    **TEAM · {firm name}**.
 4. The Business card shows a signed-in chip with a **Sign out** button.

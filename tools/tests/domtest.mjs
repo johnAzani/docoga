@@ -126,7 +126,7 @@ const wait = (ms = 40) => new Promise((r) => setTimeout(r, ms));
 /* Top-level `const`/`let` in a classic script are lexical globals — reachable by
    later scripts (and eval) but NOT as window properties. Read them via eval. */
 const lex = (dom, expr) => w(dom).eval(expr);
-const renamer = (t) => 'render' + t.charAt(0).toUpperCase() + t.slice(1);
+const renamer = (t) => t === 'rentreview' ? 'renderRentReview' : 'render' + t.charAt(0).toUpperCase() + t.slice(1);
 
 /* ============================ 1. BOOT & ROUTES ============================ */
 section('boot & routing');
@@ -135,9 +135,9 @@ const win = w(dom);
 await wait(120); // let init() + inline scripts settle
 check('page loads with zero uncaught errors', dom.__errs().length === 0, dom.__errs().join(' | ').slice(0, 200));
 check('localStorage store wrapper present', typeof lex(dom, 'store') === 'object' && typeof lex(dom, 'store').getItem === 'function');
-check('router knows 15 pages (13 + business-setup + team dashboard)', lex(dom, 'PAGES.length') === 15, 'PAGES=' + lex(dom, 'PAGES.length'));
+check('router knows 16 pages (14 + business-setup + team dashboard)', lex(dom, 'PAGES.length') === 16, 'PAGES=' + lex(dom, 'PAGES.length'));
 
-const PAGES = ['home', 'agreement', 'notice', 'receipt', 'invoice', 'employment', 'caution', 'demand', 'payslip', 'warning', 'poa', 'docs', 'pricing', 'business-setup'];
+const PAGES = ['home', 'agreement', 'notice', 'receipt', 'invoice', 'employment', 'caution', 'demand', 'rentreview', 'payslip', 'warning', 'poa', 'docs', 'pricing', 'business-setup'];
 let routeOk = 0, routeBad = [];
 for (const p of PAGES) {
   win.location.hash = '#' + p;
@@ -146,7 +146,7 @@ for (const p of PAGES) {
   if (el && el.style.display === 'block') routeOk++;
   else routeBad.push(p);
 }
-check('all 14 routes render their page', routeOk === 14, 'broken: ' + routeBad.join(','));
+check('all 15 routes render their page', routeOk === 15, 'broken: ' + routeBad.join(','));
 win.location.hash = '#not-a-real-page';
 win.dispatchEvent(new win.Event('hashchange'));
 check('unknown hash falls back to home', $(dom, 'page-home').style.display === 'block');
@@ -191,12 +191,12 @@ check('BIZ_LIVE gate constant exists and defaults to false (Phase 5 flips it tru
       (() => { const m = HTML.match(/const BIZ_LIVE\s*=\s*(true|false)/); return !!m && m[1] === 'false'; })());
 
 // Business team core (Phase 1, 11 Oct 2026): magic-link sign-in + firm branding
-// through the single freeBanner() chokepoint that all 10 renderers share.
+// through the single freeBanner() chokepoint that all 11 renderers share.
 check('Business card carries the team sign-in box', !!bizCard && !!bizCard.querySelector('#biz-team-box'));
 check('team sign-in UI is generated and posts to the worker login endpoint',
       /biz-login-email/.test(lex(dom, 'updateTeamUI.toString()')) &&
       /\/business\/login/.test(lex(dom, 'bizLoginSubmit.toString()')));
-check('freeBanner() serves firm branding in team mode (chokepoint for all 10 renderers)',
+check('freeBanner() serves firm branding in team mode (chokepoint for all 11 renderers)',
       /teamActive/.test(lex(dom, 'freeBanner.toString()')) && /teamBrandHeader/.test(lex(dom, 'freeBanner.toString()')));
 check('team brand header renders firm name + logo',
       /team-logo/.test(lex(dom, 'teamBrandHeader.toString()')) && /team-name/.test(lex(dom, 'teamBrandHeader.toString()')));
@@ -205,8 +205,8 @@ check('team boot picks up ?team_token= magic link and stores the session',
       /team_token/.test(HTML) && /docoga_team/.test(HTML));
 check('sign-out clears the stored session and re-renders',
       /docoga_team/.test(lex(dom, 'teamSignOut.toString()')) && /renderAll/.test(lex(dom, 'teamSignOut.toString()')));
-check('all 10 renderers still route through freeBanner()',
-      (HTML.match(/freeBanner\(\)\+/g) || []).length === 10);
+check('all 11 renderers still route through freeBanner()',
+      (HTML.match(/freeBanner\(\)\+/g) || []).length === 11);
 
 // The buy button must still be wired.
 check('Oga Pass buy button present and wired',
@@ -307,9 +307,10 @@ const FIELDS = {
   payslip: ['p_biz', 'p_addr', 'p_emp', 'p_role', 'p_id', 'p_period', 'p_date', 'p_basic', 'p_house', 'p_trans', 'p_other', 'p_paye', 'p_pen', 'p_nhf', 'p_ded', 'p_bank', 'p_acct', 'p_note'],
   warning: ['w_biz', 'w_addr', 'w_emp', 'w_role', 'w_date', 'w_count', 'w_incident', 'w_offence', 'w_prior', 'w_expect', 'w_deadline', 'w_signer'],
   poa: ['poa_donor', 'poa_donor_addr', 'poa_donor_id', 'poa_donor_occ', 'poa_donee', 'poa_donee_addr', 'poa_donee_id', 'poa_rel', 'poa_prop', 'poa_purpose', 'poa_date', 'poa_expiry', 'poa_state', 'poa_witness'],
+  rentreview: ['v_from', 'v_addr', 'v_to', 'v_prop', 'v_state', 'v_type', 'v_cur', 'v_new', 'v_end', 'v_date', 'v_reply', 'v_reason'],
 };
-const RENDERERS = ['agreement', 'notice', 'receipt', 'invoice', 'employment', 'caution', 'demand', 'payslip', 'warning', 'poa'];
-const PREVIEW = { agreement: 'preview-agreement', notice: 'preview-notice', receipt: 'preview-receipt', invoice: 'preview-invoice', employment: 'preview-employment', caution: 'preview-caution', demand: 'preview-demand', payslip: 'preview-payslip', warning: 'preview-warning', poa: 'preview-poa' };
+const RENDERERS = ['agreement', 'notice', 'receipt', 'invoice', 'employment', 'caution', 'demand', 'payslip', 'warning', 'poa', 'rentreview'];
+const PREVIEW = { agreement: 'preview-agreement', notice: 'preview-notice', receipt: 'preview-receipt', invoice: 'preview-invoice', employment: 'preview-employment', caution: 'preview-caution', demand: 'preview-demand', payslip: 'preview-payslip', warning: 'preview-warning', poa: 'preview-poa', rentreview: 'preview-rentreview' };
 
 let fillOk = 0, missing = [];
 for (const t of RENDERERS) {
@@ -332,7 +333,7 @@ for (const t of RENDERERS) {
     else renderBad.push(t + '(len=' + html.length + ',live=' + live.length + ')');
   } catch (e) { renderBad.push(t + ' threw ' + e.message); }
 }
-check('all 10 tools render documents with hostile input inert', renderOk === 10, renderBad.join(' ; '));
+check('all 11 tools render documents with hostile input inert', renderOk === 11, renderBad.join(' ; '));
 check('XSS payload did not execute anywhere', !win.__xss);
 check('hostile text is escaped in output', $(dom, PREVIEW.agreement).innerHTML.includes('&lt;img') && !$(dom, PREVIEW.agreement).innerHTML.includes('<img'));
 
@@ -354,7 +355,7 @@ for (const t of RENDERERS) {
   win.document.body.classList.remove('printing');
   $(dom, 'print-root').innerHTML = '';
 }
-check('printCurrent works for all 10 tools (7-tool-map regression guard)', printOk === 10, 'failed: ' + printBad.join(','));
+check('printCurrent works for all 11 tools (7-tool-map regression guard)', printOk === 11, 'failed: ' + printBad.join(','));
 check('window.print() was called', (win.__printed || 0) > 0);
 
 /* ============================ 5. SHARE / WHATSAPP ============================ */
@@ -369,7 +370,7 @@ for (const t of RENDERERS) {
     else shareBad.push(t + '→' + url.slice(0, 40));
   } catch (e) { shareBad.push(t + ':' + e.message); }
 }
-check('shareDoc builds a WhatsApp link for all 10 tools', shareOk === 10, shareBad.join(' ; '));
+check('shareDoc builds a WhatsApp link for all 11 tools', shareOk === 11, shareBad.join(' ; '));
 
 /* ============================ 6. DOCUMENTS STORE ============================ */
 section('saved documents (My Documents)');
@@ -560,7 +561,7 @@ for (const t of RENDERERS) {
     $(teamDom, 'print-root').innerHTML = '';
   } catch (e) { brandedBad.push(t + ':' + e.message); }
 }
-check('ALL 10 tools render the firm banner (name + logo) with no DocOga banner (Phase 1 gate)', brandedAll === 10, 'failed: ' + brandedBad.join(','));
+check('ALL 11 tools render the firm banner (name + logo) with no DocOga banner (Phase 1 gate)', brandedAll === 11, 'failed: ' + brandedBad.join(','));
 check('signed-in chip replaces the sign-in form on the Business card',
       !!teamDom.window.document.querySelector('#biz-team-box .team-chip') && /signed in as/i.test(teamDom.window.document.querySelector('#biz-team-box').textContent));
 tWin.teamSignOut();

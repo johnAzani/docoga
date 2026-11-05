@@ -142,6 +142,45 @@ class PageTests(unittest.TestCase):
         self.assertTrue(growth.MONEY_PAGE.search("https://docoga.com.ng/demand-letter-rent-arrears-nigeria"),
                         "a page with a generator on it is a money page")
 
+    def test_the_rent_increase_page_is_state_aware_honest_and_the_generators_words(self):
+        """5 Nov 2026 (🔒 docs/GROWTH.md fifth dive): the 11th tool, and the page only because the tool writes it."""
+        html = (SITE / "rent-increase-notice-nigeria.html").read_text(encoding="utf-8")
+        self.assertIn("Rent Increase Notice in Nigeria (2026)", html)
+        self.assertLess(html.index("NOTICE OF RENT REVIEW"), html.index("What the law actually says, state by state"),
+                        "the notice comes before the explanation — answer first")
+        self.assertIn('href="https://docoga.com.ng/samples/rent-increase-notice-nigeria.pdf" download', html)
+        self.assertIn('href="https://docoga.com.ng/#rentreview"', html)
+        self.assertIn('rel="canonical" href="https://docoga.com.ng/rent-increase-notice-nigeria"', html)
+        for needle in ("s.37(4)", "Landlord and Tenant (Amendment) Law 2008, s.3(b)", "every second anniversary",
+                       "No state statute we have read fixes a notice period for a rent increase",
+                       "offer for the next term, not an order for this one", "Jovinco", "s.44"):
+            self.assertIn(needle, html, needle)
+        self.assertNotIn("Chinedu", html)
+        index_html = (SITE / "index.html").read_text(encoding="utf-8")
+        index = re.sub(r"<[^>]+>", "", index_html)                                   # renderRentReview bolds words
+        for sentence in sample_docs.RENT_REVIEW_SENTENCES:
+            for piece in re.split(r"\[[^\]]*\]", sentence):
+                piece = piece.strip(" .,")
+                if len(piece) > 25:
+                    self.assertIn(piece, index, piece)
+        # the generator itself: an 11th tool with the Enugu cap wired in, not a page pretending to one
+        for needle in ('id="page-rentreview"', "function renderRentReview", "function rrLawText", "function rrCap",
+                       "exceeds that limit and must be reduced to not more than", "All 11 tools"):
+            self.assertIn(needle, index_html, needle)
+        pdf = pdf_text(sample_docs.render_pdf("rent-increase-notice-nigeria"))
+        self.assertIn("NOTICE OF RENT REVIEW", pdf)
+        self.assertIn("not a demand for the present one", pdf)
+        for page in ("index.html", "tenant-rights-nigeria.html", "notice-to-quit-nigeria.html",
+                     "demand-letter-rent-arrears-nigeria.html"):
+            self.assertIn("/rent-increase-notice-nigeria", (SITE / page).read_text(encoding="utf-8"), page)
+        self.assertIn("<loc>https://docoga.com.ng/rent-increase-notice-nigeria</loc>",
+                      (SITE / "sitemap.xml").read_text(encoding="utf-8"))
+        self.assertTrue((SITE / "og" / "rent-increase-notice-nigeria.jpg").is_file())
+        import growth
+        self.assertTrue(growth.MONEY_PAGE.search("https://docoga.com.ng/rent-increase-notice-nigeria"))
+        for sp in SITE.glob("*.html"):
+            self.assertNotIn("all 10 tools", sp.read_text(encoding="utf-8"), sp.name)
+
     def test_the_sample_wording_is_the_generators_wording(self):
         """Every clause body in the sample appears, placeholders aside, in site/index.html's renderAgreement."""
         index = (SITE / "index.html").read_text(encoding="utf-8")
