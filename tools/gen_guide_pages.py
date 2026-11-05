@@ -697,18 +697,19 @@ INCREASE_TABLE = '''<table>
 
 PAGES["rent-increase-notice-nigeria.html"] = dict(
     published="2026-11-05", parent=("tenant-rights-nigeria.html", "Tenant rights in Nigeria"),
-    title="Rent Increase Notice in Nigeria (2026): Sample Letter, Free PDF + What Your State\u2019s Law Actually Says",
+    title="Rent Increase Notice in Nigeria (2026): Sample Letter, Tenant\u2019s Reply, Free PDFs + Your State\u2019s Law",
     h1="Rent increase notice in Nigeria \u2014 the sample letter, free PDF, the generator, and the section of the law in your state",
-    desc="A notice of rent review for Nigeria you can read in full and download free, with the generator that writes it for your state: Lagos s.37, the Enugu 15% cap after every second anniversary, the FCT and the others \u2014 and the honest answer on how much notice the law requires.",
+    desc="A notice of rent review for Nigeria and the tenant\u2019s reply (accept, decline or counter-offer), both in full and free to download, with the one generator that writes them for your state: Lagos s.37, the Enugu 15% cap after every second anniversary, the FCT and the others \u2014 and the honest answer on how much notice the law requires.",
     lead="A rent increase in Nigeria is an offer for the next term, not an order for this one. The letter "
          "that does it properly says the current rent stands until the term ends, names the new rent in "
          "figures and words, asks for an answer in writing, and \u2014 this is the part nobody else prints \u2014 "
          "says what the law of your state actually adds: in Lagos, the tenant\u2019s s.37 right to have the "
          "court call it unreasonable; in Enugu, the 15% cap and the two-year rule; in the FCT and most "
          "states, that the agreement governs. Read it, download it, or let the generator write it for "
-         "your state in two minutes \u2014 it will not let an Enugu notice call a 50% rise lawful. Below: "
-         "the state table, the honest answer on \u201chow much notice\u201d, and what a tenant who receives "
-         "one should do.",
+         "your state in two minutes \u2014 it will not let an Enugu notice call a 50% rise lawful. The same tool "
+         "writes the <b>tenant\u2019s reply</b>: accept, decline, or counter-offer, with the s.37 right reserved. "
+         "Below: the state table, the honest answer on \u201chow much notice\u201d, and what a tenant who "
+         "receives one should do \u2014 with the reply letter to send.",
     widget=('<div class="box">\n<h2>The sample (landlord to a yearly tenant, Lagos premises)</h2>\n'
             + sample_docs.html_sample("rent-increase-notice-nigeria")
             + download_block("rent-increase-notice-nigeria", "rentreview", "Write it for your state free \u2192")
@@ -742,7 +743,13 @@ PAGES["rent-increase-notice-nigeria.html"] = dict(
             "<b>The state paragraph.</b> Lagos: s.37 and s.37(4). Enugu: s.3(b) and \u2014 if the figure is over the cap \u2014 "
             "a line saying it must come down before the notice is served. FCT and others: the agreement governs.",
         ])),
-        ("If you are the tenant who received one", ul([
+        ("If you are the tenant who received one \u2014 and the reply to send", '<p>Reply in writing, say what you '
+         'will and will not agree, keep paying the current rent, and reserve the right your state gives you. The '
+         'generator writes this letter when you choose <b>\u201cWho is writing? \u2014 the tenant\u201d</b>; it '
+         'will not write an acceptance of an Enugu figure above the 15% cap.</p>'
+         + sample_docs.html_sample("rent-increase-reply-nigeria")
+         + download_block("rent-increase-reply-nigeria", "rentreview", "Write your reply for your state free \u2192")
+         + ul([
             "<b>You do not have to accept it, and refusing is not arrears.</b> Keep paying the current rent on time, with "
             "receipts \u2014 in Lagos a landlord who refuses one commits an offence (s.5(3), \u20a6100,000).",
             "<b>Reply in writing.</b> Acknowledge, say whether you accept, counter-offer if you wish, and ask for the "
@@ -782,9 +789,14 @@ PAGES["rent-increase-notice-nigeria.html"] = dict(
          "The tenancy continues on its present terms. The landlord may negotiate, or determine the tenancy with the "
          "notice it requires and the court process; the landlord may not treat the refusal as arrears or lock the "
          "tenant out."),
-        ("Can I download the rent increase notice as a PDF for free?",
-         "Yes \u2014 the PDF above is free and needs no signup. It carries the square brackets; the generator fills them "
+        ("Can I download the rent increase notice and the tenant\u2019s reply as PDFs for free?",
+         "Yes \u2014 both PDFs above are free and need no signup. They carry the square brackets; the generator fills them "
          "in for your state and gives you a clean copy, free with a small banner or without one on the Oga Pass."),
+        ("How should a tenant reply to a rent increase letter?",
+         "In writing, before the date the landlord asked for: refer to the notice by its date, say whether you accept, "
+         "decline or counter-offer (with your figure), state that the tenancy continues on its present terms until a "
+         "rent is agreed and that the letter is not a notice to quit, and \u2014 in Lagos \u2014 reserve the s.37 right "
+         "to ask the court to declare the increase unreasonable. Keep paying the current rent and keep the receipts."),
         ("Does the notice need a lawyer?",
          "Not for a residential renewal. A solicitor is the right step when the sum is large, the tenant disputes it, "
          "or a Lagos s.37 application is coming. DocOga is not a law firm and this page is general information, not "

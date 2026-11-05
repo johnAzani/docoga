@@ -174,6 +174,23 @@ class BrandGateTests(unittest.TestCase):
         self.assertIn("fonts-inter", script)
         self.assertIn("motionstudio.py\" --check", script)
 
+    def test_every_network_step_of_the_installers_is_bounded(self):
+        """5 Nov 2026: the 6:00pm Short died in the install step — apt/curl had no clock, the job hit its
+        30-minute ceiling before a frame was drawn (run 42070315143). A stalled mirror may cost a door,
+        never the Short."""
+        script = (TOOLS_DIR / "install_motionstudio_deps.sh").read_text(encoding="utf-8")
+        for line in script.splitlines():
+            t = line.strip()
+            if t.startswith(("sudo apt-get", "python3 -m pip install", "curl ")):
+                self.fail("unbounded step: %s" % t)
+        self.assertIn('timeout "$CLOCK" sudo apt-get update', script)
+        self.assertIn('timeout "$CLOCK" sudo apt-get install', script)
+        self.assertIn("--connect-timeout 20 --max-time", script)
+        self.assertNotIn("curl -fsSL -o", script, "every curl goes through the bounded CURL array")
+        ws = (TOOLS_DIR / "install_wordsync_deps.sh").read_text(encoding="utf-8")
+        self.assertIn("--max-time", ws)
+        self.assertIn("timeout \"${INSTALL_STEP_TIMEOUT:-240}\" python3 -m pip install", ws)
+
 
 if __name__ == "__main__":
     unittest.main()
