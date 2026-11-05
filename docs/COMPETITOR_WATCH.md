@@ -82,7 +82,10 @@ items sit on the same page so the two can be read together.
   entry counts only if its slug has four or more words, carries no listing token, and uses a tenancy
   word (rent, tenant, landlord, lease, quit, eviction, agent, caution, deposit, receipt, agreement,
   premises, housing, apartment, Lagos, Abuja, LASRERA); a sitemap index is followed into its
-  post/blog/news children only; four items per rival at most.
+  post/blog/news children only; four items per rival at most. Since 5 Nov 2026 a title that reads
+  like a public tender (remodelling, asphalting, re-roofing, landscaping, bill of quantities…) is
+  dropped even when it says "housing" or "premises" — the first live pull after the paths fix
+  brought four construction tenders beside Mushrooms' four real posts.
 
 - **Paths and prices (4 Nov 2026).** A marketplace sitemap dates thousands of listings; a row may name
   `paths` (Mushrooms: `/blog/`) and only links on those paths count. A row may name one public pricing

@@ -50,6 +50,12 @@ TOPIC = re.compile(r"\b(rent|tenan|landlord|lease|quit|evict|agent|agency|cautio
                    r"premises|housing|apartment|lagos|abuja|tenancy|lasrera)\w*", re.I)
 # A sitemap slug that is a listing id ("propertypro-1qlct") or a menu page ("rent", "list a property")
 # is not something the competition *published*.
+# 5 Nov 2026: a construction-cost site's sitemap dates public tenders ("Remodelling of Anambra State
+# Housing Corporation office building", "Premises asphalting and re-roofing works") — "housing" and
+# "premises" pass the topic test, but a tender is not a thing a rival said about renting.
+TENDER = re.compile(r"\b(remodel\w*|renovat\w*|construct\w*|asphalt\w*|re-?roof\w*|landscap\w*|beautificat\w*|"
+                    r"rehabilitat\w*|tender|bill of quantit\w*|boq|takeoff|take-off|borehole|drainage|"
+                    r"perimeter fenc\w*|block of \d|classroom\w*|procurement)\b", re.I)
 TOKEN = re.compile(r"\b(?=[a-z0-9]*\d)(?=[a-z0-9]*[a-z])[a-z0-9]{4,}\b", re.I)
 MIN_SLUG_WORDS = 4
 ARTICLE_SITEMAP = re.compile(r"(post|blog|news|article|guide|insight|resource|story|stories)", re.I)
@@ -219,7 +225,8 @@ def pull(http=None, now=None, days=14, log=print, field=None):
             mine.extend(rows)
         seen, fresh = set(), []
         for r in sorted(mine, key=lambda r: r.get("published") or "", reverse=True):
-            if r["link"] in seen or not TOPIC.search((r.get("title") or "") + " " + (r.get("summary") or "")):
+            text = (r.get("title") or "") + " " + (r.get("summary") or "")
+            if r["link"] in seen or not TOPIC.search(text) or TENDER.search(r.get("title") or ""):
                 continue
             if paths and not any(p in r["link"] for p in paths):
                 continue
