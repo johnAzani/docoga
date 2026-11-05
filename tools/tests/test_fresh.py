@@ -409,11 +409,21 @@ class BrainGateTests(unittest.TestCase):
     def test_the_sunday_pack_was_rewritten_without_the_statistic(self):
         # 24 Oct 2026: the approved 25 Oct pack opened "Over 70% of Nigerian tenants pay rent
         # without paper" and was withdrawn; the brain rewrote the day at 1:30am under the gate.
+        # 5 Nov 2026: brain.prune() keeps ten days of drafts, so the 25 Oct file is gone from the
+        # repo by design — the lesson is pinned on the gate itself, and on the file while it exists.
         import brain
-        pack = json.loads((ROOT / "brain" / "drafts" / "2026-10-25.json").read_text(encoding="utf-8"))
-        self.assertEqual(pack["status"], "approved")
-        self.assertNotIn("70%", pack["post"]["headline"])
-        self.assertEqual(brain.statistic_problems(pack, ""), [])
+        withdrawn = {"status": "approved", "post": {"headline": "Over 70% of Nigerian tenants pay rent without paper",
+                                                   "lines": ["Get a receipt."]}}
+        self.assertTrue(brain.statistic_problems(withdrawn, ""), "a survey-shaped number with no cited fact is refused")
+        rewritten = {"status": "approved", "post": {"headline": "Paid rent with no receipt? Lagos law says that paper is yours.",
+                                                   "lines": ["Section 5 of the Tenancy Law 2011 makes the receipt a duty."]}}
+        self.assertEqual(brain.statistic_problems(rewritten, ""), [])
+        kept = ROOT / "brain" / "drafts" / "2026-10-25.json"
+        if kept.exists():
+            pack = json.loads(kept.read_text(encoding="utf-8"))
+            self.assertEqual(pack["status"], "approved")
+            self.assertNotIn("70%", pack["post"]["headline"])
+            self.assertEqual(brain.statistic_problems(pack, ""), [])
 
 
 class SearchPhraseTests(unittest.TestCase):
