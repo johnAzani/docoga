@@ -160,11 +160,49 @@ DEMAND_LETTER = [
           "then the court. Keep a copy and proof of delivery."),
 ]
 
+# 5 Nov 2026 (🔒 docs/GROWTH.md, fifth dive): the notice of rent review the generator writes
+# (renderRentReview). A rent increase is an offer for the next term, not an order for this one; the
+# notice says so and carries the chosen state's section. Shown for Lagos. Every sentence below is the
+# generator's sentence; the brackets are the user's details.
+RENT_REVIEW_SENTENCES = [
+    "Your current [yearly] tenancy of the above premises runs to [31 December 2026] at a rent of "
+    "[Eight Hundred and Fifty Thousand (₦850,000) Naira Only] [per annum].",
+    "This is written notice that, if you wish to continue in the premises after that date, the rent from "
+    "[1 January 2027] will be [Nine Hundred and Fifty Thousand (₦950,000) Naira Only] [per annum], a change of "
+    "[₦100,000 (11.8%)].",
+    "This is a proposal for the next term and not a demand for the present one: the rent you agreed stands "
+    "until [31 December 2026], and the new rent takes effect only on your written acceptance.",
+    "Please let me have your answer in writing by [30 November 2026]. If we do not agree a rent, the tenancy "
+    "is not thereby ended; it continues on its present terms until it is lawfully determined by the notice "
+    "your agreement or the law requires.",
+    "Nothing in this notice takes away your right under section 37 of the Lagos State Tenancy Law 2011 to "
+    "apply to the court for an order declaring an increase unreasonable; by section 37(4) no tenant may be "
+    "ejected while that application is pending.",
+]
+
+RENT_REVIEW_NOTICE = [
+    ("h", "NOTICE OF RENT REVIEW"),
+    ("p", "[LANDLORD'S FULL NAME], [landlord's address]"),
+    ("p", "[Date]"),
+    ("p", "[TENANT'S FULL NAME], [the flat / shop / house and full address of the premises]"),
+    ("p", "Dear [Tenant's name],"),
+    ("p", "RE: NOTICE OF RENT REVIEW — [2-BEDROOM FLAT, FIRST FLOOR, 12 EXAMPLE STREET, SURULERE, LAGOS]"),
+] + [("p", t) for t in RENT_REVIEW_SENTENCES] + [
+    ("p", "Yours faithfully,"),
+    ("sig", ["[Landlord's full name, signature and phone number]  -  Landlord / for the Landlord"]),
+    ("p", "For a yearly tenant in Lagos. The generator swaps the last paragraph for the chosen state: in Enugu "
+          "it cites s.3(b) of the Landlord and Tenant (Amendment) Law 2008 (review only after every second "
+          "anniversary, not more than 15%) and refuses to call a figure above the cap lawful; in the FCT and "
+          "the other states it says the tenancy agreement governs. No state we have read fixes a notice period "
+          "for a rent review — the quit-notice periods are a different question."),
+]
+
 SAMPLES = {
     "tenancy-agreement-sample-nigeria": ("Tenancy Agreement — sample (Nigeria)", TENANCY_AGREEMENT),
     "rent-receipt-sample-nigeria": ("Rent Receipt — sample (Nigeria)", RENT_RECEIPT),
     "quit-notice-letter-sample-nigeria": ("Notice to Quit — sample letter (Nigeria)", QUIT_NOTICE),
     "demand-letter-rent-arrears-nigeria": ("Demand Letter for Unpaid Rent — sample (Nigeria)", DEMAND_LETTER),
+    "rent-increase-notice-nigeria": ("Notice of Rent Review — sample (Nigeria)", RENT_REVIEW_NOTICE),
 }
 
 

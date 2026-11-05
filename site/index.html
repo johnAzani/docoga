@@ -29,7 +29,7 @@
 {"@context":"https://schema.org","@type":"WebSite","name":"DocOga","alternateName":["DocOga — the Oga of Documents","docoga.com.ng"],"url":"https://docoga.com.ng/","inLanguage":"en-NG","publisher":{"@type":"Organization","name":"DocOga","url":"https://docoga.com.ng/"}}
 </script>
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"WebApplication","name":"DocOga","applicationCategory":"BusinessApplication","operatingSystem":"Web Browser","inLanguage":"en-NG","offers":{"@type":"Offer","price":"0","priceCurrency":"NGN"},"description":"Free tenancy agreement, notice to quit, rent receipt, invoice, employment contract, caution fee receipt and letter of demand generator for every Nigerian state."}
+{"@context":"https://schema.org","@type":"WebApplication","name":"DocOga","applicationCategory":"BusinessApplication","operatingSystem":"Web Browser","inLanguage":"en-NG","offers":{"@type":"Offer","price":"0","priceCurrency":"NGN"},"description":"Free tenancy agreement, notice to quit, rent receipt, invoice, employment contract, caution fee receipt, rent review notice and letter of demand generator for every Nigerian state."}
 </script>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
@@ -348,6 +348,7 @@ body.has-pass .buy-only{display:none !important}
       <a href="#employment">Employment</a>
       <a href="#caution">Caution Fee</a>
       <a href="#demand">Demand Letter</a>
+      <a href="#rentreview">Rent Review</a>
       <a href="#payslip">Payslip</a>
       <a href="#warning">Warning Letter</a> <a href="#poa">Power of Attorney</a>
       <a href="#docs">My Documents</a>
@@ -442,6 +443,12 @@ body.has-pass .buy-only{display:none !important}
       <a href="#demand">Create letter →</a>
     </div>
     <div class="card">
+      <div class="ico"><svg aria-hidden="true"><use href="#i-file"/></svg></div><span class="chip">FREE</span>
+      <h3>Rent Review Notice</h3>
+      <p>Raising the rent? A notice of rent review for the next term that says what your state&rsquo;s law says &mdash; Lagos s.37, the Enugu 15% cap &mdash; and asks for an answer in writing.</p>
+      <a href="#rentreview">Create notice →</a>
+    </div>
+    <div class="card">
       <div class="ico"><svg aria-hidden="true"><use href="#i-receipt"/></svg></div><span class="chip">FREE</span>
       <h3>Payslip</h3>
       <p>Pay your staff like a proper company — a clean monthly payslip with earnings, deductions and net pay in words. Pairs with the employment contract.</p>
@@ -464,7 +471,7 @@ body.has-pass .buy-only{display:none !important}
   <div class="seo-block">
     <h2>Free guides — the questions Nigerians ask first</h2>
     <p>Plain-English answers on Nigerian renting and small-business paperwork, current for 2026:</p>
-    <p style="line-height:2"><a href="/rent-relief-nigeria"><b>Rent relief 2026: claim the ₦500,000 tax deduction</b></a> · <a href="/tenancy-agreement-nigeria">Tenancy agreement format</a> · <a href="/tenancy-agreement-sample-nigeria">Tenancy agreement sample + free PDF</a> · <a href="/notice-to-quit-nigeria">Quit notice: free letter + how many months</a> · <a href="/demand-letter-rent-arrears-nigeria">Demand letter for unpaid rent + free PDF</a> · <a href="/rent-receipt-format-nigeria">Rent receipt format</a> · <a href="/caution-fee-nigeria">Is the caution fee refundable?</a> · <a href="/tenant-rights-nigeria">Tenant rights &amp; landlord duties</a> · <a href="/shop-tenancy-agreement-nigeria">Shop &amp; business tenancy</a> · <a href="/invoice-format-nigeria">Invoice format + 7.5% VAT</a> · <a href="/rent-index-nigeria">Rent Monitor: rent actually paid, by state</a></p>
+    <p style="line-height:2"><a href="/rent-relief-nigeria"><b>Rent relief 2026: claim the ₦500,000 tax deduction</b></a> · <a href="/tenancy-agreement-nigeria">Tenancy agreement format</a> · <a href="/tenancy-agreement-sample-nigeria">Tenancy agreement sample + free PDF</a> · <a href="/notice-to-quit-nigeria">Quit notice: free letter + how many months</a> · <a href="/demand-letter-rent-arrears-nigeria">Demand letter for unpaid rent + free PDF</a> · <a href="/rent-increase-notice-nigeria">Rent increase notice + the law by state</a> · <a href="/rent-receipt-format-nigeria">Rent receipt format</a> · <a href="/caution-fee-nigeria">Is the caution fee refundable?</a> · <a href="/tenant-rights-nigeria">Tenant rights &amp; landlord duties</a> · <a href="/shop-tenancy-agreement-nigeria">Shop &amp; business tenancy</a> · <a href="/invoice-format-nigeria">Invoice format + 7.5% VAT</a> · <a href="/rent-index-nigeria">Rent Monitor: rent actually paid, by state</a></p>
   </div>
 
   <div class="seo-block">
@@ -808,6 +815,52 @@ body.has-pass .buy-only{display:none !important}
   </div>
 </section>
 
+<!-- ======================= RENT REVIEW NOTICE (5 Nov 2026) ======================= -->
+<section id="page-rentreview">
+  <h2 class="page-title">Notice of Rent Review</h2>
+  <p class="page-sub">Raising the rent at renewal? A notice that proposes the new rent for the next term, keeps the current rent until it ends, and says what your state&rsquo;s law actually says.</p>
+  <div class="tool-grid">
+    <div class="panel">
+      <h3>📝 Notice details</h3>
+      <form id="form-rentreview" oninput="renderRentReview()">
+        <div class="fieldset"><legend>Landlord</legend>
+          <div class="form-grid">
+            <div class="full"><label>Landlord / agent name</label><input id="v_from" placeholder="e.g. Mr. Tunde Bakare"></div>
+            <div class="full"><label>Address</label><input id="v_addr" placeholder="Street, city, state"></div>
+          </div>
+        </div>
+        <div class="fieldset"><legend>Tenant &amp; premises</legend>
+          <div class="form-grid">
+            <div class="full"><label>Tenant name (as on the agreement)</label><input id="v_to" placeholder="e.g. Miss Chioma Okafor"></div>
+            <div class="full"><label>The premises</label><input id="v_prop" placeholder="e.g. 2-bedroom flat, first floor, 12 Example Street, Surulere"></div>
+            <div><label>State</label><select id="v_state"></select></div>
+            <div><label>Tenancy</label><select id="v_type"><option value="yearly">Yearly</option><option value="half">Half-yearly</option><option value="quarterly">Quarterly</option><option value="monthly">Monthly</option></select></div>
+          </div>
+        </div>
+        <div class="fieldset"><legend>The rent</legend>
+          <div class="form-grid">
+            <div><label>Current rent (₦)</label><input id="v_cur" inputmode="numeric" placeholder="e.g. 850000"><div class="amount-hint" id="hint-v_cur"></div></div>
+            <div><label>Proposed rent (₦)</label><input id="v_new" inputmode="numeric" placeholder="e.g. 950000"><div class="amount-hint" id="hint-v_new"></div></div>
+            <div><label>Current term ends on</label><input id="v_end" type="date"></div>
+            <div><label>Date of this notice</label><input id="v_date" type="date"></div>
+            <div><label>Reply in writing by</label><input id="v_reply" type="date"></div>
+            <div class="full"><label>Reason (optional)</label><input id="v_reason" placeholder="e.g. the new borehole and the rewiring completed in 2026"></div>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div>
+      <div class="preview-label">LIVE PREVIEW <span id="badge-rentreview"></span></div>
+      <div class="preview-scroll"><div id="preview-rentreview"></div></div>
+      <div class="actions">
+        <button class="btn primary" onclick="printCurrent('rentreview')"><svg class="bi" aria-hidden="true"><use href="#i-print"/></svg>Print / Save PDF</button>
+        <button class="btn green" onclick="saveDoc('rentreview')"><svg class="bi" aria-hidden="true"><use href="#i-save"/></svg>Save</button>
+        <button class="btn green" onclick="shareDoc('rentreview')"><svg class="bi" aria-hidden="true"><use href="#i-chat"/></svg>Share</button>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ======================= PAYSLIP ======================= -->
 <section id="page-payslip">
   <h2 class="page-title">Payslip</h2>
@@ -1023,7 +1076,7 @@ body.has-pass .buy-only{display:none !important}
 <div class="per">forever</div>
 <div class="best-for">Best for one-off, personal needs</div>
 <ul>
-<li>All ten tools — agreement, notice, receipt, invoice &amp; more</li>
+<li>All eleven tools — agreement, notice, receipt, invoice &amp; more</li>
 <li>Unlimited documents</li>
 <li>Print &amp; save as PDF</li>
 <li>No signup, data stays on your phone</li>
@@ -1042,7 +1095,7 @@ body.has-pass .buy-only{display:none !important}
 <li><b>No DocOga banner or watermark</b></li>
 <li>Unlimited clean PDFs &amp; prints</li>
 <li>Priority WhatsApp support</li>
-<li><b>All 10 tools</b> — incl. power of attorney, payslips, warning letters, employment contracts, caution-fee receipts &amp; demand letters</li>
+<li><b>All 11 tools</b> — incl. rent review notices, power of attorney, payslips, warning letters, employment contracts, caution-fee receipts &amp; demand letters</li>
 </ul>
 <button class="btn primary" id="buy-btn" style="width:100%;justify-content:center" onclick="buyPass()">Get Oga Pass — ₦2,000</button>
 <div class="flw-badge buy-only"><span class="dot"></span>Secured by Flutterwave · Card · Transfer · USSD</div>
@@ -1208,7 +1261,7 @@ if(active){ chip.textContent='OGA PASS ✓ '+days+'d'; chip.classList.add('pro')
 else { chip.textContent='FREE PLAN'; chip.classList.remove('pro'); }
 const bb=$('buy-btn'); if(bb){ bb.disabled=active; bb.textContent=active?('✓ Pass active — '+days+' day'+(days>1?'s':'')+' of clean documents left'):'Get Oga Pass — ₦2,000'; }
 const ms=$('modal-sub'); if(ms){ ms.textContent=active?('Your pass is active — '+days+'d left. A NEW code adds 30 days on top of your remaining days.'):'Enter the code you received after payment to unlock 30 days of clean, watermark-free documents.'; }
-['agreement','notice','receipt','invoice','employment','caution','demand','payslip','warning'].forEach(renderBadge);
+['agreement','notice','receipt','invoice','employment','caution','demand','rentreview','payslip','warning'].forEach(renderBadge);
 }
 function openModal(){ $('modal-overlay').classList.add('open'); $('pass-input').focus(); }
 function closeModal(){ $('modal-overlay').classList.remove('open'); }
@@ -1720,6 +1773,61 @@ $('preview-demand').innerHTML=html;
 return html;
 }
 
+/* ================= NOTICE OF RENT REVIEW (5 Nov 2026) =================
+   A rent increase in Nigeria is an offer for the next term, not an order for this one (Cobra Ltd v.
+   Omole Estate; Jovinco v. Ibeozimako). The notice says so, and says what the chosen state's law adds:
+   Lagos s.37 (the court may call an increase unreasonable; no ejection while that is pending), Enugu's
+   2008 amendment (review only after every second anniversary, not more than 15%). Every sentence here
+   is pinned by tools/sample_docs.py, which prints the same notice as the free sample. */
+const RR_PERIOD={yearly:['yearly','per annum'],half:['half-yearly','per half-year'],quarterly:['quarterly','per quarter'],monthly:['monthly','per month']};
+function rrCap(cur){ return Math.floor(cur*115/100+1e-6); }
+function rrLawText(state,cur,nw){
+if(state==='Lagos') return 'Nothing in this notice takes away your right under section 37 of the Lagos State Tenancy Law 2011 to apply to the court for an order declaring an increase unreasonable; by section 37(4) no tenant may be ejected while that application is pending.';
+if(state==='Enugu') return 'Under section 3(b) of the Landlord and Tenant (Amendment) Law 2008 of Enugu State, rent may be reviewed by the parties only after every second anniversary of the tenancy, and the new rent may not exceed the existing rent by more than 15%. '+((cur>0&&nw>rrCap(cur))?'The figure proposed above exceeds that limit and must be reduced to not more than '+fmtN(rrCap(cur))+' before this notice is served.':'This proposal is made within that limit.');
+if(state==='FCT (Abuja)') return 'No law of the Federal Capital Territory fixes a notice period or a limit for a rent review; the tenancy agreement governs, and this notice follows it.';
+return 'No law of '+(state||'the state')+' that we have verified fixes a notice period or a percentage limit for a rent review; the tenancy agreement governs, and this notice follows it.';
+}
+function collectRentReview(){
+return { v_from:$('v_from').value, v_addr:$('v_addr').value, v_to:$('v_to').value, v_prop:$('v_prop').value, v_state:$('v_state').value, v_type:$('v_type').value,
+v_cur:$('v_cur').value, v_new:$('v_new').value, v_end:$('v_end').value, v_date:$('v_date').value, v_reply:$('v_reply').value, v_reason:$('v_reason').value };
+}
+function applyRentReview(p){
+[['v_from','v_from'],['v_addr','v_addr'],['v_to','v_to'],['v_prop','v_prop'],['v_cur','v_cur'],['v_new','v_new'],['v_end','v_end'],['v_date','v_date'],['v_reply','v_reply'],['v_reason','v_reason']].forEach(([k,id])=>{ $(id).value=p[k]||''; });
+if(p.v_state!=null) $('v_state').value=p.v_state;
+if(p.v_type) $('v_type').value=p.v_type;
+}
+function renderRentReview(){
+const d=collectRentReview();
+const cur=Number(d.v_cur)||0, nw=Number(d.v_new)||0;
+const diff=nw-cur, pct=(cur>0&&nw>0)?Math.round(diff/cur*1000)/10:0;
+const [tname,per]=RR_PERIOD[d.v_type]||RR_PERIOD.yearly;
+$('hint-v_cur').textContent=(cur>0?'= '+numWords(cur)+' Naira':'');
+let hint=(nw>0?'= '+numWords(nw)+' Naira':'');
+if(cur>0&&nw>0) hint+=(diff>=0?' · +':' · ')+fmtN(diff)+' ('+pct+'%)';
+if(d.v_state==='Enugu'&&cur>0&&nw>rrCap(cur)) hint+=' · ⚠ above the Enugu 15% cap — maximum '+fmtN(rrCap(cur));
+$('hint-v_new').textContent=hint;
+const from=d.v_end?addDaysISO(d.v_end,1):'';
+const html =
+'<div class="'+sheetClass()+'">'+
+'<p style="margin:0"><b>'+esc(d.v_from||'________________')+'</b><br>'+esc(d.v_addr||'')+'</p>'+
+'<p class="right" style="margin:8px 0">'+fmtDateLong(d.v_date)+'</p>'+
+'<p style="margin:8px 0"><b>'+esc(d.v_to||'________________')+'</b><br>'+esc(d.v_prop||'')+'</p>'+
+'<p style="margin:14px 0 4px"><b>Dear '+esc(d.v_to||'Sir/Madam')+',</b></p>'+
+'<p style="margin:10px 0"><u><b>RE: NOTICE OF RENT REVIEW — '+esc((d.v_prop||'THE PREMISES').toUpperCase())+'</b></u></p>'+
+'<p style="margin:10px 0">Your current '+tname+' tenancy of the above premises runs to <b>'+fmtDateLong(d.v_end)+'</b> at a rent of <b>'+nairaWords(cur)+'</b> '+per+'.</p>'+
+'<p style="margin:10px 0">This is written notice that, if you wish to continue in the premises after that date, the rent from <b>'+fmtDateLong(from)+'</b> will be <b>'+nairaWords(nw)+'</b> '+per+(cur>0&&nw>0?', a change of '+fmtN(diff)+' ('+pct+'%)':'')+(d.v_reason?', because of '+esc(d.v_reason):'')+'.</p>'+
+'<p style="margin:10px 0">This is a proposal for the next term and not a demand for the present one: the rent you agreed stands until <b>'+fmtDateLong(d.v_end)+'</b>, and the new rent takes effect only on your written acceptance.</p>'+
+'<p style="margin:10px 0">Please let me have your answer in writing by <b>'+fmtDateLong(d.v_reply)+'</b>. If we do not agree a rent, the tenancy is not thereby ended; it continues on its present terms until it is lawfully determined by the notice your agreement or the law requires.</p>'+
+'<p style="margin:10px 0">'+rrLawText(d.v_state,cur,nw)+'</p>'+
+'<p style="margin:22px 0 4px">Yours faithfully,</p>'+
+'<div class="sig-line" style="max-width:280px"></div>'+
+'<p style="margin:0"><b>'+esc(d.v_from||'________________')+'</b><br><span style="font-size:12px;color:#444">Landlord / for the Landlord</span></p>'+
+freeBanner()+
+'</div>';
+$('preview-rentreview').innerHTML=html;
+return html;
+}
+
 /* ================= print / share / save ================= */
 function receiptWantsCode(){ const d=collectReceipt(); return !!(d.r_verify&&d.r_state&&Math.round(Number(d.r_amt)||0)>=1000&&d.r_date&&window.crypto&&crypto.subtle); }
 function printCurrent(type){
@@ -1747,6 +1855,7 @@ invoice:'Creating clean naira invoices with DocOga 💼 — free Nigerian docume
 employment:'Hiring properly with a clean employment contract from DocOga 💼 — free Nigerian document maker',
 caution:'Documenting caution fees properly with DocOga 🇳🇬 — free Nigerian document maker',
 demand:'Sent a firm letter of demand with DocOga ⚖ — free Nigerian document maker',
+rentreview:'Served a proper notice of rent review with DocOga 🏠 — the law of my state on it, free Nigerian document maker',
 payslip:'Paying my staff properly with clean payslips from DocOga 🧾 — free Nigerian document maker',
 warning:'Issued a formal written warning the right way with DocOga 🇳🇬 — free Nigerian document maker',
 poa:'Drafted a Power of Attorney for my Nigerian property with DocOga — from abroad, in minutes 🇳🇬'
@@ -1828,10 +1937,10 @@ $('preview-warning').innerHTML=html;
 return html;
 }
 
-const DOC_TITLES={agreement:'Tenancy Agreement',notice:'Notice to Quit',receipt:'Rent Receipt',invoice:'Invoice',employment:'Employment Contract',caution:'Caution Fee Receipt',demand:'Letter of Demand',payslip:'Payslip',warning:'Warning Letter',poa:'Power of Attorney'};
-const RENDERERS={agreement:renderAgreement,notice:renderNotice,receipt:renderReceipt,invoice:renderInvoice,employment:renderEmployment,caution:renderCaution,demand:renderDemand,payslip:renderPayslip,warning:renderWarning,poa:renderPoa};
-const COLLECTORS={agreement:collectAgreement,notice:collectNotice,receipt:collectReceipt,invoice:collectInvoice,employment:collectEmployment,caution:collectCaution,demand:collectDemand,payslip:collectPayslip,warning:collectWarning,poa:collectPoa};
-const APPLIERS={agreement:applyAgreement,notice:applyNotice,receipt:applyReceipt,invoice:applyInvoice,employment:applyEmployment,caution:applyCaution,demand:applyDemand,payslip:applyPayslip,warning:applyWarning,poa:applyPoa};
+const DOC_TITLES={agreement:'Tenancy Agreement',notice:'Notice to Quit',receipt:'Rent Receipt',invoice:'Invoice',employment:'Employment Contract',caution:'Caution Fee Receipt',demand:'Letter of Demand',rentreview:'Notice of Rent Review',payslip:'Payslip',warning:'Warning Letter',poa:'Power of Attorney'};
+const RENDERERS={agreement:renderAgreement,notice:renderNotice,receipt:renderReceipt,invoice:renderInvoice,employment:renderEmployment,caution:renderCaution,demand:renderDemand,rentreview:renderRentReview,payslip:renderPayslip,warning:renderWarning,poa:renderPoa};
+const COLLECTORS={agreement:collectAgreement,notice:collectNotice,receipt:collectReceipt,invoice:collectInvoice,employment:collectEmployment,caution:collectCaution,demand:collectDemand,rentreview:collectRentReview,payslip:collectPayslip,warning:collectWarning,poa:collectPoa};
+const APPLIERS={agreement:applyAgreement,notice:applyNotice,receipt:applyReceipt,invoice:applyInvoice,employment:applyEmployment,caution:applyCaution,demand:applyDemand,rentreview:applyRentReview,payslip:applyPayslip,warning:applyWarning,poa:applyPoa};
 /* Always returns an array. A stored 'null'/object/string (interrupted write,
 quota error, another tab) used to return null and make init() throw TypeError
 on every load — a permanently dead app for that visitor. Guard here, once. */
@@ -1846,6 +1955,7 @@ if(type==='invoice'&&payload.i_client) title='Invoice — '+payload.i_client;
 if(type==='employment'&&payload.e_emp) title='Contract — '+payload.e_emp;
 if(type==='caution'&&payload.c_from) title='Caution Fee — '+payload.c_from;
 if(type==='demand'&&payload.d_to) title='Demand — '+payload.d_to;
+if(type==='rentreview'&&payload.v_to) title='Rent review — '+payload.v_to;
 if(type==='payslip'&&payload.p_emp) title='Payslip — '+payload.p_emp;
 if(type==='warning'&&payload.w_emp) title='Warning — '+payload.w_emp;
 if(type==='poa'&&payload.poa_donee) title='Power of Attorney — '+payload.poa_donee;
@@ -1878,7 +1988,7 @@ const DRAFT_KEY=t=>'docoga_draft_'+t;
 function saveDraft(type){ try{ store.setItem(DRAFT_KEY(type), JSON.stringify(COLLECTORS[type]())); }catch(e){} }
 function loadDrafts(){
 let restored=false;
-['agreement','notice','receipt','invoice','employment','caution','demand','payslip','warning'].forEach(t=>{
+['agreement','notice','receipt','invoice','employment','caution','demand','rentreview','payslip','warning'].forEach(t=>{
 try{
 const raw=store.getItem(DRAFT_KEY(t)); if(!raw) return;
 const p=JSON.parse(raw);
@@ -1982,7 +2092,7 @@ return html;
 }
 
 /* ================= router & init ================= */
-const PAGES=['home','agreement','notice','receipt','invoice','employment','caution','demand','payslip','warning','poa','docs','pricing','business-setup','team'];
+const PAGES=['home','agreement','notice','receipt','invoice','employment','caution','demand','rentreview','payslip','warning','poa','docs','pricing','business-setup','team'];
 function route(){
   let h=(location.hash||'#home').slice(1).split('?')[0];
   if(!PAGES.includes(h)) h='home';
@@ -1991,12 +2101,13 @@ function route(){
   if(h==='team'||h==='business-setup') bizLoad().then(function(){ if(h==='team') teamPortalRender(); else bizUpdateQuote(); }).catch(function(){});
   window.scrollTo(0,0);
 }
-function renderAll(){ renderAgreement(); renderNotice(); renderReceipt(); renderInvoice(); renderEmployment(); renderCaution(); renderDemand(); renderPayslip(); renderWarning(); renderPoa(); renderDocs(); updatePassUI(); }
+function renderAll(){ renderAgreement(); renderNotice(); renderReceipt(); renderInvoice(); renderEmployment(); renderCaution(); renderDemand(); renderRentReview(); renderPayslip(); renderWarning(); renderPoa(); renderDocs(); updatePassUI(); }
 
 (function init(){
   // states select
   $('prop_state').innerHTML='<option value="">Select state…</option>'+STATES.map(s=>'<option>'+s+'</option>').join('');
   $('r_state').innerHTML='<option value="">Select state…</option>'+STATES.map(s=>'<option>'+s+'</option>').join('');
+  $('v_state').innerHTML='<option value="">Select state…</option>'+STATES.map(s=>'<option>'+s+'</option>').join('');
   $('form-receipt').addEventListener('input',function(){ receiptVerify={fp:'',code:''}; });
   renderBook();
   // defaults
@@ -2021,11 +2132,13 @@ function renderAll(){ renderAgreement(); renderNotice(); renderReceipt(); render
   const autoE=debounce_(()=>saveDraft('employment'),700);
   const autoC=debounce_(()=>saveDraft('caution'),700);
   const autoD=debounce_(()=>saveDraft('demand'),700);
+  const autoV=debounce_(()=>saveDraft('rentreview'),700);
   const autoP=debounce_(()=>saveDraft('payslip'),700);
   const autoW=debounce_(()=>saveDraft('warning'),700);
   $('form-employment').addEventListener('input',autoE);
   $('form-caution').addEventListener('input',autoC);
   $('form-demand').addEventListener('input',autoD);
+  $('form-rentreview').addEventListener('input',autoV);
   $('form-payslip').addEventListener('input',autoP);
   $('form-warning').addEventListener('input',autoW);
   window.addEventListener('hashchange',route);

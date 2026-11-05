@@ -303,7 +303,7 @@ PAGES["tenancy-agreement-sample-nigeria.html"] = dict(
     cta=("agreement", "Create your tenancy agreement free →"),
     related=["tenancy-agreement-nigeria.html", "notice-to-quit-nigeria.html",
              "rent-receipt-format-nigeria.html", "caution-fee-nigeria.html",
-             "tenant-rights-nigeria.html"],
+             "tenant-rights-nigeria.html", "rent-increase-notice-nigeria.html"],
     priority="0.9",
 )
 
@@ -398,9 +398,9 @@ PAGES["notice-to-quit-nigeria.html"] = dict(
          "months' imprisonment. Only the court can order possession."),
     ],
     cta=("notice", "Create your notice to quit free →"),
-    related=["demand-letter-rent-arrears-nigeria.html", "tenancy-agreement-sample-nigeria.html",
-             "tenancy-agreement-nigeria.html", "tenant-rights-nigeria.html",
-             "caution-fee-nigeria.html", "rent-receipt-format-nigeria.html"],
+    related=["demand-letter-rent-arrears-nigeria.html", "rent-increase-notice-nigeria.html",
+             "tenancy-agreement-sample-nigeria.html", "tenancy-agreement-nigeria.html",
+             "tenant-rights-nigeria.html", "caution-fee-nigeria.html"],
     priority="0.9",
 )
 
@@ -675,7 +675,124 @@ PAGES["demand-letter-rent-arrears-nigeria.html"] = dict(
     ],
     cta=("demand", "Create your demand letter free \u2192"),
     related=["notice-to-quit-nigeria.html", "rent-receipt-format-nigeria.html", "tenancy-agreement-sample-nigeria.html",
-             "tenant-rights-nigeria.html"],
+             "tenant-rights-nigeria.html", "rent-increase-notice-nigeria.html"],
+    priority="0.8",
+)
+
+# 4b ── rent increase notice (5 Nov 2026, 🔒 docs/GROWTH.md fifth dive) -----------------------
+# The field for "rent increase notice/letter Nigeria" is a marketplace blog (mushrooms.ng, 20 Oct
+# 2026), a listings blog (apartments.ng) and a paid Selar file; the law explainers that rank
+# contradict each other ("six months' notice for an increase", "three months", "one month") and all
+# are reading the quit-notice periods into a different question. Nobody has the generator, the
+# sample and the sections on one page. Every section below is from tools/state_law_data.py.
+INCREASE_TABLE = '''<table>
+<tr><th>State</th><th>What the law actually says about a rent increase</th><th>Section</th></tr>
+<tr><td><b>Lagos</b></td><td><b>No percentage cap and no fixed notice period for an increase.</b> A sitting tenant who thinks an increase unreasonable applies to the court on Form TL11; the court weighs the general level of rents in the locality, the evidence and any special circumstances, and may order the increase changed to a stated figure (Form TL13). It is <b>unlawful to eject the tenant while that application is pending</b>. If the tenant refuses and nothing is agreed, the landlord\u2019s only lawful route is the notice to quit the tenancy requires (yearly tenant: six months), the seven-day notice, then the court.</td><td>Tenancy Law 2011, s.37, s.37(4); s.13(1)</td></tr>
+<tr><td><b>Enugu</b></td><td><b>The one verified statutory cap in Nigeria.</b> Rent \u201cmay be reviewed by the parties after every second anniversary of the tenancy \u2026 provided that the difference between the new and the existing rent shall not exceed 15% of the existing rent\u201d. Three conditions: by agreement (a unilateral increase is ineffective), not before the second anniversary, not more than 15%. \u20a6400,000 let from 1 January 2025 cannot be reviewed before 1 January 2027 and may not go above \u20a6460,000.</td><td>Landlord and Tenant (Amendment) Law 2008, s.3(b)</td></tr>
+<tr><td><b>Abuja (FCT)</b></td><td>No FCT equivalent of the Lagos s.37 application and no percentage cap. The tenancy agreement governs; where it is silent, the notice required is a matter of negotiation and, ultimately, of the court. The 2026 FCT Advance Rent Bill (second reading 4 Nov 2026) proposes <b>no</b> rent ceiling and no limit on increases.</td><td>no provision; HB.2839 (a bill)</td></tr>
+<tr><td><b>Kwara</b></td><td>Shifting a burden from the landlord to the tenant (a repair, a levy) is treated as an increase in rent whether or not the periodic sum changes.</td><td>s.7</td></tr>
+<tr><td><b>Rivers \u00b7 Anambra \u00b7 Kano</b></td><td>No percentage cap; no verified equivalent of the Lagos s.37 application; no tribunal to apply to. Rent increases are governed by the tenancy agreement. Anambra\u2019s neighbour Enugu has a cap \u2014 that is Enugu\u2019s law, not Anambra\u2019s.</td><td>not verified / no mechanism found</td></tr>
+</table>
+<p class="muted">Everywhere: a rent increase is an <b>offer for the next term, not an order for this one</b> \u2014 \u201crent increment must be supported by an agreement\u201d (<i>Jovinco Nigeria Ltd v. Ibeozimako</i> (2014) LPELR-23599(CA); <i>Cobra Ltd v. Omole Estate</i> (2000) 1 NWLR (Pt. 655) 1). Refusing it is not arrears; the tenancy continues on its present terms until it is lawfully determined. Sections and the date each was checked are on the <a href="DOMAIN/tenancy-law-lagos">state tenancy-law pages</a>.</p>'''.replace("DOMAIN/", DOMAIN + "/")
+
+PAGES["rent-increase-notice-nigeria.html"] = dict(
+    published="2026-11-05", parent=("tenant-rights-nigeria.html", "Tenant rights in Nigeria"),
+    title="Rent Increase Notice in Nigeria (2026): Sample Letter, Free PDF + What Your State\u2019s Law Actually Says",
+    h1="Rent increase notice in Nigeria \u2014 the sample letter, free PDF, the generator, and the section of the law in your state",
+    desc="A notice of rent review for Nigeria you can read in full and download free, with the generator that writes it for your state: Lagos s.37, the Enugu 15% cap after every second anniversary, the FCT and the others \u2014 and the honest answer on how much notice the law requires.",
+    lead="A rent increase in Nigeria is an offer for the next term, not an order for this one. The letter "
+         "that does it properly says the current rent stands until the term ends, names the new rent in "
+         "figures and words, asks for an answer in writing, and \u2014 this is the part nobody else prints \u2014 "
+         "says what the law of your state actually adds: in Lagos, the tenant\u2019s s.37 right to have the "
+         "court call it unreasonable; in Enugu, the 15% cap and the two-year rule; in the FCT and most "
+         "states, that the agreement governs. Read it, download it, or let the generator write it for "
+         "your state in two minutes \u2014 it will not let an Enugu notice call a 50% rise lawful. Below: "
+         "the state table, the honest answer on \u201chow much notice\u201d, and what a tenant who receives "
+         "one should do.",
+    widget=('<div class="box">\n<h2>The sample (landlord to a yearly tenant, Lagos premises)</h2>\n'
+            + sample_docs.html_sample("rent-increase-notice-nigeria")
+            + download_block("rent-increase-notice-nigeria", "rentreview", "Write it for your state free \u2192")
+            + '\n</div>'),
+    boxes=[
+        ("What the law actually says, state by state", INCREASE_TABLE),
+        ("How much notice does a rent increase need? The honest answer", ul([
+            "<b>No state statute we have read fixes a notice period for a rent increase.</b> The figures pages "
+            "quote \u2014 one month, three months, six months \u2014 are the <a href=\"%s/notice-to-quit-nigeria\">notice-to-"
+            "quit periods</a> (Lagos Tenancy Law 2011, s.13(1)), which answer a different question." % DOMAIN,
+            "<b>Why those periods still matter.</b> If the tenant does not accept the new rent, the landlord cannot "
+            "impose it; the only lawful route to a new rent with a new tenant is to determine the tenancy with "
+            "the notice it requires \u2014 six months for a yearly tenant in Lagos \u2014 then the seven-day notice, then "
+            "the court. A landlord who wants a higher rent from 1 January must therefore be talking by July.",
+            "<b>The agreement comes first.</b> A rent-review clause (\u201cnot less than three months\u2019 written notice "
+            "before the end of the term; by agreement\u201d) binds both sides. The <a href=\"%s/#agreement\">tenancy "
+            "agreement generator</a> writes one." % DOMAIN,
+            "<b>Enugu is the exception in the other direction:</b> not a notice period but a timing rule \u2014 no review "
+            "before every second anniversary \u2014 and a ceiling of 15%.",
+        ])),
+        ("What each line of the notice does", ul([
+            "<b>The current term and rent.</b> \u201cYour current yearly tenancy runs to [date] at a rent of \u20a6\u2026\u201d \u2014 "
+            "it fixes what is not changing, which is the first thing a tenant\u2019s lawyer checks.",
+            "<b>The proposal.</b> The new rent in figures and words, the date it would start (the day after the term "
+            "ends), the change in naira and percent, and the reason if there is one.",
+            "<b>The sentence that keeps it lawful.</b> \u201cThis is a proposal for the next term and not a demand for the "
+            "present one \u2026 the new rent takes effect only on your written acceptance.\u201d A notice that says "
+            "\u201ceffective immediately\u201d mid-term is the one the cases strike down.",
+            "<b>The answer date, and what silence means.</b> No agreement does not end the tenancy; it continues on its "
+            "present terms until lawfully determined. The notice says so instead of implying an eviction.",
+            "<b>The state paragraph.</b> Lagos: s.37 and s.37(4). Enugu: s.3(b) and \u2014 if the figure is over the cap \u2014 "
+            "a line saying it must come down before the notice is served. FCT and others: the agreement governs.",
+        ])),
+        ("If you are the tenant who received one", ul([
+            "<b>You do not have to accept it, and refusing is not arrears.</b> Keep paying the current rent on time, with "
+            "receipts \u2014 in Lagos a landlord who refuses one commits an offence (s.5(3), \u20a6100,000).",
+            "<b>Reply in writing.</b> Acknowledge, say whether you accept, counter-offer if you wish, and ask for the "
+            "landlord\u2019s answer in writing. A WhatsApp message is writing; keep it.",
+            "<b>In Lagos, the s.37 application</b> (Form TL11) asks the court to declare the increase unreasonable; no "
+            "ejection is lawful while it is pending (s.37(4)). Bring your receipts and evidence of rents nearby.",
+            "<b>In Enugu, do the arithmetic.</b> Before the second anniversary, or more than 15% above the existing "
+            "rent, the increase is unlawful and a court will not enforce the figure.",
+            "<b>Self-help is an offence everywhere.</b> No locks changed, no roof removed, no thugs; in Lagos s.44 of "
+            "the Tenancy Law 2011 \u2014 fine up to \u20a6250,000 or up to six months\u2019 imprisonment.",
+        ])),
+        ("How this compares with what else is online", ul([
+            "<b>Marketplace and listings blogs</b> publish a copy-and-paste letter with \u201ceffective immediately\u201d or a "
+            "notice period borrowed from the quit-notice table; none swaps the legal paragraph by state, and none "
+            "stops you writing an unlawful Enugu figure.",
+            "<b>Paid files</b> sell the same two paragraphs as a download. This page shows the whole notice, gives the "
+            "PDF away, and the generator writes a clean copy.",
+            "<b>Law explainers</b> that rank for the question disagree with each other on \u201chow much notice\u201d because the "
+            "statutes do not say; this page says that, and cites the sections that do exist.",
+        ])),
+    ],
+    faq=[
+        ("Can a landlord increase rent in the middle of a tenancy in Nigeria?",
+         "Not unilaterally. A rent increase takes effect only by agreement \u2014 the cases call a unilateral increase "
+         "ineffective \u2014 so an increase properly belongs to the next term, proposed in writing before the current one "
+         "ends. A rent-review clause in the agreement can allow a review on notice during a longer term."),
+        ("How much notice must a landlord give before increasing rent?",
+         "No Nigerian state statute we have read fixes one. The agreement governs; the notice-to-quit periods (one "
+         "month, three months, six months in Lagos by tenancy type) are what the landlord needs if the tenant refuses "
+         "and the tenancy is to be ended instead. Giving the proposal several months before renewal is both practical "
+         "and the only way a yearly tenancy can lawfully be re-let at a new rent on time."),
+        ("Is there a percentage limit on rent increases in Nigeria?",
+         "Only one that we have verified: Enugu State, where the Landlord and Tenant (Amendment) Law 2008 (s.3(b)) "
+         "allows a review only after every second anniversary and caps the difference at 15% of the existing rent. "
+         "Lagos has no cap but gives the tenant the s.37 application; the FCT, Rivers, Anambra and Kano have neither."),
+        ("What happens if the tenant refuses the new rent?",
+         "The tenancy continues on its present terms. The landlord may negotiate, or determine the tenancy with the "
+         "notice it requires and the court process; the landlord may not treat the refusal as arrears or lock the "
+         "tenant out."),
+        ("Can I download the rent increase notice as a PDF for free?",
+         "Yes \u2014 the PDF above is free and needs no signup. It carries the square brackets; the generator fills them "
+         "in for your state and gives you a clean copy, free with a small banner or without one on the Oga Pass."),
+        ("Does the notice need a lawyer?",
+         "Not for a residential renewal. A solicitor is the right step when the sum is large, the tenant disputes it, "
+         "or a Lagos s.37 application is coming. DocOga is not a law firm and this page is general information, not "
+         "legal advice."),
+    ],
+    cta=("rentreview", "Write your rent review notice free \u2192"),
+    related=["tenant-rights-nigeria.html", "notice-to-quit-nigeria.html", "tenancy-agreement-sample-nigeria.html",
+             "demand-letter-rent-arrears-nigeria.html"],
     priority="0.8",
 )
 
@@ -828,7 +945,7 @@ PAGES["tenant-rights-nigeria.html"] = dict(
          "their own recovery-of-premises legislation — see the state guides below."),
     ],
     cta=("agreement", "Put your tenancy in writing — free →"),
-    related=["notice-to-quit-nigeria.html", "caution-fee-nigeria.html",
+    related=["notice-to-quit-nigeria.html", "rent-increase-notice-nigeria.html", "caution-fee-nigeria.html",
              "rent-receipt-format-nigeria.html", "tenancy-agreement-nigeria.html"],
     priority="0.8",
 )
@@ -1349,7 +1466,7 @@ PAGES["rent-index-nigeria.html"] = dict(
             "under the Nigeria Tax Act 2025 (s.30(2)(a)(vi)) is claimed with a receipt and a tenancy "
             "agreement \u2014 see the rent relief guide below.",
             "<b>Landlords and agents:</b> the free version prints a small banner; the Oga Pass "
-            "(₦2,000 for 30 days) removes it across all 10 tools. The verification code is free either way.",
+            "(₦2,000 for 30 days) removes it across all 11 tools. The verification code is free either way.",
             "<b>Prefer not to register a receipt?</b> Untick the box. The receipt still prints; it just "
             "carries no code.",
          ])),
@@ -1455,7 +1572,7 @@ def render(fname, p):
 <h2>Make it in 2 minutes \u2014 free</h2>
 <p>DocOga works on your phone: answer simple questions, get a clean, standard Nigerian document you
 can print, save as PDF or share on WhatsApp. The free version carries a small banner; the Oga Pass
-(\u20a62,000/30 days) unlocks unlimited clean copies across all 10 tools.</p>
+(\u20a62,000/30 days) unlocks unlimited clean copies across all 11 tools.</p>
 <a class="cta" href="%(domain)s/#%(cta_hash)s">%(cta_label)s</a>
 </div>
 
@@ -1486,7 +1603,7 @@ your case with a qualified Nigerian lawyer or your accountant.
 </footer>
 </div>
 <div class="stickycta">
-<span><b>Oga Pass</b> — ₦2,000 · 30 days · all 10 tools · no banner</span>
+<span><b>Oga Pass</b> — ₦2,000 · 30 days · all 11 tools · no banner</span>
 <a href="%(domain)s/#pricing">Get the Pass</a>
 </div>
 <script src="/analytics-consent.js" data-track-page="true" defer></script>
@@ -1508,6 +1625,7 @@ def main():
         "caution-fee-nigeria.html": "Is the caution fee refundable?",
         "rent-receipt-format-nigeria.html": "Rent receipt format",
         "demand-letter-rent-arrears-nigeria.html": "Demand letter for unpaid rent + free PDF",
+        "rent-increase-notice-nigeria.html": "Rent increase notice + the law by state",
         "tenant-rights-nigeria.html": "Tenant rights &amp; landlord duties",
         "shop-tenancy-agreement-nigeria.html": "Shop &amp; business tenancy",
         "invoice-format-nigeria.html": "Invoice format + 7.5% VAT",

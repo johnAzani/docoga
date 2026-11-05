@@ -10,7 +10,7 @@ short, true and specific.*
 - **Ten tools, all free to start — no signup, no card:** Tenancy Agreement ·
   Notice to Quit · Rent Receipt · Caution Fee Receipt · Letter of Demand ·
   Invoice · Payslip · Employment Contract · Warning Letter · Power of Attorney.
-- **Oga Pass — ₦2,000 for 30 days.** Unlimited clean copies of all ten tools, no
+- **Oga Pass — ₦2,000 for 30 days.** Unlimited clean copies of all eleven tools, no
   banner. The free version carries a small banner. These are the only prices we
   ever name for ourselves. Never invent a discount, a bundle or a new price.
 - The anchor we may contrast against: a lawyer typically charges ₦50,000 or more

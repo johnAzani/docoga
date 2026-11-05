@@ -64,6 +64,39 @@ platforms; nothing the owner must do on a schedule.
 
 ## 5. Growth ledger (newest first — the scorecard reads the top date)
 
+- **2026-11-05** — **Fifth dive (owner, 5:05pm: "go on to next build"): the page we refused to
+  write until the tool could write it.** The 4 Nov rule said a rent-increase page only if a generator
+  exists for it; this build is the generator — the **11th tool, Notice of Rent Review**
+  (`site/index.html#rentreview`) — and then the page. **The field for "rent increase notice/letter
+  Nigeria":** a marketplace blog's two templates (mushrooms.ng, 20 Oct 2026: "NOTICE OF RENT REVIEW"
+  renewal-framed, "NOTICE OF NEW MONTHLY RENT"), a listings blog's effective-date letter (apartments.ng
+  b1130), a paid 2-in-1 file on Selar, and law explainers that contradict each other on "how much
+  notice" — six months (lexnuelinsights 30 Jun 2026; cabans.ng 16 May 2026; listproperty.ng, which
+  also cites a repealed Act), three months once in 12 months (nigeriarealestateblog 16 Mar 2025),
+  "1–6 months depending on state" (rightify.app 25 Apr 2026). All of them are reading the s.13 quit
+  ladder into a different question; none cites the s.37 forms, none knows Enugu's 15%/second-anniversary
+  cap, none admits no statute fixes a notice period for an increase. **DO NOW (shipped):** the
+  generator — state select, period, current/new rent, term end, reply-by date, reason; sentences that
+  make the increase an offer for the next term ("not a demand for the present one … takes effect only
+  on your written acceptance"; "if we do not agree a rent, the tenancy is not thereby ended"); a law
+  paragraph swapped per state from the shelf (Lagos s.37 + s.37(4); Enugu 2008 s.3(b) with the cap
+  computed — `rrCap(400,000) = 460,000` — and an over-cap figure named as one that must come down before
+  service; FCT/others: the agreement governs); live hints under the rent fields ("above the Enugu 15%
+  cap — maximum ₦460,000"). Then `rent-increase-notice-nigeria.html`: the sample (Lagos, yearly, no
+  names) + free PDF + the state table + "how much notice — the honest answer" + line-by-line + tenant
+  section + comparison; linked from tenant-rights, quit-notice, agreement-sample, demand pages and the
+  home guides block; `growth.MONEY_PAGE` counts it; footers now say 11 tools. **Measure:** first
+  impressions for "rent increase"/"rent review"/"increment letter" queries within 3 weeks; money-page
+  share (15% → 25% by 1 Dec); rentreview drafts in the Oga Pass funnel. **TEST NEXT:** a tenant's reply
+  to a rent review (counter-offer, s.37 reserved) as a second output of the same tool, if the page
+  draws tenant queries. **LATER:** employment-letter and warning-letter pages, same rule. **REJECT:**
+  a "notice period by state" table with invented months (the rivals' error); an Enugu notice that
+  prints an over-cap figure as lawful; a Word template.
+  Sources: tools/state_law_data.py (Lagos s.37, s.37(4), s.13(1), s.44; Enugu L&T (Amendment) Law
+  2008 s.3(b); Kwara s.7; Jovinco v Ibeozimako (2014) LPELR-23599(CA); Cobra v Omole Estate (2000) 1
+  NWLR (Pt.655) 1); mushrooms.ng rent-increase-letter-nigeria (20 Oct 2026); apartments.ng b1130;
+  selar.com rent-increase sample (paid); rightify.app (25 Apr 2026); lexnuelinsights (30 Jun 2026);
+  cabans.ng (16 May 2026); listproperty.ng (2024); nigeriarealestateblog (16 Mar 2025).
 - **2026-11-04** — **Fourth dive (owner, 11:35am: "build the Growth dive"): the generator that had
   no door.** Read the generators against the pages: the app has written demand letters since launch
   (`renderDemand`) and had no page for them, while every other tenancy tool has a sample page that
