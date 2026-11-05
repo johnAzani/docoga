@@ -392,22 +392,23 @@ ABUJA = dict(
     ),
 
     # 3 Nov 2026: a federal bill for the FCT, read in five reports (Premium Times 26 Oct, Daily Trust 27 Oct,
-    # Prestige/HousingTV/Ghanamma 1 Nov 2026). It is a bill. The `watch` block is what tools/law_watch.py
+    # Prestige/HousingTV/Ghanamma 1 Nov 2026; second reading 4 Nov 2026 — Punch, TheNigeriaLawyer, Pointblank,
+    # read 5 Nov 2026 after the law watch's first pull flagged eight 'moving' headlines). It is a bill. The `watch` block is what tools/law_watch.py
     # reads the news for every week; `verified` moves only when a human re-reads the sources.
     pending_bill=dict(
         cite="HB.2839 — a bill, not law",
         title="Federal Capital Territory Advance Rent Regulation and Tenants’ Protection Bill, 2026 (HB.2839)",
         text=(
-            "<b>A bill, not law, as at 3 November 2026.</b> The Federal Capital Territory Advance Rent Regulation "
+            "<b>A bill, not law, as at 5 November 2026.</b> The Federal Capital Territory Advance Rent Regulation "
             "and Tenants’ Protection Bill, 2026 (HB.2839) passed <b>first reading</b> in the House of Representatives "
-            "on 22 October 2026, sponsored by Paul Nnamchi (Enugu) with Ahmed Doro (Katsina). Nothing in it can be "
-            "enforced against an Abuja landlord or agent today."
+            "on 22 October 2026 and <b>second reading</b> on 4 November 2026, sponsored by Paul Nnamchi (Enugu) with "
+            "Ahmed Doro (Katsina). Nothing in it can be enforced against an Abuja landlord or agent today."
         ),
         stage=(
-            "<b>Where it stands:</b> first reading only. It still needs a second reading, committee stage and public "
-            "hearing, third reading, Senate concurrence and presidential assent, and it commences only on a date the "
-            "President names in the Federal Gazette. The 2022 Senate attempt (three months’ advance, then monthly) "
-            "died with the Ninth Assembly in May 2023."
+            "<b>Where it stands:</b> second reading, 4 November 2026 — debated and sent to the committee stage and a "
+            "public hearing. It still needs the committee report, third reading, Senate concurrence and presidential "
+            "assent, and commences only on a date the President names in the Federal Gazette. The 2022 Senate attempt "
+            "(three months’ advance, then monthly) died with the Ninth Assembly in May 2023."
         ),
         would=[
             "Clause 4(1) as reported: no landlord, estate agent or property manager may demand, receive or compel "
@@ -423,15 +424,19 @@ ABUJA = dict(
             "remain lawful if it passed.",
         ],
         caution=(
-            "<b>What that means today:</b> an Abuja landlord asking for two years’ rent on 3 November 2026 is not "
+            "<b>What that means today:</b> an Abuja landlord asking for two years’ rent on 5 November 2026 is not "
             "breaking any law, and no authority exists to order a refund. A notice that says “the new FCT rent law” "
-            "is describing a bill. DocOga’s law watch reads the news for this bill every week."
+            "is describing a bill that has passed two readings; the public hearing may still change it (members asked "
+            "for nationwide reach, and some questioned its constitutionality). The watch reads the news for it weekly."
         ),
         watch=dict(
-            verified="2026-11-03",
-            stage="first reading, House of Representatives, 22 October 2026",
+            verified="2026-11-05",
+            stage="second reading, House of Representatives, 4 November 2026; next: committee stage and public hearing",
             queries=["HB.2839 advance rent bill FCT", "Abuja advance rent bill House of Representatives tenants protection"],
             sources=[
+                "https://punchng.com/bill-to-cap-fct-rent-at-12-months-passes-second-reading/",
+                "https://thenigerialawyer.com/this-legislation-is-not-intended-to-undermine-property-rights-reps-pass-bill-to-limit-fct-advance-rent-to-12-months/",
+                "https://pointblanknews.com/pbn/news/reps-move-to-regulate-fct-rent-propose-12-month-advance-payment-limit/",
                 "https://www.premiumtimesng.com/news/top-news/920324-nass-roundup-ebola-corps-members-death-abuja-rent-other-stories-from-the-house-of-reps.html",
                 "https://dailytrust.com/bill-to-regulate-rent-payment-in-fct-raises-hope/",
                 "https://prestigerealestatenews.com/2026/11/01/new-bill-regulate-house-rent-abuja-ban-12-months-advance/",

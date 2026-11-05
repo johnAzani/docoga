@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools"))
 import law_watch as lw  # noqa: E402
 import state_law_data as law  # noqa: E402
+from freshness import human as freshness_human  # noqa: E402
 
 NOW = datetime(2026, 11, 12, 10, 15, tzinfo=timezone.utc)
 
@@ -39,7 +40,7 @@ def fake_http(url):
 class ShelfCarriesTheBills(unittest.TestCase):
     def test_every_published_bill_is_dated_staged_sourced_and_called_a_bill(self):
         rows = law.pending_bills()
-        self.assertEqual([slug for slug, _ in rows], ["abuja", "anambra", "enugu", "lagos"])
+        self.assertEqual([slug for slug, _ in rows], ["anambra", "enugu", "lagos", "abuja"], "oldest-verified first")
         for slug, bill in rows:
             w = bill.get("watch") or {}
             self.assertRegex(w.get("verified", ""), r"^\d{4}-\d{2}-\d{2}$", slug)
@@ -48,7 +49,7 @@ class ShelfCarriesTheBills(unittest.TestCase):
             self.assertTrue(all(u.startswith("https://") for u in w.get("sources") or []), slug)
             self.assertTrue(bill.get("title"), slug)
             self.assertIn("not law", bill["text"].lower(), slug)
-            self.assertIn("3 November 2026", bill["text"], slug)
+            self.assertIn(freshness_human(w["verified"]), bill["text"], "%s: the text carries the day it was verified" % slug)
             for key, value in bill.items():
                 for text in (value if isinstance(value, list) else [value]):
                     if isinstance(text, str):
@@ -57,7 +58,10 @@ class ShelfCarriesTheBills(unittest.TestCase):
     def test_the_fct_bill_is_the_one_the_reps_read_on_22_october_2026(self):
         bill = dict(law.pending_bills())["abuja"]
         joined = " ".join([bill["text"], bill["stage"]] + bill["would"] + [bill["caution"]])
-        for needle in ("HB.2839", "22 October 2026", "first reading", "Paul Nnamchi", "twelve months",
+        # 5 Nov 2026: the watch's first pull brought eight "moving" headlines; Punch, TheNigeriaLawyer and
+        # Pointblank (4 Nov) confirmed second reading → the shelf moved the same day, still "not law".
+        for needle in ("HB.2839", "22 October 2026", "first reading", "second reading", "4 November 2026",
+                       "public hearing", "Paul Nnamchi", "twelve months",
                        "₦500,000–₦5 million", "no rent ceiling", "not breaking any law"):
             self.assertIn(needle, joined)
 
@@ -74,13 +78,14 @@ class ShelfCarriesTheBills(unittest.TestCase):
         for slug in ("abuja", "lagos", "anambra", "enugu"):
             html = (ROOT / "site" / ("tenancy-agreement-%s.html" % slug)).read_text(encoding="utf-8")
             self.assertIn("A bill that would change this &mdash; not law yet", html, slug)
-            self.assertIn("Stage checked against the sources on 3 November 2026", html, slug)
+            self.assertIn("Stage checked against the sources on %s 2026" % ("5 November" if slug == "abuja" else "3 November"), html, slug)
         for slug in ("kano", "edo", "rivers", "ogun"):
             html = (ROOT / "site" / ("tenancy-agreement-%s.html" % slug)).read_text(encoding="utf-8")
             self.assertNotIn("A bill that would change this", html, slug)
         abuja = (ROOT / "site" / "tenancy-agreement-abuja.html").read_text(encoding="utf-8")
         self.assertIn("HB.2839", abuja)
         self.assertIn("22 October 2026", abuja)
+        self.assertIn("second reading", abuja)
 
 
 class Classification(unittest.TestCase):

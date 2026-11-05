@@ -794,6 +794,16 @@ yet", and the block says in its first sentence that nothing in it can be enforce
 year's advance stays lawful. The 2022 Senate bill (three months, then monthly) is the one people
 remember and the one that died in May 2023 — they are not the same bill.
 
+**5 Nov 2026 — the watch's first pull, and the first move it caught.** Eight "moving" headlines dated
+4 Nov 2026 (Punch 4:02pm, TheNigeriaLawyer, Pointblank, Naija News, The Eagle Online): HB.2839 passed
+**second reading** at Wednesday's plenary and goes to the committee stage and a public hearing. Nothing
+new in the clauses (s.4 twelve-month cap, voluntary longer payment in writing with the burden of proof on
+the receiver, ₦500,000–₦5m / ₦5m–₦20m, an Authority within six months, residential and commercial);
+what is new is the debate — members asked for nationwide reach and for "prohibit" to become "regulate",
+others raised property rights and freedom of trade. The shelf moved the same day: `watch.verified`
+2026-11-05, stage "second reading, 4 November 2026", three new sources, still "a bill, not law". The
+alert count stayed 0 — correct: readings are "moving", only assent is "passed".
+
 ### 15.2 Dates the shelf had been carrying without a date
 
 Lagos: "a bill" since October — now "second reading 10 July 2025; with the House Committee on
