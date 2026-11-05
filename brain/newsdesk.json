@@ -1,5 +1,5 @@
 {
- "fetched": "2026-11-04T06:50:46+00:00",
+ "fetched": "2026-11-05T00:30:53+00:00",
  "sources": [
   "Punch: 30 stories",
   "Vanguard: 20 stories",
@@ -11,16 +11,28 @@
  ],
  "items": [
   {
-   "title": "Lagos extends financial aid, healthcare to elderly caregivers",
-   "link": "https://punchng.com/lagos-extends-financial-aid-healthcare-to-elderly-caregivers/?utm_source=rss.punchng.com&utm_medium=web",
-   "published": "2026-11-04T00:52:42+00:00",
+   "title": "Parents risk losing generational wealth without preparing heirs — SAN",
+   "link": "https://punchng.com/parents-risk-losing-generational-wealth-without-preparing-heirs-san/?utm_source=rss.punchng.com&utm_medium=web",
+   "published": "2026-11-05T00:27:17+00:00",
    "source": "Punch",
+   "score": 12,
+   "matched": [
+    "rent",
+    "rents"
+   ],
+   "summary": "A Senior Advocate of Nigeria, Osaro Eghobamieh, has warned that parents risk destroying their wealth if they fail to prepare their children for succession. Read More: https://punchng.com/parents-risk-"
+  },
+  {
+   "title": "NNPC ex-director launches book on failure of family businesses",
+   "link": "https://www.premiumtimesng.com/news/more-news/922801-nnpc-ex-director-launches-book-on-failure-of-family-businesses.html",
+   "published": "2026-11-04T22:42:31+00:00",
+   "source": "Premium Times",
    "score": 4,
    "matched": [
     "rent",
     "rents"
    ],
-   "summary": "The Lagos State Government has extended financial aid and free healthcare to older persons with disabilities and elderly parents caring for children with d Read More: https://punchng.com/lagos-extends"
+   "summary": "The book draws on the former director's professional experience and her upbringing, particularly the practical intelligence and collaborative strategies she observed in her late parents. The post NNPC"
   }
  ]
 }

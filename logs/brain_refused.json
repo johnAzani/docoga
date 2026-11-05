@@ -1,5 +1,14 @@
 [
  {
+  "date": "2026-11-07",
+  "at": "2026-11-05T01:33:37+01:00",
+  "short_day": false,
+  "state": "cross-river",
+  "problems": [
+   "fact id typed into the copy: cross-river:notice_extras:4, cross-river:notice_ladder:2, cross-river:notice_ladder:4 — ids live only in `claims`, never in words a reader sees"
+  ]
+ },
+ {
   "date": "2026-11-06",
   "at": "2026-11-04T01:31:46+01:00",
   "short_day": true,

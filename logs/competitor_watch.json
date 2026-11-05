@@ -1,7 +1,35 @@
 {
- "pulled_at": "2026-11-04T06:50:46+00:00",
+ "pulled_at": "2026-11-05T00:30:53+00:00",
  "days": 14,
  "items": [
+  {
+   "competitor": "NigeriaBuildingCost — tenancy agreement generator",
+   "kind": "tool",
+   "title": "Landscaping and beautification of ict and skill acquisition centre premises at awka north lga secretariat anambra",
+   "link": "https://nigeriabuildingcost.ng/construction-tenders/landscaping-and-beautification-of-ict-and-skill-acquisition-centre-premises-at-awka-north-lga-secretariat-anambra",
+   "published": "2026-11-04T23:09:40+00:00"
+  },
+  {
+   "competitor": "NigeriaBuildingCost — tenancy agreement generator",
+   "kind": "tool",
+   "title": "Remodelling of anambra state housing corporation office building in awka",
+   "link": "https://nigeriabuildingcost.ng/construction-tenders/remodelling-of-anambra-state-housing-corporation-office-building-in-awka",
+   "published": "2026-11-04T23:06:15+00:00"
+  },
+  {
+   "competitor": "NigeriaBuildingCost — tenancy agreement generator",
+   "kind": "tool",
+   "title": "Flood and gully erosion control site works at gwagwalada abuja fct",
+   "link": "https://nigeriabuildingcost.ng/construction-tenders/flood-and-gully-erosion-control-site-works-at-gwagwalada-abuja-fct",
+   "published": "2026-11-04T23:05:26+00:00"
+  },
+  {
+   "competitor": "NigeriaBuildingCost — tenancy agreement generator",
+   "kind": "tool",
+   "title": "Construction of a mini fire station at lagos state university of education otto ijanikin",
+   "link": "https://nigeriabuildingcost.ng/construction-tenders/construction-of-a-mini-fire-station-at-lagos-state-university-of-education-otto-ijanikin",
+   "published": "2026-11-04T23:03:55+00:00"
+  },
   {
    "competitor": "Mushrooms.ng blog",
    "kind": "content",
@@ -15,39 +43,17 @@
    "title": "Where to sell used furniture lagos",
    "link": "https://mushrooms.ng/blog/where-to-sell-used-furniture-lagos",
    "published": "2026-11-02T00:00:00+00:00"
-  },
-  {
-   "competitor": "NigeriaBuildingCost — tenancy agreement generator",
-   "kind": "tool",
-   "title": "Sample tenancy agreement nigeria",
-   "link": "https://nigeriabuildingcost.ng/sample-downloads/sample-tenancy-agreement-nigeria",
-   "published": "2026-10-30T09:05:31+00:00"
-  },
-  {
-   "competitor": "Mushrooms.ng blog",
-   "kind": "content",
-   "title": "Social tiktok com renthousesurulere video 7701219549030468885",
-   "link": "https://mushrooms.ng/listing/sourced/social_tiktok_com_renthousesurulere_video_7701219549030468885",
-   "published": "2026-10-27T05:45:16+00:00"
-  },
-  {
-   "competitor": "Mushrooms.ng blog",
-   "kind": "content",
-   "title": "Social tiktok com the apartment guy video 7700391719438699794",
-   "link": "https://mushrooms.ng/listing/sourced/social_tiktok_com_the_apartment_guy_video_7700391719438699794",
-   "published": "2026-10-25T00:12:48+00:00"
   }
  ],
  "sources": [
-  "https://nigeriabuildingcost.ng/sitemap.xml: 51 changed page(s)",
+  "https://nigeriabuildingcost.ng/sitemap.xml: 378 changed page(s)",
   "https://www.wonder.legal/ng/sitemap.xml: 0 changed page(s)",
   "https://diylaw.ng/sitemap.xml: 0 changed page(s)",
   "https://sabilaw.org/feed/: 2 fresh post(s)",
   "https://legalnaija.com/feed/: 1 fresh post(s)",
   "https://rently.ng/sitemap.xml: 0 changed page(s)",
   "https://homz.ng/sitemap.xml: 0 changed page(s)",
-  "https://mushrooms.ng/feed/: unreachable (HTTP Error 404: Not Found)",
-  "https://mushrooms.ng/sitemap.xml: 38 changed page(s)",
+  "https://mushrooms.ng/sitemap.xml: 49 changed page(s)",
   "https://lexpraxisng.com/feed/: 2 fresh post(s)",
   "https://olamideoyetayolegal.com/feed/: 0 fresh post(s)",
   "https://www.youtube.com/feeds/videos.xml?channel_id=UCa158r8OZoEia4z2DhPg2LA: unreachable (HTTP Error 404: Not Found)"
@@ -56,5 +62,21 @@
   "@legalfriendng — Real Estate Lawyer (TikTok)",
   "@talk360law — KING, ESQ. (TikTok)",
   "@theonlybusayoadesanya (TikTok)"
+ ],
+ "prices": [
+  {
+   "competitor": "NigeriaBuildingCost — tenancy agreement generator",
+   "url": "https://nigeriabuildingcost.ng/tenancy-agreement",
+   "seen": [
+    "₦4,000",
+    "₦500"
+   ],
+   "found": [
+    "₦4,000",
+    "₦500"
+   ],
+   "new": [],
+   "gone": []
+  }
  ]
 }
