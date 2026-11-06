@@ -1,34 +1,34 @@
 {
- "pulled_at": "2026-11-05T07:10:31+00:00",
+ "pulled_at": "2026-11-06T00:30:53+00:00",
  "days": 14,
  "items": [
   {
    "competitor": "NigeriaBuildingCost — tenancy agreement generator",
    "kind": "tool",
-   "title": "Remodelling of anambra state housing corporation office building in awka",
-   "link": "https://nigeriabuildingcost.ng/construction-tenders/remodelling-of-anambra-state-housing-corporation-office-building-in-awka",
-   "published": "2026-11-05T03:15:05+00:00"
+   "title": "Installing rumble strips speed bumps road signs and solar caution lights on 3km nwagu ezinano road agulu anamb anambra",
+   "link": "https://nigeriabuildingcost.ng/construction-tenders/installing-rumble-strips-speed-bumps-road-signs-and-solar-caution-lights-on-3km-nwagu-ezinano-road-agulu-anamb-anambra",
+   "published": "2026-11-05T12:52:32+00:00"
   },
   {
    "competitor": "NigeriaBuildingCost — tenancy agreement generator",
    "kind": "tool",
-   "title": "Remodelling of spin project head office in abuja fct",
-   "link": "https://nigeriabuildingcost.ng/construction-tenders/remodelling-of-spin-project-head-office-in-abuja-fct",
-   "published": "2026-11-05T01:31:10+00:00"
+   "title": "Livestock support works and breeder bull housing in three borno senatorial districts",
+   "link": "https://nigeriabuildingcost.ng/construction-tenders/livestock-support-works-and-breeder-bull-housing-in-three-borno-senatorial-districts",
+   "published": "2026-11-05T12:52:32+00:00"
   },
   {
    "competitor": "NigeriaBuildingCost — tenancy agreement generator",
    "kind": "tool",
-   "title": "Premises asphalting and re roofing works at university of benin edo state",
-   "link": "https://nigeriabuildingcost.ng/construction-tenders/premises-asphalting-and-re-roofing-works-at-university-of-benin-edo-state",
-   "published": "2026-11-05T01:30:57+00:00"
+   "title": "Flood and gully erosion control site works at gwagwalada abuja fct",
+   "link": "https://nigeriabuildingcost.ng/construction-tenders/flood-and-gully-erosion-control-site-works-at-gwagwalada-abuja-fct",
+   "published": "2026-11-05T12:52:32+00:00"
   },
   {
    "competitor": "NigeriaBuildingCost — tenancy agreement generator",
    "kind": "tool",
-   "title": "Landscaping and beautification of ict and skill acquisition centre premises at awka north lga secretariat anambra",
-   "link": "https://nigeriabuildingcost.ng/construction-tenders/landscaping-and-beautification-of-ict-and-skill-acquisition-centre-premises-at-awka-north-lga-secretariat-anambra",
-   "published": "2026-11-05T01:30:50+00:00"
+   "title": "Upgrading of 20 primary health centres across fct abuja",
+   "link": "https://nigeriabuildingcost.ng/construction-tenders/upgrading-of-20-primary-health-centres-across-fct-abuja",
+   "published": "2026-11-05T12:52:32+00:00"
   },
   {
    "competitor": "Mushrooms.ng blog",
@@ -60,17 +60,17 @@
   }
  ],
  "sources": [
-  "https://nigeriabuildingcost.ng/sitemap.xml: 378 changed page(s)",
+  "https://nigeriabuildingcost.ng/sitemap.xml: 385 changed page(s)",
   "https://www.wonder.legal/ng/sitemap.xml: 0 changed page(s)",
   "https://diylaw.ng/sitemap.xml: 0 changed page(s)",
   "https://sabilaw.org/feed/: 2 fresh post(s)",
   "https://legalnaija.com/feed/: 1 fresh post(s)",
   "https://rently.ng/sitemap.xml: 0 changed page(s)",
   "https://homz.ng/sitemap.xml: 0 changed page(s)",
-  "https://mushrooms.ng/sitemap.xml: 57 changed page(s)",
+  "https://mushrooms.ng/sitemap.xml: 58 changed page(s)",
   "https://lexpraxisng.com/feed/: 2 fresh post(s)",
   "https://olamideoyetayolegal.com/feed/: 0 fresh post(s)",
-  "https://www.youtube.com/feeds/videos.xml?channel_id=UCa158r8OZoEia4z2DhPg2LA: unreachable (HTTP Error 404: Not Found)"
+  "https://www.youtube.com/feeds/videos.xml?channel_id=UCa158r8OZoEia4z2DhPg2LA: unreachable (HTTP Error 500: Internal Server Error)"
  ],
  "unwatchable": [
   "@legalfriendng — Real Estate Lawyer (TikTok)",
