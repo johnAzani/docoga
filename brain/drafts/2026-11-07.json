@@ -1,0 +1,68 @@
+{
+ "version": 1,
+ "status": "approved",
+ "date": "2026-11-07",
+ "generated_at": "2026-11-06T08:12:32+01:00",
+ "theme": "cross-river-repair-checklist-landlord-tenant-split",
+ "post_type": "checklist",
+ "hook_type": "HOWTO",
+ "state": "cross-river",
+ "claims": [
+  {
+   "text": "Cross River law divides repairs: landlords handle structural and external repairs, tenants handle internal and minor ones.",
+   "fact_id": "cross-river:repairs:1"
+  },
+  {
+   "text": "In Cross River, a tenant who does improvements with written landlord consent is entitled to compensation at the end.",
+   "fact_id": "cross-river:improvements:1"
+  }
+ ],
+ "recalled": [],
+ "post": {
+  "headline": "How to sort repairs in Cross River before paying rent",
+  "lines": [
+   "Leaking roof or broken window: do not guess who pays. Cross River law divides repairs:",
+   "landlords handle structural and external repairs, tenants handle internal and minor ones.",
+   "In Cross River, a tenant who does improvements with written landlord consent is entitled to compensation at",
+   "the end.",
+   "Put the repair terms in your written agreement on your phone in two minutes, free to start."
+  ],
+  "cta": "Send this to the friend moving into a new apartment in Calabar.",
+  "hashtags": [
+   "#DocOga",
+   "#CrossRiverRent",
+   "#CalabarTenants",
+   "#NigerianLaw"
+  ]
+ },
+ "threads": {
+  "text": "How to sort repairs in Cross River without fighting your landlord: the law places structural and external repairs on the landlord, while internal and minor fixes belong to the tenant under section 11. Any major improvements need written consent before you start. Who handled your last roof repair?",
+  "hashtags": [
+   "#DocOga",
+   "#TenantRights"
+  ],
+  "topic": "Tenant Rights Nigeria",
+  "poll": null,
+  "evening": "In Cross River, do not fix a landlord's structure out of pocket without written permission first. Without that paper, claiming compensation when leaving is tough."
+ },
+ "visual": {
+  "kicker": "repair checklist",
+  "layout": "checklist",
+  "big": "",
+  "plate": "keys wooden door"
+ },
+ "short": null,
+ "why": "Saturday calls for a save-worthy checklist; Cross River is on rotation, HOWTO is the chosen explore hook, and the clear s.11 repairs split addresses end-of-year moving disputes.",
+ "tool": "tenancy-agreement",
+ "reader": "ngozi",
+ "news_hook": null,
+ "quiz": null,
+ "gates": [
+  "citation",
+  "verification",
+  "lint",
+  "repetition",
+  "shape"
+ ],
+ "note": ""
+}

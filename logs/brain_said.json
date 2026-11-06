@@ -225,5 +225,40 @@
   "reader": "ngozi",
   "tool": "tenancy-agreement",
   "news_hook": "Rent relief season: from 2026 tenants deduct 20% of rent (max ₦500,000) — only with a receipt in their name"
+ },
+ {
+  "date": "2026-11-07",
+  "theme": "cross-river-repair-checklist-landlord-tenant-split",
+  "headline": "How to sort repairs in Cross River before paying rent",
+  "post_type": "checklist",
+  "hook_type": "HOWTO",
+  "state": "cross-river",
+  "fact_ids": [
+   "cross-river:repairs:1",
+   "cross-river:improvements:1"
+  ],
+  "recalled": 0,
+  "plate": "keys wooden door",
+  "short": false,
+  "reader": "ngozi",
+  "tool": "tenancy-agreement",
+  "news_hook": null
+ },
+ {
+  "date": "2026-11-08",
+  "theme": "edo-tribunal-dispute-stops-notice-story",
+  "headline": "A tenant in Benin went to tribunal before quit notice arrived",
+  "post_type": "engagement",
+  "hook_type": "STORY",
+  "state": "edo",
+  "fact_ids": [
+   "edo:security_of_tenancy:1"
+  ],
+  "recalled": 0,
+  "plate": "wooden door padlock keys",
+  "short": false,
+  "reader": "ngozi",
+  "tool": "notice-to-quit",
+  "news_hook": null
  }
 ]

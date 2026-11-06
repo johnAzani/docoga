@@ -1,0 +1,67 @@
+{
+ "version": 1,
+ "status": "approved",
+ "date": "2026-11-08",
+ "generated_at": "2026-11-06T08:12:51+01:00",
+ "theme": "edo-tribunal-dispute-stops-notice-story",
+ "post_type": "engagement",
+ "hook_type": "STORY",
+ "state": "edo",
+ "claims": [
+  {
+   "text": "In Edo State, once a tenant applies to the Rent Tribunal, any quit notice served afterwards has no effect.",
+   "fact_id": "edo:security_of_tenancy:1"
+  }
+ ],
+ "recalled": [],
+ "post": {
+  "headline": "A tenant in Benin went to tribunal before quit notice arrived",
+  "lines": [
+   "Her landlord wanted everyone out before Christmas to raise rent next year.",
+   "She filed an application at the Rent Tribunal first.",
+   "In Edo State, once a tenant applies to the Rent Tribunal, any quit notice served afterwards has no effect."
+  ],
+  "cta": "Did your landlord serve you notice before Christmas? Tell us below.",
+  "hashtags": [
+   "#DocOga",
+   "#EdoState",
+   "#TenantRights",
+   "#BeninCity"
+  ]
+ },
+ "threads": {
+  "text": "A tenant in Benin filed a dispute at the tribunal. The landlord served a notice to quit two days later. In Edo State, once an application reaches the Rent Tribunal, a notice served afterwards has no effect. Did your landlord serve you notice this month?",
+  "hashtags": [
+   "#DocOga",
+   "#EdoState"
+  ],
+  "topic": "Tenant Rights Nigeria",
+  "poll": {
+   "option_a": "Yes, served notice",
+   "option_b": "No, peace for now",
+   "option_c": "Rent increase instead",
+   "option_d": "Packing out willingly"
+  },
+  "evening": "In Edo State, filing an application at the Rent Tribunal stops any quit notice served afterwards cold."
+ },
+ "visual": {
+  "kicker": "tenant rights edo",
+  "layout": "poster",
+  "big": "",
+  "plate": "wooden door padlock keys"
+ },
+ "short": null,
+ "why": "Sunday engagement post combining the STORY hook with the seasonal end-of-year quit notice pressure in Edo State.",
+ "tool": "notice-to-quit",
+ "reader": "ngozi",
+ "news_hook": null,
+ "quiz": null,
+ "gates": [
+  "citation",
+  "verification",
+  "lint",
+  "repetition",
+  "shape"
+ ],
+ "note": ""
+}

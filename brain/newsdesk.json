@@ -1,5 +1,5 @@
 {
- "fetched": "2026-11-06T00:30:53+00:00",
+ "fetched": "2026-11-06T07:10:20+00:00",
  "sources": [
   "Punch: 30 stories",
   "Vanguard: 20 stories",
@@ -9,30 +9,5 @@
   "The Guardian Nigeria: unreachable (HTTP Error 403: Forbidden)",
   "Nairametrics: 20 stories"
  ],
- "items": [
-  {
-   "title": "Group calls for withdrawal of charges against Kaduna journalist",
-   "link": "https://www.premiumtimesng.com/regional/nwest/923020-group-calls-for-withdrawal-of-charges-against-kaduna-journalist.html",
-   "published": "2026-11-05T18:02:28+00:00",
-   "source": "Premium Times",
-   "score": 4,
-   "matched": [
-    "rent",
-    "rents"
-   ],
-   "summary": "The group also demanded an independent, impartial and transparent investigation into the alleged detention of her parents, the circumstances of her arrest, the reported demand that she delete her Face"
-  },
-  {
-   "title": "Family of abducted NYSC member begs FG for help",
-   "link": "https://punchng.com/family-of-abducted-nysc-member-begs-fg-for-help/?utm_source=rss.punchng.com&utm_medium=web",
-   "published": "2026-11-06T00:37:48+00:00",
-   "source": "Punch",
-   "score": 4,
-   "matched": [
-    "lease",
-    "nysc"
-   ],
-   "summary": "The family of an abducted NYSC member, Dapo, has appealed to the Federal Government for help after kidnappers demanded a N25m ransom for his release. Read More: https://punchng.com/family-of-abducted-"
-  }
- ]
+ "items": []
 }
