@@ -458,7 +458,7 @@ TOOL_NAMES = {"tenancy-agreement": "tenancy agreement", "notice-to-quit": "notic
               "letter-of-demand": "letter of demand", "invoice": "invoice", "payslip": "payslip",
               "employment-contract": "employment contract", "warning-letter": "warning letter",
               "power-of-attorney": "power of attorney", "tenant-rights": "tenant-rights guide",
-              "rent-index": "Rent Monitor page"}
+              "rent-index": "Rent Monitor page", "rent-review": "rent review notice (and the tenant's reply)"}
 
 
 def wants_link(text):

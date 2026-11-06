@@ -36,12 +36,69 @@ SITE = ROOT / "site"
 # national guide and then the homepage. Never a 404 from a social post.
 TOOLS = ("tenancy-agreement", "notice-to-quit", "rent-receipt", "caution-fee", "letter-of-demand",
          "invoice", "payslip", "employment-contract", "warning-letter", "power-of-attorney", "tenant-rights",
-         "rent-index")   # the Rent Monitor page (29 Oct 2026) — Friday's weekly counts post points here
+         "rent-index",    # the Rent Monitor page (29 Oct 2026) — Friday's weekly counts post points here
+         "rent-review")   # the rent review notice + tenant's reply (5 Nov 2026) — rent-increase posts point here
 NATIONAL_PAGE = {"tenancy-agreement": "tenancy-agreement-nigeria.html", "notice-to-quit": "notice-to-quit-nigeria.html",
                  "rent-receipt": "rent-receipt-format-nigeria.html", "caution-fee": "caution-fee-nigeria.html",
                  "invoice": "invoice-format-nigeria.html", "power-of-attorney": "power-of-attorney-nigeria.html",
-                 "tenant-rights": "tenant-rights-nigeria.html", "rent-index": "rent-index-nigeria.html"}
+                 "tenant-rights": "tenant-rights-nigeria.html", "rent-index": "rent-index-nigeria.html",
+                 # 6 Nov 2026: two money pages the Brain could not reach — every demand-letter post and
+                 # every rent-increase post had fallen to the homepage.
+                 "letter-of-demand": "demand-letter-rent-arrears-nigeria.html",
+                 "rent-review": "rent-increase-notice-nigeria.html"}
 STATE_PAGE_TOOLS = ("tenancy-agreement", "notice-to-quit", "rent-receipt", "caution-fee")
+
+# 6 Nov 2026 — the link follows the law the post cites. The 4 Nov post "Some clauses no gree with
+# Lagos law" cited lagos:increase_challenge:1-2 and pointed at the agreement page; in 15 published
+# packs the model chose 4 of 12 tools and never the demand letter. A fact key is a stronger signal
+# of what the reader needs next than the model's guess, so: when the model names no tool, the
+# dominant fact key of the claims chooses it; and a post whose claims are mostly about a rent
+# increase always lands on the rent-increase page, whatever the model chose — that page carries
+# the notice, the tenant's reply and the section the post quoted. Keys not listed route nowhere
+# (the model's choice, or the homepage, stands).
+FACT_ROUTES = {
+    "increase_challenge": "rent-review", "anniversary_rule": "rent-review", "rent_control": "rent-review",
+    "standard_rent": "rent-review",
+    "receipts": "rent-receipt", "rent_book": "rent-receipt",
+    "caution_fee": "caution-fee", "premium": "caution-fee",
+    "notice_ladder": "notice-to-quit", "notice_extras": "notice-to-quit", "notice_ladder_note": "notice-to-quit",
+    "grounds_for_possession": "notice-to-quit", "grounds_and_forms": "notice-to-quit", "forms": "notice-to-quit",
+    "service": "notice-to-quit", "tenant_at_will": "notice-to-quit",
+    "rent_in_arrears": "letter-of-demand", "distress": "letter-of-demand",
+    "advance_rent": "tenancy-agreement", "repairs": "tenancy-agreement", "improvements": "tenancy-agreement",
+    "rent_relief": "tenant-rights", "protections": "tenant-rights", "penalties": "tenant-rights",
+    "security_of_tenancy": "tenant-rights", "alternative_accommodation": "tenant-rights",
+    "suitable_alternative_accommodation": "tenant-rights",
+}
+ALWAYS_ROUTE = {"rent-review"}   # the pages whose fact keys override the model's tool
+
+
+def dominant_key(pack):
+    """The fact key (law_index `key` before the dot) most of the pack's claims cite, or ''."""
+    counts = {}
+    for c in (pack or {}).get("claims") or []:
+        fid = str((c or {}).get("fact_id") or "")
+        parts = fid.split(":")
+        key = parts[1].split(".")[0] if len(parts) >= 2 else ""
+        if key:
+            counts[key] = counts.get(key, 0) + 1
+    if not counts:
+        return ""
+    top = max(counts.values())
+    winners = sorted(k for k, v in counts.items() if v == top)
+    return winners[0] if len(winners) == 1 or top * 2 > sum(counts.values()) else ""
+
+
+def route_tool(pack):
+    """(tool, routed) — the tool the lanes should link, and whether the fact keys chose it."""
+    chosen = str((pack or {}).get("tool") or "").strip().lower() or None
+    if chosen not in TOOLS:
+        chosen = None
+    key = dominant_key(pack)
+    by_fact = FACT_ROUTES.get(key)
+    if by_fact and (chosen is None or (by_fact in ALWAYS_ROUTE and chosen != by_fact)):
+        return by_fact, True
+    return chosen, False
 
 
 def link_for(pack, site=None):
@@ -282,7 +339,8 @@ TOPIC_TAGS = {"tenancy-agreement": "Tenant Rights Nigeria", "notice-to-quit": "T
               "rent-receipt": "Tenant Rights Nigeria", "caution-fee": "Tenant Rights Nigeria",
               "tenant-rights": "Tenant Rights Nigeria", "shop-tenancy-agreement": "Nigerian Small Business",
               "invoice": "Nigerian Small Business", "payslip": "Nigerian Workplace",
-              "power-of-attorney": "Nigerian Law", "affidavit": "Nigerian Law", "rent-index": "Rent in Nigeria"}
+              "power-of-attorney": "Nigerian Law", "affidavit": "Nigerian Law", "rent-index": "Rent in Nigeria",
+              "rent-review": "Rent in Nigeria", "letter-of-demand": "Tenant Rights Nigeria"}
 DEFAULT_TOPIC = "Rent in Nigeria"
 # Instagram SEO (Google indexes professional accounts' posts since 10 Jul 2025; Instagram's own
 # search reads the caption's first line and the alt text). One plain search phrase per tool —
@@ -292,7 +350,8 @@ SEO_PHRASES = {"tenancy-agreement": "Tenancy agreement sample Nigeria", "notice-
                "tenant-rights": "Tenant rights in Nigeria", "shop-tenancy-agreement": "Shop tenancy agreement Nigeria",
                "invoice": "Invoice template Nigeria", "payslip": "Payslip format Nigeria",
                "power-of-attorney": "Power of attorney Nigeria", "affidavit": "Affidavit format Nigeria",
-               "rent-index": "Rent index Nigeria"}
+               "rent-index": "Rent index Nigeria", "rent-review": "Rent increase notice Nigeria",
+               "letter-of-demand": "Demand letter for unpaid rent Nigeria"}
 DEFAULT_SEO = "Rent and tenancy documents Nigeria"
 STATE_NAMES = {"lagos": "Lagos", "abuja": "Abuja", "fct": "Abuja", "rivers": "Rivers", "kano": "Kano", "oyo": "Oyo",
                "ogun": "Ogun", "enugu": "Enugu", "kaduna": "Kaduna", "delta": "Delta", "anambra": "Anambra"}

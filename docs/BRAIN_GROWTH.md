@@ -59,6 +59,22 @@ scorecard flags (⚠️) and I act on in the next brief — without being asked.
 
 ## 4. Changelog (newest first — the scorecard reads the top date)
 
+- **2026-11-06** — **The link follows the law the post cites.** Read back: in the 15 packs published
+  since 24 Oct the model chose 4 of 12 tools (agreement 6, receipt 5, quit notice 3, tenant rights 1);
+  the demand letter had no page route at all and the rent-increase page (5 Nov) was unknown to it, so
+  every post on arrears or a rent increase sent the reader to the homepage — the 4 Nov Lagos post
+  cited `lagos:increase_challenge:1-2` and linked the agreement page. Now `brain_drafts.FACT_ROUTES`
+  maps the shelf's fact keys to tools (`increase_challenge`/`anniversary_rule`/`rent_control` →
+  rent-review; `receipts`/`rent_book` → rent receipt; `rent_in_arrears`/`distress` → letter of demand;
+  the notice keys → quit notice; `caution_fee`/`premium` → caution fee; …). `route_tool()` applies it
+  in the editor: when the model names no tool the dominant fact key chooses one; a post whose claims
+  are mostly about a rent increase always lands on the rent-increase page (the notice, the tenant's
+  reply and the section it quoted are there); a tie or an unmapped key changes nothing. The prompt
+  now describes the two new tools; the reply lane can name "rent review notice" in a DM; every
+  `NATIONAL_PAGE` target is tested to exist. **Measure:** `tool_routed` is saved on every pack and in
+  `logs/brain_said.json` — the scorecard can count how many posts the shelf re-aimed, and the
+  Search Console pull will show whether social clicks reach the two money pages (both counted by
+  `growth.MONEY_PAGE`). `test_brain_tool_routing` (5 tests).
 - **2026-11-04** — Two habits corrected at the source. **(1) The reply lane knows the bills.** The
   commonest wrong belief under our posts is that a rent bill is already law ("Lagos don ban yearly
   rent"); the shelf has carried dated `pending_bill` facts since 3 Nov but the reply lane only saw the
