@@ -128,7 +128,16 @@ jobs:
           NOW=$(TZ=Africa/Lagos date +%-H)
           # A dispatch always posts. A scheduled run posts only in the chosen window: the cron fires
           # at :10, and the scheduler can be an hour late, so the window is the hour and the next.
-          if [ "$EVENT" != "schedule" ] || [ "$NOW" = "$WANT" ] || [ "$NOW" = "$(( (WANT + 1) % 24 ))" ]; then
+          # 6 Nov 2026: the window admitted two scheduled runs on 5 Nov — the clock at 7:10pm and
+          # GitHub's own cron, 1 h 42 min late, at 8:52pm. The feed post was refused as a duplicate
+          # by its caption guard; the Story has no caption and went to the tray twice. One record a
+          # day in the ledger therefore closes the window for every later scheduled run.
+          DONE=$(python3 tools/posted_today.py logs/instagram_sent.json --topic instagram-)   # the lane's own card + Story rows, not the Short lane's Reels
+          if [ "$EVENT" = "schedule" ] && [ "${DONE:-0}" != "0" ]; then
+            echo "go=false" >> "$GITHUB_OUTPUT"
+            echo "IG_SLOT=done hour=${NOW} chosen=${WANT} posted_today=${DONE}"
+            echo "::notice title=Instagram already posted today::logs/instagram_sent.json has ${DONE} record(s) dated today (Africa/Lagos); a second scheduled run never repeats the card or the Story"
+          elif [ "$EVENT" != "schedule" ] || [ "$NOW" = "$WANT" ] || [ "$NOW" = "$(( (WANT + 1) % 24 ))" ]; then
             echo "go=true" >> "$GITHUB_OUTPUT"
             echo "IG_SLOT=go hour=${NOW} chosen=${WANT}"
           else
