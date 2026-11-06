@@ -602,6 +602,9 @@ OUTPUT — one JSON object with exactly these keys:
            WORD BUDGET (counted, refused when over): hook_say + the four says together <= {SAY_TOTAL_MAX} words — 28 + 4 x 32 = 156 fits; 35 + 4 x 40 does not. Count before you answer.
   "why": "one sentence: why today says this"
 }}
+`tool`: "rent-review" when the post is about a rent increase, a rent review, renewing at a higher rent or the
+Enugu 15% cap (that page carries the landlord's notice AND the tenant's reply); "letter-of-demand" when it is
+about arrears or money owed; "rent-receipt" for receipts; "notice-to-quit" for quit notices and recovery.
 Rules: do not put the link or the disclaimer in `lines`, `cta` or `threads.text` — the renderer adds them.
 The `cta` is not a slogan: it names who to send it to, or asks one answerable question. Follow the ORDERS block.
 Every legal statement in the post must appear in `claims` with its fact id. Name the state in the post
@@ -1116,6 +1119,7 @@ def verify(pack, ctx, http=None, sleep=None, log=print):
 def approve(pack, ctx, model_note=""):
     """Shape the approved pack as the lanes read it (brain_drafts)."""
     short = finish_short(pack["short"]) if isinstance(pack.get("short"), dict) else None
+    routed_tool, routed = drafts.route_tool(pack)
     if short and ctx.get("series"):
         s = ctx["series"]
         short["series"] = {"slug": s["slug"], "name": s["name"], "part": s["part"], "total": s["total"], "label": s["label"]}
@@ -1139,7 +1143,8 @@ def approve(pack, ctx, model_note=""):
         # The fields the lanes and the learning loop read back (17 Oct 2026: they were linted
         # but not saved — so every link fell to the homepage, no Tuesday quiz ever reached
         # Telegram and the reader-learning column stayed "unnamed").
-        "tool": (str(pack.get("tool") or "").strip().lower() or None),
+        "tool": routed_tool,
+        "tool_routed": routed,   # 6 Nov 2026: True when the claims' fact key chose the page (drafts.route_tool)
         "reader": str(pack.get("reader") or "").strip(),
         "news_hook": (str(pack.get("news_hook") or "").strip() or None),
         "quiz": pack.get("quiz") if isinstance(pack.get("quiz"), dict) else None,
@@ -1163,6 +1168,7 @@ def remember(said, approved):
                  "recalled": len(approved.get("recalled") or []),
                  "plate": approved["visual"].get("plate", ""), "short": bool(approved.get("short")),
                  "reader": approved.get("reader") or "", "tool": approved.get("tool"),
+                 "tool_routed": bool(approved.get("tool_routed")),
                  "news_hook": approved.get("news_hook") or None})
     floor = (date.fromisoformat(approved["date"]) - timedelta(days=180)).isoformat()
     said[:] = [e for e in said if str(e.get("date", "")) >= floor]
