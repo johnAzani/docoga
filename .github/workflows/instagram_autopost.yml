@@ -132,7 +132,11 @@ jobs:
           # GitHub's own cron, 1 h 42 min late, at 8:52pm. The feed post was refused as a duplicate
           # by its caption guard; the Story has no caption and went to the tray twice. One record a
           # day in the ledger therefore closes the window for every later scheduled run.
-          DONE=$(python3 tools/posted_today.py logs/instagram_sent.json --topic instagram-)   # the lane's own card + Story rows, not the Short lane's Reels
+          # 7 Nov 2026: `--topic instagram-card` only. The Facebook lane's Reel-to-Instagram step
+          # records its video Story as `instagram-story` too, and on 6 Nov that row (9:33am) made
+          # the 7:10pm slot believe the card was done — no Instagram card that day. The card row is
+          # the one record only this lane writes.
+          DONE=$(python3 tools/posted_today.py logs/instagram_sent.json --topic instagram-card)
           if [ "$EVENT" = "schedule" ] && [ "${DONE:-0}" != "0" ]; then
             echo "go=false" >> "$GITHUB_OUTPUT"
             echo "IG_SLOT=done hour=${NOW} chosen=${WANT} posted_today=${DONE}"
