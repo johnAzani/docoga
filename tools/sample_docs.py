@@ -190,6 +190,7 @@ RENT_REVIEW_NOTICE = [
 ] + [("p", t) for t in RENT_REVIEW_SENTENCES] + [
     ("p", "Yours faithfully,"),
     ("sig", ["[Landlord's full name, signature and phone number]  -  Landlord / for the Landlord"]),
+    ("p", "Received by: ____________________ (tenant)   Signature: __________   Date: __________"),
     ("p", "For a yearly tenant in Lagos. The generator swaps the last paragraph for the chosen state: in Enugu "
           "it cites s.3(b) of the Landlord and Tenant (Amendment) Law 2008 (review only after every second "
           "anniversary, not more than 15%) and refuses to call a figure above the cap lawful; in the FCT and "
@@ -226,6 +227,7 @@ RENT_REPLY_LETTER = [
 ] + [("p", t) for t in RENT_REPLY_SENTENCES] + [
     ("p", "Yours faithfully,"),
     ("sig", ["[Tenant's full name, signature and phone number]  -  Tenant"]),
+    ("p", "Received by: ____________________ (landlord or agent)   Signature: __________   Date: __________"),
     ("p", "A counter-offer from a yearly tenant in Lagos. The generator also writes a plain decline (renew at "
           "the current rent) and an acceptance, and swaps the last paragraph for the chosen state: in Enugu it "
           "cites s.3(b) of the Landlord and Tenant (Amendment) Law 2008 and, where the landlord's figure is more "

@@ -33,6 +33,26 @@ FEDERAL_LAW = {
                  citation="Nigeria Tax Act 2025 (assented 26 June 2025; in force 1 January 2026)",
                  source="https://www.thecable.ng/full-text-the-nigeria-tax-act-2025/"),
         ],
+        # 7 Nov 2026 (Dominance dive): the "landlords cannot increase rent by more than 20%" belief is
+        # the most-repeated wrong answer on the field this week. It is a House motion, not a statute —
+        # the Brain gets the fact so a reply can say so with the date, and the routing sends it to the
+        # rent-review page, which carries the same answer.
+        increase_motion=dict(
+            cite="House of Representatives resolution, 23 October 2025",
+            text=(
+                "<b>There is no federal percentage cap on rent increases.</b> On 23 October 2025 the House of "
+                "Representatives adopted a motion (moved by Bassey Akiba, Calabar Municipality/Odukpani) urging "
+                "that rent increases be kept within 20% of the existing rent — a resolution, not a law: it binds "
+                "no landlord and no court. The only verified statutory cap is Enugu's 15% after every second "
+                "anniversary (Landlord and Tenant (Amendment) Law 2008, s.3(b)); Lagos gives the sitting tenant "
+                "the s.37 application instead of a cap."
+            ),
+            fct_bill=(
+                "The FCT Advance Rent Regulation and Tenants' Protection Bill 2026 (HB.2839), at second reading on "
+                "4 November 2026, caps advance rent at twelve months and proposes no ceiling on rent and no limit "
+                "on increases — so even if passed it would not change this answer in Abuja."
+            ),
+        ),
         rent_relief=dict(
             cite="s.30(2)(a)(vi)",
             text=(

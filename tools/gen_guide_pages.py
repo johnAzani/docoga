@@ -687,7 +687,7 @@ PAGES["demand-letter-rent-arrears-nigeria.html"] = dict(
 # sample and the sections on one page. Every section below is from tools/state_law_data.py.
 INCREASE_TABLE = '''<table>
 <tr><th>State</th><th>What the law actually says about a rent increase</th><th>Section</th></tr>
-<tr><td><b>Lagos</b></td><td><b>No percentage cap and no fixed notice period for an increase.</b> A sitting tenant who thinks an increase unreasonable applies to the court on Form TL11; the court weighs the general level of rents in the locality, the evidence and any special circumstances, and may order the increase changed to a stated figure (Form TL13). It is <b>unlawful to eject the tenant while that application is pending</b>. If the tenant refuses and nothing is agreed, the landlord\u2019s only lawful route is the notice to quit the tenancy requires (yearly tenant: six months), the seven-day notice, then the court.</td><td>Tenancy Law 2011, s.37, s.37(4); s.13(1)</td></tr>
+<tr><td><b>Lagos</b></td><td><b>No percentage cap and no fixed notice period for an increase.</b> A sitting tenant who thinks an increase unreasonable applies to the court on Form TL11; the court weighs the general level of rents in the locality, the evidence and any special circumstances, and may order the increase changed to a stated figure (Form TL13). It is <b>unlawful to eject the tenant while that application is pending</b>. If the tenant refuses and nothing is agreed, the landlord\u2019s only lawful route is the notice to quit the tenancy requires (yearly tenant: six months), the seven-day notice, then the court. <b>Two limits nobody prints:</b> the 2011 Law \u2014 and with it s.37 \u2014 does not apply in <b>Apapa, Ikeja GRA, Ikoyi and Victoria Island</b> (s.1(3)); and an increase that arrives bundled with a demand for two years upfront breaks s.4 \u2014 a sitting yearly tenant may not be asked for more than one year in advance (fine \u20a6100,000, s.4(5)), whatever the new figure.</td><td>Tenancy Law 2011, s.37, s.37(4); s.13(1); s.1(3); s.4</td></tr>
 <tr><td><b>Enugu</b></td><td><b>The one verified statutory cap in Nigeria.</b> Rent \u201cmay be reviewed by the parties after every second anniversary of the tenancy \u2026 provided that the difference between the new and the existing rent shall not exceed 15% of the existing rent\u201d. Three conditions: by agreement (a unilateral increase is ineffective), not before the second anniversary, not more than 15%. \u20a6400,000 let from 1 January 2025 cannot be reviewed before 1 January 2027 and may not go above \u20a6460,000.</td><td>Landlord and Tenant (Amendment) Law 2008, s.3(b)</td></tr>
 <tr><td><b>Abuja (FCT)</b></td><td>No FCT equivalent of the Lagos s.37 application and no percentage cap. The tenancy agreement governs; where it is silent, the notice required is a matter of negotiation and, ultimately, of the court. The 2026 FCT Advance Rent Bill (second reading 4 Nov 2026) proposes <b>no</b> rent ceiling and no limit on increases.</td><td>no provision; HB.2839 (a bill)</td></tr>
 <tr><td><b>Kwara</b></td><td>Shifting a burden from the landlord to the tenant (a repair, a levy) is treated as an increase in rent whether or not the periodic sum changes.</td><td>s.7</td></tr>
@@ -755,7 +755,11 @@ PAGES["rent-increase-notice-nigeria.html"] = dict(
             "<b>Reply in writing.</b> Acknowledge, say whether you accept, counter-offer if you wish, and ask for the "
             "landlord\u2019s answer in writing. A WhatsApp message is writing; keep it.",
             "<b>In Lagos, the s.37 application</b> (Form TL11) asks the court to declare the increase unreasonable; no "
-            "ejection is lawful while it is pending (s.37(4)). Bring your receipts and evidence of rents nearby.",
+            "ejection is lawful while it is pending (s.37(4)). Bring your receipts and evidence of rents nearby \u2014 "
+            "two or three comparable rents on your street, dated, is what the court measures the increase against. "
+            "Not in Apapa, Ikeja GRA, Ikoyi or Victoria Island, where the 2011 Law does not apply (s.1(3)).",
+            "<b>\u201cNot more than 20%\u201d is a motion, not a law.</b> The House of Representatives urged a 20% ceiling on "
+            "23 October 2025; no statute followed. Do not quote it to a landlord \u2014 quote s.37 (Lagos) or s.3(b) (Enugu).",
             "<b>In Enugu, do the arithmetic.</b> Before the second anniversary, or more than 15% above the existing "
             "rent, the increase is unlawful and a court will not enforce the figure.",
             "<b>Self-help is an offence everywhere.</b> No locks changed, no roof removed, no thugs; in Lagos s.44 of "
@@ -769,6 +773,9 @@ PAGES["rent-increase-notice-nigeria.html"] = dict(
             "PDF away, and the generator writes a clean copy.",
             "<b>Law explainers</b> that rank for the question disagree with each other on \u201chow much notice\u201d because the "
             "statutes do not say; this page says that, and cites the sections that do exist.",
+            "<b>Letter makers</b> now exist elsewhere, and the good ones are free too. The difference is what the letter "
+            "knows: ours changes its legal paragraph by state, refuses an Enugu figure above the cap, prints the \u201creceived "
+            "by\u201d line a court asks for, and carries no sample names that were never real people.",
         ])),
     ],
     faq=[
@@ -785,6 +792,17 @@ PAGES["rent-increase-notice-nigeria.html"] = dict(
          "Only one that we have verified: Enugu State, where the Landlord and Tenant (Amendment) Law 2008 (s.3(b)) "
          "allows a review only after every second anniversary and caps the difference at 15% of the existing rent. "
          "Lagos has no cap but gives the tenant the s.37 application; the FCT, Rivers, Anambra and Kano have neither."),
+        ("Is it true a landlord cannot increase rent by more than 20%?",
+         "No. The 20% figure is a House of Representatives motion of 23 October 2025 urging that increases be kept "
+         "within 20% of the existing rent \u2014 a resolution, not a law; it binds nobody. The FCT bill at second "
+         "reading (HB.2839, 4 November 2026) caps advance rent at twelve months and proposes no limit on increases. "
+         "Quote a section to your landlord, not a headline: in Lagos that is s.37; in Enugu, s.3(b)."),
+        ("What should a Lagos tenant gather before challenging an increase under s.37?",
+         "The court\u2019s first measure is the general level of rents for comparable premises in the locality, so "
+         "note two or three current rents for similar flats on nearby streets (listings, neighbours, an agent\u2019s "
+         "quote) with the date, keep every rent receipt, and keep the landlord\u2019s notice and your written reply. "
+         "The DocOga <a href=\"%s/rent-index-nigeria\">Rent Monitor</a> shows the asking rents it counts each week, "
+         "by city and bedroom count, which is a starting point \u2014 not evidence on its own." % DOMAIN),
         ("What happens if the tenant refuses the new rent?",
          "The tenancy continues on its present terms. The landlord may negotiate, or determine the tenancy with the "
          "notice it requires and the court process; the landlord may not treat the refusal as arrears or lock the "

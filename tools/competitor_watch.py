@@ -53,9 +53,13 @@ TOPIC = re.compile(r"\b(rent|tenan|landlord|lease|quit|evict|agent|agency|cautio
 # 5 Nov 2026: a construction-cost site's sitemap dates public tenders ("Remodelling of Anambra State
 # Housing Corporation office building", "Premises asphalting and re-roofing works") — "housing" and
 # "premises" pass the topic test, but a tender is not a thing a rival said about renting.
+# 7 Nov 2026: four more tenders passed on "caution lights", "bull housing" and "abuja" — the regex
+# grows, and a map row may now carry `skip_paths` (NigeriaBuildingCost: /construction-tenders/).
 TENDER = re.compile(r"\b(remodel\w*|renovat\w*|construct\w*|asphalt\w*|re-?roof\w*|landscap\w*|beautificat\w*|"
                     r"rehabilitat\w*|tender|bill of quantit\w*|boq|takeoff|take-off|borehole|drainage|"
-                    r"perimeter fenc\w*|block of \d|classroom\w*|procurement)\b", re.I)
+                    r"perimeter fenc\w*|block of \d|classroom\w*|procurement|installing|install\w* of|"
+                    r"upgrading|erosion|health cent\w*|livestock|rumble strip\w*|road sign\w*|site works|"
+                    r"supply (?:and|&) (?:installation|delivery)|\d+\s?km)\b", re.I)
 TOKEN = re.compile(r"\b(?=[a-z0-9]*\d)(?=[a-z0-9]*[a-z])[a-z0-9]{4,}\b", re.I)
 MIN_SLUG_WORDS = 4
 ARTICLE_SITEMAP = re.compile(r"(post|blog|news|article|guide|insight|resource|story|stories)", re.I)
@@ -211,6 +215,7 @@ def pull(http=None, now=None, days=14, log=print, field=None):
     for comp in field:
         feeds = list(comp.get("feeds") or [])
         paths = [p for p in (comp.get("paths") or []) if p]   # e.g. ["/blog/"] — the rest of a marketplace sitemap is listings
+        skip = [p for p in (comp.get("skip_paths") or []) if p]   # e.g. ["/construction-tenders/"] — never a publication
         if not feeds and "youtube.com" in (comp.get("url") or ""):
             yt = youtube_feed_for(comp["url"], http=http)
             if yt:
@@ -229,6 +234,8 @@ def pull(http=None, now=None, days=14, log=print, field=None):
             if r["link"] in seen or not TOPIC.search(text) or TENDER.search(r.get("title") or ""):
                 continue
             if paths and not any(p in r["link"] for p in paths):
+                continue
+            if skip and any(p in r["link"] for p in skip):
                 continue
             seen.add(r["link"])
             fresh.append({"competitor": comp["name"], "kind": comp.get("kind", ""), "title": r["title"][:160],
@@ -264,6 +271,67 @@ def fresh_items(data=None, now=None, max_age_days=10):
     return list(data.get("items") or [])
 
 
+# ── Collisions: a rival wrote on a topic DocOga has a money page for (7 Nov 2026) ────────────────
+# The 5 Nov pull carried "How much can landlord increase rent nigeria" — published the same day as
+# docoga.com.ng/rent-increase-notice-nigeria — and nothing said so. Each row: the page slug, the words
+# a rival's title would use, and the brain tool whose link lands on that page. Order matters: the
+# first match wins, so the narrower topics come first.
+COVERAGE = (
+    ("rent-increase-notice-nigeria", re.compile(r"rent\s+(increase|increment|review|hike|rise)|increase\w*\s+(the\s+|your\s+|my\s+)?rent|raise\w*\s+(the\s+)?rent", re.I), "rent-review"),
+    ("demand-letter-rent-arrears-nigeria", re.compile(r"demand\s+letter|arrears|unpaid\s+rent|owing\s+rent|rent\s+default", re.I), "letter-of-demand"),
+    ("caution-fee-nigeria", re.compile(r"caution\s+(fee|deposit|money)|security\s+deposit|refundable\s+deposit", re.I), "caution-fee"),
+    ("rent-receipt-format-nigeria", re.compile(r"rent\s+receipt|receipt\s+for\s+rent", re.I), "rent-receipt"),
+    ("notice-to-quit-nigeria", re.compile(r"quit\s+notice|notice\s+to\s+quit|7\s*days?\s+notice|seven\s+days?\s+notice|evict\w*|recover\w*\s+possession", re.I), "notice-to-quit"),
+    ("rent-relief-nigeria", re.compile(r"rent\s+relief|tax\s+(relief|deduction)", re.I), "tenant-rights"),
+    ("shop-tenancy-agreement-nigeria", re.compile(r"shop\s+(tenancy|lease|agreement)|commercial\s+(tenancy|lease)", re.I), "tenancy-agreement"),
+    ("tenancy-agreement-sample-nigeria", re.compile(r"tenancy\s+agreement|lease\s+agreement|rent\s+agreement|tenancy\s+contract", re.I), "tenancy-agreement"),
+    ("tenant-rights-nigeria", re.compile(r"tenant'?s?\s+rights|landlord'?s?\s+(duties|obligations)|what\s+(a\s+)?landlord\s+cannot", re.I), "tenant-rights"),
+)
+SITE_DIR = ROOT / "site"
+SITE_URL = "https://docoga.com.ng"
+
+
+def page_date(slug, site=None):
+    """The page's datePublished, or '' when the page is not there (then it is a gap, not a collision)."""
+    path = Path(site or SITE_DIR) / (slug + ".html")
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return ""
+    m = re.search(r'"datePublished":\s*"(\d{4}-\d{2}-\d{2})', text) or re.search(r'"dateModified":\s*"(\d{4}-\d{2}-\d{2})', text)
+    return m.group(1) if m else "live"
+
+
+def collisions(items, site=None):
+    """[{competitor, title, published, page, page_url, page_date, tool}] — rival items on a topic
+    DocOga already answers. The page must exist; a match on a missing page is reported by `gaps`."""
+    out = []
+    for it in items or []:
+        title = str(it.get("title") or "")
+        for slug, rx, tool in COVERAGE:
+            if rx.search(title):
+                when = page_date(slug, site)
+                if when:
+                    out.append({"competitor": it.get("competitor", ""), "title": title[:120], "published": (it.get("published") or "")[:10],
+                                "page": slug, "page_url": "%s/%s" % (SITE_URL, slug), "page_date": when, "tool": tool})
+                break
+    return out
+
+
+def gaps(items, site=None):
+    """Rival items on the business that no COVERAGE row claims (or whose page is missing) — the
+    Growth lane's candidate list, written by the field rather than by guesswork."""
+    out = []
+    for it in items or []:
+        title = str(it.get("title") or "")
+        if TENDER.search(title):   # an older pull may still carry tenders the regex has since learnt
+            continue
+        hit = next(((slug, tool) for slug, rx, tool in COVERAGE if rx.search(title)), None)
+        if hit is None or not page_date(hit[0], site):
+            out.append({"competitor": it.get("competitor", ""), "title": title[:120], "published": (it.get("published") or "")[:10]})
+    return out
+
+
 def prompt_block(items, field=None):
     """THE FIELD for the brain's prompt: what rivals published, and the standing edge to press."""
     field = field if field is not None else load_field()
@@ -275,6 +343,16 @@ def prompt_block(items, field=None):
                   for it in items[:12]]
     else:
         lines.append("- (nothing new from the field this week — lead, do not follow)")
+    hits = collisions(items)
+    if hits:
+        lines.append("COLLISIONS — a rival wrote on a question DocOga already answers with a page. Answer it from the shelf, "
+                     "point the post at that page (set `tool`), and say the one thing their title cannot:")
+        seen = set()
+        for h in hits[:6]:
+            if h["page"] in seen:
+                continue
+            seen.add(h["page"])
+            lines.append("- %s (%s) → set tool=\"%s\"; the page is %s" % (h["title"], h["published"] or "undated", h["tool"], h["page_url"]))
     tools = [c for c in field if c.get("kind") == "tool"]
     if tools:
         lines.append("DocOga's standing edge over the %d document tools on the field: every line cited to the state's own "
@@ -360,6 +438,12 @@ def scorecard_lines(data=None, now=None, status=None):
         lines.append("- %s — %s" % (name, "; ".join(r["title"][:70] for r in rows[:3])))
     if not items:
         lines.append("- nothing new on the field this window — DocOga posted every day of it")
+    for h in collisions(items)[:6]:
+        lines.append("- ⚔️ collision: %s — \"%s\" (%s) ↔ /%s (ours, published %s) → the brain is told to point there"
+                     % (h["competitor"], h["title"][:70], h["published"] or "undated", h["page"], h["page_date"]))
+    for g in gaps(items)[:6]:
+        lines.append("- ◻ uncovered: %s — \"%s\" (%s) — no DocOga page answers this title; a Growth candidate, not an order"
+                     % (g["competitor"], g["title"][:70], g["published"] or "undated"))
     lines += price_lines(data.get("prices") or [])
     return head + lines
 

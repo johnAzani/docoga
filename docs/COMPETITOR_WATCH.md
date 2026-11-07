@@ -12,14 +12,14 @@ DocOga's own money, pricing reasoning and plans stay in `docoga-private`.
 
 ## 1. Document tools — who else sells the paper
 
-| Who | What they sell | Price (public, re-read 4 Nov 2026) | Watchable feed |
+| Who | What they sell | Price (public, re-read 7 Nov 2026) | Watchable feed |
 |---|---|---|---|
 | NigeriaBuildingCost — tenancy agreement generator | Free generator, all 36 states + FCT, state notice clauses, agency/legal fee fields (10%/10% defaults); printout watermarked; "send to your tenant" needs a login; 30 Oct 2026 sample library (48 files, a filled-in sample tenancy agreement first; download behind a free account) | ₦4,000 one-time 90-day pass removes the watermark on all 6 tools; **₦500 7-day pass** ("for a one-off job") | sitemap + price sentinel on `/tenancy-agreement` |
 | Wonder.Legal Nigeria | 14 housing documents (rent receipt, notice to quit, late-rent notice, deposit-return letter, rent-change notice, sublet request…); basic rent receipt free, customised paid | per document | sitemap |
-| DIYLaw | Lawyer-drafted documents, paid per document, account needed | per document | RSS + sitemap |
-| SabiLaw Solutions | One-time Word template of a tenancy agreement | per template | sitemap |
+| DIYLaw | Lawyer-drafted documents, paid per document, account needed | tenancy agreement ₦3,500 + VAT (on the price sentinel) | RSS + sitemap |
+| SabiLaw Solutions | One-time Word template of a tenancy agreement, 6-month agreement, 7-day owner's notice, demand letter | ₦3,200 each (on the price sentinel) | sitemap |
 | Legalnaija templates | Customise-and-download tenancy agreement (Q&A form) | not public | RSS |
-| Rently.ng | Landlord SaaS: PDF receipts in one click, agreement generator + e-sign (Premium), tenant portal, WhatsApp/SMS reminders; free tier ≤3 properties/3 tenants | subscription | sitemap |
+| Rently.ng | Landlord SaaS: PDF receipts, quit/breach/demand notices free on the ₦0 plan (1 property, 3 tenants); agreement generator + e-sign, reminders on Premium | ₦5,000/month (₦50,000/year); Enterprise ₦15,000/month | sitemap |
 | Homz.ng | Property-management dashboard with agreements, quit notices, receipts | subscription | sitemap |
 
 **Where DocOga is already different (facts, not claims):** every clause and every post cites the state's
@@ -27,6 +27,17 @@ own section from the law shelf (317 facts, 9 states as of 3 Nov 2026, Tier A: Ab
 Nigerian English; no watermark; no account; one price for 30 days; a verified receipt ledger and a
 paid-rent index nobody else publishes. Nobody on this table writes to tenants *and* landlords every day
 on five platforms with a cited law behind each post.
+
+## 1b. The collision sensor (7 Nov 2026)
+
+Every rival title the watch keeps is read against DocOga's nine money pages (`COVERAGE` in
+`tools/competitor_watch.py`: rent increase, demand letter, caution fee, rent receipt, notice to quit,
+rent relief, shop tenancy, tenancy agreement, tenant rights). A hit is a **collision** — "⚔️ collision:
+rival — title (date) ↔ /our-page" on the Monday scorecard, and a COLLISIONS block in the Brain's prompt
+that names our page and sets the tool, so the week a rival writes on a question we answer, DocOga's
+routed answer goes out. A miss on the business is "◻ uncovered" — a Growth candidate, never an order.
+The first collision it would have caught: a rival's *how much can a landlord increase rent* post on
+5 Nov 2026, the day `/rent-increase-notice-nigeria` shipped.
 
 ## 2. Content rivals — who else ranks for the questions
 

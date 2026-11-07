@@ -58,7 +58,7 @@ STATE_PAGE_TOOLS = ("tenancy-agreement", "notice-to-quit", "rent-receipt", "caut
 # (the model's choice, or the homepage, stands).
 FACT_ROUTES = {
     "increase_challenge": "rent-review", "anniversary_rule": "rent-review", "rent_control": "rent-review",
-    "standard_rent": "rent-review",
+    "standard_rent": "rent-review", "increase_motion": "rent-review",
     "receipts": "rent-receipt", "rent_book": "rent-receipt",
     "caution_fee": "caution-fee", "premium": "caution-fee",
     "notice_ladder": "notice-to-quit", "notice_extras": "notice-to-quit", "notice_ladder_note": "notice-to-quit",
