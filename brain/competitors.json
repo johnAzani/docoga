@@ -1,6 +1,6 @@
 {
- "_comment": "The field DocOga plays on — verified by web research on 2 Nov 2026 (docs/COMPETITOR_WATCH.md). tools/competitor_watch.py reads the public feeds here every Monday (₦0: RSS, sitemaps, YouTube channel feeds; nothing that needs a login) and hands the brain what the field published, so every DocOga post is written knowing what the others said — to say it better, cite the section they did not, and take the angle they missed. Never to copy. Add a competitor only with a source you read; never a guess.",
- "verified": "2026-11-04",
+ "_comment": "The field DocOga plays on — verified by web research on 2 Nov 2026, re-verified 4 and 7 Nov 2026 (docs/COMPETITOR_WATCH.md). tools/competitor_watch.py reads the public feeds here every Monday (₦0: RSS, sitemaps, YouTube channel feeds; nothing that needs a login) and hands the brain what the field published, so every DocOga post is written knowing what the others said — to say it better, cite the section they did not, and take the angle they missed. Never to copy. Add a competitor only with a source you read; never a guess.",
+ "verified": "2026-11-07",
  "competitors": [
   {
    "name": "NigeriaBuildingCost — tenancy agreement generator",
@@ -9,14 +9,17 @@
    "feeds": [
     "https://nigeriabuildingcost.ng/sitemap.xml"
    ],
-   "note": "Free generator, 36 states + FCT, printed copy watermarked; ₦4,000 one-time pass removes watermarks on all six tools for 90 days and — new on the page by 4 Nov 2026 — a ₦500 seven-day pass 'for a one-off job'. Agreement defaults write agency 10% / legal 10% into the document; 'send to your tenant' by email or link needs a login. 30 Oct 2026: a 48-document sample library (mostly construction takeoffs) opened with a filled-in 'Sample Tenancy Agreement (Nigeria Format)' PDF at the top — preview free, download behind a free account (122 downloads by 4 Nov). Closest direct rival to the pass model (pages read 2 and 4 Nov 2026).",
+   "note": "Free generator, 36 states + FCT, printed copy watermarked; ₦4,000 one-time pass removes the watermark for 90 days (\"all 6 tools\": BOQ, quotation, invoice, estimator, tenancy agreement, BOQ import) and a ₦500 seven-day pass on the pricing page; agency 10% / legal 10% written into the default agreement; notice-to-quit clause is a generic 1 week/1 month/1 quarter/6 months list that says \"confirm the statutory requirement\"; sample library (30 Oct) behind a free account. Re-read 7 Nov 2026: unchanged. Its sitemap dates public construction tenders daily — watched with /construction-tenders/ excluded.",
    "prices": {
     "url": "https://nigeriabuildingcost.ng/tenancy-agreement",
     "seen": [
      "₦4,000",
      "₦500"
     ]
-   }
+   },
+   "skip_paths": [
+    "/construction-tenders/"
+   ]
   },
   {
    "name": "Wonder.Legal Nigeria",
@@ -25,7 +28,7 @@
    "feeds": [
     "https://www.wonder.legal/ng/sitemap.xml"
    ],
-   "note": "Questionnaire templates incl. a free basic rent receipt and 14 housing letters (notice to quit, late rent, deposit return); Word + PDF; revision-dated."
+   "note": "Questionnaire templates (Word + PDF) incl. a free basic rent receipt (rev. 9 Aug 2026) and about twenty housing letters — notice to quit, late rent notice, lease renewal, and a **Change of Rent Notice** (rev. 18 Aug 2026) that is generic for all states, names the Lagos excluded areas, and tells the tenant who disagrees to \"be ready to vacate\" (no s.37, no notice ladder). Re-read 7 Nov 2026."
   },
   {
    "name": "DIYLaw",
@@ -34,7 +37,15 @@
    "feeds": [
     "https://diylaw.ng/sitemap.xml"
    ],
-   "note": "Paid per document, Nigeria-drafted tenancy agreement; direct-to-purchase."
+   "note": "Paid per document, Nigeria-drafted: tenancy agreement ₦3,500, employee contract ₦3,500, NDA ₦5,000, privacy policy ₦2,000; board resolution and letter of confirmation free; VAT added. Site banner (7 Nov 2026) says CAC/FIRS delays are slowing its registrations business.",
+   "prices": {
+    "url": "https://diylaw.ng/documents/",
+    "seen": [
+     "₦5,000",
+     "₦2,000",
+     "₦3,500"
+    ]
+   }
   },
   {
    "name": "SabiLaw Solutions",
@@ -43,7 +54,13 @@
    "feeds": [
     "https://sabilaw.org/feed/"
    ],
-   "note": "Lawyer-prepared Word template, one-time purchase, instant download."
+   "note": "Lawyer-prepared Word templates, ₦3,200 each, one-time purchase, instant download: tenancy agreement, 6-month tenancy agreement, 7 days' owner's intention to recover possession, demand letter for payment of debt. Re-read 7 Nov 2026: unchanged, product pages dated Dec 2022.",
+   "prices": {
+    "url": "https://solutions.sabilaw.org/product/tenancy-agreement/",
+    "seen": [
+     "₦3,200"
+    ]
+   }
   },
   {
    "name": "Legalnaija templates",
@@ -52,7 +69,7 @@
    "feeds": [
     "https://legalnaija.com/feed/"
    ],
-   "note": "Short questionnaire → paid download; also a legal-information blog with steady tenancy posts."
+   "note": "Short questionnaire → paid download at app.legalnaija.com/shop/templates (the explainer post is from Mar 2022); also a legal-information blog with steady but general posts (colloquia, arbitration). Re-read 7 Nov 2026: unchanged."
   },
   {
    "name": "Rently.ng",
@@ -61,7 +78,7 @@
    "feeds": [
     "https://rently.ng/sitemap.xml"
    ],
-   "note": "Landlord SaaS: payment ledger with one-click PDF receipts, agreement generator + e-sign on the paid plan, tenant portal, WhatsApp/SMS reminders."
+   "note": "Landlord SaaS: free plan (1 property, 3 tenants) with payment ledger + one-click PDF receipts, tenant portal links and \"legal notices — quit notices, breach notices, rent demand letters in seconds\" marked Free; agreement generator + e-sign, reminders (email/WhatsApp/SMS) and reports on Premium ₦5,000/month (₦50,000/year); Enterprise ₦15,000/month (₦170,000/year); tenant verification from ₦10,000. Claims 5,000+ landlords. Re-read 7 Nov 2026."
   },
   {
    "name": "Homz.ng",
@@ -70,7 +87,7 @@
    "feeds": [
     "https://homz.ng/sitemap.xml"
    ],
-   "note": "Property-management dashboard that generates agreements, quit notices and receipts; subscription."
+   "note": "Listings marketplace first (rent / buy / shortlet / land, Lagos-heavy) with property-management tools behind sign-in that generate agreements, quit notices and receipts; subscription. Re-read 7 Nov 2026: home page is listings only; no public document pages to watch."
   },
   {
    "name": "Mushrooms.ng blog",
@@ -79,7 +96,7 @@
    "feeds": [
     "https://mushrooms.ng/sitemap.xml"
    ],
-   "note": "The strongest 2026 explainers on renting in Lagos and Abuja — and from 20 to 22 Oct 2026 a burst of about fifteen tenancy-law posts in three days (quit notice and rent increases step by step citing Lagos s.13, Lagos tenant rights, agency fee and the 5% bill, subletting rules with a consent letter to copy, a rent-increase letter, shortlet guides), then moving-out checklists on 2 Nov. Copy-and-fill letters inside blog posts are their answer to generators. No RSS (/feed/ is 404, read 4 Nov 2026) — watched through the sitemap, /blog/ paths only; the rest is listings.",
+   "note": "The strongest content rival, and since 20 Oct 2026 a tool rival too: its \"rent increase letter\" post is a two-sided generator (\"I'm raising the rent / My rent went up\") with city-level rent comparison for 16 cities, a tenant's reply, PDF/WhatsApp/image output and blank Word/PDF templates — free, no sign-up — plus four copy-and-fill letters; the sample carries invented names. 5 Nov 2026: \"How much can a landlord increase rent in Nigeria\" (no legal percentage; Lagos s.37 + s.37(4); the 20% House motion of Oct 2025 is not law; excluded areas; s.4 advance rent; \"other states: check your state's law\" — no Enugu cap, no section outside Lagos) and \"7 days notice to quit\"; 20–22 Oct burst of about fifteen tenancy-law explainers; moving-out checklists 2 Nov. Cites Nairametrics 50–100% increase reports as fact. No RSS (/feed/ 404) — watched through the sitemap, /blog/ paths only.",
    "paths": [
     "/blog/"
    ]
@@ -91,7 +108,7 @@
    "feeds": [
     "https://lexpraxisng.com/feed/"
    ],
-   "note": "Law-firm explainers (the Tenancy Bill 2025 clause by clause, Aug 2026)."
+   "note": "Corporate/business law firm (company formation, tax, IP, data protection; a real-estate transactions service page added Sep 2026); tenancy explainers are occasional (the Tenancy Bill 2025 clause by clause, Aug 2026). Re-read 7 Nov 2026: no new tenancy post."
   },
   {
    "name": "Olamide Oyetayo Legal",
@@ -100,7 +117,7 @@
    "feeds": [
     "https://olamideoyetayolegal.com/feed/"
    ],
-   "note": "Landlord-side eviction explainers (Recovery of Premises Act, Lagos Tenancy Law) feeding a legal-services funnel."
+   "note": "Abuja/Lagos firm; landlord-side eviction explainers (Recovery of Premises Act, Lagos Tenancy Law) and, in 2026, buyer-side Abuja property checks; insights feed is WhatsApp-CTA driven. Re-read 7 Nov 2026: latest insights are property purchase and business contracts, not tenancy."
   },
   {
    "name": "AALAWSNG — Adeola Kolawole (YouTube)",

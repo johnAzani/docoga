@@ -210,6 +210,64 @@ class PathsAndPrices(unittest.TestCase):
                 self.assertTrue(r["prices"]["url"].startswith("https://") and r["prices"]["seen"], r["name"])
             for pth in r.get("paths") or []:
                 self.assertTrue(pth.startswith("/"), r["name"])
+        self.assertEqual(nbc["skip_paths"], ["/construction-tenders/"], "7 Nov 2026: four tenders leaked past the regex")
+        self.assertGreaterEqual(sum(1 for r in rows.values() if "prices" in r), 3, "SabiLaw and DIYLaw joined the price sentinel on 7 Nov 2026")
+
+    # ── 7 Nov 2026: the tender leak and the collision sensor ─────────────────────────────────────
+    def test_the_four_tenders_that_leaked_on_5_november_no_longer_pass_and_skip_paths_drop_the_folder(self):
+        raw = b"""<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<url><loc>https://tool.ng/construction-tenders/installing-rumble-strips-speed-bumps-road-signs-and-solar-caution-lights</loc><lastmod>2026-10-30</lastmod></url>
+<url><loc>https://tool.ng/construction-tenders/livestock-support-works-and-breeder-bull-housing-in-three-borno-senatorial</loc><lastmod>2026-10-30</lastmod></url>
+<url><loc>https://tool.ng/construction-tenders/flood-and-gully-erosion-control-site-works-at-gwagwalada-abuja-fct</loc><lastmod>2026-10-30</lastmod></url>
+<url><loc>https://tool.ng/construction-tenders/upgrading-of-20-primary-health-centres-across-fct-abuja</loc><lastmod>2026-10-30</lastmod></url>
+<url><loc>https://tool.ng/blog/caution-fee-in-abuja-what-the-law-says</loc><lastmod>2026-10-30</lastmod></url>
+</urlset>"""
+        field = [{"name": "Tool", "kind": "tool", "url": "https://tool.ng", "feeds": ["https://tool.ng/sitemap.xml"], "note": "x"}]
+        data = cw.pull(http=lambda u, timeout=0: (200, raw), now=NOW, days=14, log=lambda *a: None, field=field)
+        self.assertEqual([it["title"] for it in data["items"]], ["Caution fee in abuja what the law says"], "the regex alone now holds")
+        # and the folder itself is skipped even for a title the regex would never learn
+        raw2 = raw.replace(b"upgrading-of-20-primary-health-centres-across-fct-abuja", b"caution-fee-housing-estate-abuja")
+        field[0]["skip_paths"] = ["/construction-tenders/"]
+        data = cw.pull(http=lambda u, timeout=0: (200, raw2), now=NOW, days=14, log=lambda *a: None, field=field)
+        self.assertEqual([it["link"] for it in data["items"]], ["https://tool.ng/blog/caution-fee-in-abuja-what-the-law-says"])
+
+    def test_a_rival_post_on_a_question_we_answer_is_a_collision_and_the_brain_is_pointed_at_our_page(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            site = Path(tmp)
+            (site / "rent-increase-notice-nigeria.html").write_text('{"datePublished": "2026-11-05"}', encoding="utf-8")
+            (site / "notice-to-quit-nigeria.html").write_text('{"dateModified": "2026-11-05"}', encoding="utf-8")
+            (site / "tenant-rights-nigeria.html").write_text("<html>no dates</html>", encoding="utf-8")
+            items = [{"competitor": "Rival", "title": "How much can landlord increase rent nigeria", "published": "2026-11-05", "link": "https://r.ng/a"},
+                     {"competitor": "Rival", "title": "7 days notice to quit nigeria", "published": "2026-11-05", "link": "https://r.ng/b"},
+                     {"competitor": "Rival", "title": "Tenants rights when the landlord sells", "published": "2026-11-04", "link": "https://r.ng/c"},
+                     {"competitor": "Rival", "title": "Caution fee refund rules", "published": "2026-11-04", "link": "https://r.ng/d"},
+                     {"competitor": "Rival", "title": "House for rent captions nigeria", "published": "2026-11-05", "link": "https://r.ng/e"},
+                     {"competitor": "Rival", "title": "Upgrading of 20 primary health centres across fct abuja", "published": "2026-11-05", "link": "https://r.ng/f"}]
+            hits = cw.collisions(items, site=site)
+            self.assertEqual([(h["page"], h["page_date"], h["tool"]) for h in hits],
+                             [("rent-increase-notice-nigeria", "2026-11-05", "rent-review"),
+                              ("notice-to-quit-nigeria", "2026-11-05", "notice-to-quit"),
+                              ("tenant-rights-nigeria", "live", "tenant-rights")])
+            self.assertEqual(hits[0]["page_url"], "https://docoga.com.ng/rent-increase-notice-nigeria")
+            self.assertEqual([g["title"] for g in cw.gaps(items, site=site)],
+                             ["Caution fee refund rules", "House for rent captions nigeria"],
+                             "a matched topic whose page is missing is a gap; a tender is neither")
+        # the real site: the 5 Nov pull's rent-increase post collides with the page shipped the same day
+        real = cw.collisions([{"competitor": "R", "title": "How much can landlord increase rent nigeria", "published": "2026-11-05"}])
+        self.assertEqual((real[0]["page"], real[0]["tool"]), ("rent-increase-notice-nigeria", "rent-review"))
+        for slug, _rx, tool in cw.COVERAGE:
+            self.assertTrue((ROOT / "site" / (slug + ".html")).exists(), slug)
+            self.assertIn(tool, __import__("brain_drafts").TOOLS, tool)
+        block = cw.prompt_block([{"competitor": "R", "title": "How much can landlord increase rent nigeria", "published": "2026-11-05"}], field=[])
+        self.assertIn("COLLISIONS", block)
+        self.assertIn('set tool="rent-review"; the page is https://docoga.com.ng/rent-increase-notice-nigeria', block)
+        self.assertNotIn("COLLISIONS", cw.prompt_block([{"competitor": "R", "title": "House for rent captions nigeria", "published": "2026-11-05"}], field=[]))
+        data = {"pulled_at": "2026-11-02T06:00:00+00:00", "days": 14, "sources": {}, "unwatchable": [],
+                "items": [{"competitor": "R", "title": "How much can landlord increase rent nigeria", "published": "2026-11-01", "link": "https://r.ng/a"},
+                          {"competitor": "R", "title": "How to advertise house for rent nigeria", "published": "2026-11-01", "link": "https://r.ng/b"}]}
+        lines = cw.scorecard_lines(data, now=NOW)
+        self.assertTrue(any(l.startswith("- ⚔️ collision: R — \"How much can landlord increase rent nigeria\" (2026-11-01) ↔ /rent-increase-notice-nigeria") for l in lines), lines)
+        self.assertTrue(any(l.startswith("- ◻ uncovered: R — \"How to advertise house for rent nigeria\"") for l in lines), lines)
 
 
 if __name__ == "__main__":

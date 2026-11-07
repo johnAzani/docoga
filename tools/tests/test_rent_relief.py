@@ -241,7 +241,11 @@ class FederalShelfTests(unittest.TestCase):
         import law_index
         lagos = law_index.facts_for("lagos")
         self.assertEqual(lagos[-1]["id"], "nigeria:rent_relief:8")
-        self.assertTrue(all(f["slug"] == "lagos" for f in lagos[:-8]))
+        fed_n = len(law_index.federal_facts())   # 8 rent-relief facts + the increase-motion facts (7 Nov 2026)
+        self.assertGreaterEqual(fed_n, 10)
+        self.assertTrue(all(f["slug"] == "lagos" for f in lagos[:-fed_n]))
+        self.assertTrue(all(f["slug"] == "nigeria" for f in lagos[-fed_n:]))
+        self.assertIn("nigeria:increase_motion:1", [f["id"] for f in lagos])
         self.assertEqual(law_index.facts_for("nigeria"), law_index.federal_facts())
         self.assertNotIn("nigeria", [s for s, _, _ in law_index.states()])
         ids = [f["id"] for f in law_index.all_facts()]

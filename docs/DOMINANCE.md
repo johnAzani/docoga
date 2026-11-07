@@ -71,6 +71,41 @@ without the signal that says so.
 
 ## 5. Research ledger (newest first — the scorecard reads the top date)
 
+- **2026-11-07** — All 14 rows re-verified by hand (map `verified` 2026-11-07) and this week's rival
+  content read against the rent-increase page shipped on 5 Nov. **The collision:** the strongest
+  content rival (Mushrooms.ng) published *"How much can a landlord increase rent in Nigeria"* on
+  **the same day** as our page, and its 20 Oct rent-increase-letter post — which the 4 Nov row
+  called "a letter to copy" — is in fact a **two-sided generator** (landlord's notice / tenant's
+  reply, rent compared by city for 16 cities, PDF and WhatsApp output, blank Word/PDF templates, no
+  sign-up, free). That is the closest thing to the Rent Review tool on the field and the 4 Nov ledger
+  under-read it; corrected here. What it still lacks, checked line by line: no state-aware legal
+  paragraph (Lagos s.37 is explained in prose, every other state is "check your law"), **no Enugu
+  15% / second-anniversary rule and no refusal of an unlawful figure**, no Kwara s.7, sample letters
+  with invented names, and press statistics quoted as fact. Wonder.Legal has a generic NG "Change of
+  Rent Notice" (rev. 18 Aug 2026) that tells a disagreeing tenant to "be ready to vacate" — no s.37,
+  no notice ladder. Rently gives quit, breach and demand notices free on its ₦0 plan (Premium
+  ₦5,000/month, Enterprise ₦15,000/month); SabiLaw ₦3,200 per template and DIYLaw ₦3,500 per
+  agreement unchanged and now on the price sentinel; NBC (₦4,000/₦500), Legalnaija, Homz, Lexpraxis
+  (corporate; no tenancy post), Olamide Oyetayo (property-purchase posts) unchanged; AALAWSNG and the
+  three TikTok creators as before (no public feed at ₦0). The wider field this week: Abuja residents
+  backing HB.2839 (2 Nov), the ₦20m-fine headline after second reading (6 Nov), and the 20%-cap belief
+  repeated as law in three explainers. **Watch fault found and fixed:** four NigeriaBuildingCost
+  construction tenders ("solar caution lights", "breeder bull housing", "gwagwalada abuja", "health
+  centres… fct") passed the topic filter on 5 Nov — the tender regex grows and a map row can now
+  `skip_paths` a whole folder. **Shipped:** a **collision sensor** in the watch — every rival title is
+  read against the nine money pages (`COVERAGE`); a hit becomes "⚔️ collision … ↔ /our-page" on the
+  Monday scorecard and a COLLISIONS block in the Brain's prompt that names the page and sets the tool,
+  so a rival's post on a question we answer turns into a routed DocOga post the same week; a miss
+  becomes "◻ uncovered" — the Growth lane's candidate list written by the field. On the page and in
+  the tool: the Lagos row now carries the four excluded areas (s.1(3)) and the s.4 advance-rent bundle;
+  the "not more than 20%" answer (House motion of 23 Oct 2025 — a resolution, not a law) as an FAQ, a
+  bullet and a federal shelf fact (`nigeria:increase_motion`, routed to rent-review) so a Brain reply
+  can say it with the date; a comparables note for s.37 (what the court measures against); and both
+  generated letters and both samples print a **"Received by … Signature … Date"** acknowledgment
+  line. **Beats rivals because** the only other free generator writes one legal paragraph for the
+  whole country; ours writes the state's, refuses the Enugu figure, prints the proof of service, and
+  the machine now notices the day a rival steps onto one of our questions. Next field re-verification
+  due by 22 Dec 2026 (≤45 d); next dive ≤21 Nov 2026.
 - **2026-11-04** — Field re-verified (map `verified` 2026-11-04) and the fortnight read. **What moved:**
   the closest tool rival (NigeriaBuildingCost) now sells a **₦500 seven-day pass** under its ₦4,000
   ninety-day one, opened a 48-document sample library on 30 Oct with a filled-in sample tenancy
