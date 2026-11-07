@@ -260,5 +260,26 @@
   "reader": "ngozi",
   "tool": "notice-to-quit",
   "news_hook": null
+ },
+ {
+  "date": "2026-11-09",
+  "theme": "kwara-notice-to-quit-how-long",
+  "headline": "How much notice should your Kwara landlord give you?",
+  "post_type": "educational",
+  "hook_type": "QUESTION",
+  "state": "kwara",
+  "fact_ids": [
+   "kwara:notice_ladder:2",
+   "kwara:notice_ladder:4",
+   "kwara:tenant_at_will:1",
+   "kwara:notice_extras:3"
+  ],
+  "recalled": 0,
+  "plate": "keys wooden door",
+  "short": true,
+  "reader": "ngozi",
+  "tool": "notice-to-quit",
+  "tool_routed": false,
+  "news_hook": null
  }
 ]

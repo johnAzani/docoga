@@ -1,0 +1,111 @@
+{
+ "version": 1,
+ "status": "approved",
+ "date": "2026-11-09",
+ "generated_at": "2026-11-07T07:22:56+01:00",
+ "theme": "kwara-notice-to-quit-how-long",
+ "post_type": "educational",
+ "hook_type": "QUESTION",
+ "state": "kwara",
+ "claims": [
+  {
+   "text": "For a monthly tenancy in Kwara, your landlord must give you one month's notice.",
+   "fact_id": "kwara:notice_ladder:2"
+  },
+  {
+   "text": "For a yearly tenancy in Kwara, it's half a year's notice.",
+   "fact_id": "kwara:notice_ladder:4"
+  },
+  {
+   "text": "If you are a tenant at will, you may not be entitled to any notice at all in Kwara, under Chapter L4 of the Landlord and Tenant Law.",
+   "fact_id": "kwara:tenant_at_will:1"
+  },
+  {
+   "text": "The nature of your tenancy is determined by when rent is paid or demanded.",
+   "fact_id": "kwara:notice_extras:3"
+  }
+ ],
+ "recalled": [],
+ "post": {
+  "headline": "How much notice should your Kwara landlord give you?",
+  "lines": [
+   "Ngozi, if your landlord wants you to pack out, the notice period depends on your tenancy type.",
+   "For a monthly tenancy in Kwara, your landlord must give you one month's notice (s.17(1)(b)).",
+   "For a yearly tenancy, it's half a year's notice (s.17(1)(d)).",
+   "If you are a tenant at will, you may not be entitled to any notice at all in Kwara, under Chapter L4.",
+   "Make your notice to quit today on DocOga.com.ng, free to start."
+  ],
+  "cta": "Send this to a friend whose landlord wants them to pack out.",
+  "hashtags": [
+   "#DocOga",
+   "#KwaraTenancy",
+   "#NoticeToQuit",
+   "#TenantRights"
+  ]
+ },
+ "threads": {
+  "text": "Your Kwara landlord gave you a quit notice. Was it the right length? For a monthly tenancy, it's one month. For a yearly tenancy, it's half a year. But a tenant at will may get no notice at all (Kwara's Chapter L4). The law in Kwara is specific.\n\nWhat kind of tenant are you?",
+  "hashtags": [
+   "#DocOga",
+   "#Kwara"
+  ],
+  "topic": "Tenant Rights Kwara",
+  "poll": null,
+  "evening": "Kwara landlords must give proper notice. A monthly tenant gets one month. A yearly tenant, half a year. Know your rights, Ngozi. Don't be rushed out."
+ },
+ "visual": {
+  "kicker": "Know Your Rights",
+  "layout": "poster",
+  "big": "",
+  "plate": "keys wooden door"
+ },
+ "short": {
+  "title": "Kwara notice to quit: How long is it?",
+  "hook_sub": "Know your notice period.",
+  "hook_say": "Your landlord wants you to pack out. But did they give you the right amount of notice? In Kwara, the length of your notice depends on your tenancy type.",
+  "tips": [
+   {
+    "text": "Monthly tenant?",
+    "sub": "One month notice (Kwara s.17(1)(b)).",
+    "say": "If you pay rent monthly, the law in Kwara State says your landlord must give you one month's notice to quit."
+   },
+   {
+    "text": "Yearly tenant?",
+    "sub": "Half a year notice (Kwara s.17(1)(d)).",
+    "say": "For those paying yearly, you are entitled to half a year's notice. Don't let anyone rush you out."
+   },
+   {
+    "text": "Tenant at will?",
+    "sub": "Maybe no notice at all.",
+    "say": "If you're a tenant at will, Kwara's Chapter L4 says you might get no notice. This is a unique Kwara rule."
+   },
+   {
+    "text": "Get your notice.",
+    "sub": "Free on DocOga.com.ng.",
+    "say": "Make sure your notice is correct. Generate a standard notice to quit for Kwara State, free to start."
+   }
+  ],
+  "hook_text": "KWARA NOTICE TO QUIT: HOW LONG IS IT?",
+  "series": {
+   "slug": "notice-to-quit",
+   "name": "Notice to quit",
+   "part": 1,
+   "total": 5,
+   "label": "How long the notice is"
+  }
+ },
+ "why": "Today is a know-your-rights Monday, focusing on Kwara state and answering Google searches for 'notice to quit', while adhering to the QUESTION hook type and writing to Ngozi, as per strategy and orders.",
+ "tool": "notice-to-quit",
+ "tool_routed": false,
+ "reader": "ngozi",
+ "news_hook": null,
+ "quiz": null,
+ "gates": [
+  "citation",
+  "verification",
+  "lint",
+  "repetition",
+  "shape"
+ ],
+ "note": ""
+}
