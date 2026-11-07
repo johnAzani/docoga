@@ -59,6 +59,27 @@ scorecard flags (⚠️) and I act on in the next brief — without being asked.
 
 ## 4. Changelog (newest first — the scorecard reads the top date)
 
+- **2026-11-07** — **The field writes the research list.** Read back: the competitor watch's new
+  "◻ uncovered" line (this morning's Dominance dive) named two rival titles with no DocOga page behind
+  them and then waited for a person to notice — the same shape as every gap before it. Now
+  `tools/page_briefs.py` keeps every uncovered title across pulls (`brain/page_briefs.json`; two
+  titles are one question when they share two content words and half of the smaller set), and the
+  **second** time the field writes on a question — a second rival, a second title, a second week —
+  the Brain drafts a **page brief**: the question, who asks, what the law shelf already holds on it
+  (fact ids by word match, the two common words "rent" and "tenant" never counting), the closest page
+  we have, the tool the page would link, three to six things to verify before a word is written, and
+  a verdict — *build*, *extend* (the Growth lock forbids thin duplicates, so a near page is extended,
+  not copied) or *decline* (outside the business). Gemini writes the angle (🔒 Gemini only, the shared
+  quota ledger, one call a night at most, after the planner); the brief is gated — no rival name, no
+  figure or percentage, a real tool, a real verdict — and when every model is refused for the day the
+  brief is still written from rules and says so. It lands as `brain/briefs/<id>.md` on main, a
+  GitHub issue labelled `page-brief` (the workflow already holds `issues: write`), and a Monday
+  scorecard block; a declined question is remembered so it is never asked again. Nothing is published
+  from a brief — it is a research order, and the research is still a person reading the law.
+  **Measure:** briefs drafted, by verdict and by `drafted_by`, on the scorecard; the first one is due
+  tonight (the field asked "house for rent captions / how to advertise" twice on 5 Nov); the test of
+  the loop is whether a brief becomes a page that earns Search Console impressions within 30 days of
+  its issue — the GSC pull will show it against the issue date. Next ≤ 21 Nov 2026.
 - **2026-11-06** — **The link follows the law the post cites.** Read back: in the 15 packs published
   since 24 Oct the model chose 4 of 12 tools (agreement 6, receipt 5, quit notice 3, tenant rights 1);
   the demand letter had no page route at all and the rent-increase page (5 Nov) was unknown to it, so

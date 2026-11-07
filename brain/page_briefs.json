@@ -1,0 +1,27 @@
+{
+ "_comment": "Uncovered field questions kept across pulls; a brief is drafted the second time one is seen (tools/page_briefs.py). Status: watching → briefed → built | declined.",
+ "briefs": [
+  {
+   "id": "house-rent-caption",
+   "question": "House for rent captions nigeria",
+   "status": "watching",
+   "first_seen": "2026-11-07",
+   "last_seen": "2026-11-07",
+   "sightings": [
+    {
+     "competitor": "Mushrooms.ng blog",
+     "title": "House for rent captions nigeria",
+     "published": "2026-11-05",
+     "seen": "2026-11-07"
+    },
+    {
+     "competitor": "Mushrooms.ng blog",
+     "title": "How to advertise house for rent nigeria",
+     "published": "2026-11-05",
+     "seen": "2026-11-07"
+    }
+   ],
+   "brief": null
+  }
+ ]
+}
