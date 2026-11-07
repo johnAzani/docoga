@@ -31,6 +31,20 @@ class PostedTodayTests(unittest.TestCase):
         self.assertEqual(posted_today.posted_today(p, "2026-11-05", "instagram-"), 2)
         self.assertEqual(posted_today.posted_today(p, "2026-11-06", "instagram-"), 0)
 
+    def test_the_facebook_lanes_reel_and_video_story_do_not_close_the_card_slot(self):
+        """6 Nov 2026 as it happened: the Facebook lane put the Short on Instagram as a Reel (topic = the
+        Short's title) and as a video Story (topic instagram-story) at 9:33am; the 7:10pm card slot
+        must still be open."""
+        p = self.ledger([
+            {"recorded_at": "2026-11-06T09:33:00+01:00", "date": "2026-11-06", "topic": "instagram-story",
+             "title": "Story \u00b7 Reel \u00b7 Don't let your landlord keep your tenancy agreement copy."},
+            {"recorded_at": "2026-11-06T09:33:00+01:00", "date": "2026-11-06",
+             "topic": "Don't let your landlord keep your tenancy agreement copy.", "title": "Reel \u00b7 ..."},
+        ])
+        self.assertEqual(posted_today.posted_today(p, "2026-11-06", "instagram-card"), 0)
+        p2 = self.ledger([{"date": "2026-11-06", "topic": "instagram-card"}, {"date": "2026-11-06", "topic": "instagram-story"}])
+        self.assertEqual(posted_today.posted_today(p2, "2026-11-06", "instagram-card"), 1)
+
     def test_falls_back_to_recorded_at_in_lagos_time(self):
         p = self.ledger([{"recorded_at": "2026-11-05T23:30:00+00:00", "topic": "instagram-story"}])  # 00:30 Lagos, 6 Nov
         self.assertEqual(posted_today.posted_today(p, "2026-11-06", "instagram-"), 1)
@@ -46,7 +60,8 @@ class PostedTodayTests(unittest.TestCase):
     def test_the_instagram_slot_gate_asks_the_ledger_before_the_hour(self):
         wf = (ROOT / ".github/workflows/instagram_autopost.yml").read_text(encoding="utf-8")
         gate = wf.split("Slot gate", 1)[1].split("publish:", 1)[0]
-        self.assertIn("tools/posted_today.py logs/instagram_sent.json --topic instagram-", gate)
+        self.assertIn("tools/posted_today.py logs/instagram_sent.json --topic instagram-card", gate)
+        self.assertNotIn("--topic instagram-)", gate, "instagram- also matches the Facebook lane's video Story (6 Nov: no card)")
         self.assertLess(gate.index("posted_today.py"), gate.index('[ "$NOW" = "$WANT" ]'))
         self.assertIn('[ "$EVENT" = "schedule" ] && [ "${DONE:-0}" != "0" ]', gate, "a manual dispatch still posts")
 
