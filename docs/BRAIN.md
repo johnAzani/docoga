@@ -379,7 +379,17 @@ run reads their public RSS/sitemap/YouTube feeds at ₦0, writes `logs/competito
 the pack prompt carries THE FIELD — titles only, with the rule *say it better, cite the section
 they did not, take the angle they missed, never copy a headline, never name a rival*. Mondays the
 scorecard prints "Competitor watch — the field this week". TikTok/Instagram creators publish no
-feed at ₦0 and are listed as unwatchable rather than guessed.
+feed at ₦0 and are listed as unwatchable rather than guessed. Since 7 Nov 2026 the watch also reads
+every rival title against DocOga's money pages: a hit is a **collision** (the prompt names our page and
+sets the tool), a miss is **uncovered**.
+
+**Page briefs (`tools/page_briefs.py`, 7 Nov 2026).** The uncovered titles are kept across pulls in
+`brain/page_briefs.json`; the second time the field writes on the same question the Brain drafts a
+research brief — question, who asks, shelf facts already held, closest page, tool, three to six
+things to verify, a verdict of build / extend / decline — gated (no rival name, no figure), written
+by Gemini or, when every model is refused, from rules. It is committed as `brain/briefs/<id>.md`,
+filed as a GitHub issue labelled `page-brief`, and listed on the Monday scorecard. A brief is a
+research order for the owner, never a page; nothing is published from it.
 
 **Listening (`tools/listening.py`).** The newsdesk hears the papers; this hears the
 people. Every night the brain GETs the thread titles on Nairaland's Properties,

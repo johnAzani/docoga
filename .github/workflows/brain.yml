@@ -149,6 +149,35 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
+      # 7 Nov 2026 (🔒 docs/BRAIN_GROWTH.md): a question the field wrote on twice that no DocOga page
+      # answers becomes a page brief for the owner to research — never a page (tools/page_briefs.py).
+      - name: Page briefs — what the field asked twice that we have no page for
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set +e
+          python3 tools/page_briefs.py observe 2>&1 | tee /tmp/briefs.log
+          CODE=${PIPESTATUS[0]}
+          set -e
+          if [ "$CODE" != "0" ]; then
+            echo "::warning title=Page briefs did not run::exit $CODE — the field's uncovered questions were not folded in tonight"
+          fi
+          gh label create page-brief --color 0E8A16 --description "A research brief the field wrote (tools/page_briefs.py)" >/dev/null 2>&1 || true
+          grep '^brief: ' /tmp/briefs.log | sed 's/^brief: //' | while read -r FILE; do
+            [ -f "$FILE" ] || continue
+            TITLE=$(head -n 1 "$FILE" | sed 's/^# //')
+            if [ -z "$(gh issue list --label page-brief --state all --search "\"$TITLE\" in:title" --json number --jq '.[0].number' 2>/dev/null)" ]; then
+              gh issue create --title "$TITLE" --label page-brief --body-file "$FILE" || echo "::warning title=Brief not filed::$FILE — the file is committed; the issue was not opened"
+            fi
+          done
+          {
+            echo "### Page briefs"
+            echo
+            echo '```'
+            python3 tools/page_briefs.py show 2>/dev/null | head -n 12
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Listening — what Nigerians asked this week (Nairaland, r/Nigeria)
         run: |
           set +e
@@ -337,7 +366,7 @@ jobs:
           # (brain/answers exists on Mondays only): every pack, the newsdesk, the Deep-Dive
           # attempts — written on the runner, never committed, so the lanes posted from the
           # rotation every day. tools/tests/test_workflow_contract.py now forbids the shape.
-          for path in brain/drafts brain/feedback.md brain/newsdesk.json brain/listening.json brain/answers logs/brain_said.json logs/brain_refused.json logs/brain_deepdive.json logs/competitor_watch.json episodes site/guides site/og site/sitemap.xml; do
+          for path in brain/drafts brain/feedback.md brain/newsdesk.json brain/listening.json brain/answers brain/page_briefs.json brain/briefs logs/brain_said.json logs/brain_refused.json logs/brain_deepdive.json logs/competitor_watch.json episodes site/guides site/og site/sitemap.xml; do
             if [ -e "$path" ]; then git add -A "$path"; fi
           done
           if [ -n "${INDEXNOW_KEY:-}" ] && [ -f "site/${INDEXNOW_KEY}.txt" ]; then git add "site/${INDEXNOW_KEY}.txt"; fi
