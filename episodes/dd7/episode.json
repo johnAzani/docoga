@@ -1,0 +1,707 @@
+{
+ "id": "dd7",
+ "number": 7,
+ "title": "Rent Increase Rules: Enugu's Cap vs. Lagos's Challenge",
+ "kicker": "DOCOGA — DEEP-DIVE · EPISODE 7",
+ "disclaimer": "GENERAL INFORMATION · NOT LEGAL ADVICE · RULES VARY BY STATE AND AGREEMENT",
+ "voice": {
+  "_locked": "LOCKED by the owner 14 Oct 2026 — must equal tools/deepdive.py LOCKED_VOICE_*; the engine refuses anything else",
+  "name": "Orus",
+  "instruction": "Narrate this in a natural Nigerian English accent, like a confident Lagos radio presenter:"
+ },
+ "audio": {
+  "_comment": "Sound plan — synthesized by tools/soundkit.py, cued from the beats (python3 tools/deepdive.py dd2 cues). Bed levels are dB(A) relative to the narrator's speech; SFX are dB below the voice peak. Run #1 (-27 raw) was inaudible on phones — these are broadcast-documentary levels.",
+  "bed": true,
+  "bpm": 72,
+  "seed": 7,
+  "bed_gap_db": -8,
+  "bed_speech_db": -16,
+  "sfx_db": -12,
+  "hit_db": -9,
+  "tick_db": -16,
+  "riser_db": -14,
+  "stinger_db": -9,
+  "tail_fade_s": 4
+ },
+ "youtube": {
+  "title": "Rent Increase Rules: Enugu's 15% Cap vs. Lagos's 'Unreasonable' Challenge (Deep-Dive 7)",
+  "description": "Are you worried about your landlord increasing rent? The rules differ depending on your state. In this DocOga Deep-Dive, we break down rent increase laws in Enugu and Lagos, showing you your rights and how to protect your finances. Learn about Enugu's unique 15% cap and the process for challenging unreasonable increases in Lagos. Paper beats memory: always get a written agreement and receipts!\n\nGet your Tenancy Agreement or Letter of Demand free to start on DocOga: https://docoga.com.ng\nGeneral information, not legal advice.",
+  "tags": [
+   "rent increase",
+   "tenancy law nigeria",
+   "enugu tenancy law",
+   "lagos tenancy law",
+   "rent control nigeria",
+   "tenant rights nigeria",
+   "landlord tenant dispute",
+   "unreasonable rent",
+   "nigerian landlord",
+   "docoga",
+   "nigerian tenants",
+   "rent cap",
+   "legal advice nigeria",
+   "property law nigeria",
+   "magistrates court lagos"
+  ]
+ },
+ "cover": {
+  "img": "naira",
+  "kicker": "KNOW YOUR RIGHTS",
+  "line1": "LAGOS",
+  "highlight": "VS",
+  "label": "ENUGU",
+  "line2": "RENT INCREASE",
+  "line3": "WHAT THE LAW SAYS",
+  "sub": "Cap? Challenge? Or market price?"
+ },
+ "sections": [
+  {
+   "n": 1,
+   "title": "The Hook"
+  },
+  {
+   "n": 2,
+   "title": "Enugu's Hard Cap: 15% Max"
+  },
+  {
+   "n": 3,
+   "title": "Conditions for Enugu's Protection"
+  },
+  {
+   "n": 4,
+   "title": "Lagos: No Cap, But a Remedy"
+  },
+  {
+   "n": 5,
+   "title": "Challenging an Increase in Lagos"
+  },
+  {
+   "n": 6,
+   "title": "Bills are NOT Law (Yet!)"
+  },
+  {
+   "n": 7,
+   "title": "New Tenants and Market Rates"
+  },
+  {
+   "n": 8,
+   "title": "Paper Beats Memory: Document It!"
+  },
+  {
+   "n": 9,
+   "title": "The Law, and DocOga"
+  }
+ ],
+ "beats": [
+  {
+   "sec": 1,
+   "trig": null,
+   "head": "Rent Don Increase!",
+   "sub": "That common phrase that makes every tenant sweat.",
+   "img": "naira",
+   "shot": "naira banknotes scattered"
+  },
+  {
+   "sec": 1,
+   "trig": [
+    "my",
+    "people",
+    "wetin",
+    "dey"
+   ],
+   "head": "Budget Sweating?",
+   "sub": "Unexpected rent hikes can throw your life off balance.",
+   "img": "calendar",
+   "shot": "calendar with highlighted dates"
+  },
+  {
+   "sec": 1,
+   "trig": [
+    "the",
+    "anger",
+    "around",
+    "rent"
+   ],
+   "head": "You Have Rights!",
+   "sub": "Don't feel helpless, the law is on your side.",
+   "img": "letter",
+   "shot": null
+  },
+  {
+   "sec": 1,
+   "trig": [
+    "those",
+    "rights",
+    "my",
+    "friend"
+   ],
+   "head": "States Differ",
+   "sub": "Enugu and Lagos have different rules for rent increases.",
+   "img": "rooftops",
+   "shot": "city rooftops at dawn"
+  },
+  {
+   "sec": 2,
+   "trig": null,
+   "head": "Enugu's Hard Cap",
+   "sub": "A strong protection for tenants against excessive increases.",
+   "img": "keke",
+   "shot": null
+  },
+  {
+   "sec": 2,
+   "trig": [
+    "in",
+    "enugu",
+    "a",
+    "rent"
+   ],
+   "head": "15% Maximum",
+   "sub": "Rent increase cannot exceed 15% of existing rent.",
+   "img": "naira",
+   "shot": "stack of naira notes"
+  },
+  {
+   "sec": 2,
+   "trig": [
+    "after",
+    "every",
+    "second",
+    "anniversary"
+   ],
+   "head": "2-Year Stability",
+   "sub": "Review only after second anniversary of your tenancy.",
+   "img": "calendar",
+   "shot": null
+  },
+  {
+   "sec": 2,
+   "trig": [
+    "the",
+    "section",
+    "explicitly",
+    "states"
+   ],
+   "head": "Example: ₦400k to ₦460k",
+   "sub": "₦400,000 rent can only go to ₦460,000 after 2 years.",
+   "img": "naira",
+   "shot": null
+  },
+  {
+   "sec": 3,
+   "trig": null,
+   "head": "3 Conditions Apply",
+   "sub": "These must all be met for the Enugu cap to work.",
+   "img": "pen",
+   "shot": "hand writing on paper"
+  },
+  {
+   "sec": 3,
+   "trig": [
+    "first",
+    "the",
+    "review",
+    "must"
+   ],
+   "head": "By Agreement",
+   "sub": "Landlord and tenant must agree; no unilateral increases.",
+   "img": "letter",
+   "shot": "signed agreement document"
+  },
+  {
+   "sec": 3,
+   "trig": [
+    "second",
+    "the",
+    "increase",
+    "cannot"
+   ],
+   "head": "After 2 Years",
+   "sub": "No increase before the second anniversary of your tenancy.",
+   "img": "calendar",
+   "shot": null
+  },
+  {
+   "sec": 3,
+   "trig": [
+    "and",
+    "third",
+    "of",
+    "course"
+   ],
+   "head": "Not Over 15%",
+   "sub": "The increase must stay within the 15% legal limit.",
+   "img": "naira",
+   "shot": "naira currency in hand"
+  },
+  {
+   "sec": 4,
+   "trig": null,
+   "head": "Lagos: No Cap",
+   "sub": "No statutory percentage cap on rent increases here.",
+   "img": "danfo",
+   "shot": null
+  },
+  {
+   "sec": 4,
+   "trig": [
+    "unlike",
+    "enugu",
+    "there",
+    "is"
+   ],
+   "head": "Crucial Point",
+   "sub": "Many tenants misunderstand Lagos's specific rules.",
+   "img": "court",
+   "shot": "courtroom interior"
+  },
+  {
+   "sec": 4,
+   "trig": [
+    "however",
+    "lagos",
+    "does",
+    "offer"
+   ],
+   "head": "S.37 Remedy",
+   "sub": "You can challenge an unreasonable increase in court.",
+   "img": "letter",
+   "shot": "document with stamp"
+  },
+  {
+   "sec": 4,
+   "trig": [
+    "it",
+    "allows",
+    "you",
+    "to"
+   ],
+   "head": "Legal Avenue",
+   "sub": "You have a legal path, even without a percentage cap.",
+   "img": "phone",
+   "shot": null
+  },
+  {
+   "sec": 5,
+   "trig": null,
+   "head": "Challenge Procedure",
+   "sub": "How to dispute rent increase in Lagos courts.",
+   "img": "court",
+   "shot": "court building entrance"
+  },
+  {
+   "sec": 5,
+   "trig": [
+    "start",
+    "by",
+    "filling",
+    "out"
+   ],
+   "head": "Form TL11 Application",
+   "sub": "Apply to Magistrates’ Court for order against increase.",
+   "img": "letter",
+   "shot": "filled out form"
+  },
+  {
+   "sec": 5,
+   "trig": [
+    "the",
+    "court",
+    "will",
+    "then"
+   ],
+   "head": "Court Weighs Factors",
+   "sub": "Locality rent levels, witnesses, special circumstances.",
+   "img": "letter",
+   "shot": "scales of justice"
+  },
+  {
+   "sec": 5,
+   "trig": [
+    "if",
+    "the",
+    "court",
+    "is"
+   ],
+   "head": "Order Specific Amount",
+   "sub": "Court can change increase to a reasonable figure.",
+   "img": "letter",
+   "shot": "court order document"
+  },
+  {
+   "sec": 5,
+   "trig": [
+    "it",
+    "is",
+    "unlawful",
+    "for"
+   ],
+   "head": "No Eviction Pending",
+   "sub": "Landlord cannot eject you while application is pending.",
+   "img": "door",
+   "shot": "padlocked door"
+  },
+  {
+   "sec": 6,
+   "trig": null,
+   "head": "Bills ≠ Law",
+   "sub": "Proposed laws are not yet legally binding.",
+   "img": "court",
+   "shot": "gavel on a desk"
+  },
+  {
+   "sec": 6,
+   "trig": [
+    "there",
+    "is",
+    "no",
+    "federal"
+   ],
+   "head": "Federal Motion",
+   "sub": "House of Reps motion is a resolution, not a law.",
+   "img": "letter",
+   "shot": "parliament building"
+  },
+  {
+   "sec": 6,
+   "trig": [
+    "even",
+    "in",
+    "lagos",
+    "while"
+   ],
+   "head": "Lagos Bill Pending",
+   "sub": "Tenancy Law 2011 is still the law, not the bill.",
+   "img": "rooftops",
+   "shot": "lagos city skyline"
+  },
+  {
+   "sec": 6,
+   "trig": [
+    "until",
+    "the",
+    "governor",
+    "assents"
+   ],
+   "head": "Enugu Bills Too",
+   "sub": "New bills are still pending, not yet signed into law.",
+   "img": "keke",
+   "shot": "keke on a street"
+  },
+  {
+   "sec": 6,
+   "trig": [
+    "always",
+    "remember",
+    "my",
+    "friend"
+   ],
+   "head": "Cite Law, Not Bill",
+   "sub": "Refer to current law, not what is proposed.",
+   "img": "pen",
+   "shot": null
+  },
+  {
+   "sec": 7,
+   "trig": null,
+   "head": "New Tenants' Rent",
+   "sub": "Rules differ for new vs. sitting tenants.",
+   "img": "door",
+   "shot": "new apartment door"
+  },
+  {
+   "sec": 7,
+   "trig": [
+    "the",
+    "specific",
+    "rent",
+    "increase"
+   ],
+   "head": "Sitting Tenants First",
+   "sub": "Caps and challenges are mainly for existing tenancies.",
+   "img": "trader",
+   "shot": "market trader with goods"
+  },
+  {
+   "sec": 7,
+   "trig": [
+    "for",
+    "a",
+    "new",
+    "tenant"
+   ],
+   "head": "As Agreed",
+   "sub": "Rent for vacant property is 'as agreed' by parties.",
+   "img": "letter",
+   "shot": "tenancy agreement document"
+  },
+  {
+   "sec": 7,
+   "trig": [
+    "with",
+    "rents",
+    "reportedly",
+    "rising"
+   ],
+   "head": "Rent-Increase Anger",
+   "sub": "High rents cause anger, clarity is key.",
+   "img": "naira",
+   "shot": "pile of naira notes"
+  },
+  {
+   "sec": 7,
+   "trig": [
+    "if",
+    "you",
+    "are",
+    "a"
+   ],
+   "head": "Written Agreement",
+   "sub": "Your best protection is a clear tenancy agreement.",
+   "img": "pen",
+   "shot": "pen on an agreement"
+  },
+  {
+   "sec": 8,
+   "trig": null,
+   "head": "Paper Beats Memory",
+   "sub": "Written records protect your rights.",
+   "img": "letter",
+   "shot": "stack of documents"
+  },
+  {
+   "sec": 8,
+   "trig": [
+    "your",
+    "tenancy",
+    "agreement",
+    "is"
+   ],
+   "head": "Your First Defence",
+   "sub": "Clear agreement for starting rent and terms.",
+   "img": "pen",
+   "shot": "hand signing agreement"
+  },
+  {
+   "sec": 8,
+   "trig": [
+    "if",
+    "they",
+    "still",
+    "push"
+   ],
+   "head": "Unlawful Increment",
+   "sub": "Court will not enforce illegal rent increases.",
+   "img": "court",
+   "shot": "court hearing in progress"
+  },
+  {
+   "sec": 8,
+   "trig": [
+    "lagos",
+    "is",
+    "one",
+    "of"
+   ],
+   "head": "Insist on Receipt",
+   "sub": "Lagos requires receipts, vital proof for disputes.",
+   "img": "letter",
+   "shot": "rent receipt document"
+  },
+  {
+   "sec": 9,
+   "trig": null,
+   "head": "Know Your Rights",
+   "sub": "Protect yourself from unfair rent increases.",
+   "img": "phone",
+   "shot": "hand holding a phone"
+  },
+  {
+   "sec": 9,
+   "trig": [
+    "whether",
+    "you're",
+    "in",
+    "enugu"
+   ],
+   "head": "DocOga Empowers You",
+   "sub": "We provide tools for your tenancy journey.",
+   "img": "phone",
+   "shot": null
+  },
+  {
+   "sec": 9,
+   "trig": [
+    "our",
+    "tenancy",
+    "agreement",
+    "tool"
+   ],
+   "head": "Tenancy Agreement",
+   "sub": "Get clear, written terms in two minutes, on your phone.",
+   "img": "letter",
+   "shot": "printed tenancy agreement"
+  },
+  {
+   "sec": 9,
+   "trig": [
+    "all",
+    "our",
+    "ten",
+    "tools"
+   ],
+   "head": "Free to Start",
+   "sub": "No signup, no card needed to generate documents.",
+   "img": "naira",
+   "shot": "naira coins"
+  },
+  {
+   "sec": 9,
+   "trig": [
+    "for",
+    "unlimited",
+    "clean",
+    "copies"
+   ],
+   "head": "Oga Pass ₦2,000",
+   "sub": "Unlimited documents for 30 days, no banner.",
+   "img": "naira",
+   "shot": "stack of ₦2,000 notes"
+  },
+  {
+   "sec": 9,
+   "trig": [
+    "a",
+    "lawyer",
+    "typically",
+    "charges"
+   ],
+   "head": "Save Lawyer Fees",
+   "sub": "DocOga helps avoid typical ₦50,000 lawyer fees.",
+   "img": "court",
+   "shot": null
+  },
+  {
+   "sec": 9,
+   "trig": [
+    "have",
+    "the",
+    "paper"
+   ],
+   "head": "DOCOGA",
+   "sub": "docoga.com.ng — link in the description",
+   "img": "celebration",
+   "shot": null,
+   "endcard": true
+  }
+ ],
+ "brain": {
+  "written": "2026-11-08T07:38:23+01:00",
+  "theme": "rent-increase-rules-enugu-lagos",
+  "claims": [
+   {
+    "text": "In Enugu a rent increase may not exceed 15% of the existing rent, and rent may be reviewed only after every second anniversary of the tenancy.",
+    "fact_id": "enugu:increase_challenge:1"
+   },
+   {
+    "text": "The section as quoted: “rent chargeable for letting of any accommodation within the State shall be as agreed between the landlord and the tenant, and may be reviewed by the parties after every second anniversary of the tenancy created … PROVIDED that the difference between the new and the existing rent shall not exceed 15% of the existing rent”.",
+    "fact_id": "enugu:increase_challenge:2"
+   },
+   {
+    "text": "A flat let at ₦400,000 a year from 1 January 2025 cannot be reviewed before 1 January 2027, and the new rent may not exceed ₦460,000 (₦400,000 plus 15%).",
+    "fact_id": "enugu:increase_challenge:3"
+   },
+   {
+    "text": "The review is by the parties — a unilateral increase is ineffective.",
+    "fact_id": "enugu:increase_challenge:4"
+   },
+   {
+    "text": "Not before the second anniversary.",
+    "fact_id": "enugu:increase_challenge:4"
+   },
+   {
+    "text": "Not more than 15% above the existing rent.",
+    "fact_id": "enugu:increase_challenge:4"
+   },
+   {
+    "text": "Enugu’s cap applies to a sitting tenancy being reviewed; it says nothing about the rent a landlord may ask of a new tenant, which remains “as agreed”.",
+    "fact_id": "enugu:increase_challenge:5"
+   },
+   {
+    "text": "There is no statutory percentage cap on rent increases in Lagos.",
+    "fact_id": "lagos:increase_challenge:3"
+   },
+   {
+    "text": "Lagos’s remedy is the s.37 application to have an increase declared unreasonable.",
+    "fact_id": "enugu:increase_challenge:5"
+   },
+   {
+    "text": "On Form TL11 the tenant applies to the Court for an order declaring an increase unreasonable.",
+    "fact_id": "lagos:increase_challenge:1"
+   },
+   {
+    "text": "The Court issues a hearing notice on Form TL12 and weighs (a) the general level of rents in the locality or a similar locality, (b) evidence of witnesses, and (c) any special circumstances.",
+    "fact_id": "lagos:increase_challenge:1"
+   },
+   {
+    "text": "If satisfied, it may order on Form TL13 that the increase be changed to a specific amount.",
+    "fact_id": "lagos:increase_challenge:1"
+   },
+   {
+    "text": "It is unlawful for a landlord to eject a tenant while that application is pending.",
+    "fact_id": "lagos:increase_challenge:2"
+   },
+   {
+    "text": "There is no federal percentage cap on rent increases.",
+    "fact_id": "nigeria:increase_motion:1"
+   },
+   {
+    "text": "On 23 October 2025 the House of Representatives adopted a motion urging that rent increases be kept within 20% of the existing rent — a resolution, not a law: it binds no landlord and no court.",
+    "fact_id": "nigeria:increase_motion:1"
+   },
+   {
+    "text": "The Lagos State Tenancy and Recovery of Premises Bill, 2025 passed second reading on 10 July 2025 and went to the House Committee on Housing, where it still sat in August 2026.",
+    "fact_id": "lagos:pending_bill:1"
+   },
+   {
+    "text": "The Tenancy Law of 2011 remains the law of Lagos until the Assembly passes the bill and the Governor assents.",
+    "fact_id": "lagos:pending_bill:1"
+   },
+   {
+    "text": "As reported (clause 33): the s.37 right to ask the court to call an increase unreasonable survives, with no eviction while the application is pending; the bill still sets no rent ceiling.",
+    "fact_id": "lagos:pending_bill:6"
+   },
+   {
+    "text": "A bill, not law, as at 3 November 2026. Two bills would amend the Landlord and Tenant Law, Cap. 101.",
+    "fact_id": "enugu:pending_bill:1"
+   },
+   {
+    "text": "Until the Governor assents and the law is gazetted, the 2008 amendment (rent review only after every second anniversary, no more than 15%) is the newest Enugu law.",
+    "fact_id": "enugu:pending_bill:2"
+   },
+   {
+    "text": "An unlawful increment, and a court will not enforce the increased figure.",
+    "fact_id": "enugu:protections:2"
+   },
+   {
+    "text": "Lagos is one of the few states that makes a rent receipt a statutory duty and prescribes what must be on it.",
+    "fact_id": "lagos:receipts:1"
+   },
+   {
+    "text": "If your landlord tries to increase rent before the second anniversary or by more than 15%, you can point to the law and your agreement.",
+    "fact_id": "enugu:protections:2",
+    "recalled": true
+   },
+   {
+    "text": "If they still push an unlawful increment, a court will not enforce that increased figure.",
+    "fact_id": "enugu:protections:2",
+    "recalled": true
+   },
+   {
+    "text": "Lagos is one of the few states that makes a rent receipt a statutory duty and prescribes what must be on it.",
+    "fact_id": "lagos:receipts:1",
+    "recalled": true
+   }
+  ]
+ }
+}

@@ -623,6 +623,29 @@
     "beat 25 shot 'person checking phone' dropped"
    ],
    "run_id": "42430063912"
+  },
+  {
+   "at": "2026-11-08T07:38:23+01:00",
+   "episode": "dd7",
+   "attempt": 1,
+   "outcome": "written",
+   "title": "Rent Increase Rules: Enugu's Cap vs. Lagos's Challenge",
+   "problems": [],
+   "healed": [
+    "beat 3 shot 'open letter on a desk' dropped",
+    "beat 5 shot 'keke napep on a street' dropped",
+    "beat 7 shot 'calendar with a two-year mark' dropped",
+    "beat 8 shot 'naira notes on a table' dropped",
+    "beat 11 shot 'calendar page with year highlighted' dropped",
+    "beat 13 shot 'front door of a house' dropped",
+    "beat 13 dropped: trigger \"enugu's cap applies to\" not spoken in section 3 after word 77",
+    "beat 14 shot 'danfo bus on a busy street' dropped",
+    "beat 17 shot 'person using a phone' dropped",
+    "beat 20 plate 'balance' → letter",
+    "beat 27 shot 'pen on a legal document' dropped",
+    "beat 38 shot 'person using docoga on phone' dropped"
+   ],
+   "run_id": "42454932353"
   }
  ]
 }

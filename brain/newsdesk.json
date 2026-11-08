@@ -1,5 +1,5 @@
 {
- "fetched": "2026-11-08T00:30:51+00:00",
+ "fetched": "2026-11-08T06:29:24+00:00",
  "sources": [
   "Punch: 30 stories",
   "Vanguard: 20 stories",
@@ -9,17 +9,5 @@
   "The Guardian Nigeria: unreachable (HTTP Error 403: Forbidden)",
   "Nairametrics: 20 stories"
  ],
- "items": [
-  {
-   "title": "Ogun blames contractor as pupils languish in rented hall",
-   "link": "https://punchng.com/ogun-blames-contractor-as-pupils-languish-in-rented-hall/?utm_source=rss.punchng.com&utm_medium=web",
-   "published": "2026-11-08T00:12:44+00:00",
-   "source": "Punch",
-   "score": 6,
-   "matched": [
-    "rent"
-   ],
-   "summary": "For over three years, pupils in a school in Ogun State have endured excessive heat, poor ventilation, and foul odours, while teachers struggle to create a conducive learning environment, YUSUF… Read M"
-  }
- ]
+ "items": []
 }

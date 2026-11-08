@@ -1,6 +1,15 @@
 [
  {
   "date": "2026-11-10",
+  "at": "2026-11-08T07:33:35+01:00",
+  "short_day": true,
+  "state": "lagos",
+  "problems": [
+   "verifier: legal statement not on the shelf — 'A verbal demand or random WhatsApp text is not a valid legal notice.'"
+  ]
+ },
+ {
+  "date": "2026-11-10",
   "at": "2026-11-08T01:32:24+01:00",
   "short_day": true,
   "state": "lagos",

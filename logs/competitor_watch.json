@@ -1,5 +1,5 @@
 {
- "pulled_at": "2026-11-08T00:30:51+00:00",
+ "pulled_at": "2026-11-08T06:29:25+00:00",
  "days": 14,
  "items": [
   {
@@ -39,7 +39,7 @@
   }
  ],
  "sources": [
-  "https://nigeriabuildingcost.ng/sitemap.xml: 388 changed page(s)",
+  "https://nigeriabuildingcost.ng/sitemap.xml: 390 changed page(s)",
   "https://www.wonder.legal/ng/sitemap.xml: 0 changed page(s)",
   "https://diylaw.ng/sitemap.xml: 0 changed page(s)",
   "https://sabilaw.org/feed/: 3 fresh post(s)",
@@ -49,7 +49,7 @@
   "https://mushrooms.ng/sitemap.xml: 51 changed page(s)",
   "https://lexpraxisng.com/feed/: 2 fresh post(s)",
   "https://olamideoyetayolegal.com/feed/: 0 fresh post(s)",
-  "https://www.youtube.com/feeds/videos.xml?channel_id=UCa158r8OZoEia4z2DhPg2LA: 12 fresh post(s)"
+  "https://www.youtube.com/feeds/videos.xml?channel_id=UCa158r8OZoEia4z2DhPg2LA: unreachable (HTTP Error 404: Not Found)"
  ],
  "unwatchable": [
   "@legalfriendng — Real Estate Lawyer (TikTok)",
