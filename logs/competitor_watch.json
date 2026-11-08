@@ -1,35 +1,7 @@
 {
- "pulled_at": "2026-11-07T06:22:11+00:00",
+ "pulled_at": "2026-11-08T00:30:51+00:00",
  "days": 14,
  "items": [
-  {
-   "competitor": "NigeriaBuildingCost — tenancy agreement generator",
-   "kind": "tool",
-   "title": "Installing rumble strips speed bumps road signs and solar caution lights on 3km nwagu ezinano road agulu anamb anambra",
-   "link": "https://nigeriabuildingcost.ng/construction-tenders/installing-rumble-strips-speed-bumps-road-signs-and-solar-caution-lights-on-3km-nwagu-ezinano-road-agulu-anamb-anambra",
-   "published": "2026-11-05T12:52:32+00:00"
-  },
-  {
-   "competitor": "NigeriaBuildingCost — tenancy agreement generator",
-   "kind": "tool",
-   "title": "Livestock support works and breeder bull housing in three borno senatorial districts",
-   "link": "https://nigeriabuildingcost.ng/construction-tenders/livestock-support-works-and-breeder-bull-housing-in-three-borno-senatorial-districts",
-   "published": "2026-11-05T12:52:32+00:00"
-  },
-  {
-   "competitor": "NigeriaBuildingCost — tenancy agreement generator",
-   "kind": "tool",
-   "title": "Flood and gully erosion control site works at gwagwalada abuja fct",
-   "link": "https://nigeriabuildingcost.ng/construction-tenders/flood-and-gully-erosion-control-site-works-at-gwagwalada-abuja-fct",
-   "published": "2026-11-05T12:52:32+00:00"
-  },
-  {
-   "competitor": "NigeriaBuildingCost — tenancy agreement generator",
-   "kind": "tool",
-   "title": "Upgrading of 20 primary health centres across fct abuja",
-   "link": "https://nigeriabuildingcost.ng/construction-tenders/upgrading-of-20-primary-health-centres-across-fct-abuja",
-   "published": "2026-11-05T12:52:32+00:00"
-  },
   {
    "competitor": "Mushrooms.ng blog",
    "kind": "content",
@@ -57,20 +29,27 @@
    "title": "How to advertise house for rent nigeria",
    "link": "https://mushrooms.ng/blog/how-to-advertise-house-for-rent-nigeria",
    "published": "2026-11-05T00:00:00+00:00"
+  },
+  {
+   "competitor": "NigeriaBuildingCost — tenancy agreement generator",
+   "kind": "tool",
+   "title": "Sample tenancy agreement nigeria",
+   "link": "https://nigeriabuildingcost.ng/sample-downloads/sample-tenancy-agreement-nigeria",
+   "published": "2026-10-30T09:05:31+00:00"
   }
  ],
  "sources": [
-  "https://nigeriabuildingcost.ng/sitemap.xml: 387 changed page(s)",
+  "https://nigeriabuildingcost.ng/sitemap.xml: 388 changed page(s)",
   "https://www.wonder.legal/ng/sitemap.xml: 0 changed page(s)",
   "https://diylaw.ng/sitemap.xml: 0 changed page(s)",
-  "https://sabilaw.org/feed/: 2 fresh post(s)",
+  "https://sabilaw.org/feed/: 3 fresh post(s)",
   "https://legalnaija.com/feed/: 0 fresh post(s)",
   "https://rently.ng/sitemap.xml: 0 changed page(s)",
   "https://homz.ng/sitemap.xml: 0 changed page(s)",
-  "https://mushrooms.ng/sitemap.xml: 54 changed page(s)",
+  "https://mushrooms.ng/sitemap.xml: 51 changed page(s)",
   "https://lexpraxisng.com/feed/: 2 fresh post(s)",
   "https://olamideoyetayolegal.com/feed/: 0 fresh post(s)",
-  "https://www.youtube.com/feeds/videos.xml?channel_id=UCa158r8OZoEia4z2DhPg2LA: unreachable (HTTP Error 404: Not Found)"
+  "https://www.youtube.com/feeds/videos.xml?channel_id=UCa158r8OZoEia4z2DhPg2LA: 12 fresh post(s)"
  ],
  "unwatchable": [
   "@legalfriendng — Real Estate Lawyer (TikTok)",
@@ -88,6 +67,34 @@
    "found": [
     "₦4,000",
     "₦500"
+   ],
+   "new": [],
+   "gone": []
+  },
+  {
+   "competitor": "DIYLaw",
+   "url": "https://diylaw.ng/documents/",
+   "seen": [
+    "₦5,000",
+    "₦2,000",
+    "₦3,500"
+   ],
+   "found": [
+    "₦5,000",
+    "₦2,000",
+    "₦3,500"
+   ],
+   "new": [],
+   "gone": []
+  },
+  {
+   "competitor": "SabiLaw Solutions",
+   "url": "https://solutions.sabilaw.org/product/tenancy-agreement/",
+   "seen": [
+    "₦3,200"
+   ],
+   "found": [
+    "₦3,200"
    ],
    "new": [],
    "gone": []

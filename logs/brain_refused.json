@@ -1,5 +1,19 @@
 [
  {
+  "date": "2026-11-10",
+  "at": "2026-11-08T01:32:24+01:00",
+  "short_day": true,
+  "state": "lagos",
+  "problems": [
+   "a body line is 117 characters; max 110: 'Monthly tenants get one month, quarterly'",
+   "a body line is 122 characters; max 110: 'For fixed-term tenancies, no quit notice'",
+   "a body line is 112 characters; max 110: 'The notice does not need to end on the a'",
+   "the disclaimer is added by the renderer — remove it from the copy",
+   "a cited post names the section number (e.g. s.5) in its copy",
+   "fact id typed into the copy: lagos:notice_extras:1, lagos:notice_extras:4, lagos:notice_ladder:1 — ids live only in `claims`, never in words a reader sees"
+  ]
+ },
+ {
   "date": "2026-11-09",
   "at": "2026-11-07T01:33:22+01:00",
   "short_day": true,

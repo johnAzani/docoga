@@ -560,6 +560,69 @@
     "beat 36 sub cut at a word: 'Free to start, Oga Pass for ₦2,000 for 30 days for'"
    ],
    "run_id": "41747348211"
+  },
+  {
+   "at": "2026-11-08T01:33:00+01:00",
+   "episode": "dd7",
+   "attempt": 1,
+   "outcome": "refused",
+   "title": "Rent Increases: What the Law Says in Enugu and Lagos",
+   "problems": [
+    "section 5: 88 words; need 120-200",
+    "total narration 870 words; need 1,100-1,800"
+   ],
+   "healed": [
+    "beat 2 dropped: trigger 'is this even allowed' not spoken in section 1 after word 0",
+    "beat 12 shot 'two years marked on calendar' dropped",
+    "beat 12 dropped: trigger 'not before the second' not spoken in section 4 after word 33",
+    "beat 15 dropped: trig ['unreasonable'] is not 2-4 words",
+    "beat 17 sub cut at a word: 'Court considers locality rents, witness evidence, special'",
+    "beat 18 sub cut at a word: 'Court can order the increase be changed to a specific, fair'",
+    "beat 27 shot 'close up of phone screen' dropped",
+    "beat 29 shot 'person holding smartphone' dropped",
+    "beat 31 shot 'naira notes on a desk' dropped",
+    "beat 33 shot 'stack of two thousand naira' dropped"
+   ],
+   "run_id": "42430063912"
+  },
+  {
+   "at": "2026-11-08T01:33:39+01:00",
+   "episode": "dd7",
+   "attempt": 2,
+   "outcome": "refused",
+   "title": "Rent Increases: Your Rights in Enugu and Lagos",
+   "problems": [
+    "no emoji or markdown in narration"
+   ],
+   "healed": [
+    "beat 15 shot 'person holding phone' dropped",
+    "beat 38 shot 'kiosk with sign' dropped"
+   ],
+   "run_id": "42430063912"
+  },
+  {
+   "at": "2026-11-08T01:34:17+01:00",
+   "episode": "dd7",
+   "attempt": 3,
+   "outcome": "refused",
+   "title": "Rent Increases: Your Rights in Lagos and Enugu",
+   "problems": [
+    "claim cites unknown fact id 'BUSINESS MEMORY'",
+    "claim cites unknown fact id 'BUSINESS MEMORY'",
+    "claim cites unknown fact id 'BUSINESS MEMORY'",
+    "claim cites unknown fact id 'BUSINESS MEMORY'",
+    "claim cites unknown fact id 'BUSINESS MEMORY'",
+    "claim cites unknown fact id 'BUSINESS MEMORY'"
+   ],
+   "healed": [
+    "beat 2 dropped: trigger 'dropping a bombshell' not spoken in section 1 after word 0",
+    "beat 4 plate 'map' → letter",
+    "beat 7 dropped: trigger 'leaves you powerless' not spoken in section 2 after word 29",
+    "beat 19 dropped: trigger 'not exceed n460000' not spoken in section 5 after word 50",
+    "beat 24 dropped: trigger 'know your numbers' not spoken in section 6 after word 57",
+    "beat 25 shot 'person checking phone' dropped"
+   ],
+   "run_id": "42430063912"
   }
  ]
 }

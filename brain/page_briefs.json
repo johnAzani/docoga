@@ -4,7 +4,7 @@
   {
    "id": "house-rent-caption",
    "question": "House for rent captions nigeria",
-   "status": "watching",
+   "status": "briefed",
    "first_seen": "2026-11-07",
    "last_seen": "2026-11-07",
    "sightings": [
@@ -21,7 +21,27 @@
      "seen": "2026-11-07"
     }
    ],
-   "brief": null
+   "brief": {
+    "verdict": "build",
+    "reason": "This topic addresses how landlords and agents can effectively market rental properties, a core aspect of tenancy.",
+    "working_title": "How to Advertise a House for Rent in Nigeria: Tips for Landlords & Agents",
+    "the_question": "How can landlords and agents effectively advertise rental properties and write engaging captions in Nigeria?",
+    "who_asks": "landlord",
+    "angle": "This page will focus on legally compliant advertising practices and ethical considerations for landlords and agents, ensuring adverts meet Nigerian tenancy law standards.",
+    "verify": [
+     "Lagos State Tenancy Law, 2011 (or relevant state tenancy law) - sections on landlord obligations",
+     "Advertising Practitioners (Registration, etc.) Act, 2004 - provisions on advertising standards and ethics",
+     "Consumer Protection Act - sections on misleading advertisements or unfair practices",
+     "Estate Agency best practices for property listings in Nigeria",
+     "Standard requirements for property descriptions and disclosures"
+    ],
+    "tool": "tenancy-agreement",
+    "extend_page": "",
+    "shelf": [],
+    "closest_page": "rent-receipt-format-nigeria"
+   },
+   "drafted_by": "gemini",
+   "briefed_at": "2026-11-08T00:31:07+00:00"
   }
  ]
 }
