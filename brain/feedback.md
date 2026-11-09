@@ -1,17 +1,17 @@
 # What the numbers said — written 2026-11-09 by tools/brain.py feedback
 
-## Scorecard 2026-W46 (taken 2026-11-09 05:40)
+## Scorecard 2026-W46 (taken 2026-11-09 14:18)
 
 **Money:** 0 passes / ₦0 this week · 0 passes / ₦0 in 28 days
-**Traffic:** 97 visits to the site this week (Nigeria 11.3%) — facebook 81, direct 16
+**Traffic:** 95 visits to the site this week (Nigeria 10.5%) — facebook 80, direct 15
 **Sold by channel (28 days):** none tagged yet · checkout taps: none yet
 **Google (28 days, pulled 2026-11-09):** 16 clicks / 448 impressions, CTR 3.6% — 'notice to quit' (0 clicks, pos 11.2), 'edo state tenancy law' (0 clicks, pos 8.9), 'quit notice' (0 clicks, pos 1.0), 'quit notice from landlord to tenant' (0 clicks, pos 50.0)
 
 | Channel | Followers | 7-day views | Signal |
 |---|---|---|---|
-| Facebook | 1 | 17 | shares/post 26.1% · comments/post 69.6% · clicks/post 0.0% |
-| Instagram | 11 | 65 | sends+saves per reach 0.0% · per post 0.0% |
-| Threads | 0 | 44 | replies/post 35.0% · reposts/post 0.0% |
+| Facebook | 1 | 14 | shares/post 0.0% · comments/post 69.6% · clicks/post 0.0% |
+| Instagram | 11 | 63 | sends+saves per reach 0.0% · per post 0.0% |
+| Threads | 0 | 55 | replies/post 35.0% · reposts/post 0.0% |
 | Telegram | 2 | — | members only (Bot API has no views) |
 | YouTube | 49 | 647 total | top Short: Change the lock. Become the defendant. |
 
@@ -24,7 +24,7 @@
 | Instagram followers (+5.5%/week) | 11 | 3.2 | ✅ |
 | Threads followers (+7%/week) | 0 | 0.0% | ✅ |
 | YouTube subscribers (+13/week) | 49 | 62.0 | 🔻 |
-| Facebook shares per view (>= 1.5%) | 6.2% | 1.5% | ✅ |
+| Facebook shares per view (>= 1.5%) | 0.0% | 1.5% | 🔻 |
 | Instagram shares+saves per reach (>= 1.5%) | 0.0% | 1.5% | 🔻 |
 | Threads replies per post (>= 3) | 35.0% | 3.0 | 🔻 |
 | Facebook comments per post (>= 2) | 69.6% | 2.0 | 🔻 |
@@ -38,40 +38,40 @@
 | Telegram 1,000 members — channel ads/stars eligibility | 2 | 998 | 0.0% | 40.9 | — | 🔻 behind pace (due 2027-04-30) |
 
 ### Instagram diagnosis — is anyone seeing it?
-- Strangers who saw us this week: 19 (followers: 5) — 79.2% of all reach was recommendation.
-- Posts shown to nobody (reach 0) this fortnight: 1 of 20.
-- Reels reach 4.4 people per post; text cards and carousels 1.7 — Instagram says it shows majority-text posts less (Ranking Explained, 31 May 2023).
+- Strangers who saw us this week: 17 (followers: 5) — 77.3% of all reach was recommendation.
+- Posts shown to nobody (reach 0) this fortnight: 0 of 20.
+- Reels reach 4.4 people per post; text cards and carousels 1.8 — Instagram says it shows majority-text posts less (Ranking Explained, 31 May 2023).
 - Reels hold a viewer 6.8 s on average; 69.0% leave inside 3 seconds — the first 3 seconds decide the second wave.
-- Per 100 people reached: 3.6 likes, 0 shares — Mosseri's two rates; sends per reach is the one that buys stranger reach.
+- Per 100 people reached: 3.5 likes, 0 shares — Mosseri's two rates; sends per reach is the one that buys stranger reach.
 - Profile visits from posts: 0; follows from posts: 0; website taps this week: 0.
-Facebook engagement by posting hour (WAT): 9:00 → 3.14, 16:00 → 2.0, 17:00 → 2.0
+Facebook engagement by posting hour (WAT): 16:00 → 2.0, 17:00 → 2.0, 9:00 → 1.86
 Instagram engagement by posting hour (WAT): 19:00 → 2.17, 18:00 → 2.0, 9:00 → 1.0
 Threads engagement by posting hour (WAT): 20:00 → 2.5, 13:00 → 0.86, 7:00 → 0.0
 
 ### What the brain's choices earned (avg engagement score, posts)
 | Dimension | Choice | Avg | n |
 |---|---|---|---|
-| hook_type | rotation | 5.5 | 4 |
 | hook_type | CURIOSITY | 2.5 | 2 |
 | hook_type | STORY | 1.7 | 11 |
 | hook_type | STAT | 1.6 | 11 |
-| hook_type | QUESTION | 1.4 | 8 |
-| hook_type | STAKES | 1.4 | 15 |
+| hook_type | STAKES | 1.5 | 14 |
+| hook_type | QUESTION | 1.3 | 10 |
 | hook_type | HOWTO | 1.2 | 12 |
-| post_type | rotation | 5.5 | 4 |
+| hook_type | rotation | 0.7 | 3 |
 | post_type | engagement | 2.1 | 8 |
 | post_type | state_spotlight | 1.6 | 5 |
+| post_type | educational | 1.4 | 8 |
 | post_type | promo | 1.4 | 12 |
 | post_type | story | 1.4 | 9 |
 | post_type | pidgin | 1.4 | 12 |
 | post_type | checklist | 1.3 | 6 |
-| post_type | educational | 1.3 | 7 |
-| reader | rotation | 5.5 | 4 |
+| post_type | rotation | 0.7 | 3 |
 | reader | tunde | 2.0 | 2 |
 | reader | okafor | 1.6 | 9 |
-| reader | ngozi | 1.5 | 48 |
-| source | rotation | 5.5 | 4 |
-| source | brain | 1.5 | 59 |
+| reader | ngozi | 1.5 | 49 |
+| reader | rotation | 0.7 | 3 |
+| source | brain | 1.5 | 60 |
+| source | rotation | 0.7 | 3 |
 
 ### Brain IQ — is the editor getting smarter?
 - packs passed the gates first time: 54% ▲ (last week 45%) — 7 approved, 6 night(s) refused
@@ -79,7 +79,7 @@ Threads engagement by posting hour (WAT): 20:00 → 2.5, 13:00 → 0.86, 7:00 �
 - answer page this week: yes
 - law shelf: 319 facts across 9 states
 - shelf recall: 1 legal sentence(s) matched to an uncited fact instead of refused (last week 0)
-- lessons it is carrying into every prompt: not_on_shelf ×64, line_length ×20, claim_overreach ×19, news_hook ×11, beats ×9, unknown_fact ×9
+- lessons it is carrying into every prompt: not_on_shelf ×68, line_length ×20, claim_overreach ×19, news_hook ×11, beats ×9, unknown_fact ×9
 - shelf gaps (60 days): 8 pair(s) blocked; research targets: kano:receipts ×7, cross-river:receipts ×4
 - last brain improvement: 2026-11-07 (2 day(s) ago) — **The field writes the research list.** Read back: the competitor watch's new
 
@@ -116,25 +116,24 @@ Threads engagement by posting hour (WAT): 20:00 → 2.5, 13:00 → 0.86, 7:00 �
 
 ### Orders for the coming week
 - Sends are below 1.5% of reach: lead with STAKES and STAT hooks, put one named-person send line in every post ('send this to the friend renewing in January'), and use the checklist layout twice this week.
-- Instagram reached 24 accounts this week and nobody forwarded a post: the Reel is the only format strangers see — open it on the scene, not the title, and end on the one line a tenant sends to a friend; the text card's first line becomes the hook, the search phrase moves to line two.
+- Instagram reached 22 accounts this week and nobody forwarded a post: the Reel is the only format strangers see — open it on the scene, not the title, and end on the one line a tenant sends to a friend; the text card's first line becomes the hook, the search phrase moves to line two.
 - Threads replies are under 3 per post: every Threads post ends with a question answerable in five words ('which state are you renting in?'); one opinion post this week.
 - Facebook comments are under 2 per post: ask for the reader's state or a yes/no in the last line; a Thursday scenario people will argue with.
 - YouTube subscribers are behind: change the Short hook archetype for two weeks and put a number in the first line; the title must name the loss.
 - Telegram has been behind two weeks running: the state-spotlight and checklist days this week carry the most-forwarded genre — what a landlord may and may not demand.
 - Facebook has been behind two weeks running: the state-spotlight and checklist days this week carry the most-forwarded genre — what a landlord may and may not demand.
 - Sales are behind while reach grows: the promo moves into the payday window (25th to month-end); every post names the exact document and 'two minutes, free to start' in the last line; one testimonial-style scenario this week.
-- Hooks, by what they earned this fortnight: CURIOSITY 2 (n=2), STORY 2 (n=11), STAT 2 (n=11), QUESTION 1 (n=8), STAKES 1 (n=15), HOWTO 1 (n=12) — use CURIOSITY on two of the four cited days; rest HOWTO for two weeks.
+- Hooks, by what they earned this fortnight: CURIOSITY 2 (n=2), STORY 2 (n=11), STAT 2 (n=11), STAKES 2 (n=14), QUESTION 1 (n=10), HOWTO 1 (n=12) — use CURIOSITY on two of the four cited days; rest HOWTO for two weeks.
 - Readers, by what they earned: Tunde 2, Okafor 2, Ngozi 2 — write to Tunde again this week on a new theme; do not drop the others.
-- Brain-written days averaged 2 against 6 for rotation days (the hand-written baseline is winning — study its hooks).
+- Brain-written days averaged 2 against 1 for rotation days (keep going).
 - Facebook Stars is behind pace: 499 to go, 0 a week now, 42.6 a week needed by 2027-01-31 — this week every Facebook post ends with the follow line ('follow for the next rule') and the Reel/Short names the Page by hand.
 - YouTube fan funding is behind pace: 451 to go, 16.3 a week now, 22.4 a week needed by 2027-03-31 — this week every Youtube post ends with the follow line ('follow for the next rule') and the Reel/Short names the Page by hand.
 - Instagram gifts is behind pace: 989 to go, 3.3 a week now, 40.5 a week needed by 2027-04-30 — this week every Instagram post ends with the follow line ('follow for the next rule') and the Reel/Short names the Page by hand.
 - Telegram Stars is behind pace: 998 to go, 0 a week now, 40.9 a week needed by 2027-04-30 — this week every Telegram post ends with the follow line ('follow for the next rule') and the Reel/Short names the Page by hand.
-- Readers reach the site from Facebook most (81 visits); keep the mix
-- Facebook best this fortnight: '9 documents. 1 page. ₦0 to start.
+- Readers reach the site from Facebook most (80 visits); keep the mix
+- Facebook best this fortnight: 'How much notice should your Kwara landlord give you?
 
-1. Tenancy Agreement
-2. R' (20); '🎬 Deep-Dive 5 (9 minutes): Advance Rent in Lagos and Abuja: ' (2) — write the next facebook post in that register, on a different theme.
+Ngozi,' (2); '🎬 Deep-Dive 5 (9 minutes): Advance Rent in Lagos and Abuja: ' (2) — write the next facebook post in that register, on a different theme.
 - Instagram best this fortnight: 'In Kwara high-density areas, landlords must issue a rent boo' (3); 'Did you know that in Cross River State, your landlord can on' (3) — write the next instagram post in that register, on a different theme.
 - Threads best this fortnight: 'In Edo State, filing an application at the Rent Tribunal sto' (3); 'A tenant in Benin filed a dispute at the tribunal. The landl' (3) — write the next threads post in that register, on a different theme.
 
