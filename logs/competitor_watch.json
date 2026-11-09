@@ -1,5 +1,5 @@
 {
- "pulled_at": "2026-11-09T00:30:51+00:00",
+ "pulled_at": "2026-11-09T06:59:58+00:00",
  "days": 14,
  "items": [
   {
@@ -39,7 +39,7 @@
   }
  ],
  "sources": [
-  "https://nigeriabuildingcost.ng/sitemap.xml: 394 changed page(s)",
+  "https://nigeriabuildingcost.ng/sitemap.xml: 402 changed page(s)",
   "https://www.wonder.legal/ng/sitemap.xml: 0 changed page(s)",
   "https://diylaw.ng/sitemap.xml: 0 changed page(s)",
   "https://sabilaw.org/feed/: 3 fresh post(s)",
@@ -94,9 +94,14 @@
     "₦3,200"
    ],
    "found": [
-    "₦3,200"
+    "₦3,200",
+    "₦7,000",
+    "₦5,100"
    ],
-   "new": [],
+   "new": [
+    "₦7,000",
+    "₦5,100"
+   ],
    "gone": []
   }
  ]

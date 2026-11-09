@@ -1,6 +1,18 @@
 [
  {
   "date": "2026-11-10",
+  "at": "2026-11-09T08:04:48+01:00",
+  "short_day": true,
+  "state": "lagos",
+  "problems": [
+   "verifier: legal statement not on the shelf — 'A valid notice must state the full names of both landlord and tenant exactly as they appear on your written tenancy agre'",
+   "verifier: legal statement not on the shelf — 'The notice must clearly describe the property address. An inaccurate address can invalidate the entire notice in court.'",
+   "verifier: legal statement not on the shelf — 'The document must specify the exact date the tenant is expected to deliver possession of the property.'",
+   "verifier: legal statement not on the shelf — 'In Lagos, a notice to quit must be served personally or strictly according to the service clause in your tenancy agreeme'"
+  ]
+ },
+ {
+  "date": "2026-11-10",
   "at": "2026-11-09T01:31:32+01:00",
   "short_day": true,
   "state": "lagos",

@@ -96,7 +96,7 @@ Threads engagement by posting hour (WAT): 20:00 → 2.5, 13:00 → 0.86, 7:00 �
 - ◻ uncovered: Mushrooms.ng blog — "How to advertise house for rent nigeria" (2026-11-05) — no DocOga page answers this title; a Growth candidate, not an order
 - rival prices: NigeriaBuildingCost — tenancy agreement generator — ₦4,000, ₦500, as mapped
 - rival prices: DIYLaw — ₦5,000, ₦2,000, ₦3,500, as mapped
-- rival prices: SabiLaw Solutions — ₦3,200, as mapped
+- ⚠️ rival price moved: SabiLaw Solutions — new ₦7,000, ₦5,100; gone none (map said ₦3,200) → re-verify brain/competitors.json
 
 ### Page briefs — what the field asked twice that we have no page for (🔒 docs/BRAIN_GROWTH.md)
 - 📝 page brief: How to Advertise a House for Rent in Nigeria: Tips for Landlords & Agents — build; seen 2× on the field; brain/briefs/house-rent-caption.md
