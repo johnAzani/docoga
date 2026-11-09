@@ -2,8 +2,8 @@
   "v": 1,
   "alg": "A256GCM",
   "name": "TIKTOK_REFRESH_TOKEN",
-  "nonce": "OGceA0yY+FOrEE17",
-  "ciphertext": "LQ84v6u+weXhym4btnHKDhul/vM6TFzbXdHzc2MzfItB6M6nPRttejZggOQUQkErdZEynGwjCihoIhW9m7VjyvaoIEJnwSOivNIEpINkwQ/4x1FWoZZADg==",
-  "minted_at": "2026-11-06T17:17:05+00:00",
+  "nonce": "InBuXjMn4fhivAjO",
+  "ciphertext": "ygNPasoDRL7xqLAELf/H0R7rKR9htlXOJ3HaNTO2ypzGZLuK3OYrtG1jYsrS7PNZhtbHjavA1IGesYzKGewMsbPP/nlb4DK5RGkjGTTbwnbNutx2Iyj+RA==",
+  "minted_at": "2026-11-09T17:16:26+00:00",
   "expires_at": "2027-10-21"
 }

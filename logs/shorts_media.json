@@ -114,19 +114,32 @@
       "run_id": "42257626279",
       "series": "Part 5 of 5 · Tenancy agreement",
       "series_topic": "Tenancy agreement"
+    },
+    {
+      "date": "2026-11-09",
+      "video_id": "MhWB4IN3a-A",
+      "title": "Kwara notice to quit: How long is it? (part 1 of 5) #Shorts",
+      "url": "https://docoga-pass.johnazani.workers.dev/m/qj6PGIuLN3iC6z6JNxOsGavy8dCw4KaP.mp4",
+      "name": "qj6PGIuLN3iC6z6JNxOsGavy8dCw4KaP",
+      "bytes": 35244316,
+      "hosted_at": "2026-11-09T17:17:14+00:00",
+      "expires_at": "2026-11-10T23:17:14+00:00",
+      "run_id": "42660401148",
+      "series": "Part 1 of 5 · Notice to quit",
+      "series_topic": "Notice to quit"
     }
   ],
   "latest": {
-    "date": "2026-11-06",
-    "video_id": "VjhYDjCwmtY",
-    "title": "Renewing your tenancy? Do it right (part 5 of 5) #Shorts",
-    "url": "https://docoga-pass.johnazani.workers.dev/m/sNVxJULAl-egdC0figEdd0pnIVKJC_sB.mp4",
-    "name": "sNVxJULAl-egdC0figEdd0pnIVKJC_sB",
-    "bytes": 44618231,
-    "hosted_at": "2026-11-06T17:18:10+00:00",
-    "expires_at": "2026-11-07T23:18:10+00:00",
-    "run_id": "42257626279",
-    "series": "Part 5 of 5 · Tenancy agreement",
-    "series_topic": "Tenancy agreement"
+    "date": "2026-11-09",
+    "video_id": "MhWB4IN3a-A",
+    "title": "Kwara notice to quit: How long is it? (part 1 of 5) #Shorts",
+    "url": "https://docoga-pass.johnazani.workers.dev/m/qj6PGIuLN3iC6z6JNxOsGavy8dCw4KaP.mp4",
+    "name": "qj6PGIuLN3iC6z6JNxOsGavy8dCw4KaP",
+    "bytes": 35244316,
+    "hosted_at": "2026-11-09T17:17:14+00:00",
+    "expires_at": "2026-11-10T23:17:14+00:00",
+    "run_id": "42660401148",
+    "series": "Part 1 of 5 · Notice to quit",
+    "series_topic": "Notice to quit"
   }
 }

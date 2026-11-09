@@ -366,5 +366,28 @@
     "playlist_item_id": "UExGMExMRGJHczhBVS41MjE1MkI0OTQ2QzJGNzNG",
     "planned_at": "2026-11-08T09:02:46+00:00",
     "notes": []
+  },
+  {
+    "video_id": "MhWB4IN3a-A",
+    "kind": "short",
+    "title": "Kwara notice to quit: How long is it?",
+    "date": "2026-11-09",
+    "comment_text": "Full episode (free, 9 minutes): Advance Rent in Lagos and Abuja: What the Law Says (Deep-Dive 5) — https://www.youtube.com/watch?v=LR1ulEO-RQA\nPart 1 of 5 · Notice to quit.\nPart 2 tomorrow, 7:00pm.\n\nWhich of these do you already do — and which one have you been skipping? Tell me below 👇\n\nFree receipt, tenancy agreement and notice templates (no sign-up): https://docoga.com.ng/?s=yt",
+    "comment_id": "",
+    "playlist_id": "PLGn3YRk7msT0",
+    "playlist_item_id": "UExHbjNZUms3bXNUMC4zMDg5MkQ5MEVDMEM1NTg2",
+    "planned_at": "2026-11-09T17:16:17+00:00",
+    "notes": [
+      "2026-11-09T17:16:20+00:00: series playlistItems.insert HTTP 409 (SERVICE_UNAVAILABLE)"
+    ],
+    "series": {
+      "slug": "notice-to-quit",
+      "name": "Notice to quit",
+      "part": 1,
+      "total": 5,
+      "week_start": "2026-11-09"
+    },
+    "series_playlist_id": "",
+    "series_item_id": ""
   }
 ]
