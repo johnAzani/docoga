@@ -1,6 +1,18 @@
 [
  {
   "date": "2026-11-10",
+  "at": "2026-11-09T01:31:32+01:00",
+  "short_day": true,
+  "state": "lagos",
+  "problems": [
+   "a body line is 112 characters; max 110: 'This week, Lagos politicians are debatin'",
+   "a body line is 151 characters; max 110: 'A fixed-term tenancy needs no quit notic'",
+   "a cited post names the section number (e.g. s.5) in its copy",
+   "fact id typed into the copy: lagos:notice_extras:1, lagos:notice_extras:4, lagos:notice_ladder:5 — ids live only in `claims`, never in words a reader sees"
+  ]
+ },
+ {
+  "date": "2026-11-10",
   "at": "2026-11-08T07:33:35+01:00",
   "short_day": true,
   "state": "lagos",

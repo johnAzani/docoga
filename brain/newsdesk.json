@@ -1,5 +1,5 @@
 {
- "fetched": "2026-11-08T06:29:24+00:00",
+ "fetched": "2026-11-09T00:30:51+00:00",
  "sources": [
   "Punch: 30 stories",
   "Vanguard: 20 stories",
@@ -9,5 +9,43 @@
   "The Guardian Nigeria: unreachable (HTTP Error 403: Forbidden)",
   "Nairametrics: 20 stories"
  ],
- "items": []
+ "items": [
+  {
+   "title": "Lagos governorship candidates disagree over rent control, housing, flooding",
+   "link": "https://www.premiumtimesng.com/news/top-news/923777-lagos-governorship-candidates-disagree-over-rent-control-housing-flooding.html",
+   "published": "2026-11-08T21:28:39+00:00",
+   "source": "Premium Times",
+   "score": 18,
+   "matched": [
+    "rent",
+    "rent control",
+    "housing"
+   ],
+   "summary": "The Lagos State governorship candidates disagreed over the causes of flooding in Lagos and the measures needed to address it. The post Lagos governorship candidates disagree over rent control, housing"
+  },
+  {
+   "title": "Lagos Debate: oppositions fault housing, rent, taxes as Hamzat defends APC’s record",
+   "link": "https://businessday.ng/politics/article/lagos-debate-oppositions-fault-housing-rent-taxes-as-hamzat-defends-apcs-record/",
+   "published": "2026-11-08T20:33:22+00:00",
+   "source": "BusinessDay",
+   "score": 9,
+   "matched": [
+    "rent",
+    "housing"
+   ],
+   "summary": "Four Lagos governorship candidates have outlined competing approaches to the state’s housing crisis, rising cost of living, taxation and public read more Lagos Debate: oppositions fault housing, rent,"
+  },
+  {
+   "title": "Governorship Debate: Private sector cannot solve Lagos housing crisis alone – NDC’s Doherty",
+   "link": "https://www.vanguardngr.com/2026/11/governorship-debate-private-sector-cannot-solve-lagos-housing-crisis-alone-ndcs-doherty/",
+   "published": "2026-11-08T19:20:00+00:00",
+   "source": "Vanguard",
+   "score": 4,
+   "matched": [
+    "housing",
+    "accommodation"
+   ],
+   "summary": "The Nigeria Democratic Congress (NDC) governorship candidate in Lagos State, Funso Doherty, has said the private sector cannot independently address the state's housing crisis, urging the government t"
+  }
+ ]
 }

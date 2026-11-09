@@ -1,0 +1,123 @@
+{
+ "version": 1,
+ "status": "approved",
+ "date": "2026-11-11",
+ "generated_at": "2026-11-09T01:37:41+01:00",
+ "theme": "anambra-how-seven-days-notice-works-after-quit-notice",
+ "post_type": "pidgin",
+ "hook_type": "HOWTO",
+ "state": "anambra",
+ "claims": [
+  {
+   "text": "For Anambra, after quit notice expire, landlord must give another seven clear days notice before court.",
+   "fact_id": "anambra:notice_extras:5"
+  },
+  {
+   "text": "Landlord no fit jump this seven days notice enter court, and self-help na unlawful eviction for law.",
+   "fact_id": "anambra:protections:1"
+  },
+  {
+   "text": "The day dem serve the paper no dey count inside the seven clear days.",
+   "fact_id": "anambra:notice_extras:5",
+   "recalled": true
+  },
+  {
+   "text": "The day of service is excluded",
+   "fact_id": "anambra:notice_extras:5",
+   "recalled": true
+  },
+  {
+   "text": "The notice cannot run before the quit notice ends.",
+   "fact_id": "anambra:notice_extras:5",
+   "recalled": true
+  },
+  {
+   "text": "Self-help is an unlawful eviction and courts make landlords pay heavy damages for it.",
+   "fact_id": "anambra:protections:1",
+   "recalled": true
+  }
+ ],
+ "recalled": [],
+ "post": {
+  "headline": "How notice to owner intention dey work for Anambra",
+  "lines": [
+   "Your quit notice don expire, but landlord talk say you must pack out today today.",
+   "For Anambra, after quit notice expire, landlord must give another seven clear days notice before court.",
+   "Landlord no fit jump this seven days notice enter court, and self-help na unlawful eviction for law.",
+   "The day dem serve the paper no dey count inside the seven clear days.",
+   "Make you get proper paper for your phone inside two minutes, free to start."
+  ],
+  "cta": "Send this post give your guy wey landlord dey threaten for Anambra.",
+  "hashtags": [
+   "#DocOga",
+   "#AnambraLaw",
+   "#TenantRights",
+   "#QuitNotice"
+  ]
+ },
+ "threads": {
+  "text": "How notice to owner intention dey work for Anambra: quit notice don expire, but court work never start. Landlord must give seven clear days notice of intention to apply to court. Self-help no follow at all. Did your landlord serve seven days?",
+  "hashtags": [
+   "#DocOga",
+   "#Anambra"
+  ],
+  "topic": "Tenant Rights Nigeria",
+  "poll": null,
+  "evening": "Anambra law no allow landlord jump straight to court once quit notice finish. That seven clear days paper must land first."
+ },
+ "visual": {
+  "kicker": "oya make we talk",
+  "layout": "checklist",
+  "big": "",
+  "plate": "wooden door keys"
+ },
+ "short": {
+  "title": "After the notice expires",
+  "hook_sub": "Landlord cannot skip seven days notice",
+  "hook_say": "Your quit notice has expired and your landlord is already knocking to throw your things out. The law says court does not start like that.",
+  "tips": [
+   {
+    "text": "Wait for seven days",
+    "sub": "Quit notice expiring is not final",
+    "say": "In Anambra, after a quit notice expires, the landlord must still serve a separate seven clear days notice before heading to court."
+   },
+   {
+    "text": "Count the days right",
+    "sub": "Day of service is excluded",
+    "say": "Seven clear days means the date the paper was handed to you is not counted. The notice cannot run before the quit notice ends."
+   },
+   {
+    "text": "No self-help allowed",
+    "sub": "Removing doors attracts legal damages",
+    "say": "A landlord cannot throw bags out or change locks. Self-help is an unlawful eviction and courts make landlords pay heavy damages for it."
+   },
+   {
+    "text": "Prepare the right paper",
+    "sub": "Get standard notices online fast",
+    "say": "Never rely on verbal warnings. Landlords and tenants can generate valid, dated legal notices on DocOga in two minutes, completely free to start."
+   }
+  ],
+  "hook_text": "AFTER THE NOTICE EXPIRES",
+  "series": {
+   "slug": "notice-to-quit",
+   "name": "Notice to quit",
+   "part": 3,
+   "total": 5,
+   "label": "After the notice expires"
+  }
+ },
+ "why": "Wednesday pidgin explainer on Anambra notice ladder, hitting the 'After the notice expires' part 3 series with a HOWTO hook written to Tunde.",
+ "tool": "notice-to-quit",
+ "tool_routed": false,
+ "reader": "tunde",
+ "news_hook": null,
+ "quiz": null,
+ "gates": [
+  "citation",
+  "verification",
+  "lint",
+  "repetition",
+  "shape"
+ ],
+ "note": ""
+}

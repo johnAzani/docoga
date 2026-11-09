@@ -1,4 +1,4 @@
-# What the numbers said — written 2026-11-02 by tools/brain.py feedback
+# What the numbers said — written 2026-11-09 by tools/brain.py feedback
 
 ## Scorecard 2026-W45 (taken 2026-11-02 13:48)
 
@@ -77,12 +77,40 @@ Threads engagement by posting hour (WAT): 20:00 → 3.0, 13:00 → 0.43, 7:00 �
 - answer page this week: no
 - law shelf: 262 facts across 8 states
 - lessons it is carrying into every prompt: not_on_shelf ×58, claim_overreach ×19, line_length ×11, news_hook ×11, beats ×6, short_shape ×5
+- lessons it is carrying into every prompt: none — no refusals in 30 days
 - last brain improvement: 2026-11-02 (0 day(s) ago) — The field: the Brain plans knowing what competitors published this week
 
 ### Competitor watch — the field this week (🔒 docs/DOMINANCE.md)
-- last deep research: 2026-11-02 (0 day(s) ago) — The field: 7 document tools (prices, free tiers, watermarks), 3 content rivals,
-- field map verified: 2026-11-02 (0 day(s) ago)
-- not pulled yet — the brain's Monday run writes logs/competitor_watch.json
+- last deep research: 2026-11-07 (2 day(s) ago) — All 14 rows re-verified by hand (map `verified` 2026-11-07) and this week's rival
+- field map verified: 2026-11-07 (2 day(s) ago)
+- field pulled 2026-11-09: 5 item(s) from 2 competitor(s); not watchable at ₦0: @legalfriendng — Real Estate Lawyer (TikTok), @talk360law — KING, ESQ. (TikTok), @theonlybusayoadesanya (TikTok)
+- Mushrooms.ng blog — 7 days notice to quit nigeria; House for rent captions nigeria; How much can landlord increase rent nigeria
+- NigeriaBuildingCost — tenancy agreement generator — Sample tenancy agreement nigeria
+- ⚔️ collision: Mushrooms.ng blog — "7 days notice to quit nigeria" (2026-11-05) ↔ /notice-to-quit-nigeria (ours, published 2026-11-05) → the brain is told to point there
+- ⚔️ collision: Mushrooms.ng blog — "How much can landlord increase rent nigeria" (2026-11-05) ↔ /rent-increase-notice-nigeria (ours, published 2026-11-05) → the brain is told to point there
+- ⚔️ collision: NigeriaBuildingCost — tenancy agreement generator — "Sample tenancy agreement nigeria" (2026-10-30) ↔ /tenancy-agreement-sample-nigeria (ours, published 2026-11-03) → the brain is told to point there
+- ◻ uncovered: Mushrooms.ng blog — "House for rent captions nigeria" (2026-11-05) — no DocOga page answers this title; a Growth candidate, not an order
+- ◻ uncovered: Mushrooms.ng blog — "How to advertise house for rent nigeria" (2026-11-05) — no DocOga page answers this title; a Growth candidate, not an order
+- rival prices: NigeriaBuildingCost — tenancy agreement generator — ₦4,000, ₦500, as mapped
+- rival prices: DIYLaw — ₦5,000, ₦2,000, ₦3,500, as mapped
+- rival prices: SabiLaw Solutions — ₦3,200, as mapped
+
+### Page briefs — what the field asked twice that we have no page for (🔒 docs/BRAIN_GROWTH.md)
+- 📝 page brief: How to Advertise a House for Rent in Nigeria: Tips for Landlords & Agents — build; seen 2× on the field; brain/briefs/house-rent-caption.md
+
+### Law watch — are the bills on our pages still bills
+- pulled 2026-11-05: 4 bill(s) watched, 0 passage alert(s)
+- Anambra — quiet; stage verified 2026-11-03 (announced by the Assembly 26 March 2026 and the Governor 21 June 2026;)
+- Enugu — quiet; stage verified 2026-11-03 (executive bill announced 26 October 2026; four-week pledge); newest: Mbah to sign bill regulating agency, legal fees within four weeks.
+- Lagos — quiet; stage verified 2026-11-03 (second reading 10 July 2025; with the House Committee on Housing as at)
+- Abuja (FCT) — 🟡 moving; stage verified 2026-11-05 (second reading, House of Representatives, 4 November 2026; next: commi); newest: Abuja Rent: Bill to protect tenants from exploitation scale second reading at Re
+
+### Growth — where the next naira is (🔒 docs/GROWTH.md)
+- last growth dive: 2026-11-05 (4 day(s) ago; limit 7)
+- money-page share of Google impressions (2026-10-02 → 2026-10-30): 15% (102 of 672) — target 40% 🔻
+- zero-click top spots (pos ≤3, 0 clicks): 'quit notice' pos 1.0 ×48, 'quite notice' pos 1.0 ×5 → informational queries under AI Overviews; the fix is a transactional page, not a title tweak
+- striking distance (pos 4–10): 'notice to quit' pos 7.4 ×23, 'notice to quit' pos 4.8 ×20, 'quit notice letter from landlord to tenant in nigeria' pos 6.3 ×19 (transactional)
+- this week's order: build the page that turns the quit-notice audience into document-makers: a sample-and-download page with the generator one tap away. Google already shows us at position 1.0 for 'quit notice' (48 impressions, 0 clicks) — money-page share is 15% against 40%.
 
 ### Orders for the coming week
 - Sends are below 1.5% of reach: lead with STAKES and STAT hooks, put one named-person send line in every post ('send this to the friend renewing in January'), and use the checklist layout twice this week.
@@ -116,8 +144,8 @@ In Abuja, a yearly tenant ge' (2) — write the next instagram post in that regi
 - Top longform: 'Tenancy Agreement in Nigeria: The 8 Clauses That Decide Everything' 6 views; 'The Rent Receipt: The ₦50 Paper That Wins Cases' 5 views; 'Notice to Quit in Nigeria: The Legal Timeline Every Tenant & Landlord Must Know' 4 views
 
 ## Last 28 days of the brain's own output
-- post types: engagement ×3, checklist ×2, pidgin ×2, promo ×1, story ×1, educational ×1, state_spotlight ×1
-- hooks: STAT ×4, STAKES ×3, QUESTION ×1, CLAIM ×1, CURIOSITY ×1, HOWTO ×1
-- states: edo ×3, cross-river ×2, anambra ×1, kano ×1, rivers ×1, abuja ×1, kwara ×1, lagos ×1
+- post types: engagement ×4, checklist ×3, pidgin ×2, promo ×2, story ×2, educational ×2, state_spotlight ×1
+- hooks: STAT ×4, QUESTION ×3, STAKES ×3, HOWTO ×2, STORY ×2, CLAIM ×1, CURIOSITY ×1
+- states: edo ×4, cross-river ×3, anambra ×2, abuja ×2, kwara ×2, kano ×1, rivers ×1, lagos ×1
 
 Rotate away from the most-used type and hook above; the least-used state is overdue.

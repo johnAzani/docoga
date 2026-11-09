@@ -1,0 +1,45 @@
+{
+ "version": 1,
+ "status": "approved",
+ "source": "listening",
+ "kind": "answer_page",
+ "date": "2026-11-09",
+ "theme": "cross-river-tenancy-law-how-much-notice-must-you-give-or-get",
+ "state": "cross-river",
+ "tool": "notice-to-quit",
+ "topic": "notice_ladder",
+ "post": {
+  "headline": "Cross River Tenancy Law: How Much Notice Must You Give (Or Get)?",
+  "lines": [
+   "Landlords and tenants in Cross River often find themselves in a bit of wahala when it comes to ending a tenancy. Knowing how much notice to give or expect can save everyone a lot of stress and confusion.",
+   "Here’s what the tenancy law in Cross River State says about notice periods:",
+   "1. If you pay your rent every week, or if your tenancy is considered ‘at will’ without a fixed term, the law requires just one week's notice from either side (s.15(1)(a)). This is the shortest notice period. 2. For those who pay their rent monthly, the law states that you must give or get one month's notice before the tenancy can end (s.15(1)(b)). This is a common arrangement for many tenants. 3. If your tenancy agreement is set up for three months at a time, meaning you pay rent quarterly, then a quarter (three months) of notice is what is legally required (s.15(1)(c)). 4. Lastly, for tenancies where rent is paid yearly, the law specifies a longer notice period of half a year, which is six months (s.15(1)(d)). This applies to longer-term agreements.",
+   "To avoid any headaches, always put your notice in writing and make sure you have proof it was delivered. This simple step can prevent many disputes down the line."
+  ]
+ },
+ "quiz": {
+  "question": "What is the proper notice period for tenants and landlords in Cross River state?",
+  "explanation": "The notice period in Cross River depends on how often you pay your rent, ranging from one week for weekly tenancies (s.15(1)(a)) to half a year for yearly tenancies (s.15(1)(d))."
+ },
+ "claims": [
+  {
+   "text": "If you pay your rent every week, or if your tenancy is considered ‘at will’ without a fixed term, the law requires just one week's notice from either side (s.15(1)(a)).",
+   "fact_id": "cross-river:notice_ladder:1"
+  },
+  {
+   "text": "For those who pay their rent monthly, the law states that you must give or get one month's notice before the tenancy can end (s.15(1)(b)).",
+   "fact_id": "cross-river:notice_ladder:2"
+  },
+  {
+   "text": "If your tenancy agreement is set up for three months at a time, meaning you pay rent quarterly, then a quarter (three months) of notice is what is legally required (s.15(1)(c)).",
+   "fact_id": "cross-river:notice_ladder:3"
+  },
+  {
+   "text": "Lastly, for tenancies where rent is paid yearly, the law specifies a longer notice period of half a year, which is six months (s.15(1)(d)).",
+   "fact_id": "cross-river:notice_ladder:4"
+  }
+ ],
+ "why": "Many tenants and landlords in Cross River are unclear about the correct notice periods for ending a tenancy, leading to frequent disputes.",
+ "asked": "",
+ "url": "https://docoga.com.ng/guides/cross-river-tenancy-law-how-much-notice-must-you-give-or-get"
+}

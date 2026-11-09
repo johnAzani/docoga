@@ -1,5 +1,5 @@
 {
- "pulled_at": "2026-11-08T06:29:37+00:00",
+ "pulled_at": "2026-11-09T00:31:09+00:00",
  "items": [],
  "answered": [
   {
@@ -21,11 +21,26 @@
    "kind": "answer_page",
    "state_slug": "abuja",
    "topic": "notice_ladder"
+  },
+  {
+   "date": "2026-11-09",
+   "url": "https://docoga.com.ng/guides/cross-river-tenancy-law-how-much-notice-must-you-give-or-get",
+   "title": "Cross River Tenancy Law: How Much Notice Must You Give (Or Get)?",
+   "kind": "answer_page",
+   "state_slug": "cross-river",
+   "topic": "notice_ladder"
   }
  ],
  "sources": [
-  "Nairaland Properties: 67",
+  "Nairaland Properties: 61",
   "Nairaland Family: 58",
-  "Nairaland Politics: 61"
+  "Nairaland Politics: 63"
+ ],
+ "answer_log": [
+  {
+   "at": "2026-11-09T00:40:48+00:00",
+   "outcome": "drafted",
+   "reason": "https://docoga.com.ng/guides/cross-river-tenancy-law-how-much-notice-must-you-give-or-get"
+  }
  ]
 }
