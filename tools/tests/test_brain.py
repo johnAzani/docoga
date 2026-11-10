@@ -798,7 +798,7 @@ class WorkflowContractTests(unittest.TestCase):
         self.assertIn("contents: write", self.wf)
         self.assertIn("issues: write", self.wf)
         self.assertIn("cancel-in-progress: false", self.wf)
-        self.assertIn("for path in brain/drafts brain/feedback.md brain/newsdesk.json brain/listening.json brain/answers brain/page_briefs.json brain/briefs logs/brain_said.json logs/brain_refused.json logs/brain_deepdive.json logs/competitor_watch.json episodes site/guides site/og site/sitemap.xml; do", self.wf)
+        self.assertIn("for path in brain/drafts brain/feedback.md brain/newsdesk.json brain/listening.json brain/answers brain/page_briefs.json brain/briefs logs/brain_said.json logs/brain_refused.json logs/brain_deepdive.json logs/competitor_watch.json episodes site/guides site/og site/sitemap.xml site/_redirects; do", self.wf)
         self.assertIn('if [ -e "$path" ]; then git add -A "$path"; fi', self.wf, "one path at a time — a joint add with one missing path adds nothing (22 Oct 2026)")
         self.assertIn("gh issue create", self.wf)
         self.assertIn("brain-automation", self.wf)

@@ -382,6 +382,19 @@ def scorecard_lines(data=None):
     return lines
 
 
+def decisions(data=None):
+    """Briefed questions the editor has since decided (status declined or built, with a `decision`):
+    the workflow closes their issues with the reason. One tab-separated line each: title, status, reason."""
+    data = data if data is not None else load()
+    out = []
+    for e in data.get("briefs") or []:
+        dec = e.get("decision") or {}
+        if e.get("status") in ("declined", "built") and dec.get("reason") and e.get("brief"):
+            title = "Page brief: %s" % ((e["brief"] or {}).get("working_title") or e["question"])
+            out.append("%s\t%s\t%s" % (title, e["status"], " ".join(str(dec["reason"]).split())))
+    return out
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description="Page briefs — the field writes the research list")
     sub = ap.add_subparsers(dest="cmd")
@@ -389,7 +402,12 @@ def main(argv=None):
     o.add_argument("--dry-run", action="store_true")
     sub.add_parser("show")
     sub.add_parser("scorecard")
+    sub.add_parser("decisions")
     args = ap.parse_args(argv)
+    if args.cmd == "decisions":
+        for line in decisions():
+            print(line)
+        return 0
     if args.cmd == "observe":
         data, written = run(dry_run=args.dry_run)
         print("PAGE_BRIEFS_NEW=%d" % len(written))

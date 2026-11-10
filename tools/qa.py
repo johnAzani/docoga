@@ -320,6 +320,14 @@ _cu = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "clean_urls.py
 check("no canonical / og:url / sitemap loc ends in .html (Cloudflare 307s it)", _cu.returncode == 0,
       (_cu.stdout.strip().splitlines() or [""])[0])
 
+# 11d-bis. Permanent redirects (10 Nov 2026). Cloudflare's 307 is temporary and Google kept both
+# URLs two weeks after the clean canonicals; site/_redirects 301s every /x.html → /x and must list
+# every page (tools/redirects_build.py; the guides lane refreshes it nightly).
+_rb = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "redirects_build.py"), "--check"],
+                     capture_output=True, text=True)
+check("site/_redirects carries a 301 for every public page (Google counted /x and /x.html twice)", _rb.returncode == 0,
+      (_rb.stdout.strip().splitlines() or [""])[0])
+
 # 11e. Link previews (29 Oct 2026). Every public page carries an og:image that exists and is
 # light enough for WhatsApp; before this no page had one, so every shared link was a bare box.
 _og = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "og_images.py"), "--check"],

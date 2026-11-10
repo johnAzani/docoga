@@ -4,7 +4,7 @@
   {
    "id": "house-rent-caption",
    "question": "House for rent captions nigeria",
-   "status": "briefed",
+   "status": "declined",
    "first_seen": "2026-11-07",
    "last_seen": "2026-11-07",
    "sightings": [
@@ -41,7 +41,13 @@
     "closest_page": "rent-receipt-format-nigeria"
    },
    "drafted_by": "gemini",
-   "briefed_at": "2026-11-08T00:31:07+00:00"
+   "briefed_at": "2026-11-08T00:31:07+00:00",
+   "decision": {
+    "by": "editor",
+    "date": "2026-11-10",
+    "verdict": "decline",
+    "reason": "Read against the law shelf and the Growth lock (4 Nov 2026: a page only where DocOga writes the document). The question is listing marketing; the only law behind it is agent registration (Lagos LASRERA Law 2021), misleading-advertisement rules (FCCPA 2018, Part XV) and the advertising regulator's code — none of which a tenancy document carries. No DocOga document stands behind a listing page, so no page. LATER: a landlord's letter of authority to let (landlord → agent, naming the fee and the LASRERA number) would give the question a document; revisit if the field asks a third time or the Lagos Bill's 5% agency cap becomes law."
+   }
   }
  ]
 }
