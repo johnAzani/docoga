@@ -1,5 +1,5 @@
 {
- "fetched": "2026-11-09T06:59:58+00:00",
+ "fetched": "2026-11-10T00:30:52+00:00",
  "sources": [
   "Punch: 30 stories",
   "Vanguard: 20 stories",
@@ -9,42 +9,5 @@
   "The Guardian Nigeria: unreachable (HTTP Error 403: Forbidden)",
   "Nairametrics: 20 stories"
  ],
- "items": [
-  {
-   "title": "ICYMI: Lagos to enforce one-year rent rule — Hamzat",
-   "link": "https://punchng.com/lagos-to-enforce-one-year-rent-rule-hamzat/?utm_source=rss.punchng.com&utm_medium=web",
-   "published": "2026-11-09T05:56:52+00:00",
-   "source": "Punch",
-   "score": 12,
-   "matched": [
-    "landlord",
-    "landlords",
-    "rent"
-   ],
-   "summary": "Lagos State Deputy Governor, Obafemi Hamzat, says the state government plans to enforce the one-year rent payment provision in its real estate law to prevent landlords from demanding two or three year"
-  },
-  {
-   "title": "Mr & Mrs Cartoon: Landlord and neighbour’s wife",
-   "link": "https://www.vanguardngr.com/2026/11/mr-mrs-cartoon-landlord-and-neighbours-wife/",
-   "published": "2026-11-09T05:53:17+00:00",
-   "source": "Vanguard",
-   "score": 9,
-   "matched": [
-    "landlord"
-   ],
-   "summary": "Vanguard News The post Mr & Mrs Cartoon: Landlord and neighbour’s wife appeared first on Vanguard News."
-  },
-  {
-   "title": "NASS Roundup: State police, emergency care, Abuja rent, other stories from House of Reps",
-   "link": "https://www.premiumtimesng.com/news/top-news/923824-nass-roundup-state-police-emergency-care-abuja-rent-other-stories-from-house-of-reps.html",
-   "published": "2026-11-09T06:07:16+00:00",
-   "source": "Premium Times",
-   "score": 7,
-   "matched": [
-    "rent",
-    "housing"
-   ],
-   "summary": "The National Assembly advanced several legislative proposals and constitutional reforms covering security, healthcare, housing and financial investments, with some seeking to address challenges of eve"
-  }
- ]
+ "items": []
 }

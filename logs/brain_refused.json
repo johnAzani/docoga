@@ -1,5 +1,14 @@
 [
  {
+  "date": "2026-11-12",
+  "at": "2026-11-10T01:38:16+01:00",
+  "short_day": true,
+  "state": "enugu",
+  "problems": [
+   "fact id typed into the copy: enugu:notice_extras:6, enugu:notice_extras:7, enugu:protections:1 — ids live only in `claims`, never in words a reader sees"
+  ]
+ },
+ {
   "date": "2026-11-10",
   "at": "2026-11-09T08:04:48+01:00",
   "short_day": true,

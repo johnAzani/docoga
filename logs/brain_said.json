@@ -304,5 +304,31 @@
   "tool": "notice-to-quit",
   "tool_routed": false,
   "news_hook": null
+ },
+ {
+  "date": "2026-11-10",
+  "theme": "lagos-rent-receipt-tax-relief-claim",
+  "headline": "Your Lagos rent receipt is worth up to ₦500,000 in tax relief.",
+  "post_type": "state_spotlight",
+  "hook_type": "CLAIM",
+  "state": "lagos",
+  "fact_ids": [
+   "nigeria:rent_relief:1",
+   "lagos:receipts:1",
+   "lagos:receipts:2",
+   "lagos:receipts:3",
+   "lagos:receipts:4",
+   "lagos:receipts:5",
+   "lagos:receipts:6",
+   "lagos:receipts:7",
+   "nigeria:rent_relief:4"
+  ],
+  "recalled": 0,
+  "plate": "rent receipt table",
+  "short": true,
+  "reader": "ngozi",
+  "tool": "rent-receipt",
+  "tool_routed": false,
+  "news_hook": "Rent relief season: from 2026 tenants deduct 20% of rent (max ₦500,000) — only with a receipt in their name"
  }
 ]

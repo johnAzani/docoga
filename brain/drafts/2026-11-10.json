@@ -1,0 +1,130 @@
+{
+ "version": 1,
+ "status": "approved",
+ "date": "2026-11-10",
+ "generated_at": "2026-11-10T01:33:56+01:00",
+ "theme": "lagos-rent-receipt-tax-relief-claim",
+ "post_type": "state_spotlight",
+ "hook_type": "CLAIM",
+ "state": "lagos",
+ "claims": [
+  {
+   "text": "From 2026, you can deduct 20% of your annual rent paid, up to ₦500,000, from your taxable income, but only if you have a valid rent receipt in your name.",
+   "fact_id": "nigeria:rent_relief:1"
+  },
+  {
+   "text": "In Lagos, every landlord must issue a receipt on payment of rent, stating the date, names and addresses of landlord and tenant, description and location of premises, amount paid, and period covered.",
+   "fact_id": "lagos:receipts:1"
+  },
+  {
+   "text": "The receipt must state the date on which the rent was received.",
+   "fact_id": "lagos:receipts:2"
+  },
+  {
+   "text": "The receipt must state the names and addresses of the landlord and the tenant.",
+   "fact_id": "lagos:receipts:3"
+  },
+  {
+   "text": "The receipt must state the description and location of the premises.",
+   "fact_id": "lagos:receipts:4"
+  },
+  {
+   "text": "The receipt must state the amount of rent paid.",
+   "fact_id": "lagos:receipts:5"
+  },
+  {
+   "text": "The receipt must state the period to which the payment relates.",
+   "fact_id": "lagos:receipts:6"
+  },
+  {
+   "text": "A landlord who fails to issue a receipt is liable on conviction to a fine of ₦100,000.",
+   "fact_id": "lagos:receipts:7"
+  },
+  {
+   "text": "Joint Revenue Board PIT Guidelines 2026, para 9.6 — minimum information for rent relief: (i) the legal tenant's name; (ii) actual rent paid and the period covered; (iii) the landlord's full name and one of mobile number, Tax ID or NIN; (iv) the property address. A receipt in the tenant's own name with all four, the signed agreement and proof of payment is what HR and tax offices ask for.",
+   "fact_id": "nigeria:rent_relief:4"
+  }
+ ],
+ "recalled": [],
+ "post": {
+  "headline": "Your Lagos rent receipt is worth up to ₦500,000 in tax relief.",
+  "lines": [
+   "Ngozi, from 2026, you can claim 20% of your rent paid as tax relief, up to ₦500,000.",
+   "But only with a valid rent receipt in your name, with all four details HR needs.",
+   "In Lagos, your landlord MUST give you a receipt (s.5, Tenancy Law 2011).",
+   "It must show date, names, address, amount, and period to claim your relief."
+  ],
+  "cta": "Send this to the friend who pays rent in Lagos. Follow for the next rule.",
+  "hashtags": [
+   "#DocOga",
+   "#RentRelief",
+   "#LagosTenancy",
+   "#RentReceipt"
+  ]
+ },
+ "threads": {
+  "text": "Ngozi, your rent receipt in Lagos is more than just paper. It is your ticket to claiming up to ₦500,000 in tax relief from 2026. The law (s.5, Tenancy Law 2011) says your landlord MUST issue one, with specific details like date, names, and amount. Is your receipt ready for tax season?",
+  "hashtags": [
+   "#DocOga",
+   "#LagosRent"
+  ],
+  "topic": "Tenant Rights Nigeria",
+  "poll": null,
+  "evening": "A valid Lagos rent receipt means your landlord's details, your name, the amount, and the period. Without it, you leave money on the table. Make sure your receipt is complete."
+ },
+ "visual": {
+  "kicker": "Know Your Rights",
+  "layout": "poster",
+  "big": "",
+  "plate": "rent receipt table"
+ },
+ "short": {
+  "title": "Your Lagos rent receipt is a tax relief goldmine. Get it right.",
+  "hook_sub": "Up to ₦500,000 back.",
+  "hook_say": "Don't just pay rent. Get a proper receipt. From 2026, your Lagos rent receipt can save you up to ₦500,000 on your taxes. But only if it's correct. Here’s what you need to know.",
+  "tips": [
+   {
+    "text": "Landlord MUST issue",
+    "sub": "Lagos law demands it.",
+    "say": "In Lagos State, your landlord is legally required to issue you a receipt for every rent payment. This is not optional; it's a statutory duty under the Tenancy Law 2011."
+   },
+   {
+    "text": "Needs 4 key details",
+    "sub": "For tax relief proof.",
+    "say": "For tax relief, your receipt must have your name, the rent amount and period, your landlord's details, and the property address. Without these, HR can refuse your claim."
+   },
+   {
+    "text": "Check the date",
+    "sub": "And names are correct.",
+    "say": "Always verify the date of payment and ensure both your name and your landlord's name and address are correctly written on the receipt. Accuracy protects your claim."
+   },
+   {
+    "text": "Get DocOga receipt",
+    "sub": "Tax-ready in 2 minutes.",
+    "say": "Make sure your receipt is ready for tax season. Use DocOga to generate a clean, standard Lagos rent receipt in two minutes, free to start. It's built for rent relief claims."
+   }
+  ],
+  "hook_text": "YOUR LAGOS RENT RECEIPT IS A TAX RELIEF GOLDMINE.\nGET IT RIGHT.",
+  "series": {
+   "slug": "notice-to-quit",
+   "name": "Notice to quit",
+   "part": 2,
+   "total": 5,
+   "label": "What a valid notice says"
+  }
+ },
+ "why": "This post highlights the new rent relief benefit and connects it to the statutory duty of landlords in Lagos to issue receipts, addressing Ngozi's need for proper documentation and aligning with the 'state spotlight' lead type and 'CLAIM' hook.",
+ "tool": "rent-receipt",
+ "tool_routed": false,
+ "reader": "ngozi",
+ "news_hook": "Rent relief season: from 2026 tenants deduct 20% of rent (max ₦500,000) — only with a receipt in their name",
+ "quiz": null,
+ "gates": [
+  "citation",
+  "verification",
+  "lint",
+  "repetition",
+  "shape"
+ ],
+ "note": ""
+}
