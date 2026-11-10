@@ -64,6 +64,38 @@ platforms; nothing the owner must do on a schedule.
 
 ## 5. Growth ledger (newest first — the scorecard reads the top date)
 
+- **2026-11-10** — **Sixth dive (owner, 7:55am: "Continue"): the page Google counts twice.** The
+  9 Nov Search Console pull (28 days to 6 Nov: 16 clicks / 448 impressions, CTR 3.6%) put "quit
+  notice" at **position 1.0 with 0 clicks** — and the page URL it ranked was `/notice-to-quit-nigeria.html`,
+  while `/notice-to-quit-nigeria` sat at 8.3 with 74 impressions of its own. The same split on
+  `/notice-to-quit-kano` (1.5 / 4.4), `/notice-to-quit-enugu`, `/notice-to-quit-abuja`,
+  `/rent-receipt-lagos`: two weeks after the clean canonicals of 28 Oct, Google still indexes both
+  selves of a page, because Cloudflare's `/x.html → /x` is a **307 — temporary** — and Google treats it
+  as one; the canonical hint alone did not fold them. **DO NOW (shipped):** `site/_redirects` — a
+  **301** from every `/x.html` to its clean URL (102 static lines, `tools/redirects_build.py`; the
+  assets-only worker reads `_redirects` before HTML handling, "always followed, regardless of whether
+  or not an asset matches"); the guides lane refreshes it when it writes a page and the Brain commits
+  it; `qa.py` fails when a page has no line. Also this dive: the first page brief (#214, "how to
+  advertise a house for rent") read against the shelf and **declined** — the law that touches it
+  (LASRERA registration, FCCPA Part XV misleading advertisements) is real but no DocOga document stands
+  behind a listing page, and the 4 Nov rule holds (a page only where the tool writes the document);
+  the Brain closes the issue with the reason from the ledger, and LATER names the document that would
+  change the answer (a landlord's letter of authority to let). And the Instagram slot: on 9 Nov the
+  chosen 7:10pm run died at GitHub's end with no jobs and the day lost its card — a later scheduled
+  run before 10pm now carries a card the chosen slot never posted (once; the same-day ledger guard
+  still comes first). **Measure:** in the next two Search Console pulls the `.html` rows vanish and the
+  clean URL inherits their impressions — "quit notice" should show one row near position 1 with clicks;
+  money-page share 15% → 25% by 1 Dec. **TEST NEXT:** the "quit notice" title once the rows merge —
+  the position-1 snippet earned 0 clicks in 6 impressions, which is too few to judge until they merge.
+  **LATER:** letter of authority to let (landlord → agent); employment-letter and warning-letter pages.
+  **REJECT:** a `/*.html` splat rule (the docs show a splat only at the end of a path — one wrong line
+  would 301 every page to nowhere); turning `html_handling` off (the worker is assets-only and
+  `worker/index.js` is never touched); a page from brief #214 as written.
+  Sources: logs/search_console.json (taken 2026-11-09, window 2026-10-09→11-06); Cloudflare docs —
+  workers/static-assets/routing/advanced/html-handling (307 table) and workers/static-assets/redirects
+  (`_redirects` semantics, 2,000 static lines, "redirects are always followed"), read from the
+  cloudflare-docs repository 10 Nov 2026; brain/briefs/house-rent-caption.md; GitHub run 42671673688
+  (9 Nov, zero jobs).
 - **2026-11-05** — **Fifth dive (owner, 5:05pm: "go on to next build"): the page we refused to
   write until the tool could write it.** The 4 Nov rule said a rent-increase page only if a generator
   exists for it; this build is the generator — the **11th tool, Notice of Rent Review**

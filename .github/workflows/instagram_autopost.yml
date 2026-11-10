@@ -144,6 +144,13 @@ jobs:
           elif [ "$EVENT" != "schedule" ] || [ "$NOW" = "$WANT" ] || [ "$NOW" = "$(( (WANT + 1) % 24 ))" ]; then
             echo "go=true" >> "$GITHUB_OUTPUT"
             echo "IG_SLOT=go hour=${NOW} chosen=${WANT}"
+          elif [ "$NOW" -gt "$WANT" ] && [ "$NOW" -le 21 ]; then
+            # 10 Nov 2026: on 9 Nov the chosen 7:10pm dispatch died at GitHub's end (a run with no
+            # jobs) and the day lost its card. No card yet today (checked above) and the chosen hour
+            # has passed → the next scheduled run before 10pm carries it, once.
+            echo "go=true" >> "$GITHUB_OUTPUT"
+            echo "IG_SLOT=catchup hour=${NOW} chosen=${WANT}"
+            echo "::notice title=Instagram catch-up::the ${WANT}:10 slot posted nothing today (its run never started); this run carries the card"
           else
             echo "go=false" >> "$GITHUB_OUTPUT"
             echo "IG_SLOT=skipped hour=${NOW} chosen=${WANT}"

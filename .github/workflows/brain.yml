@@ -170,6 +170,16 @@ jobs:
               gh issue create --title "$TITLE" --label page-brief --body-file "$FILE" || echo "::warning title=Brief not filed::$FILE — the file is committed; the issue was not opened"
             fi
           done
+          # A brief the editor has decided (brain/page_briefs.json: status declined|built + decision)
+          # closes its own issue with the reason — the sandbox token cannot touch issues, this one can.
+          python3 tools/page_briefs.py decisions 2>/dev/null | while IFS=$'\t' read -r TITLE STATUS REASON; do
+            [ -n "$TITLE" ] || continue
+            NUM=$(gh issue list --label page-brief --state open --search "\"$TITLE\" in:title" --json number --jq '.[0].number' 2>/dev/null)
+            [ -n "$NUM" ] || continue
+            gh issue comment "$NUM" --body "**Editor's decision: ${STATUS}.** ${REASON}" >/dev/null 2>&1 || true
+            if [ "$STATUS" = "built" ]; then gh issue close "$NUM" --reason completed || true; else gh issue close "$NUM" --reason "not planned" || true; fi
+            echo "brief issue #$NUM closed: $STATUS"
+          done
           {
             echo "### Page briefs"
             echo
@@ -366,7 +376,7 @@ jobs:
           # (brain/answers exists on Mondays only): every pack, the newsdesk, the Deep-Dive
           # attempts — written on the runner, never committed, so the lanes posted from the
           # rotation every day. tools/tests/test_workflow_contract.py now forbids the shape.
-          for path in brain/drafts brain/feedback.md brain/newsdesk.json brain/listening.json brain/answers brain/page_briefs.json brain/briefs logs/brain_said.json logs/brain_refused.json logs/brain_deepdive.json logs/competitor_watch.json episodes site/guides site/og site/sitemap.xml; do
+          for path in brain/drafts brain/feedback.md brain/newsdesk.json brain/listening.json brain/answers brain/page_briefs.json brain/briefs logs/brain_said.json logs/brain_refused.json logs/brain_deepdive.json logs/competitor_watch.json episodes site/guides site/og site/sitemap.xml site/_redirects; do
             if [ -e "$path" ]; then git add -A "$path"; fi
           done
           if [ -n "${INDEXNOW_KEY:-}" ] && [ -f "site/${INDEXNOW_KEY}.txt" ]; then git add "site/${INDEXNOW_KEY}.txt"; fi

@@ -186,6 +186,20 @@ class WiringTests(unittest.TestCase):
         self.assertEqual(pb.MAX_BRIEFS_PER_RUN, 1, "one model call a night at most — the planner's quota comes first")
         self.assertEqual(pb.TWICE, 2)
 
+    def test_a_decided_brief_closes_its_own_issue_from_the_workflow(self):
+        data = {"briefs": [{"id": "a", "question": "q", "status": "declined", "sightings": [{}], "brief": {"working_title": "T"},
+                            "decision": {"reason": "no document\nbehind it"}},
+                           {"id": "b", "question": "q2", "status": "declined", "sightings": [{}], "brief": {"verdict": "decline"}},
+                           {"id": "c", "question": "q3", "status": "briefed", "sightings": [{}], "brief": {"working_title": "U"}}]}
+        self.assertEqual(pb.decisions(data), ["Page brief: T\tdeclined\tno document behind it"],
+                         "a model decline has no issue to close; an open brief is not decided")
+        wf = (ROOT / ".github" / "workflows" / "brain.yml").read_text(encoding="utf-8")
+        self.assertIn("python3 tools/page_briefs.py decisions", wf)
+        self.assertIn('gh issue close "$NUM" --reason "not planned"', wf)
+        real = pb.decisions()
+        self.assertTrue(any(l.startswith("Page brief: How to Advertise a House for Rent in Nigeria") and "\tdeclined\t" in l for l in real),
+                        "10 Nov 2026: the first brief was declined by the editor — no document behind a listing page")
+
     def test_the_real_ledger_if_present_is_well_formed(self):
         data = pb.load()
         for e in data["briefs"]:

@@ -367,6 +367,14 @@ def build(day=None, site=None, now=None, log=print, drafts_dir=None, answers_dir
             % (len(written), added, "y" if added == 1 else "ies", len(entries)))
     else:
         log("guides: nothing new")
+    # 10 Nov 2026: every page needs its permanent /x.html → /x line (tools/redirects_build.py);
+    # a new guide without one would be the one page Google could still count twice.
+    try:
+        import redirects_build
+        if redirects_build.build(site=site):
+            log("guides: site/_redirects refreshed")
+    except Exception as exc:  # noqa: BLE001 — the page is the deliverable
+        log("guides: _redirects not refreshed: %s" % str(exc)[:80])
     return written
 
 
