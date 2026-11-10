@@ -21,6 +21,104 @@
    "door": "pixabay",
    "lane": ""
   },
+  "pixabay:34330": {
+   "n": 1,
+   "last": "2026-11-10",
+   "query": "apartment building balcony nigeria",
+   "door": "pixabay",
+   "lane": ""
+  },
+  "pixabay:12778": {
+   "n": 1,
+   "last": "2026-11-10",
+   "query": "paper receipt nigeria",
+   "door": "pixabay",
+   "lane": ""
+  },
+  "pixabay:174007": {
+   "n": 1,
+   "last": "2026-11-10",
+   "query": "paper receipt nigeria",
+   "door": "pixabay",
+   "lane": ""
+  },
+  "pixabay:5278": {
+   "n": 1,
+   "last": "2026-11-10",
+   "query": "lagos street nigeria",
+   "door": "pixabay",
+   "lane": ""
+  },
+  "pixabay:313951": {
+   "n": 2,
+   "last": "2026-11-10",
+   "query": "lagos street nigeria",
+   "door": "pixabay",
+   "lane": ""
+  },
+  "pixabay:49395": {
+   "n": 1,
+   "last": "2026-11-10",
+   "query": "paper receipt nigeria",
+   "door": "pixabay",
+   "lane": ""
+  },
+  "pixabay:136081": {
+   "n": 1,
+   "last": "2026-11-10",
+   "query": "law books shelf nigeria",
+   "door": "pixabay",
+   "lane": ""
+  },
+  "pixabay:207982": {
+   "n": 1,
+   "last": "2026-11-10",
+   "query": "paper receipt nigeria",
+   "door": "pixabay",
+   "lane": ""
+  },
+  "pixabay:313952": {
+   "n": 2,
+   "last": "2026-11-10",
+   "query": "lagos street nigeria",
+   "door": "pixabay",
+   "lane": ""
+  },
+  "pixabay:277042": {
+   "n": 1,
+   "last": "2026-11-10",
+   "query": "paper receipt nigeria",
+   "door": "pixabay",
+   "lane": ""
+  },
+  "pixabay:313948": {
+   "n": 2,
+   "last": "2026-11-10",
+   "query": "lagos street nigeria",
+   "door": "pixabay",
+   "lane": ""
+  },
+  "pixabay:145360": {
+   "n": 1,
+   "last": "2026-11-10",
+   "query": "paper receipt nigeria",
+   "door": "pixabay",
+   "lane": ""
+  },
+  "pixabay:201009": {
+   "n": 3,
+   "last": "2026-11-10",
+   "query": "paper receipt nigeria",
+   "door": "pixabay",
+   "lane": ""
+  },
+  "pixabay:335742": {
+   "n": 1,
+   "last": "2026-11-10",
+   "query": "apartment building balcony nigeria",
+   "door": "pixabay",
+   "lane": ""
+  },
   "pixabay:5024119": {
    "n": 1,
    "last": "2026-11-09",
@@ -333,13 +431,6 @@
    "n": 1,
    "last": "2026-11-06",
    "query": "lagos street nigeria",
-   "door": "pixabay",
-   "lane": ""
-  },
-  "pixabay:201009": {
-   "n": 2,
-   "last": "2026-11-06",
-   "query": "contract signature pen nigeria",
    "door": "pixabay",
    "lane": ""
   },
@@ -854,13 +945,6 @@
    "door": "pixabay",
    "lane": ""
   },
-  "pixabay:313951": {
-   "n": 1,
-   "last": "2026-10-30",
-   "query": "lagos street nigeria",
-   "door": "pixabay",
-   "lane": ""
-  },
   "pixabay:174006": {
    "n": 1,
    "last": "2026-10-30",
@@ -910,13 +994,6 @@
    "door": "pixabay",
    "lane": ""
   },
-  "pixabay:313952": {
-   "n": 1,
-   "last": "2026-10-29",
-   "query": "lagos street nigeria",
-   "door": "pixabay",
-   "lane": ""
-  },
   "pixabay:201018": {
    "n": 1,
    "last": "2026-10-29",
@@ -928,13 +1005,6 @@
    "n": 1,
    "last": "2026-10-29",
    "query": "courthouse columns nigeria",
-   "door": "pixabay",
-   "lane": ""
-  },
-  "pixabay:313948": {
-   "n": 1,
-   "last": "2026-10-29",
-   "query": "paper receipt nigeria",
    "door": "pixabay",
    "lane": ""
   },
