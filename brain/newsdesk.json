@@ -1,5 +1,5 @@
 {
- "fetched": "2026-11-10T00:30:52+00:00",
+ "fetched": "2026-11-10T07:37:34+00:00",
  "sources": [
   "Punch: 30 stories",
   "Vanguard: 20 stories",
@@ -9,5 +9,30 @@
   "The Guardian Nigeria: unreachable (HTTP Error 403: Forbidden)",
   "Nairametrics: 20 stories"
  ],
- "items": []
+ "items": [
+  {
+   "title": "I sold heavy weapons internationally – Orji Kalu",
+   "link": "https://www.vanguardngr.com/2026/11/i-sold-heavy-weapons-internationally-orji-kalu/",
+   "published": "2026-11-10T06:45:16+00:00",
+   "source": "Vanguard",
+   "score": 4,
+   "matched": [
+    "rent",
+    "rents"
+   ],
+   "summary": "The Senator representing Abia North, Orji Kalu, has disclosed that he previously engaged in the international trade of heavy weapons, selling arms to buyers in different countries before quitting the "
+  },
+  {
+   "title": "I sold arms to anyone with money — Kalu",
+   "link": "https://punchng.com/i-sold-arms-to-anyone-with-money-kalu/?utm_source=rss.punchng.com&utm_medium=web",
+   "published": "2026-11-10T06:45:24+00:00",
+   "source": "Punch",
+   "score": 4,
+   "matched": [
+    "rent",
+    "rents"
+   ],
+   "summary": "Senator Orji Kalu has disclosed that he previously traded in heavy weapons internationally, selling to any buyer with money before his parents made him sto Read More: https://punchng.com/i-sold-arms-t"
+  }
+ ]
 }

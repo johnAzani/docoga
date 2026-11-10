@@ -1,6 +1,17 @@
 [
  {
   "date": "2026-11-12",
+  "at": "2026-11-10T08:38:43+01:00",
+  "short_day": true,
+  "state": "enugu",
+  "problems": [
+   "a body line is 149 characters; max 110: 'In Enugu, a landlord may not resort to s'",
+   "a body line is 183 characters; max 110: 'Even after a valid quit notice, your lan'",
+   "short.tips[4].say: no link — the end card carries it"
+  ]
+ },
+ {
+  "date": "2026-11-12",
   "at": "2026-11-10T01:38:16+01:00",
   "short_day": true,
   "state": "enugu",

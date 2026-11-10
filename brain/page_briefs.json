@@ -48,6 +48,49 @@
     "verdict": "decline",
     "reason": "Read against the law shelf and the Growth lock (4 Nov 2026: a page only where DocOga writes the document). The question is listing marketing; the only law behind it is agent registration (Lagos LASRERA Law 2021), misleading-advertisement rules (FCCPA 2018, Part XV) and the advertising regulator's code — none of which a tenancy document carries. No DocOga document stands behind a listing page, so no page. LATER: a landlord's letter of authority to let (landlord → agent, naming the fee and the LASRERA number) would give the question a document; revisit if the field asks a third time or the Lagos Bill's 5% agency cap becomes law."
    }
+  },
+  {
+   "id": "house-rent-caption-261110",
+   "question": "House for rent captions nigeria",
+   "status": "briefed",
+   "first_seen": "2026-11-10",
+   "last_seen": "2026-11-10",
+   "sightings": [
+    {
+     "competitor": "Mushrooms.ng blog",
+     "title": "House for rent captions nigeria",
+     "published": "2026-11-05",
+     "seen": "2026-11-10"
+    },
+    {
+     "competitor": "Mushrooms.ng blog",
+     "title": "How to advertise house for rent nigeria",
+     "published": "2026-11-05",
+     "seen": "2026-11-10"
+    }
+   ],
+   "brief": {
+    "verdict": "build",
+    "reason": "The competition's topics address how to advertise property for rent, a distinct process from rent receipts, and fall within DocOga's core focus on tenancy and agent documents.",
+    "working_title": "How to advertise a house for rent in Nigeria? What the law says",
+    "the_question": "The searcher wants to understand the legal requirements and best practices for advertising a house for rent in Nigeria to attract tenants.",
+    "who_asks": "agent",
+    "angle": "DocOga will focus on the legal framework governing property advertisements, ensuring compliance with state tenancy laws and consumer protection acts. This includes what must be disclosed and what is prohibited in property listings.",
+    "verify": [
+     "Lagos State Tenancy Law, Part III, Section 3",
+     "Lagos State Consumer Protection Agency Law",
+     "Estate Agency Regulatory Authority (EARA) guidelines (if applicable)",
+     "Advertisement Standard Panel (ASP) guidelines",
+     "Federal Competition and Consumer Protection Act (FCCPA) 2018",
+     "State-specific provisions on discrimination in housing advertisements"
+    ],
+    "tool": "tenancy-agreement",
+    "extend_page": "",
+    "shelf": [],
+    "closest_page": "rent-receipt-format-nigeria"
+   },
+   "drafted_by": "gemini",
+   "briefed_at": "2026-11-10T07:37:51+00:00"
   }
  ]
 }
