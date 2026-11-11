@@ -72,6 +72,28 @@ class LedgerTests(unittest.TestCase):
         self.assertEqual((entry["first_seen"], entry["last_seen"]), ("2026-11-07", "2026-11-14"))
         self.assertEqual([e["id"] for e in pb.due(data)], ["house-rent-caption"])
 
+    def test_a_declined_question_is_not_briefed_again_unless_a_new_source_asks(self):
+        """10 Nov 2026: #214 was declined at dawn and the same run opened #216 on the same two Mushrooms
+        titles, because observe() only matched undecided entries. A decline keeps its sightings; a new
+        rival asking the question reopens it to watching (the 'asked a third time' rule of GROWTH.md)."""
+        data = pb.observe(ITEMS_1, data={"briefs": []}, now=NOW)
+        data = pb.observe(ITEMS_2, data=data, now=LATER)
+        entry = data["briefs"][0]
+        entry["status"] = "declined"
+        entry["decision"] = {"by": "editor", "date": "2026-11-14", "reason": "no document behind it"}
+        again = pb.observe(ITEMS_1, data=data, now=LATER)
+        again = pb.observe(ITEMS_2, data=again, now=LATER)
+        self.assertEqual(len(again["briefs"]), 1, "the same two sources again: no fresh entry, no second brief")
+        self.assertEqual(again["briefs"][0]["status"], "declined")
+        self.assertEqual(pb.due(again), [])
+        third = pb.observe([{"competitor": "Rival C", "title": "How to advertise house for rent nigeria",
+                             "published": "2026-11-20", "kind": "post", "url": "https://c.example/ad"}], data=again, now=LATER)
+        self.assertEqual(len(third["briefs"]), 1)
+        self.assertEqual((third["briefs"][0]["status"], third["briefs"][0]["reopened"]), ("watching", "2026-11-14"),
+                         "a third source asking reopens the question; the old decision stays as history")
+        self.assertEqual(third["briefs"][0]["decision"]["reason"], "no document behind it")
+        self.assertEqual([e["id"] for e in pb.due(third)], ["house-rent-caption"])
+
     def test_the_shelf_and_the_closest_page_are_read_from_what_we_have(self):
         self.assertEqual([h["id"] for h in pb.shelf_hits("Caution fee refund when the tenant leaves", facts=FACTS)], ["lagos:caution_fee:1"])
         self.assertEqual(pb.shelf_hits("How to advertise house for rent", facts=FACTS), [], "'rent' alone proves nothing")

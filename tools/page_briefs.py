@@ -114,8 +114,11 @@ def observe(items=None, data=None, now=None):
         title = g["title"].strip()
         if not words(title):
             continue
-        entry = next((e for e in data["briefs"] if e["status"] != "declined" and
-                      (same_question(e["question"], title) or any(same_question(s["title"], title) for s in e["sightings"]))), None)
+        # Every status matches — a declined question keeps absorbing its sightings instead of
+        # becoming a fresh entry that is briefed again (10 Nov 2026: #214 declined at dawn, #216 opened
+        # by the same run). A decline is revisited only when a *new* source asks the question.
+        entry = next((e for e in data["briefs"] if
+                      same_question(e["question"], title) or any(same_question(s["title"], title) for s in e["sightings"])), None)
         if entry is None:
             entry = {"id": key_for(title), "question": title, "status": "watching", "first_seen": today, "last_seen": today,
                      "sightings": [], "brief": None}
@@ -126,6 +129,11 @@ def observe(items=None, data=None, now=None):
         if (g["competitor"], title.lower()) not in seen and len(entry["sightings"]) < MAX_SIGHTINGS:
             entry["sightings"].append({"competitor": g["competitor"], "title": title, "published": g.get("published", ""), "seen": today})
             entry["last_seen"] = today
+            if entry["status"] == "declined" and g["competitor"] not in {s["competitor"] for s in entry["sightings"][:-1]}:
+                # asked again by a source that had not asked before: the question goes back to watching
+                # and is briefed afresh at the next due() — the old decision stays on the entry as history.
+                entry["status"] = "watching"
+                entry["reopened"] = today
     return data
 
 
