@@ -7,6 +7,69 @@
    "door": "pixabay",
    "lane": ""
   },
+  "pixabay:131988": {
+   "n": 1,
+   "last": "2026-11-11",
+   "query": "padlocked door nigeria",
+   "door": "pixabay",
+   "lane": ""
+  },
+  "pixabay:31599": {
+   "n": 1,
+   "last": "2026-11-11",
+   "query": "courthouse columns nigeria",
+   "door": "pixabay",
+   "lane": ""
+  },
+  "pixabay:214082": {
+   "n": 1,
+   "last": "2026-11-11",
+   "query": "padlocked door nigeria",
+   "door": "pixabay",
+   "lane": ""
+  },
+  "pixabay:28835": {
+   "n": 1,
+   "last": "2026-11-11",
+   "query": "paper documents stack nigeria",
+   "door": "pixabay",
+   "lane": ""
+  },
+  "pixabay:124170": {
+   "n": 1,
+   "last": "2026-11-11",
+   "query": "padlocked door nigeria",
+   "door": "pixabay",
+   "lane": ""
+  },
+  "pixabay:140078": {
+   "n": 1,
+   "last": "2026-11-11",
+   "query": "house gate compound nigeria",
+   "door": "pixabay",
+   "lane": ""
+  },
+  "pixabay:86008": {
+   "n": 1,
+   "last": "2026-11-11",
+   "query": "padlocked door nigeria",
+   "door": "pixabay",
+   "lane": ""
+  },
+  "pixabay:313952": {
+   "n": 3,
+   "last": "2026-11-11",
+   "query": "lagos street nigeria",
+   "door": "pixabay",
+   "lane": ""
+  },
+  "pixabay:10685": {
+   "n": 1,
+   "last": "2026-11-11",
+   "query": "house gate compound nigeria",
+   "door": "pixabay",
+   "lane": ""
+  },
   "pixabay:4222263": {
    "n": 1,
    "last": "2026-11-10",
@@ -81,13 +144,6 @@
    "n": 1,
    "last": "2026-11-10",
    "query": "paper receipt nigeria",
-   "door": "pixabay",
-   "lane": ""
-  },
-  "pixabay:313952": {
-   "n": 2,
-   "last": "2026-11-10",
-   "query": "lagos street nigeria",
    "door": "pixabay",
    "lane": ""
   },
