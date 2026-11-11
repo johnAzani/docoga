@@ -91,6 +91,22 @@
    },
    "drafted_by": "gemini",
    "briefed_at": "2026-11-10T07:37:51+00:00"
+  },
+  {
+   "id": "firm-year-end-party",
+   "question": "Why your firm’s year-end party should leave something on the wall",
+   "status": "watching",
+   "first_seen": "2026-11-11",
+   "last_seen": "2026-11-11",
+   "sightings": [
+    {
+     "competitor": "Legalnaija templates",
+     "title": "Why your firm’s year-end party should leave something on the wall",
+     "published": "2026-11-11",
+     "seen": "2026-11-11"
+    }
+   ],
+   "brief": null
   }
  ]
 }

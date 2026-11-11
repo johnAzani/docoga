@@ -1,7 +1,14 @@
 {
- "pulled_at": "2026-11-10T07:37:34+00:00",
+ "pulled_at": "2026-11-11T00:30:50+00:00",
  "days": 14,
  "items": [
+  {
+   "competitor": "Legalnaija templates",
+   "kind": "tool",
+   "title": "Why your firm’s year-end party should leave something on the wall",
+   "link": "https://legalnaija.com/why-your-firms-year-end-party-should-leave-something-on-the-wall/",
+   "published": "2026-11-11T00:10:07+00:00"
+  },
   {
    "competitor": "Mushrooms.ng blog",
    "kind": "content",
@@ -42,14 +49,14 @@
   "https://nigeriabuildingcost.ng/sitemap.xml: 401 changed page(s)",
   "https://www.wonder.legal/ng/sitemap.xml: 0 changed page(s)",
   "https://diylaw.ng/sitemap.xml: 0 changed page(s)",
-  "https://sabilaw.org/feed/: 3 fresh post(s)",
-  "https://legalnaija.com/feed/: 1 fresh post(s)",
+  "https://sabilaw.org/feed/: 2 fresh post(s)",
+  "https://legalnaija.com/feed/: 2 fresh post(s)",
   "https://rently.ng/sitemap.xml: 0 changed page(s)",
   "https://homz.ng/sitemap.xml: 0 changed page(s)",
-  "https://mushrooms.ng/sitemap.xml: 43 changed page(s)",
+  "https://mushrooms.ng/sitemap.xml: 70 changed page(s)",
   "https://lexpraxisng.com/feed/: 2 fresh post(s)",
   "https://olamideoyetayolegal.com/feed/: 0 fresh post(s)",
-  "https://www.youtube.com/feeds/videos.xml?channel_id=UCa158r8OZoEia4z2DhPg2LA: unreachable (HTTP Error 404: Not Found)"
+  "https://www.youtube.com/feeds/videos.xml?channel_id=UCa158r8OZoEia4z2DhPg2LA: 11 fresh post(s)"
  ],
  "unwatchable": [
   "@legalfriendng — Real Estate Lawyer (TikTok)",
@@ -94,9 +101,12 @@
     "₦3,200"
    ],
    "found": [
-    "₦3,200"
+    "₦3,200",
+    "₦100"
    ],
-   "new": [],
+   "new": [
+    "₦100"
+   ],
    "gone": []
   }
  ]
