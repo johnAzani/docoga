@@ -52,7 +52,7 @@
   {
    "id": "house-rent-caption-261110",
    "question": "House for rent captions nigeria",
-   "status": "briefed",
+   "status": "declined",
    "first_seen": "2026-11-10",
    "last_seen": "2026-11-10",
    "sightings": [
@@ -90,7 +90,13 @@
     "closest_page": "rent-receipt-format-nigeria"
    },
    "drafted_by": "gemini",
-   "briefed_at": "2026-11-10T07:37:51+00:00"
+   "briefed_at": "2026-11-10T07:37:51+00:00",
+   "decision": {
+    "by": "editor",
+    "date": "2026-11-11",
+    "verdict": "declined",
+    "reason": "Duplicate of house-rent-caption (declined 10 Nov 2026 — no DocOga document stands behind a listing page). The ledger matched new sightings only against undecided entries, so the same question was briefed twice; fixed in tools/page_briefs.observe, a declined question now keeps its sightings and is revisited only when a new source asks it."
+   }
   },
   {
    "id": "firm-year-end-party",

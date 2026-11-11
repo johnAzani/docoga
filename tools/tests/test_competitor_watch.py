@@ -107,7 +107,10 @@ class Pull(unittest.TestCase):
             out = Path(tmp) / "field.json"
             buf = io.StringIO()
             with redirect_stdout(buf):
-                rc = cw.main(["pull", "--out", str(out)])
+                # the CLI reads the real clock: the window opens at the fixture's 20 Oct 2026 so the
+                # 28–30 Oct items stay inside it on any day (11 Nov 2026: the fixed 14 days had aged them out)
+                days = (datetime.now(timezone.utc) - datetime(2026, 10, 20, tzinfo=timezone.utc)).days + 1
+                rc = cw.main(["pull", "--out", str(out), "--days", str(max(days, 14))])
             self.assertEqual(rc, 0)
             self.assertIn("FIELD_ITEMS=3", buf.getvalue())
             self.assertEqual(len(json.loads(out.read_text())["items"]), 3)
