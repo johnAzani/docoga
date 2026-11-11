@@ -1,0 +1,131 @@
+{
+ "version": 1,
+ "status": "approved",
+ "date": "2026-11-12",
+ "generated_at": "2026-11-11T07:59:56+01:00",
+ "theme": "enugu-landlord-self-help-lockout",
+ "post_type": "story",
+ "hook_type": "CURIOSITY",
+ "state": "enugu",
+ "claims": [
+  {
+   "text": "A landlord in Enugu cannot resort to self-help like lock-outs, removing roofs, or cutting power.",
+   "fact_id": "enugu:protections:1"
+  },
+  {
+   "text": "Unlawful eviction makes the landlord liable for damages in court, regardless of tenant status.",
+   "fact_id": "enugu:notice_extras:7",
+   "recalled": true
+  },
+  {
+   "text": "Under Enugu law, self-help like lock-outs or removing roofs is unlawful, and courts award damages against landlords who do it.",
+   "fact_id": "enugu:protections:1",
+   "recalled": true
+  },
+  {
+   "text": "In Enugu, a landlord who changes locks or cuts off power is resorting to unlawful self-help.",
+   "fact_id": "enugu:protections:1",
+   "recalled": true
+  },
+  {
+   "text": "Even if rent has run out, valid notice and a court order are required before any eviction.",
+   "fact_id": "enugu:notice_extras:7",
+   "recalled": true
+  },
+  {
+   "text": "Nigerian courts order landlords who use self-help to pay heavy damages to the tenant.",
+   "fact_id": "enugu:notice_extras:7",
+   "recalled": true
+  },
+  {
+   "text": "Landlords must follow the legal process and issue a proper Notice to Quit on time.",
+   "fact_id": "enugu:notice_extras:6",
+   "recalled": true
+  }
+ ],
+ "recalled": [
+  "enugu:notice_extras:6",
+  "enugu:notice_extras:7"
+ ],
+ "post": {
+  "headline": "What happens when an Enugu landlord changes your lock",
+  "lines": [
+   "A tenant in Enugu came home to find his lock changed and electricity cut off because rent expired.",
+   "Many landlords think taking off doors or locking tenants out is a quick way to reclaim property.",
+   "In Enugu, a landlord cannot resort to self-help like lock-outs, removing roofs, or cutting power.",
+   "Unlawful eviction makes the landlord liable for damages in court, regardless of tenant status."
+  ],
+  "cta": "Send this to the friend renting in Enugu before their landlord attempts self-help.",
+  "hashtags": [
+   "#DocOga",
+   "#Enugu",
+   "#TenantRights",
+   "#NoticeToQuit"
+  ]
+ },
+ "threads": {
+  "text": "A landlord in Enugu removed a tenant's door to force them out after rent expired. Under Enugu law, self-help like lock-outs or removing roofs is unlawful, and courts award damages against landlords who do it. Has your landlord ever threatened to change your locks?",
+  "hashtags": [
+   "#DocOga",
+   "#Enugu"
+  ],
+  "topic": "Tenant Rights Enugu",
+  "poll": null,
+  "evening": "Locking out a tenant in Enugu without a court order turns the landlord into a defendant in damages."
+ },
+ "visual": {
+  "kicker": "Know Your Rights",
+  "layout": "poster",
+  "big": "",
+  "plate": "keys wooden door"
+ },
+ "short": {
+  "title": "What happens when an Enugu landlord changes your lock?",
+  "hook_sub": "Self-help eviction is unlawful in Enugu",
+  "hook_say": "A landlord in Enugu came home one evening and changed the main lock because rent expired. Here is why that move backfires in court.",
+  "tips": [
+   {
+    "text": "Self-help is illegal",
+    "sub": "Landlords cannot change locks or doors",
+    "say": "In Enugu, a landlord who changes locks or cuts off power is resorting to unlawful self-help."
+   },
+   {
+    "text": "Court process is compulsory",
+    "sub": "Eviction requires a court order",
+    "say": "Even if rent has run out, valid notice and a court order are required before any eviction."
+   },
+   {
+    "text": "Landlord pays damages",
+    "sub": "Unlawful eviction leads to damages",
+    "say": "Nigerian courts order landlords who use self-help to pay heavy damages to the tenant."
+   },
+   {
+    "text": "Issue proper notice",
+    "sub": "Follow the legal eviction process",
+    "say": "Landlords must follow the legal process and issue a proper Notice to Quit on time."
+   }
+  ],
+  "hook_text": "WHAT HAPPENS WHEN AN ENUGU LANDLORD CHANGES YOUR LOCK?",
+  "series": {
+   "slug": "notice-to-quit",
+   "name": "Notice to quit",
+   "part": 4,
+   "total": 5,
+   "label": "Locks and self-help"
+  }
+ },
+ "why": "Thursday scenario addressing Tunde on Enugu self-help eviction protections, using CURIOSITY hook and supporting part 4 of the Notice to Quit Short series.",
+ "tool": "notice-to-quit",
+ "tool_routed": false,
+ "reader": "tunde",
+ "news_hook": null,
+ "quiz": null,
+ "gates": [
+  "citation",
+  "verification",
+  "lint",
+  "repetition",
+  "shape"
+ ],
+ "note": ""
+}

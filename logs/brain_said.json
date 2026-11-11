@@ -330,5 +330,29 @@
   "tool": "rent-receipt",
   "tool_routed": false,
   "news_hook": "Rent relief season: from 2026 tenants deduct 20% of rent (max ₦500,000) — only with a receipt in their name"
+ },
+ {
+  "date": "2026-11-12",
+  "theme": "enugu-landlord-self-help-lockout",
+  "headline": "What happens when an Enugu landlord changes your lock",
+  "post_type": "story",
+  "hook_type": "CURIOSITY",
+  "state": "enugu",
+  "fact_ids": [
+   "enugu:protections:1",
+   "enugu:notice_extras:7",
+   "enugu:protections:1",
+   "enugu:protections:1",
+   "enugu:notice_extras:7",
+   "enugu:notice_extras:7",
+   "enugu:notice_extras:6"
+  ],
+  "recalled": 2,
+  "plate": "keys wooden door",
+  "short": true,
+  "reader": "tunde",
+  "tool": "notice-to-quit",
+  "tool_routed": false,
+  "news_hook": null
  }
 ]

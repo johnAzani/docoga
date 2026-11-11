@@ -1,5 +1,5 @@
 {
- "fetched": "2026-11-11T00:30:50+00:00",
+ "fetched": "2026-11-11T06:55:09+00:00",
  "sources": [
   "Punch: 30 stories",
   "Vanguard: 20 stories",
@@ -9,5 +9,17 @@
   "The Guardian Nigeria: unreachable (HTTP Error 403: Forbidden)",
   "Nairametrics: 20 stories"
  ],
- "items": []
+ "items": [
+  {
+   "title": "Meet Nigerian-born woman appointed New Jersey lieutenant governor",
+   "link": "https://punchng.com/meet-nigerian-born-woman-appointed-new-jersey-lieutenant-governor/?utm_source=rss.punchng.com&utm_medium=web",
+   "published": "2026-11-11T07:04:14+00:00",
+   "source": "Punch",
+   "score": 9,
+   "matched": [
+    "tenant"
+   ],
+   "summary": "Nigerian-born American lawyer, Shirley Emehelu, has been appointed as the Lieutenant Governor of New Jersey in the United States, making her the first immigrant to occupy the position in the state’s h"
+  }
+ ]
 }
