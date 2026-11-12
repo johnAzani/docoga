@@ -64,6 +64,20 @@ platforms; nothing the owner must do on a schedule.
 
 ## 5. Growth ledger (newest first — the scorecard reads the top date)
 
+**Owner's decisions, 12 Nov 2026 (standing):** **no ₦500 single-document price** — the ₦2,000/30-day
+pass stays the only product; **no agents** — the owner will not meet, message or be asked to meet
+estate agents, and no plan may lean on him handing the link to anyone. Both were offered as his
+decisions and declined; neither is raised again.
+
+**Editor's decisions, 12 Nov 2026 (standing):** build hours go to money only — Google clicks, the
+money-page share (15% → 40%) and the tap from free sample to clean copy; the social lanes keep running
+at ₦0 but receive no further build work on cards, Reels, Shorts craft, hooks or thumbnails. Every
+Founder's brief opens with two numbers: Google clicks (28 days) and passes sold (28 days).
+**Checkpoint, end of February 2027:** 500 Google clicks in a month and 10 passes sold in a month —
+met, we scale pages and states; missed, the owner is told to stop spending even attention on it and
+the product is parked, sold or changed. The owner plans his money as if DocOga earns ₦0 until then.
+
+
 - **2026-11-12** — **Seventh dive (owner, 7:55am: "Continue"): the snippet, not the ranking.** The 9 Nov
   pull (28 days to 6 Nov) read page by page: eleven pages sit on page one with impressions and almost
   no clicks — `/power-of-attorney-nigeria` position 4.7, 57 impressions, 1 click; `/notice-to-quit-edo`
