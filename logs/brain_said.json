@@ -375,5 +375,30 @@
   "tool": "rent-review",
   "tool_routed": true,
   "news_hook": null
+ },
+ {
+  "date": "2026-11-14",
+  "theme": "kano-tenancy-agreement-checklist-no-statute",
+  "headline": "Moving to Kano? Your tenancy agreement is your only shield.",
+  "post_type": "checklist",
+  "hook_type": "STORY",
+  "state": "kano",
+  "fact_ids": [
+   "kano:verified_negative:2",
+   "kano:verified_negative:3",
+   "kano:advance_rent:1",
+   "kano:verified_negative:3",
+   "kano:verified_negative:3",
+   "kano:notice_extras:3",
+   "kano:verified_negative:3",
+   "kano:notice_extras:3"
+  ],
+  "recalled": 2,
+  "plate": "keys wooden door",
+  "short": false,
+  "reader": "tunde",
+  "tool": "tenancy-agreement",
+  "tool_routed": false,
+  "news_hook": null
  }
 ]

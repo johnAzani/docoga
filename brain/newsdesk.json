@@ -1,5 +1,5 @@
 {
- "fetched": "2026-11-12T00:30:52+00:00",
+ "fetched": "2026-11-12T07:31:49+00:00",
  "sources": [
   "Punch: 30 stories",
   "Vanguard: 20 stories",
@@ -11,27 +11,16 @@
  ],
  "items": [
   {
-   "title": "Ghana demands $4.14 million unpaid oil surface rentals from petroleum firms",
-   "link": "https://nairametrics.com/2026/11/11/ghana-demands-4-14-million-unpaid-oil-surface-rentals-from-petroleum-firms/",
-   "published": "2026-11-11T11:15:18+00:00",
-   "source": "Nairametrics",
-   "score": 6,
-   "matched": [
-    "rent"
-   ],
-   "summary": "Ghana is seeking to recover $4.14 million in unpaid surface rentals from upstream petroleum companies, with the Public Interest and Accountability Committee (PIAC) recommending tougher measures agains"
-  },
-  {
-   "title": "Visa Report Highlights Opportunity to Connect Digital Payments with Business Operations for smes in Nigeria",
-   "link": "https://nairametrics.com/2026/11/11/visa-report-highlights-opportunity-to-connect-digital-payments-with-business-operations-for-smes-in-nigeria/",
-   "published": "2026-11-11T10:22:38+00:00",
-   "source": "Nairametrics",
-   "score": 5,
+   "title": "Student Loan: Parents, NANS offer tips on how to stop double dipping by beneficiaries",
+   "link": "https://www.vanguardngr.com/2026/11/student-loan-parents-nans-offer-tips-on-how-to-stop-double-dipping-by-beneficiaries/",
+   "published": "2026-11-12T05:55:17+00:00",
+   "source": "Vanguard",
+   "score": 12,
    "matched": [
     "rent",
-    "sme"
+    "rents"
    ],
-   "summary": "Report identifies next SME digitization opportunity: connecting payments with day-to-day business management. 94% of SMEs surveyed find an all-in-one payment and business solution appealing, yet only "
+   "summary": "\"The Student Loan Scheme was set up to give access to higher education to students who would otherwise drop out because of inability to pay fees\" The post Student Loan: Parents, NANS offer tips on how"
   }
  ]
 }

@@ -1,5 +1,5 @@
 {
- "pulled_at": "2026-11-12T00:30:52+00:00",
+ "pulled_at": "2026-11-12T07:31:49+00:00",
  "days": 14,
  "items": [
   {
@@ -53,17 +53,17 @@
   }
  ],
  "sources": [
-  "https://nigeriabuildingcost.ng/sitemap.xml: 405 changed page(s)",
+  "https://nigeriabuildingcost.ng/sitemap.xml: 407 changed page(s)",
   "https://www.wonder.legal/ng/sitemap.xml: 0 changed page(s)",
   "https://diylaw.ng/sitemap.xml: 0 changed page(s)",
   "https://sabilaw.org/feed/: 7 fresh post(s)",
   "https://legalnaija.com/feed/: 2 fresh post(s)",
   "https://rently.ng/sitemap.xml: 0 changed page(s)",
   "https://homz.ng/sitemap.xml: 0 changed page(s)",
-  "https://mushrooms.ng/sitemap.xml: 65 changed page(s)",
-  "https://lexpraxisng.com/feed/: 2 fresh post(s)",
+  "https://mushrooms.ng/sitemap.xml: 64 changed page(s)",
+  "https://lexpraxisng.com/feed/: 1 fresh post(s)",
   "https://olamideoyetayolegal.com/feed/: 0 fresh post(s)",
-  "https://www.youtube.com/feeds/videos.xml?channel_id=UCa158r8OZoEia4z2DhPg2LA: 10 fresh post(s)"
+  "https://www.youtube.com/feeds/videos.xml?channel_id=UCa158r8OZoEia4z2DhPg2LA: unreachable (HTTP Error 404: Not Found)"
  ],
  "unwatchable": [
   "@legalfriendng — Real Estate Lawyer (TikTok)",
@@ -108,12 +108,9 @@
     "₦3,200"
    ],
    "found": [
-    "₦3,200",
-    "₦5,200"
+    "₦3,200"
    ],
-   "new": [
-    "₦5,200"
-   ],
+   "new": [],
    "gone": []
   }
  ]

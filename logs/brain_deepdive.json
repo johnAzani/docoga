@@ -703,6 +703,72 @@
     "beat 31 dropped: trigger 'its free to start' not spoken in section 9 after word 56"
    ],
    "run_id": "43127787616"
+  },
+  {
+   "at": "2026-11-12T08:34:42+01:00",
+   "episode": "dd8",
+   "attempt": 1,
+   "outcome": "refused",
+   "title": "Notice to Quit: Rivers' Strict Dates vs. Lagos's Flexibility",
+   "problems": [
+    "total narration 882 words; need 1,100-1,800",
+    "36-48 beats (got 23)",
+    "claim cites unknown fact id 'lagos:notice_extras:6'"
+   ],
+   "healed": [
+    "beat 11 plate 'map' → letter",
+    "beat 13 plate 'receipt' → letter",
+    "beat 18 plate 'document' → letter",
+    "beat 18 dropped: trigger 'fixedterm tenancies' not spoken in section 7 after word 37",
+    "beat 19 dropped: trigger 'unlawful selfhelp eviction' not spoken in section 7 after word 37",
+    "beat 22 plate 'house' → letter"
+   ],
+   "run_id": "43175881838"
+  },
+  {
+   "at": "2026-11-12T08:35:21+01:00",
+   "episode": "dd8",
+   "attempt": 2,
+   "outcome": "refused",
+   "title": "Notice to Quit: Rivers vs. Lagos — Date Rules That Protect You",
+   "problems": [
+    "36-48 beats (got 27)",
+    "section 4 needs at least two beats",
+    "claim cites unknown fact id 'lagos:notice_extras:6'"
+   ],
+   "healed": [
+    "beat 10 shot 'danfo bus on lagos road' dropped",
+    "beat 11 dropped: trigger 'threemonth and sixmonth' not spoken in section 4 after word 0",
+    "beat 12 dropped: trigger 'makes lagos somewhat unique' not spoken in section 4 after word 0",
+    "beat 15 shot 'one week one month six months calendar' dropped",
+    "beat 18 dropped: trigger 'of the owners intention' not spoken in section 6 after word 0",
+    "beat 22 dropped: trig ['date', 'of', 'service', 'is', 'key'] is not 2-4 words",
+    "beat 27 dropped: trig ['not', 'claiming', 'to', 'be', 'the'] is not 2-4 words"
+   ],
+   "run_id": "43175881838"
+  },
+  {
+   "at": "2026-11-12T08:37:19+01:00",
+   "episode": "dd8",
+   "attempt": 3,
+   "outcome": "refused",
+   "title": "Notice to Quit: The Date Mistake That Can Cost You",
+   "problems": [
+    "claim cites unknown fact id 'lagos:notice_extras:6'"
+   ],
+   "healed": [
+    "beat 3 plate 'map' → letter",
+    "beat 7 dropped: trigger 'statutory length' not spoken in section 2 after word 45",
+    "beat 17 dropped: trigger 'section 134' not spoken in section 5 after word 0",
+    "beat 22 dropped: trigger 'fixedterm tenancies' not spoken in section 6 after word 72",
+    "beat 23 dropped: trigger 'sevenday notice' not spoken in section 6 after word 72",
+    "beat 27 shot 'document with warning sign' dropped",
+    "beat 28 plate 'padlock' → letter",
+    "beat 29 dropped: trigger 'no lockouts' not spoken in section 8 after word 0",
+    "beat 31 plate 'police' → letter",
+    "beat 31 dropped: trigger 'section 441' not spoken in section 8 after word 46"
+   ],
+   "run_id": "43175881838"
   }
  ]
 }

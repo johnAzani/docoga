@@ -1,0 +1,102 @@
+{
+ "version": 1,
+ "status": "approved",
+ "date": "2026-11-14",
+ "generated_at": "2026-11-12T08:34:07+01:00",
+ "theme": "kano-tenancy-agreement-checklist-no-statute",
+ "post_type": "checklist",
+ "hook_type": "STORY",
+ "state": "kano",
+ "claims": [
+  {
+   "text": "Two separate research passes for a Kano rent-control or tenancy statute returned no Nigerian authority at all.",
+   "fact_id": "kano:verified_negative:2"
+  },
+  {
+   "text": "A Kano tenant has no statutory figure to point to and no tribunal to apply to about the rent itself — so everything turns on the tenancy agreement.",
+   "fact_id": "kano:verified_negative:3"
+  },
+  {
+   "text": "Your tenancy agreement is your only shield.",
+   "fact_id": "kano:advance_rent:1",
+   "recalled": true
+  },
+  {
+   "text": "In Kano, everything depends on that paper.",
+   "fact_id": "kano:verified_negative:3",
+   "recalled": true
+  },
+  {
+   "text": "Your agreement is the law.",
+   "fact_id": "kano:verified_negative:3",
+   "recalled": true
+  },
+  {
+   "text": "Make sure it covers rent, notice, and repairs.",
+   "fact_id": "kano:notice_extras:3",
+   "recalled": true
+  },
+  {
+   "text": "your written agreement is everything.",
+   "fact_id": "kano:verified_negative:3",
+   "recalled": true
+  },
+  {
+   "text": "Make sure it spells out your rent, notice periods, and who fixes what.",
+   "fact_id": "kano:notice_extras:3",
+   "recalled": true
+  }
+ ],
+ "recalled": [
+  "kano:advance_rent:1",
+  "kano:notice_extras:3"
+ ],
+ "post": {
+  "headline": "Moving to Kano? Your tenancy agreement is your only shield.",
+  "lines": [
+   "Imagine you move to Kano, pay your rent, and suddenly the landlord changes the terms.",
+   "Without a tenancy agreement, you have no law to point to. In Kano, everything depends on that paper.",
+   "DocOga found no Kano rent control or tenancy statute. Your agreement is the law.",
+   "Make sure it covers rent, notice, and repairs. Get it right in two minutes, free to start."
+  ],
+  "cta": "Send this to the friend moving to Kano this month.",
+  "hashtags": [
+   "#DocOga",
+   "#KanoRent",
+   "#TenancyAgreement",
+   "#PaperBeatsMemory",
+   "#TenantRights"
+  ]
+ },
+ "threads": {
+  "text": "Moving to Kano? Your tenancy agreement is your only shield. DocOga found no Kano rent control law, so your written agreement is everything. Make sure it spells out your rent, notice periods, and who fixes what. Get it right before you move in.\n\nWhat is your biggest concern when renting?",
+  "hashtags": [
+   "#DocOga",
+   "#KanoRent"
+  ],
+  "topic": "Kano Rent Agreement",
+  "poll": null,
+  "evening": "Kano landlords and tenants: no state law sets rent limits or tribunals. Your tenancy agreement is the only document that protects both sides. Get it in writing."
+ },
+ "visual": {
+  "kicker": "Know your rights",
+  "layout": "checklist",
+  "big": "",
+  "plate": "keys wooden door"
+ },
+ "short": null,
+ "why": "This post addresses Tunde, who is renting for the first time, in Kano, where the absence of statutory law makes the tenancy agreement paramount, aligning with the checklist lead type and story hook.",
+ "tool": "tenancy-agreement",
+ "tool_routed": false,
+ "reader": "tunde",
+ "news_hook": null,
+ "quiz": null,
+ "gates": [
+  "citation",
+  "verification",
+  "lint",
+  "repetition",
+  "shape"
+ ],
+ "note": ""
+}
