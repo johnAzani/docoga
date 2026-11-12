@@ -1,5 +1,14 @@
 [
  {
+  "date": "2026-11-14",
+  "at": "2026-11-12T01:37:54+01:00",
+  "short_day": false,
+  "state": "kano",
+  "problems": [
+   "fact id typed into the copy: kano:notice_extras:1, kano:notice_extras:3, kano:notice_extras:4 — ids live only in `claims`, never in words a reader sees"
+  ]
+ },
+ {
   "date": "2026-11-13",
   "at": "2026-11-11T08:02:19+01:00",
   "short_day": true,

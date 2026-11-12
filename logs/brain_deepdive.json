@@ -646,6 +646,63 @@
     "beat 38 shot 'person using docoga on phone' dropped"
    ],
    "run_id": "42454932353"
+  },
+  {
+   "at": "2026-11-12T01:40:34+01:00",
+   "episode": "dd8",
+   "attempt": 1,
+   "outcome": "refused",
+   "title": "Notice to Quit: The Wrong Date Voids Your Eviction",
+   "problems": [
+    "no emoji or markdown in narration",
+    "claim cites unknown fact id 'lagos:notice_extras:6'"
+   ],
+   "healed": [
+    "beat 4 shot 'person holding phone' dropped",
+    "beat 12 dropped: trigger 'deviate can render' not spoken in section 3 after word 48",
+    "beat 16 dropped: trigger 'critical detail' not spoken in section 4 after word 89",
+    "beat 18 dropped: trigger 'threemonth and sixmonth' not spoken in section 5 after word 0",
+    "beat 22 shot 'calendar with 7 marked days' dropped"
+   ],
+   "run_id": "43127787616"
+  },
+  {
+   "at": "2026-11-12T01:41:12+01:00",
+   "episode": "dd8",
+   "attempt": 2,
+   "outcome": "refused",
+   "title": "The Quit Notice: How Rivers State Differs from Lagos",
+   "problems": [
+    "total narration 905 words; need 1,100-1,800"
+   ],
+   "healed": [
+    "beat 2 dropped: trigger 'is this paper even' not spoken in section 1 after word 0",
+    "beat 5 dropped: trigger 'process of court' not spoken in section 2 after word 0",
+    "beat 10 dropped: trigger 'one weeks notice' not spoken in section 3 after word 49",
+    "beat 16 dropped: trigger 'section 134' not spoken in section 5 after word 0",
+    "beat 20 dropped: trigger 'fixedterm tenancy' not spoken in section 6 after word 0",
+    "beat 21 dropped: trigger 'sevenday notice' not spoken in section 6 after word 0",
+    "beat 34 dropped: trigger 'due process' not spoken in section 9 after word 18"
+   ],
+   "run_id": "43127787616"
+  },
+  {
+   "at": "2026-11-12T01:43:50+01:00",
+   "episode": "dd8",
+   "attempt": 3,
+   "outcome": "refused",
+   "title": "Notice to Quit: Rivers' Strict Rules vs. Lagos's Exceptions",
+   "problems": [
+    "36-48 beats (got 27)"
+   ],
+   "healed": [
+    "beat 11 dropped: head 'Lagos: The Anniversary Exception' is not 1-28 characters",
+    "beat 12: first beat of section 4 — trig cleared",
+    "beat 21 dropped: trigger 'thats seven clear days' not spoken in section 6 after word 79",
+    "beat 26 dropped: head 'Defective Notice, Vitiated Case' is not 1-28 characters",
+    "beat 31 dropped: trigger 'its free to start' not spoken in section 9 after word 56"
+   ],
+   "run_id": "43127787616"
   }
  ]
 }

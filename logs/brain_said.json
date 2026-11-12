@@ -354,5 +354,26 @@
   "tool": "notice-to-quit",
   "tool_routed": false,
   "news_hook": null
+ },
+ {
+  "date": "2026-11-13",
+  "theme": "rivers-notice-to-quit-anniversary-rule-promo",
+  "headline": "Rivers tenants: Your quit notice date is specific",
+  "post_type": "promo",
+  "hook_type": "CLAIM",
+  "state": "rivers",
+  "fact_ids": [
+   "rivers:anniversary_rule:1",
+   "rivers:anniversary_rule:2",
+   "rivers:anniversary_rule:3",
+   "rivers:protections:2"
+  ],
+  "recalled": 2,
+  "plate": "rivers state map",
+  "short": true,
+  "reader": "ngozi",
+  "tool": "rent-review",
+  "tool_routed": true,
+  "news_hook": null
  }
 ]

@@ -1,0 +1,116 @@
+{
+ "version": 1,
+ "status": "approved",
+ "date": "2026-11-13",
+ "generated_at": "2026-11-12T01:33:30+01:00",
+ "theme": "rivers-notice-to-quit-anniversary-rule-promo",
+ "post_type": "promo",
+ "hook_type": "CLAIM",
+ "state": "rivers",
+ "claims": [
+  {
+   "text": "In Rivers State, your landlord's notice to quit must end on the eve of the anniversary of your tenancy term.",
+   "fact_id": "rivers:anniversary_rule:1"
+  },
+  {
+   "text": "A notice that gets this date wrong is defective.",
+   "fact_id": "rivers:anniversary_rule:2"
+  },
+  {
+   "text": "If your tenancy started January 1st, a yearly notice must expire December 31st.",
+   "fact_id": "rivers:anniversary_rule:3",
+   "recalled": true
+  },
+  {
+   "text": "A defective notice protects you from having to move out based on incorrect paperwork.",
+   "fact_id": "rivers:protections:2",
+   "recalled": true
+  }
+ ],
+ "recalled": [
+  "rivers:anniversary_rule:3",
+  "rivers:protections:2"
+ ],
+ "post": {
+  "headline": "Rivers tenants: Your quit notice date is specific",
+  "lines": [
+   "Ngozi, in Rivers State,",
+   "your landlord's notice to quit must end on the eve of the anniversary of your tenancy term.",
+   "A notice that gets this date wrong is defective.",
+   "Don't let a wrong date push you out. Get the correct notice today, free to start.",
+   "It takes two minutes on your phone."
+  ],
+  "cta": "Send this to a friend whose landlord just gave them a notice.",
+  "hashtags": [
+   "#DocOga",
+   "#RiversTenancy",
+   "#NoticeToQuit",
+   "#TenantRights"
+  ]
+ },
+ "threads": {
+  "text": "Ngozi, in Rivers State, your landlord's notice to quit must end on the eve of the anniversary of your tenancy term. If the date is wrong, the notice is defective. Don't move because of a faulty paper. Get the right one. Is your quit notice date correct?",
+  "hashtags": [
+   "#DocOga",
+   "#Tenancy"
+  ],
+  "topic": "Tenant Rights Nigeria",
+  "poll": null,
+  "evening": "A quit notice in Rivers is a process of court, not just a letter. It needs to be precise. The wrong date can make it invalid, protecting you from unlawful eviction. Know what your landlord must do."
+ },
+ "visual": {
+  "kicker": "Know Your Rights",
+  "layout": "poster",
+  "big": "",
+  "plate": "rivers state map"
+ },
+ "short": {
+  "title": "Answering a notice: Is it valid?",
+  "hook_sub": "Check the date first",
+  "hook_say": "Your landlord gave you a notice to quit. But is it even valid? Many notices are defective because of one simple mistake.",
+  "tips": [
+   {
+    "text": "Check the date",
+    "sub": "Must end on anniversary eve in Rivers",
+    "say": "In Rivers State, the notice must end on the eve of your tenancy's anniversary. If your tenancy started January 1st, a yearly notice must expire December 31st."
+   },
+   {
+    "text": "Wrong date, invalid",
+    "sub": "A defective notice protects you",
+    "say": "A notice that gets this date wrong is defective and may not be valid. This protects you from having to move out based on incorrect paperwork."
+   },
+   {
+    "text": "Get the right paper",
+    "sub": "DocOga gives you the facts",
+    "say": "Don't just accept a notice. Use DocOga to understand what a valid notice looks like in Rivers State, and what your rights are."
+   },
+   {
+    "text": "Avoid court issues",
+    "sub": "Know your steps",
+    "say": "Knowing the law on notice periods and dates can help you respond correctly and avoid unnecessary disputes or unlawful eviction."
+   }
+  ],
+  "hook_text": "ANSWERING A NOTICE: IS IT VALID?",
+  "series": {
+   "slug": "notice-to-quit",
+   "name": "Notice to quit",
+   "part": 5,
+   "total": 5,
+   "label": "Answering a notice"
+  }
+ },
+ "why": "Today is a promo day, and the most forwarded genre is 'what a landlord may and may not demand'; this promo focuses on the critical date requirement for notice to quit in Rivers, aligning with the Short series and sales goals by pointing to the Notice to Quit tool during year-end pressure.",
+ "tool": "rent-review",
+ "tool_routed": true,
+ "reader": "ngozi",
+ "news_hook": null,
+ "quiz": null,
+ "gates": [
+  "citation",
+  "verification",
+  "lint",
+  "repetition",
+  "shape"
+ ],
+ "note": ""
+}

@@ -1,7 +1,14 @@
 {
- "pulled_at": "2026-11-11T06:55:09+00:00",
+ "pulled_at": "2026-11-12T00:30:52+00:00",
  "days": 14,
  "items": [
+  {
+   "competitor": "SabiLaw Solutions",
+   "kind": "tool",
+   "title": "City Engineering Nigeria Ltd v. Federal Housing Authority (1997)",
+   "link": "https://sabilaw.org/city-engineering-case-summary/",
+   "published": "2026-11-11T19:08:31+00:00"
+  },
   {
    "competitor": "Legalnaija templates",
    "kind": "tool",
@@ -49,14 +56,14 @@
   "https://nigeriabuildingcost.ng/sitemap.xml: 405 changed page(s)",
   "https://www.wonder.legal/ng/sitemap.xml: 0 changed page(s)",
   "https://diylaw.ng/sitemap.xml: 0 changed page(s)",
-  "https://sabilaw.org/feed/: 2 fresh post(s)",
+  "https://sabilaw.org/feed/: 7 fresh post(s)",
   "https://legalnaija.com/feed/: 2 fresh post(s)",
   "https://rently.ng/sitemap.xml: 0 changed page(s)",
   "https://homz.ng/sitemap.xml: 0 changed page(s)",
-  "https://mushrooms.ng/sitemap.xml: 70 changed page(s)",
+  "https://mushrooms.ng/sitemap.xml: 65 changed page(s)",
   "https://lexpraxisng.com/feed/: 2 fresh post(s)",
   "https://olamideoyetayolegal.com/feed/: 0 fresh post(s)",
-  "https://www.youtube.com/feeds/videos.xml?channel_id=UCa158r8OZoEia4z2DhPg2LA: unreachable (HTTP Error 404: Not Found)"
+  "https://www.youtube.com/feeds/videos.xml?channel_id=UCa158r8OZoEia4z2DhPg2LA: 10 fresh post(s)"
  ],
  "unwatchable": [
   "@legalfriendng — Real Estate Lawyer (TikTok)",
