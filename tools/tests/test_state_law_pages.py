@@ -37,7 +37,9 @@ class LawPageTests(unittest.TestCase):
         for slug, st in g.STATES.items():
             t = (SITE / ("tenancy-law-%s.html" % slug)).read_text(encoding="utf-8")
             title = re.search(r"<title>(.*?)</title>", t).group(1)
-            self.assertTrue(title.startswith("Tenancy Law in " + st["place"]), title)
+            # 12 Nov 2026: the query is typed as "edo state tenancy law" — the title now opens with it
+            self.assertTrue(title.startswith(g.law_place(slug, st) + " Tenancy Law"), title)
+            self.assertLessEqual(len(title), 60, title)
 
     def test_the_tool_pages_link_to_the_law_page_as_tenancy_law_not_as_a_second_agreement(self):
         t = (SITE / "tenancy-agreement-edo.html").read_text(encoding="utf-8")

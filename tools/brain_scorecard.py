@@ -1311,6 +1311,8 @@ def summary_md(snap):
     try:
         import growth
         lines += ["", "### Growth — where the next naira is (🔒 docs/GROWTH.md)"] + growth.scorecard_lines()
+        import snippet_audit
+        lines += snippet_audit.scorecard_lines()
     except Exception:  # noqa: BLE001 — never breaks the scorecard
         pass
     lines += ["", "### Orders for the coming week"] + ["- " + o for o in snap.get("orders") or []]
