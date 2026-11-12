@@ -457,8 +457,8 @@ body.has-pass .buy-only{display:none !important}
     <div class="card">
       <div class="ico"><svg aria-hidden="true"><use href="#i-shield"/></svg></div><span class="chip">FREE</span>
       <h3>Warning Letter</h3>
-      <p>Handle staff misconduct the lawful way — a formal first, second or final written warning with a clear paper trail and an improvement deadline.</p>
-      <a href="#warning">Create warning →</a>
+      <p>Handle staff misconduct the lawful way — a query asking for a written explanation, then a first, second or final written warning with a clear paper trail and an improvement deadline.</p>
+      <a href="#warning">Create query or warning →</a>
     </div>
   </div>
 
@@ -471,7 +471,7 @@ body.has-pass .buy-only{display:none !important}
   <div class="seo-block">
     <h2>Free guides — the questions Nigerians ask first</h2>
     <p>Plain-English answers on Nigerian renting and small-business paperwork, current for 2026:</p>
-    <p style="line-height:2"><a href="/rent-relief-nigeria"><b>Rent relief 2026: claim the ₦500,000 tax deduction</b></a> · <a href="/tenancy-agreement-nigeria">Tenancy agreement format</a> · <a href="/tenancy-agreement-sample-nigeria">Tenancy agreement sample + free PDF</a> · <a href="/notice-to-quit-nigeria">Quit notice: free letter + how many months</a> · <a href="/demand-letter-rent-arrears-nigeria">Demand letter for unpaid rent + free PDF</a> · <a href="/rent-increase-notice-nigeria">Rent increase notice + the law by state</a> · <a href="/employment-contract-sample-nigeria">Employment contract sample + free PDF</a> · <a href="/rent-receipt-format-nigeria">Rent receipt format</a> · <a href="/caution-fee-nigeria">Is the caution fee refundable?</a> · <a href="/tenant-rights-nigeria">Tenant rights &amp; landlord duties</a> · <a href="/shop-tenancy-agreement-nigeria">Shop &amp; business tenancy</a> · <a href="/invoice-format-nigeria">Invoice format + 7.5% VAT</a> · <a href="/rent-index-nigeria">Rent Monitor: rent actually paid, by state</a></p>
+    <p style="line-height:2"><a href="/rent-relief-nigeria"><b>Rent relief 2026: claim the ₦500,000 tax deduction</b></a> · <a href="/tenancy-agreement-nigeria">Tenancy agreement format</a> · <a href="/tenancy-agreement-sample-nigeria">Tenancy agreement sample + free PDF</a> · <a href="/notice-to-quit-nigeria">Quit notice: free letter + how many months</a> · <a href="/demand-letter-rent-arrears-nigeria">Demand letter for unpaid rent + free PDF</a> · <a href="/rent-increase-notice-nigeria">Rent increase notice + the law by state</a> · <a href="/employment-contract-sample-nigeria">Employment contract sample + free PDF</a> · <a href="/query-letter-sample-nigeria">Query letter, reply &amp; warning letter + free PDFs</a> · <a href="/rent-receipt-format-nigeria">Rent receipt format</a> · <a href="/caution-fee-nigeria">Is the caution fee refundable?</a> · <a href="/tenant-rights-nigeria">Tenant rights &amp; landlord duties</a> · <a href="/shop-tenancy-agreement-nigeria">Shop &amp; business tenancy</a> · <a href="/invoice-format-nigeria">Invoice format + 7.5% VAT</a> · <a href="/rent-index-nigeria">Rent Monitor: rent actually paid, by state</a></p>
   </div>
 
   <div class="seo-block">
@@ -935,7 +935,7 @@ body.has-pass .buy-only{display:none !important}
 <!-- ======================= WARNING LETTER ======================= -->
 <section id="page-warning">
   <h2 class="page-title">Warning Letter</h2>
-  <p class="page-sub">A formal written warning — first, second or final — with a clear paper trail, expected improvement and deadline.</p>
+  <p class="page-sub">A query (explain in writing, within a deadline) or a formal written warning — first, second or final — with a clear paper trail, expected improvement and deadline.</p>
   <div class="tool-grid">
     <div class="panel">
       <h3>📝 Warning details</h3>
@@ -955,7 +955,7 @@ body.has-pass .buy-only{display:none !important}
         </div>
         <div class="fieldset"><legend>The warning</legend>
           <div class="form-grid">
-            <div><label>Warning stage</label><select id="w_count"><option>First written warning</option><option>Second written warning</option><option>Final written warning</option></select></div>
+            <div><label>Warning stage</label><select id="w_count"><option>First written warning</option><option>Second written warning</option><option>Final written warning</option><option>Query (explain in writing)</option></select></div>
             <div><label>Incident date(s)</label><input id="w_incident" placeholder="e.g. 12 & 15 Sep 2026"></div>
             <div class="full"><label>Misconduct / policy violated</label><textarea id="w_offence" placeholder="e.g. Repeated lateness to work despite verbal reminders on two occasions…"></textarea></div>
             <div class="full"><label>Prior warnings reference (optional)</label><input id="w_prior" placeholder="e.g. verbal warning dated 2 Aug 2026"></div>
@@ -1970,10 +1970,35 @@ function collectWarning(){ return { w_biz:$('w_biz').value,w_addr:$('w_addr').va
 w_count:$('w_count').value,w_incident:$('w_incident').value,w_offence:$('w_offence').value,w_prior:$('w_prior').value,w_expect:$('w_expect').value,
 w_deadline:$('w_deadline').value,w_signer:$('w_signer').value }; }
 function applyWarning(p){ ['w_biz','w_addr','w_emp','w_role','w_date','w_incident','w_offence','w_prior','w_expect','w_deadline','w_signer'].forEach(id=>{ $(id).value=p[id]||''; }); if(p.w_count) $('w_count').value=p.w_count; }
+/* 12 Nov 2026: the query — Nigeria's name for the step before a warning. The employer asks for a written
+   explanation within a stated time; the warning (or nothing) follows the reply. Labour Act s.11(5) keeps
+   summary dismissal for conduct that justifies it; a query first is what makes the later step defensible. */
+function renderQueryLetter(d){
+return '<div class="'+sheetClass()+'">'+
+'<p style="margin:0"><b>'+esc(d.w_biz||'________________')+'</b>'+(d.w_addr?'<br><small>'+esc(d.w_addr)+'</small>':'')+'</p>'+
+'<p style="text-align:right;margin:6px 0">'+fmtDateLong(d.w_date)+'</p>'+
+'<hr>'+
+'<p><b>To:</b> '+esc(d.w_emp||'________________')+(d.w_role?', '+esc(d.w_role):'')+'</p>'+
+'<p style="margin-bottom:14px"><b>RE: QUERY</b></p>'+
+'<p>Dear '+esc((d.w_emp||'Employee').split(' ').slice(0,2).join(' '))+',</p>'+
+'<p>It has been reported that '+esc(d.w_offence||'you engaged in the conduct described below')+(d.w_incident?' (date(s): <b>'+esc(d.w_incident)+'</b>)':'')+', which, if established, is contrary to the terms of your employment and company policy.</p>'+
+(d.w_prior?'<p>Reference is made to '+esc(d.w_prior)+'.</p>':'')+
+'<p><b>You are required to explain in writing</b> why disciplinary action should not be taken against you in respect of the above'+(d.w_deadline?', and to submit your explanation to the undersigned on or before <b>'+fmtDateLong(d.w_deadline)+'</b>':', and to submit your explanation to the undersigned within 48 hours of receiving this letter')+'.</p>'+
+(d.w_expect?'<p>'+esc(d.w_expect)+'</p>':'')+
+'<p>Your explanation will be considered before any decision is taken. Failure to respond within the time given may result in a decision being taken on the information available, in accordance with your employment contract and applicable labour laws.</p>'+
+'<p style="margin-top:26px">Yours faithfully,</p>'+
+'<div class="sig-grid" style="margin-top:14px"><div><div class="sig-line"></div>'+esc(d.w_signer||'Authorised manager')+'<br><small>For '+esc(d.w_biz||'the company')+'</small></div><div><div class="sig-line"></div>'+esc(d.w_emp||'Employee')+'<br><small>Date</small></div></div>'+
+'<hr style="margin-top:24px">'+
+'<p style="font-size:12px"><b>ACKNOWLEDGEMENT:</b> I, '+esc(d.w_emp||'the employee')+', acknowledge receipt of this query. Receipt does not indicate agreement with its contents.</p>'+
+'<div class="sig-grid" style="margin-top:8px"><div><div class="sig-line"></div>'+esc(d.w_emp||'Employee')+'<br><small>Signature &amp; date</small></div><div><div class="sig-line"></div>'+esc(d.w_signer||'Manager')+'<br><small>Signature &amp; date</small></div></div>'+
+freeBanner()+
+'</div>';
+}
 function renderWarning(){
 const d=collectWarning();
 const count=d.w_count||'First written warning';
-const html =
+const isQuery=/^Query/.test(count);
+const html = isQuery ? renderQueryLetter(d) :
 '<div class="'+sheetClass()+'">'+
 '<p style="margin:0"><b>'+esc(d.w_biz||'________________')+'</b>'+(d.w_addr?'<br><small>'+esc(d.w_addr)+'</small>':'')+'</p>'+
 '<p style="text-align:right;margin:6px 0">'+fmtDateLong(d.w_date)+'</p>'+
@@ -2016,7 +2041,7 @@ if(type==='caution'&&payload.c_from) title='Caution Fee — '+payload.c_from;
 if(type==='demand'&&payload.d_to) title='Demand — '+payload.d_to;
 if(type==='rentreview'&&payload.v_to) title=(payload.v_role==='tenant'?'Rent review reply — '+(payload.v_from||payload.v_to):'Rent review — '+payload.v_to);
 if(type==='payslip'&&payload.p_emp) title='Payslip — '+payload.p_emp;
-if(type==='warning'&&payload.w_emp) title='Warning — '+payload.w_emp;
+if(type==='warning'&&payload.w_emp) title=(/^Query/.test(payload.w_count||'')?'Query — ':'Warning — ')+payload.w_emp;
 if(type==='poa'&&payload.poa_donee) title='Power of Attorney — '+payload.poa_donee;
 const docs=getDocs(); docs.unshift({id:Date.now(),type,title,ts:Date.now(),payload});
 store.setItem('docoga_docs',JSON.stringify(docs.slice(0,60)));
