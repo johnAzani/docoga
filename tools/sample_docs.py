@@ -236,6 +236,50 @@ RENT_REPLY_LETTER = [
           "rent on the day it falls due and keep the receipts."),
 ]
 
+# 12 Nov 2026 (owner: "let's do it" — money-only builds): the employment contract the generator writes
+# (site/index.html, renderEmployment), as the sample people type "employment contract sample nigeria pdf"
+# for. Eight clauses, the same order; the floors in brackets come from the Labour Act, Cap L1 LFN 2004,
+# read from the enrolled text (ss.7, 9, 11, 15, 16, 18). A small shop hiring a sales assistant; no names.
+EMPLOYMENT_CONTRACT = [
+    ("h", "EMPLOYMENT CONTRACT"),
+    ("p", "Private & Confidential"),
+    ("p", "BETWEEN: [EMPLOYER'S BUSINESS NAME], of [business address, Lagos] (“the Employer”) of the one part;"),
+    ("p", "AND: [EMPLOYEE'S FULL NAME], of [employee's address] (“the Employee”) of the other part."),
+    ("c", 1, "POSITION AND DUTIES", "The Employer hereby employs the Employee as [Sales Assistant], and the Employee accepts such "
+     "employment. The Employee shall: [attend to customers, keep the shop floor stocked and tidy, record each day's sales "
+     "and bank the takings], and shall perform such other duties as the Employer may reasonably assign."),
+    ("c", 2, "COMMENCEMENT AND PROBATION", "Employment commences on [1 December 2026]. The first [3] months constitute a "
+     "period of probation, during which either party may terminate this contract with [one week's] written notice. "
+     "Confirmation of employment will be communicated in writing on satisfactory completion of probation."),
+    ("c", 3, "REMUNERATION", "The Employer shall pay the Employee a salary of [One Hundred and Twenty Thousand (₦120,000) "
+     "Naira Only] per month, payable not later than the 28th day of each month, subject to statutory deductions "
+     "(including PAYE tax and the Employee's pension contribution where applicable)."),
+    ("c", 4, "HOURS AND PLACE OF WORK", "The normal working hours shall be [Monday to Saturday, 8:00am to 5:00pm, with one "
+     "hour's break]. The principal place of work shall be [the shop at 12 Example Street, Surulere, Lagos], and the "
+     "Employee may be required to work at such other place as the Employer's business reasonably requires."),
+    ("c", 5, "ANNUAL LEAVE AND SICK LEAVE", "The Employee shall be entitled to [15] working days of annual leave for each "
+     "completed year of service, to be taken at times approved by the Employer. The Employee shall further be entitled "
+     "to paid sick leave of up to twelve working days in any calendar year, on the certificate of a registered "
+     "medical practitioner."),
+    ("c", 6, "CONFIDENTIALITY", "The Employee shall not, during or after the termination of this employment, disclose to "
+     "any person any confidential information relating to the business, affairs, customers or finances of the Employer, "
+     "except as required by law."),
+    ("c", 7, "TERMINATION AND NOTICE", "After probation, either party may terminate this employment by giving [one "
+     "month's] written notice (or payment in lieu). The Employer may terminate summarily for gross misconduct. All "
+     "Employer property shall be returned on the last day of employment."),
+    ("c", 8, "GOVERNING LAW", "This contract shall be governed by the laws of the Federal Republic of Nigeria."),
+    ("p", "IN WITNESS WHEREOF the parties have executed this contract on the date first written above."),
+    ("sig", ["For: [Employer's business name] — Employer — signature & date",
+             "[Employee's full name] — Employee — signature & date"]),
+    ("p", "The floors behind the brackets (Labour Act, Cap L1 LFN 2004, for a 'worker' as s.91 defines one): a written "
+          "statement of terms within three months of engagement (s.7); notice after probation of at least one day, one week, "
+          "two weeks or one month by length of service (s.11(2)) — the contract's one month is above that floor; wages at "
+          "intervals of not more than one month (s.15); paid sick leave of up to twelve working days a year (s.16); at least "
+          "six working days' holiday after twelve months (s.18). The salary shown is above the national minimum wage of "
+          "₦70,000 a month (National Minimum Wage (Amendment) Act 2024)."),
+]
+
+
 SAMPLES = {
     "tenancy-agreement-sample-nigeria": ("Tenancy Agreement — sample (Nigeria)", TENANCY_AGREEMENT),
     "rent-receipt-sample-nigeria": ("Rent Receipt — sample (Nigeria)", RENT_RECEIPT),
@@ -243,6 +287,7 @@ SAMPLES = {
     "demand-letter-rent-arrears-nigeria": ("Demand Letter for Unpaid Rent — sample (Nigeria)", DEMAND_LETTER),
     "rent-increase-notice-nigeria": ("Notice of Rent Review — sample (Nigeria)", RENT_REVIEW_NOTICE),
     "rent-increase-reply-nigeria": ("Reply to a Notice of Rent Review — tenant's sample (Nigeria)", RENT_REPLY_LETTER),
+    "employment-contract-sample-nigeria": ("Employment Contract — sample (Nigeria)", EMPLOYMENT_CONTRACT),
 }
 
 

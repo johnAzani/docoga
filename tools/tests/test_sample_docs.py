@@ -198,6 +198,48 @@ class PageTests(unittest.TestCase):
         for sp in SITE.glob("*.html"):
             self.assertNotIn("all 10 tools", sp.read_text(encoding="utf-8"), sp.name)
 
+    def test_the_employment_contract_page_is_the_generators_contract_on_the_labour_act_floors(self):
+        """12 Nov 2026 (money-only build, docs/GROWTH.md §4): a free sample in front of the paid employment
+        tool; every floor read from the enrolled Labour Act, Cap L1 LFN 2004 — not from a blog."""
+        html = (SITE / "employment-contract-sample-nigeria.html").read_text(encoding="utf-8")
+        self.assertIn("<title>Employment Contract Sample Nigeria: Free PDF + Template</title>", html)
+        self.assertLess(html.index("EMPLOYMENT CONTRACT"), html.index("The Labour Act floors, clause by clause"),
+                        "the contract comes before the explanation — answer first")
+        self.assertIn('href="https://docoga.com.ng/samples/employment-contract-sample-nigeria.pdf" download', html)
+        self.assertIn('href="https://docoga.com.ng/#employment"', html)
+        self.assertIn('rel="canonical" href="https://docoga.com.ng/employment-contract-sample-nigeria"', html)
+        for needle in ("s.7(1)", "s.9(3)", "s.11(2)", "s.13(1)", "s.15", "s.16", "s.18(1)", "s.91(1)",
+                       "six working days", "twelve working days", "one day", "one week", "two weeks", "one month",
+                       "\u20a670,000 a month", "not legal advice"):
+            self.assertIn(needle, html, needle)
+        for invented in ("Chinedu", "Adebayo", "Mr ", "Mrs "):
+            self.assertNotIn(invented, html, "no invented names in a sample")
+        # the sample is the generator's contract: same eight clause headings, same order
+        index_html = (SITE / "index.html").read_text(encoding="utf-8")
+        heads = ["POSITION AND DUTIES", "COMMENCEMENT AND PROBATION", "REMUNERATION", "HOURS AND PLACE OF WORK",
+                 "ANNUAL LEAVE AND SICK LEAVE", "CONFIDENTIALITY", "TERMINATION AND NOTICE", "GOVERNING LAW"]
+        for n, h in enumerate(heads, 1):
+            self.assertIn("<b>%d. %s</b>" % (n, h), index_html, h)
+            self.assertIn("%d. %s" % (n, h), html, h)
+        positions = [html.index("%d. %s" % (n, h)) for n, h in enumerate(heads, 1)]
+        self.assertEqual(positions, sorted(positions), "same order as the generator")
+        # the generator now writes the s.7(1)(g) sick-pay term with the s.16 floor
+        self.assertIn("paid sick leave of up to twelve working days in any calendar year", index_html)
+        pdf = pdf_text(sample_docs.render_pdf("employment-contract-sample-nigeria"))
+        self.assertIn("EMPLOYMENT CONTRACT", pdf)
+        self.assertIn("5. ANNUAL LEAVE AND SICK LEAVE", pdf)
+        self.assertNotIn("\\\"", pdf)
+        for page in ("index.html", "invoice-format-nigeria.html", "shop-tenancy-agreement-nigeria.html"):
+            self.assertIn("/employment-contract-sample-nigeria", (SITE / page).read_text(encoding="utf-8"), page)
+        self.assertIn("<loc>https://docoga.com.ng/employment-contract-sample-nigeria</loc>",
+                      (SITE / "sitemap.xml").read_text(encoding="utf-8"))
+        self.assertTrue((SITE / "og" / "employment-contract-sample-nigeria.jpg").is_file())
+        self.assertIn("/employment-contract-sample-nigeria.html /employment-contract-sample-nigeria 301",
+                      (SITE / "_redirects").read_text(encoding="utf-8"))
+        import growth
+        self.assertTrue(growth.MONEY_PAGE.search("https://docoga.com.ng/employment-contract-sample-nigeria"),
+                        "a page with a generator on it is a money page")
+
     def test_the_sample_wording_is_the_generators_wording(self):
         """Every clause body in the sample appears, placeholders aside, in site/index.html's renderAgreement."""
         index = (SITE / "index.html").read_text(encoding="utf-8")

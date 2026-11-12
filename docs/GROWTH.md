@@ -78,6 +78,29 @@ met, we scale pages and states; missed, the owner is told to stop spending even 
 the product is parked, sold or changed. The owner plans his money as if DocOga earns ₦0 until then.
 
 
+- **2026-11-12** — **Eighth dive (owner, 9:20am: "Ok let's do it" — first build under §4's money-only rule):
+  a free sample in front of the paid employment tool.** The employment generator (`#employment`) has
+  been a paid tool with no search page in front of it since launch: nothing on the site answered
+  "employment contract sample Nigeria", so nothing sent Google to it. Research first — the Labour Act,
+  Cap L1 LFN 2004, read from the enrolled text (not a summary): s.7(1) written statement within three
+  months and its ten particulars; s.9(3) no one under 16; s.11(2) the notice ladder one day / one week /
+  two weeks / one month and s.11(6) pay in lieu; s.13(1) hours left to the agreement; s.15 pay period
+  ≤ one month; s.16 twelve days' sick pay; s.18 six days' holiday after twelve months, no cash in lieu
+  (s.18(3)); s.91 "worker" excludes administrative/executive/technical/professional staff. The generator's
+  defaults (3 months' probation, 15 days' leave, one month's notice, pay by the 28th) all sit above the
+  floors — but it carried **no sick-pay term**, which s.7(1)(g) requires; clause 5 now does
+  (`renderEmployment`, "Annual leave and sick leave"). Shipped: `tools/sample_docs.EMPLOYMENT_CONTRACT`
+  (the generator's eight clauses, a shop hiring a sales assistant, no names) → `/samples/…pdf` (noindex);
+  `/employment-contract-sample-nigeria` (title 55 chars, description 154; the contract first, then a
+  clause-by-clause table of the floors with the section for each, employer's checklist, employee's
+  checklist, six FAQs with JSON-LD; links from the homepage guides block, the invoice and shop-tenancy
+  pages; sitemap, og card, 301 rule; `growth.MONEY_PAGE` now counts it). Facts outside the Act stated with
+  their source and no more: ₦70,000 minimum wage (2024 amendment; <25-person exemption), PAYE to the
+  state of residence, PRA 2014 10%/8%. Test: `test_the_employment_contract_page_is_the_generators_contract_
+  on_the_labour_act_floors`. Measure: the page in GSC by ~10 Dec; a click on it is a money-page click.
+  Not done (next): the receipt→pass and agreement→pass tap counts are still invisible — the 26 Nov GSC
+  read decides whether the next dive is more sample pages (warning letter, offer letter) or the tap.
+
 - **2026-11-12** — **Seventh dive (owner, 7:55am: "Continue"): the snippet, not the ranking.** The 9 Nov
   pull (28 days to 6 Nov) read page by page: eleven pages sit on page one with impressions and almost
   no clicks — `/power-of-attorney-nigeria` position 4.7, 57 impressions, 1 click; `/notice-to-quit-edo`
