@@ -826,6 +826,138 @@ PAGES["rent-increase-notice-nigeria.html"] = dict(
     priority="0.8",
 )
 
+# 4c ── employment contract sample (12 Nov 2026, money-only build; docs/GROWTH.md §4) --------------
+# The employment generator is a paid tool with no search page in front of it. Every floor quoted
+# below was read from the enrolled Labour Act, Cap L1 LFN 2004 (ss.7, 9, 11, 13, 15, 16, 18, 91);
+# nothing here is from a blog. The sample is tools/sample_docs.EMPLOYMENT_CONTRACT — the same eight
+# clauses, in the same order, that renderEmployment writes.
+LABOUR_FLOORS = '''<table>
+<tr><th>Term in the contract</th><th>The statutory floor (Labour Act, Cap L1 LFN 2004)</th><th>Section</th></tr>
+<tr><td><b>Written terms</b></td><td>Within <b>three months</b> of engagement the employer gives the worker a written statement of: the employer\u2019s name; the worker\u2019s name and address and the place and date of engagement; the nature of the employment; the expiry date of a fixed-term contract; the notice period; wages and how and how often they are paid; hours of work; holidays and holiday pay; sickness and sick pay; and any special conditions. A signed contract that carries all of these is that statement.</td><td>s.7(1)</td></tr>
+<tr><td><b>Age</b></td><td>No one under <b>16</b> may be employed under a contract of this kind.</td><td>s.9(3)</td></tr>
+<tr><td><b>Notice</b></td><td>Either side may end the contract on notice of at least <b>one day</b> (up to three months\u2019 service), <b>one week</b> (over three months, under two years), <b>two weeks</b> (two to five years) or <b>one month</b> (five years and more). Notice of a week or more must be in writing; either side may pay wages in lieu instead. The contract may give longer notice \u2014 never shorter.</td><td>s.11(2), (3), (6)</td></tr>
+<tr><td><b>Hours</b></td><td>Normal hours are fixed by the agreement, by collective bargaining or by a wages board \u2014 the Act does not itself set a weekly maximum, so the hours clause is the whole of the rule.</td><td>s.13(1)</td></tr>
+<tr><td><b>Pay day</b></td><td>Wages are due at the end of each pay period, and a pay period may not be longer than <b>one month</b>.</td><td>s.15</td></tr>
+<tr><td><b>Sick leave</b></td><td>Wages are payable for up to <b>twelve working days</b> of absence in a calendar year, on a registered medical practitioner\u2019s certificate.</td><td>s.16</td></tr>
+<tr><td><b>Annual leave</b></td><td>After <b>twelve months\u2019</b> continuous service, at least <b>six working days</b> of holiday with full pay (twelve for a worker under sixteen). The holiday may not be bought out with cash while the contract runs.</td><td>s.18(1), (3)</td></tr>
+<tr><td><b>Who the floors protect</b></td><td>The Act\u2019s \u201cworker\u201d excludes staff in administrative, executive, technical or professional roles, members of the employer\u2019s family and agents who work outside the employer\u2019s premises on commission. For them the contract governs \u2014 which is why it should be written, and written clearly.</td><td>s.91(1)</td></tr>
+</table>
+<p class="muted">Outside the Labour Act: the national minimum wage is <b>\u20a670,000 a month</b> (National Minimum Wage (Amendment) Act 2024; the Minimum Wage Act exempts establishments employing fewer than 25 people and part-time or commission work); PAYE is deducted from each salary and remitted to the tax authority of the state where the employee lives; where the Pension Reform Act 2014 applies, the employer contributes at least 10% and the employee 8% of monthly emoluments.</p>'''
+
+PAGES["employment-contract-sample-nigeria.html"] = dict(
+    published="2026-11-12", parent=("invoice-format-nigeria.html", "Small-business paperwork"),
+    title="Employment Contract Sample Nigeria: Free PDF + Template",
+    h1="Employment contract sample for Nigeria \u2014 the full contract, free PDF, and the Labour Act floors behind every clause",
+    desc="Employment contract sample for Nigeria, in full and free to download: eight clauses \u2014 probation, notice, leave, pay \u2014 each checked against the Labour Act.",
+    lead="A shop, a salon, a clinic, a small office: the first employee arrives and someone asks for \u201cthe "
+         "contract\u201d. This is that contract in the standard Nigerian form \u2014 position and duties, start date and "
+         "probation, salary and pay day, hours and place of work, leave and sick leave, confidentiality, notice, "
+         "governing law \u2014 with square brackets where your details go. Read it, download the PDF, or let the "
+         "generator fill it in and give you a clean copy in two minutes. Below the sample: what each clause is "
+         "for, and the one thing the templates online leave out \u2014 the floors the Labour Act sets under a "
+         "worker\u2019s notice, leave, sick pay and pay day, with the section for each.",
+    widget=('<div class="box">\n<h2>The sample (a small business hiring a sales assistant, Lagos)</h2>\n'
+            + sample_docs.html_sample("employment-contract-sample-nigeria")
+            + download_block("employment-contract-sample-nigeria", "employment", "Fill it in free \u2014 any role, any state \u2192")
+            + '\n</div>'),
+    boxes=[
+        ("What each clause is for", ul([
+            "<b>1. Position and duties.</b> The job title and a short list of what the job is. Write the list: "
+            "a dispute about \u201cthat is not my work\u201d is settled by this clause, and the Act requires the nature of "
+            "the employment to be in writing (s.7(1)(c)).",
+            "<b>2. Commencement and probation.</b> The start date fixes everything else \u2014 the notice ladder, the "
+            "twelve months to the first holiday, the three months for the written statement. Probation is not in "
+            "the Act; it is a contractual period with a shorter notice, and it must be confirmed in writing when it "
+            "ends or it simply runs on.",
+            "<b>3. Remuneration.</b> The salary in figures and words, the pay day, and the deductions \u2014 PAYE and, "
+            "where the pension scheme applies, the employee\u2019s 8%. A pay period longer than a month needs the "
+            "State Authority\u2019s consent (s.9(4)); the 28th of each month is inside the rule.",
+            "<b>4. Hours and place of work.</b> The Act leaves normal hours to the agreement (s.13(1)), so the days "
+            "and times in this clause are the rule for this job. The place of work is where the worker must report; "
+            "the \u201cother place\u201d sentence covers a second branch without a new contract.",
+            "<b>5. Annual leave and sick leave.</b> Fifteen working days is the common private-sector figure and "
+            "sits above the Act\u2019s six (s.18). The sick-leave sentence is the one most templates omit \u2014 s.7(1)(g) "
+            "requires the terms on sickness and sick pay to be stated, and s.16 sets the twelve-day floor.",
+            "<b>6. Confidentiality.</b> Customer lists, prices, suppliers, takings. The clause survives the end of "
+            "the employment; it is not a non-compete, which Nigerian courts read narrowly.",
+            "<b>7. Termination and notice.</b> One month each way after probation \u2014 longer than any step of the "
+            "s.11 ladder, so lawful for every length of service \u2014 with payment in lieu allowed (s.11(6)). Summary "
+            "dismissal is reserved for gross misconduct; a poor sales month is not gross misconduct.",
+            "<b>8. Governing law.</b> Nigerian law, which means the Labour Act, the National Industrial Court for "
+            "disputes, and the state\u2019s PAYE authority.",
+        ])),
+        ("The Labour Act floors, clause by clause", LABOUR_FLOORS),
+        ("Before the contract is signed \u2014 the employer\u2019s checklist", ul([
+            "<b>Two copies, both signed,</b> one for each side. The Act wants the worker to have the written terms "
+            "within three months (s.7(1)); handing over a signed copy on day one is the simplest proof.",
+            "<b>Check the age.</b> Nobody under sixteen under a contract of this kind (s.9(3)); keep a copy of the "
+            "ID you saw.",
+            "<b>Register for PAYE</b> with the tax authority of the state where the employee lives, and keep the "
+            "payslips \u2014 the deductions clause is only lawful if the money actually reaches the authority.",
+            "<b>Decide the pension question early.</b> Under the Pension Reform Act 2014 the employer\u2019s share is "
+            "at least 10% of monthly emoluments on top of salary; a salary quoted without it is a salary that "
+            "will be renegotiated.",
+            "<b>Keep the leave record.</b> Holiday may not be paid out in cash while the contract runs (s.18(3)), "
+            "so an untaken year carries forward in the record rather than disappearing.",
+        ])),
+        ("If you are the employee signing it", ul([
+            "<b>Count the notice both ways.</b> The notice you must give is the notice you are owed; a contract that "
+            "asks you for a month and gives you a week is lopsided, and for a Labour Act worker the employer\u2019s "
+            "week is only lawful for service under two years (s.11(2)).",
+            "<b>Look for the leave and sick-leave sentences.</b> If they are missing, ask for them in writing before "
+            "signing \u2014 the Act requires them to be stated (s.7(1)(g)).",
+            "<b>Deductions must be named.</b> PAYE and pension are lawful; \u201cshortages\u201d, \u201cbreakages\u201d and "
+            "unexplained fines are not deductions a contract can authorise in advance.",
+            "<b>Keep your copy.</b> At the National Industrial Court, the signed contract is the first exhibit \u2014 "
+            "for both sides.",
+        ])),
+        ("How this sample compares with what else is online", ul([
+            "<b>Template catalogues</b> describe what an employment contract \u201cshould contain\u201d and sell the "
+            "document. This page shows the whole contract and gives it away.",
+            "<b>Foreign templates</b> (US at-will letters, UK statements of particulars, South African contracts) "
+            "cite laws that do not run here. Every section on this page is a section of the Labour Act, Cap L1 "
+            "LFN 2004, read from the enrolled text \u2014 not from a summary of it.",
+            "<b>A lawyer\u2019s contract</b> adds restrictive covenants, intellectual-property clauses and a staff "
+            "handbook, and is the right step for a senior or technical hire the Act\u2019s floors do not protect. For "
+            "the first shop assistant, cashier or receptionist, this is the contract the lawyer would start from.",
+        ])),
+    ],
+    faq=[
+        ("How do I write an employment contract in Nigeria?",
+         "Name the employer and the employee; state the position and duties, the start date and any probation, the "
+         "salary in figures and words with the pay day and deductions, the hours and place of work, annual leave and "
+         "sick leave, confidentiality, the notice each side must give, and the governing law; both sign, each keeps "
+         "a copy. The sample above is that contract; the generator fills it in."),
+        ("Is a written contract compulsory?",
+         "For a worker the Labour Act covers, the employer must give a written statement of the main terms within "
+         "three months of the start (s.7(1)). A signed contract that carries all of those terms satisfies the "
+         "section. For staff the Act\u2019s definition of \u201cworker\u201d excludes \u2014 administrative, executive, technical "
+         "and professional roles \u2014 the contract is not required by the Act, but it is the only thing that then "
+         "governs the job."),
+        ("What is the minimum notice period in Nigeria?",
+         "Under s.11(2) of the Labour Act: one day for service up to three months, one week for over three months "
+         "but under two years, two weeks for two to five years, and one month for five years or more \u2014 and notice "
+         "of a week or more must be written. A contract may give longer notice; this sample gives one month either "
+         "way after probation."),
+        ("How many days of annual leave does the law give?",
+         "At least six working days with full pay after twelve months\u2019 continuous service (s.18(1)); most private "
+         "employers give more, and the sample gives fifteen. Sick leave is separate: up to twelve working days a "
+         "year with a medical certificate (s.16)."),
+        ("Can I put a three-month probation in the contract?",
+         "Yes. Probation is a contractual term, not a statutory one; the sample uses three months with one week\u2019s "
+         "notice during it. For a Labour Act worker in the first three months the statutory floor is one day, so "
+         "a week is above it. Confirm the employee in writing when probation ends."),
+        ("Can I download the employment contract as a PDF for free?",
+         "Yes \u2014 the PDF above is free and needs no signup. It carries the square brackets; the generator fills "
+         "them in and gives you a clean copy, free with a small banner or without one on the Oga Pass. DocOga is "
+         "not a law firm and this page is general information, not legal advice."),
+    ],
+    cta=("employment", "Create your employment contract free \u2192"),
+    related=["invoice-format-nigeria.html", "shop-tenancy-agreement-nigeria.html", "tenancy-agreement-sample-nigeria.html",
+             "rent-receipt-format-nigeria.html", "demand-letter-rent-arrears-nigeria.html"],
+    priority="0.8",
+)
+
 # 5 ── tenant rights ------------------------------------------------------------
 PAGES["tenant-rights-nigeria.html"] = dict(
     # Rewritten 29 Oct 2026 (Search Console: position 15, 21 impressions, 2 clicks). Page-one
@@ -1062,7 +1194,7 @@ PAGES["shop-tenancy-agreement-nigeria.html"] = dict(
     ],
     cta=("agreement", "Create your shop tenancy agreement free →"),
     related=["tenancy-agreement-nigeria.html", "notice-to-quit-nigeria.html",
-             "invoice-format-nigeria.html", "tenant-rights-nigeria.html"],
+             "invoice-format-nigeria.html", "employment-contract-sample-nigeria.html", "tenant-rights-nigeria.html"],
     priority="0.8",
 )
 
@@ -1158,7 +1290,7 @@ PAGES["invoice-format-nigeria.html"] = dict(
     ],
     cta=("invoice", "Create your invoice free →"),
     related=["rent-receipt-format-nigeria.html", "tenancy-agreement-nigeria.html",
-             "shop-tenancy-agreement-nigeria.html"],
+             "shop-tenancy-agreement-nigeria.html", "employment-contract-sample-nigeria.html"],
     priority="0.8",
 )
 
@@ -1656,6 +1788,7 @@ def main():
         "rent-receipt-format-nigeria.html": "Rent receipt format",
         "demand-letter-rent-arrears-nigeria.html": "Demand letter for unpaid rent + free PDF",
         "rent-increase-notice-nigeria.html": "Rent increase notice + the law by state",
+        "employment-contract-sample-nigeria.html": "Employment contract sample + free PDF",
         "tenant-rights-nigeria.html": "Tenant rights &amp; landlord duties",
         "shop-tenancy-agreement-nigeria.html": "Shop &amp; business tenancy",
         "invoice-format-nigeria.html": "Invoice format + 7.5% VAT",
