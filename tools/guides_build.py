@@ -143,6 +143,66 @@ def faq_for(pack):
     return out[:3]
 
 
+TITLE_MAX = 60  # tools/snippet_audit.py (12 Nov 2026): a result shows about this many characters
+
+
+_DANGLING = {"a", "an", "the", "in", "of", "to", "for", "and", "or", "your", "my", "his", "her", "their", "is", "are", "be",
+             "can", "must", "before", "after", "with", "without", "from", "by", "on", "at", "you", "it", "what", "how", "give"}
+
+
+def title_tag_for(headline, state=""):
+    """The <title>: the headline whole when it fits, else cut at a word (no ellipsis — Google reads one
+    as a truncated title and rewrites it); the state only when it still fits. No " | DocOga": results
+    print the site name on their own line since 2023, and the nine characters buy a word of the answer."""
+    headline = " ".join(str(headline or "").split()).rstrip(" :;,—-")
+    title = headline
+    if len(title) > TITLE_MAX:
+        head = title[:TITLE_MAX + 1]
+        clause = max(head.rfind(": "), head.rfind(" — "), head.rfind("? "), head.rfind(", "))
+        title = head[:clause] if clause >= 28 else (head.rsplit(" ", 1)[0] if " " in head else head[:TITLE_MAX])
+        words = title.rstrip(" :;,—-?!.(").split(" ")
+        rest = headline[len(" ".join(words)):].strip(" :;,—-?!.(").split(" ")
+        if rest and rest[0][:1].isupper() and len(words) > 3:
+            words.pop()  # the cut split a name ("… in Cross | River") — drop the half
+        while len(words) > 3 and words[-1].lower().strip("(") in _DANGLING:
+            words.pop()
+        title = " ".join(words).rstrip(" :;,—-?!.(")
+    state = str(state or "").strip()
+    if state and state.lower() not in title.lower() and len(title) + 3 + len(state) <= TITLE_MAX:
+        title += " — " + state
+    return title
+
+
+def retitle(site=None, log=print):
+    """Rewrite the <title>, og:title and og:image:alt of guide pages whose draft has since been pruned,
+    so the 60-character rule reaches every page and not only the ones rebuilt tonight. Idempotent."""
+    folder = Path(site or SITE) / GUIDES_DIRNAME
+    changed = []
+    for page in sorted(folder.glob("*.html")):
+        if page.name == "index.html":
+            continue
+        html_text = page.read_text(encoding="utf-8")
+        m = re.search(r"<title>(.*?)</title>", html_text, re.S)
+        if not m:
+            continue
+        old = html.unescape(m.group(1).strip())
+        if len(old) <= TITLE_MAX and not old.endswith("…"):
+            continue
+        h = re.search(r'"headline":\s*"((?:[^"\\]|\\.)*)"', html_text)
+        headline = json.loads('"%s"' % h.group(1)) if h else old.split(" | DocOga")[0].split(" — ")[0]
+        st = re.search(r" — ([^—|]+?) \| DocOga$", old)
+        new = title_tag_for(headline, st.group(1).strip() if st else "")
+        if new == old:
+            continue
+        out = html_text.replace("<title>%s</title>" % m.group(1), "<title>%s</title>" % esc(new))
+        for attr in ("og:title", "og:image:alt"):
+            out = re.sub(r'(<meta property="%s" content=")[^"]*(")' % re.escape(attr), lambda mm: mm.group(1) + esc(new) + mm.group(2), out)
+        page.write_text(out, encoding="utf-8")
+        changed.append(page.name)
+        log("guides: retitled %s → %s" % (page.name, new))
+    return changed
+
+
 def page_html(pack, facts_by_id=None, now=None):
     now = now or dt.datetime.now(LAGOS)
     slug = slug_for(pack)
@@ -153,8 +213,7 @@ def page_html(pack, facts_by_id=None, now=None):
     faq = faq_for(pack)
     state = rows[0]["state"] if rows else ""
     statute = rows[0]["statute"] if rows else ""
-    title = headline if len(headline) <= 60 else headline[:57].rsplit(" ", 1)[0] + "…"
-    title_tag = "%s%s | DocOga" % (title, (" — " + state) if state and state.lower() not in title.lower() else "")
+    title_tag = title_tag_for(headline, state)
     desc = description_for(pack)
     tool_link = drafts.link_for(pack)
     tool_link += ("&" if "?" in tool_link else "?") + "s=g"
@@ -176,7 +235,7 @@ def page_html(pack, facts_by_id=None, now=None):
              '<meta property="og:image" content="%s/og/%s-%s.jpg">' % (HOST, GUIDES_DIRNAME, slug),
              '<meta property="og:image:width" content="1200">',
              '<meta property="og:image:height" content="630">',
-             '<meta property="og:image:alt" content="%s">' % esc(title),
+             '<meta property="og:image:alt" content="%s">' % esc(title_tag),
              '<meta name="twitter:card" content="summary_large_image">',
              '<meta property="og:url" content="%s">' % esc(url),
              '<meta property="og:type" content="article">',
@@ -367,6 +426,7 @@ def build(day=None, site=None, now=None, log=print, drafts_dir=None, answers_dir
             % (len(written), added, "y" if added == 1 else "ies", len(entries)))
     else:
         log("guides: nothing new")
+    retitle(site=site, log=log)  # 12 Nov 2026: the 60-character title rule reaches pruned pages too
     # 10 Nov 2026: every page needs its permanent /x.html → /x line (tools/redirects_build.py);
     # a new guide without one would be the one page Google could still count twice.
     try:

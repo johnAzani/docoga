@@ -61,7 +61,7 @@ class PdfTests(unittest.TestCase):
 class PageTests(unittest.TestCase):
     def test_the_sample_page_is_answer_first_with_the_full_sample_the_download_and_the_generator(self):
         html = (SITE / "tenancy-agreement-sample-nigeria.html").read_text(encoding="utf-8")
-        self.assertIn("<title>Tenancy Agreement Sample in Nigeria (2026): Full Text + Free PDF Download</title>", html)
+        self.assertIn("<title>Tenancy Agreement Sample in Nigeria: Full Text + Free PDF</title>", html)
         self.assertLess(html.index("RESIDENTIAL TENANCY AGREEMENT"), html.index("What each clause does"),
                         "the sample comes before the explanation — answer first")
         self.assertIn("13. GOVERNING LAW AND JURISDICTION", html)
@@ -115,7 +115,7 @@ class PageTests(unittest.TestCase):
     def test_the_demand_letter_page_is_answer_first_state_aware_and_the_generators_words(self):
         """4 Nov 2026 (🔒 docs/GROWTH.md fourth dive): the generator wrote demand letters with no page."""
         html = (SITE / "demand-letter-rent-arrears-nigeria.html").read_text(encoding="utf-8")
-        self.assertIn("Demand Letter for Unpaid Rent in Nigeria (2026)", html)
+        self.assertIn("Demand Letter for Unpaid Rent in Nigeria: Sample + Free PDF", html)
         self.assertLess(html.index("DEMAND LETTER — UNPAID RENT"), html.index("What each line of the letter is for"),
                         "the letter comes before the explanation — answer first")
         self.assertIn('href="https://docoga.com.ng/samples/demand-letter-rent-arrears-nigeria.pdf" download', html)
@@ -145,7 +145,7 @@ class PageTests(unittest.TestCase):
     def test_the_rent_increase_page_is_state_aware_honest_and_the_generators_words(self):
         """5 Nov 2026 (🔒 docs/GROWTH.md fifth dive): the 11th tool, and the page only because the tool writes it."""
         html = (SITE / "rent-increase-notice-nigeria.html").read_text(encoding="utf-8")
-        self.assertIn("Rent Increase Notice in Nigeria (2026)", html)
+        self.assertIn("Rent Increase Notice Nigeria: Sample + Tenant\u2019s Reply (PDF)", html)
         self.assertLess(html.index("NOTICE OF RENT REVIEW"), html.index("What the law actually says, state by state"),
                         "the notice comes before the explanation — answer first")
         self.assertIn('href="https://docoga.com.ng/samples/rent-increase-notice-nigeria.pdf" download', html)

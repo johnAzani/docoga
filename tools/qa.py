@@ -328,6 +328,14 @@ _rb = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "redirects_bui
 check("site/_redirects carries a 301 for every public page (Google counted /x and /x.html twice)", _rb.returncode == 0,
       (_rb.stdout.strip().splitlines() or [""])[0])
 
+# 11d-ter. Snippets (12 Nov 2026). Eleven pages sat on page one with impressions and almost no clicks;
+# 59 titles ran past the 60 characters a result shows and twelve state pages shared one description.
+# tools/snippet_audit.py: title ≤ 60, description 70–160, no two pages alike.
+_sa = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "snippet_audit.py"), "--check"],
+                     capture_output=True, text=True)
+check("every title fits a result (≤ 60 chars) and every description is unique and 70–160 chars (snippet_audit)", _sa.returncode == 0,
+      (_sa.stdout.strip().splitlines() or [""])[0])
+
 # 11e. Link previews (29 Oct 2026). Every public page carries an og:image that exists and is
 # light enough for WhatsApp; before this no page had one, so every shared link was a bare box.
 _og = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "og_images.py"), "--check"],

@@ -2,7 +2,7 @@
 """Generate DocOga state SEO pages: 4 tenancy tools x 6 states = 24 pages.
 Facts verified 19 Sep 2026: Lagos Tenancy Law 2011 s.13(1)/s.4/s.13(2)-(3);
 Recovery of Premises Act s.8 (FCT). Other states: honest general framing."""
-import io, os, sys
+import io, os, re, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from clean_urls import clean_text  # Cloudflare 307s /x.html → /x: canonicals, links and sitemap locs are bare
 import sample_docs  # the free sample + PDF beside the generator (🔒 docs/GROWTH.md, 3 Nov 2026)
@@ -102,8 +102,8 @@ STATES = {
 
 TOOLS = {
  'tenancy-agreement': dict(tool='Tenancy Agreement', hash='#agreement', verb='agreement',
-   title='Tenancy Agreement in {place} — Free Nigerian Generator (2026)',
-   desc='Create a complete tenancy agreement for {place} in 2 minutes. Free, on your phone — rent, caution fee, notice periods, covenants. Print or save as PDF.',
+   title='Tenancy Agreement in {short}', title_tails=[': Free Sample + PDF (2026)', ': Free Sample + PDF', ': Free PDF'],
+   desc='Tenancy agreement for {short} in 2 minutes: rent, caution fee, notice period ({yearly} yearly where silent), covenants. Free — print or PDF.',
    lead='Renting in {place}? A written tenancy agreement is the one document that protects both landlord and tenant \u2014 the rent, the duration, the caution fee, and the notice each side must give before the tenancy ends. DocOga builds a complete, standard Nigerian agreement in about two minutes \u2014 free, no signup, straight from your phone.',
    body_title='What your {place} agreement should lock down',
    bullets=[
@@ -117,8 +117,10 @@ TOOLS = {
      ('Does the agreement override the notice periods in the law?', 'Generally yes \u2014 the statutory periods apply where the agreement is silent. Write the notice you want into the agreement.'),
      ('How much is a lawyer-drafted agreement?', 'Commonly \u20a620,000\u2013\u20a650,000 in Nigerian cities. The DocOga generator produces a standard agreement free (small watermark), or clean copies for \u20a62,000/30 days.')]),
  'notice-to-quit': dict(tool='Notice to Quit', hash='#notice', verb='notice',
-   title='Notice to Quit in {place} — Free Generator (2026)',
-   desc='The lawful notice to quit for {place}: correct minimum periods, valid service, and a free generator that produces the letter in 2 minutes.',
+   title='Notice to Quit in {short}', title_tails=[': How Many Months + Free Letter', ': How Many Months', ': Months + Free Letter'],
+   desc='Notice to quit in {short}: {monthly} for a monthly tenant, {yearly} yearly {source}, then the 7-day notice. Valid service and a free letter in 2 minutes.',
+   desc_short='Notice to quit in {short}: {monthly} monthly, {yearly} yearly {source}, then 7 days\u2019 notice. Free letter in 2 minutes.',
+   desc_shorter='Notice to quit in {short}: {monthly} monthly, {yearly} yearly {source_short}, then the 7-day notice. Free letter in 2 minutes.',
    lead='Ending a tenancy in {place}? A notice to quit that fails on period or service will be thrown out by the court \u2014 months wasted. Here are the rules that matter, and a generator that produces a properly-formatted notice in about two minutes.',
    body_title='When a notice to quit is valid in {place}',
    bullets=[
@@ -132,8 +134,8 @@ TOOLS = {
      ('What if I\u2019m in arrears?', '{arrears_placeholder}'),
      ('How do I count the notice period?', 'Traditionally it had to expire at the end of a complete period of the tenancy \u2014 the modern Lagos rule allows expiry on or after the current term ends. When in doubt, give more than the minimum.')]),
  'rent-receipt': dict(tool='Rent Receipt', hash='#receipt', verb='receipt',
-   title='Rent Receipt in {place} — Free Generator (2026)',
-   desc='Issue a proper rent receipt in {place}: date, amount in words and figures, period covered, signatures. Free generator, 2 minutes, print or PDF.',
+   title='Rent Receipt in {short}', title_tails=[': Free Template + PDF (2026)', ': Free Template + PDF', ': Free PDF'],
+   desc='Rent receipt for {short}: date, amount in words and figures, period covered, who paid whom, signatures. Free, 2 minutes — print or PDF.',
    lead='Rent in Nigeria is paid in advance \u2014 commonly a full year at once. Every payment deserves a proper receipt: it is the tenant\u2019s proof of payment in any dispute, and the landlord\u2019s clean record. DocOga produces a proper Nigerian rent receipt in about two minutes \u2014 free.',
    body_title='What a valid rent receipt carries',
    bullets=[
@@ -147,8 +149,8 @@ TOOLS = {
      ('Can a receipt be handwritten?', 'Yes \u2014 what matters is content and signature. A clean printed receipt simply removes the arguments.'),
      ('I paid an agent, not the landlord. Receipt from whom?', 'Whoever collects must receipt \u2014 and the agreement should identify who is authorised to collect rent.')]),
  'caution-fee': dict(tool='Caution Fee Receipt', hash='#caution', verb='caution-fee receipt',
-   title='Caution Fee Receipt in {place} — Free Generator (2026)',
-   desc='Secure your caution fee / security deposit in {place} with a proper receipt and written refund terms. Free generator, 2 minutes.',
+   title='Caution Fee Receipt in {short}', title_tails=[': Free Template + Refund Terms', ': Free Template', ': Free PDF'],
+   desc='Caution fee receipt for {short} with refund terms in writing: apart from rent, itemised deductions only, a refund date. Free, 2 minutes.',
    lead='The caution fee (security deposit) is refundable money \u2014 in practice, the most disputed money in Nigerian tenancies. Your protection is written refund terms recorded at the moment of payment. DocOga produces a caution-fee receipt with proper refund terms in about two minutes \u2014 free.',
    body_title='Protecting your caution fee in {place}',
    bullets=[
@@ -165,8 +167,9 @@ TOOLS = {
    # Added 29 Oct 2026. People type "<state> tenancy law"; the verified law block (tools/state_law_data.py)
    # was buried on the tool pages — this page leads with it. Where a state's statute is not verified the
    # page says so (unverified_block) rather than borrowing another state's sections.
-   title='Tenancy Law in {place}: Notice Periods, Rent, Courts',
-   desc='What the tenancy law in {place} actually says \u2014 the statute, how many months\u2019 notice, receipts and advance rent, where a dispute goes \u2014 with section numbers, and what we could not confirm.',
+   title='{law_place} Tenancy Law', title_tails=[': Notice Months, Rent, Courts (2026)', ': Notice Months, Rent, Courts', ': Notice, Rent, Courts'],
+   desc='{law_place} tenancy law: the statute, the notice months ({monthly} monthly, {yearly} yearly), receipts, advance rent, which court \u2014 with section numbers.',
+   desc_unverified='{law_place} tenancy law: no statute verified yet \u2014 the general Nigerian rule ({monthly} monthly, {yearly} yearly), receipts, advance rent, courts, and the gaps.',
    lead='Which law governs a tenancy in {place}, how many months\u2019 notice it requires, what it says about receipts, advance rent and caution money, and which court or tribunal hears a dispute. Every rule below carries its section; where we could not verify a point from the primary text we say so instead of guessing.',
    body_title='The five things the law in {place} decides',
    bullets=[
@@ -236,7 +239,7 @@ footer{{margin-top:34px;border-top:1px solid #DCE4F0;padding-top:16px;font-size:
 <div class="wrap">
 <a class="brand" href="https://docoga.com.ng/">DocOga</a>
 {crumbs}
-<h1>{title}</h1>
+<h1>{h1}</h1>
 {updated_line}
 <p class="lead">{lead}</p>
 
@@ -716,6 +719,75 @@ def faq_html(t, st):
         out.append('<details><summary>' + q.replace('{place}', st['place']) + '</summary><p>' + a + '</p></details>')
     return '\n'.join(out)
 
+TITLE_MAX = 60   # tools/snippet_audit.py: what a result shows before the cut (12 Nov 2026)
+DESC_MAX = 160
+_WORD_NUM = {'one': '1', 'two': '2', 'three': '3', 'four': '4', 'five': '5', 'six': '6', 'seven': '7', 'twelve': '12'}
+
+
+def short_place(st):
+    """'Rivers State (Port Harcourt)' \u2192 'Rivers (Port Harcourt)': the city stays (people search it), the
+    word State goes \u2014 the title has 60 characters and the number must fit."""
+    return st['place'].replace(' State', '')
+
+
+def law_place(slug, st):
+    return 'FCT Abuja' if slug == 'abuja' else st['full']
+
+
+def ladder_brief(slug):
+    """(monthly, yearly) as '1 month', '6 months' \u2014 read from the state's own ladder, never typed by hand."""
+    out = {}
+    for kind, period in notice_rows(slug):
+        k = kind.lower()
+        m = re.search(r'(\d+|one|two|three|four|five|six|seven|twelve)\s*(calendar\s+)?(week|month|year)s?', period, re.I)
+        if not m:
+            continue
+        n = _WORD_NUM.get(m.group(1).lower(), m.group(1))
+        unit = m.group(3).lower()
+        if unit == 'year':
+            n, unit = str(int(n) * 12), 'month'
+        val = '%s %s%s' % (n, unit, '' if n == '1' else 's')
+        if k.startswith('monthly') and 'monthly' not in out:
+            out['monthly'] = val
+        elif k.startswith('yearly') and 'yearly' not in out:
+            out['yearly'] = val
+    return out.get('monthly', '1 month'), out.get('yearly', '6 months')
+
+
+def fit_title(base, tails):
+    """The base plus the first tail that keeps the title within TITLE_MAX; the base alone otherwise."""
+    for tail in tails or []:
+        if len(base + tail) <= TITLE_MAX:
+            return base + tail
+    return base
+
+
+def snippet_for(slug, tslug, t, st):
+    """(title, description) for one state page: numbers from the shelf, within the limits."""
+    monthly, yearly = ladder_brief(slug)
+    law = STATE_LAW.get(slug)
+    verified = bool(law and law.get('statutes'))
+    statute = law['statutes'][0]['title'] if verified else ''
+    source = ('under the %s' % statute) if verified else '(the general Nigerian rule)'
+    year = re.search(r'\b(19|20)\d\d\b', statute)
+    source_short = source if len(source) <= 40 else ('under the state\u2019s %s law' % year.group(0) if year else 'under the state\u2019s own law')
+    words = dict(place=st['place'], short=short_place(st), law_place=law_place(slug, st), monthly=monthly, yearly=yearly,
+                 source=source, source_short=source_short, courts=st['courts'])
+    title = fit_title(t['title'].format(**words), t.get('title_tails'))
+    keys = ['desc']
+    if not verified and t.get('desc_unverified'):
+        keys = ['desc_unverified']
+    keys += [k for k in ('desc_short', 'desc_shorter') if t.get(k)]
+    desc = ''
+    for k in keys:
+        desc = t[k].format(**words)
+        if len(desc) <= DESC_MAX:
+            break
+    if len(desc) > DESC_MAX:
+        desc = desc[:DESC_MAX - 1].rsplit(' ', 1)[0].rstrip(',;:\u2014 ') + '.'
+    return title, desc
+
+
 def share_text(title, bare):
     """WhatsApp pre-filled text: the page title and its bare URL (Cloudflare 307s .html → bare anyway).
     Nigeria's rent conversations happen on WhatsApp; a tap here is the \u20a60 distribution channel."""
@@ -764,8 +836,8 @@ def main():
             overlay(st, slug)
             d = dict(st)
             d.update(t)
-            d['title'] = t['title'].format(place=st['place'])
-            d['desc'] = t['desc'].format(place=st['place'])
+            d['title'], d['desc'] = snippet_for(slug, tslug, t, st)
+            d['h1'] = d['title'].replace(short_place(st), st['place'], 1)  # the heading keeps the word State
             d['lead'] = t['lead'].format(place=st['place'])
             d['body_title'] = t['body_title'].format(place=st['place'])
             d['bullets'] = '\n'.join('<li>' + b.format(place=st['place'], courts=st['courts']) + '</li>' for b in t['bullets'])

@@ -64,6 +64,39 @@ platforms; nothing the owner must do on a schedule.
 
 ## 5. Growth ledger (newest first — the scorecard reads the top date)
 
+- **2026-11-12** — **Seventh dive (owner, 7:55am: "Continue"): the snippet, not the ranking.** The 9 Nov
+  pull (28 days to 6 Nov) read page by page: eleven pages sit on page one with impressions and almost
+  no clicks — `/power-of-attorney-nigeria` position 4.7, 57 impressions, 1 click; `/notice-to-quit-edo`
+  6.3, 55, 1; `/notice-to-quit-kaduna` 7.0, 15, 0; `/notice-to-quit-kano` 4.4, 12, 0; the Rivers page
+  3.4, 38, 2. The ranking is earned; the words in the result lose the tap. Reading our own titles and
+  descriptions showed why: **59 of 97 titles ran past 60 characters** (the state pages at 64–84 —
+  "… — Free Generator (2026)" is what a result cuts off), the power-of-attorney title was 85 and its
+  description 239, and **all twelve notice-to-quit state pages carried one identical description** with
+  no number in it, while the question typed is a number ("how many months"). **DO NOW (shipped):**
+  every title ≤ 60 characters with the query words first (`Notice to Quit in Edo (Benin City): How Many
+  Months`; `Edo State Tenancy Law: Notice Months, Rent, Courts` — the exact shape of "edo state tenancy
+  law", 12 impressions on the wrong page); a description per state built from the state's own ladder
+  and statute (`1 month monthly, 6 months yearly under the Recovery of Premises Law, then the 7-day
+  notice`), never typed by hand (`gen_state_pages.snippet_for`, `ladder_brief`); the twelve hand-written
+  pages trimmed with their numbers kept (₦50,000, ₦100,000, ₦500,000, 7.5%, 15%); guide pages lose the
+  " | DocOga" suffix (results print the site name on their own line) and cut at a clause, never with an
+  ellipsis; 83 link-preview cards redrawn. The rule is now a machine: `tools/snippet_audit.py` (title
+  ≤ 60, description 70–160, no two pages alike) fails `qa.py`, the nightly guides build re-titles pruned
+  pages, and the Monday scorecard prints "snippets losing the tap" — page-one pages under a
+  click-through floor for their position — so this reading never has to be done by hand again. The
+  quit-notice title of 3 Nov is untouched (lock). **Measure:** CTR on the five pages above in the
+  ~26 Nov and ~10 Dec pulls (today 0–5%); the goal is the Edo and power-of-attorney pages above 5% at
+  their positions; "edo state tenancy law" landing on `/tenancy-law-edo`. **TEST NEXT:** if the Edo
+  page moves but Kano/Kaduna do not, the unverified-state wording ("the general Nigerian rule") is the
+  next suspect. **LATER:** a pixel-width measure instead of characters (Google cuts at ~600 px);
+  descriptions that quote the state's section number. **REJECT:** changing the quit-notice title; a year
+  in every title (it costs seven characters and dates the page); keyword-stuffed titles that read like
+  a list; any invented click-through curve presented as a measured fact (the floor is a working
+  assumption and the code says so).
+  Sources: logs/search_console.json (taken 2026-11-09, window 2026-10-09→11-06, top_pages and
+  top_queries); the 97 public pages' <title> and description read on 12 Nov 2026 (tools/snippet_audit.py
+  --check before the change: 96 problems); tools/state_law_data.py ladders; the og cards redrawn with
+  tools/og_images.py.
 - **2026-11-10** — **Sixth dive (owner, 7:55am: "Continue"): the page Google counts twice.** The
   9 Nov Search Console pull (28 days to 6 Nov: 16 clicks / 448 impressions, CTR 3.6%) put "quit
   notice" at **position 1.0 with 0 clicks** — and the page URL it ranked was `/notice-to-quit-nigeria.html`,

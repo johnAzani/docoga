@@ -150,9 +150,9 @@ PAGES = {}
 
 # 1 ── PILLAR: tenancy agreement format Nigeria ---------------------------------
 PAGES["tenancy-agreement-nigeria.html"] = dict(
-    title="Tenancy Agreement in Nigeria (2026) — Format, Clauses &amp; Free Generator",
+    title="Tenancy Agreement in Nigeria: Format, Clauses + Free PDF",
     h1="Tenancy Agreement in Nigeria: the 2026 format, clause by clause",
-    desc="The standard Nigerian tenancy agreement format: parties, term, rent, the advance-rent limit, caution fee, notice period and covenants. Build one free in 2 minutes on your phone.",
+    desc="The standard Nigerian tenancy agreement format: parties, term, rent, advance-rent limit, caution fee, notice period, covenants. Build one free in 2 minutes.",
     lead="A Nigerian tenancy agreement is the document that decides who pays what, for how long, "
          "and how either side ends the arrangement. Most disputes between Nigerian landlords and "
          "tenants are really arguments about a clause that was never written down. This page sets "
@@ -242,9 +242,9 @@ CLAUSE_NOTES = [
 
 PAGES["tenancy-agreement-sample-nigeria.html"] = dict(
     published="2026-11-03", parent=("tenancy-agreement-nigeria.html", "Tenancy agreement in Nigeria"),
-    title="Tenancy Agreement Sample in Nigeria (2026): Full Text + Free PDF Download",
+    title="Tenancy Agreement Sample in Nigeria: Full Text + Free PDF",
     h1="Tenancy agreement sample in Nigeria — the full text, clause by clause, free PDF",
-    desc="A complete Nigerian tenancy agreement sample you can read in full: 13 standard clauses, the state notice table, a free PDF download (no signup) and a generator that fills your names in 2 minutes.",
+    desc="A complete Nigerian tenancy agreement sample in full: 13 standard clauses, the state notice table, a free PDF (no signup), a generator that fills your names.",
     lead="This is a full residential tenancy agreement in the standard Nigerian form — the parties, the "
          "premises, thirteen covenants, signatures and witnesses — with square brackets where your details "
          "go. Read it here, download it as a PDF, or let the generator fill it in and give you a clean copy "
@@ -314,7 +314,7 @@ PAGES["notice-to-quit-nigeria.html"] = dict(
     # now says both inside 60 characters and the page opens with the sample itself.
     title="Quit Notice Nigeria: Sample Letter, Format, How Many Months",
     h1="Quit notice in Nigeria — sample letter, how to write it, and how many months",
-    desc="Quit notice sample letter (Nigeria): copy the wording or make yours free in 2 minutes — PDF or WhatsApp. How many months: 1 week, 1 month, 3 or 6 months, plus the 7-day notice.",
+    desc="Quit notice sample letter (Nigeria): copy the wording or make yours free in 2 minutes — PDF or WhatsApp. How many months: 1 week, 1, 3 or 6 months, then 7 days.",
     lead="A notice to quit (quit notice) is the formal letter that starts a lawful end to a tenancy. "
          "Get the period wrong, or serve it on the wrong person, and the court will throw the case "
          "out — months wasted. Below: a sample you can copy, how many months each tenancy type "
@@ -408,7 +408,7 @@ PAGES["notice-to-quit-nigeria.html"] = dict(
 PAGES["caution-fee-nigeria.html"] = dict(
     title="Is the Caution Fee Refundable in Nigeria? (2026)",
     h1="Is the caution fee refundable in Nigeria? Yes — here is how to actually get it back",
-    desc="A caution fee is a refundable security deposit, not a payment. What Nigerian law says, the clause to insist on, and how to claim the money back when you move out.",
+    desc="A caution fee is a refundable security deposit, not a payment. What Nigerian law says, the clause to insist on, and how to claim the money back at move-out.",
     lead="The caution fee is the most disputed money in Nigerian renting. It is usually 10% of annual "
          "rent or one to three months' rent, paid on top of everything else — and too many tenants "
          "never see it again. The short answer is that it is refundable money. Whether <i>you</i> get "
@@ -488,7 +488,7 @@ PAGES["caution-fee-nigeria.html"] = dict(
 PAGES["rent-receipt-format-nigeria.html"] = dict(
     title="Rent Receipt Format in Nigeria: How to Write One (2026)",
     h1="Rent receipt format in Nigeria — the five things the law requires",
-    desc="The correct Nigerian rent receipt format: the five details Lagos law requires on every receipt, the ₦100,000 fine for refusing one, and a free generator that prints or saves as PDF.",
+    desc="The correct Nigerian rent receipt format: the five details Lagos law requires, the ₦100,000 fine for refusing a receipt, and a free generator — print or PDF.",
     lead="Nigerian rent is paid in advance, often a whole year in one transfer. That makes the receipt "
          "the single most important document a tenant holds — it is the proof of payment in any "
          "dispute, and the landlord's clean record too. In Lagos it is not optional: a landlord who "
@@ -573,9 +573,9 @@ ARREARS_TABLE = '''<table>
 
 PAGES["demand-letter-rent-arrears-nigeria.html"] = dict(
     published="2026-11-04", parent=("notice-to-quit-nigeria.html", "Notice to quit in Nigeria"),
-    title="Demand Letter for Unpaid Rent in Nigeria (2026): Sample + Free PDF + What Each State\u2019s Law Says",
+    title="Demand Letter for Unpaid Rent in Nigeria: Sample + Free PDF",
     h1="Demand letter for unpaid rent in Nigeria \u2014 the sample letter, free PDF, and the arrears rule in your state",
-    desc="A demand letter for rent arrears in Nigeria you can read in full and download free: the sum in words, the due date, the days to pay, what follows if it is ignored \u2014 and the arrears rule of Lagos, Abuja, Edo, Cross River, Kwara and Rivers law, section by section.",
+    desc="Demand letter for rent arrears in Nigeria, in full and free to download: the sum in words, due date, days to pay, what follows — and your state\u2019s arrears rule.",
     lead="Before a quit notice, before a lawyer, before anything the court will look at, there is one "
          "letter: the written demand for the rent that fell due and was not paid. This is that letter in "
          "the standard Nigerian form \u2014 the sum in figures and words, the period it covers, the date it "
@@ -697,9 +697,9 @@ INCREASE_TABLE = '''<table>
 
 PAGES["rent-increase-notice-nigeria.html"] = dict(
     published="2026-11-05", parent=("tenant-rights-nigeria.html", "Tenant rights in Nigeria"),
-    title="Rent Increase Notice in Nigeria (2026): Sample Letter, Tenant\u2019s Reply, Free PDFs + Your State\u2019s Law",
+    title="Rent Increase Notice Nigeria: Sample + Tenant\u2019s Reply (PDF)",
     h1="Rent increase notice in Nigeria \u2014 the sample letter, free PDF, the generator, and the section of the law in your state",
-    desc="A notice of rent review for Nigeria and the tenant\u2019s reply (accept, decline or counter-offer), both in full and free to download, with the one generator that writes them for your state: Lagos s.37, the Enugu 15% cap after every second anniversary, the FCT and the others \u2014 and the honest answer on how much notice the law requires.",
+    desc="Notice of rent review for Nigeria plus the tenant\u2019s reply (accept, decline, counter-offer), both free to download — Lagos s.37, the Enugu 15% cap, the FCT.",
     lead="A rent increase in Nigeria is an offer for the next term, not an order for this one. The letter "
          "that does it properly says the current rent stands until the term ends, names the new rent in "
          "figures and words, asks for an answer in writing, and \u2014 this is the part nobody else prints \u2014 "
@@ -835,7 +835,7 @@ PAGES["tenant-rights-nigeria.html"] = dict(
     # Lagos text — and says plainly what the law does NOT promise.
     title="Tenant Rights in Nigeria 2026: What Your Landlord Cannot Do",
     h1="Tenant rights in Nigeria — what your landlord cannot do, with the section of the law",
-    desc="Tenant rights in Nigeria with the section numbers: 9 things your landlord cannot do, how many months' notice, rent increases — and what the law does not promise you.",
+    desc="Tenant rights in Nigeria with section numbers: 9 things your landlord cannot do, how many months' notice, rent increases — and what the law does not promise.",
     lead="Most Nigerian tenants do not know what they are legally owed — which is why disputes get "
          "settled by whoever shouts loudest. Everything below carries the section it rests on, from "
          "the Lagos Tenancy Law 2011 (the most detailed state law) with the FCT and other states "
@@ -982,9 +982,9 @@ PAGES["tenant-rights-nigeria.html"] = dict(
 
 # 6 ── shop / commercial tenancy ------------------------------------------------
 PAGES["shop-tenancy-agreement-nigeria.html"] = dict(
-    title="Agreement Between Landlord and Tenant for a Shop in Nigeria (2026)",
+    title="Agreement Between Landlord and Tenant for a Shop in Nigeria",
     h1="Agreement between landlord and tenant for a shop: what a commercial tenancy needs",
-    desc="Commercial tenancy in Nigeria — the clauses a shop or office agreement needs: permitted use, rent review, fixtures, signage, renewal and reinstatement. Free generator, 2 minutes.",
+    desc="Commercial tenancy in Nigeria — the clauses a shop or office agreement needs: permitted use, rent review, fixtures, signage, renewal. Free, 2 minutes.",
     lead="A shop tenancy is not a longer residential tenancy. The money at stake is a business, the "
          "term is usually longer, and the clauses that matter — permitted use, rent review, who owns "
          "the fittings, what has to be put back at the end — are the ones residential templates leave "
@@ -1068,9 +1068,9 @@ PAGES["shop-tenancy-agreement-nigeria.html"] = dict(
 
 # 7 ── invoice format + VAT -----------------------------------------------------
 PAGES["invoice-format-nigeria.html"] = dict(
-    title="Invoice Format for Small Business in Nigeria (+7.5% VAT, 2026)",
+    title="Invoice Format for Small Business in Nigeria (7.5% VAT)",
     h1="Invoice format for small business in Nigeria — with 7.5% VAT done properly",
-    desc="The Nigerian invoice format small businesses need: TIN, invoice number, VAT shown separately at 7.5%, totals in naira, payment terms. Free generator — print or PDF in 2 minutes.",
+    desc="The Nigerian invoice format small businesses need: TIN, invoice number, VAT shown separately at 7.5%, totals in naira, payment terms. Free — print or PDF.",
     lead="A Nigerian invoice that gets paid is specific: who you are, what was supplied, how much, "
          "and whether VAT applies. Since 1 January 2026 the Nigeria Tax Act 2025 governs the rules — "
          "the VAT rate itself did not change, but what you must show on the invoice, and who has to "
@@ -1251,9 +1251,9 @@ render();
 # 2026) Part III para 9.1–9.6 verified 28 Oct 2026 — the minimum information list. PIT bands 2026: 0% first ₦800k, 15%, 18%, 21%, 23%,
 # 25% above ₦50m (PwC; KPMG Flash Alert 2025-168). Employer-provided accommodation: no relief.
 PAGES["rent-relief-nigeria.html"] = dict(
-    title="Rent Relief in Nigeria 2026: Claim the ₦500,000 Tax Deduction (Calculator + Free Letter)",
+    title="Rent Relief Nigeria 2026: Claim the ₦500,000 Tax Deduction",
     h1="Rent relief in Nigeria — the 20% deduction every tenant can claim from 2026, and the papers you need",
-    desc="Since 1 January 2026 tenants deduct 20% of rent paid (max ₦500,000) from taxable income — but only with a rent receipt and tenancy agreement. Calculator, deadlines, and a free declaration letter for HR or the tax office.",
+    desc="Since 1 January 2026 tenants deduct 20% of rent paid (max ₦500,000) from taxable income — with a rent receipt and agreement. Calculator, deadlines, free letter.",
     lead="The Nigeria Tax Act 2025 scrapped the old consolidated relief and gave tenants something "
          "better: a deduction of 20% of the rent you actually pay, up to ₦500,000 a year. It is not "
          "automatic. Nobody gets it without the paper — a rent receipt in your name, a tenancy "
@@ -1440,9 +1440,9 @@ WIDGET_RENT_INDEX = r"""<style>
 
 
 PAGES["rent-index-nigeria.html"] = dict(
-    title="Rent Index Nigeria 2026: Rent Actually Paid, by State (DocOga Rent Monitor)",
+    title="Rent Index Nigeria 2026: Rent Actually Paid, by State",
     h1="Nigeria\u2019s rent index \u2014 built from rent actually paid, not asking prices",
-    desc="Nigeria has no official rent index. The DocOga Rent Monitor counts verified rent receipts by state and publishes a median only when a state reaches 30 receipts in a month. Live counts, the method, and how to add your receipt free.",
+    desc="Nigeria has no official rent index. The DocOga Rent Monitor counts verified rent receipts by state, a median at 30 a month. Live counts, the method, join free.",
     lead="Nobody in Nigeria measures the rent people actually pay. The Bureau of Statistics publishes a "
          "national price index, not rents by state; the private \u201caverage rent\u201d figures come "
          "from listings \u2014 what landlords ask, not what tenants pay. DocOga\u2019s free rent receipt "
