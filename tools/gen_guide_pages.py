@@ -953,8 +953,135 @@ PAGES["employment-contract-sample-nigeria.html"] = dict(
          "not a law firm and this page is general information, not legal advice."),
     ],
     cta=("employment", "Create your employment contract free \u2192"),
-    related=["invoice-format-nigeria.html", "shop-tenancy-agreement-nigeria.html", "tenancy-agreement-sample-nigeria.html",
-             "rent-receipt-format-nigeria.html", "demand-letter-rent-arrears-nigeria.html"],
+    related=["query-letter-sample-nigeria.html", "invoice-format-nigeria.html", "shop-tenancy-agreement-nigeria.html",
+             "tenancy-agreement-sample-nigeria.html", "rent-receipt-format-nigeria.html"],
+    priority="0.8",
+)
+
+# 4d ── query letter + warning letter (12 Nov 2026, second money-only build; docs/GROWTH.md §4) -----
+# "Query" is the Nigerian word for the letter that asks an employee to explain in writing before any
+# warning; "how to reply a query" is what the employee searches. The warning tool now writes the
+# query too (renderQueryLetter). The law quoted is the Labour Act, Cap L1 LFN 2004, read from the
+# enrolled text — s.5(1), s.5(7), s.7(1)(h), s.11(2), s.11(5), s.11(6), s.11(7), s.91 — nothing else.
+DISCIPLINE_TABLE = '''<table>
+<tr><th>Step</th><th>What it is</th><th>What the Labour Act says</th></tr>
+<tr><td><b>1. Query</b></td><td>A letter stating what is alleged, with dates, asking the employee to explain in writing by a stated time (24\u201372 hours is usual). It decides nothing.</td><td>Nothing in the Act requires a query; what the Act fixes is what the employer may <i>not</i> do instead \u2014 fine the worker or dock wages for the misconduct (s.5(1)).</td></tr>
+<tr><td><b>2. Reply</b></td><td>The employee\u2019s written explanation: what happened, why, what changes. Short, factual, dated, a copy kept.</td><td>The Act is silent on the reply; a reply that is considered before the next step is what makes that step defensible if it is ever challenged.</td></tr>
+<tr><td><b>3. Warning</b></td><td>First, second or final written warning: the conduct, the expected improvement, a deadline, and what follows if it is not met. Signed for receipt.</td><td>A warning may not carry a fine or a deduction (s.5(1)); whatever deductions the law does allow may not exceed one-third of a month\u2019s wages (s.5(7)). Special conditions of the job belong in the written terms (s.7(1)(h)).</td></tr>
+<tr><td><b>4. Termination on notice</b></td><td>Where warnings have not worked: notice as the contract provides, or payment in lieu.</td><td>Notice of at least one day, one week, two weeks or one month by length of service (s.11(2)); payment in lieu allowed (s.11(6)); all wages due must be paid on or before the notice expires (s.11(7)).</td></tr>
+<tr><td><b>5. Summary dismissal</b></td><td>Dismissal without notice for gross misconduct \u2014 theft, fraud, violence, wilful damage.</td><td>Kept open by s.11(5) for conduct that would have justified it at common law. The query and the reply are what show, later, that the conduct was established and the worker was heard.</td></tr>
+</table>
+<p class="muted">The Act\u2019s floors bind a \u201cworker\u201d as s.91 defines one \u2014 administrative, executive, technical and professional staff are governed by their contracts. For them, the steps above are still the practice the National Industrial Court expects to see on paper.</p>'''
+
+PAGES["query-letter-sample-nigeria.html"] = dict(
+    published="2026-11-12", parent=("employment-contract-sample-nigeria.html", "Employment contract sample"),
+    title="Query Letter Sample Nigeria: Warning Letter + Reply (PDF)",
+    h1="Query letter in Nigeria \u2014 the sample query, the employee\u2019s reply, the warning letter that follows, and the law under all three",
+    desc="Query letter sample for Nigeria, free to download: the employer\u2019s query, the employee\u2019s reply, the warning that follows \u2014 and what the Labour Act forbids.",
+    lead="An employee resumes late twice, or the till is short, or a customer complains. The first letter is "
+         "not a warning \u2014 it is a <b>query</b>: a request to explain in writing, by a stated time, before any "
+         "decision is taken. This page carries all three letters of a lawful disciplinary paper trail in the "
+         "standard Nigerian form \u2014 the query, the employee\u2019s reply, and the first written warning \u2014 with "
+         "square brackets where the details go. Read them, download the PDFs, or let the generator write the "
+         "query or the warning with your facts in two minutes. Below the letters: what each step is for, what "
+         "the Labour Act forbids at each one (fines and deductions, chiefly), and how an employee should answer.",
+    widget=('<div class="box">\n<h2>1. The query (employer to employee)</h2>\n'
+            + sample_docs.html_sample("query-letter-sample-nigeria")
+            + download_block("query-letter-sample-nigeria", "warning", "Write a query with your facts \u2014 free \u2192")
+            + '\n</div>\n<div class="box">\n<h2>2. The reply (employee to employer)</h2>\n'
+            + sample_docs.html_sample("query-letter-reply-nigeria")
+            + '<p class="dl"><a class="cta" href="%s" download>Download the reply as PDF \u2014 free, no signup</a></p>' % sample_docs.pdf_url("query-letter-reply-nigeria")
+            + '\n</div>\n<div class="box">\n<h2>3. The warning letter (if the reply does not answer it)</h2>\n'
+            + sample_docs.html_sample("warning-letter-sample-nigeria")
+            + download_block("warning-letter-sample-nigeria", "warning", "Write the warning letter \u2014 free \u2192")
+            + '\n</div>'),
+    boxes=[
+        ("What each letter is for", ul([
+            "<b>The query</b> states the allegation and its dates and asks for a written explanation by a stated "
+            "time. It must not announce the punishment \u2014 a query that says \u201cyou are hereby warned\u201d is a "
+            "warning with the hearing skipped. Hand it over in person, have the employee sign for receipt, and keep "
+            "the copy.",
+            "<b>The reply</b> is the employee\u2019s hearing. It should say what happened, why, and what will change; "
+            "it should not argue with the manager or accuse colleagues. Late, missing or evasive replies are "
+            "themselves facts the employer may rely on.",
+            "<b>The warning</b> records the conduct, refers to the query and the reply, states the expected "
+            "improvement and a deadline, and says what follows if it is not met. \u201cFirst\u201d, \u201csecond\u201d and "
+            "\u201cfinal\u201d are not in the Act; they are the ladder most Nigerian staff handbooks use, and the generator "
+            "writes all three.",
+            "<b>The acknowledgement</b> at the foot of the query and the warning is the proof of service. The words "
+            "\u201creceipt does not indicate agreement\u201d are there so the employee has no reason to refuse to sign.",
+        ])),
+        ("The five steps and the law under each", DISCIPLINE_TABLE),
+        ("What an employer may not do instead of a warning", ul([
+            "<b>Fine the worker.</b> \u201cNo employer shall make any deduction \u2026 or any agreement or contract with a "
+            "worker for any deduction \u2026 for or in respect of any fines\u201d (s.5(1)). A \u201clateness fine\u201d in a "
+            "staff handbook is unenforceable against a Labour Act worker.",
+            "<b>Dock wages for the loss.</b> A deduction for loss caused by the worker\u2019s wilful misconduct or "
+            "neglect needs <i>the prior written consent of an authorised labour officer</i> and must be reasonable "
+            "(s.5(1), proviso). Short till, broken stock, a lost phone \u2014 none may simply be taken from salary.",
+            "<b>Exceed a third.</b> Whatever deductions the law does permit \u2014 PAYE, pension, union dues, an "
+            "overpayment within the last three months (s.5(5)) \u2014 may not together exceed one-third of the month\u2019s "
+            "wages (s.5(7)).",
+            "<b>Suspend without pay indefinitely.</b> The Act does not provide for it; a suspension pending the reply "
+            "should be short, in writing, and on pay unless the contract clearly says otherwise.",
+            "<b>Dismiss summarily for an ordinary lapse.</b> Lateness, a missed target or a rude word are not the "
+            "gross misconduct s.11(5) contemplates; they are query-and-warning matters. Summary dismissal is for "
+            "theft, fraud, violence and the like \u2014 and even then the query first is what proves it later.",
+        ])),
+        ("If you are the employee who received a query", ul([
+            "<b>Reply in writing, inside the time given.</b> Silence is read against you. If the time is too short to "
+            "gather facts, say so in writing and ask for a day.",
+            "<b>Facts, then responsibility, then the fix.</b> The sample reply above is the shape: what happened, "
+            "what you did about it at the time, what you accept, what will change. One page.",
+            "<b>Sign for receipt.</b> Signing the acknowledgement is not admitting the allegation \u2014 the letter says "
+            "so. Refusing to sign only removes your proof of the date you received it.",
+            "<b>Keep everything.</b> The query, your reply, the warning. If the matter ends in a dismissal you dispute, "
+            "the National Industrial Court will ask whether you were heard; these are the papers that answer.",
+            "<b>Check your payslip afterwards.</b> A fine or an unexplained deduction following a warning is itself "
+            "unlawful for a Labour Act worker (s.5(1)) \u2014 raise it in writing.",
+        ])),
+        ("How this page compares with what else is online", ul([
+            "<b>Template sites</b> show one query letter and one \u201chow to reply\u201d paragraph and sell the Word "
+            "file. This page shows all three letters in full and gives them away.",
+            "<b>Foreign HR templates</b> (US \u201cwrite-ups\u201d, UK disciplinary invitations) describe procedures under "
+            "laws that do not run here. Every section on this page is a section of the Labour Act, Cap L1 LFN 2004, "
+            "read from the enrolled text.",
+            "<b>A lawyer</b> is the right call when the matter is heading for dismissal of a senior employee, or the "
+            "employee has already written through counsel. For the query and the first warning, this is the paper "
+            "the lawyer would want to find in the file.",
+        ])),
+    ],
+    faq=[
+        ("What is a query letter?",
+         "In Nigerian workplaces, a query is the employer\u2019s letter asking an employee to explain in writing, by a "
+         "stated time, why disciplinary action should not be taken over a stated allegation. It is not a warning "
+         "and it decides nothing; the reply is considered before the next step. The sample above is that letter; "
+         "the generator writes it with your facts."),
+        ("How do I reply to a query letter?",
+         "In writing, before the deadline, in one page: acknowledge the query and its date, state what happened and "
+         "why, say what you did at the time, accept what is yours to accept, state what will change, and sign and "
+         "date it. Keep a copy. The sample reply above is that letter."),
+        ("Can my employer fine me or deduct from my salary after a query?",
+         "Not for a Labour Act worker. Section 5(1) forbids deductions or agreements for deductions \u201cin respect of "
+         "any fines\u201d; a deduction for loss caused by wilful misconduct needs an authorised labour officer\u2019s prior "
+         "written consent and must be reasonable; and all deductions in a month are capped at one-third of wages "
+         "(s.5(7))."),
+        ("How many warnings before termination in Nigeria?",
+         "The Labour Act sets no number. It fixes the notice a termination needs \u2014 one day to one month by length "
+         "of service (s.11(2)) or payment in lieu (s.11(6)) \u2014 and keeps summary dismissal for conduct that "
+         "justifies it (s.11(5)). The first-second-final ladder comes from staff handbooks and from what the "
+         "National Industrial Court expects to see when a dismissal is challenged."),
+        ("Must I sign the acknowledgement on a query or warning?",
+         "Signing records receipt, not agreement \u2014 the letter says so. Refusing only deprives you of proof of the "
+         "date you received it, which is the date your reply time runs from."),
+        ("Can I download these letters as PDFs for free?",
+         "Yes \u2014 all three PDFs above are free and need no signup. They carry the square brackets; the generator "
+         "writes the query or the warning with your details, free with a small banner or without one on the Oga "
+         "Pass. DocOga is not a law firm and this page is general information, not legal advice."),
+    ],
+    cta=("warning", "Write a query or warning letter free \u2192"),
+    related=["employment-contract-sample-nigeria.html", "invoice-format-nigeria.html", "shop-tenancy-agreement-nigeria.html",
+             "demand-letter-rent-arrears-nigeria.html", "tenancy-agreement-sample-nigeria.html"],
     priority="0.8",
 )
 
@@ -1789,6 +1916,7 @@ def main():
         "demand-letter-rent-arrears-nigeria.html": "Demand letter for unpaid rent + free PDF",
         "rent-increase-notice-nigeria.html": "Rent increase notice + the law by state",
         "employment-contract-sample-nigeria.html": "Employment contract sample + free PDF",
+        "query-letter-sample-nigeria.html": "Query letter, reply &amp; warning letter + free PDFs",
         "tenant-rights-nigeria.html": "Tenant rights &amp; landlord duties",
         "shop-tenancy-agreement-nigeria.html": "Shop &amp; business tenancy",
         "invoice-format-nigeria.html": "Invoice format + 7.5% VAT",

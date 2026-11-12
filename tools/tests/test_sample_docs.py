@@ -240,6 +240,53 @@ class PageTests(unittest.TestCase):
         self.assertTrue(growth.MONEY_PAGE.search("https://docoga.com.ng/employment-contract-sample-nigeria"),
                         "a page with a generator on it is a money page")
 
+    def test_the_query_letter_page_carries_all_three_letters_and_the_tool_now_writes_the_query(self):
+        """12 Nov 2026 (second money-only build): query → reply → warning on one page; the warning tool gains
+        the query stage; every rule quoted is Labour Act s.5 / s.11, read from the enrolled text."""
+        html = (SITE / "query-letter-sample-nigeria.html").read_text(encoding="utf-8")
+        self.assertIn("<title>Query Letter Sample Nigeria: Warning Letter + Reply (PDF)</title>", html)
+        order = [html.index("RE: QUERY"), html.index("REPLY TO QUERY"), html.index("FIRST WRITTEN WARNING"),
+                 html.index("The five steps and the law under each")]
+        self.assertEqual(order, sorted(order), "query, reply, warning, then the explanation — answer first")
+        for slug in ("query-letter-sample-nigeria", "query-letter-reply-nigeria", "warning-letter-sample-nigeria"):
+            self.assertIn('href="https://docoga.com.ng/samples/%s.pdf" download' % slug, html, slug)
+            self.assertFalse((SITE / (slug + ".html")).exists() and slug != "query-letter-sample-nigeria",
+                             "one page, three outputs — no thin duplicates")
+        self.assertIn('href="https://docoga.com.ng/#warning"', html)
+        self.assertIn('rel="canonical" href="https://docoga.com.ng/query-letter-sample-nigeria"', html)
+        for needle in ("s.5(1)", "s.5(7)", "s.11(2)", "s.11(5)", "s.11(6)", "s.11(7)", "one-third",
+                       "in respect of any fines", "authorised labour officer", "not legal advice"):
+            self.assertIn(needle, html, needle)
+        for invented in ("Chidi", "Bisi", "Mr ", "Mrs "):
+            self.assertNotIn(invented, html, "no invented names in a sample")
+        # the generator: a Query stage that writes the query, and the warning branch untouched
+        index_html = (SITE / "index.html").read_text(encoding="utf-8")
+        for needle in ("<option>Query (explain in writing)</option>", "function renderQueryLetter",
+                       "const isQuery=/^Query/.test(count);", "<b>RE: QUERY</b>",
+                       "<b>You are required to explain in writing</b> why disciplinary action should not be taken",
+                       "within 48 hours of receiving this letter", "Your explanation will be considered before any decision is taken",
+                       "This letter serves as your <b>'+count.toLowerCase()+'</b>"):
+            self.assertIn(needle, index_html, needle)
+        # the sample letters say what the generator says
+        index = re.sub(r"<[^>]+>", "", index_html)
+        flat = re.sub(r"\s+", " ", html)                                              # the <pre> wraps at 78 columns
+        for sentence in ("which, if established, is contrary to the terms of your employment and company policy",
+                         "why disciplinary action should not be taken against you in respect of the above",
+                         "which is contrary to the terms of your employment and company policy",
+                         "failure to show the required improvement may result in further disciplinary action"):
+            self.assertIn(sentence, index, sentence)
+            self.assertIn(sentence, flat, sentence)
+        for slug, head in (("query-letter-sample-nigeria", "QUERY"), ("query-letter-reply-nigeria", "REPLY TO QUERY"),
+                           ("warning-letter-sample-nigeria", "FIRST WRITTEN WARNING")):
+            self.assertIn(head, pdf_text(sample_docs.render_pdf(slug)), slug)
+        for page in ("index.html", "employment-contract-sample-nigeria.html"):
+            self.assertIn("/query-letter-sample-nigeria", (SITE / page).read_text(encoding="utf-8"), page)
+        self.assertIn("<loc>https://docoga.com.ng/query-letter-sample-nigeria</loc>",
+                      (SITE / "sitemap.xml").read_text(encoding="utf-8"))
+        self.assertTrue((SITE / "og" / "query-letter-sample-nigeria.jpg").is_file())
+        import growth
+        self.assertTrue(growth.MONEY_PAGE.search("https://docoga.com.ng/query-letter-sample-nigeria"))
+
     def test_the_sample_wording_is_the_generators_wording(self):
         """Every clause body in the sample appears, placeholders aside, in site/index.html's renderAgreement."""
         index = (SITE / "index.html").read_text(encoding="utf-8")

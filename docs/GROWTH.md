@@ -78,6 +78,28 @@ met, we scale pages and states; missed, the owner is told to stop spending even 
 the product is parked, sold or changed. The owner plans his money as if DocOga earns ₦0 until then.
 
 
+- **2026-11-12** — **Ninth dive (owner, 10:25am: "What next"): the query letter — the second paid tool
+  with no page in front of it, and the Nigerian word nobody's template uses.** Audit after the eighth
+  dive: of the eleven tools, two still had no search page — the warning letter and the payslip. Chosen
+  first: the warning letter, because the Nigerian search is not "warning letter" but **"query"** — the
+  letter asking an employee to explain in writing before any warning — and "how to reply a query" is the
+  employee's half of the same search. Research: the Labour Act, Cap L1 LFN 2004, enrolled text — s.5(1)
+  no fines or deductions "in respect of any fines", and a deduction for loss from wilful misconduct only
+  with an authorised labour officer's prior written consent; s.5(5) overpayments within three months;
+  s.5(7) all deductions ≤ one-third of a month's wages; s.11(5) summary dismissal kept for conduct that
+  justifies it; s.11(7) wages due on or before notice expires; s.7(1)(h) special conditions. No case law
+  is quoted — the Third Alteration and the NICN authorities could not be read from a primary host today,
+  so the page describes the query–reply–warning ladder as practice, not as statute. Shipped: the warning
+  **tool now writes the query** (`renderQueryLetter`, stage "Query (explain in writing)", 48-hour default
+  or a chosen deadline, acknowledgement foot); three samples in `tools/sample_docs.py` (query, employee's
+  reply, first written warning — one shop, one lateness, no names) → three noindex PDFs;
+  `/query-letter-sample-nigeria` (title 57, description 155): the three letters first, then the five-step
+  table with the section under each, what an employer may not do instead of a warning, the employee's
+  checklist, six FAQs; linked from the homepage guides block and the employment page; sitemap, og card,
+  301 rule; `growth.MONEY_PAGE` counts it; domtest banner-chokepoint count 12 → 13. Measure: GSC by
+  ~10 Dec. Next page in this cluster when the 26 Nov read supports it: the payslip (the last tool with no
+  page).
+
 - **2026-11-12** — **Eighth dive (owner, 9:20am: "Ok let's do it" — first build under §4's money-only rule):
   a free sample in front of the paid employment tool.** The employment generator (`#employment`) has
   been a paid tool with no search page in front of it since launch: nothing on the site answered

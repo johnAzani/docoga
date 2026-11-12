@@ -280,6 +280,92 @@ EMPLOYMENT_CONTRACT = [
 ]
 
 
+# 12 Nov 2026 (second money-only build): the warning tool's two letters and the reply people search for.
+# "Query" is Nigeria's name for the step before a warning — the employer asks for a written explanation
+# within a stated time, and the warning (or nothing) follows the reply. Every letter mirrors what
+# renderQueryLetter / renderWarning in site/index.html write. The law quoted is the Labour Act, Cap L1
+# LFN 2004, read from the enrolled text: s.5(1) no fines or deductions for misconduct without a labour
+# officer's written consent, s.5(7) deductions capped at one-third of a month's wages, s.11(5) summary
+# dismissal kept for conduct that justifies it. No names; a shop and a sales assistant, as on the
+# employment page.
+QUERY_LETTER = [
+    ("h", "QUERY"),
+    ("p", "[EMPLOYER'S BUSINESS NAME]"),
+    ("p", "[Business address, Lagos]"),
+    ("p", "[14 November 2026]"),
+    ("p", "To: [Employee's full name], [Sales Assistant]"),
+    ("p", "RE: QUERY"),
+    ("p", "Dear [Employee's first name],"),
+    ("p", "It has been reported that [you resumed work at 9:40am on Monday 10 November and 10:05am on Wednesday "
+          "12 November 2026 without prior notice or permission, leaving the shop unopened past the 8:00am "
+          "resumption time] (date(s): [10 and 12 November 2026]), which, if established, is contrary to the terms "
+          "of your employment and company policy."),
+    ("p", "You are required to explain in writing why disciplinary action should not be taken against you in "
+          "respect of the above, and to submit your explanation to the undersigned on or before [Monday 17 "
+          "November 2026]."),
+    ("p", "Your explanation will be considered before any decision is taken. Failure to respond within the time "
+          "given may result in a decision being taken on the information available, in accordance with your "
+          "employment contract and applicable labour laws."),
+    ("p", "Yours faithfully,"),
+    ("sig", ["[Manager's name, title] — for [Employer's business name] — signature & date",
+             "[Employee's full name] — received — signature & date"]),
+    ("p", "ACKNOWLEDGEMENT: I, [Employee's full name], acknowledge receipt of this query. Receipt does not "
+          "indicate agreement with its contents."),
+]
+
+QUERY_REPLY = [
+    ("h", "REPLY TO QUERY"),
+    ("p", "[Employee's full name], [Sales Assistant]"),
+    ("p", "[15 November 2026]"),
+    ("p", "To: [Manager's name, title], [Employer's business name]"),
+    ("p", "RE: REPLY TO QUERY DATED [14 NOVEMBER 2026]"),
+    ("p", "Dear [Sir/Madam],"),
+    ("p", "I acknowledge receipt of your query dated [14 November 2026] concerning [my late resumption on 10 and 12 "
+          "November 2026]."),
+    ("p", "[On both mornings the bus I take from Ikorodu was held in traffic on Ikorodu Road after an accident at "
+          "Ketu; I called the shop line at 8:10am on the 10th and sent a message on the 12th, and I reported to "
+          "work as soon as I arrived. I accept that I should have informed you directly before 8:00am.]"),
+    ("p", "I sincerely apologise for the lateness and for any inconvenience to the business. [I have now arranged "
+          "to leave home 45 minutes earlier and will call the manager directly before 7:45am on any day I "
+          "expect to be late.] I assure you that this will not happen again."),
+    ("p", "I remain committed to my work and respectfully ask that this explanation be taken into account."),
+    ("p", "Yours faithfully,"),
+    ("sig", ["[Employee's full name] — signature & date"]),
+]
+
+WARNING_LETTER = [
+    ("h", "FIRST WRITTEN WARNING"),
+    ("p", "[EMPLOYER'S BUSINESS NAME]"),
+    ("p", "[Business address, Lagos]"),
+    ("p", "[18 November 2026]"),
+    ("p", "To: [Employee's full name], [Sales Assistant]"),
+    ("p", "RE: FIRST WRITTEN WARNING"),
+    ("p", "Dear [Employee's first name],"),
+    ("p", "This letter serves as your first written warning in respect of [late resumption on 10 and 12 November "
+          "2026 without prior notice, leaving the shop unopened past the 8:00am resumption time] (incident "
+          "date(s): [10 and 12 November 2026]), which is contrary to the terms of your employment and company "
+          "policy."),
+    ("p", "Reference is made to [the query dated 14 November 2026 and your reply dated 15 November 2026, which "
+          "has been considered]."),
+    ("p", "EXPECTED IMPROVEMENT: You are required to [resume work by 8:00am daily and to inform the manager by "
+          "phone before 7:45am on any day you expect to be late] on or before [19 November 2026]."),
+    ("p", "Be advised that failure to show the required improvement may result in further disciplinary action, "
+          "up to and including the termination of your employment, in accordance with your employment contract "
+          "and applicable labour laws."),
+    ("p", "Yours faithfully,"),
+    ("sig", ["[Manager's name, title] — for [Employer's business name] — signature & date",
+             "[Employee's full name] — received — signature & date"]),
+    ("p", "ACKNOWLEDGEMENT: I, [Employee's full name], acknowledge receipt of this letter. Receipt does not "
+          "necessarily indicate agreement with its contents."),
+    ("p", "What the warning may not do (Labour Act, Cap L1 LFN 2004): impose a fine or a deduction from wages for "
+          "the misconduct — s.5(1) forbids both unless a law permits them or an authorised labour officer consents "
+          "in writing to a reasonable deduction for loss the worker's wilful misconduct caused — and in any month "
+          "deductions of every kind may not exceed one-third of wages (s.5(7)). Summary dismissal without notice "
+          "remains open only for conduct that justifies it (s.11(5)); a documented query, reply and warning are "
+          "what show, later, that it did."),
+]
+
+
 SAMPLES = {
     "tenancy-agreement-sample-nigeria": ("Tenancy Agreement — sample (Nigeria)", TENANCY_AGREEMENT),
     "rent-receipt-sample-nigeria": ("Rent Receipt — sample (Nigeria)", RENT_RECEIPT),
@@ -288,6 +374,9 @@ SAMPLES = {
     "rent-increase-notice-nigeria": ("Notice of Rent Review — sample (Nigeria)", RENT_REVIEW_NOTICE),
     "rent-increase-reply-nigeria": ("Reply to a Notice of Rent Review — tenant's sample (Nigeria)", RENT_REPLY_LETTER),
     "employment-contract-sample-nigeria": ("Employment Contract — sample (Nigeria)", EMPLOYMENT_CONTRACT),
+    "query-letter-sample-nigeria": ("Query Letter — sample (Nigeria)", QUERY_LETTER),
+    "query-letter-reply-nigeria": ("Reply to a Query — employee's sample (Nigeria)", QUERY_REPLY),
+    "warning-letter-sample-nigeria": ("Warning Letter — sample (Nigeria)", WARNING_LETTER),
 }
 
 

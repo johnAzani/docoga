@@ -205,8 +205,8 @@ check('team boot picks up ?team_token= magic link and stores the session',
       /team_token/.test(HTML) && /docoga_team/.test(HTML));
 check('sign-out clears the stored session and re-renders',
       /docoga_team/.test(lex(dom, 'teamSignOut.toString()')) && /renderAll/.test(lex(dom, 'teamSignOut.toString()')));
-check('all 11 renderers (and the tenant-reply branch of the rent-review tool) still route through freeBanner()',
-      (HTML.match(/freeBanner\(\)\+/g) || []).length === 12);
+check('all 11 renderers (plus the tenant-reply branch of the rent-review tool and the query branch of the warning tool) still route through freeBanner()',
+      (HTML.match(/freeBanner\(\)\+/g) || []).length === 13);
 
 // The buy button must still be wired.
 check('Oga Pass buy button present and wired',
