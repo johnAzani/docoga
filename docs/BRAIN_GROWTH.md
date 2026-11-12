@@ -59,6 +59,27 @@ scorecard flags (⚠️) and I act on in the next brief — without being asked.
 
 ## 4. Changelog (newest first — the scorecard reads the top date)
 
+- **2026-11-12** — **The brief names the right page, or none.** Read back: the first page brief (the
+  field's "house for rent captions", 10 Nov) told the editor the closest page we have was
+  `rent-receipt-format-nigeria` — because the matcher counted shared slug words and the one word
+  "rent" sits in 23 of our 104 slugs; ties ("can landlord increase rent in enugu": rent-receipt-enugu
+  vs the rent-increase page, two words each) went to whichever came first in the sitemap, and a
+  question that named a state could not find that state's page because state names were stop words.
+  A wrong "closest page" is worse than none: the brief then tells a person to extend the wrong page,
+  and the Growth lock's "extend, do not duplicate" is applied to the wrong thing. Now
+  `page_briefs.closest_page` weighs every shared word by its rarity across our pages
+  (log((N+1)/(df+1))), counts place names and never offers another state's page, treats words that
+  name a kind of page (sample, format, template, pdf) as a third of a word, demands at least one
+  *telling* shared word — not a place, not a form word, not one that more than a sixth of our pages
+  carry unless the page is the question's own state's — and otherwise answers "no page stands close";
+  a daily guide yields to a top-level page that scores the same. **Measure:** twelve questions the
+  field and the ledger have actually asked, run against the real sitemap in
+  `test_page_briefs.test_the_closest_page_is_the_telling_page_not_the_first_page_that_says_rent` —
+  before: 7 of 12 right (three "none" questions found a page through "rent" or "landlord"; the
+  Enugu increase went to a receipt page; the Lagos notice went to the national page); after: 12 of 12.
+  The next brief the field triggers will carry the page the editor should actually open. Next ≤ 26 Nov
+  2026.
+
 - **2026-11-07** — **The field writes the research list.** Read back: the competitor watch's new
   "◻ uncovered" line (this morning's Dominance dive) named two rival titles with no DocOga page behind
   them and then waited for a person to notice — the same shape as every gap before it. Now

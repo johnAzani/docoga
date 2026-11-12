@@ -103,6 +103,32 @@ class LedgerTests(unittest.TestCase):
         self.assertGreater(len(real), 50)
         self.assertIn("rent-increase-notice-nigeria", [slug for slug, _ in real])
 
+    def test_the_closest_page_is_the_telling_page_not_the_first_page_that_says_rent(self):
+        """12 Nov 2026 (🔒 Brain Growth): the matcher counted shared words, so 'house for rent captions'
+        was sent to the rent-receipt page through the one word 'rent'. Twelve questions the field and
+        the ledger have actually asked, against the real sitemap — rarity-weighted, place-aware, honest
+        about having nothing."""
+        pages = pb.site_pages()
+        expect = {
+            "House for rent captions nigeria": "",                                   # no page; say so
+            "How to advertise house for rent": "",
+            "Why your firm\u2019s year-end party should leave something on the wall": "",
+            "City Engineering Nigeria Ltd v. Federal Housing Authority (1997)": "",
+            "landlord changed my lock in abuja": "",                                 # the Enugu lockout guide is another state's
+            "can landlord increase rent in enugu": "rent-increase-notice-nigeria",   # 'increase' outweighs 'enugu'
+            "how many months notice for a yearly tenant in Lagos": "notice-to-quit-lagos",
+            "rent receipt sample": "rent-receipt-format-nigeria",                    # 'sample' is a kind of page, not a subject
+            "caution fee refund": "caution-fee-nigeria",                             # placeless question: the national page
+            "quit notice in rivers state": "notice-to-quit-rivers",
+            "query letter for lateness": "query-letter-sample-nigeria",
+            "employment contract for a driver": "employment-contract-sample-nigeria",
+        }
+        got = {q: pb.closest_page(q, pages=pages)[0] for q in expect}
+        self.assertEqual(got, expect)
+        # a shared place name alone, or a shared FORM word alone, never makes a page the closest page
+        self.assertEqual(pb.closest_page("anything in kano", pages=pages), ("", []))
+        self.assertEqual(pb.closest_page("free pdf sample", pages=pages), ("", []))
+
 
 class DraftTests(unittest.TestCase):
     def entry(self):

@@ -144,6 +144,20 @@ def due(data):
 
 
 # ── what we already have: the shelf and the pages ──────────────────────────────────────────────────
+PLACES = set("""lagos abuja fct rivers enugu kano oyo edo delta kaduna ogun plateau anambra kwara cross river
+imo abia akwa ibom ondo osun ekiti kogi benue niger bauchi borno sokoto kebbi gombe jigawa katsina zamfara
+yobe adamawa taraba nasarawa ebonyi bayelsa ibadan port harcourt benin kaduna ilorin jos uyo calabar owerri
+asaba awka abeokuta warri onitsha aba""".split())
+
+
+def page_words(text):
+    """Content words for the closest-page test: words() plus the place names words() drops as stop
+    words — "notice in Lagos" must be able to find notice-to-quit-lagos, not only the national page."""
+    out = set(words(text))
+    out |= {w for w in re.findall(r"[a-z]+", str(text or "").lower()) if w in PLACES}
+    return out
+
+
 def site_pages(sitemap=None):
     """[(slug, words)] for every page in the sitemap — the closest-page test reads the slug."""
     try:
@@ -154,18 +168,60 @@ def site_pages(sitemap=None):
     for loc in re.findall(r"<loc>\s*(\S+?)\s*</loc>", text):
         slug = loc.replace(SITE_URL, "").strip("/")
         if slug and not slug.endswith((".pdf", ".xml")):
-            out.append((slug, set(words(slug.replace("-", " ").replace("/", " ")))))
+            out.append((slug, page_words(re.sub(r"^guides/", "", slug).replace("-", " ").replace("/", " "))))
     return out
 
 
+FORM = {"sample", "format", "template", "pdf", "free", "download", "guid", "guide", "index", "page"}
+
+
 def closest_page(question, pages=None):
-    """(slug, shared words) of the page whose slug shares most content words — ('', []) when none."""
-    qw = set(words(question))
-    best, best_shared = "", []
-    for slug, pw in pages if pages is not None else site_pages():
-        shared = sorted(qw & pw)
-        if len(shared) > len(best_shared):
-            best, best_shared = slug, shared
+    """(slug, shared words) of the page that shares the most *telling* words with the question —
+    ('', []) when no page stands close.
+
+    12 Nov 2026 (🔒 Brain Growth): the first version counted shared words, so "house for rent
+    captions nigeria" landed on rent-receipt-format-nigeria through the one word "rent" (shared by
+    forty slugs) and "can landlord increase rent in enugu" tied rent-receipt-enugu with the rent-increase
+    page and took the first in the sitemap. Now: each shared word is worth its rarity across our pages
+    (log((N+1)/(df+1)) — "nigeria", "rent" and "tenancy" weigh little, "increase" and "caution" a lot);
+    words that name a *kind* of page rather than a subject (FORM: sample, format, template …) weigh a
+    third; place names count (page_words) and a page about another state is never the closest page;
+    the best page must share at least one telling word — not a FORM word, not a place, not one that
+    more than a sixth of our pages carry (unless the page is the question's own state's) — otherwise the honest answer is "no page stands close"; and a daily
+    guide under guides/ yields to a top-level page that scores the same (the Growth lock says extend the
+    page that ranks, not the day's note)."""
+    import math
+    pages = list(pages if pages is not None else site_pages())
+    if not pages:
+        return "", []
+    qw = page_words(question)
+    q_places = qw & PLACES
+    n = len(pages)
+    df = {}
+    for _, pw in pages:
+        for w in pw:
+            df[w] = df.get(w, 0) + 1
+    idf = {w: math.log((n + 1) / (c + 1)) for w, c in df.items()}
+    common = max(2.0, n / 6.0)                 # a word more than one page in six carries proves nothing
+    best, best_shared, best_score = "", [], 0.0
+    for slug, pw in pages:
+        shared = qw & pw
+        if not shared:
+            continue
+        p_places = pw & PLACES
+        if q_places and p_places and not (q_places & p_places):
+            continue                                            # another state's page is never closest
+        same_place = bool(q_places & p_places)
+        telling = [w for w in shared if w not in FORM and w not in PLACES and (df[w] <= common or same_place)]
+        if not telling:
+            continue
+        score = sum(idf[w] * (0.3 if w in FORM else 1.0) for w in shared)
+        if slug.startswith("guides/"):
+            score *= 0.85
+        if p_places and not q_places:
+            score *= 0.9                                        # a placeless question: the national page first
+        if score > best_score + 1e-9 or (abs(score - best_score) <= 1e-9 and best and len(slug) < len(best)):
+            best, best_shared, best_score = slug, sorted(shared), score
     return best, best_shared
 
 
