@@ -366,6 +366,48 @@ WARNING_LETTER = [
 ]
 
 
+# 12 Nov 2026 (third money-only build): the payslip the tool writes (renderPayslip — earnings, four
+# deduction lines, net, words), as the sample people type "payslip format nigeria" for. The figures are
+# computed, not invented: the shop's sales assistant from the employment page at ₦120,000 a month, PAYE
+# under the Nigeria Tax Act 2025 Fourth Schedule (first ₦800,000 a year at 0%, the next ₦2.2m at 15%)
+# after the 8% pension the Pension Reform Act 2014 s.4(1) deducts, NHF nil (voluntary for private-sector
+# staff since the Business Facilitation Act 2023 s.45 rewrote NHF Act s.4). Arithmetic on the page.
+PAYSLIP = [
+    ("h", "PAYSLIP"),
+    ("kv", "Employer", "[EMPLOYER'S BUSINESS NAME], [business address, Lagos]"),
+    ("kv", "Employee", "[Employee's full name] — [Sales Assistant] · ID: [DO-0007]"),
+    ("kv", "Pay period", "[November 2026] · Paid [28 November 2026]"),
+    ("gap",),
+    ("kv", "EARNINGS", "₦"),
+    ("kv", "Basic salary", "[70,000.00]"),
+    ("kv", "Housing allowance", "[30,000.00]"),
+    ("kv", "Transport allowance", "[20,000.00]"),
+    ("kv", "Other allowances", "[0.00]"),
+    ("kv", "GROSS PAY", "[120,000.00]"),
+    ("gap",),
+    ("kv", "DEDUCTIONS", "₦"),
+    ("kv", "PAYE (income tax)", "[6,560.00]"),
+    ("kv", "Pension (employee 8%)", "[9,600.00]"),
+    ("kv", "National Housing Fund", "[0.00] (private sector — not opted in)"),
+    ("kv", "Other deductions", "[0.00]"),
+    ("kv", "TOTAL DEDUCTIONS", "[16,160.00]"),
+    ("gap",),
+    ("kv", "NET PAY", "[₦103,840.00]"),
+    ("kv", "Amount in words", "[One Hundred and Three Thousand, Eight Hundred and Forty Naira] only"),
+    ("kv", "Paid via", "[Bank transfer — bank name · A/C 0123456789]"),
+    ("p", "This is a computer-generated payslip and does not require a signature."),
+    ("p", "How the two statutory lines were worked out. Pension: 8% of basic + housing + transport (₦120,000) = "
+          "₦9,600 (Pension Reform Act 2014, s.4(1)(b); the employer adds at least 10% — ₦12,000 — on top, never "
+          "from the employee). PAYE: annual gross ₦1,440,000 less the year's pension ₦115,200 = chargeable "
+          "₦1,324,800; the first ₦800,000 at 0%, the remaining ₦524,800 at 15% = ₦78,720 a year = ₦6,560 a month "
+          "(Nigeria Tax Act 2025, Fourth Schedule; no rent relief declared). An employee earning the national "
+          "minimum wage of ₦70,000 or less pays no PAYE at all (NTA 2025, s.163). NHF is 2.5% of monthly income "
+          "but, since the Business Facilitation Act 2023 (s.45), only if a private-sector employee chooses to "
+          "contribute. Total deductions of any kind may not exceed one-third of the month's wages (Labour Act, "
+          "s.5(7))."),
+]
+
+
 SAMPLES = {
     "tenancy-agreement-sample-nigeria": ("Tenancy Agreement — sample (Nigeria)", TENANCY_AGREEMENT),
     "rent-receipt-sample-nigeria": ("Rent Receipt — sample (Nigeria)", RENT_RECEIPT),
@@ -377,6 +419,7 @@ SAMPLES = {
     "query-letter-sample-nigeria": ("Query Letter — sample (Nigeria)", QUERY_LETTER),
     "query-letter-reply-nigeria": ("Reply to a Query — employee's sample (Nigeria)", QUERY_REPLY),
     "warning-letter-sample-nigeria": ("Warning Letter — sample (Nigeria)", WARNING_LETTER),
+    "payslip-sample-nigeria": ("Payslip — sample (Nigeria, 2026 PAYE)", PAYSLIP),
 }
 
 
@@ -402,6 +445,8 @@ def html_sample(slug):
             out.append("")
         elif kind == "kv":
             out.append("%-24s %s" % (_esc(b[1]) + ":", _esc(b[2])))
+        elif kind == "gap":
+            out.append("")
         elif kind == "sig":
             out.append("")
             for label in b[1]:
@@ -435,6 +480,8 @@ def _lines(blocks, title):
             lines += [("R", l) for l in textwrap.wrap(_pdf_text(b[3]), CHARS)] + [("R", "")]
         elif kind == "kv":
             lines += [("R", l) for l in textwrap.wrap(_pdf_text("%s: %s" % (b[1], b[2])), CHARS, subsequent_indent="    ")]
+        elif kind == "gap":
+            lines.append(("R", ""))
         elif kind == "sig":
             lines.append(("R", ""))
             for label in b[1]:
