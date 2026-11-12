@@ -78,6 +78,29 @@ met, we scale pages and states; missed, the owner is told to stop spending even 
 the product is parked, sold or changed. The owner plans his money as if DocOga earns ₦0 until then.
 
 
+- **2026-11-12** — **Tenth dive (owner, 12:00pm: "Continue"): the payslip — the last of the eleven
+  tools with no page in front of it.** Field read first (web, 12 Nov): the "payslip format nigeria"
+  results are HR-software blogs, one free formatter and a sixteen-country template farm; they print
+  NHF 2.5%-of-basic as a compulsory line, and the ones that know it is voluntary credit the 2025 tax
+  Act. Research, each to a section: **PAYE** under the Nigeria Tax Act 2025 Fourth Schedule — first
+  ₦800,000 a year at 0%, then 15/18/21/23/25% — with the s.163 exemption for anyone earning the
+  ₦70,000 minimum wage or less (law-firm reading of the Act + the Presidential Fiscal Policy Committee's
+  list); **pension** 8%/10% of emoluments ≥ basic+housing+transport (PRA 2014 s.4(1), quoted verbatim by
+  a PenCom-side source); **NHF** voluntary for private-sector employees since **February 2023** —
+  s.45 of the Business Facilitation (Miscellaneous Provisions) Act rewrote NHF Act s.4, "may" for the
+  private sector, base changed to monthly income (KPMG alert, Proshare quoting the section, ICAN
+  journal); **ECA** 1% of payroll, employer only (Employees' Compensation Act 2010 s.33(1), enrolled
+  text); Labour Act s.5(7) one-third cap and s.15 pay period (enrolled text). Shipped: a computed
+  sample — the employment page's ₦120,000 sales assistant taken through the 2026 bands: pension ₦9,600,
+  chargeable ₦1,324,800, tax ₦78,720 a year, PAYE ₦6,560 a month, net ₦103,840, the arithmetic printed
+  under the slip and again step by step with the rent-relief variant (₦5,560) — `/payslip-format-nigeria`
+  (title 53, description 159): slip first, the line-by-line rule table with sections, the worked example,
+  the employee's checklist, six FAQs; `sample_docs` learns the `gap` block; linked from the homepage
+  guides block, the employment and query pages; sitemap, og card, 301; `growth.MONEY_PAGE` counts it.
+  The tool itself still only formats what is typed — honest on the page — and the test now asserts
+  **every one of the eleven tools has a page whose call to action is that tool.** Three money pages
+  today (#220, #221, this); measure all three in the 26 Nov and ~10 Dec GSC reads.
+
 - **2026-11-12** — **Ninth dive (owner, 10:25am: "What next"): the query letter — the second paid tool
   with no page in front of it, and the Nigerian word nobody's template uses.** Audit after the eighth
   dive: of the eleven tools, two still had no search page — the warning letter and the payslip. Chosen

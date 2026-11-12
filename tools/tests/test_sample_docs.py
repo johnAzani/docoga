@@ -287,6 +287,47 @@ class PageTests(unittest.TestCase):
         import growth
         self.assertTrue(growth.MONEY_PAGE.search("https://docoga.com.ng/query-letter-sample-nigeria"))
 
+    def test_the_payslip_page_shows_computed_figures_and_the_2026_rules_with_their_sections(self):
+        """12 Nov 2026 (third money-only build): the last tool with no page. The figures are arithmetic the
+        reader can check; NHF is voluntary for private-sector staff since the 2023 Act, not the 2025 one."""
+        html = (SITE / "payslip-format-nigeria.html").read_text(encoding="utf-8")
+        self.assertIn("<title>Payslip Format Nigeria: Free Sample + PDF (2026 PAYE)</title>", html)
+        self.assertLess(html.index("PAYSLIP"), html.index("The rule behind each statutory line"), "answer first")
+        self.assertIn('href="https://docoga.com.ng/samples/payslip-sample-nigeria.pdf" download', html)
+        self.assertIn('href="https://docoga.com.ng/#payslip"', html)
+        # the arithmetic: 120,000 gross → 9,600 pension → 1,324,800 chargeable → 78,720 a year → 6,560 a month → 103,840 net
+        for figure in ("\u20a69,600", "\u20a61,324,800", "\u20a678,720", "\u20a66,560", "\u20a6103,840", "\u20a65,560"):
+            self.assertIn(figure, html, figure)
+        self.assertEqual(round((1_440_000 - 115_200 - 800_000) * 0.15 / 12), 6_560)
+        self.assertEqual(120_000 - 9_600 - 6_560, 103_840)
+        for needle in ("Fourth Schedule", "s.163", "Pension Reform Act 2014, s.4(1)", "Business Facilitation", "s.45",
+                       "Employees\u2019 Compensation Act 2010 s.33(1)", "s.5(7)", "s.15", "first \u20a6800,000 at 0%",
+                       "voluntary for private-sector employees", "one-third", "not advice"):
+            self.assertIn(needle, html, needle)
+        self.assertNotIn("GTBank", html)
+        for invented in ("Chidi", "Bisi", "Mr ", "Mrs "):
+            self.assertNotIn(invented, html)
+        pdf = pdf_text(sample_docs.render_pdf("payslip-sample-nigeria"))
+        self.assertIn("PAYSLIP", pdf)
+        self.assertIn("NET PAY", pdf)
+        index_html = (SITE / "index.html").read_text(encoding="utf-8")
+        for line in ("Basic salary", "Housing allowance", "Transport allowance", "Other allowances", "GROSS PAY",
+                     "PAYE (income tax)", "Pension (employee)", "National Housing Fund", "Other deductions", "TOTAL DEDUCTIONS", "NET PAY"):
+            self.assertIn(line, index_html, line)          # the sample's lines are the generator's lines
+            self.assertIn(line, html, line)
+        for page in ("index.html", "employment-contract-sample-nigeria.html", "query-letter-sample-nigeria.html"):
+            self.assertIn("/payslip-format-nigeria", (SITE / page).read_text(encoding="utf-8"), page)
+        self.assertIn("<loc>https://docoga.com.ng/payslip-format-nigeria</loc>", (SITE / "sitemap.xml").read_text(encoding="utf-8"))
+        self.assertTrue((SITE / "og" / "payslip-format-nigeria.jpg").is_file())
+        import growth
+        self.assertTrue(growth.MONEY_PAGE.search("https://docoga.com.ng/payslip-format-nigeria"))
+        # every one of the eleven tools now has a page in front of it
+        for h in ("agreement", "notice", "receipt", "invoice", "employment", "caution", "demand", "rentreview", "payslip", "warning", "poa"):
+            hits = [p for p in SITE.glob("*.html") if p.name != "index.html"
+                    and 'href="https://docoga.com.ng/#%s"' % h in p.read_text(encoding="utf-8")
+                    and '<a class="cta" href="https://docoga.com.ng/#%s"' % h in p.read_text(encoding="utf-8")]
+            self.assertTrue(hits, "no page carries the %s tool as its own call to action" % h)
+
     def test_the_sample_wording_is_the_generators_wording(self):
         """Every clause body in the sample appears, placeholders aside, in site/index.html's renderAgreement."""
         index = (SITE / "index.html").read_text(encoding="utf-8")

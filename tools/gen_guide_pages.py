@@ -953,8 +953,8 @@ PAGES["employment-contract-sample-nigeria.html"] = dict(
          "not a law firm and this page is general information, not legal advice."),
     ],
     cta=("employment", "Create your employment contract free \u2192"),
-    related=["query-letter-sample-nigeria.html", "invoice-format-nigeria.html", "shop-tenancy-agreement-nigeria.html",
-             "tenancy-agreement-sample-nigeria.html", "rent-receipt-format-nigeria.html"],
+    related=["query-letter-sample-nigeria.html", "payslip-format-nigeria.html", "invoice-format-nigeria.html",
+             "shop-tenancy-agreement-nigeria.html", "tenancy-agreement-sample-nigeria.html"],
     priority="0.8",
 )
 
@@ -1080,8 +1080,143 @@ PAGES["query-letter-sample-nigeria.html"] = dict(
          "Pass. DocOga is not a law firm and this page is general information, not legal advice."),
     ],
     cta=("warning", "Write a query or warning letter free \u2192"),
-    related=["employment-contract-sample-nigeria.html", "invoice-format-nigeria.html", "shop-tenancy-agreement-nigeria.html",
-             "demand-letter-rent-arrears-nigeria.html", "tenancy-agreement-sample-nigeria.html"],
+    related=["employment-contract-sample-nigeria.html", "payslip-format-nigeria.html", "invoice-format-nigeria.html",
+             "shop-tenancy-agreement-nigeria.html", "demand-letter-rent-arrears-nigeria.html"],
+    priority="0.8",
+)
+
+# 4e ── payslip format (12 Nov 2026, third money-only build; docs/GROWTH.md §4) ----------------------
+# The last of the eleven tools with no search page. The field (read 12 Nov: HR-software blogs, a free
+# generator, a sixteen-country template farm) prints 2.5%-of-basic NHF as compulsory and dates its
+# end to the wrong Act; nobody shows the PAYE arithmetic under the 2026 bands. Every rule below is
+# tied to its section: Nigeria Tax Act 2025 (Fourth Schedule; s.163), Pension Reform Act 2014 s.4(1),
+# Business Facilitation (Miscellaneous Provisions) Act 2023 s.45 (NHF Act s.4 as amended), Employees'
+# Compensation Act 2010 s.33(1), Labour Act Cap L1 s.5(7) and s.15.
+PAYSLIP_LINES = '''<table>
+<tr><th>Line</th><th>The rule in 2026</th><th>Source</th></tr>
+<tr><td><b>Gross pay</b></td><td>Basic + housing + transport + other allowances. Wages are due at the end of each pay period, and a pay period may not be longer than <b>one month</b>.</td><td>Labour Act, s.15</td></tr>
+<tr><td><b>PAYE</b></td><td>On annual chargeable income (gross less pension and the other allowed deductions and reliefs): <b>first \u20a6800,000 at 0%</b>; next \u20a62,200,000 at 15%; next \u20a69,000,000 at 18%; next \u20a613,000,000 at 21%; next \u20a625,000,000 at 23%; above \u20a650,000,000 at 25%. Divide the year\u2019s tax by twelve for the monthly line. Rent relief: 20% of annual rent paid, up to \u20a6500,000, where the employee declares it. <b>An employee whose gross income from the job is the national minimum wage (\u20a670,000 a month) or less pays no PAYE at all.</b> Remitted to the internal revenue service of the state where the employee lives.</td><td>Nigeria Tax Act 2025, Fourth Schedule; s.163</td></tr>
+<tr><td><b>Pension (employee)</b></td><td><b>Minimum 8%</b> of monthly emoluments \u2014 as the contract defines them, but never less than basic + housing + transport. The employer adds <b>at least 10%</b> on top; that share is a cost of the business and never appears as a deduction.</td><td>Pension Reform Act 2014, s.4(1)(a)\u2013(b)</td></tr>
+<tr><td><b>National Housing Fund</b></td><td>2.5% of monthly income \u2014 <b>compulsory for public-sector staff and the self-employed, voluntary for private-sector employees</b> since February 2023, when s.45 of the Business Facilitation Act rewrote s.4 of the NHF Act. A private employer deducts it only for an employee who has chosen to contribute. (Most templates online still print it as compulsory, and several date its end to the 2025 tax law; both are wrong.)</td><td>Business Facilitation (Misc. Provisions) Act 2023, s.45</td></tr>
+<tr><td><b>Other deductions</b></td><td>Only what a law permits or the employee has agreed to in writing \u2014 a salary advance, a cooperative, union dues. <b>No fines</b>, and a deduction for loss or damage only with an authorised labour officer\u2019s prior written consent. <b>Everything deducted in a month, added together, may not exceed one-third of that month\u2019s wages.</b></td><td>Labour Act, s.5(1), s.5(7)</td></tr>
+<tr><td><b>Employer-only costs</b> (not on the payslip)</td><td>Employer pension \u2265 10%; Employees\u2019 Compensation Fund <b>1% of monthly payroll</b>; Industrial Training Fund 1% of annual payroll for employers of 25 or more.</td><td>PRA 2014 s.4(1)(a); Employees\u2019 Compensation Act 2010 s.33(1); ITF Act s.6 as amended 2023</td></tr>
+</table>
+<p class="muted">The payslip tool takes the PAYE, pension and NHF figures you enter; it does not compute tax for you. The worked example under the sample shows the arithmetic for one salary so you can check your own.</p>'''
+
+PAGES["payslip-format-nigeria.html"] = dict(
+    published="2026-11-12", parent=("employment-contract-sample-nigeria.html", "Employment contract sample"),
+    title="Payslip Format Nigeria: Free Sample + PDF (2026 PAYE)",
+    h1="Payslip format in Nigeria \u2014 the sample, the free PDF, and the 2026 rule behind every line",
+    desc="Payslip format for Nigeria, free to download: earnings, PAYE under the 2026 bands, 8% pension, when NHF applies, the one-third cap \u2014 with the arithmetic shown.",
+    lead="Every employee asks for one eventually \u2014 for a loan, a visa, a rent application, or to check what "
+         "was taken out and why. This is the Nigerian payslip in its standard form: employer and employee, the "
+         "pay period, earnings line by line, gross pay, the deductions the law allows, net pay in figures and "
+         "words. The figures in the sample are computed, not invented \u2014 a \u20a6120,000 salary taken through "
+         "the 2026 tax bands and the 8% pension, with the arithmetic printed under it \u2014 so you can check "
+         "your own. Download the PDF, or let the generator lay yours out in two minutes. Below the sample: what "
+         "each line is for, the rule behind each statutory line with its section, and what an employee should "
+         "check before signing for a loan on the strength of it.",
+    widget=('<div class="box">\n<h2>The sample (a \u20a6120,000 salary, November 2026)</h2>\n'
+            + sample_docs.html_sample("payslip-sample-nigeria")
+            + download_block("payslip-sample-nigeria", "payslip", "Lay out your payslip free \u2192")
+            + '\n</div>'),
+    boxes=[
+        ("What each line is for", ul([
+            "<b>Employer, employee, period, pay date.</b> The payslip is evidence \u2014 of employment, of income, of "
+            "what was deducted. A bank or an embassy reads these four lines first; a payslip with no pay period "
+            "proves nothing.",
+            "<b>Basic, housing, transport.</b> The three components the pension law reads (the 8% and the 10% are "
+            "calculated on at least their sum), which is why Nigerian salaries are split this way even when the "
+            "employee never sees a difference.",
+            "<b>Gross pay.</b> The whole of the month\u2019s earnings before anything is taken out \u2014 the figure a "
+            "lender multiplies.",
+            "<b>PAYE.</b> The employee\u2019s income tax, withheld by the employer and paid to the state where the "
+            "employee lives. Under the 2026 bands a worker on \u20a6120,000 a month pays about \u20a66,560; a worker "
+            "on \u20a670,000 pays nothing.",
+            "<b>Pension, NHF, other deductions.</b> Each named, each with its rule in the table below. A line "
+            "called \u201cdeductions\u201d with no breakdown is the first thing to query.",
+            "<b>Net pay, in figures and in words.</b> What reached the account. The words are there for the same "
+            "reason they are on a cheque \u2014 a figure can be altered; a sentence cannot be altered quietly.",
+            "<b>\u201cComputer-generated, no signature required.\u201d</b> Standard, and lawful; what gives the "
+            "document weight is that it matches the bank transfer and the employer\u2019s records.",
+        ])),
+        ("The rule behind each statutory line, with its section", PAYSLIP_LINES),
+        ("The worked example, step by step", ul([
+            "<b>Monthly:</b> basic \u20a670,000 + housing \u20a630,000 + transport \u20a620,000 = gross <b>\u20a6120,000</b>.",
+            "<b>Pension (employee):</b> 8% \u00d7 \u20a6120,000 = <b>\u20a69,600</b>. (The employer separately pays "
+            "10% \u00d7 \u20a6120,000 = \u20a612,000 into the same retirement savings account.)",
+            "<b>Annual chargeable income:</b> gross \u20a61,440,000 \u2212 pension \u20a6115,200 = <b>\u20a61,324,800</b> "
+            "(no NHF, no rent relief declared).",
+            "<b>Tax for the year:</b> first \u20a6800,000 \u00d7 0% = \u20a60; remaining \u20a6524,800 \u00d7 15% = "
+            "<b>\u20a678,720</b>.",
+            "<b>PAYE on the payslip:</b> \u20a678,720 \u00f7 12 = <b>\u20a66,560</b> a month.",
+            "<b>Net pay:</b> \u20a6120,000 \u2212 \u20a69,600 \u2212 \u20a66,560 = <b>\u20a6103,840</b>. Total deductions of "
+            "\u20a616,160 are 13% of wages \u2014 well inside the one-third cap.",
+            "<b>If the same employee declared rent of \u20a6400,000 a year:</b> relief of \u20a680,000 would bring "
+            "chargeable income to \u20a61,244,800 and the year\u2019s tax to \u20a666,720 \u2014 \u20a65,560 a month. "
+            "The declaration is the employee\u2019s to make, with the rent receipt as proof (see the rent-relief "
+            "guide).",
+        ])),
+        ("If you are the employee reading yours", ul([
+            "<b>Add the earnings and subtract the deductions yourself.</b> The net on the slip must equal the "
+            "transfer in your bank; a difference is a question for payroll, in writing.",
+            "<b>Check the PAYE against the bands.</b> On \u20a6120,000 a month the right figure is about "
+            "\u20a66,560; a payslip still taking the old 7%-and-up rates on the first naira is taking too much.",
+            "<b>Check the pension reached the account.</b> 8% from you and 10% from the employer should appear in "
+            "your retirement savings account statement each month; the deduction on the slip is not the same as "
+            "the remittance.",
+            "<b>NHF: did you opt in?</b> If you are in the private sector and never chose to contribute, the 2.5% "
+            "line should not be there.",
+            "<b>Fines and \u201cshortages\u201d are not deductions.</b> A Labour Act worker may not be fined through "
+            "the payslip (s.5(1)); raise it in writing, and keep the slip.",
+            "<b>Keep twelve months of slips.</b> Lenders, landlords and embassies ask for three to six; the tax "
+            "authority may ask for the year.",
+        ])),
+        ("How this page compares with what else is online", ul([
+            "<b>HR-software blogs</b> print \u201cNHF 2.5% of basic\u201d as a compulsory line and, where they "
+            "notice it is voluntary, credit the wrong Act. The rule changed in February 2023 (Business "
+            "Facilitation Act, s.45), on monthly income, and only for private-sector employees; this page says so "
+            "with the section.",
+            "<b>Free generators</b> format whatever figures you type. So does ours \u2014 the difference is the "
+            "worked example above, so you know whether the figures you type are right.",
+            "<b>Foreign template farms</b> offer a \u201cNigeria payslip\u201d beside sixteen other countries, with "
+            "the pay stub\u2019s layout and a tax column calculated who knows how. Every rule on this page is a "
+            "Nigerian section, with its year.",
+        ])),
+    ],
+    faq=[
+        ("What should a payslip in Nigeria contain?",
+         "Employer and employee details, the pay period and pay date, each earning line and the gross, each "
+         "deduction by name \u2014 PAYE, pension, NHF where the employee contributes, anything else the employee "
+         "agreed to in writing \u2014 the total deductions, and the net pay in figures and words. The sample above "
+         "is that layout; the generator produces it."),
+        ("How is PAYE calculated on a salary in 2026?",
+         "Annual gross less pension (and NHF, NHIS and rent relief where they apply) gives chargeable income; the "
+         "first \u20a6800,000 is taxed at 0%, the next \u20a62.2 million at 15%, the next \u20a69 million at 18%, "
+         "then 21%, 23% and 25% above \u20a650 million (Nigeria Tax Act 2025, Fourth Schedule). The year\u2019s tax "
+         "divided by twelve is the monthly PAYE. A worker earning the national minimum wage or less pays none "
+         "(s.163)."),
+        ("Is NHF compulsory for private-sector employees?",
+         "No \u2014 not since February 2023. Section 45 of the Business Facilitation (Miscellaneous Provisions) Act "
+         "2023 amended s.4 of the NHF Act: public-sector employees and the self-employed earning the minimum wage "
+         "or more \u201cshall\u201d contribute 2.5% of monthly income; private-sector employees \u201cmay\u201d. An "
+         "employer deducts it only for an employee who has opted in."),
+        ("What is the pension deduction on a payslip?",
+         "At least 8% of monthly emoluments from the employee, and at least 10% from the employer on top, both paid "
+         "into the employee\u2019s retirement savings account (Pension Reform Act 2014, s.4(1)). Emoluments are as "
+         "the contract defines them, but never less than basic + housing + transport."),
+        ("Can an employer deduct fines or shortages on the payslip?",
+         "Not from a Labour Act worker. Section 5(1) forbids deductions in respect of fines; a deduction for loss or "
+         "damage caused by wilful misconduct needs an authorised labour officer\u2019s prior written consent; and "
+         "all deductions in a month may not exceed one-third of wages (s.5(7))."),
+        ("Can I download the payslip as a PDF for free?",
+         "Yes \u2014 the PDF above is free and needs no signup. The generator lays out yours with your figures, free "
+         "with a small banner or without one on the Oga Pass. It formats what you enter; it does not compute tax. "
+         "DocOga is not a law firm or a tax adviser and this page is general information, not advice."),
+    ],
+    cta=("payslip", "Lay out your payslip free \u2192"),
+    related=["employment-contract-sample-nigeria.html", "query-letter-sample-nigeria.html", "rent-relief-nigeria.html",
+             "invoice-format-nigeria.html", "rent-receipt-format-nigeria.html"],
     priority="0.8",
 )
 
@@ -1917,6 +2052,7 @@ def main():
         "rent-increase-notice-nigeria.html": "Rent increase notice + the law by state",
         "employment-contract-sample-nigeria.html": "Employment contract sample + free PDF",
         "query-letter-sample-nigeria.html": "Query letter, reply &amp; warning letter + free PDFs",
+        "payslip-format-nigeria.html": "Payslip format + 2026 PAYE worked example",
         "tenant-rights-nigeria.html": "Tenant rights &amp; landlord duties",
         "shop-tenancy-agreement-nigeria.html": "Shop &amp; business tenancy",
         "invoice-format-nigeria.html": "Invoice format + 7.5% VAT",
