@@ -1,5 +1,5 @@
 {
- "pulled_at": "2026-11-05T17:59:17+00:00",
+ "pulled_at": "2026-11-12T10:15:43+00:00",
  "days": 14,
  "alerts": 0,
  "bills": [
@@ -21,32 +21,7 @@
    "stage": "executive bill announced 26 October 2026; four-week pledge",
    "signal": "quiet",
    "alerts": 0,
-   "items": [
-    {
-     "title": "Mbah to sign bill regulating agency, legal fees within four weeks.",
-     "source": "Bing News",
-     "link": "http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6aecc3f6f9bc484a8986812f3789693a&url=https%3a%2f%2fbusinessday.ng%2fnews%2farticle%2fmbah-to-sign-bill-regulating-agency-legal-fees-within-four-weeks%2f&c=7968843020804795831&mkt=en-us",
-     "published": "2026-10-26T17:00:00+00:00",
-     "signal": "passed",
-     "first_seen": "2026-11-05T17:59:17+00:00"
-    },
-    {
-     "title": "Mbah to sign bill regulating agency, legal fees within four weeks.",
-     "source": "Bing News",
-     "link": "http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6aecc3f76374411aa539f1fa537dd9b3&url=https%3a%2f%2fbusinessday.ng%2fnews%2farticle%2fmbah-to-sign-bill-regulating-agency-legal-fees-within-four-weeks%2f&c=7968843020804795831&mkt=en-us",
-     "published": "2026-10-26T17:00:00+00:00",
-     "signal": "passed",
-     "first_seen": "2026-11-05T17:59:17+00:00"
-    },
-    {
-     "title": "High Cost Of Rent Forces Enugu Residents To Relocate To Villages",
-     "source": "Bing News",
-     "link": "http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6aecc3f6f9bc484a8986812f3789693a&url=https%3a%2f%2fleadership.ng%2fhigh-cost-of-rent-forces-enugu-residents-to-relocate-to-villages%2f&c=446680970100894546&mkt=en-us",
-     "published": "2026-10-23T07:13:00+00:00",
-     "signal": "mention",
-     "first_seen": "2026-11-05T17:59:17+00:00"
-    }
-   ]
+   "items": []
   },
   {
    "slug": "lagos",
@@ -54,9 +29,34 @@
    "title": "Lagos State Tenancy and Recovery of Premises Bill, 2025",
    "verified": "2026-11-03",
    "stage": "second reading 10 July 2025; with the House Committee on Housing as at August 2026",
-   "signal": "quiet",
+   "signal": "moving",
    "alerts": 0,
-   "items": []
+   "items": [
+    {
+     "title": "Lagos Governorship Candidates Disagree Over Rent Control, Housing, Flooding",
+     "source": "Bing News",
+     "link": "http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6af591d29ced45939ba6c806d136192b&url=https%3a%2f%2fwww.msn.com%2fen-xl%2fafrica%2fother%2flagos-governorship-candidates-disagree-over-rent-control-housing-flooding%2far-AA2h3gmi&c=10461179963831529788&mkt=en-us",
+     "published": "2026-11-08T22:55:14+00:00",
+     "signal": "moving",
+     "first_seen": "2026-11-12T10:15:43+00:00"
+    },
+    {
+     "title": "APC guber candidate puts Lagos landlords on notice over 2- and 3-year rent demands",
+     "source": "Bing News",
+     "link": "http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6af591d29ced45939ba6c806d136192b&url=https%3a%2f%2fwww.msn.com%2fen-xl%2fafrica%2fnigeria%2fapc-guber-candidate-puts-lagos-landlords-on-notice-over-2-and-3-year-rent-demands%2far-AA2h1N2o&c=9860652189891401646&mkt=en-us",
+     "published": "2026-11-08T14:23:00+00:00",
+     "signal": "mention",
+     "first_seen": "2026-11-12T10:15:43+00:00"
+    },
+    {
+     "title": "APC guber candidate puts Lagos landlords on notice over 2- and 3-year rent demands",
+     "source": "Bing News",
+     "link": "http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6af591d2f3a84f38b7ddff7c705a08e8&url=https%3a%2f%2fwww.msn.com%2fen-xl%2fafrica%2fnigeria%2fapc-guber-candidate-puts-lagos-landlords-on-notice-over-2-and-3-year-rent-demands%2far-AA2h1N2o&c=9860652189891401646&mkt=en-us",
+     "published": "2026-11-08T14:23:00+00:00",
+     "signal": "mention",
+     "first_seen": "2026-11-12T10:15:43+00:00"
+    }
+   ]
   },
   {
    "slug": "abuja",
@@ -68,68 +68,68 @@
    "alerts": 0,
    "items": [
     {
-     "title": "Abuja Rent: Bill to protect tenants from exploitation scale second reading at Reps |",
-     "source": "The Eagle Online",
-     "link": "https://news.google.com/rss/articles/CBMisgFBVV95cUxNbldjR2pIWVo3VU9LVUt6eGRMUUQ1VlNBWmFQaXYxN0JOSTVMMlhmd0psbGFQZ1hNRG9NMEt5dkdaOHdwbkRZQlN0dF96X01ocmVNVkQ3QjB0ak10WXBUaHltaXBYUW9wLUowZGhrRXNsZDQwMG5jUUMxbU9JRWtUM2FoMXdkTUJuSmNVLU5QVE82dHlGcTBJbHBVMHVNVEEybFRSZU1FNk9yeFhsOU1oU09R?oc=5",
-     "published": "2026-11-04T18:44:33+00:00",
+     "title": "Reps pass FCT rent regulation bill, propose 12-month advance payment limit",
+     "source": "Bing News",
+     "link": "http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6af591d30d474a2892bb57f7f98f5887&url=https%3a%2f%2fwww.msn.com%2fen-xl%2fnews%2fother%2freps-pass-fct-rent-regulation-bill-propose-12-month-advance-payment-limit%2far-AA2gLxrS&c=14223356094252794690&mkt=en-us",
+     "published": "2026-11-04T12:01:40+00:00",
      "signal": "moving",
-     "first_seen": "2026-11-05T10:15:46+00:00"
-    },
-    {
-     "title": "Nigeria House Passes Second Reading For FCT Tenancy Regulation Bill",
-     "source": "Head Topics",
-     "link": "https://news.google.com/rss/articles/CBMilgFBVV95cUxOT2ZmenA0WTJOczZOSVFmOUdUTXNUWDRna0d0d1lFbXZ5amJzU1VTbHBxYU5yLS1oaG5iMkpaczNqNzZ5eE9XcWkydktRUDNpcGxSTU8yMUN4a0l2aWxDdTFTM0taZ3hyMWxDekZidXFoVy1BcUc3akgxQjdMU0FOMXR2MnVNdkRWMFVZNDBlX0U4UnlDdnc?oc=5",
-     "published": "2026-11-04T17:16:00+00:00",
-     "signal": "moving",
-     "first_seen": "2026-11-05T10:15:46+00:00"
+     "first_seen": "2026-11-12T10:15:43+00:00"
     },
     {
      "title": "Reps pass FCT rent regulation bill, propose 12-month advance payment limit",
      "source": "Bing News",
-     "link": "http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6aecc3f86d5a4eb296b43a445ef314aa&url=https%3a%2f%2fwww.msn.com%2fen-xl%2fnews%2fother%2freps-pass-fct-rent-regulation-bill-propose-12-month-advance-payment-limit%2far-AA2gLxrS&c=14223356094252794690&mkt=en-us",
+     "link": "http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6af591d409b64d05be0205b223c08fc0&url=https%3a%2f%2fwww.msn.com%2fen-xl%2fnews%2fother%2freps-pass-fct-rent-regulation-bill-propose-12-month-advance-payment-limit%2far-AA2gLxrS&c=14223356094252794690&mkt=en-us",
      "published": "2026-11-04T12:01:40+00:00",
      "signal": "moving",
-     "first_seen": "2026-11-05T17:59:17+00:00"
-    },
-    {
-     "title": "Reps pass FCT rent regulation bill, propose 12-month advance payment limit",
-     "source": "Bing News",
-     "link": "http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6aecc3f9457345759590805e407d7177&url=https%3a%2f%2fwww.msn.com%2fen-xl%2fnews%2fother%2freps-pass-fct-rent-regulation-bill-propose-12-month-advance-payment-limit%2far-AA2gLxrS&c=14223356094252794690&mkt=en-us",
-     "published": "2026-11-04T12:01:40+00:00",
-     "signal": "moving",
-     "first_seen": "2026-11-05T17:59:17+00:00"
-    },
-    {
-     "title": "Housing: Reps seek end to exploitative rents in Abuja",
-     "source": "Bing News",
-     "link": "http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6aecc3f9457345759590805e407d7177&url=https%3a%2f%2fwww.msn.com%2fen-xl%2fnews%2fother%2fhousing-reps-seek-end-to-exploitative-rents-in-abuja%2far-AA2gLJs1&c=2380202072438387394&mkt=en-us",
-     "published": "2026-11-04T12:01:24+00:00",
-     "signal": "moving",
-     "first_seen": "2026-11-05T17:59:17+00:00"
+     "first_seen": "2026-11-12T10:15:43+00:00"
     },
     {
      "title": "Reps Move To Control Abitrary Rent Increments In Abuja",
      "source": "Bing News",
-     "link": "http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6aecc3f9457345759590805e407d7177&url=https%3a%2f%2fleadership.ng%2freps-move-to-control-abitrary-rent-increments-in-abuja%2f&c=14280373308874496021&mkt=en-us",
+     "link": "http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6af591d409b64d05be0205b223c08fc0&url=https%3a%2f%2fleadership.ng%2freps-move-to-control-abitrary-rent-increments-in-abuja%2f&c=14280373308874496021&mkt=en-us",
      "published": "2026-11-04T10:57:00+00:00",
      "signal": "moving",
-     "first_seen": "2026-11-05T17:59:17+00:00"
+     "first_seen": "2026-11-12T10:15:43+00:00"
     },
     {
      "title": "Reps Pass FCT Rent Regulation Bill For Second Reading",
      "source": "Bing News",
-     "link": "http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6aecc3f86d5a4eb296b43a445ef314aa&url=https%3a%2f%2fwww.naijanews.com%2f2026%2f11%2f04%2freps-pass-fct-rent-regulation-bill-second-reading%2f&c=8096137146414132134&mkt=en-us",
+     "link": "http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6af591d30d474a2892bb57f7f98f5887&url=https%3a%2f%2fwww.naijanews.com%2f2026%2f11%2f04%2freps-pass-fct-rent-regulation-bill-second-reading%2f&c=8096137146414132134&mkt=en-us",
      "published": "2026-11-04T08:49:00+00:00",
      "signal": "moving",
-     "first_seen": "2026-11-05T17:59:17+00:00"
+     "first_seen": "2026-11-12T10:15:43+00:00"
     },
     {
      "title": "Reps Pass FCT Rent Regulation Bill For Second Reading",
      "source": "Bing News",
-     "link": "http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6aecc3f9457345759590805e407d7177&url=https%3a%2f%2fwww.naijanews.com%2f2026%2f11%2f04%2freps-pass-fct-rent-regulation-bill-second-reading%2f&c=8096137146414132134&mkt=en-us",
+     "link": "http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6af591d409b64d05be0205b223c08fc0&url=https%3a%2f%2fwww.naijanews.com%2f2026%2f11%2f04%2freps-pass-fct-rent-regulation-bill-second-reading%2f&c=8096137146414132134&mkt=en-us",
      "published": "2026-11-04T08:49:00+00:00",
      "signal": "moving",
-     "first_seen": "2026-11-05T17:59:17+00:00"
+     "first_seen": "2026-11-12T10:15:43+00:00"
+    },
+    {
+     "title": "Bill to cap FCT rent at 12 months passes second reading",
+     "source": "Bing News",
+     "link": "http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6af591d30d474a2892bb57f7f98f5887&url=https%3a%2f%2fpunchng.com%2fbill-to-cap-fct-rent-at-12-months-passes-second-reading%2f&c=16911405331518288304&mkt=en-us",
+     "published": "2026-11-04T08:02:00+00:00",
+     "signal": "moving",
+     "first_seen": "2026-11-12T10:15:43+00:00"
+    },
+    {
+     "title": "Reps move to stop Abuja landlords from collecting advance rent, agency fees",
+     "source": "Bing News",
+     "link": "http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6af591d409b64d05be0205b223c08fc0&url=https%3a%2f%2fdailypost.ng%2f2026%2f11%2f04%2ffct-tenants-reps-move-to-curb-multi-year-rent-demands-agency-fees%2f&c=12502218912747847217&mkt=en-us",
+     "published": "2026-11-04T07:52:00+00:00",
+     "signal": "moving",
+     "first_seen": "2026-11-12T10:15:43+00:00"
+    },
+    {
+     "title": "Reps pass FCT rent regulation bill amid disagreement",
+     "source": "Bing News",
+     "link": "http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6af591d409b64d05be0205b223c08fc0&url=https%3a%2f%2fwww.vanguardngr.com%2f2026%2f11%2freps-pass-fct-rent-regulation-bill-amid-disagreement%2f&c=4644083407403658797&mkt=en-us",
+     "published": "2026-11-04T06:53:00+00:00",
+     "signal": "moving",
+     "first_seen": "2026-11-12T10:15:43+00:00"
     }
    ]
   }
@@ -165,6 +165,16 @@
     "lagos": "quiet",
     "abuja": "moving"
    }
+  },
+  {
+   "recorded_at": "2026-11-12T10:15:43+00:00",
+   "alerts": 0,
+   "signals": {
+    "anambra": "quiet",
+    "enugu": "quiet",
+    "lagos": "moving",
+    "abuja": "moving"
+   }
   }
  ],
  "sources": [
@@ -172,17 +182,17 @@
   "anambra/Anambra rent and tenancy law S: Bing News: 1 item(s), 0 in window",
   "anambra/Anambra House of Assembly tena: Google News: 10 item(s), 0 in window",
   "anambra/Anambra House of Assembly tena: Bing News: 1 item(s), 0 in window",
-  "enugu/Enugu landlord and tenant amen: Google News: 10 item(s), 1 in window",
-  "enugu/Enugu landlord and tenant amen: Bing News: 4 item(s), 4 in window",
-  "enugu/Enugu House of Assembly tenanc: Google News: 8 item(s), 1 in window",
-  "enugu/Enugu House of Assembly tenanc: Bing News: 2 item(s), 2 in window",
-  "lagos/Lagos Tenancy and Recovery of : Google News: 33 item(s), 0 in window",
-  "lagos/Lagos Tenancy and Recovery of : Bing News: 4 item(s), 0 in window",
-  "lagos/Lagos tenancy bill House of As: Google News: 10 item(s), 0 in window",
-  "lagos/Lagos tenancy bill House of As: Bing News: 2 item(s), 0 in window",
-  "abuja/HB.2839 advance rent bill FCT: Google News: 8 item(s), 7 in window",
-  "abuja/HB.2839 advance rent bill FCT: Bing News: 6 item(s), 6 in window",
-  "abuja/Abuja advance rent bill House : Google News: 22 item(s), 15 in window",
+  "enugu/Enugu landlord and tenant amen: Google News: 9 item(s), 1 in window",
+  "enugu/Enugu landlord and tenant amen: Bing News: 3 item(s), 2 in window",
+  "enugu/Enugu House of Assembly tenanc: Google News: 9 item(s), 0 in window",
+  "enugu/Enugu House of Assembly tenanc: Bing News: 1 item(s), 1 in window",
+  "lagos/Lagos Tenancy and Recovery of : Google News: 27 item(s), 0 in window",
+  "lagos/Lagos Tenancy and Recovery of : Bing News: 6 item(s), 2 in window",
+  "lagos/Lagos tenancy bill House of As: Google News: 9 item(s), 0 in window",
+  "lagos/Lagos tenancy bill House of As: Bing News: 3 item(s), 1 in window",
+  "abuja/HB.2839 advance rent bill FCT: Google News: 9 item(s), 6 in window",
+  "abuja/HB.2839 advance rent bill FCT: Bing News: 8 item(s), 8 in window",
+  "abuja/Abuja advance rent bill House : Google News: 25 item(s), 17 in window",
   "abuja/Abuja advance rent bill House : Bing News: 12 item(s), 11 in window"
  ]
 }
