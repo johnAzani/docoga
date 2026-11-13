@@ -840,6 +840,74 @@
     "description cut to shape"
    ],
    "run_id": "43337616102"
+  },
+  {
+   "at": "2026-11-13T08:04:24+01:00",
+   "episode": "dd8",
+   "attempt": 1,
+   "outcome": "refused",
+   "title": "Rivers Tenancy Law: The Eve of Anniversary Rule",
+   "problems": [
+    "section 8: 89 words; need 120-200",
+    "total narration 940 words; need 1,100-1,800"
+   ],
+   "healed": [
+    "beat 2 dropped: trigger 'my rent is past' not spoken in section 1 after word 0",
+    "beat 28 shot 'person inside house' dropped",
+    "beat 29 shot 'person inside house' dropped",
+    "beat 31 shot 'person inside house' dropped"
+   ],
+   "run_id": "43382837939"
+  },
+  {
+   "at": "2026-11-13T08:08:30+01:00",
+   "episode": "dd8",
+   "attempt": 2,
+   "outcome": "refused",
+   "title": "Notice to Quit: Rivers' Strict Rule vs. Lagos's Exception",
+   "problems": [
+    "verifier: claim [rivers:notice_extras:5] not supported — The claim appears in the claims list but is not present in the post text; however, evaluating the post text, this claim is not present in the p",
+    "verifier: claim [rivers:forum:1] not supported — Not stated in the post text.",
+    "verifier: claim [lagos:notice_extras:4] not supported — Form TL5 is not mentioned in the post.",
+    "verifier: claim [rivers:protections:1] not supported — Not explicitly stated in the post text (post says 'can lead to serious consequences', doesn't use 'sounds in damages').",
+    "verifier: claim [lagos:protections:4] not supported — Post only mentions forcibly ejecting or threatening, and ₦250,000 or 6 months, but not the full text about demolishing/altering."
+   ],
+   "healed": [
+    "beat 5 dropped: trigger \"it's the landlords formal\" not spoken in section 2 after word 0",
+    "beat 12 dropped: trigger 'three and sixmonth' not spoken in section 4 after word 0",
+    "beat 16 plate 'receipt' → letter",
+    "beat 17 shot 'person holding smartphone' dropped",
+    "beat 21 shot 'calendar with crossed out dates' dropped",
+    "beat 21 dropped: trigger 'for a fixedterm tenancy' not spoken in section 6 after word 22",
+    "beat 25 dropped: trigger 'this sevenday notice cannot' not spoken in section 7 after word 21",
+    "beat 26 plate 'clock' → letter",
+    "beat 26 dropped: trigger 'the term seven clear' not spoken in section 7 after word 21",
+    "beat 30 shot 'law books on a desk' dropped",
+    "beat 32 shot 'hand holding smartphone with docoga logo' dropped",
+    "beat 35 shot 'docoga app on phone screen' dropped"
+   ],
+   "run_id": "43382837939"
+  },
+  {
+   "at": "2026-11-13T08:11:03+01:00",
+   "episode": "dd8",
+   "attempt": 3,
+   "outcome": "refused",
+   "title": "Quit Notice Rules: Rivers' Strict Dates vs. Lagos's Flexibility",
+   "problems": [
+    "36-48 beats (got 21)",
+    "section 3 needs at least two beats"
+   ],
+   "healed": [
+    "beat 2 dropped: trigger 'your landlord says pack' not spoken in section 1 after word 0",
+    "beat 7 dropped: trigger 'rivers state s62' not spoken in section 3 after word 0",
+    "beat 10 dropped: trigger 'yearly tenancy that began' not spoken in section 4 after word 44",
+    "beat 16 dropped: trigger 'fixedterm tenancies lagos state' not spoken in section 6 after word 38",
+    "beat 18 dropped: trigger 'further written notice of' not spoken in section 7 after word 0",
+    "beat 20 dropped: trigger 'rivers state s5 even' not spoken in section 7 after word 77",
+    "beat 22 sub cut at a word: 'No lock-outs, removal of goods, disconnection. Sounds in'"
+   ],
+   "run_id": "43382837939"
   }
  ]
 }

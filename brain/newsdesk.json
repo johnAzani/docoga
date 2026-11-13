@@ -1,5 +1,5 @@
 {
- "fetched": "2026-11-13T00:30:52+00:00",
+ "fetched": "2026-11-13T07:02:38+00:00",
  "sources": [
   "Punch: 30 stories",
   "Vanguard: 20 stories",
@@ -9,5 +9,17 @@
   "The Guardian Nigeria: unreachable (HTTP Error 403: Forbidden)",
   "Nairametrics: 20 stories"
  ],
- "items": []
+ "items": [
+  {
+   "title": "Meet Ohaebosim, first Nigerian-American to become lieutenant governor in US",
+   "link": "https://punchng.com/meet-ohaebosim-first-nigerian-american-to-become-lieutenant-governor-in-us/?utm_source=rss.punchng.com&utm_medium=web",
+   "published": "2026-11-13T07:51:03+00:00",
+   "source": "Punch",
+   "score": 9,
+   "matched": [
+    "tenant"
+   ],
+   "summary": "Wichita Democrat KC Ohaebosim has been elected Lieutenant Governor of Kansas, becoming the first Nigerian-American to hold such an office in the US. Read More: https://punchng.com/meet-ohaebosim-first"
+  }
+ ]
 }
