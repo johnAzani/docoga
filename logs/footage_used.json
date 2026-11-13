@@ -14,6 +14,76 @@
    "door": "pixabay",
    "lane": ""
   },
+  "pixabay:20263": {
+   "n": 1,
+   "last": "2026-11-13",
+   "query": "padlocked door nigeria",
+   "door": "pixabay",
+   "lane": ""
+  },
+  "pixabay:313952": {
+   "n": 4,
+   "last": "2026-11-13",
+   "query": "lagos street nigeria",
+   "door": "pixabay",
+   "lane": ""
+  },
+  "pixabay:313951": {
+   "n": 3,
+   "last": "2026-11-13",
+   "query": "lagos street nigeria",
+   "door": "pixabay",
+   "lane": ""
+  },
+  "pixabay:48067": {
+   "n": 1,
+   "last": "2026-11-13",
+   "query": "port harcourt waterfront nigeria",
+   "door": "pixabay",
+   "lane": ""
+  },
+  "pixabay:59526": {
+   "n": 1,
+   "last": "2026-11-13",
+   "query": "wall calendar nigeria",
+   "door": "pixabay",
+   "lane": ""
+  },
+  "pixabay:172545": {
+   "n": 1,
+   "last": "2026-11-13",
+   "query": "wall calendar nigeria",
+   "door": "pixabay",
+   "lane": ""
+  },
+  "pixabay:313345": {
+   "n": 2,
+   "last": "2026-11-13",
+   "query": "lagos street nigeria",
+   "door": "pixabay",
+   "lane": ""
+  },
+  "pixabay:313948": {
+   "n": 3,
+   "last": "2026-11-13",
+   "query": "lagos street nigeria",
+   "door": "pixabay",
+   "lane": ""
+  },
+  "pixabay:327978": {
+   "n": 1,
+   "last": "2026-11-13",
+   "query": "port harcourt waterfront nigeria",
+   "door": "pixabay",
+   "lane": ""
+  },
+  "pixabay:128321": {
+   "n": 1,
+   "last": "2026-11-13",
+   "query": "padlocked door nigeria",
+   "door": "pixabay",
+   "lane": ""
+  },
   "pixabay:2801676": {
    "n": 14,
    "last": "2026-11-12",
@@ -119,13 +189,6 @@
    "door": "pixabay",
    "lane": ""
   },
-  "pixabay:313952": {
-   "n": 3,
-   "last": "2026-11-11",
-   "query": "lagos street nigeria",
-   "door": "pixabay",
-   "lane": ""
-  },
   "pixabay:10685": {
    "n": 1,
    "last": "2026-11-11",
@@ -182,13 +245,6 @@
    "door": "pixabay",
    "lane": ""
   },
-  "pixabay:313951": {
-   "n": 2,
-   "last": "2026-11-10",
-   "query": "lagos street nigeria",
-   "door": "pixabay",
-   "lane": ""
-  },
   "pixabay:49395": {
    "n": 1,
    "last": "2026-11-10",
@@ -214,13 +270,6 @@
    "n": 1,
    "last": "2026-11-10",
    "query": "paper receipt nigeria",
-   "door": "pixabay",
-   "lane": ""
-  },
-  "pixabay:313948": {
-   "n": 2,
-   "last": "2026-11-10",
-   "query": "lagos street nigeria",
    "door": "pixabay",
    "lane": ""
   },
@@ -1103,13 +1152,6 @@
    "n": 1,
    "last": "2026-10-29",
    "query": "padlocked door nigeria",
-   "door": "pixabay",
-   "lane": ""
-  },
-  "pixabay:313345": {
-   "n": 1,
-   "last": "2026-10-29",
-   "query": "bank building atm nigeria",
    "door": "pixabay",
    "lane": ""
   },
