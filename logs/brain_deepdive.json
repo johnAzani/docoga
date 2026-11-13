@@ -769,6 +769,77 @@
     "beat 31 dropped: trigger 'section 441' not spoken in section 8 after word 46"
    ],
    "run_id": "43175881838"
+  },
+  {
+   "at": "2026-11-13T01:34:55+01:00",
+   "episode": "dd8",
+   "attempt": 1,
+   "outcome": "refused",
+   "title": "Your Notice to Quit: Getting the Date Right in Rivers and Lagos",
+   "problems": [
+    "36-48 beats (got 25)"
+   ],
+   "healed": [
+    "beat 9 dropped: trigger 'get this date wrong' not spoken in section 3 after word 49",
+    "beat 11 shot 'calendar with a big x on dec 31' dropped",
+    "beat 12 shot 'calendar with one specific date highlighted' dropped",
+    "beat 15 shot 'calendar with a range of dates' dropped",
+    "beat 15 dropped: trig ['on', 'or', 'after', 'the', 'date'] is not 2-4 words",
+    "beat 19 shot 'calendar with 7 highlighted days' dropped",
+    "beat 20 dropped: trigger 'seven days notice' not spoken in section 7 after word 0",
+    "beat 21 shot 'timeline with two marked events' dropped",
+    "beat 29 dropped: trig ['two', 'thousand', 'naira', 'for', 'thirty'] is not 2-4 words"
+   ],
+   "run_id": "43337616102"
+  },
+  {
+   "at": "2026-11-13T01:35:26+01:00",
+   "episode": "dd8",
+   "attempt": 2,
+   "outcome": "refused",
+   "title": "Quit Notice in Rivers vs. Lagos: The Date That Changes Everything",
+   "problems": [
+    "total narration 946 words; need 1,100-1,800",
+    "36-48 beats (got 16)",
+    "section 1 needs at least two beats",
+    "section 3 needs at least two beats",
+    "section 8 needs at least two beats",
+    "claim cites unknown fact id 'lagos:notice_extras:6'"
+   ],
+   "healed": [
+    "beat 2 dropped: trigger 'does this notice' not spoken in section 1 after word 0",
+    "beat 6 dropped: trigger 'section 134 states' not spoken in section 3 after word 0",
+    "beat 15 dropped: head 'Rivers: Broad Tenant Definition' is not 1-28 characters",
+    "beat 16: first beat of section 8 — trig cleared",
+    "beat 18 shot 'person holding phone' dropped"
+   ],
+   "run_id": "43337616102"
+  },
+  {
+   "at": "2026-11-13T01:36:17+01:00",
+   "episode": "dd8",
+   "attempt": 3,
+   "outcome": "refused",
+   "title": "Quit Notice Dates: Lagos vs. Rivers Anniversary Rule",
+   "problems": [
+    "36-48 beats (got 28)",
+    "claim cites unknown fact id 'lagos:notice_extras:6'"
+   ],
+   "healed": [
+    "beat 3 dropped: trigger 'defective enough' not spoken in section 1 after word 83",
+    "beat 4 plate 'rivers' → letter",
+    "beat 10 plate 'nigeria' → letter",
+    "beat 13 plate 'lagos' → letter",
+    "beat 14 dropped: trigger 'on or after' not spoken in section 5 after word 0",
+    "beat 19 shot 'calendar with flexible end date' dropped",
+    "beat 21 plate 'receipt' → letter",
+    "beat 21 dropped: trigger 'mode of payment' not spoken in section 7 after word 0",
+    "beat 26 shot 'seven days marked on calendar' dropped",
+    "beat 27 dropped: trigger 'no lockouts' not spoken in section 8 after word 93",
+    "beat 28 dropped: trigger 'acting unlawfully' not spoken in section 8 after word 93",
+    "description cut to shape"
+   ],
+   "run_id": "43337616102"
   }
  ]
 }

@@ -1,0 +1,83 @@
+{
+ "version": 1,
+ "status": "approved",
+ "date": "2026-11-15",
+ "generated_at": "2026-11-13T01:34:19+01:00",
+ "theme": "abuja-advance-rent-no-limit-question",
+ "post_type": "engagement",
+ "hook_type": "CURIOSITY",
+ "state": "abuja",
+ "claims": [
+  {
+   "text": "The Recovery of Premises Act sets no limit on how much rent a landlord may demand in advance in the FCT, and attaches no penalty to demanding more than a year.",
+   "fact_id": "abuja:advance_rent:1"
+  },
+  {
+   "text": "An Abuja landlord asking for two years’ rent on 5 November 2026 is not breaking any law, and no authority exists to order a refund.",
+   "fact_id": "abuja:pending_bill:7"
+  },
+  {
+   "text": "Your landlord can legally demand more than a year's rent.",
+   "fact_id": "abuja:advance_rent:1",
+   "recalled": true
+  },
+  {
+   "text": "What you agree is what counts, so get it in writing.",
+   "fact_id": "abuja:advance_rent:1",
+   "recalled": true
+  }
+ ],
+ "recalled": [],
+ "post": {
+  "headline": "Why your Abuja landlord can ask for two years' rent upfront",
+  "lines": [
+   "Tunde, moving to Abuja? Your landlord can legally demand more than a year's rent.",
+   "The Recovery of Premises Act sets no limit on advance rent in the FCT.",
+   "Even with a bill proposing a cap, an Abuja landlord asking for two years today is not breaking any law.",
+   "What you agree is what counts, so get it in writing."
+  ],
+  "cta": "Send this to someone looking for their first flat in Abuja.",
+  "hashtags": [
+   "#DocOga",
+   "#AbujaRent",
+   "#TenantRights",
+   "#AdvanceRent"
+  ]
+ },
+ "threads": {
+  "text": "Tunde, new to Abuja? Your landlord can legally ask for more than one year's rent upfront. The Recovery of Premises Act sets no limit on advance rent in the FCT. Even a pending bill doesn't change this today. What do you think about this rule?",
+  "hashtags": [
+   "#DocOga",
+   "#Abuja"
+  ],
+  "topic": "Tenant Rights Abuja",
+  "poll": {
+   "option_a": "Fair, it's a contract",
+   "option_b": "Unfair, too much pressure",
+   "option_c": "Depends on the area",
+   "option_d": "Needs change now"
+  },
+  "evening": "In Abuja, the Recovery of Premises Act sets no cap on advance rent. A pending bill proposes a 12-month limit, but it's not law yet."
+ },
+ "visual": {
+  "kicker": "Know Your Rights",
+  "layout": "poster",
+  "big": "",
+  "plate": "rent agreement money keys"
+ },
+ "short": null,
+ "why": "This post addresses advance rent demands in Abuja for Tunde, using a CURIOSITY hook and an engagement question, following the orders for Sunday and the specified reader.",
+ "tool": "tenancy-agreement",
+ "tool_routed": false,
+ "reader": "tunde",
+ "news_hook": "Rent relief season: from 2026 tenants deduct 20% of rent (max ₦500,000) — only with a receipt in their name",
+ "quiz": null,
+ "gates": [
+  "citation",
+  "verification",
+  "lint",
+  "repetition",
+  "shape"
+ ],
+ "note": ""
+}

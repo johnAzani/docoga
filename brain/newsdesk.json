@@ -1,5 +1,5 @@
 {
- "fetched": "2026-11-12T07:31:49+00:00",
+ "fetched": "2026-11-13T00:30:52+00:00",
  "sources": [
   "Punch: 30 stories",
   "Vanguard: 20 stories",
@@ -9,18 +9,5 @@
   "The Guardian Nigeria: unreachable (HTTP Error 403: Forbidden)",
   "Nairametrics: 20 stories"
  ],
- "items": [
-  {
-   "title": "Student Loan: Parents, NANS offer tips on how to stop double dipping by beneficiaries",
-   "link": "https://www.vanguardngr.com/2026/11/student-loan-parents-nans-offer-tips-on-how-to-stop-double-dipping-by-beneficiaries/",
-   "published": "2026-11-12T05:55:17+00:00",
-   "source": "Vanguard",
-   "score": 12,
-   "matched": [
-    "rent",
-    "rents"
-   ],
-   "summary": "\"The Student Loan Scheme was set up to give access to higher education to students who would otherwise drop out because of inability to pay fees\" The post Student Loan: Parents, NANS offer tips on how"
-  }
- ]
+ "items": []
 }

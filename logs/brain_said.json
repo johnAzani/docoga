@@ -400,5 +400,26 @@
   "tool": "tenancy-agreement",
   "tool_routed": false,
   "news_hook": null
+ },
+ {
+  "date": "2026-11-15",
+  "theme": "abuja-advance-rent-no-limit-question",
+  "headline": "Why your Abuja landlord can ask for two years' rent upfront",
+  "post_type": "engagement",
+  "hook_type": "CURIOSITY",
+  "state": "abuja",
+  "fact_ids": [
+   "abuja:advance_rent:1",
+   "abuja:pending_bill:7",
+   "abuja:advance_rent:1",
+   "abuja:advance_rent:1"
+  ],
+  "recalled": 0,
+  "plate": "rent agreement money keys",
+  "short": false,
+  "reader": "tunde",
+  "tool": "tenancy-agreement",
+  "tool_routed": false,
+  "news_hook": "Rent relief season: from 2026 tenants deduct 20% of rent (max ₦500,000) — only with a receipt in their name"
  }
 ]
