@@ -1,7 +1,7 @@
 {
  "used": {
   "openverse:f53f4b36-8b95-4b2e-8701-975ad01cf6d7": {
-   "n": 2,
+   "n": 4,
    "last": "2026-11-13",
    "query": "rivers state map",
    "door": "openverse",
@@ -81,6 +81,13 @@
    "n": 1,
    "last": "2026-11-13",
    "query": "padlocked door nigeria",
+   "door": "pixabay",
+   "lane": ""
+  },
+  "pixabay:599486": {
+   "n": 1,
+   "last": "2026-11-13",
+   "query": "rivers state map nigeria",
    "door": "pixabay",
    "lane": ""
   },
