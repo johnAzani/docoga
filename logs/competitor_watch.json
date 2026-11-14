@@ -1,7 +1,21 @@
 {
- "pulled_at": "2026-11-13T07:02:39+00:00",
+ "pulled_at": "2026-11-14T00:30:56+00:00",
  "days": 14,
  "items": [
+  {
+   "competitor": "Olamide Oyetayo Legal",
+   "kind": "content",
+   "title": "Rent increment in Nigeria: What Tenants and Landlords must know",
+   "link": "https://olamideoyetayolegal.com/rent-increment-in-nigeria-what-tenants-and-landlords-must-know-2/",
+   "published": "2026-11-13T11:44:36+00:00"
+  },
+  {
+   "competitor": "Olamide Oyetayo Legal",
+   "kind": "content",
+   "title": "Leading Law firm in Abuja: Olamide Oyetayo & Co | Dispute Resolution | Commercial law & Property management",
+   "link": "https://olamideoyetayolegal.com/leading-law-firm-in-abuja-olamide-oyetayo-co-dispute-resolution-commercial-law-property-management/",
+   "published": "2026-11-13T11:38:35+00:00"
+  },
   {
    "competitor": "SabiLaw Solutions",
    "kind": "tool",
@@ -43,26 +57,19 @@
    "title": "How to advertise house for rent nigeria",
    "link": "https://mushrooms.ng/blog/how-to-advertise-house-for-rent-nigeria",
    "published": "2026-11-05T00:00:00+00:00"
-  },
-  {
-   "competitor": "NigeriaBuildingCost — tenancy agreement generator",
-   "kind": "tool",
-   "title": "Sample tenancy agreement nigeria",
-   "link": "https://nigeriabuildingcost.ng/sample-downloads/sample-tenancy-agreement-nigeria",
-   "published": "2026-10-30T09:05:31+00:00"
   }
  ],
  "sources": [
-  "https://nigeriabuildingcost.ng/sitemap.xml: 396 changed page(s)",
+  "https://nigeriabuildingcost.ng/sitemap.xml: 365 changed page(s)",
   "https://www.wonder.legal/ng/sitemap.xml: 0 changed page(s)",
   "https://diylaw.ng/sitemap.xml: 0 changed page(s)",
   "https://sabilaw.org/feed/: 7 fresh post(s)",
   "https://legalnaija.com/feed/: 2 fresh post(s)",
   "https://rently.ng/sitemap.xml: 0 changed page(s)",
   "https://homz.ng/sitemap.xml: 0 changed page(s)",
-  "https://mushrooms.ng/sitemap.xml: 66 changed page(s)",
-  "https://lexpraxisng.com/feed/: 1 fresh post(s)",
-  "https://olamideoyetayolegal.com/feed/: 0 fresh post(s)",
+  "https://mushrooms.ng/sitemap.xml: 59 changed page(s)",
+  "https://lexpraxisng.com/feed/: 2 fresh post(s)",
+  "https://olamideoyetayolegal.com/feed/: 2 fresh post(s)",
   "https://www.youtube.com/feeds/videos.xml?channel_id=UCa158r8OZoEia4z2DhPg2LA: unreachable (HTTP Error 404: Not Found)"
  ],
  "unwatchable": [
@@ -108,9 +115,12 @@
     "₦3,200"
    ],
    "found": [
-    "₦3,200"
+    "₦3,200",
+    "₦100"
    ],
-   "new": [],
+   "new": [
+    "₦100"
+   ],
    "gone": []
   }
  ]

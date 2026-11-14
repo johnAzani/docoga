@@ -908,6 +908,81 @@
     "beat 22 sub cut at a word: 'No lock-outs, removal of goods, disconnection. Sounds in'"
    ],
    "run_id": "43382837939"
+  },
+  {
+   "at": "2026-11-14T01:32:22+01:00",
+   "episode": "dd8",
+   "attempt": 1,
+   "outcome": "refused",
+   "title": "Rent Due: Arrears in Rivers, Advance in Lagos",
+   "problems": [
+    "36-48 beats (got 28)",
+    "section 6 needs at least two beats",
+    "no emoji or markdown in narration"
+   ],
+   "healed": [
+    "beat 2 plate 'map' → letter",
+    "beat 2 dropped: trigger 'some states law' not spoken in section 1 after word 0",
+    "beat 3 plate 'river' → letter",
+    "beat 3 dropped: trigger 'rivers state default' not spoken in section 1 after word 0",
+    "beat 6 sub cut at a word: 'Rent is payable at the end of the period, unless agreed'",
+    "beat 6 dropped: trig ['rent', 'is', 'payable', 'in', 'arrears'] is not 2-4 words",
+    "beat 12 plate 'map' → letter",
+    "beat 17 plate 'nigeria' → letter",
+    "beat 19 dropped: trigger 'for new or wouldbe' not spoken in section 6 after word 0",
+    "beat 20 dropped: trigger 'receives or pays rent' not spoken in section 6 after word 0",
+    "beat 24 dropped: trigger 'comply with the section' not spoken in section 7 after word 67",
+    "beat 25 plate 'receipt' → letter"
+   ],
+   "run_id": "43534654861"
+  },
+  {
+   "at": "2026-11-14T01:34:56+01:00",
+   "episode": "dd8",
+   "attempt": 2,
+   "outcome": "refused",
+   "title": "The Notice to Quit: Rivers' Strict Rules vs. Lagos's Flexibility",
+   "problems": [
+    "36-48 beats (got 9)",
+    "section 1 needs at least two beats",
+    "section 2 needs at least two beats",
+    "section 3 needs at least two beats",
+    "section 4 needs at least two beats",
+    "section 5 needs at least two beats",
+    "section 6 needs at least two beats",
+    "section 7 needs at least two beats",
+    "section 8 needs at least two beats",
+    "section 9 needs at least two beats",
+    "claim cites unknown fact id None",
+    "claim cites unknown fact id 'lagos:notice_extras:6'"
+   ],
+   "healed": [
+    "beat 2 dropped: trigger 'gettingthedates wrong' not spoken in section 1 after word 0",
+    "beat 4 dropped: trigger 'processofcourt addressed' not spoken in section 2 after word 0",
+    "beat 6 dropped: trig ['eve of the anniversary'] is not 2-4 words",
+    "beat 7 dropped: trigger 'defectivemeaningit cannot' not spoken in section 3 after word 0",
+    "beat 9 dropped: trigger 'expirepreciselyon december' not spoken in section 4 after word 0",
+    "beat 10 dropped: trig ['yearly tenant in rivers'] is not 2-4 words",
+    "beat 12 dropped: trig ['terminate on or after'] is not 2-4 words",
+    "beat 13 dropped: trig ['makes lagos more adaptable'] is not 2-4 words",
+    "beat 15 dropped: trig ['tenant at will gets'] is not 2-4 words",
+    "beat 16 dropped: trig ['when rent is paid'] is not 2-4 words",
+    "beat 18 dropped: trigger 'sevendaynoticeabsolutely cannot' not spoken in section 7 after word 0",
+    "beat 19 dropped: trigger 'bothstatesprohibit landlords' not spoken in section 7 after word 0"
+   ],
+   "run_id": "43534654861"
+  },
+  {
+   "at": "2026-11-14T01:38:35+01:00",
+   "episode": "dd8",
+   "attempt": 3,
+   "outcome": "written",
+   "title": "Quit Notice in Rivers and Lagos: The Anniversary Trap",
+   "problems": [],
+   "healed": [
+    "beat 31 shot 'law text volume' dropped"
+   ],
+   "run_id": "43534654861"
   }
  ]
 }

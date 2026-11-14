@@ -1,0 +1,603 @@
+{
+ "id": "dd8",
+ "number": 8,
+ "title": "Quit Notice in Rivers and Lagos: The Anniversary Trap",
+ "kicker": "DOCOGA — DEEP-DIVE · EPISODE 8",
+ "disclaimer": "GENERAL INFORMATION · NOT LEGAL ADVICE · RULES VARY BY STATE AND AGREEMENT",
+ "voice": {
+  "_locked": "LOCKED by the owner 14 Oct 2026 — must equal tools/deepdive.py LOCKED_VOICE_*; the engine refuses anything else",
+  "name": "Orus",
+  "instruction": "Narrate this in a natural Nigerian English accent, like a confident Lagos radio presenter:"
+ },
+ "audio": {
+  "_comment": "Sound plan — synthesized by tools/soundkit.py, cued from the beats (python3 tools/deepdive.py dd2 cues). Bed levels are dB(A) relative to the narrator's speech; SFX are dB below the voice peak. Run #1 (-27 raw) was inaudible on phones — these are broadcast-documentary levels.",
+  "bed": true,
+  "bpm": 72,
+  "seed": 7,
+  "bed_gap_db": -8,
+  "bed_speech_db": -16,
+  "sfx_db": -12,
+  "hit_db": -9,
+  "tick_db": -16,
+  "riser_db": -14,
+  "stinger_db": -9,
+  "tail_fade_s": 4
+ },
+ "youtube": {
+  "title": "Quit Notice in Rivers vs Lagos: The Anniversary Trap (Deep-Dive 8)",
+  "description": "Did your landlord serve a quit notice that ends mid-month or right after rent expired? In Rivers State, section 7 makes it mandatory that notices terminate on the eve of the tenancy anniversary, while Lagos section 13(4) has a different rule. Learn how the notice ladder works, why expiry of rent does not end tenancy, and how to verify statutory notices in two minutes on your phone.\n\nGenerate your standard tenancy documents at https://docoga.com.ng\n\nGeneral information, not legal advice.",
+  "tags": [
+   "DocOga",
+   "Quit Notice Nigeria",
+   "Rivers Tenancy Law",
+   "Lagos Tenancy Law 2011",
+   "Notice to Quit",
+   "Tenant Rights Nigeria",
+   "Port Harcourt Rent",
+   "Seven Days Notice",
+   "Landlord and Tenant Nigeria",
+   "Nigerian Property Law"
+  ]
+ },
+ "cover": {
+  "img": "door",
+  "kicker": "KNOW YOUR RIGHTS",
+  "line1": "QUIT NOTICE",
+  "highlight": "TRAP",
+  "label": "RIVERS VS LAGOS",
+  "line2": "WHY YOUR QUIT NOTICE",
+  "line3": "MIGHT BE ILLEGAL TODAY",
+  "sub": "The anniversary rule explained"
+ },
+ "sections": [
+  {
+   "n": 1,
+   "title": "The Hook"
+  },
+  {
+   "n": 2,
+   "title": "The Rivers Anniversary Rule"
+  },
+  {
+   "n": 3,
+   "title": "The Lagos Exception"
+  },
+  {
+   "n": 4,
+   "title": "The Statutory Notice Ladder"
+  },
+  {
+   "n": 5,
+   "title": "A Process of Court, Not a Letter"
+  },
+  {
+   "n": 6,
+   "title": "The Seven Clear Days Rule"
+  },
+  {
+   "n": 7,
+   "title": "Who Counts as a Tenant"
+  },
+  {
+   "n": 8,
+   "title": "No Self-Help Allowed"
+  },
+  {
+   "n": 9,
+   "title": "The Law, and DocOga"
+  }
+ ],
+ "beats": [
+  {
+   "sec": 1,
+   "trig": null,
+   "head": "THE GATE PAPER",
+   "sub": "A sudden notice taped to the gate",
+   "img": "door",
+   "shot": "padlocked iron gate"
+  },
+  {
+   "sec": 1,
+   "trig": [
+    "rent",
+    "finished",
+    "yesterday"
+   ],
+   "head": "RENT EXPIRY MYTH",
+   "sub": "Rent running out does not end tenancy",
+   "img": "calendar",
+   "shot": "wall calendar page"
+  },
+  {
+   "sec": 1,
+   "trig": [
+    "expiry",
+    "of",
+    "rent"
+   ],
+   "head": "TENANCY STILL STANDS",
+   "sub": "Valid statutory notice is required",
+   "img": "letter",
+   "shot": "folded paper letter"
+  },
+  {
+   "sec": 1,
+   "trig": [
+    "check",
+    "the",
+    "calendar"
+   ],
+   "head": "CHECK THE DATES",
+   "sub": "Paper and dates beat sudden threats",
+   "img": "court",
+   "shot": "magistrate court building"
+  },
+  {
+   "sec": 2,
+   "trig": null,
+   "head": "RIVERS SECTION 7",
+   "sub": "The strict eve of anniversary rule",
+   "img": "court",
+   "shot": "courtroom wooden bench"
+  },
+  {
+   "sec": 2,
+   "trig": [
+    "terminate",
+    "on",
+    "the",
+    "eve"
+   ],
+   "head": "EVE OF ANNIVERSARY",
+   "sub": "Must end the day before renewal",
+   "img": "calendar",
+   "shot": "desk calendar date"
+  },
+  {
+   "sec": 2,
+   "trig": [
+    "31",
+    "december",
+    "2025"
+   ],
+   "head": "THE EXACT DATE",
+   "sub": "Yearly term ending 31 December",
+   "img": "pen",
+   "shot": "fountain pen writing"
+  },
+  {
+   "sec": 2,
+   "trig": [
+    "dead",
+    "on",
+    "arrival"
+   ],
+   "head": "DEFECTIVE NOTICE",
+   "sub": "Wrong date kills the entire notice",
+   "img": "letter",
+   "shot": "official legal document"
+  },
+  {
+   "sec": 3,
+   "trig": null,
+   "head": "THE LAGOS EXCEPTION",
+   "sub": "Why landlords mix up the laws",
+   "img": "danfo",
+   "shot": "lagos yellow bus"
+  },
+  {
+   "sec": 3,
+   "trig": [
+    "lagos",
+    "tenancy",
+    "law",
+    "2011"
+   ],
+   "head": "LAGOS S.13(4)",
+   "sub": "Notice can end on or after term",
+   "img": "rooftops",
+   "shot": "lagos city skyline"
+  },
+  {
+   "sec": 3,
+   "trig": [
+    "effluxion",
+    "of",
+    "time"
+   ],
+   "head": "FIXED TERM EXPIRY",
+   "sub": "Form TL5 seven-day notice in Lagos",
+   "img": "court",
+   "shot": "court registry counter"
+  },
+  {
+   "sec": 3,
+   "trig": [
+    "in",
+    "a",
+    "port",
+    "harcourt"
+   ],
+   "head": "PORT HARCOURT RULES",
+   "sub": "Lagos shortcuts fail in Rivers courts",
+   "img": "letter",
+   "shot": "typed legal notice"
+  },
+  {
+   "sec": 4,
+   "trig": null,
+   "head": "THE NOTICE LADDER",
+   "sub": "Statutory notice lengths by law",
+   "img": "calendar",
+   "shot": "calendar monthly grid"
+  },
+  {
+   "sec": 4,
+   "trig": [
+    "entitled",
+    "to",
+    "six",
+    "months"
+   ],
+   "head": "YEARLY: SIX MONTHS",
+   "sub": "Rivers section 6(1)(d) requirement",
+   "img": "letter",
+   "shot": "stamped official document"
+  },
+  {
+   "sec": 4,
+   "trig": [
+    "tenant",
+    "at",
+    "will"
+   ],
+   "head": "WEEKLY: ONE WEEK",
+   "sub": "Rivers section 6(1)(a) provision",
+   "img": "door",
+   "shot": "wooden apartment door"
+  },
+  {
+   "sec": 4,
+   "trig": [
+    "payment",
+    "and",
+    "demand"
+   ],
+   "head": "RENT MODE GOVERNS",
+   "sub": "Rent payment cycle defines tenancy",
+   "img": "naira",
+   "shot": "bundle of naira notes"
+  },
+  {
+   "sec": 5,
+   "trig": null,
+   "head": "COURT PROCESS ONLY",
+   "sub": "A quit notice is not a casual letter",
+   "img": "court",
+   "shot": "high court exterior"
+  },
+  {
+   "sec": 5,
+   "trig": [
+    "anyaehie",
+    "v",
+    "ongolo"
+   ],
+   "head": "APPEAL COURT RULING",
+   "sub": "Notice is process of court",
+   "img": "court",
+   "shot": "law report book"
+  },
+  {
+   "sec": 5,
+   "trig": [
+    "form",
+    "b",
+    "when"
+   ],
+   "head": "STATUTORY FORMS",
+   "sub": "Forms B, C and E under Rivers law",
+   "img": "letter",
+   "shot": "printed court form"
+  },
+  {
+   "sec": 5,
+   "trig": [
+    "vitiates",
+    "the",
+    "whole"
+   ],
+   "head": "FATAL DEFECT",
+   "sub": "Wrong form ruins the proceeding",
+   "img": "pen",
+   "shot": "pen signing document"
+  },
+  {
+   "sec": 6,
+   "trig": null,
+   "head": "THE SEVEN DAYS",
+   "sub": "Notice of owner intention to apply",
+   "img": "calendar",
+   "shot": "calendar with circled date"
+  },
+  {
+   "sec": 6,
+   "trig": [
+    "quit",
+    "notice",
+    "expires"
+   ],
+   "head": "SERVED AFTER EXPIRY",
+   "sub": "Cannot issue before quit notice ends",
+   "img": "letter",
+   "shot": "sealed envelope on desk"
+  },
+  {
+   "sec": 6,
+   "trig": [
+    "day",
+    "of",
+    "service"
+   ],
+   "head": "SEVEN CLEAR DAYS",
+   "sub": "Service day excluded by statute",
+   "img": "calendar",
+   "shot": "desk calendar notepad"
+  },
+  {
+   "sec": 6,
+   "trig": [
+    "renders",
+    "the",
+    "action"
+   ],
+   "head": "INVALID COUNT",
+   "sub": "Rushing days invalidates action",
+   "img": "court",
+   "shot": "courtroom gavel"
+  },
+  {
+   "sec": 7,
+   "trig": null,
+   "head": "WHO IS A TENANT",
+   "sub": "Broad statutory definitions",
+   "img": "door",
+   "shot": "residential compound gate"
+  },
+  {
+   "sec": 7,
+   "trig": [
+    "payment",
+    "of",
+    "rent",
+    "or"
+   ],
+   "head": "SECTION 29 DEFINITION",
+   "sub": "Covers payment or rent-free stay",
+   "img": "letter",
+   "shot": "tenancy agreement paperwork"
+  },
+  {
+   "sec": 7,
+   "trig": [
+    "payable",
+    "in",
+    "arrears"
+   ],
+   "head": "RENT IN ARREARS",
+   "sub": "Rivers Cap 75 section 75(1)",
+   "img": "naira",
+   "shot": "naira notes on table"
+  },
+  {
+   "sec": 7,
+   "trig": [
+    "formal",
+    "statutory",
+    "service"
+   ],
+   "head": "ALL OCCUPANTS COVERED",
+   "sub": "Formal service required for everyone",
+   "img": "court",
+   "shot": "court process document"
+  },
+  {
+   "sec": 8,
+   "trig": null,
+   "head": "SELF-HELP IS ILLEGAL",
+   "sub": "Landlords cannot take law in hands",
+   "img": "door",
+   "shot": "chain lock on door"
+  },
+  {
+   "sec": 8,
+   "trig": [
+    "pursuance",
+    "of",
+    "a",
+    "court"
+   ],
+   "head": "COURT ORDER NEEDED",
+   "sub": "Rivers sections 20 to 22 enforce order",
+   "img": "court",
+   "shot": "magistrate court room"
+  },
+  {
+   "sec": 8,
+   "trig": [
+    "section",
+    "44",
+    "subsection",
+    "1"
+   ],
+   "head": "LAGOS S.44 OFFENCE",
+   "sub": "250k fine or 6 months prison",
+   "img": "letter",
+   "shot": null
+  },
+  {
+   "sec": 8,
+   "trig": [
+    "text",
+    "of",
+    "the",
+    "statute"
+   ],
+   "head": "STAND ON LAW",
+   "sub": "Paper and sections defeat threats",
+   "img": "pen",
+   "shot": "signed legal agreement"
+  },
+  {
+   "sec": 9,
+   "trig": null,
+   "head": "PAPER BEATS MEMORY",
+   "sub": "Document your tenancy properly",
+   "img": "phone",
+   "shot": "smartphone showing website"
+  },
+  {
+   "sec": 9,
+   "trig": [
+    "fifty",
+    "thousand",
+    "naira"
+   ],
+   "head": "SAVE LEGAL FEES",
+   "sub": "Lawyers typically charge 50,000",
+   "img": "naira",
+   "shot": "stacked naira cash"
+  },
+  {
+   "sec": 9,
+   "trig": [
+    "in",
+    "about",
+    "two",
+    "minutes"
+   ],
+   "head": "DOCOGA IN 2 MINUTES",
+   "sub": "Standard Nigerian tenancy documents",
+   "img": "phone",
+   "shot": "mobile screen interface"
+  },
+  {
+   "sec": 9,
+   "trig": [
+    "oga",
+    "pass",
+    "for"
+   ],
+   "head": "OGA PASS AT N2,000",
+   "sub": "30 days unlimited clean copies",
+   "img": "letter",
+   "shot": "clean printed contract"
+  },
+  {
+   "sec": 9,
+   "trig": [
+    "com",
+    "ng",
+    "today"
+   ],
+   "head": "DOCOGA",
+   "sub": "docoga.com.ng — link in the description",
+   "img": "celebration",
+   "shot": null,
+   "endcard": true
+  }
+ ],
+ "brain": {
+  "written": "2026-11-14T01:38:35+01:00",
+  "theme": "quit-notice-rivers-lagos",
+  "claims": [
+   {
+    "text": "In Rivers State under section 7 of the Recovery of Premises Law, a notice to quit must terminate on the eve of the anniversary of the current term.",
+    "fact_id": "rivers:anniversary_rule:1"
+   },
+   {
+    "text": "Section 13 subsection 4 of the Lagos Tenancy Law 2011 is the exception, where three- and six-month notices need not end on the anniversary and may end on or after the date the tenancy expires.",
+    "fact_id": "rivers:anniversary_rule:2"
+   },
+   {
+    "text": "For a yearly tenancy in Rivers that began on 1 January 2025, a valid six-month quit notice must expire on 31 December 2025, which is the eve of the anniversary.",
+    "fact_id": "rivers:anniversary_rule:3"
+   },
+   {
+    "text": "In Rivers under section 6 subsection 1 d, a yearly tenant is entitled to six months notice.",
+    "fact_id": "rivers:notice_ladder:1"
+   },
+   {
+    "text": "Under section 6 subsection 2 in Rivers, the nature of a tenancy is determined, absent contrary evidence, by reference to the mode of payment and demand for rent.",
+    "fact_id": "rivers:notice_extras:1"
+   },
+   {
+    "text": "In Rivers, the expiry of rent does not end the tenancy, and a tenancy is determined by a valid notice or effluxion of a fixed term.",
+    "fact_id": "rivers:notice_extras:2"
+   },
+   {
+    "text": "After the quit notice expires in Rivers, the landlord must serve a further written notice of the owner intention to apply to court to recover possession of not less than seven clear days.",
+    "fact_id": "rivers:notice_extras:3"
+   },
+   {
+    "text": "For the seven clear days notice, the day of service is excluded and the day of expiry included.",
+    "fact_id": "rivers:notice_extras:4"
+   },
+   {
+    "text": "Under section 5 in Rivers, a notice to quit is given in Form B when signed by the landlord himself, Form C when signed by an agent or solicitor, and the seven-day notice under section 8 is Form E.",
+    "fact_id": "rivers:notice_extras:5"
+   },
+   {
+    "text": "The Court of Appeal in Anyaehie v Ongolo held on sections 5 to 7 of the Rivers Law that a notice to quit is a process of court addressed to a known tenant and not a letter.",
+    "fact_id": "rivers:notice_extras:6"
+   },
+   {
+    "text": "Under section 6 subsection 1 a in Rivers, a tenant at will or weekly tenant receives one week notice.",
+    "fact_id": "rivers:notice_extras:7"
+   },
+   {
+    "text": "Under section 29 in Rivers, a tenant includes any person occupying premises whether on payment of rent or otherwise, but not a person occupying under a bona fide claim of ownership.",
+    "fact_id": "rivers:who_is_a_tenant:1"
+   },
+   {
+    "text": "Under section 75 subsection 1 of the Landlord and Tenant Law in Rivers, rent is payable in arrears unless the parties agree otherwise.",
+    "fact_id": "rivers:rent_in_arrears:1"
+   },
+   {
+    "text": "In Rivers, a defect in the issue, content or service of a notice vitiates the whole proceeding.",
+    "fact_id": "rivers:protections:2"
+   },
+   {
+    "text": "The date of service is the material date, not the date written on the notice.",
+    "fact_id": "rivers:protections:3"
+   },
+   {
+    "text": "Under sections 20 to 22 in Rivers, an occupier whose tenancy has ended can be put out only in pursuance of a court order obtained after the Law notices.",
+    "fact_id": "rivers:protections:4"
+   },
+   {
+    "text": "In Lagos under section 13 subsection 5, a fixed-term tenancy needs no quit notice at all once it determines by effluxion of time, requiring only a seven-day notice of intention to recover possession in Form TL5.",
+    "fact_id": "lagos:notice_extras:4"
+   },
+   {
+    "text": "Under section 44 subsection 1 of the Lagos Tenancy Law 2011, demolishing, altering or modifying a building to eject a tenant without court approval is an offence punishable by 250,000 naira fine or 6 months imprisonment.",
+    "fact_id": "lagos:protections:4"
+   },
+   {
+    "text": "A landlord who acts as if running out of rent automatically ejects you is acting unlawfully.",
+    "fact_id": "rivers:notice_extras:2",
+    "recalled": true
+   },
+   {
+    "text": "This seven-day notice cannot be issued while the quit notice is still running. It can only be served after the quit notice has completely expired.",
+    "fact_id": "rivers:notice_extras:3",
+    "recalled": true
+   },
+   {
+    "text": "A landlord who takes the law into his own hands commits an actionable wrong that sounds in damages.",
+    "fact_id": "rivers:protections:1",
+    "recalled": true
+   }
+  ]
+ }
+}
