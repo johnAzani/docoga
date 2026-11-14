@@ -1,6 +1,15 @@
 [
  {
   "date": "2026-11-16",
+  "at": "2026-11-14T07:55:51+01:00",
+  "short_day": true,
+  "state": "cross-river",
+  "problems": [
+   "headline is 73 characters; max 70"
+  ]
+ },
+ {
+  "date": "2026-11-16",
   "at": "2026-11-14T01:31:41+01:00",
   "short_day": true,
   "state": "cross-river",
@@ -396,14 +405,6 @@
    "a body line is 144 characters; max 110: 'No more paying cash without paper. In Kw'",
    "a body line is 112 characters; max 110: 'This rent book is kept by you, the tenan'",
    "news_hook is not one of this week's NEWSDESK headlines — a story the papers did not print is not a story",
-   "a cited post names the section number (e.g. s.5) in its copy"
-  ]
- },
- {
-  "date": "2026-10-26",
-  "at": "2026-10-24T01:31:16+01:00",
-  "short_day": true,
-  "problems": [
    "a cited post names the section number (e.g. s.5) in its copy"
   ]
  }
