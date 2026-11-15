@@ -1,7 +1,21 @@
 {
- "pulled_at": "2026-11-14T06:52:45+00:00",
+ "pulled_at": "2026-11-15T00:30:52+00:00",
  "days": 14,
  "items": [
+  {
+   "competitor": "Olamide Oyetayo Legal",
+   "kind": "content",
+   "title": "Rent increment in Nigeria: What Tenants and Landlords must know",
+   "link": "https://olamideoyetayolegal.com/rent-increment-in-nigeria-what-tenants-and-landlords-must-know-2/",
+   "published": "2026-11-13T11:44:36+00:00"
+  },
+  {
+   "competitor": "Olamide Oyetayo Legal",
+   "kind": "content",
+   "title": "Leading Law firm in Abuja: Olamide Oyetayo & Co | Dispute Resolution | Commercial law & Property management",
+   "link": "https://olamideoyetayolegal.com/leading-law-firm-in-abuja-olamide-oyetayo-co-dispute-resolution-commercial-law-property-management/",
+   "published": "2026-11-13T11:38:35+00:00"
+  },
   {
    "competitor": "SabiLaw Solutions",
    "kind": "tool",
@@ -53,10 +67,10 @@
   "https://legalnaija.com/feed/: 2 fresh post(s)",
   "https://rently.ng/sitemap.xml: 0 changed page(s)",
   "https://homz.ng/sitemap.xml: 0 changed page(s)",
-  "https://mushrooms.ng/sitemap.xml: 58 changed page(s)",
+  "https://mushrooms.ng/sitemap.xml: 66 changed page(s)",
   "https://lexpraxisng.com/feed/: 2 fresh post(s)",
-  "https://olamideoyetayolegal.com/feed/: unreachable (The read operation timed out)",
-  "https://www.youtube.com/feeds/videos.xml?channel_id=UCa158r8OZoEia4z2DhPg2LA: unreachable (HTTP Error 404: Not Found)"
+  "https://olamideoyetayolegal.com/feed/: 2 fresh post(s)",
+  "https://www.youtube.com/feeds/videos.xml?channel_id=UCa158r8OZoEia4z2DhPg2LA: unreachable (HTTP Error 500: Internal Server Error)"
  ],
  "unwatchable": [
   "@legalfriendng — Real Estate Lawyer (TikTok)",

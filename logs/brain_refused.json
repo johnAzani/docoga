@@ -1,5 +1,24 @@
 [
  {
+  "date": "2026-11-17",
+  "at": "2026-11-15T01:39:59+01:00",
+  "short_day": true,
+  "state": "edo",
+  "problems": [
+   "verifier: claim [edo:first_six_months:1] not supported — The fact states the landlord 'may not give notice to quit or recover possession during the first six months of the tenancy — except on the orde"
+  ]
+ },
+ {
+  "date": "2026-11-16",
+  "at": "2026-11-15T01:33:34+01:00",
+  "short_day": true,
+  "state": "cross-river",
+  "problems": [
+   "a cited post names the section number (e.g. s.5) in its copy",
+   "fact id typed into the copy: cross-river:advance_rent:1, cross-river:premium:1 — ids live only in `claims`, never in words a reader sees"
+  ]
+ },
+ {
   "date": "2026-11-16",
   "at": "2026-11-14T07:55:51+01:00",
   "short_day": true,
@@ -387,25 +406,6 @@
    "a body line is 121 characters; max 110: 'This receipt must state the date, names '",
    "news_hook is not one of this week's NEWSDESK headlines — a story the papers did not print is not a story",
    "the disclaimer is added by the renderer — remove it from the copy"
-  ]
- },
- {
-  "date": "2026-10-26",
-  "at": "2026-10-25T01:37:30+01:00",
-  "short_day": true,
-  "problems": [
-   "news_hook is not one of this week's NEWSDESK headlines — a story the papers did not print is not a story"
-  ]
- },
- {
-  "date": "2026-10-26",
-  "at": "2026-10-24T05:55:26+01:00",
-  "short_day": true,
-  "problems": [
-   "a body line is 144 characters; max 110: 'No more paying cash without paper. In Kw'",
-   "a body line is 112 characters; max 110: 'This rent book is kept by you, the tenan'",
-   "news_hook is not one of this week's NEWSDESK headlines — a story the papers did not print is not a story",
-   "a cited post names the section number (e.g. s.5) in its copy"
   ]
  }
 ]

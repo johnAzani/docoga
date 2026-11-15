@@ -587,5 +587,11 @@
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
+  <url>
+    <loc>https://docoga.com.ng/guides/abuja-advance-rent-no-limit-question</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
 </urlset>
 <!-- Add one <url> block per SEO content page as you publish them (see PLAN.md keyword cluster). -->

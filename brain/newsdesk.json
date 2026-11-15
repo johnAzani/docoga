@@ -1,5 +1,5 @@
 {
- "fetched": "2026-11-14T06:52:44+00:00",
+ "fetched": "2026-11-15T00:30:52+00:00",
  "sources": [
   "Punch: 30 stories",
   "Vanguard: 20 stories",
@@ -9,17 +9,5 @@
   "The Guardian Nigeria: unreachable (HTTP Error 403: Forbidden)",
   "Nairametrics: 20 stories"
  ],
- "items": [
-  {
-   "title": "UK protesters against INEC chair were rented – Lawyer",
-   "link": "https://punchng.com/uk-protesters-against-inec-chair-were-rented-lawyer/?utm_source=rss.punchng.com&utm_medium=web",
-   "published": "2026-11-14T05:18:55+00:00",
-   "source": "Punch",
-   "score": 6,
-   "matched": [
-    "rent"
-   ],
-   "summary": "A UK-based Nigerian lawyer, Dayo Babalola, has alleged that protesters who demonstrated against INEC Chairman Joash Amupitan in London were paid. Read More: https://punchng.com/uk-protesters-against-i"
-  }
- ]
+ "items": []
 }
