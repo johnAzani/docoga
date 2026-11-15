@@ -1,5 +1,5 @@
 {
- "pulled_at": "2026-11-15T00:30:52+00:00",
+ "pulled_at": "2026-11-15T06:56:49+00:00",
  "days": 14,
  "items": [
   {
@@ -70,7 +70,7 @@
   "https://mushrooms.ng/sitemap.xml: 66 changed page(s)",
   "https://lexpraxisng.com/feed/: 2 fresh post(s)",
   "https://olamideoyetayolegal.com/feed/: 2 fresh post(s)",
-  "https://www.youtube.com/feeds/videos.xml?channel_id=UCa158r8OZoEia4z2DhPg2LA: unreachable (HTTP Error 500: Internal Server Error)"
+  "https://www.youtube.com/feeds/videos.xml?channel_id=UCa158r8OZoEia4z2DhPg2LA: unreachable (HTTP Error 404: Not Found)"
  ],
  "unwatchable": [
   "@legalfriendng — Real Estate Lawyer (TikTok)",
@@ -115,12 +115,9 @@
     "₦3,200"
    ],
    "found": [
-    "₦3,200",
-    "₦5,200"
+    "₦3,200"
    ],
-   "new": [
-    "₦5,200"
-   ],
+   "new": [],
    "gone": []
   }
  ]
