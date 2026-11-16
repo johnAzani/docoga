@@ -1,0 +1,99 @@
+{
+ "version": 1,
+ "status": "approved",
+ "date": "2026-11-17",
+ "generated_at": "2026-11-16T08:10:13+01:00",
+ "theme": "edo-six-months-no-quit-notice",
+ "post_type": "state_spotlight",
+ "hook_type": "STAT",
+ "state": "edo",
+ "claims": [
+  {
+   "text": "In Edo State, if you pay rent in advance for a monthly or quarterly tenancy, your landlord cannot give you a notice to quit or recover possession during the first six months.",
+   "fact_id": "edo:first_six_months:1"
+  }
+ ],
+ "recalled": [],
+ "post": {
+  "headline": "Edo: 6 Months No Quit Notice If You Pay In Advance",
+  "lines": [
+   "Ngozi, if you just paid your rent in Edo State, know your right.",
+   "The law says your landlord cannot issue a notice to quit for the first six months of your tenancy,",
+   "if you paid in advance (s.18).",
+   "This gives you statutory breathing space, except by tribunal order or your consent.",
+   "Don't let anyone push you out before time."
+  ],
+  "cta": "Send this to a friend who just paid rent in Edo State.",
+  "hashtags": [
+   "#DocOga",
+   "#EdoTenancyLaw",
+   "#TenantRights",
+   "#RentInNigeria"
+  ]
+ },
+ "threads": {
+  "text": "In Edo State, if you pay rent in advance for a monthly or quarterly tenancy, your landlord cannot give you a notice to quit for the first six months (s.18). This is your statutory breathing space. No landlord should force you out before then. Which state protects tenants best?",
+  "hashtags": [
+   "#DocOga",
+   "#Edo"
+  ],
+  "topic": "Tenant Rights Nigeria",
+  "poll": null,
+  "evening": "Edo tenants who pay rent upfront get a 6-month shield against quit notices. Know the law, protect your stay."
+ },
+ "visual": {
+  "kicker": "KNOW YOUR RIGHTS",
+  "layout": "stat",
+  "big": "6 MONTHS",
+  "plate": "keys wooden door"
+ },
+ "short": {
+  "title": "Paid a caution fee? Take photos on day one.",
+  "hook_sub": "Prove pre-existing damage.",
+  "hook_say": "Before you move into that new apartment, especially if you paid a caution fee, there's one critical thing to do. Many tenants forget this, and it costs them dearly later. Avoid paying for damages you didn't cause.",
+  "tips": [
+   {
+    "text": "Snap every corner",
+    "sub": "Damage, wear, defects",
+    "say": "Take clear photos or a video of every single crack, stain, or scratch in the apartment. Document the kitchen, bathroom, walls, and floors thoroughly. This is your evidence."
+   },
+   {
+    "text": "Date the evidence",
+    "sub": "Timestamp everything",
+    "say": "Ensure your photos and videos are dated, either by your phone's timestamp or a physical newspaper in the shot. This proves the condition of the property on your move-in day."
+   },
+   {
+    "text": "Share with landlord",
+    "sub": "Send proof via WhatsApp",
+    "say": "Send these dated photos or videos to your landlord or agent via WhatsApp or email. This creates a record that they received and acknowledged the initial state of the property. Keep your own copy safe."
+   },
+   {
+    "text": "Use Caution Fee tool",
+    "sub": "Record condition now",
+    "say": "DocOga's free Caution Fee tool helps you document the property's condition, protecting your refund. Get it today and save yourself future trouble. General information, not legal advice."
+   }
+  ],
+  "hook_text": "PAID A CAUTION FEE?\nTAKE PHOTOS ON DAY ONE.",
+  "series": {
+   "slug": "caution-fee",
+   "name": "Caution fee",
+   "part": 2,
+   "total": 5,
+   "label": "Photos on day one"
+  }
+ },
+ "why": "Today is a state spotlight day for Edo, and the chosen STAT hook allows highlighting a strong tenant protection, directly addressing Google searches for 'edo state tenancy law' and aligning with the 'what a landlord may and may not demand' genre, while the Short follows the caution fee series.",
+ "tool": "notice-to-quit",
+ "tool_routed": false,
+ "reader": "ngozi",
+ "news_hook": null,
+ "quiz": null,
+ "gates": [
+  "citation",
+  "verification",
+  "lint",
+  "repetition",
+  "shape"
+ ],
+ "note": ""
+}

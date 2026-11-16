@@ -1,6 +1,28 @@
 [
  {
   "date": "2026-11-18",
+  "at": "2026-11-16T08:14:33+01:00",
+  "short_day": true,
+  "state": "kwara",
+  "problems": [
+   "threads.text must end with a question the reader can answer in five words (replies are what Threads ranks on)",
+   "fact id typed into the copy: kwara:distress:2, nigeria:rent_relief:1 — ids live only in `claims`, never in words a reader sees"
+  ]
+ },
+ {
+  "date": "2026-11-16",
+  "at": "2026-11-16T08:05:32+01:00",
+  "short_day": true,
+  "state": "cross-river",
+  "problems": [
+   "verifier: legal statement not on the shelf — 'A caution fee protects property from damage. In Cross River, landlords cannot twist it into extra rent or agent payment.'",
+   "verifier: legal statement not on the shelf — 'Caution money sits separate from your rent. Treat it as a deposit for repairs, not a second payment.'",
+   "verifier: legal statement not on the shelf — 'Your caution fee belongs to the landlord as security for damage, not the agent as a hidden commission.'",
+   "verifier: legal statement not on the shelf — 'When you leave without damage, the landlord refunds the caution money without unreasonable delay.'"
+  ]
+ },
+ {
+  "date": "2026-11-18",
   "at": "2026-11-16T01:37:13+01:00",
   "short_day": true,
   "state": "kwara",
@@ -389,23 +411,6 @@
    "verifier: legal statement not on the shelf — 'The receipt must explicitly state the exact amount of rent you have paid. This prevents any dispute over the sum exchang'",
    "verifier: legal statement not on the shelf — \"It must specify the period to which the payment relates, such as 'January to December 2027' or 'first quarter of 2027'. \"",
    "verifier: legal statement not on the shelf — 'The receipt needs to describe the premises and its location, making it clear which property the rent payment is for. (s.'"
-  ]
- },
- {
-  "date": "2026-10-26",
-  "at": "2026-10-26T06:10:52+01:00",
-  "short_day": true,
-  "problems": [
-   "a cited post names the section number (e.g. s.5) in its copy",
-   "short.tips[4].say: no link — the end card carries it"
-  ]
- },
- {
-  "date": "2026-10-28",
-  "at": "2026-10-26T01:38:02+01:00",
-  "short_day": true,
-  "problems": [
-   "verifier: legal statement not on the shelf — 'In Anambra, the law says the receipt is the proof that rent was paid (anambra:receipts:1).'"
   ]
  }
 ]

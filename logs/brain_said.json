@@ -421,5 +421,23 @@
   "tool": "tenancy-agreement",
   "tool_routed": false,
   "news_hook": "Rent relief season: from 2026 tenants deduct 20% of rent (max ₦500,000) — only with a receipt in their name"
+ },
+ {
+  "date": "2026-11-17",
+  "theme": "edo-six-months-no-quit-notice",
+  "headline": "Edo: 6 Months No Quit Notice If You Pay In Advance",
+  "post_type": "state_spotlight",
+  "hook_type": "STAT",
+  "state": "edo",
+  "fact_ids": [
+   "edo:first_six_months:1"
+  ],
+  "recalled": 0,
+  "plate": "keys wooden door",
+  "short": true,
+  "reader": "ngozi",
+  "tool": "notice-to-quit",
+  "tool_routed": false,
+  "news_hook": null
  }
 ]
