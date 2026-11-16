@@ -1,0 +1,146 @@
+# Money — the daily metre: did money come in, and if not, which step is leaking?
+#
+# The dashboard shows what sold when the owner opens it; the weekly scorecard grades the week every
+# Monday. Neither answers the morning question, and neither keeps a day-by-day record. This lane
+# reads the same owner-dashboard API (tools/money.py) once a day, writes `logs/money_ledger.json`,
+# and keeps ONE living issue — the owner's phone view — with three numbers, the stage the money is
+# stuck at, and the single action that moves it.
+#
+# It never posts, never charges, never needs a new secret beyond the dashboard passphrase the
+# scorecard already uses. Reads only; ₦0. A missing passphrase or an unreachable worker is a line
+# saying so in the issue and the run summary — never a red run (the repo's rule: a lane that cannot
+# see says so, it does not pretend to be broken or to be healthy).
+name: Money — the daily metre
+
+on:
+  schedule:
+    - cron: '10 5 * * *'          # 06:10 WAT, before the posting lanes, after the night's sales settle
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Read and report, but write no ledger and commit nothing'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write        # logs/money_ledger.json
+  issues: write          # ONE living issue "💰 Money — daily metre", updated, never multiplied
+
+concurrency:
+  group: docoga-money
+  cancel-in-progress: false
+
+jobs:
+  measure:
+    name: Read the money and name the leak
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      TZ: Africa/Lagos
+      MONEY_DRY_RUN: ${{ inputs.dry_run }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          ref: main
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install what the lane needs (the owner-DM helper uses requests)
+        run: python3 -m pip install --quiet requests
+
+      - name: Pull the money and write the brief
+        id: money
+        env:
+          DOCOGA_ADMIN_PASSPHRASE: ${{ secrets.DOCOGA_ADMIN_PASSPHRASE }}
+          DOCOGA_DAILY_TARGET: ${{ vars.DOCOGA_DAILY_TARGET }}
+        run: |
+          set +e
+          if [ "$MONEY_DRY_RUN" = "true" ]; then
+            python3 tools/money.py pull --dry-run --summary-file /tmp/money.md 2>&1 | tee /tmp/money.log
+          else
+            python3 tools/money.py pull --summary-file /tmp/money.md 2>&1 | tee /tmp/money.log
+          fi
+          # The machine lines are the handoff to the steps below; a renamed key reads as "0".
+          # Written out one by one on purpose: the handoff auditor greps for the producer of every
+          # key a workflow reads, and a loop over "$key" produces no key it can see.
+          echo "MONEY_TODAY=$(sed -n 's/^MONEY_TODAY=//p' /tmp/money.log | tail -1)" >> "$GITHUB_OUTPUT"
+          echo "MONEY_7D=$(sed -n 's/^MONEY_7D=//p' /tmp/money.log | tail -1)" >> "$GITHUB_OUTPUT"
+          echo "MONEY_28D=$(sed -n 's/^MONEY_28D=//p' /tmp/money.log | tail -1)" >> "$GITHUB_OUTPUT"
+          echo "MONEY_TARGET=$(sed -n 's/^MONEY_TARGET=//p' /tmp/money.log | tail -1)" >> "$GITHUB_OUTPUT"
+          echo "MONEY_STAGE=$(sed -n 's/^MONEY_STAGE=//p' /tmp/money.log | tail -1)" >> "$GITHUB_OUTPUT"
+          echo "MONEY_VISITS_PER_DAY=$(sed -n 's/^MONEY_VISITS_PER_DAY=//p' /tmp/money.log | tail -1)" >> "$GITHUB_OUTPUT"
+          [ -s /tmp/money.md ] || echo "_The brief could not be written; see the run log._" > /tmp/money.md
+          cat /tmp/money.md >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+
+      - name: Keep the one money issue current (the owner's phone view)
+        if: ${{ env.MONEY_DRY_RUN != 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set +e
+          [ -s /tmp/money.md ] || { echo "no brief to post"; exit 0; }
+          {
+            echo "_Updated daily 06:10 WAT by the money metre. Latest: $(date +'%d %b %Y') — [run]($RUN_URL)._"
+            echo
+            cat /tmp/money.md
+            echo
+            echo "---"
+            echo "Nothing to tap here. This issue is rewritten each morning, never closed."
+          } > /tmp/issue_body.md
+          gh label create money --color 0b7a3b --description "the daily money metre" --force >/dev/null 2>&1 || true
+          NUM="$(gh issue list --repo "$REPO" --label money --state open --json number,title \
+                 --jq '[.[] | select(.title | startswith("💰 Money"))][0].number' 2>/dev/null)"
+          if [ -n "$NUM" ] && [ "$NUM" != "null" ]; then
+            gh issue edit "$NUM" --repo "$REPO" --body-file /tmp/issue_body.md >/dev/null \
+              || gh api -X PATCH "repos/$REPO/issues/$NUM" -F body=@/tmp/issue_body.md >/dev/null
+            echo "✅ issue #$NUM updated"
+          else
+            gh issue create --repo "$REPO" --title "💰 Money — daily metre" --label money --body-file /tmp/issue_body.md \
+              && echo "✅ money issue opened" \
+              || echo "::warning title=Money issue not created::the brief is still in the run summary"
+          fi
+          exit 0
+
+      # A sale is the one thing worth a phone buzz. Everything else waits for the morning read.
+      - name: Text the owner when money actually came in
+        if: ${{ env.MONEY_DRY_RUN != 'true' && steps.money.outputs.MONEY_TODAY != '0' }}
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        run: |
+          set +e
+          python3 tools/owner_dm.py send --text "💰 DocOga: ₦${{ steps.money.outputs.MONEY_TODAY }} in today (${{ steps.money.outputs.MONEY_STAGE }}). 7 days: ₦${{ steps.money.outputs.MONEY_7D }}. Target ₦${{ steps.money.outputs.MONEY_TARGET }}/day — the brief has today's one action." \
+            2>&1 | tee /tmp/owner_dm.log || true
+          exit 0
+
+      - name: Commit the ledger
+        if: ${{ env.MONEY_DRY_RUN != 'true' }}
+        env:
+          BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set +e
+          [ -e logs/money_ledger.json ] || { echo "no ledger file to commit"; exit 0; }
+          git add logs/money_ledger.json
+          if git diff --staged --quiet; then
+            echo "nothing new to commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -m "Money ledger: $(date +%F) [skip ci]"
+          if ! git pull --rebase --autostash origin "$BRANCH"; then
+            echo "::warning title=Money ledger not committed::could not rebase on $BRANCH — today's row lives only in the run summary"
+            exit 0
+          fi
+          if ! git push origin "HEAD:$BRANCH"; then
+            echo "::warning title=Money ledger not pushed::today's row did not reach $BRANCH"
+            exit 0
+          fi
+          echo "✅ ledger pushed to $BRANCH"
