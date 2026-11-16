@@ -11,6 +11,7 @@ real wolf walks in.
 
 import os
 import sys
+import tempfile
 import unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -156,6 +157,148 @@ class TheRepositoryItself(unittest.TestCase):
         """qa.py treats an empty list as the pass condition, so the CLI has to agree."""
         code = wh.main([os.path.join(ROOT, "..", "definitely-not-a-repo")])
         self.assertEqual(code, 0, "no workflows directory is not a finding; it is nothing to check")
+
+
+
+
+class MachineLines(unittest.TestCase):
+    """Rule 4: a key a workflow pulls out with sed has to be printed by someone.
+
+    The failure is quiet in the wrong direction — an empty string, a ledger entry of `unknown`, a
+    summary line saying "not reported" — and the producer half of it is easy to miss, because this
+    repo prints most of those keys through a shared `machine()` helper that takes them as keyword
+    arguments, so no literal `IG_PERMALINK=` ever appears in a source file. The first version of
+    this rule did not know that idiom and reported two dangling keys in a lane that was printing
+    both of them correctly.
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+
+    def _repo(self, workflow_text, python_text="", shell_text=""):
+        root = os.path.join(self.tmp, "repo")
+        os.makedirs(os.path.join(root, ".github", "workflows"), exist_ok=True)
+        os.makedirs(os.path.join(root, "tools"), exist_ok=True)
+        with open(os.path.join(root, ".github", "workflows", "lane.yml"), "w",
+                  encoding="utf-8") as handle:
+            handle.write(workflow_text)
+        if python_text:
+            with open(os.path.join(root, "tools", "publish.py"), "w", encoding="utf-8") as handle:
+                handle.write(python_text)
+        if shell_text:
+            with open(os.path.join(root, "tools", "publish.sh"), "w", encoding="utf-8") as handle:
+                handle.write(shell_text)
+        return root
+
+    def test_a_key_nobody_prints_is_a_finding(self):
+        root = self._repo("""name: t
+on:
+  workflow_dispatch: {}
+jobs:
+  j:
+    steps:
+      - name: read it back
+        run: |
+          PERMALINK=$(sed -n 's/^IG_PERMALINK=//p' /tmp/post.log | tail -1)
+""", 'print("IG_RESULT=sent")\n')
+        found = wh.audit_machine_lines(root)
+        self.assertEqual([kind for kind, _detail in found], ["machine line with no producer"])
+        self.assertIn("IG_PERMALINK", found[0][1])
+
+    def test_a_key_printed_through_machine_is_not_a_finding(self):
+        """The keyword form is how every lane in this repo actually emits its facts."""
+        root = self._repo("""name: t
+on:
+  workflow_dispatch: {}
+jobs:
+  j:
+    steps:
+      - name: read it back
+        run: |
+          PERMALINK=$(sed -n 's/^IG_PERMALINK=//p' /tmp/post.log | tail -1)
+""", '''def machine(result, cause=None, **extra):
+    print("IG_RESULT=%s" % result)
+    for key, value in extra.items():
+        print("%s=%s" % (key, value))
+
+
+def publish():
+    machine("sent", None, IG_PERMALINK=link)
+''')
+        self.assertEqual(wh.audit_machine_lines(root), [])
+
+    def test_a_key_printed_through_log_is_not_a_finding(self):
+        """`log("KEY=%s")` is the shared logger, and two brain lanes print their keys that way.
+
+        The first version of this rule knew `print` and not `log`, so it indicted both of them.
+        """
+        root = self._repo("""name: t
+on:
+  workflow_dispatch: {}
+jobs:
+  j:
+    steps:
+      - name: read it back
+        run: |
+          WHY=$(sed -n 's/^BRAIN_DEEPDIVE_WHY=//p' /tmp/brain.log | tail -1)
+""", 'def deepdive(log=print):\n    log("BRAIN_DEEPDIVE_WHY=%s" % reason)\n')
+        self.assertEqual(wh.audit_machine_lines(root), [])
+
+    def test_a_machine_call_wrapped_across_lines_is_produced(self):
+        """The keyword form, continued: a regex that stops at the newline sees no keyword at all."""
+        root = self._repo("""name: t
+on:
+  workflow_dispatch: {}
+jobs:
+  j:
+    steps:
+      - name: read it back
+        run: |
+          HOSTED=$(sed -n 's/^IG_REELS_HOSTED=//p' /tmp/probe.log | tail -1)
+          NAME=$(sed -n 's/^IG_USERNAME=//p' /tmp/probe.log | tail -1)
+""", '''def machine(result, cause=None, **extra):
+    print("%s=%s" % (result, cause))
+
+
+def probe(report):
+    machine("probed", None, IG_REELS_READY="yes",
+            IG_REELS_HOSTED="yes" if report.get("hosted") else "no",
+            IG_USER_ID=report["ig_user_id"], IG_USERNAME=report["ig_username"])
+''')
+        self.assertEqual(wh.audit_machine_lines(root), [])
+
+    def test_a_key_a_shell_script_echoes_is_produced(self):
+        """`review_push.sh` prints REVIEW_URL; only .py files were read, so it looked unprinted."""
+        root = self._repo("""name: t
+on:
+  workflow_dispatch: {}
+jobs:
+  j:
+    steps:
+      - name: read it back
+        run: |
+          URL=$(sed -n 's/^REVIEW_URL=//p' /tmp/review_push.log | tail -1)
+""", shell_text='echo "REVIEW_URL=https://github.com/${GITHUB_REPOSITORY}/tree/$BRANCH"\n')
+        self.assertEqual(wh.audit_machine_lines(root), [])
+
+    def test_a_key_a_previous_step_echoed_is_produced(self):
+        root = self._repo("""name: t
+on:
+  workflow_dispatch: {}
+jobs:
+  j:
+    steps:
+      - name: make it
+        run: |
+          echo "REEL_URL=$URL" >> "$GITHUB_ENV"
+      - name: read it
+        run: |
+          sed -n 's/^REEL_URL=//p' /tmp/other.log
+""")
+        self.assertEqual(wh.audit_machine_lines(root), [])
+
+    def test_the_repository_itself_has_no_dangling_machine_lines(self):
+        self.assertEqual(wh.audit_machine_lines(ROOT), [])
 
 
 if __name__ == "__main__":
