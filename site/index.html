@@ -37,7 +37,7 @@
 {"@type":"Question","name":"How much does a lawyer charge for a tenancy agreement in Nigeria?","acceptedAnswer":{"@type":"Answer","text":"Typically ₦20,000 to ₦50,000 or more depending on the state and property. DocOga provides the standard document free, or clean unlimited copies with the ₦2,000 Oga Pass."}},
 {"@type":"Question","name":"What is a caution fee or security deposit?","acceptedAnswer":{"@type":"Answer","text":"A refundable deposit, often 5 to 10 percent of rent, protecting the landlord against damage beyond normal wear and tear. It must be refunded at the end of the tenancy if the property is returned in good condition."}},
 {"@type":"Question","name":"How many months notice to quit in Nigeria?","acceptedAnswer":{"@type":"Answer","text":"It depends on the tenancy type and state law. In Lagos, yearly tenants get 3 months notice and monthly tenants 1 month under the Tenancy Law 2011."}},
-{"@type":"Question","name":"Is DocOga really free?","acceptedAnswer":{"@type":"Answer","text":"Yes. Every tool is free with no signup. Free documents carry a small DocOga watermark; ₦2,000 buys the clean, print-ready document — no watermark, unlimited copies for 30 days."}}
+{"@type":"Question","name":"Is DocOga really free?","acceptedAnswer":{"@type":"Answer","text":"Yes. Every tool is free with no signup. Free documents carry a small watermark; ₦2,000 buys the clean, print-ready copy — no watermark, unlimited for 30 days."}}
 ]}
 </script>
 <style>
@@ -2078,7 +2078,7 @@ const raw=store.getItem(DRAFT_KEY(t)); if(!raw) return;
 const p=JSON.parse(raw);
 const has=Object.values(p||{}).some(v=>v!==''&&v!=null&&!(Array.isArray(v)&&!v.length));
 if(!has) return;
-APPLIERS[t](p); restored=true;
+APPLIERS[t](p); restored=true; TOOL_STARTED[t]=true;
 }catch(e){}
 });
 if(restored) toast('Your unfinished drafts were restored. 📝');
@@ -2184,47 +2184,29 @@ function route(){
   document.querySelectorAll('header nav a').forEach(a=>a.classList.toggle('active',a.getAttribute('href')==='#'+h));
   if(h==='team'||h==='business-setup') bizLoad().then(function(){ if(h==='team') teamPortalRender(); else bizUpdateQuote(); }).catch(function(){});
   window.scrollTo(0,0);
-  try{ updateStickyCta(); }catch(e){}
+  updateStickyCta();
 }
 /* The offer, at the moment the buyer is looking at their own document.
    16 Nov 2026: the ₦2,000 was being sold as "remove the banner" from a comparison table — the
    market pays for the clean document itself (legaldoc.ng ₦5,000; Selar templates ₦5,000–₦15,000),
    so the bar now names the clean copy and its button goes straight to checkout once a document
    exists. No document yet = no pitch on money; just what the pass is. */
-const TOOL_PAGES=['agreement','notice','receipt','invoice','employment','caution','demand',
-  'rentreview','payslip','warning','poa'];
 const TOOL_STARTED={};
-/* "A document exists" = the buyer typed one of their own answers. The template renders its whole
-   boilerplate immediately (blanks and prefilled defaults included), so measuring the preview or
-   counting filled fields would pitch every visitor the instant they open a tool. Typing is the
-   one honest signal, and it survives re-renders. */
-function documentStarted(route){
-  if(TOOL_STARTED[route]) return true;
-  const page=$('page-'+route); if(!page) return false;
-  const typed=page.querySelectorAll('input:not([type]), input[type=text], input[type=tel], input[type=number], input[type=email], input[type=url], textarea');
-  let filled=0;
-  typed.forEach(function(f){ if(f.value && String(f.value).trim()) filled++; });
-  return filled>=3;   // a restored draft: template defaults are at most two fields
-}
-let _stickyState='';
+/* Offered once the buyer has written an answer (or a restored draft): a rendered template is
+   not a document. */
+const STICKY_BASE=function(){ var e=document.getElementById('sticky-cta'); return e?e.innerHTML:''; }();
 function updateStickyCta(){
-  const el=$('sticky-cta'); if(!el) return;
-  if(passActive()||teamActive()){ return; }
+  const el=$('sticky-cta'); if(!el||passActive()||teamActive()) return;
   const route=(location.hash||'#home').slice(1).split('?')[0];
-  const written=TOOL_PAGES.indexOf(route)>=0 && documentStarted(route);
-  const state=written?'written':'browse';
-  if(state===_stickyState) return;
-  _stickyState=state;
-  el.innerHTML=written
-    ? '<span><b>This copy carries a watermark.</b> Get the clean, print-ready document</span>'+
+  el.innerHTML=(RENDERERS[route]&&TOOL_STARTED[route])
+    ? '<span><b>This copy carries a watermark.</b> Get the clean, print-ready copy</span>'+
       '<button class="btn primary sm" onclick="buyPass()">₦2,000 · 30 days</button>'
-    : '<span><b>Clean, signable documents</b> — ₦2,000 · 30 days</span>'+
-      '<a class="btn primary sm" href="#pricing">See what you get</a>';
+    : STICKY_BASE;
 }
 document.addEventListener('input',function(e){
   const t=e.target; if(!t||!t.form) return;
   const r=(location.hash||'#home').slice(1).split('?')[0];
-  if(TOOL_PAGES.indexOf(r)>=0 && t.value && String(t.value).trim()) TOOL_STARTED[r]=true;
+  if(RENDERERS[r] && t.value && String(t.value).trim()) TOOL_STARTED[r]=true;
   updateStickyCta();
 });
 function renderAll(){ renderAgreement(); renderNotice(); renderReceipt(); renderInvoice(); renderEmployment(); renderCaution(); renderDemand(); renderRentReview(); renderPayslip(); renderWarning(); renderPoa(); renderDocs(); updatePassUI(); updateStickyCta(); }
