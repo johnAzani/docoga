@@ -212,6 +212,60 @@ check('all 11 renderers (plus the tenant-reply branch of the rent-review tool an
 check('Oga Pass buy button present and wired',
       !!$(dom, 'buy-btn') && /buyPass\(/.test($(dom, 'buy-btn').getAttribute('onclick') || ''));
 
+/* ---------- the offer, at the moment the document exists (16 Nov 2026) ----------
+   The pass was being sold as "remove the banner" inside a comparison table. The market pays for
+   the clean document itself (legaldoc.ng ₦5,000; Selar templates ₦5,000-₦15,000), so the offer
+   now names the clean copy and switches to a direct checkout once the buyer has written
+   something of their own. Nobody who has not started a document is pitched money. */
+section('offer ladder — sell the clean document, at the moment it exists');
+{
+  const d = boot();
+  const w2 = w(d);
+  await wait(100);
+  const bar = () => $(d, 'sticky-cta');
+  w2.location.hash = '#agreement';
+  w2.dispatchEvent(new w2.Event('hashchange'));
+  check('sticky bar: before a document exists it describes the pass and links to pricing',
+        !!bar() && /#pricing/.test(bar().innerHTML) && !/buyPass\(/.test(bar().innerHTML),
+        bar() && bar().innerHTML.slice(0, 140));
+  check('sticky bar: no cold checkout button while the buyer has written nothing',
+        !!bar() && !bar().querySelector('button'));
+  const setIn = (id, v) => { const el = w2.document.getElementById(id); el.value = v; el.dispatchEvent(new w2.Event('input', { bubbles: true })); };
+  setIn('ll_name', 'Musa Ibrahim');
+  setIn('tt_name', 'Ngozi Okafor');
+  check('sticky bar: once the buyer has written into the document it sells the clean copy',
+        !!bar() && /watermark/i.test(bar().textContent) && /clean/i.test(bar().textContent),
+        bar() && bar().textContent);
+  const barBtn = bar() && bar().querySelector('button');
+  check('sticky bar: the written-document state goes straight to buyPass()',
+        !!barBtn && /buyPass\(/.test(barBtn.getAttribute('onclick') || ''),
+        barBtn && barBtn.getAttribute('onclick'));
+  check('sticky bar: the price is on the button', !!barBtn && /2,000/.test(barBtn.textContent),
+        barBtn && barBtn.textContent);
+  w2.location.hash = '#pricing';
+  w2.dispatchEvent(new w2.Event('hashchange'));
+  check('sticky bar returns to the browse state away from a tool',
+        !/buyPass\(/.test(bar().innerHTML), bar().innerHTML.slice(0, 140));
+  check('the sticky bar is re-evaluated by renderAll and by the router',
+        /updateStickyCta/.test(lex(d, 'renderAll.toString()')) && /updateStickyCta/.test(lex(d, 'route.toString()')));
+  check('a document-level input listener re-evaluates the bar as the buyer types',
+        /document\.addEventListener\('input',[\s\S]{0,400}updateStickyCta/.test(HTML));
+}
+
+/* The watermark is the product now: it must say what the paid copy is. */
+section('watermark names the thing being sold');
+{
+  const banner = lex(dom, 'freeBanner()');
+  check('free banner says the watermark stays on the printed copy', /watermark/i.test(banner), banner.slice(0, 160));
+  check('free banner names the clean document as the paid alternative', /clean document/i.test(banner), banner.slice(0, 160));
+  check('free banner still carries the site address (it is also an ad)', /docoga/i.test(banner));
+  check('pricing copy sells the clean, print-ready copy rather than "banner removal"',
+        /clean, print-ready copy/i.test(priceText) && !/remove this banner|banner-free/i.test(priceText),
+        priceText.replace(/\s+/g, ' ').slice(0, 160));
+  check('pricing subtitle states what the buyer gets to do with it (sign, stamp, send)',
+        /sign, stamp and send/i.test(priceText));
+}
+
 
 section('Power of Attorney (diaspora tool)');
 const POWERS_KEYS = ['poa_k1','poa_k2','poa_k3','poa_k4','poa_k5','poa_k6','poa_k7','poa_k8'];

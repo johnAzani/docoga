@@ -37,7 +37,7 @@
 {"@type":"Question","name":"How much does a lawyer charge for a tenancy agreement in Nigeria?","acceptedAnswer":{"@type":"Answer","text":"Typically ₦20,000 to ₦50,000 or more depending on the state and property. DocOga provides the standard document free, or clean unlimited copies with the ₦2,000 Oga Pass."}},
 {"@type":"Question","name":"What is a caution fee or security deposit?","acceptedAnswer":{"@type":"Answer","text":"A refundable deposit, often 5 to 10 percent of rent, protecting the landlord against damage beyond normal wear and tear. It must be refunded at the end of the tenancy if the property is returned in good condition."}},
 {"@type":"Question","name":"How many months notice to quit in Nigeria?","acceptedAnswer":{"@type":"Answer","text":"It depends on the tenancy type and state law. In Lagos, yearly tenants get 3 months notice and monthly tenants 1 month under the Tenancy Law 2011."}},
-{"@type":"Question","name":"Is DocOga really free?","acceptedAnswer":{"@type":"Answer","text":"Yes. Every tool is free with no signup. Free documents carry a small DocOga banner; the ₦2,000 Oga Pass removes it for 30 days of unlimited clean documents."}}
+{"@type":"Question","name":"Is DocOga really free?","acceptedAnswer":{"@type":"Answer","text":"Yes. Every tool is free with no signup. Free documents carry a small DocOga watermark; ₦2,000 buys the clean, print-ready document — no watermark, unlimited copies for 30 days."}}
 ]}
 </script>
 <style>
@@ -1080,7 +1080,7 @@ body.has-pass .buy-only{display:none !important}
 <!-- ======================= PRICING ======================= -->
 <section id="page-pricing">
 <h2 class="page-title">Simple pricing</h2>
-<p class="page-sub">Free forever for real. Upgrade only when you want clean, banner-free documents.</p>
+<p class="page-sub">Free forever for real. Pay only when you want the <b>clean, print-ready copy</b> you can sign, stamp and send — no DocOga watermark on it.</p>
 <div class="price-grid">
 <div class="price-card">
 <div class="plan">Free</div>
@@ -1092,24 +1092,24 @@ body.has-pass .buy-only{display:none !important}
 <li>Unlimited documents</li>
 <li>Print &amp; save as PDF</li>
 <li>No signup, data stays on your phone</li>
-<li>Small DocOga banner on documents</li>
+<li><b>DocOga watermark</b> on the printed document</li>
 </ul>
 <a class="btn green" style="width:100%;justify-content:center" href="#agreement">Start free</a>
 </div>
 <div class="price-card hot">
 <span class="tag">MOST POPULAR</span>
-<div class="plan">Oga Pass</div>
+<div class="plan">The clean document</div>
 <div class="amount">₦2,000<small> / 30 days</small></div>
-<div class="best-for">Best for landlords, agents &amp; small businesses</div>
-<div class="anchor">A lawyer charges <b>₦20,000–₦50,000</b> for one agreement. One Oga Pass = <b>unlimited clean documents</b> for 30 days.</div>
+<div class="best-for">For the landlord, agent or employer who must hand over a proper document</div>
+<div class="anchor">A lawyer charges <b>₦20,000–₦50,000</b> to draft one agreement. This is the <b>same document, clean</b> — no watermark, ready to print, sign and keep.</div>
 <ul>
 <li>Everything in Free</li>
-<li><b>No DocOga banner or watermark</b></li>
-<li>Unlimited clean PDFs &amp; prints</li>
+<li><b>No DocOga watermark</b> — the copy you sign, stamp and send</li>
+<li>Unlimited clean documents for 30 days</li>
 <li>Priority WhatsApp support</li>
 <li><b>All 11 tools</b> — incl. rent review notices, power of attorney, payslips, warning letters, employment contracts, caution-fee receipts &amp; demand letters</li>
 </ul>
-<button class="btn primary" id="buy-btn" style="width:100%;justify-content:center" onclick="buyPass()">Get Oga Pass — ₦2,000</button>
+<button class="btn primary" id="buy-btn" style="width:100%;justify-content:center" onclick="buyPass()">Get the clean document — ₦2,000</button>
 <div class="flw-badge buy-only"><span class="dot"></span>Secured by Flutterwave · Card · Transfer · USSD</div>
 <p class="guarantee buy-only">Your code appears on screen in ~30 seconds — or WhatsApp us and a human sorts it out.</p>
 <p style="text-align:center;margin-top:8px"><button class="link-btn" onclick="openModal()">Have a code? Activate / extend →</button></p>
@@ -1153,7 +1153,7 @@ body.has-pass .buy-only{display:none !important}
 </div>
 </section>
 
-<div class="sticky-cta no-print" id="sticky-cta"><span><b>Oga Pass</b> — ₦2,000 · 30 days unlimited</span><a class="btn primary sm" href="#pricing">Get the Pass</a></div>
+<div class="sticky-cta no-print" id="sticky-cta"><span><b>Clean, signable documents</b> — ₦2,000 · 30 days</span><a class="btn primary sm" href="#pricing">See what you get</a></div>
 </main>
 
 <footer>
@@ -1271,7 +1271,7 @@ const days=active?Math.ceil((pass.exp-Date.now())/864e5):0;
 document.body.classList.toggle('has-pass', active);
 if(active){ chip.textContent='OGA PASS ✓ '+days+'d'; chip.classList.add('pro'); }
 else { chip.textContent='FREE PLAN'; chip.classList.remove('pro'); }
-const bb=$('buy-btn'); if(bb){ bb.disabled=active; bb.textContent=active?('✓ Pass active — '+days+' day'+(days>1?'s':'')+' of clean documents left'):'Get Oga Pass — ₦2,000'; }
+const bb=$('buy-btn'); if(bb){ bb.disabled=active; bb.textContent=active?('✓ Pass active — '+days+' day'+(days>1?'s':'')+' of clean documents left'):'Get the clean document — ₦2,000'; }
 const ms=$('modal-sub'); if(ms){ ms.textContent=active?('Your pass is active — '+days+'d left. A NEW code adds 30 days on top of your remaining days.'):'Enter the code you received after payment to unlock 30 days of clean, watermark-free documents.'; }
 ['agreement','notice','receipt','invoice','employment','caution','demand','rentreview','payslip','warning'].forEach(renderBadge);
 }
@@ -1320,7 +1320,7 @@ function buyPass(){ trackEvent('pass_checkout_opened',{value:2000, currency:'NGN
    run end-to-end without the customer sending a WhatsApp message. */
 /* shared sheet helpers */
 function sheetClass(){ return passActive()?'sheet':'sheet free'; }
-function freeBanner(){ if(teamActive()) return teamBrandHeader(); return passActive()?'':'<div class="free-banner">Created free with <b>DocOga</b> — '+esc(SITE_URL)+' — Get the Oga Pass to remove this banner.</div>'; }
+function freeBanner(){ if(teamActive()) return teamBrandHeader(); return passActive()?'':'<div class="free-banner">Created free with <b>DocOga</b> — '+esc(SITE_URL)+' — this watermark stays on the copy you print. Get the clean document to remove it.</div>'; }
 function renderBadge(type){ const b=$('badge-'+type); if(!b) return; b.innerHTML = teamActive() ? '<span class="badge team">TEAM · '+esc((team&&team.team&&team.team.name)||'')+'</span>' : (passActive() ? '<span class="badge pro">OGA PASS</span>' : '<span class="badge free">FREE · banner on doc</span>'); }
 
 /* ================= Business team core (Phase 1, 11 Oct 2026) =================
@@ -2184,8 +2184,50 @@ function route(){
   document.querySelectorAll('header nav a').forEach(a=>a.classList.toggle('active',a.getAttribute('href')==='#'+h));
   if(h==='team'||h==='business-setup') bizLoad().then(function(){ if(h==='team') teamPortalRender(); else bizUpdateQuote(); }).catch(function(){});
   window.scrollTo(0,0);
+  try{ updateStickyCta(); }catch(e){}
 }
-function renderAll(){ renderAgreement(); renderNotice(); renderReceipt(); renderInvoice(); renderEmployment(); renderCaution(); renderDemand(); renderRentReview(); renderPayslip(); renderWarning(); renderPoa(); renderDocs(); updatePassUI(); }
+/* The offer, at the moment the buyer is looking at their own document.
+   16 Nov 2026: the ₦2,000 was being sold as "remove the banner" from a comparison table — the
+   market pays for the clean document itself (legaldoc.ng ₦5,000; Selar templates ₦5,000–₦15,000),
+   so the bar now names the clean copy and its button goes straight to checkout once a document
+   exists. No document yet = no pitch on money; just what the pass is. */
+const TOOL_PAGES=['agreement','notice','receipt','invoice','employment','caution','demand',
+  'rentreview','payslip','warning','poa'];
+const TOOL_STARTED={};
+/* "A document exists" = the buyer typed one of their own answers. The template renders its whole
+   boilerplate immediately (blanks and prefilled defaults included), so measuring the preview or
+   counting filled fields would pitch every visitor the instant they open a tool. Typing is the
+   one honest signal, and it survives re-renders. */
+function documentStarted(route){
+  if(TOOL_STARTED[route]) return true;
+  const page=$('page-'+route); if(!page) return false;
+  const typed=page.querySelectorAll('input:not([type]), input[type=text], input[type=tel], input[type=number], input[type=email], input[type=url], textarea');
+  let filled=0;
+  typed.forEach(function(f){ if(f.value && String(f.value).trim()) filled++; });
+  return filled>=3;   // a restored draft: template defaults are at most two fields
+}
+let _stickyState='';
+function updateStickyCta(){
+  const el=$('sticky-cta'); if(!el) return;
+  if(passActive()||teamActive()){ return; }
+  const route=(location.hash||'#home').slice(1).split('?')[0];
+  const written=TOOL_PAGES.indexOf(route)>=0 && documentStarted(route);
+  const state=written?'written':'browse';
+  if(state===_stickyState) return;
+  _stickyState=state;
+  el.innerHTML=written
+    ? '<span><b>This copy carries a watermark.</b> Get the clean, print-ready document</span>'+
+      '<button class="btn primary sm" onclick="buyPass()">₦2,000 · 30 days</button>'
+    : '<span><b>Clean, signable documents</b> — ₦2,000 · 30 days</span>'+
+      '<a class="btn primary sm" href="#pricing">See what you get</a>';
+}
+document.addEventListener('input',function(e){
+  const t=e.target; if(!t||!t.form) return;
+  const r=(location.hash||'#home').slice(1).split('?')[0];
+  if(TOOL_PAGES.indexOf(r)>=0 && t.value && String(t.value).trim()) TOOL_STARTED[r]=true;
+  updateStickyCta();
+});
+function renderAll(){ renderAgreement(); renderNotice(); renderReceipt(); renderInvoice(); renderEmployment(); renderCaution(); renderDemand(); renderRentReview(); renderPayslip(); renderWarning(); renderPoa(); renderDocs(); updatePassUI(); updateStickyCta(); }
 
 (function init(){
   // states select

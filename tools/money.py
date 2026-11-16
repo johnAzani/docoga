@@ -32,6 +32,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 import urllib.error
 import urllib.request
@@ -418,14 +419,79 @@ def required_visits(target, price, conversion=0.01):
 
 # ── the brief ─────────────────────────────────────────────────────────────────────────────
 
-def brief(ledger, today, target=DEFAULT_TARGET, days=14, problems=None):
-    """The markdown the owner reads on his phone: three numbers, the stage, one action, the ledger."""
+def _redact_money(text, target):
+    """Take the naira out of a sentence without gutting it.
+
+    The stage's one action is written with real figures because it is written for the owner. The
+    issue it is published in is public, so in `public` mode each amount becomes words that still
+    mean something: a sum below the daily target is "a small sum", anything at or above it is
+    "the daily target"."""
+    def swap(match):
+        try:
+            value = float(match.group(1).replace(",", ""))
+        except (TypeError, ValueError):
+            return "an amount"
+        per_day = bool(match.group(2))
+        if value >= float(target or 0):
+            return "the daily target"        # "…₦5,000 a day" → "…the daily target"
+        return "a small sum a day" if per_day else "a small sum"
+    return re.sub("\u20a6\\s?([\\d,]+)(\\s+a\\s+day)?", swap, text or "")
+
+
+def brief(ledger, today, target=DEFAULT_TARGET, days=14, problems=None, public=False):
+    """The markdown the owner reads on his phone: three numbers, the stage, one action, the ledger.
+
+    `public=True` renders the same brief with **no naira anywhere**, because this is what the
+    daily workflow publishes in the repository issue. Owner instruction: "Money figures must live
+    in the Telegram DM only, not in the public repo issue." A public issue can still carry the
+    stage, the pass counts and the visits a day — the things that say whether the machine is
+    working — without telling anyone what it earns. Amounts reach the phone through the machine
+    lines (`MONEY_TODAY=…`), which the DM step reads.
+    """
     found = diagnosis(ledger, today, target)
     week, month = found["week"], found["month"]
     per_day = found["visits_per_day"]
     price = found["price"]
     out = ["### 💰 Money — %s" % today, ""]
     day_row = (window(ledger, 1, today) or [{}])[-1]
+    if public:
+        out.append("**Stage: `%s`**" % found["stage"])
+        out.append("")
+        out.append("**Yesterday/today:** %s · %s business teams"
+                   % (_passes(day_row.get("passes")), _fmt(day_row.get("business") or 0)))
+        out.append("**7 days:** %s · %s"
+                   % (_passes(week["passes"]),
+                      ("%s visits a day" % _fmt(per_day)) if per_day is not None else "visits not connected"))
+        out.append("**28 days:** %s" % _passes(month["passes"]))
+        out.append("**Against target:** %s" % ("met" if found["revenue_today"] >= target else "below target"))
+        out.append("")
+        out.append("**Today's one action:** %s" % _redact_money(found["action"], target))
+        out.append("")
+        if per_day is not None:
+            out.append("**The arithmetic:** one pass at 1%% conversion needs **%s visits a day**. "
+                       "This site has **%s**." % (_fmt(required_visits(target, price)), _fmt(per_day)))
+            out.append("")
+        rows = window(ledger, days, today)
+        if rows:
+            out.append("<details><summary>Last %d days</summary>" % len(rows))
+            out.append("")
+            out.append("| day | passes | visits/day |")
+            out.append("|---|---|---|")
+            for row in reversed(rows):
+                out.append("| %s | %s | %s |" % (
+                    row.get("date"), _fmt(row.get("passes")),
+                    _fmt(((row.get("visits_7d") or 0) / 7.0)) if row.get("visits_7d") is not None else "—"))
+            out.append("")
+            out.append("</details>")
+            out.append("")
+        for problem in problems or []:
+            out.append("_Not measured: %s._" % problem)
+        if problems:
+            out.append("")
+        out.append("_Amounts go to the owner's phone, not here. Stage, passes and visits come from the "
+                   "owner dashboard API and Cloudflare Web Analytics; the ledger is "
+                   "`logs/money_ledger.json`._")
+        return "\n".join(out)
     out.append("**Yesterday/today:** ₦%s · %s · %s business teams"
                % (_fmt(found["revenue_today"]), _passes(day_row.get("passes")),
                   _fmt(day_row.get("business") or 0)))
@@ -488,7 +554,10 @@ def main(argv=None):
     sub = parser.add_subparsers(dest="cmd")
 
     p_pull = sub.add_parser("pull", help="read the dashboard and record today")
-    p_pull.add_argument("--summary-file", default="")
+    p_pull.add_argument("--summary-file", default="",
+                        help="public markdown for the repository issue (no naira)")
+    p_pull.add_argument("--owner-file", default="",
+                        help="full markdown with amounts, for the owner's phone only")
     p_pull.add_argument("--dry-run", action="store_true", help="read and print, write nothing")
     p_pull.add_argument("--today", default="", help="override the date (tests)")
 
@@ -510,10 +579,13 @@ def main(argv=None):
                 save_ledger(ledger)
         target = int(os.environ.get("DOCOGA_DAILY_TARGET") or DEFAULT_TARGET)
         found = diagnosis(ledger, today, target)
-        text = brief(ledger, today, target, problems=problems)
+        text = brief(ledger, today, target, problems=problems, public=True)
         if args.summary_file:
             with open(args.summary_file, "w", encoding="utf-8") as handle:
                 handle.write(text + "\n")
+        if args.owner_file:
+            with open(args.owner_file, "w", encoding="utf-8") as handle:
+                handle.write(brief(ledger, today, target, problems=problems) + "\n")
         print(text)
         for line in machine_lines(found):
             print(line)

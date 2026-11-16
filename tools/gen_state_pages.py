@@ -263,9 +263,9 @@ footer{{margin-top:34px;border-top:1px solid #DCE4F0;padding-top:16px;font-size:
 
 <div class="box">
 <h2>Make it in 2 minutes \u2014 free</h2>
-<p>DocOga\u2019s {tool} generator works on your phone: answer simple questions, get a clean, standard Nigerian document. Free version carries a small banner; the Oga Pass (\u20a62,000/30 days) unlocks unlimited clean copies \u2014 all 11 tools.</p>
+<p>DocOga\u2019s {tool} generator works on your phone: answer simple questions, get a clean, standard Nigerian document. Free version carries a small watermark; the Oga Pass (\u20a62,000/30 days) unlocks unlimited clean copies \u2014 all 11 tools.</p>
 <a class="cta" href="https://docoga.com.ng/{hash}">Create your {verb} free \u2192</a>{sample_block}
-<p style="font-size:14.5px;margin-top:2px">Need it clean \u2014 no banner, unlimited copies? <a class="cta2" href="https://docoga.com.ng/#pricing">Get the Oga Pass, \u20a62,000 for 30 days \u2192</a></p>
+<p style="font-size:14.5px;margin-top:2px">Need the clean copy you can sign, stamp and hand over? <a class="cta2" href="https://docoga.com.ng/#pricing">Get the clean document, \u20a62,000 for 30 days \u2192</a></p>
 </div>
 
 <div class="share"><span>Someone in {place} needs this?</span> <a href="https://wa.me/?text={share_text}" target="_blank" rel="noopener" onclick="window.gtag&amp;&amp;gtag('event','share',{{method:'whatsapp',content_type:'page',item_id:'{share_id}'}})">Share on WhatsApp \u2192</a></div>
@@ -292,7 +292,7 @@ footer{{margin-top:34px;border-top:1px solid #DCE4F0;padding-top:16px;font-size:
 </div>
 
 <div class="stickycta">
-<span><b>Oga Pass</b> \u2014 \u20a62,000 \u00b7 30 days \u00b7 all 11 tools \u00b7 no banner</span>
+<span><b>Clean document</b> \u2014 \u20a62,000 \u00b7 30 days \u00b7 all 11 tools \u00b7 no watermark</span>
 <a href="https://docoga.com.ng/#pricing">Get the Pass</a>
 </div>
 <script src="/analytics-consent.js" data-track-page="true" defer></script>
@@ -880,7 +880,7 @@ def main():
     print(f"sitemap: +{len(missing)} URLs ({len(sitemap_add)} state pages); lastmod set on {len(sitemap_add)}; newest {max(dates.values())}")
 
     s = io.open('site/index.html', encoding='utf-8').read()
-    anchor = '''    <p>DocOga puts a standard, fill-in-the-blanks document generator in every pocket — from Lagos to Kano to Port Harcourt. Answer simple questions, and your document is ready to print, save as PDF, or share on WhatsApp. The free version carries a small DocOga banner; the <b>Oga Pass (₦2,000)</b> removes it and unlocks unlimited clean copies for 30 days.</p>
+    anchor = '''    <p>DocOga puts a standard, fill-in-the-blanks document generator in every pocket — from Lagos to Kano to Port Harcourt. Answer simple questions, and your document is ready to print, save as PDF, or share on WhatsApp. The free version carries a small DocOga watermark; <b>₦2,000</b> buys the clean, print-ready copy — no watermark, unlimited copies for 30 days.</p>
   </div>'''
     links = ' · '.join(f'<a href="tenancy-agreement-{k}.html">{st["name"]}</a>' for k, st in STATES.items())
     if 'State guides' not in s:
