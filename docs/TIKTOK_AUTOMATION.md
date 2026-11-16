@@ -142,3 +142,81 @@ from `status`: `TIKTOK_CONNECTED=yes|no`, `TIKTOK_BOX=sealed <date>|absent`.
 A Direct Post audit (so the tap disappears) needs a demo video of the app's UI showing the
 creator-info call, the privacy picker with no default, the commercial-content toggle and a
 preview — a web page, not a cron. Not ₦0 in hours; parked.
+
+---
+
+# The Content Posting API audit — the application, written out (16 Nov 2026)
+
+The audit is **free** and it is the difference between a draft that waits in your inbox for a
+human tap and a caption-carrying public post. Nothing in `tools/tiktok_draft.py` has to change
+until it is granted; this page exists so the five minutes of form-filling are the only work.
+
+## Why it is worth the five minutes
+
+| | unaudited today | audited |
+|---|---|---|
+| Direct Post (`video.publish`) | forced `SELF_ONLY` — a private video on your own account, error `unaudited_client_can_only_post_to_private_accounts` | public, with `post_info.title` (the caption) and `video_cover_timestamp_ms` (the cover) |
+| Inbox upload (`video.upload`) | works: a draft notification, ≤5 pending per 24 h, **you** tap Post and paste the caption | unchanged, still available as the fallback |
+| Owner work per post | one tap + one paste | none |
+
+TikTok is the only platform in the plan with 47.8M Nigerian adults, +43.4% year on year, and an
+algorithm that does not require followers. The lane is already built and the renders already
+exist — the audit removes the human step, not the content step.
+
+## Step 1 — the portal
+
+TikTok for Developers → **My apps** → `DocOga` (the app whose key/secret are in
+`TIKTOK_CLIENT_KEY` / `TIKTOK_CLIENT_SECRET`) → **Content Posting API** → **Apply for audit**.
+
+## Step 2 — the answers, verbatim
+
+**What does your integration do?**
+> DocOga publishes its own educational videos about Nigerian tenancy and property documents.
+> The videos are rendered by our own pipeline from our own scripts; no third-party content, no
+> user-uploaded video, no other creators' accounts. One account is posted to: @docoga.ng, the
+> brand's own account. The integration is operated by the brand itself, not on behalf of users.
+
+**Who are your users?**
+> One: the brand's own account. This is not a multi-tenant tool. There is no creator login,
+> no OAuth flow exposed to the public, and no user content.
+
+**How is content created and scheduled?**
+> A nightly pipeline renders a 9:16 MP4 (our own motion graphics + our own synthesised
+> narration, no licensed music) and uploads it to the account's inbox or posts it directly with
+> a prepared caption. Posting runs once a day, from our own CI, through the Content Posting API.
+
+**What will you do with Direct Post?**
+> Publish our own videos publicly with a caption and a cover timestamp. We do not modify,
+> re-upload or repost other people's content, and we do not post commercial content on behalf of
+> advertisers.
+
+**Terms of Service URL:** `https://docoga.com.ng/terms.html`
+**Privacy Policy URL:** `https://docoga.com.ng/privacy.html`
+**Website:** `https://docoga.com.ng`
+
+## Step 3 — the demo video (this is what gets rejected)
+
+TikTok wants to *see* the posting flow. Record the phone screen, 40–60 seconds, no narration
+needed, and show exactly these four things in this order:
+
+1. Open the TikTok app → **Inbox** → the draft notification from DocOga (this is the live
+   `video.upload` path working today).
+2. Open the draft → the caption is visible → **Post**. (Proves the content and the account.)
+3. Switch to a screen recording of the **privacy picker** with *no default selected* — the audit
+   reviewers look for a forced public post; ours never preselects.
+4. The **commercial-content toggle** (off — this is not paid promotion) and the **preview**
+   screen before publishing.
+
+If any of those four is missing, the application is refused with a form letter and the five
+minutes become a week. Record in one take; the app does not care about production values.
+
+## Step 4 — after approval (a code change, prepared)
+
+When the audit is granted, `tools/tiktok_draft.py` gains a `--direct` mode: `POST
+/v2/post/publish/video/init/` with `post_info.title` (the caption from `tools/reel_caption.py
+--platform tiktok`), `post_info.privacy_level=PUBLIC_TO_EVERYONE`, `post_info.disable_comment=false`,
+and `video_cover_timestamp_ms` from the cover the renderer already picks. The inbox lane stays
+as the fallback for the days TikTok's `reached_active_user_cap` fires.
+
+**Until then the lane is not broken, it is manual** — and it is still the cheapest reach in the
+plan, because the drafts land for free.

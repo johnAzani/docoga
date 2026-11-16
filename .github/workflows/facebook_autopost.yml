@@ -23,10 +23,10 @@ name: Facebook Page Autopost
 # A Reels lane rides this same job (Mon + Thu): the three-phase `video_reels`
 # protocol, publishing the very file the YouTube lane renders from the same
 # date-seeded rotation, because a plain Page video post only reaches roughly the
-# follower count while a Reel reaches the Reels surface. It ships defaulted to
-# `probe` (open and abandon an upload session — the only Reels check that
-# publishes nothing) and becomes `on` with one repository variable, `FB_REELS`.
-# See FACEBOOK_AUTOMATION.md §9.
+# follower count while a Reel reaches the Reels surface. It runs `on` by default
+# since 16 Nov 2026 (it was `probe` — open and abandon an upload session, i.e.
+# publish nothing — for the four weeks the Page earned nothing); `FB_REELS=off`
+# is the kill switch and `FB_REELS=probe` restores the old behaviour.
 #
 # The day after a Deep-Dive goes public, the daily post is the episode itself —
 # the banked 16:9 master from the repo's release through `/{page}/videos` (every
@@ -118,11 +118,15 @@ env:
   # the day Meta sunsets one, the fix is one line in Settings → Actions →
   # Variables (`META_GRAPH_VERSION = v27.0`), not a commit and a deploy.
   META_GRAPH_VERSION: ${{ vars.META_GRAPH_VERSION || 'v26.0' }}
-  # The Reels lane's mode: `probe` (default), `on`, `off`. A variable rather than
-  # a secret because it is not sensitive, and rather than a commit because the
-  # owner should be able to switch the lane on the morning they read a green
-  # probe line, in Settings → Actions → Variables.
-  REELS_MODE: ${{ vars.FB_REELS || 'probe' }}
+  # The Reels lane's mode: `on` (default), `probe`, `off`. Owner, 16 Nov 2026:
+  # "Do all" — the lane had published nothing since 22 Oct because the default was
+  # `probe`, i.e. it opened a `video_reels` session and abandoned it every Mon/Thu
+  # while the platform it reaches is 46M Nigerians and 73% of the country's social
+  # traffic. The grant is proven (public Reels on 15, 20 and 22 Oct; the probe has
+  # been green since), so `on` is now the default and `FB_REELS=off` is the kill
+  # switch — no commit needed to stop it, and Settings → Actions → Variables still
+  # overrides this line in either direction.
+  REELS_MODE: ${{ vars.FB_REELS || 'on' }}
   # Stories: `on` (default) / `off`. The tray is the guard, not a file.
   STORIES_MODE: ${{ vars.FB_STORIES || 'on' }}
   # Instagram Reels ride this lane too (owner, 16 Oct 2026: "what about reals" — at ₦0).

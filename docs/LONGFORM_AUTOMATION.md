@@ -199,6 +199,47 @@ says so in the report; everything above still lands. To add it: re-mint `YT_REFR
 that scope ticked alongside `youtube.upload` + `youtube.readonly` (same consent flow as
 `docs/LAUNCH_SEQUENCE.md` step 3), paste the new token into the secret. Nothing else changes.
 
+## The search lane — what to make next (16 Nov 2026)
+
+The queue used to be an idea list. Eight Deep-Dives were titled like essays
+("Caution Fee in Nigeria: The Only 4 Deductions a Landlord Can Make") and the
+channel earned 279 impressions in 90 days, because nobody searches for an essay
+title and YouTube matches the first words of the title.
+
+`tools/yt_search_lane.py` turns that around at ₦0. It reads `logs/search_console.json`
+— the queries Google showed docoga.com.ng for in the last 28 days — and proposes the
+videos that answer them:
+
+```
+python3 tools/yt_search_lane.py --print    # the brief, as a table
+python3 tools/yt_search_lane.py --write    # logs/yt_search_lane.json (committed)
+python3 tools/yt_search_lane.py --check    # CI: shape + duplicates, no network
+```
+
+**Why Search Console, of all data sources?** Because it is the only one in the repo
+that records somebody *wanting* something: a query with impressions and a position
+of 9–11 means Google already decided the page answers it and a competitor is not
+strong enough to own it. A video for the same phrase is a second surface on demand
+that is already proven — no audience research, no keyword tool, no spend.
+
+The rules it enforces (and `tools/qa.py` fails the build on):
+
+| rule | why |
+|---|---|
+| the query opens the title | YouTube matches the first words; anything else cannot be found |
+| the year is in the title | the audience searches "2026", and a year dates the video as current |
+| ≤ 70 characters | mobile truncates around there, and the hook dies after it |
+| the page's `<h1>` supplies the hook | the page already says why it exists; the video should say the same |
+| one video per page | two videos for one page compete with each other |
+| no topic already covered | `episodes/*/episode.json` + `logs/youtube_longform.json` are the record |
+| no fragments | `kano`, `portharcourt`, `in plateau state` are real Search Console rows and useless titles |
+
+The brief is a *proposal*, not a render: it does not touch `episodes/queue.json`,
+YouTube, or the ledger. Turning a candidate into an episode is still the existing
+Deep-Dive path (an `episodes/<id>/episode.json` plus a queue entry), which is
+deliberate — a machine that publishes un-reviewed legal video on its own is a worse
+idea than a machine that says which five videos are worth making.
+
 ## What is intentionally not done
 
 - **No b-roll.** Stills with camera drift, grain, the left gradient and the caption line —
