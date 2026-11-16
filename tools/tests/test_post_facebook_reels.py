@@ -494,6 +494,20 @@ class ReelDayRuleTests(unittest.TestCase):
         self.assertEqual(decided["exit"], 4)
         self.assertIn("REELS_MODE", decided["reason"])
 
+    def test_the_workflow_runs_the_lane_on_by_default(self):
+        """Owner, 16 Nov 2026: "Do all". Until today the workflow defaulted to `probe`,
+        so every Mon/Thu opened a `video_reels` session and abandoned it — a lane that
+        looked alive in the Actions list while publishing nothing, on the platform that is
+        73% of Nigeria's social traffic. The grant is proven (public Reels on 15/20/22 Oct),
+        so `on` is the default and the variable is the kill switch."""
+        workflow = (Path(__file__).resolve().parents[2] /
+                    ".github" / "workflows" / "facebook_autopost.yml").read_text(encoding="utf-8")
+        self.assertIn("REELS_MODE: ${{ vars.FB_REELS || 'on' }}", workflow)
+        self.assertNotIn("vars.FB_REELS || 'probe'", workflow)
+        # Still a switch, in both directions, without a commit.
+        self.assertIn("FB_REELS=off", workflow)
+        self.assertIn("FB_REELS=probe", workflow)
+
     def test_probe_mode_is_the_default(self):
         with patch.dict(os.environ, {}, clear=True):
             self.assertEqual(facebook_reel_daily.mode_from_env(), "probe")

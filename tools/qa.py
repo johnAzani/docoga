@@ -343,6 +343,16 @@ _og = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "og_images.py"
 check("every public page has an og:image that exists (WhatsApp/Facebook/Threads link previews)", _og.returncode == 0,
       (_og.stdout.strip().splitlines() or [""])[0])
 
+# 11f. The YouTube search lane (16 Nov 2026). Eight Deep-Dives were titled like essays and the
+# channel had 279 impressions in 90 days; a video is worth making when somebody already searched
+# it. tools/yt_search_lane.py derives the next videos from logs/search_console.json (real queries
+# the site appears for) and refuses essay shapes: the query opens the title, the year is in it,
+# nothing over 70 characters, no two candidates alike, no topic already published.
+_ysl = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "yt_search_lane.py"), "--check"],
+                      capture_output=True, text=True)
+check("the next videos are titled the way people search (yt_search_lane: query first, year, no duplicates)",
+      _ysl.returncode == 0, (_ysl.stdout.strip().splitlines() or [""])[-1])
+
 print("── 12. Hosting is Cloudflare Pages (Netlify retired 3 Oct 2026) ──")
 # The owner moved hosting off Netlify entirely. These three checks exist because
 # the failure mode is silent: a re-added netlify.toml, or a doc that still says

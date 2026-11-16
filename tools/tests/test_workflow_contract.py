@@ -1283,13 +1283,19 @@ class FacebookReelsContractTests(unittest.TestCase):
         self.assertIn("skip=yes", str(step["run"]),
                       "a skip must be a step output, so the render step can stand down")
 
-    def test_the_mode_is_a_variable_whose_default_publishes_nothing(self):
+    def test_the_mode_is_a_variable_and_publishes_by_default_since_16_nov_2026(self):
+        """It shipped defaulted to `probe` on 16 Oct 2026 — the spelling of `upload_phase`
+        nobody had probed yet. By 22 Oct the probe was green and the lane had published
+        public Reels (logs/facebook_reels.json), and then it sat in `probe` for four weeks
+        while the Page earned nothing. Owner instruction, 16 Nov 2026: "Do all" — the lane
+        runs `on` by default, `FB_REELS` is the switch in both directions, and the script's
+        own default stays `probe` so a laptop or a dry run still publishes nothing."""
         env = self.job.get("env") or self.doc.get("env") or {}
-        self.assertEqual(env.get("REELS_MODE"), "${{ vars.FB_REELS || 'probe' }}",
-                         "on by default would mean the first-ever reel is published by an "
-                         "unattended run, on a spelling of upload_phase nobody has probed yet")
+        self.assertEqual(env.get("REELS_MODE"), "${{ vars.FB_REELS || 'on' }}",
+                         "the lane must be live: a probe publishes nothing")
         script = (ROOT / "scripts" / "facebook_reel_daily.py").read_text(encoding="utf-8")
-        self.assertIn('"probe"', script, "the script's default must match the workflow's")
+        self.assertIn('"probe"', script, "the script's own default must still publish nothing")
+        self.assertIn("FB_REELS=off", self.text, "there must be a kill switch that needs no commit")
 
     def test_contents_write_is_spent_on_exactly_one_path(self):
         self.assertEqual((self.doc.get("permissions") or {}).get("contents"), "write")
