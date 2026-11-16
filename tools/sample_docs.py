@@ -408,6 +408,58 @@ PAYSLIP = [
 ]
 
 
+# 16 Nov 2026 (money-only build): the Power of Attorney page has sat on page one for weeks with
+# impressions and no clicks (pos 5.2, 46 impressions, 0 clicks in the 16 Nov pull) and was the one
+# tool page with no sample to read and download. This is the generator's deed (site/index.html,
+# renderPoa) for the common diaspora case — a donor abroad appointing a relative to manage a let
+# property — with the sale power deliberately not granted (the page's own advice: keep it narrow).
+POWER_OF_ATTORNEY = [
+    ("h", "DEED OF POWER OF ATTORNEY"),
+    ("p", "Made this [12th day of January 2027] · Governed by the laws of [Lagos State]"),
+    ("p", "THIS DEED OF POWER OF ATTORNEY is made the day and year first above written."),
+    ("p", "BY [DONOR'S FULL NAME] of [donor's address abroad, e.g. 14 Example Road, London, United Kingdom], "
+          "[occupation] (ID: [international passport number]) (hereinafter called \u201cthe Donor\u201d, which expression "
+          "shall where the context admits include the Donor's personal representatives);"),
+    ("p", "IN FAVOUR OF [DONEE'S FULL NAME] of [donee's address in Nigeria], [sister] of the Donor (ID: [NIN or "
+          "passport number]) (hereinafter called \u201cthe Donee\u201d or \u201cthe Attorney\u201d)."),
+    ("p", "WHEREAS the Donor is entitled to the property situate at [3-bedroom flat, Block B, 12 Example Street, "
+          "Surulere, Lagos] (hereinafter called \u201cthe Property\u201d);"),
+    ("p", "AND WHEREAS the Donor is presently resident outside Nigeria and is desirous of appointing the Donee to act "
+          "for and in the name of the Donor in respect of the Property upon the terms hereinafter contained;"),
+    ("p", "NOW THIS DEED WITNESSETH that the Donor hereby APPOINTS the Donee to be the true and lawful Attorney of the "
+          "Donor, for the Donor and in the Donor's name, to do the following acts and things:"),
+    ("c", 1, "POWERS GRANTED", "(a) Manage, supervise and maintain the property. (b) Let or lease the property and sign "
+     "tenancy agreements. (c) Demand, collect and recover rent and rent arrears, and issue receipts. (d) Institute, "
+     "conduct or defend legal proceedings in the name of the Donor. (e) Execute, stamp and register documents at the "
+     "Lands Registry. (f) Pay rates, taxes, ground rent, levies and service charges."),
+    ("c", 2, "PURPOSE", "The authority hereby conferred is given for the following purpose and no other: [the letting "
+     "and management of the Property while the Donor is resident abroad]."),
+    ("c", 3, "LIMITATION \u2014 THIS IS NOT A TRANSFER OF OWNERSHIP", "This Deed authorises the Donee to deal with the "
+     "Property on the Donor's behalf. It does not convey, assign or transfer any estate or interest in land to the "
+     "Donee. Ownership passes only by a duly executed and registered instrument. The Donee shall not use this Deed "
+     "for any purpose outside the powers granted above."),
+    ("c", 4, "DURATION", "This Power of Attorney shall remain in force until [31 December 2028], unless earlier revoked "
+     "in writing by the Donor."),
+    ("c", 5, "GOVERNING LAW", "This Deed is executed in Nigeria and shall be governed by and construed in accordance "
+     "with the laws of [Lagos State] and the laws of the Federal Republic of Nigeria."),
+    ("p", "IN WITNESS WHEREOF the parties have hereunto set their hands the day and year first above written."),
+    ("sig", ["[Donor's full name] \u2014 the Donor \u2014 signature",
+             "[Donee's full name] \u2014 the Donee \u2014 signature",
+             "[Witness] \u2014 name, address, signature",
+             "Notary Public \u2014 notarial attestation \u2014 seal"]),
+    ("p", "BEFORE YOU SIGN \u2014 EXECUTION AND REGISTRATION. 1. Sign and witness; where the Donor is illiterate or blind, the "
+          "document must be attested by a judge, magistrate, JP, Notary Public or Commissioner for Oaths. 2. Register "
+          "it if it concerns land: a power of attorney authorising any person to deal with land must be delivered to "
+          "the appropriate Lands Registry \u2014 in Ojugbele v. Olasoji (1982) SC 71 the Supreme Court held that a "
+          "registrable power of attorney which is not registered is inadmissible as evidence. 3. Stamp it: stamp duty "
+          "is payable before the instrument can be used in evidence. 4. For use outside Nigeria, attest before a Notary "
+          "Public and, where required, authenticate at the Ministry of Foreign Affairs and legalise at the embassy \u2014 "
+          "Nigeria is not a party to the Hague Apostille Convention, so consular legalisation, not apostille, is the "
+          "route. 5. No sale power is granted above: a sale needs a Deed of Assignment and, by section 22 of the Land "
+          "Use Act, the Governor's Consent \u2014 an \u201cirrevocable\u201d power of attorney is not a substitute for either."),
+]
+
+
 SAMPLES = {
     "tenancy-agreement-sample-nigeria": ("Tenancy Agreement — sample (Nigeria)", TENANCY_AGREEMENT),
     "rent-receipt-sample-nigeria": ("Rent Receipt — sample (Nigeria)", RENT_RECEIPT),
@@ -420,6 +472,7 @@ SAMPLES = {
     "query-letter-reply-nigeria": ("Reply to a Query — employee's sample (Nigeria)", QUERY_REPLY),
     "warning-letter-sample-nigeria": ("Warning Letter — sample (Nigeria)", WARNING_LETTER),
     "payslip-sample-nigeria": ("Payslip — sample (Nigeria, 2026 PAYE)", PAYSLIP),
+    "power-of-attorney-sample-nigeria": ("Deed of Power of Attorney — sample (Nigeria)", POWER_OF_ATTORNEY),
 }
 
 

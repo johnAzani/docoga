@@ -287,6 +287,42 @@ class PageTests(unittest.TestCase):
         import growth
         self.assertTrue(growth.MONEY_PAGE.search("https://docoga.com.ng/query-letter-sample-nigeria"))
 
+    def test_the_power_of_attorney_page_opens_with_the_generators_deed_and_its_free_pdf(self):
+        """16 Nov 2026: the one tool page with no sample — page one for weeks (pos 5.2, 46 impressions,
+        0 clicks). The deed first, the sale power left out, the law the generator prints kept word for word."""
+        html = (SITE / "power-of-attorney-nigeria.html").read_text(encoding="utf-8")
+        self.assertLess(html.index("DEED OF POWER OF ATTORNEY"), html.index("First, the one thing a power of attorney does"),
+                        "the deed comes before the explanation — answer first")
+        self.assertIn('href="https://docoga.com.ng/samples/power-of-attorney-sample-nigeria.pdf" download', html)
+        self.assertIn('href="https://docoga.com.ng/#poa"', html)
+        flat = re.sub(r"\s+", " ", html)
+        self.assertNotIn("Sell, assign or transfer the property", flat.split("First, the one thing")[0],
+                         "the sample grants no sale power — the page's own advice")
+        for needle in ("Ojugbele v. Olasoji (1982) SC 71", "section 22 of the Land Use Act",
+                       "not a party to the Hague Apostille Convention", "inadmissible as evidence"):
+            self.assertIn(needle, flat, needle)
+        for invented in ("Chinedu", "Adebayo", "Mr ", "Mrs "):
+            self.assertNotIn(invented, flat.split("First, the one thing")[0], "no invented names in a sample")
+        # the sample is the generator's deed: the six granted powers and the fixed clauses are renderPoa's words
+        index_html = (SITE / "index.html").read_text(encoding="utf-8")
+        index = re.sub(r"<[^>]+>", "", index_html)
+        for sentence in ("Manage, supervise and maintain the property", "Let or lease the property and sign tenancy agreements",
+                         "Demand, collect and recover rent and rent arrears, and issue receipts",
+                         "Institute, conduct or defend legal proceedings in the name of the Donor",
+                         "Execute, stamp and register documents at the Lands Registry",
+                         "Pay rates, taxes, ground rent, levies and service charges",
+                         "It does", "convey, assign or transfer any estate or interest in land to the Donee",
+                         "The Donee shall not use this Deed for any purpose outside the powers granted above",
+                         "is desirous of appointing the Donee to act for and in the name of the Donor in respect of the Property"):
+            self.assertIn(sentence, index, sentence)
+            self.assertIn(sentence, flat, sentence)
+        pdf = pdf_text(sample_docs.render_pdf("power-of-attorney-sample-nigeria"))
+        self.assertIn("DEED OF POWER OF ATTORNEY", pdf)
+        self.assertIn("LIMITATION - THIS IS NOT A TRANSFER OF OWNERSHIP", pdf)
+        import growth
+        self.assertTrue(growth.MONEY_PAGE.search("https://docoga.com.ng/power-of-attorney-nigeria"),
+                        "a page with a paid generator on it is a money page")
+
     def test_the_payslip_page_shows_computed_figures_and_the_2026_rules_with_their_sections(self):
         """12 Nov 2026 (third money-only build): the last tool with no page. The figures are arithmetic the
         reader can check; NHF is voluntary for private-sector staff since the 2023 Act, not the 2025 one."""
