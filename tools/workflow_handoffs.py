@@ -7,7 +7,7 @@ invisible to any test that exercises one half alone. It is how Telegram's day-de
 in jq), and it is how the token vault on 13 Oct 2026 produced a box that `open` read perfectly and
 the publisher then sent as a bearer token — a broken day 2, with every single-verb test green.
 
-Three rules:
+Four rules:
 
 1. **A `$GITHUB_ENV` write read in the same step.** Actions assembles the environment *between*
    steps, so `echo "X=…" >> "$GITHUB_ENV"` followed by `$X` in the same `run:` block reads empty.
@@ -19,6 +19,9 @@ Three rules:
    (`X=v gh …`, including one continued with `\\`).
 3. **`${{ steps.<id>.outputs.<name> }}` that no step writes.** A typo'd id or key becomes the empty
    string rather than an error, so the consumer sees "nothing" while the producer looks successful.
+4. **A `sed -n 's/^KEY=//p'` in a workflow reading a machine line nothing prints.** The same class
+   one layer down: sed answers with the empty string, the ledger records `unknown`, the summary says
+   "not reported", and a lane that worked is indistinguishable from one that half-worked forever.
 
 The checker's precision matters as much as its rules: matching `$X` inside `${X_OUT}`, or failing to
 see an inline assignment continued across a backslash, fires on every lane at once and teaches
@@ -46,8 +49,14 @@ CALLER = re.compile(r"(?:^|[\s|;&(])(?:command\s+)?(?:gh|jq|python3?)\b")
 # and `IG_MEDIA_ID` as dangling in a lane that printed both correctly, and a checker that indicts
 # working code is worse than one that misses a bug.
 SED_READ = re.compile(r"""sed -n 's/\^([A-Z][A-Z0-9_]*)=""")
-PRINTED = re.compile(r"""(?:print\(\s*f?["']|echo\s+(?:-[ne]+\s+)*["']|printf\s+(?:-n\s+)?["'])([A-Z][A-Z0-9_]*)=""")
-MACHINE_CALL = re.compile(r"machine\(([^)\n]*)\)")
+# `print(...)` and the shared `log(...)` are how Python lanes print; echo/printf are how the shell
+# ones do it. `log` was missing from the first version of this rule, which indicted two brain lanes
+# that print their keys correctly — a checker that cries wolf on working code gets switched off,
+# and then the real dangling read walks in.
+PRINTED = re.compile(
+    r"""(?:(?:print|log)\(\s*f?["']|echo\s+(?:-[ne]+\s+)*["']|printf\s+(?:-n\s+)?["'])"""
+    r"""([A-Z][A-Z0-9_]*)=""")
+MACHINE_OPEN = re.compile(r"\bmachine\(")
 MACHINE_KW = re.compile(r"\b([A-Z][A-Z0-9_]+)=")
 
 
@@ -154,16 +163,39 @@ def audit_text(text, label=""):
     return problems
 
 
-def _python_files(root):
+def _source_files(root):
+    """The files a machine line can be printed from: Python and shell, in tools/ and scripts/."""
     for sub in ("tools", "scripts"):
         directory = os.path.join(root, sub)
         if not os.path.isdir(directory):
             continue
         for name in sorted(os.listdir(directory)):
-            if name.endswith(".py"):
-                path = os.path.join(directory, name)
-                with open(path, encoding="utf-8") as handle:
-                    yield path, handle.read()
+            if not name.endswith((".py", ".sh")):
+                continue
+            path = os.path.join(directory, name)
+            with open(path, encoding="utf-8", errors="replace") as handle:
+                yield path, handle.read()
+
+
+def _machine_arguments(text):
+    """The argument list of every `machine(...)` call, including calls split across lines.
+
+    The lanes wrap these calls (`machine("sent", None, IG_REELS_READY=…, IG_USERNAME=…`) and a
+    regex that stops at the first newline or `)` sees only the first keyword — or none at all,
+    which is how `IG_REELS_HOSTED` and `IG_USERNAME` were reported as printed by nothing.
+    """
+    for match in MACHINE_OPEN.finditer(text):
+        depth, index = 0, match.end() - 1
+        while index < len(text):
+            char = text[index]
+            if char == "(":
+                depth += 1
+            elif char == ")":
+                depth -= 1
+                if depth == 0:
+                    yield text[match.end():index]
+                    break
+            index += 1
 
 
 def audit_machine_lines(root):
@@ -186,10 +218,10 @@ def audit_machine_lines(root):
         for key in SED_READ.findall(text):
             read.setdefault(key, set()).add(name)
         produced.update(PRINTED.findall(text))   # some keys are echoed by an earlier step
-    for _path, text in _python_files(root):
+    for _path, text in _source_files(root):
         produced.update(PRINTED.findall(text))
-        for call in MACHINE_CALL.findall(text):
-            produced.update(MACHINE_KW.findall(call))
+        for arguments in _machine_arguments(text):
+            produced.update(MACHINE_KW.findall(arguments))
     return [("machine line with no producer",
              "%s read by %s with `sed -n 's/^%s=//p'` matches nothing any file prints — the read "
              "yields an empty string, so print it or pass it to `machine()`" % (

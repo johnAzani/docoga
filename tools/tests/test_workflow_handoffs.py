@@ -175,7 +175,7 @@ class MachineLines(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.mkdtemp()
 
-    def _repo(self, workflow_text, python_text=""):
+    def _repo(self, workflow_text, python_text="", shell_text=""):
         root = os.path.join(self.tmp, "repo")
         os.makedirs(os.path.join(root, ".github", "workflows"), exist_ok=True)
         os.makedirs(os.path.join(root, "tools"), exist_ok=True)
@@ -185,6 +185,9 @@ class MachineLines(unittest.TestCase):
         if python_text:
             with open(os.path.join(root, "tools", "publish.py"), "w", encoding="utf-8") as handle:
                 handle.write(python_text)
+        if shell_text:
+            with open(os.path.join(root, "tools", "publish.sh"), "w", encoding="utf-8") as handle:
+                handle.write(shell_text)
         return root
 
     def test_a_key_nobody_prints_is_a_finding(self):
@@ -222,6 +225,60 @@ jobs:
 def publish():
     machine("sent", None, IG_PERMALINK=link)
 ''')
+        self.assertEqual(wh.audit_machine_lines(root), [])
+
+    def test_a_key_printed_through_log_is_not_a_finding(self):
+        """`log("KEY=%s")` is the shared logger, and two brain lanes print their keys that way.
+
+        The first version of this rule knew `print` and not `log`, so it indicted both of them.
+        """
+        root = self._repo("""name: t
+on:
+  workflow_dispatch: {}
+jobs:
+  j:
+    steps:
+      - name: read it back
+        run: |
+          WHY=$(sed -n 's/^BRAIN_DEEPDIVE_WHY=//p' /tmp/brain.log | tail -1)
+""", 'def deepdive(log=print):\n    log("BRAIN_DEEPDIVE_WHY=%s" % reason)\n')
+        self.assertEqual(wh.audit_machine_lines(root), [])
+
+    def test_a_machine_call_wrapped_across_lines_is_produced(self):
+        """The keyword form, continued: a regex that stops at the newline sees no keyword at all."""
+        root = self._repo("""name: t
+on:
+  workflow_dispatch: {}
+jobs:
+  j:
+    steps:
+      - name: read it back
+        run: |
+          HOSTED=$(sed -n 's/^IG_REELS_HOSTED=//p' /tmp/probe.log | tail -1)
+          NAME=$(sed -n 's/^IG_USERNAME=//p' /tmp/probe.log | tail -1)
+""", '''def machine(result, cause=None, **extra):
+    print("%s=%s" % (result, cause))
+
+
+def probe(report):
+    machine("probed", None, IG_REELS_READY="yes",
+            IG_REELS_HOSTED="yes" if report.get("hosted") else "no",
+            IG_USER_ID=report["ig_user_id"], IG_USERNAME=report["ig_username"])
+''')
+        self.assertEqual(wh.audit_machine_lines(root), [])
+
+    def test_a_key_a_shell_script_echoes_is_produced(self):
+        """`review_push.sh` prints REVIEW_URL; only .py files were read, so it looked unprinted."""
+        root = self._repo("""name: t
+on:
+  workflow_dispatch: {}
+jobs:
+  j:
+    steps:
+      - name: read it back
+        run: |
+          URL=$(sed -n 's/^REVIEW_URL=//p' /tmp/review_push.log | tail -1)
+""", shell_text='echo "REVIEW_URL=https://github.com/${GITHUB_REPOSITORY}/tree/$BRANCH"\n')
         self.assertEqual(wh.audit_machine_lines(root), [])
 
     def test_a_key_a_previous_step_echoed_is_produced(self):
