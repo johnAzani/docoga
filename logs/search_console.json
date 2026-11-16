@@ -1,55 +1,23 @@
 {
- "taken_at": "2026-11-09T13:30:24+00:00",
+ "taken_at": "2026-11-16T05:00:50+00:00",
  "site": "https://docoga.com.ng/",
  "window": {
-  "start": "2026-10-09",
-  "end": "2026-11-06",
+  "start": "2026-10-16",
+  "end": "2026-11-13",
   "days": 28
  },
- "clicks": 16,
- "impressions": 448,
- "ctr": 0.0357,
- "nigeria_clicks": 15,
+ "clicks": 11,
+ "impressions": 279,
+ "ctr": 0.0394,
+ "nigeria_clicks": 11,
  "top_queries": [
-  {
-   "query": "notice to quit",
-   "page": "https://docoga.com.ng/notice-to-quit-nigeria",
-   "clicks": 0,
-   "impressions": 12,
-   "ctr": 0.0,
-   "position": 11.2
-  },
   {
    "query": "edo state tenancy law",
    "page": "https://docoga.com.ng/notice-to-quit-edo.html",
    "clicks": 0,
-   "impressions": 9,
+   "impressions": 6,
    "ctr": 0.0,
-   "position": 8.9
-  },
-  {
-   "query": "quit notice",
-   "page": "https://docoga.com.ng/notice-to-quit-nigeria.html",
-   "clicks": 0,
-   "impressions": 5,
-   "ctr": 0.0,
-   "position": 1.0
-  },
-  {
-   "query": "quit notice from landlord to tenant",
-   "page": "https://docoga.com.ng/notice-to-quit-nigeria.html",
-   "clicks": 0,
-   "impressions": 3,
-   "ctr": 0.0,
-   "position": 50.0
-  },
-  {
-   "query": "quit notice letter from landlord to tenant in nigeria",
-   "page": "https://docoga.com.ng/notice-to-quit-nigeria",
-   "clicks": 0,
-   "impressions": 3,
-   "ctr": 0.0,
-   "position": 5.3
+   "position": 10.0
   },
   {
    "query": "tenancy law in edo state",
@@ -60,14 +28,6 @@
    "position": 9.3
   },
   {
-   "query": "how to write quit notice",
-   "page": "https://docoga.com.ng/notice-to-quit-nigeria",
-   "clicks": 0,
-   "impressions": 2,
-   "ctr": 0.0,
-   "position": 1.0
-  },
-  {
    "query": "quit notice from landlord to tenant",
    "page": "https://docoga.com.ng/notice-to-quit-nigeria",
    "clicks": 0,
@@ -76,52 +36,12 @@
    "position": 11.0
   },
   {
-   "query": "quit notice letter from landlord to tenant in nigeria",
-   "page": "https://docoga.com.ng/notice-to-quit-nigeria.html",
-   "clicks": 0,
-   "impressions": 2,
-   "ctr": 0.0,
-   "position": 6.5
-  },
-  {
-   "query": "shop agreement",
-   "page": "https://docoga.com.ng/shop-tenancy-agreement-nigeria.html",
-   "clicks": 0,
-   "impressions": 2,
-   "ctr": 0.0,
-   "position": 10.5
-  },
-  {
    "query": "how many days does a tenant have to give notice",
    "page": "https://docoga.com.ng/tenant-rights-nigeria.html",
    "clicks": 0,
    "impressions": 1,
    "ctr": 0.0,
    "position": 11.0
-  },
-  {
-   "query": "how many months does your landlord have to give notice",
-   "page": "https://docoga.com.ng/tenant-rights-nigeria.html",
-   "clicks": 0,
-   "impressions": 1,
-   "ctr": 0.0,
-   "position": 9.0
-  },
-  {
-   "query": "how to expire",
-   "page": "https://docoga.com.ng/notice-to-quit-nigeria",
-   "clicks": 0,
-   "impressions": 1,
-   "ctr": 0.0,
-   "position": 6.0
-  },
-  {
-   "query": "in enugu",
-   "page": "https://docoga.com.ng/notice-to-quit-enugu",
-   "clicks": 0,
-   "impressions": 1,
-   "ctr": 0.0,
-   "position": 3.0
   },
   {
    "query": "in plateau state",
@@ -149,11 +69,11 @@
   },
   {
    "query": "notice to quit",
-   "page": "https://docoga.com.ng/notice-to-quit-nigeria.html",
+   "page": "https://docoga.com.ng/notice-to-quit-nigeria",
    "clicks": 0,
    "impressions": 1,
    "ctr": 0.0,
-   "position": 1.0
+   "position": 76.0
   },
   {
    "query": "portharcourt",
@@ -180,22 +100,6 @@
    "position": 84.0
   },
   {
-   "query": "rental receipt",
-   "page": "https://docoga.com.ng/rent-receipt-format-nigeria.html",
-   "clicks": 0,
-   "impressions": 1,
-   "ctr": 0.0,
-   "position": 8.0
-  },
-  {
-   "query": "rivers state tenancy law",
-   "page": "https://docoga.com.ng/tenancy-agreement-rivers.html",
-   "clicks": 0,
-   "impressions": 1,
-   "ctr": 0.0,
-   "position": 11.0
-  },
-  {
    "query": "shop tenancy agreement",
    "page": "https://docoga.com.ng/shop-tenancy-agreement-nigeria.html",
    "clicks": 0,
@@ -207,69 +111,45 @@
  "striking_distance": [],
  "top_pages": [
   {
-   "page": "https://docoga.com.ng/notice-to-quit-enugu.html",
-   "clicks": 3,
-   "impressions": 19,
-   "position": 5.0
-  },
-  {
    "page": "https://docoga.com.ng/",
-   "clicks": 2,
-   "impressions": 19,
-   "position": 6.3
+   "clicks": 3,
+   "impressions": 10,
+   "position": 4.7
   },
   {
-   "page": "https://docoga.com.ng/notice-to-quit-rivers.html",
+   "page": "https://docoga.com.ng/notice-to-quit-enugu.html",
    "clicks": 2,
-   "impressions": 38,
-   "position": 3.4
+   "impressions": 17,
+   "position": 5.5
   },
   {
    "page": "https://docoga.com.ng/tenant-rights-nigeria.html",
    "clicks": 2,
-   "impressions": 23,
-   "position": 14.6
+   "impressions": 16,
+   "position": 17.7
   },
   {
    "page": "https://docoga.com.ng/notice-to-quit-delta.html",
    "clicks": 1,
-   "impressions": 10,
-   "position": 3.7
+   "impressions": 9,
+   "position": 4.0
   },
   {
    "page": "https://docoga.com.ng/notice-to-quit-edo.html",
    "clicks": 1,
-   "impressions": 55,
-   "position": 6.3
+   "impressions": 38,
+   "position": 5.9
   },
   {
-   "page": "https://docoga.com.ng/notice-to-quit-nigeria",
+   "page": "https://docoga.com.ng/notice-to-quit-rivers.html",
    "clicks": 1,
-   "impressions": 74,
-   "position": 8.3
-  },
-  {
-   "page": "https://docoga.com.ng/notice-to-quit-nigeria.html",
-   "clicks": 1,
-   "impressions": 33,
-   "position": 8.7
-  },
-  {
-   "page": "https://docoga.com.ng/notice-to-quit-plateau.html",
-   "clicks": 1,
-   "impressions": 7,
-   "position": 2.9
-  },
-  {
-   "page": "https://docoga.com.ng/power-of-attorney-nigeria.html",
-   "clicks": 1,
-   "impressions": 57,
-   "position": 4.7
+   "impressions": 27,
+   "position": 3.4
   },
   {
    "page": "https://docoga.com.ng/rent-receipt-format-nigeria.html",
    "clicks": 1,
-   "impressions": 27,
+   "impressions": 24,
    "position": 6.7
   },
   {
@@ -291,46 +171,34 @@
    "position": 7.7
   },
   {
-   "page": "https://docoga.com.ng/notice-to-quit-abuja",
-   "clicks": 0,
-   "impressions": 2,
-   "position": 9.0
-  },
-  {
-   "page": "https://docoga.com.ng/notice-to-quit-abuja.html",
-   "clicks": 0,
-   "impressions": 2,
-   "position": 5.0
-  },
-  {
-   "page": "https://docoga.com.ng/notice-to-quit-enugu",
-   "clicks": 0,
-   "impressions": 3,
-   "position": 3.3
-  },
-  {
    "page": "https://docoga.com.ng/notice-to-quit-kaduna.html",
    "clicks": 0,
-   "impressions": 15,
-   "position": 7.0
-  },
-  {
-   "page": "https://docoga.com.ng/notice-to-quit-kano",
-   "clicks": 0,
-   "impressions": 2,
-   "position": 1.5
+   "impressions": 6,
+   "position": 8.0
   },
   {
    "page": "https://docoga.com.ng/notice-to-quit-kano.html",
    "clicks": 0,
-   "impressions": 12,
-   "position": 4.4
+   "impressions": 11,
+   "position": 4.7
   },
   {
-   "page": "https://docoga.com.ng/notice-to-quit-rivers",
+   "page": "https://docoga.com.ng/notice-to-quit-nigeria",
+   "clicks": 0,
+   "impressions": 36,
+   "position": 12.3
+  },
+  {
+   "page": "https://docoga.com.ng/notice-to-quit-plateau.html",
    "clicks": 0,
    "impressions": 2,
-   "position": 5.0
+   "position": 4.0
+  },
+  {
+   "page": "https://docoga.com.ng/power-of-attorney-nigeria.html",
+   "clicks": 0,
+   "impressions": 46,
+   "position": 5.2
   },
   {
    "page": "https://docoga.com.ng/rent-receipt-delta.html",
@@ -355,6 +223,36 @@
    "clicks": 0,
    "impressions": 2,
    "position": 1.0
+  },
+  {
+   "page": "https://docoga.com.ng/rent-receipt-lagos.html",
+   "clicks": 0,
+   "impressions": 5,
+   "position": 4.8
+  },
+  {
+   "page": "https://docoga.com.ng/rent-receipt-ogun.html",
+   "clicks": 0,
+   "impressions": 6,
+   "position": 7.8
+  },
+  {
+   "page": "https://docoga.com.ng/rent-receipt-rivers.html",
+   "clicks": 0,
+   "impressions": 6,
+   "position": 6.5
+  },
+  {
+   "page": "https://docoga.com.ng/shop-tenancy-agreement-nigeria.html",
+   "clicks": 0,
+   "impressions": 20,
+   "position": 6.5
+  },
+  {
+   "page": "https://docoga.com.ng/videos/",
+   "clicks": 0,
+   "impressions": 1,
+   "position": 9.0
   }
  ]
 }
