@@ -68,6 +68,20 @@ jobs:
         run: |
           if [ -f docs/YOUTUBE_PERFORMANCE.md ]; then cat docs/YOUTUBE_PERFORMANCE.md >> "$GITHUB_STEP_SUMMARY"; else tail -n 20 /tmp/yt_stats.log >> "$GITHUB_STEP_SUMMARY"; fi
           { echo; echo "### Google Search Console"; echo '```'; tail -n 8 /tmp/search_console.log 2>/dev/null || echo "(not run)"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      # The weekly snapshot knows what the channel did; this says what to make next.
+      # tools/yt_search_lane.py derives the video queue from the Search Console rows pulled
+      # in the step above (real queries the site already appears for), titled the way people
+      # type them. No network, no key, no cost — and tools/qa.py fails the build if the
+      # brief drifts back to essay titles or repeats a published topic.
+      - name: The next videos, from the queries just pulled
+        continue-on-error: true
+        run: |
+          set +e
+          python3 tools/yt_search_lane.py --write --print | tee /tmp/yt_lane.log
+          rc=$?
+          set -e
+          { echo; echo "### Next videos (search lane)"; echo '```'; sed -n '1,14p' /tmp/yt_lane.log; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          exit $rc
       - name: Commit the snapshot
         continue-on-error: true
         env:
@@ -78,4 +92,5 @@ jobs:
           git pull --rebase --autostash origin "$BRANCH" || { echo "::warning title=Stats not committed::could not rebase on $BRANCH"; exit 1; }
           for path in logs/youtube_stats.json docs/YOUTUBE_PERFORMANCE.md; do if [ -e "$path" ]; then git add "$path"; fi; done   # one at a time (22 Oct 2026)
           git add logs/search_console.json 2>/dev/null || true
+          git add logs/yt_search_lane.json 2>/dev/null || true   # the video brief built from it
           git diff --staged --quiet || { git commit -m "Auto: YouTube stats snapshot $(date +%F) [skip ci]" && git push origin "HEAD:$BRANCH"; }
