@@ -136,6 +136,12 @@
       "inputs": {}
     },
     {
+      "workflow": "money.yml",
+      "name": "Money — the daily metre",
+      "cron": "10 5 * * *",
+      "inputs": {}
+    },
+    {
       "workflow": "narrator_resume.yml",
       "name": "Narrator — warm up and resume at the quota reset",
       "cron": "12 7 * * *",

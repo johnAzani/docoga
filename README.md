@@ -44,6 +44,14 @@ no server, 0 Naira/month to run.
   receipts, read through the account API, gzipped, sealed under `SOCIAL_TOKEN_KEY` into
   `logs/backup/kv-latest.box` (dated copy Sundays). Cloudflare KV has no backup of its own.
   Restore is a human act: `python3 tools/kv_backup.py restore --file … --confirm RESTORE`.
+  **`money.yml`** (06:10 WAT daily, 16 Nov 2026) is the money metre: it reads the same owner-dashboard
+  API the weekly scorecard reads (`/admin/data` for passes, ₦ and business teams; `/admin/site` for
+  visits), records one row per day in `logs/money_ledger.json`, and rewrites ONE living issue
+  "💰 Money — daily metre" with three numbers, the stage the money is stuck at (`unmeasured`,
+  `no-traffic`, `offer-unseen`, `checkout-broken`, `converting-weak`, `renewal-gap` — or `earning`)
+  and the single action that moves it — plus the arithmetic behind it. `python3 tools/money.py status` says
+  the day's line in the terminal; `brief` renders the ledger with no network. A sale is the only
+  thing that texts the owner's phone.
 - `brain/` — **the standing editor** (16 Oct 2026). `brain.yml` runs nightly, reads the
   business memory + editorial policy + the section-cited law shelf, asks Gemini (free
   tier, 2–3 requests) for the next days' posts, Short topics and visual briefs, and
