@@ -1,4 +1,4 @@
-# What the numbers said — written 2026-11-09 by tools/brain.py feedback
+# What the numbers said — written 2026-11-16 by tools/brain.py feedback
 
 ## Scorecard 2026-W46 (taken 2026-11-09 14:18)
 
@@ -84,35 +84,45 @@ Threads engagement by posting hour (WAT): 20:00 → 2.5, 13:00 → 0.86, 7:00 �
 - last brain improvement: 2026-11-07 (2 day(s) ago) — **The field writes the research list.** Read back: the competitor watch's new
 
 ### Competitor watch — the field this week (🔒 docs/DOMINANCE.md)
-- last deep research: 2026-11-07 (2 day(s) ago) — All 14 rows re-verified by hand (map `verified` 2026-11-07) and this week's rival
-- field map verified: 2026-11-07 (2 day(s) ago)
-- field pulled 2026-11-09: 5 item(s) from 2 competitor(s); not watchable at ₦0: @legalfriendng — Real Estate Lawyer (TikTok), @talk360law — KING, ESQ. (TikTok), @theonlybusayoadesanya (TikTok)
+- last deep research: 2026-11-07 (9 day(s) ago) — All 14 rows re-verified by hand (map `verified` 2026-11-07) and this week's rival
+- field map verified: 2026-11-07 (9 day(s) ago)
+- field pulled 2026-11-16: 8 item(s) from 4 competitor(s); not watchable at ₦0: @legalfriendng — Real Estate Lawyer (TikTok), @talk360law — KING, ESQ. (TikTok), @theonlybusayoadesanya (TikTok)
 - Mushrooms.ng blog — 7 days notice to quit nigeria; House for rent captions nigeria; How much can landlord increase rent nigeria
-- NigeriaBuildingCost — tenancy agreement generator — Sample tenancy agreement nigeria
-- ⚔️ collision: Mushrooms.ng blog — "7 days notice to quit nigeria" (2026-11-05) ↔ /notice-to-quit-nigeria (ours, published 2026-11-05) → the brain is told to point there
+- Olamide Oyetayo Legal — Rent increment in Nigeria: What Tenants and Landlords must know; Leading Law firm in Abuja: Olamide Oyetayo & Co | Dispute Resolution |
+- SabiLaw Solutions — City Engineering Nigeria Ltd v. Federal Housing Authority (1997)
+- Legalnaija templates — Why your firm’s year-end party should leave something on the wall
+- ⚔️ collision: Olamide Oyetayo Legal — "Rent increment in Nigeria: What Tenants and Landlords must know" (2026-11-13) ↔ /rent-increase-notice-nigeria (ours, published 2026-11-05) → the brain is told to point there
+- ⚔️ collision: Mushrooms.ng blog — "7 days notice to quit nigeria" (2026-11-05) ↔ /notice-to-quit-nigeria (ours, published 2026-11-12) → the brain is told to point there
 - ⚔️ collision: Mushrooms.ng blog — "How much can landlord increase rent nigeria" (2026-11-05) ↔ /rent-increase-notice-nigeria (ours, published 2026-11-05) → the brain is told to point there
-- ⚔️ collision: NigeriaBuildingCost — tenancy agreement generator — "Sample tenancy agreement nigeria" (2026-10-30) ↔ /tenancy-agreement-sample-nigeria (ours, published 2026-11-03) → the brain is told to point there
+- ◻ uncovered: Olamide Oyetayo Legal — "Leading Law firm in Abuja: Olamide Oyetayo & Co | Dispute Resolution |" (2026-11-13) — no DocOga page answers this title; a Growth candidate, not an order
+- ◻ uncovered: SabiLaw Solutions — "City Engineering Nigeria Ltd v. Federal Housing Authority (1997)" (2026-11-11) — no DocOga page answers this title; a Growth candidate, not an order
+- ◻ uncovered: Legalnaija templates — "Why your firm’s year-end party should leave something on the wall" (2026-11-11) — no DocOga page answers this title; a Growth candidate, not an order
 - ◻ uncovered: Mushrooms.ng blog — "House for rent captions nigeria" (2026-11-05) — no DocOga page answers this title; a Growth candidate, not an order
 - ◻ uncovered: Mushrooms.ng blog — "How to advertise house for rent nigeria" (2026-11-05) — no DocOga page answers this title; a Growth candidate, not an order
 - rival prices: NigeriaBuildingCost — tenancy agreement generator — ₦4,000, ₦500, as mapped
 - rival prices: DIYLaw — ₦5,000, ₦2,000, ₦3,500, as mapped
-- ⚠️ rival price moved: SabiLaw Solutions — new ₦7,000, ₦5,100; gone none (map said ₦3,200) → re-verify brain/competitors.json
+- ⚠️ rival price moved: SabiLaw Solutions — new ₦5,200; gone none (map said ₦3,200) → re-verify brain/competitors.json
 
 ### Page briefs — what the field asked twice that we have no page for (🔒 docs/BRAIN_GROWTH.md)
-- 📝 page brief: How to Advertise a House for Rent in Nigeria: Tips for Landlords & Agents — build; seen 2× on the field; brain/briefs/house-rent-caption.md
+- watching: "Why your firm’s year-end party should leave something on the wall" — seen 1× (brief at 2)
+- watching: "City Engineering Nigeria Ltd v. Federal Housing Authority (1997)" — seen 1× (brief at 2)
+- watching: "Leading Law firm in Abuja: Olamide Oyetayo & Co | Dispute Resolution |" — seen 1× (brief at 2)
+- declined: "House for rent captions nigeria"; "House for rent captions nigeria"
 
 ### Law watch — are the bills on our pages still bills
-- pulled 2026-11-05: 4 bill(s) watched, 0 passage alert(s)
+- pulled 2026-11-12: 4 bill(s) watched, 0 passage alert(s)
 - Anambra — quiet; stage verified 2026-11-03 (announced by the Assembly 26 March 2026 and the Governor 21 June 2026;)
-- Enugu — quiet; stage verified 2026-11-03 (executive bill announced 26 October 2026; four-week pledge); newest: Mbah to sign bill regulating agency, legal fees within four weeks.
-- Lagos — quiet; stage verified 2026-11-03 (second reading 10 July 2025; with the House Committee on Housing as at)
-- Abuja (FCT) — 🟡 moving; stage verified 2026-11-05 (second reading, House of Representatives, 4 November 2026; next: commi); newest: Abuja Rent: Bill to protect tenants from exploitation scale second reading at Re
+- Enugu — quiet; stage verified 2026-11-03 (executive bill announced 26 October 2026; four-week pledge)
+- Lagos — 🟡 moving; stage verified 2026-11-03 (second reading 10 July 2025; with the House Committee on Housing as at); newest: Lagos Governorship Candidates Disagree Over Rent Control, Housing, Flooding
+- Abuja (FCT) — 🟡 moving; stage verified 2026-11-05 (second reading, House of Representatives, 4 November 2026; next: commi); newest: Reps pass FCT rent regulation bill, propose 12-month advance payment limit
 
 ### Growth — where the next naira is (🔒 docs/GROWTH.md)
-- last growth dive: 2026-11-05 (4 day(s) ago; limit 7)
+- last growth dive: 2026-11-12 (4 day(s) ago; limit 7)
 - money-page share of Google impressions (2026-10-09 → 2026-11-06): 14% (59 of 414) — target 40% 🔻
 - zero-click top spots (pos ≤3, 0 clicks): 'quit notice' pos 1.0 ×5 → informational queries under AI Overviews; the fix is a transactional page, not a title tweak
 - this week's order: build the page that turns the quit-notice audience into document-makers: a sample-and-download page with the generator one tap away. Google already shows us at position 1.0 for 'quit notice' (5 impressions, 0 clicks) — money-page share is 14% against 40%.
+- snippets in the rules: yes — every title ≤ 60 chars, every description unique
+- snippets losing the tap (page one, under the floor): /power-of-attorney-nigeria.html pos 4.7 1/57; /notice-to-quit-kano.html pos 4.4 0/12; /notice-to-quit-kaduna.html pos 7.0 0/15; /notice-to-quit-edo.html pos 6.3 1/55
 
 ### Orders for the coming week
 - Sends are below 1.5% of reach: lead with STAKES and STAT hooks, put one named-person send line in every post ('send this to the friend renewing in January'), and use the checklist layout twice this week.
@@ -142,8 +152,8 @@ Ngozi,' (2); '🎬 Deep-Dive 5 (9 minutes): Advance Rent in Lagos and Abuja: ' (
 - Top longform: 'Tenancy Agreement in Nigeria: The 8 Clauses That Decide Everything' 6 views; 'The Rent Receipt: The ₦50 Paper That Wins Cases' 5 views; 'Caution Fee: The Refund War' 4 views
 
 ## Last 28 days of the brain's own output
-- post types: engagement ×4, checklist ×3, pidgin ×3, promo ×2, story ×2, educational ×2, state_spotlight ×1
-- hooks: STAT ×4, QUESTION ×3, STAKES ×3, HOWTO ×3, STORY ×2, CLAIM ×1, CURIOSITY ×1
-- states: edo ×4, cross-river ×3, anambra ×3, abuja ×2, kwara ×2, kano ×1, rivers ×1, lagos ×1
+- post types: engagement ×5, checklist ×4, pidgin ×3, promo ×3, story ×3, educational ×2, state_spotlight ×2
+- hooks: STAT ×4, QUESTION ×3, CLAIM ×3, STAKES ×3, CURIOSITY ×3, HOWTO ×3, STORY ×3
+- states: edo ×4, cross-river ×3, anambra ×3, abuja ×3, kano ×2, rivers ×2, kwara ×2, lagos ×2, enugu ×1
 
 Rotate away from the most-used type and hook above; the least-used state is overdue.

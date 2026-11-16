@@ -1,5 +1,35 @@
 [
  {
+  "date": "2026-11-18",
+  "at": "2026-11-16T01:37:13+01:00",
+  "short_day": true,
+  "state": "kwara",
+  "problems": [
+   "verifier: legal statement not on the shelf — 'Normal wear and tear from living in a house is the landlord expense. You do not pay for faded wall paint.'",
+   "verifier: legal statement not on the shelf — 'A landlord may only deduct money for actual damage you caused, like cracked sinks, broken doors, or damaged electrical f'"
+  ]
+ },
+ {
+  "date": "2026-11-17",
+  "at": "2026-11-16T01:34:21+01:00",
+  "short_day": true,
+  "state": "edo",
+  "problems": [
+   "short.tips[1].text: 1-5 words, <= 30 characters"
+  ]
+ },
+ {
+  "date": "2026-11-16",
+  "at": "2026-11-16T01:33:23+01:00",
+  "short_day": true,
+  "state": "cross-river",
+  "problems": [
+   "verifier: legal statement not on the shelf — 'A caution fee only secures physical damage you cause.'",
+   "verifier: legal statement not on the shelf — 'It is never an advance rent deposit.'",
+   "verifier: legal statement not on the shelf — 'An agent cannot take their inspection or commission out of your caution fee deposit at signing.'"
+  ]
+ },
+ {
   "date": "2026-11-17",
   "at": "2026-11-15T08:01:03+01:00",
   "short_day": true,
@@ -376,36 +406,6 @@
   "short_day": true,
   "problems": [
    "verifier: legal statement not on the shelf — 'In Anambra, the law says the receipt is the proof that rent was paid (anambra:receipts:1).'"
-  ]
- },
- {
-  "date": "2026-10-27",
-  "at": "2026-10-26T01:35:08+01:00",
-  "short_day": true,
-  "problems": [
-   "verifier: legal statement not on the shelf — 'Under s.5(2) of the Lagos Tenancy Law 2011, your landlord owes you a signed receipt showing the property, names, amount,'",
-   "verifier: legal statement not on the shelf — 'Under s.5(2) of the Lagos Tenancy Law, the receipt must identify the exact parties involved by name and their legal addr'",
-   "verifier: legal statement not on the shelf — 'A valid receipt must be dated and signed by your landlord or agent.'"
-  ]
- },
- {
-  "date": "2026-10-26",
-  "at": "2026-10-26T01:31:26+01:00",
-  "short_day": true,
-  "problems": [
-   "a body line is 157 characters; max 110: 'Your Kwara landlord must give you half a'",
-   "a body line is 123 characters; max 110: 'But if you are a tenant at will, the Lan'",
-   "a body line is 210 characters; max 110: 'A landlord cannot just seize your belong'",
-   "news_hook is not one of this week's NEWSDESK headlines — a story the papers did not print is not a story"
-  ]
- },
- {
-  "date": "2026-10-27",
-  "at": "2026-10-25T06:10:09+01:00",
-  "short_day": true,
-  "problems": [
-   "verifier: legal statement not on the shelf — 'A simple bank transfer alert is not the statutory receipt the law requires.'",
-   "verifier: legal statement not on the shelf — 'Ensure your landlord or authorised agent signs the paper.'"
   ]
  }
 ]

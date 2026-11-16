@@ -1,0 +1,47 @@
+{
+ "version": 1,
+ "status": "approved",
+ "source": "listening",
+ "kind": "answer_page",
+ "date": "2026-11-16",
+ "theme": "notice-to-quit-length-under-kwara-state-tenancy-law",
+ "state": "kwara",
+ "tool": "notice-to-quit",
+ "topic": "notice_ladder",
+ "post": {
+  "headline": "Notice To Quit Length Under Kwara State Tenancy Law",
+  "lines": [
+   "Many tenants in Kwara wake up to sudden eviction notices demanding they leave within a few days. Landlords often assume any short letter is enough to clear a house, but the law sets a clear ladder for how much time you must receive before leaving.",
+   "1. Tenancy at will or weekly tenancy requires one week notice to quit (s.17(1)(a)).",
+   "2. Monthly tenancy requires one month notice to quit (s.17(1)(b)).",
+   "3. Quarterly tenancy requires a quarter notice to quit (s.17(1)(c)).",
+   "4. Yearly tenancy requires half a year notice to quit (s.17(1)(d)).",
+   "Check your original tenancy agreement or receipts to confirm how your rent is paid, count the calendar months properly, and do not pack out in a panic if the days given fall short of what the law demands."
+  ]
+ },
+ "quiz": {
+  "question": "How long is the notice to quit in Kwara State?",
+  "explanation": "The notice period depends on how you pay rent, running from one week up to half a year under s.17(1) of the law."
+ },
+ "claims": [
+  {
+   "text": "Tenancy at will or weekly tenancy requires one week notice to quit (s.17(1)(a)).",
+   "fact_id": "kwara:notice_ladder:1"
+  },
+  {
+   "text": "Monthly tenancy requires one month notice to quit (s.17(1)(b)).",
+   "fact_id": "kwara:notice_ladder:2"
+  },
+  {
+   "text": "Quarterly tenancy requires a quarter notice to quit (s.17(1)(c)).",
+   "fact_id": "kwara:notice_ladder:3"
+  },
+  {
+   "text": "Yearly tenancy requires half a year notice to quit (s.17(1)(d)).",
+   "fact_id": "kwara:notice_ladder:4"
+  }
+ ],
+ "why": "Tenants in Ilorin and other parts of Kwara frequently face unlawful, rushed eviction notices from property owners.",
+ "asked": "",
+ "url": "https://docoga.com.ng/guides/notice-to-quit-length-under-kwara-state-tenancy-law"
+}

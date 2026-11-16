@@ -1,5 +1,5 @@
 {
- "pulled_at": "2026-11-15T06:57:02+00:00",
+ "pulled_at": "2026-11-16T00:31:23+00:00",
  "items": [],
  "answered": [
   {
@@ -29,7 +29,26 @@
    "kind": "answer_page",
    "state_slug": "cross-river",
    "topic": "notice_ladder"
+  },
+  {
+   "date": "2026-11-16",
+   "url": "https://docoga.com.ng/guides/notice-to-quit-length-under-kwara-state-tenancy-law",
+   "title": "Notice To Quit Length Under Kwara State Tenancy Law",
+   "kind": "answer_page",
+   "state_slug": "kwara",
+   "topic": "notice_ladder"
   }
  ],
- "sources": []
+ "sources": [
+  "Nairaland Properties: 63",
+  "Nairaland Family: 61",
+  "Nairaland Politics: 64"
+ ],
+ "answer_log": [
+  {
+   "at": "2026-11-16T00:37:26+00:00",
+   "outcome": "drafted",
+   "reason": "https://docoga.com.ng/guides/notice-to-quit-length-under-kwara-state-tenancy-law"
+  }
+ ]
 }

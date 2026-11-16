@@ -1,5 +1,5 @@
 {
- "fetched": "2026-11-15T06:56:49+00:00",
+ "fetched": "2026-11-16T00:31:00+00:00",
  "sources": [
   "Punch: 30 stories",
   "Vanguard: 20 stories",
@@ -9,5 +9,17 @@
   "The Guardian Nigeria: unreachable (HTTP Error 403: Forbidden)",
   "Nairametrics: 20 stories"
  ],
- "items": []
+ "items": [
+  {
+   "title": "NDC candidate in Kwara pledges N120,000 minimum wage for workers",
+   "link": "https://www.vanguardngr.com/2026/11/ndc-candidate-in-kwara-pledges-n120000-minimum-wage-for-workers/",
+   "published": "2026-11-15T20:38:52+00:00",
+   "source": "Vanguard",
+   "score": 6,
+   "matched": [
+    "minimum wage"
+   ],
+   "summary": "On pensioners, Ajia promised to verify outstanding gratuities and publish a schedule for settling validated arrears. The post NDC candidate in Kwara pledges N120,000 minimum wage for workers appeared "
+  }
+ ]
 }
