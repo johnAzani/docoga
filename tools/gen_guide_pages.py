@@ -288,7 +288,7 @@ PAGES["tenancy-agreement-sample-nigeria.html"] = dict(
          "DocOga is not a law firm and this is not legal advice."),
         ("Can I download the sample as a PDF for free?",
          "Yes — the PDF above is free and needs no signup. It carries the square brackets; the generator fills "
-         "them in and gives you a clean copy, free with a small banner or without one on the Oga Pass."),
+         "them in and gives you a clean copy, free with a small watermark, or clean and watermark-free on the Oga Pass."),
         ("Which state is the sample written for?",
          "The wording is the standard form used across Nigeria; the bracketed state is Lagos because the Lagos "
          "Tenancy Law 2011 is the most detailed. Change the state in clause 11 and clause 13 — or pick your state "
@@ -671,7 +671,7 @@ PAGES["demand-letter-rent-arrears-nigeria.html"] = dict(
          "firm and this page is general information, not legal advice."),
         ("Can I download the demand letter as a PDF for free?",
          "Yes \u2014 the PDF above is free and needs no signup. It carries the square brackets; the generator fills "
-         "them in and gives you a clean copy, free with a small banner or without one on the Oga Pass."),
+         "them in and gives you a clean copy, free with a small watermark, or clean and watermark-free on the Oga Pass."),
     ],
     cta=("demand", "Create your demand letter free \u2192"),
     related=["notice-to-quit-nigeria.html", "rent-receipt-format-nigeria.html", "tenancy-agreement-sample-nigeria.html",
@@ -809,7 +809,7 @@ PAGES["rent-increase-notice-nigeria.html"] = dict(
          "tenant out."),
         ("Can I download the rent increase notice and the tenant\u2019s reply as PDFs for free?",
          "Yes \u2014 both PDFs above are free and need no signup. They carry the square brackets; the generator fills them "
-         "in for your state and gives you a clean copy, free with a small banner or without one on the Oga Pass."),
+         "in for your state and gives you a clean copy, free with a small watermark, or clean and watermark-free on the Oga Pass."),
         ("How should a tenant reply to a rent increase letter?",
          "In writing, before the date the landlord asked for: refer to the notice by its date, say whether you accept, "
          "decline or counter-offer (with your figure), state that the tenancy continues on its present terms until a "
@@ -949,7 +949,7 @@ PAGES["employment-contract-sample-nigeria.html"] = dict(
          "a week is above it. Confirm the employee in writing when probation ends."),
         ("Can I download the employment contract as a PDF for free?",
          "Yes \u2014 the PDF above is free and needs no signup. It carries the square brackets; the generator fills "
-         "them in and gives you a clean copy, free with a small banner or without one on the Oga Pass. DocOga is "
+         "them in and gives you a clean copy, free with a small watermark, or clean and watermark-free on the Oga Pass. DocOga is "
          "not a law firm and this page is general information, not legal advice."),
     ],
     cta=("employment", "Create your employment contract free \u2192"),
@@ -1076,7 +1076,7 @@ PAGES["query-letter-sample-nigeria.html"] = dict(
          "date you received it, which is the date your reply time runs from."),
         ("Can I download these letters as PDFs for free?",
          "Yes \u2014 all three PDFs above are free and need no signup. They carry the square brackets; the generator "
-         "writes the query or the warning with your details, free with a small banner or without one on the Oga "
+         "writes the query or the warning with your details, free with a small watermark, or clean without one on the Oga "
          "Pass. DocOga is not a law firm and this page is general information, not legal advice."),
     ],
     cta=("warning", "Write a query or warning letter free \u2192"),
@@ -1211,7 +1211,7 @@ PAGES["payslip-format-nigeria.html"] = dict(
          "all deductions in a month may not exceed one-third of wages (s.5(7))."),
         ("Can I download the payslip as a PDF for free?",
          "Yes \u2014 the PDF above is free and needs no signup. The generator lays out yours with your figures, free "
-         "with a small banner or without one on the Oga Pass. It formats what you enter; it does not compute tax. "
+         "with a small watermark, or clean without one on the Oga Pass. It formats what you enter; it does not compute tax. "
          "DocOga is not a law firm or a tax adviser and this page is general information, not advice."),
     ],
     cta=("payslip", "Lay out your payslip free \u2192"),
@@ -1889,7 +1889,7 @@ PAGES["rent-index-nigeria.html"] = dict(
             "<b>Tenants:</b> ask for the DocOga receipt by name. The ₦500,000 rent-relief deduction "
             "under the Nigeria Tax Act 2025 (s.30(2)(a)(vi)) is claimed with a receipt and a tenancy "
             "agreement \u2014 see the rent relief guide below.",
-            "<b>Landlords and agents:</b> the free version prints a small banner; the Oga Pass "
+            "<b>Landlords and agents:</b> the free version prints a small watermark; the Oga Pass "
             "(₦2,000 for 30 days) removes it across all 11 tools. The verification code is free either way.",
             "<b>Prefer not to register a receipt?</b> Untick the box. The receipt still prints; it just "
             "carries no code.",
@@ -1995,7 +1995,7 @@ def render(fname, p):
 <div class="box">
 <h2>Make it in 2 minutes \u2014 free</h2>
 <p>DocOga works on your phone: answer simple questions, get a clean, standard Nigerian document you
-can print, save as PDF or share on WhatsApp. The free version carries a small banner; the Oga Pass
+can print, save as PDF or share on WhatsApp. The free version carries a small watermark; the Oga Pass
 (\u20a62,000/30 days) unlocks unlimited clean copies across all 11 tools.</p>
 <a class="cta" href="%(domain)s/#%(cta_hash)s">%(cta_label)s</a>
 </div>
@@ -2027,7 +2027,7 @@ your case with a qualified Nigerian lawyer or your accountant.
 </footer>
 </div>
 <div class="stickycta">
-<span><b>Oga Pass</b> — ₦2,000 · 30 days · all 11 tools · no banner</span>
+<span><b>Clean document</b> — ₦2,000 · 30 days · all 11 tools · no watermark</span>
 <a href="%(domain)s/#pricing">Get the Pass</a>
 </div>
 <script src="/analytics-consent.js" data-track-page="true" defer></script>
