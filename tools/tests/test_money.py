@@ -180,6 +180,42 @@ class TheArithmetic(unittest.TestCase):
         self.assertGreater(money.required_visits(5000, 2000, 0), 0)
 
 
+class ThePublicBrief(unittest.TestCase):
+    """Owner, 16 Nov 2026: "Money figures must live in the Telegram DM only, not in the public
+    repo issue." The issue is public, so the brief that lands in it must carry the stage and the
+    counts — never a naira figure."""
+
+    def ledger(self):
+        return ledger_of({"date": "2026-11-15", "revenue": 4000, "passes": 2, "visits_7d": 91, "price": 2000},
+                         {"date": "2026-11-16", "revenue": 0, "passes": 0, "price": 2000})
+
+    def test_public_brief_states_no_amount_at_all(self):
+        text = money.brief(self.ledger(), "2026-11-16", public=True)
+        self.assertNotIn("\u20a6", text)
+        self.assertNotIn("MONEY_TODAY", text)
+
+    def test_public_brief_still_says_whether_the_machine_works(self):
+        text = money.brief(self.ledger(), "2026-11-16", public=True)
+        self.assertIn("**Stage: `", text)
+        self.assertIn("passes", text)
+        self.assertIn("**Today's one action:**", text)
+        self.assertIn("**The arithmetic:**", text)
+        self.assertIn("visits a day", text)
+
+    def test_public_brief_says_where_the_amounts_went(self):
+        text = money.brief(self.ledger(), "2026-11-16", public=True)
+        self.assertIn("Amounts go to the owner's phone", text)
+
+    def test_public_brief_hides_a_problemless_empty_ledger_without_crashing(self):
+        text = money.brief({"days": []}, "2026-11-16", public=True)
+        self.assertNotIn("\u20a6", text)
+        self.assertIn("unmeasured", text)
+
+    def test_the_owner_brief_still_carries_the_numbers_that_go_to_the_phone(self):
+        text = money.brief(self.ledger(), "2026-11-16")
+        self.assertIn("\u20a6", text)
+
+
 class TheBrief(unittest.TestCase):
     def ledger(self):
         return ledger_of({"date": "2026-11-15", "revenue": 0, "passes": 0, "visits_7d": 91, "price": 2000},

@@ -60,6 +60,10 @@ jobs:
           DOCOGA_DAILY_TARGET: ${{ vars.DOCOGA_DAILY_TARGET }}
         run: |
           set +e
+          # /tmp/money.md is the PUBLIC issue body: tools/money.py writes it with `public=True`,
+          # i.e. stage, pass counts and visits a day, and no naira anywhere (owner instruction,
+          # 16 Nov 2026: amounts live in the Telegram DM only). The figures still reach the phone
+          # through the MONEY_* machine lines below, which the DM step reads.
           if [ "$MONEY_DRY_RUN" = "true" ]; then
             python3 tools/money.py pull --dry-run --summary-file /tmp/money.md 2>&1 | tee /tmp/money.log
           else
