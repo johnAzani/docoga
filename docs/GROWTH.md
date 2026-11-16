@@ -78,6 +78,24 @@ met, we scale pages and states; missed, the owner is told to stop spending even 
 the product is parked, sold or changed. The owner plans his money as if DocOga earns ₦0 until then.
 
 
+- **2026-11-16** — **Tenth dive (owner, 2:00pm Mon: "Continue"): the page-one page with no sample.** The
+  16 Nov pull (28 days to 13 Nov): 11 clicks / 279 impressions, down from 16 / 448 — the fortnight after
+  the clean-URL 301s (10 Nov) and the title rewrite (12 Nov), so a dip of the expected shape, not yet a
+  verdict (26 Nov is); money-page share 14% → 29%. Read page by page, the one standing fact is the same
+  as in every pull since October: **`/power-of-attorney-nigeria` at position 5.2 with 46 impressions and
+  0 clicks** — the largest zero-click row on the site, and the one tool page that had **no sample to
+  read and no PDF to download**: a well-researched essay for the diaspora, generator link at the bottom.
+  Every page that converts impressions into taps on this site opens with the document itself. Shipped:
+  `tools/sample_docs.POWER_OF_ATTORNEY` — the generator's own deed (`renderPoa`), a donor abroad
+  appointing a relative to let and manage a Lagos flat, six powers granted and the **sale power left
+  out** (the page's own advice), the execution-and-registration notes the generator prints kept word
+  for word (Ojugbele v. Olasoji, s.22 Land Use Act, no apostille — Nigeria's absence from the HCCH table
+  re-checked 16 Nov) → `/samples/power-of-attorney-sample-nigeria.pdf` (noindex), placed as the **first
+  box** of the page with the download and the generator one tap away; `growth.MONEY_PAGE` now counts
+  the page (a paid generator stands behind it); test pins the order, the words and the absent sale
+  power. Measure: the PoA row's clicks in the 26 Nov and 10 Dec pulls against 0/46. Not done: nothing
+  else — no new page, by design, until 26 Nov.
+
 - **2026-11-12** — **Tenth dive (owner, 12:00pm: "Continue"): the payslip — the last of the eleven
   tools with no page in front of it.** Field read first (web, 12 Nov): the "payslip format nigeria"
   results are HR-software blogs, one free formatter and a sixteen-country template farm; they print
