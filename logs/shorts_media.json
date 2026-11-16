@@ -1,17 +1,6 @@
 {
   "history": [
     {
-      "date": "2026-10-22",
-      "video_id": "XLvfYhPrqEQ",
-      "title": "Moving into a rented flat in Nigeria: skip the photos, pay for old damage #Shorts",
-      "url": "https://docoga-pass.johnazani.workers.dev/m/dYR_4dC8nxAZnbvwQZejzWbh9i-08i-7.mp4",
-      "name": "dYR_4dC8nxAZnbvwQZejzWbh9i-08i-7",
-      "bytes": 46729523,
-      "hosted_at": "2026-10-22T17:19:38+00:00",
-      "expires_at": "2026-10-23T23:19:38+00:00",
-      "run_id": "39818878428"
-    },
-    {
       "date": "2026-10-23",
       "video_id": "ZHPtiWZ6j10",
       "title": "Caution fee refund in Nigeria: sign without asking, fund the repaint #Shorts",
@@ -179,19 +168,32 @@
       "run_id": "43468425104",
       "series": "Part 5 of 5 · Notice to quit",
       "series_topic": "Notice to quit"
+    },
+    {
+      "date": "2026-11-16",
+      "video_id": "x6TLkyL0mag",
+      "title": "Repairs in a rented flat in Nigeria: report it by mouth, own the repair bill #Shorts",
+      "url": "https://docoga-pass.johnazani.workers.dev/m/_3hBapVcGOx-DNVpGGL_DCQfb3mb5cWU.mp4",
+      "name": "_3hBapVcGOx-DNVpGGL_DCQfb3mb5cWU",
+      "bytes": 44744797,
+      "hosted_at": "2026-11-16T17:19:43+00:00",
+      "expires_at": "2026-11-17T23:19:43+00:00",
+      "run_id": "43913723641",
+      "series": "",
+      "series_topic": ""
     }
   ],
   "latest": {
-    "date": "2026-11-13",
-    "video_id": "AeluF6uRkms",
-    "title": "Answering a notice: Is it valid? (part 5 of 5) #Shorts",
-    "url": "https://docoga-pass.johnazani.workers.dev/m/o3fvqfxjgeTzUAs2_PbO0g7JjHuRR_bI.mp4",
-    "name": "o3fvqfxjgeTzUAs2_PbO0g7JjHuRR_bI",
-    "bytes": 39710770,
-    "hosted_at": "2026-11-13T17:13:54+00:00",
-    "expires_at": "2026-11-14T23:13:54+00:00",
-    "run_id": "43468425104",
-    "series": "Part 5 of 5 · Notice to quit",
-    "series_topic": "Notice to quit"
+    "date": "2026-11-16",
+    "video_id": "x6TLkyL0mag",
+    "title": "Repairs in a rented flat in Nigeria: report it by mouth, own the repair bill #Shorts",
+    "url": "https://docoga-pass.johnazani.workers.dev/m/_3hBapVcGOx-DNVpGGL_DCQfb3mb5cWU.mp4",
+    "name": "_3hBapVcGOx-DNVpGGL_DCQfb3mb5cWU",
+    "bytes": 44744797,
+    "hosted_at": "2026-11-16T17:19:43+00:00",
+    "expires_at": "2026-11-17T23:19:43+00:00",
+    "run_id": "43913723641",
+    "series": "",
+    "series_topic": ""
   }
 }
