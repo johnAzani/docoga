@@ -175,6 +175,20 @@ class PathsAndPrices(unittest.TestCase):
         self.assertEqual(cw.price_figures(PRICING), ["₦4,000", "₦500", "₦25,000"])
         self.assertEqual(cw.price_figures(b"no money here 2026"), [])
 
+    def test_price_figures_stop_at_the_upsell_block_and_skip_struck_through_was_prices(self):
+        """16 Nov 2026: the sentinel read a related product's ₦5,200 off a SabiLaw product page whose own
+        price (₦3,200) had not moved, and the scorecard shouted 'rival price moved'. A product page's
+        price is the price above 'Related products'; a <del>was</del> price is not an asking price."""
+        page = ("<html><body><h1>Tenancy Agreement</h1><p>Lawyer-prepared template.</p>"
+                "<p class='price'><del>&#8358;4,000.00</del> <ins>₦3,200.00</ins></p><button>Add to cart</button>"
+                "<h2>Related products</h2><p>LPDC Petition <del>₦7,000.00</del> ₦5,100.00</p>"
+                "<p>Letter Of Authority ₦5,200.00</p><p>Garnishee Affidavit ₦3,200.00</p></body></html>").encode()
+        self.assertEqual(cw.price_figures(page), ["₦3,200"])
+        also = b"<p>Pass: NGN 2,000</p><h3>You may also like</h3><p>Premium NGN 15,000</p>"
+        self.assertEqual(cw.price_figures(also), ["₦2,000"])
+        self.assertEqual(cw.price_figures(b"<p>Plans: \xe2\x82\xa65,000 and \xe2\x82\xa615,000</p>"), ["₦5,000", "₦15,000"],
+                         "a page with no upsell block is read to the end, as before")
+
     def test_the_sentinel_flags_a_moved_price_and_never_a_matching_one(self):
         field = [{"name": "Tool", "kind": "tool", "url": "https://tool.ng", "feeds": [], "note": "x",
                   "prices": {"url": "https://tool.ng/pricing", "seen": ["₦4,000", "₦500", "₦25,000"]}},

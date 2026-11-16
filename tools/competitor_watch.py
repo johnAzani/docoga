@@ -148,11 +148,25 @@ def youtube_feed_for(url, http=None):
     return ("https://www.youtube.com/feeds/videos.xml?channel_id=" + m.group(1).decode()) if m else None
 
 
+# 16 Nov 2026: a WooCommerce product page carries other products' prices below the one we watch —
+# "Related products", "You may also like" — and a struck-through "was" price inside <del>. The
+# sentinel read ₦5,200 off a SabiLaw page whose own price had not moved and shouted "price moved";
+# the hand re-read found ₦3,200 unchanged. Only the page's own prices count: nothing after the first
+# upsell heading, nothing struck through.
+UPSELL = re.compile(r"\b(related products?|you may also like|customers? (?:who bought|also (?:bought|viewed))|"
+                    r"recently viewed|recommended for you|more (?:products|templates) like this|frequently bought together|"
+                    r"people also (?:bought|viewed)|similar (?:products|templates|documents))\b", re.I)
+
+
 def price_figures(raw):
-    """Every distinct naira figure on a public page, as the map writes them ("₦4,000"), page order."""
+    """Every distinct naira figure the page itself asks for, as the map writes them ("₦4,000"), page
+    order — nothing from the scripts, nothing struck through, nothing after the first upsell block."""
     text = raw.decode("utf-8", "replace") if isinstance(raw, (bytes, bytearray)) else str(raw or "")
-    text = html.unescape(re.sub(r"<(script|style)\b.*?</\1>", " ", text, flags=re.S | re.I))
-    text = re.sub(r"<[^>]+>", " ", text)
+    text = re.sub(r"<(script|style|del|s|strike)\b.*?</\1>", " ", text, flags=re.S | re.I)
+    text = html.unescape(re.sub(r"<[^>]+>", " ", text))
+    cut = UPSELL.search(text)
+    if cut:
+        text = text[:cut.start()]
     out = []
     for m in PRICE.finditer(text):
         n = int(m.group(1).replace(",", ""))

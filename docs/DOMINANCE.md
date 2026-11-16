@@ -71,6 +71,30 @@ without the signal that says so.
 
 ## 5. Research ledger (newest first — the scorecard reads the top date)
 
+- **2026-11-16** — **Dive: the sentinel's false alarm, the FCT bill's true stage, and the week's
+  collisions read.** (1) The Monday scorecard said *"rival price moved: SabiLaw — new ₦5,200 (map said
+  ₦3,200)"*. Read by hand: the tenancy-agreement page still asks **₦3,200**; the ₦5,100–₦5,200 figures
+  sit in the page's *Related products* block (an LPDC petition on sale from ₦7,000, a letter of
+  authority) — the sentinel was reading the whole page. `competitor_watch.price_figures` now stops at
+  the first upsell heading (*Related products*, *You may also like*, *Customers also bought* …) and
+  skips struck-through `<del>` "was" prices, so a product page's price is the page's own asking price
+  and nothing else (`test_price_figures_stop_at_the_upsell_block_and_skip_struck_through_was_prices`).
+  The map row carries the hand re-read; the map's full 14-row re-verification stays due ≤ 22 Dec.
+  (2) The law-watch headline *"Reps pass FCT rent regulation bill"* re-read against five reports
+  (Punch, TheNigeriaLawyer, Naija News, Pointblank, West African Pilot, all 4 Nov 2026): it is the
+  **second-reading** pass of HB.2839 — committee and public hearing next, no third reading, no Senate,
+  no assent; our rent-increase page and shelf already say "second reading 4 Nov 2026" and need no
+  change. The 12-month cap, the ₦500k–₦20m fines and the new Authority remain proposals.
+  (3) Collisions: the Abuja law firm's *"Rent increment in Nigeria"* (feed-dated 13 Nov, first
+  published Sept 2024) explains Lagos s.37(1) and says a sitting tenant must agree an increase —
+  correct, Lagos-only, no Enugu 15% rule, no notice ladder, no generator; Mushrooms.ng's *"7 days
+  notice to quit"* and *"how much can a landlord increase rent"* (5 Nov) are the pieces already read
+  on 7 Nov. Nothing on the field this week writes the document or cites the section our two new
+  employment pages (12 Nov) cite. (4) Money read: Google 28 days 11 clicks / 279 impressions, CTR 3.9%
+  — impressions down from 448 in the prior pull, the fortnight after the clean-URL 301s (10 Nov) and
+  the title rewrite (12 Nov); money-page share up 14% → 29%. Not a verdict yet: the 26 Nov pull is the
+  first full window after both changes. Next dive ≤ 30 Nov 2026.
+
 - **2026-11-07** — All 14 rows re-verified by hand (map `verified` 2026-11-07) and this week's rival
   content read against the rent-increase page shipped on 5 Nov. **The collision:** the strongest
   content rival (Mushrooms.ng) published *"How much can a landlord increase rent in Nigeria"* on
