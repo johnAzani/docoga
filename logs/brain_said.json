@@ -439,5 +439,43 @@
   "tool": "notice-to-quit",
   "tool_routed": false,
   "news_hook": null
+ },
+ {
+  "date": "2026-11-18",
+  "theme": "kwara-court-alternative-accommodation-rule",
+  "headline": "Landlord fit lose court case if tenant no get where to go",
+  "post_type": "pidgin",
+  "hook_type": "STAKES",
+  "state": "kwara",
+  "fact_ids": [
+   "kwara:suitable_alternative_accommodation:1",
+   "kwara:suitable_alternative_accommodation:2"
+  ],
+  "recalled": 0,
+  "plate": "court building exterior",
+  "short": true,
+  "reader": "okafor",
+  "tool": "notice-to-quit",
+  "tool_routed": false,
+  "news_hook": null
+ },
+ {
+  "date": "2026-11-19",
+  "theme": "lagos-security-deposit-separate-receipt-account",
+  "headline": "Did your Lagos landlord issue a separate receipt for caution fee?",
+  "post_type": "story",
+  "hook_type": "QUESTION",
+  "state": "lagos",
+  "fact_ids": [
+   "lagos:receipts:8",
+   "lagos:receipts:8"
+  ],
+  "recalled": 0,
+  "plate": "keys wooden door",
+  "short": true,
+  "reader": "ngozi",
+  "tool": "caution-fee",
+  "tool_routed": false,
+  "news_hook": null
  }
 ]

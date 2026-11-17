@@ -1,5 +1,5 @@
 {
- "fetched": "2026-11-17T00:31:02+00:00",
+ "fetched": "2026-11-17T08:18:33+00:00",
  "sources": [
   "Punch: 30 stories",
   "Vanguard: 20 stories",
@@ -9,18 +9,5 @@
   "The Guardian Nigeria: unreachable (HTTP Error 403: Forbidden)",
   "Nairametrics: 20 stories"
  ],
- "items": [
-  {
-   "title": "SunTrust Bank boosts staff welfare, raises salaries up to 75%, promotes 25% of workforce",
-   "link": "https://nairametrics.com/2026/11/16/suntrust-bank-boosts-staff-welfare-raises-salaries-up-to-75-promotes-25-of-workforce/",
-   "published": "2026-11-16T12:57:32+00:00",
-   "source": "Nairametrics",
-   "score": 4,
-   "matched": [
-    "salary",
-    "salaries"
-   ],
-   "summary": "Nigeria’s first full-fledged technology bank, SunTrust Bank Nigeria Limited (STBNL) has promoted 25 per cent of its workforce and implemented salary increases of between 25 per cent and 75 per cent fo"
-  }
- ]
+ "items": []
 }

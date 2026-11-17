@@ -1,0 +1,102 @@
+{
+ "version": 1,
+ "status": "approved",
+ "date": "2026-11-18",
+ "generated_at": "2026-11-17T09:19:08+01:00",
+ "theme": "kwara-court-alternative-accommodation-rule",
+ "post_type": "pidgin",
+ "hook_type": "STAKES",
+ "state": "kwara",
+ "claims": [
+  {
+   "text": "For Kwara State, court no fit just throw tenant outside unless suitable alternative accommodation dey for ground.",
+   "fact_id": "kwara:suitable_alternative_accommodation:1"
+  },
+  {
+   "text": "Accommodation must fit tenant work place, pocket, and family size.",
+   "fact_id": "kwara:suitable_alternative_accommodation:2"
+  }
+ ],
+ "recalled": [],
+ "post": {
+  "headline": "Landlord fit lose court case if tenant no get where to go",
+  "lines": [
+   "If you hurry drag tenant go court, Kwara law get strong check.",
+   "For Kwara State, court no fit just throw tenant outside unless suitable alternative accommodation dey for",
+   "ground.",
+   "Accommodation must fit tenant work place, pocket, and family size.",
+   "Follow proper procedure make your matter no hang for court."
+  ],
+  "cta": "Send this to one landlord wey dey plan court matter this year.",
+  "hashtags": [
+   "#DocOga",
+   "#KwaraProperty",
+   "#LandlordHub"
+  ]
+ },
+ "threads": {
+  "text": "For Kwara State, court no fit just eject tenant unless dem satisfy say suitable alternative accommodation dey for ground. E must fit the tenant pocket and work place. You be landlord or tenant?",
+  "hashtags": [
+   "#DocOga",
+   "#NigeriaRealEstate"
+  ],
+  "topic": "Tenant Rights Nigeria",
+  "poll": null,
+  "evening": "In Kwara, rushing to eject a tenant without checking court requirements can freeze your application for months."
+ },
+ "visual": {
+  "kicker": "oya make we talk",
+  "layout": "poster",
+  "big": "",
+  "plate": "court building exterior"
+ },
+ "short": {
+  "title": "Deduct caution fee blindly. Pay twice in court.",
+  "hook_sub": "Landlords lose disputes over unfair deductions.",
+  "hook_say": "When a tenant packs out, taking caution money without proof turns into an expensive court loss. Know what qualifies before you touch the balance.",
+  "tips": [
+   {
+    "text": "Check fair wear tear",
+    "sub": "Routine fading walls are landlord duty",
+    "say": "Do not charge the tenant for normal aging of the flat. Routine fading and minor scuffs belong to property maintenance, not the tenant deposit."
+   },
+   {
+    "text": "Inspect broken fixtures only",
+    "sub": "Cracked sinks and holes require repair",
+    "say": "Legitimate deductions cover visible structural damage caused by neglect. Cracked sinks, broken doors, and destroyed fittings qualify for an itemised bill."
+   },
+   {
+    "text": "Collect receipted repair bills",
+    "sub": "Estimate figures will fail in dispute",
+    "say": "Never invent random amounts when returning funds. Present actual vendor receipts showing exact artisan costs and replacement parts purchased."
+   },
+   {
+    "text": "Refund balance without delay",
+    "sub": "Withholding funds creates legal exposure",
+    "say": "Return whatever balance remains promptly after exit inspection. Delaying payment without genuine justification makes you liable before the tribunal."
+   }
+  ],
+  "hook_text": "DEDUCT CAUTION FEE BLINDLY.\nPAY TWICE IN COURT.",
+  "series": {
+   "slug": "caution-fee",
+   "name": "Caution fee",
+   "part": 3,
+   "total": 5,
+   "label": "What may be deducted"
+  }
+ },
+ "why": "Wednesday calls for a pidgin/plain explainer addressing Mr Okafor on Kwara court requirements before year end, pairing with the part 3 caution fee Short on deductions.",
+ "tool": "notice-to-quit",
+ "tool_routed": false,
+ "reader": "okafor",
+ "news_hook": null,
+ "quiz": null,
+ "gates": [
+  "citation",
+  "verification",
+  "lint",
+  "repetition",
+  "shape"
+ ],
+ "note": ""
+}

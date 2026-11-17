@@ -1,0 +1,102 @@
+{
+ "version": 1,
+ "status": "approved",
+ "date": "2026-11-19",
+ "generated_at": "2026-11-17T09:19:28+01:00",
+ "theme": "lagos-security-deposit-separate-receipt-account",
+ "post_type": "story",
+ "hook_type": "QUESTION",
+ "state": "lagos",
+ "claims": [
+  {
+   "text": "In Lagos, where a landlord requires a security deposit, the landlord or agent must issue a separate receipt.",
+   "fact_id": "lagos:receipts:8"
+  },
+  {
+   "text": "The tenant is entitled to a written account at least every six months of how the deposit money was disbursed.",
+   "fact_id": "lagos:receipts:8"
+  }
+ ],
+ "recalled": [],
+ "post": {
+  "headline": "Did your Lagos landlord issue a separate receipt for caution fee?",
+  "lines": [
+   "Ngozi moved out of Ikeja and asked for her caution fee back.",
+   "Her landlord gave verbal excuses about painting and repairs.",
+   "In Lagos, where a landlord requires a security deposit, the landlord or agent must issue a separate receipt.",
+   "The tenant is entitled to a written account at least every six months of how the deposit money was disbursed."
+  ],
+  "cta": "Send this to the friend moving out of their flat this December.",
+  "hashtags": [
+   "#DocOga",
+   "#LagosTenants",
+   "#CautionFee",
+   "#TenantRights"
+  ]
+ },
+ "threads": {
+  "text": "Ngozi asked for her caution fee back in Ikeja, but the landlord claimed deductions without proof. In Lagos, taking a security deposit requires a separate receipt and a written account every six months. Did you get a caution fee receipt?",
+  "hashtags": [
+   "#DocOga",
+   "#LagosTenants"
+  ],
+  "topic": "Tenant Rights Lagos",
+  "poll": null,
+  "evening": "A caution fee in Lagos is not free money for the landlord. Without a separate receipt and written accounts, deductions are hard to justify."
+ },
+ "visual": {
+  "kicker": "caution fee rights",
+  "layout": "poster",
+  "big": "",
+  "plate": "keys wooden door"
+ },
+ "short": {
+  "title": "Getting your caution fee back",
+  "hook_sub": "Demand your written paper trail",
+  "hook_say": "Your tenancy ended and the landlord wants to hold your deposit. You need a paper trail to recover every single naira owed to you.",
+  "tips": [
+   {
+    "text": "Show your original receipt",
+    "sub": "Proof of the deposit paid",
+    "say": "Pull out the separate receipt given when you paid the caution deposit. It proves the exact balance held by the landlord."
+   },
+   {
+    "text": "Request a written account",
+    "sub": "Ask for dated repair receipts",
+    "say": "In Lagos, a tenant is entitled to a written account showing how any security deposit was spent. Require receipts for every deduction."
+   },
+   {
+    "text": "Conduct a handover inspection",
+    "sub": "Walk through with the agent",
+    "say": "Inspect the apartment alongside the caretaker before you hand over keys. Agree on the condition in writing to stop false damage claims."
+   },
+   {
+    "text": "Issue a demand letter",
+    "sub": "State a clear refund deadline",
+    "say": "If refund delays persist, send a formal written demand giving a specific deadline. Paper creates evidence for formal recovery."
+   }
+  ],
+  "hook_text": "GETTING YOUR CAUTION FEE BACK",
+  "series": {
+   "slug": "caution-fee",
+   "name": "Caution fee",
+   "part": 4,
+   "total": 5,
+   "label": "Getting it back"
+  }
+ },
+ "why": "Thursday story-style scenario for Ngozi in Lagos using QUESTION hook, aligned with part 4 of the Caution Fee Short series.",
+ "tool": "caution-fee",
+ "tool_routed": false,
+ "reader": "ngozi",
+ "news_hook": null,
+ "quiz": null,
+ "gates": [
+  "citation",
+  "verification",
+  "lint",
+  "repetition",
+  "shape"
+ ],
+ "note": ""
+}
