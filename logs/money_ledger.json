@@ -1,3 +1,296 @@
 {
- "days": []
+ "days": [
+  {
+   "business": 0,
+   "date": "2026-10-17",
+   "passes": 0,
+   "price": 2000,
+   "revenue": 0,
+   "taken_at": "2026-11-17T05:10:52Z",
+   "waitlist": 0
+  },
+  {
+   "business": 0,
+   "date": "2026-10-18",
+   "passes": 0,
+   "price": 2000,
+   "revenue": 0,
+   "taken_at": "2026-11-17T05:10:52Z",
+   "waitlist": 0
+  },
+  {
+   "business": 0,
+   "date": "2026-10-19",
+   "passes": 0,
+   "price": 2000,
+   "revenue": 0,
+   "taken_at": "2026-11-17T05:10:52Z",
+   "waitlist": 0
+  },
+  {
+   "business": 0,
+   "date": "2026-10-20",
+   "passes": 0,
+   "price": 2000,
+   "revenue": 0,
+   "taken_at": "2026-11-17T05:10:52Z",
+   "waitlist": 0
+  },
+  {
+   "business": 0,
+   "date": "2026-10-21",
+   "passes": 0,
+   "price": 2000,
+   "revenue": 0,
+   "taken_at": "2026-11-17T05:10:52Z",
+   "waitlist": 0
+  },
+  {
+   "business": 0,
+   "date": "2026-10-22",
+   "passes": 0,
+   "price": 2000,
+   "revenue": 0,
+   "taken_at": "2026-11-17T05:10:52Z",
+   "waitlist": 0
+  },
+  {
+   "business": 0,
+   "date": "2026-10-23",
+   "passes": 0,
+   "price": 2000,
+   "revenue": 0,
+   "taken_at": "2026-11-17T05:10:52Z",
+   "waitlist": 0
+  },
+  {
+   "business": 0,
+   "date": "2026-10-24",
+   "passes": 0,
+   "price": 2000,
+   "revenue": 0,
+   "taken_at": "2026-11-17T05:10:52Z",
+   "waitlist": 0
+  },
+  {
+   "business": 0,
+   "date": "2026-10-25",
+   "passes": 0,
+   "price": 2000,
+   "revenue": 0,
+   "taken_at": "2026-11-17T05:10:52Z",
+   "waitlist": 0
+  },
+  {
+   "business": 0,
+   "date": "2026-10-26",
+   "passes": 0,
+   "price": 2000,
+   "revenue": 0,
+   "taken_at": "2026-11-17T05:10:52Z",
+   "waitlist": 0
+  },
+  {
+   "business": 0,
+   "date": "2026-10-27",
+   "passes": 0,
+   "price": 2000,
+   "revenue": 0,
+   "taken_at": "2026-11-17T05:10:52Z",
+   "waitlist": 0
+  },
+  {
+   "business": 0,
+   "date": "2026-10-28",
+   "passes": 0,
+   "price": 2000,
+   "revenue": 0,
+   "taken_at": "2026-11-17T05:10:52Z",
+   "waitlist": 0
+  },
+  {
+   "business": 0,
+   "date": "2026-10-29",
+   "passes": 0,
+   "price": 2000,
+   "revenue": 0,
+   "taken_at": "2026-11-17T05:10:52Z",
+   "waitlist": 0
+  },
+  {
+   "business": 0,
+   "date": "2026-10-30",
+   "passes": 0,
+   "price": 2000,
+   "revenue": 0,
+   "taken_at": "2026-11-17T05:10:52Z",
+   "waitlist": 0
+  },
+  {
+   "business": 0,
+   "date": "2026-10-31",
+   "passes": 0,
+   "price": 2000,
+   "revenue": 0,
+   "taken_at": "2026-11-17T05:10:52Z",
+   "waitlist": 0
+  },
+  {
+   "business": 0,
+   "date": "2026-11-01",
+   "passes": 0,
+   "price": 2000,
+   "revenue": 0,
+   "taken_at": "2026-11-17T05:10:52Z",
+   "waitlist": 0
+  },
+  {
+   "business": 0,
+   "date": "2026-11-02",
+   "passes": 0,
+   "price": 2000,
+   "revenue": 0,
+   "taken_at": "2026-11-17T05:10:52Z",
+   "waitlist": 0
+  },
+  {
+   "business": 0,
+   "date": "2026-11-03",
+   "passes": 0,
+   "price": 2000,
+   "revenue": 0,
+   "taken_at": "2026-11-17T05:10:52Z",
+   "waitlist": 0
+  },
+  {
+   "business": 0,
+   "date": "2026-11-04",
+   "passes": 0,
+   "price": 2000,
+   "revenue": 0,
+   "taken_at": "2026-11-17T05:10:52Z",
+   "waitlist": 0
+  },
+  {
+   "business": 0,
+   "date": "2026-11-05",
+   "passes": 0,
+   "price": 2000,
+   "revenue": 0,
+   "taken_at": "2026-11-17T05:10:52Z",
+   "waitlist": 0
+  },
+  {
+   "business": 0,
+   "date": "2026-11-06",
+   "passes": 0,
+   "price": 2000,
+   "revenue": 0,
+   "taken_at": "2026-11-17T05:10:52Z",
+   "waitlist": 0
+  },
+  {
+   "business": 0,
+   "date": "2026-11-07",
+   "passes": 0,
+   "price": 2000,
+   "revenue": 0,
+   "taken_at": "2026-11-17T05:10:52Z",
+   "waitlist": 0
+  },
+  {
+   "business": 0,
+   "date": "2026-11-08",
+   "passes": 0,
+   "price": 2000,
+   "revenue": 0,
+   "taken_at": "2026-11-17T05:10:52Z",
+   "waitlist": 0
+  },
+  {
+   "business": 0,
+   "date": "2026-11-09",
+   "passes": 0,
+   "price": 2000,
+   "revenue": 0,
+   "taken_at": "2026-11-17T05:10:52Z",
+   "waitlist": 0
+  },
+  {
+   "business": 0,
+   "date": "2026-11-10",
+   "passes": 0,
+   "price": 2000,
+   "revenue": 0,
+   "taken_at": "2026-11-17T05:10:52Z",
+   "waitlist": 0
+  },
+  {
+   "business": 0,
+   "date": "2026-11-11",
+   "passes": 0,
+   "price": 2000,
+   "revenue": 0,
+   "taken_at": "2026-11-17T05:10:52Z",
+   "waitlist": 0
+  },
+  {
+   "business": 0,
+   "date": "2026-11-12",
+   "passes": 0,
+   "price": 2000,
+   "revenue": 0,
+   "taken_at": "2026-11-17T05:10:52Z",
+   "waitlist": 0
+  },
+  {
+   "business": 0,
+   "date": "2026-11-13",
+   "passes": 0,
+   "price": 2000,
+   "revenue": 0,
+   "taken_at": "2026-11-17T05:10:52Z",
+   "waitlist": 0
+  },
+  {
+   "business": 0,
+   "date": "2026-11-14",
+   "passes": 0,
+   "price": 2000,
+   "revenue": 0,
+   "taken_at": "2026-11-17T05:10:52Z",
+   "waitlist": 0
+  },
+  {
+   "business": 0,
+   "date": "2026-11-15",
+   "passes": 0,
+   "price": 2000,
+   "revenue": 0,
+   "taken_at": "2026-11-17T05:10:52Z",
+   "waitlist": 0
+  },
+  {
+   "business": 0,
+   "date": "2026-11-16",
+   "passes": 0,
+   "price": 2000,
+   "revenue": 0,
+   "taken_at": "2026-11-17T05:10:52Z",
+   "waitlist": 0
+  },
+  {
+   "business": 0,
+   "date": "2026-11-17",
+   "pageviews_28d": 270,
+   "pageviews_7d": 93,
+   "passes": 0,
+   "price": 2000,
+   "revenue": 0,
+   "taken_at": "2026-11-17T05:10:52Z",
+   "visits_28d": 270,
+   "visits_7d": 90,
+   "waitlist": 0
+  }
+ ]
 }
