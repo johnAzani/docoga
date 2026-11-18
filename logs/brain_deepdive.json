@@ -983,6 +983,52 @@
     "beat 31 shot 'law text volume' dropped"
    ],
    "run_id": "43534654861"
+  },
+  {
+   "at": "2026-11-18T01:41:38+01:00",
+   "episode": "dd9",
+   "attempt": 1,
+   "outcome": "refused",
+   "title": "Rent Increases: Lagos vs. Kano – Know Your Rights",
+   "problems": [
+    "verifier: claim [lagos:increase_challenge:3] not supported — The episode narration does not mention Enugu's cap or statute at all in this context."
+   ],
+   "healed": [
+    "section 2: style word rewritten",
+    "beat 1 sub cut at a word: 'What to do when your landlord increases the rent. It'",
+    "beat 5 dropped: trigger 'no statutory percentage cap' not spoken in section 2 after word 0",
+    "beat 12 dropped: trigger 'bill not law as' not spoken in section 4 after word 0",
+    "beat 17 dropped: trigger 'no kano standardrent regime' not spoken in section 5 after word 30",
+    "beat 21 plate 'calculator' → letter",
+    "beat 25 dropped: trigger 'high court has jurisdiction' not spoken in section 7 after word 20",
+    "beat 26 dropped: trigger 'general protection against selfhelp' not spoken in section 7 after word 20",
+    "beat 30 plate 'nigeria' → letter",
+    "beat 31 sub cut at a word: 'Laws vary by state: Lagos has remedies, Kano relies on'"
+   ],
+   "run_id": "44208386045"
+  },
+  {
+   "at": "2026-11-18T01:46:18+01:00",
+   "episode": "dd9",
+   "attempt": 2,
+   "outcome": "written",
+   "title": "Rent Increases: Lagos Courts vs. Kano Agreements",
+   "problems": [],
+   "healed": [
+    "beat 2 shot 'naira notes on a table' dropped",
+    "beat 3 plate 'map' → letter",
+    "beat 5 plate 'scales' → letter",
+    "beat 6 sub cut at a word: 'The law lets a court decide what is reasonable, not a fixed'",
+    "beat 6 plate 'calculator' → letter",
+    "beat 13 sub cut at a word: 'If satisfied, Court can change the increase to a specific'",
+    "beat 16 plate 'book' → letter",
+    "beat 16 dropped: trigger 'no kano rentcontrol statute' not spoken in section 5 after word 0",
+    "beat 17 plate 'scales' → letter",
+    "beat 19 shot 'person signing contract' dropped",
+    "beat 21 plate 'document' → letter",
+    "beat 23 plate 'rules' → letter"
+   ],
+   "run_id": "44208386045"
   }
  ]
 }

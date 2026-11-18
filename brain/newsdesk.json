@@ -1,5 +1,5 @@
 {
- "fetched": "2026-11-17T08:18:33+00:00",
+ "fetched": "2026-11-18T00:30:55+00:00",
  "sources": [
   "Punch: 30 stories",
   "Vanguard: 20 stories",
@@ -9,5 +9,30 @@
   "The Guardian Nigeria: unreachable (HTTP Error 403: Forbidden)",
   "Nairametrics: 20 stories"
  ],
- "items": []
+ "items": [
+  {
+   "title": "Enugu Assembly passes bill to restrict rent increase to 2% every four years",
+   "link": "https://businessday.ng/real-estate/article/enugu-assembly-passes-bill-to-restrict-rent-increase-to-2-every-four-years/",
+   "published": "2026-11-17T21:58:40+00:00",
+   "source": "BusinessDay",
+   "score": 9,
+   "matched": [
+    "rent",
+    "eviction"
+   ],
+   "summary": "…Allows 10% increase for renovated properties…Curbs arbitrary charges, unlawful eviction The Enugu State House of Assembly has passed a read more Enugu Assembly passes bill to restrict rent increase t"
+  },
+  {
+   "title": "Top 8 Lagos locations with the highest rental yields in 2026",
+   "link": "https://nairametrics.com/2026/11/17/top-8-lagos-locations-with-the-highest-rental-yields-in-2026/",
+   "published": "2026-11-17T14:29:26+00:00",
+   "source": "Nairametrics",
+   "score": 7,
+   "matched": [
+    "rent",
+    "apartment"
+   ],
+   "summary": "Using the report's findings, this Nairametrics ranking identifies the eight Lagos locations offering the highest rental yields for two-bedroom apartments in 2026, with average annual returns ranging f"
+  }
+ ]
 }

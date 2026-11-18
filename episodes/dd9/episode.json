@@ -1,0 +1,539 @@
+{
+ "id": "dd9",
+ "number": 9,
+ "title": "Rent Increases: Lagos Courts vs. Kano Agreements",
+ "kicker": "DOCOGA — DEEP-DIVE · EPISODE 9",
+ "disclaimer": "GENERAL INFORMATION · NOT LEGAL ADVICE · RULES VARY BY STATE AND AGREEMENT",
+ "voice": {
+  "_locked": "LOCKED by the owner 14 Oct 2026 — must equal tools/deepdive.py LOCKED_VOICE_*; the engine refuses anything else",
+  "name": "Orus",
+  "instruction": "Narrate this in a natural Nigerian English accent, like a confident Lagos radio presenter:"
+ },
+ "audio": {
+  "_comment": "Sound plan — synthesized by tools/soundkit.py, cued from the beats (python3 tools/deepdive.py dd2 cues). Bed levels are dB(A) relative to the narrator's speech; SFX are dB below the voice peak. Run #1 (-27 raw) was inaudible on phones — these are broadcast-documentary levels.",
+  "bed": true,
+  "bpm": 72,
+  "seed": 7,
+  "bed_gap_db": -8,
+  "bed_speech_db": -16,
+  "sfx_db": -12,
+  "hit_db": -9,
+  "tick_db": -16,
+  "riser_db": -14,
+  "stinger_db": -9,
+  "tail_fade_s": 4
+ },
+ "youtube": {
+  "title": "Rent Increase Laws: Lagos Courts vs. Kano Agreements (Deep-Dive 9)",
+  "description": "Facing a rent increase in Nigeria? Your rights depend on your state. This DocOga Deep-Dive explores the crucial differences between Lagos and Kano State when it comes to challenging rent hikes. \n\nIn Lagos, Section 37 of the Tenancy Law 2011 gives sitting tenants a real remedy: you can apply to the Magistrates' Court to declare an increase unreasonable. The Court considers factors like local rent levels and evidence, and can order a specific amount. Crucially, your landlord cannot evict you while this application is pending.\n\nHowever, in Kano State, there is no specific rent-control statute, no tribunal, and no percentage cap on increases. This means that in Kano, your tenancy agreement is king. All terms regarding rent increases must be explicitly stated and agreed upon in your written contract. Without statutory protection, your agreement and a clear rent receipt become your strongest defence.\n\nLearn how to protect your tenancy rights, whether through judicial challenge in Lagos or strong contractual agreements in Kano. Understand why 'paper beats memory' and how DocOga helps you create essential documents like Tenancy Agreements\n\nhttps://docoga.com.ng",
+  "tags": [
+   "Rent Increase Nigeria",
+   "Lagos Tenancy Law",
+   "Kano Rent Law",
+   "Tenant Rights Nigeria",
+   "Unreasonable Rent Increase",
+   "DocOga",
+   "Nigerian Landlord Tenant Law",
+   "Magistrates Court Lagos",
+   "Tenancy Agreement Kano",
+   "Rent Receipt Nigeria",
+   "Property Law Nigeria",
+   "Housing Nigeria",
+   "Lagos Property Market",
+   "Kano Property Market",
+   "Nigerian Tenants"
+  ]
+ },
+ "cover": {
+  "img": "naira",
+  "kicker": "KNOW YOUR RIGHTS",
+  "line1": "RENT HIKE?",
+  "highlight": "KANO",
+  "label": "vs LAGOS",
+  "line2": "What the Law Says",
+  "line3": "About Your Rent Increase",
+  "sub": "Courts in Lagos, agreement in Kano"
+ },
+ "sections": [
+  {
+   "n": 1,
+   "title": "The Rent Hike Nightmare"
+  },
+  {
+   "n": 2,
+   "title": "Lagos: Your Right to Challenge"
+  },
+  {
+   "n": 3,
+   "title": "How Lagos Law Works"
+  },
+  {
+   "n": 4,
+   "title": "The Court's Decision in Lagos"
+  },
+  {
+   "n": 5,
+   "title": "Kano: The Absence of Specific Law"
+  },
+  {
+   "n": 6,
+   "title": "Kano: Agreement Is King"
+  },
+  {
+   "n": 7,
+   "title": "The Power of Your Written Agreement in Kano"
+  },
+  {
+   "n": 8,
+   "title": "Protecting Your Tenancy, Everywhere"
+  },
+  {
+   "n": 9,
+   "title": "The Law, and DocOga"
+  }
+ ],
+ "beats": [
+  {
+   "sec": 1,
+   "trig": null,
+   "head": "The Rent Hike Nightmare",
+   "sub": "That dreaded rent increase: your rights depend on your state.",
+   "img": "rooftops",
+   "shot": "city rooftops at dusk"
+  },
+  {
+   "sec": 1,
+   "trig": [
+    "rent",
+    "is",
+    "going",
+    "up"
+   ],
+   "head": "Rent Is Going Up",
+   "sub": "Do you accept it or can you challenge the increase?",
+   "img": "naira",
+   "shot": null
+  },
+  {
+   "sec": 1,
+   "trig": [
+    "depends",
+    "on",
+    "where",
+    "you"
+   ],
+   "head": "Where You Live Matters",
+   "sub": "Lagos and Kano have very different rules for rent increases.",
+   "img": "letter",
+   "shot": "map of nigeria"
+  },
+  {
+   "sec": 2,
+   "trig": null,
+   "head": "Lagos: Your Right to Challenge",
+   "sub": "The Tenancy Law 2011 offers tenants a powerful tool.",
+   "img": "court",
+   "shot": "courtroom interior"
+  },
+  {
+   "sec": 2,
+   "trig": [
+    "unreasonable",
+    "rent",
+    "increases"
+   ],
+   "head": "Unreasonable Increases",
+   "sub": "Lagos aims for fairness, not just landlord's mercy.",
+   "img": "letter",
+   "shot": "scales of justice"
+  },
+  {
+   "sec": 2,
+   "trig": [
+    "no",
+    "statutory",
+    "percentage",
+    "cap"
+   ],
+   "head": "No Percentage Cap",
+   "sub": "The law lets a court decide what is reasonable, not a fixed",
+   "img": "letter",
+   "shot": "calculator display"
+  },
+  {
+   "sec": 3,
+   "trig": null,
+   "head": "How Lagos Law Works",
+   "sub": "Section 37 gives tenants a real remedy for rent hikes.",
+   "img": "letter",
+   "shot": "legal document form"
+  },
+  {
+   "sec": 3,
+   "trig": [
+    "section",
+    "37",
+    "gives"
+   ],
+   "head": "Use Section 37",
+   "sub": "Apply to the Court to declare the increase unreasonable.",
+   "img": "pen",
+   "shot": "hand writing on paper"
+  },
+  {
+   "sec": 3,
+   "trig": [
+    "completing",
+    "form",
+    "tl11"
+   ],
+   "head": "File Form TL11",
+   "sub": "Your official application starts the legal process.",
+   "img": "letter",
+   "shot": "official form document"
+  },
+  {
+   "sec": 4,
+   "trig": null,
+   "head": "The Court's Decision in Lagos",
+   "sub": "The Court weighs specific factors to decide what's fair.",
+   "img": "court",
+   "shot": "judge's gavel"
+  },
+  {
+   "sec": 4,
+   "trig": [
+    "hearing",
+    "notice",
+    "on",
+    "form"
+   ],
+   "head": "Hearing Notice TL12",
+   "sub": "Both parties present their case, with evidence and witnesses.",
+   "img": "calendar",
+   "shot": "calendar with highlighted date"
+  },
+  {
+   "sec": 4,
+   "trig": [
+    "general",
+    "level",
+    "of",
+    "rents"
+   ],
+   "head": "Locality Rent Levels",
+   "sub": "Court compares your rent to similar properties nearby.",
+   "img": "rooftops",
+   "shot": "neighbourhood buildings"
+  },
+  {
+   "sec": 4,
+   "trig": [
+    "order",
+    "on",
+    "form",
+    "tl13"
+   ],
+   "head": "Court Orders New Rent",
+   "sub": "If satisfied, Court can change the increase to a specific",
+   "img": "letter",
+   "shot": "court order document"
+  },
+  {
+   "sec": 4,
+   "trig": [
+    "unlawful",
+    "for",
+    "a",
+    "landlord"
+   ],
+   "head": "No Eviction Pending",
+   "sub": "Landlord cannot eject you while your application is active.",
+   "img": "door",
+   "shot": "locked door"
+  },
+  {
+   "sec": 5,
+   "trig": null,
+   "head": "Kano: Absence of Specific Law",
+   "sub": "Kano's legal landscape for rent increases is very different.",
+   "img": "keke",
+   "shot": "keke napep on street"
+  },
+  {
+   "sec": 5,
+   "trig": [
+    "absence",
+    "of",
+    "specific",
+    "statutory"
+   ],
+   "head": "No Statutory Protection",
+   "sub": "No specific provisions change how increases are handled.",
+   "img": "letter",
+   "shot": "unbalanced scales of justice"
+  },
+  {
+   "sec": 6,
+   "trig": null,
+   "head": "Kano: Agreement Is King",
+   "sub": "Without specific laws, your tenancy agreement is paramount.",
+   "img": "letter",
+   "shot": "signed agreement document"
+  },
+  {
+   "sec": 6,
+   "trig": [
+    "everything",
+    "turns",
+    "on",
+    "the"
+   ],
+   "head": "Agreement Is Paramount",
+   "sub": "No statutory figure or tribunal for rent challenges in Kano.",
+   "img": "pen",
+   "shot": null
+  },
+  {
+   "sec": 6,
+   "trig": [
+    "no",
+    "kano",
+    "equivalent",
+    "of"
+   ],
+   "head": "No Lagos S.37 Equivalent",
+   "sub": "No tribunal to declare increases unreasonable in Kano.",
+   "img": "court",
+   "shot": "empty courtroom bench"
+  },
+  {
+   "sec": 6,
+   "trig": [
+    "burden",
+    "squarely",
+    "on",
+    "the"
+   ],
+   "head": "Your Contract Rules",
+   "sub": "Rent increases depend entirely on your tenancy agreement.",
+   "img": "letter",
+   "shot": "legal contract paper"
+  },
+  {
+   "sec": 7,
+   "trig": null,
+   "head": "Power of Written Agreement",
+   "sub": "In Kano, your tenancy agreement is your primary shield.",
+   "img": "letter",
+   "shot": "detailed written agreement"
+  },
+  {
+   "sec": 7,
+   "trig": [
+    "rent",
+    "increases",
+    "are",
+    "governed"
+   ],
+   "head": "Agreement Governs All",
+   "sub": "If your agreement is silent, general contract law applies.",
+   "img": "letter",
+   "shot": null
+  },
+  {
+   "sec": 7,
+   "trig": [
+    "explicitly",
+    "stated",
+    "clear",
+    "and"
+   ],
+   "head": "Be Explicit in Contract",
+   "sub": "Negotiate and clearly state rent review and increase terms.",
+   "img": "letter",
+   "shot": null
+  },
+  {
+   "sec": 7,
+   "trig": [
+    "agreement",
+    "governs",
+    "first",
+    "where"
+   ],
+   "head": "Agreement Binds First",
+   "sub": "Where it fixes the notice, that period is legally binding.",
+   "img": "letter",
+   "shot": "binding contract"
+  },
+  {
+   "sec": 8,
+   "trig": null,
+   "head": "Protecting Your Tenancy",
+   "sub": "Universal principles apply, whether Lagos or Kano.",
+   "img": "door",
+   "shot": "secure front door"
+  },
+  {
+   "sec": 8,
+   "trig": [
+    "insist",
+    "on",
+    "a",
+    "written"
+   ],
+   "head": "Written Agreement First",
+   "sub": "Read every line before signing; check all rent clauses.",
+   "img": "pen",
+   "shot": "hand signing agreement"
+  },
+  {
+   "sec": 8,
+   "trig": [
+    "getting",
+    "a",
+    "receipt",
+    "for"
+   ],
+   "head": "Get Every Receipt",
+   "sub": "Crucial evidence of payment, especially in Kano.",
+   "img": "letter",
+   "shot": "stack of receipts"
+  },
+  {
+   "sec": 9,
+   "trig": null,
+   "head": "The Law, and DocOga",
+   "sub": "State laws differ; always be informed and prepared.",
+   "img": "phone",
+   "shot": null
+  },
+  {
+   "sec": 9,
+   "trig": [
+    "paper",
+    "beats",
+    "memory"
+   ],
+   "head": "Paper Beats Memory",
+   "sub": "Written documents protect your tenancy rights every time.",
+   "img": "letter",
+   "shot": "important document"
+  },
+  {
+   "sec": 9,
+   "trig": [
+    "docoga",
+    "is",
+    "here",
+    "to"
+   ],
+   "head": "DocOga Empowers You",
+   "sub": "Standard Nigerian documents in two minutes, on your phone.",
+   "img": "phone",
+   "shot": "app interface on phone"
+  },
+  {
+   "sec": 9,
+   "trig": [
+    "ten",
+    "tools",
+    "for",
+    "free"
+   ],
+   "head": "Free to Start",
+   "sub": "No signup, no card needed for our ten free tools.",
+   "img": "naira",
+   "shot": "stack of naira coins"
+  },
+  {
+   "sec": 9,
+   "trig": [
+    "oga",
+    "pass",
+    "for",
+    "just"
+   ],
+   "head": "Oga Pass: ₦2,000",
+   "sub": "Unlimited clean copies of all tools for thirty days.",
+   "img": "celebration",
+   "shot": "hands celebrating"
+  },
+  {
+   "sec": 9,
+   "trig": [
+    "today",
+    "with",
+    "docoga"
+   ],
+   "head": "DOCOGA",
+   "sub": "docoga.com.ng — link in the description",
+   "img": "celebration",
+   "shot": null,
+   "endcard": true
+  }
+ ],
+ "brain": {
+  "written": "2026-11-18T01:46:18+01:00",
+  "theme": "rent-increases-lagos-kano-agreements",
+  "claims": [
+   {
+    "text": "There is no statutory percentage cap on rent increases in Lagos.",
+    "fact_id": "lagos:increase_challenge:3"
+   },
+   {
+    "text": "s.37 gives a sitting tenant a real remedy. On Form TL11 the tenant applies to the Court for an order declaring an increase unreasonable.",
+    "fact_id": "lagos:increase_challenge:1"
+   },
+   {
+    "text": "The Court issues a hearing notice on Form TL12 and weighs (a) the general level of rents in the locality or a similar locality, (b) evidence of witnesses, and (c) any special circumstances.",
+    "fact_id": "lagos:increase_challenge:1"
+   },
+   {
+    "text": "If satisfied, it may order on Form TL13 that the increase be changed to a specific amount.",
+    "fact_id": "lagos:increase_challenge:1"
+   },
+   {
+    "text": "It is unlawful for a landlord to eject a tenant while that application is pending.",
+    "fact_id": "lagos:increase_challenge:2"
+   },
+   {
+    "text": "There is no Rent Tribunal in Lagos. The tribunals were abolished and their functions transferred to the Magistrates’ Courts, and s.48 of the 2011 Law repealed the Rent Tribunals (Abolition and Transfer of Functions) Law 2007.",
+    "fact_id": "lagos:forum:1"
+   },
+   {
+    "text": "s.47 defines “Court” as the High Court and Magistrates’ Court of Lagos State and expressly excludes the Customary Court.",
+    "fact_id": "lagos:forum:1"
+   },
+   {
+    "text": "On the present state of published sources there is no Kano rent-control statute we can cite, which means there is no Kano standard-rent regime, no Kano rent tribunal we can identify, and no Kano advance-rent cap.",
+    "fact_id": "kano:verified_negative:2"
+   },
+   {
+    "text": "That absence is itself the useful information. A Kano tenant has no statutory figure to point to and no tribunal to apply to about the rent itself — so everything turns on the tenancy agreement.",
+    "fact_id": "kano:verified_negative:3"
+   },
+   {
+    "text": "With no rent-control statute there is no Kano equivalent of the Lagos s.37 application to have an increase declared unreasonable, and no tribunal to apply to.",
+    "fact_id": "kano:increase_challenge:1"
+   },
+   {
+    "text": "Rent increases are governed entirely by the tenancy agreement.",
+    "fact_id": "kano:increase_challenge:1"
+   },
+   {
+    "text": "No percentage cap on rent increases exists in Kano.",
+    "fact_id": "kano:increase_challenge:2"
+   },
+   {
+    "text": "The agreement governs first. Where it fixes the notice, that period binds; the statutory ladder applies only where it is silent.",
+    "fact_id": "kano:notice_extras:3"
+   },
+   {
+    "text": "Because there is also no rent-control regime to give a tenant a paper trail remedy, the receipt matters more in Kano, not less: with no statutory rent record and no tribunal, a tenant’s evidence that rent was paid is the receipt itself.",
+    "fact_id": "kano:receipts:1"
+   }
+  ]
+ }
+}
