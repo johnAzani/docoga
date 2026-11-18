@@ -477,5 +477,23 @@
   "tool": "caution-fee",
   "tool_routed": false,
   "news_hook": null
+ },
+ {
+  "date": "2026-11-20",
+  "theme": "anambra-seven-days-notice-owner-intention-stat",
+  "headline": "7 clear days is the statutory rule in Anambra",
+  "post_type": "promo",
+  "hook_type": "STAT",
+  "state": "anambra",
+  "fact_ids": [
+   "anambra:notice_extras:5"
+  ],
+  "recalled": 0,
+  "plate": "wooden courtroom bench gavel",
+  "short": true,
+  "reader": "okafor",
+  "tool": "notice-to-quit",
+  "tool_routed": false,
+  "news_hook": null
  }
 ]

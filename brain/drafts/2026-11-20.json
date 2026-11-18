@@ -1,0 +1,99 @@
+{
+ "version": 1,
+ "status": "approved",
+ "date": "2026-11-20",
+ "generated_at": "2026-11-18T08:50:14+01:00",
+ "theme": "anambra-seven-days-notice-owner-intention-stat",
+ "post_type": "promo",
+ "hook_type": "STAT",
+ "state": "anambra",
+ "claims": [
+  {
+   "text": "In Anambra, the landlord must serve a notice of owner intention of not less than seven clear days after quit notice expires.",
+   "fact_id": "anambra:notice_extras:5"
+  }
+ ],
+ "recalled": [],
+ "post": {
+  "headline": "7 clear days is the statutory rule in Anambra",
+  "lines": [
+   "Serving a quit notice is only stage one for an Anambra landlord.",
+   "In Anambra, the landlord must serve a notice of owner intention of not less than seven clear days after quit",
+   "notice expires.",
+   "The day of service is excluded, and the day of expiry is included.",
+   "Generate a valid notice to quit and owner intention form in two minutes."
+  ],
+  "cta": "Send this to a property owner managing units in Anambra.",
+  "hashtags": [
+   "#DocOga",
+   "#AnambraRealEstate",
+   "#NigerianLandlords",
+   "#PropertyManagement"
+  ]
+ },
+ "threads": {
+  "text": "In Anambra, a landlord cannot rush straight to court once a quit notice ends. The law requires a notice of owner's intention giving at least 7 clear days after expiry. Have you served both statutory notices?",
+  "hashtags": [
+   "#DocOga",
+   "#AnambraProperty"
+  ],
+  "topic": "Anambra Tenancy Law",
+  "poll": null,
+  "evening": "A quit notice ending does not automatically open the courtroom door in Anambra. The 7 days notice of intention must follow."
+ },
+ "visual": {
+  "kicker": "Anambra notice rules",
+  "layout": "stat",
+  "big": "7 DAYS",
+  "plate": "wooden courtroom bench gavel"
+ },
+ "short": {
+  "title": "Unreturned caution fee? Issue a demand letter.",
+  "hook_sub": "When your landlord ignores your refund calls",
+  "hook_say": "Moved out in peace but your caution fee is suddenly trapped? Calling every morning will not build evidence. A formal demand letter starts the legal countdown.",
+  "tips": [
+   {
+    "text": "Itemise every lawful deduction",
+    "sub": "Demand full written receipts for claimed repairs",
+    "say": "Do not accept verbal deductions. Your letter should demand written receipts and proof for every single repair the landlord claims against your initial caution deposit."
+   },
+   {
+    "text": "State the exact amount",
+    "sub": "Specify the precise balance owed to you",
+    "say": "State the exact naira figure paid on move-in and subtract undisputed repairs. Ambiguity gives room for endless excuses and delay tactics."
+   },
+   {
+    "text": "Set a firm deadline",
+    "sub": "Give seven to fourteen days to pay",
+    "say": "Set a strict deadline of seven to fourteen working days for the refund. This establishes unreasonable delay if you escalate to small claims court."
+   },
+   {
+    "text": "Deliver with proof",
+    "sub": "Send via registered post or signed delivery",
+    "say": "Deliver the letter by hand with a signed acknowledgment copy, or send via trackable dispatch. That signed acknowledgment is your evidence in court."
+   }
+  ],
+  "hook_text": "UNRETURNED CAUTION FEE?\nISSUE A DEMAND LETTER.",
+  "series": {
+   "slug": "caution-fee",
+   "name": "Caution fee",
+   "part": 5,
+   "total": 5,
+   "label": "The demand letter"
+  }
+ },
+ "why": "Friday promo lead using the winning STAT hook archetype and targeting landlord Mr Okafor on Anambra's 7 clear days requirement, combined with part 5 of the caution fee Short series on demand letters.",
+ "tool": "notice-to-quit",
+ "tool_routed": false,
+ "reader": "okafor",
+ "news_hook": null,
+ "quiz": null,
+ "gates": [
+  "citation",
+  "verification",
+  "lint",
+  "repetition",
+  "shape"
+ ],
+ "note": ""
+}

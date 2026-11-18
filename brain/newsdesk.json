@@ -1,5 +1,5 @@
 {
- "fetched": "2026-11-18T00:30:55+00:00",
+ "fetched": "2026-11-18T07:49:26+00:00",
  "sources": [
   "Punch: 30 stories",
   "Vanguard: 20 stories",
@@ -11,28 +11,31 @@
  ],
  "items": [
   {
-   "title": "Enugu Assembly passes bill to restrict rent increase to 2% every four years",
-   "link": "https://businessday.ng/real-estate/article/enugu-assembly-passes-bill-to-restrict-rent-increase-to-2-every-four-years/",
-   "published": "2026-11-17T21:58:40+00:00",
-   "source": "BusinessDay",
-   "score": 9,
+   "title": "EXPLAINER: Things to know about Enugu’s proposed 2% rent cap",
+   "link": "https://punchng.com/explainer-things-to-know-about-enugus-proposed-2-rent-cap/?utm_source=rss.punchng.com&utm_medium=web",
+   "published": "2026-11-18T06:54:40+00:00",
+   "source": "Punch",
+   "score": 14,
    "matched": [
+    "landlord",
+    "landlords",
     "rent",
-    "eviction"
+    "rents"
    ],
-   "summary": "…Allows 10% increase for renovated properties…Curbs arbitrary charges, unlawful eviction The Enugu State House of Assembly has passed a read more Enugu Assembly passes bill to restrict rent increase t"
+   "summary": "The Enugu State House of Assembly has passed a bill seeking to restrict landlords from increasing rents by more than two per cent every four years, a proposal that could significantly change the… Read"
   },
   {
-   "title": "Top 8 Lagos locations with the highest rental yields in 2026",
-   "link": "https://nairametrics.com/2026/11/17/top-8-lagos-locations-with-the-highest-rental-yields-in-2026/",
-   "published": "2026-11-17T14:29:26+00:00",
+   "title": "Enugu Assembly passes bill limiting rent increases to 2% every four years",
+   "link": "https://nairametrics.com/2026/11/18/enugu-assembly-passes-bill-limiting-rent-increases-to-2-every-four-years/",
+   "published": "2026-11-18T06:32:55+00:00",
    "source": "Nairametrics",
-   "score": 7,
+   "score": 12,
    "matched": [
-    "rent",
-    "apartment"
+    "landlord",
+    "landlords",
+    "rent"
    ],
-   "summary": "Using the report's findings, this Nairametrics ranking identifies the eight Lagos locations offering the highest rental yields for two-bedroom apartments in 2026, with average annual returns ranging f"
+   "summary": "The Enugu State House of Assembly has passed a bill seeking to limit landlords to a maximum rent increase of 2% every four years, subject to specified exceptions. The post Enugu Assembly passes bill l"
   }
  ]
 }
