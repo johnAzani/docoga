@@ -516,5 +516,26 @@
     "playlist_item_id": "UExGMExMRGJHczhBVS4xMkVGQjNCMUM1N0RFNEUx",
     "planned_at": "2026-11-18T10:24:57+00:00",
     "notes": []
+  },
+  {
+    "video_id": "tkkbU8J56vI",
+    "kind": "short",
+    "title": "Deduct caution fee blindly. Pay twice in court.",
+    "date": "2026-11-18",
+    "comment_text": "Full episode (free, 9 minutes): Your Rent Can Reduce Your Tax: The New Federal Law (Deep-Dive 6) — https://www.youtube.com/watch?v=8xiJEqF3B1U\nPart 3 of 5 · Caution fee.\nPart 4 tomorrow, 7:00pm.\n\nWhich of these do you already do — and which one have you been skipping? Tell me below 👇\n\nFree receipt, tenancy agreement and notice templates (no sign-up): https://docoga.com.ng/?s=yt",
+    "comment_id": "",
+    "playlist_id": "",
+    "playlist_item_id": "",
+    "planned_at": "2026-11-18T17:17:58+00:00",
+    "notes": [],
+    "series": {
+      "slug": "caution-fee",
+      "name": "Caution fee",
+      "part": 3,
+      "total": 5,
+      "week_start": "2026-11-16"
+    },
+    "series_playlist_id": "",
+    "series_item_id": ""
   }
 ]
