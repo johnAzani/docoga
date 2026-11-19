@@ -1,5 +1,5 @@
 {
- "fetched": "2026-11-18T07:49:26+00:00",
+ "fetched": "2026-11-19T00:31:00+00:00",
  "sources": [
   "Punch: 30 stories",
   "Vanguard: 20 stories",
@@ -9,33 +9,5 @@
   "The Guardian Nigeria: unreachable (HTTP Error 403: Forbidden)",
   "Nairametrics: 20 stories"
  ],
- "items": [
-  {
-   "title": "EXPLAINER: Things to know about Enugu’s proposed 2% rent cap",
-   "link": "https://punchng.com/explainer-things-to-know-about-enugus-proposed-2-rent-cap/?utm_source=rss.punchng.com&utm_medium=web",
-   "published": "2026-11-18T06:54:40+00:00",
-   "source": "Punch",
-   "score": 14,
-   "matched": [
-    "landlord",
-    "landlords",
-    "rent",
-    "rents"
-   ],
-   "summary": "The Enugu State House of Assembly has passed a bill seeking to restrict landlords from increasing rents by more than two per cent every four years, a proposal that could significantly change the… Read"
-  },
-  {
-   "title": "Enugu Assembly passes bill limiting rent increases to 2% every four years",
-   "link": "https://nairametrics.com/2026/11/18/enugu-assembly-passes-bill-limiting-rent-increases-to-2-every-four-years/",
-   "published": "2026-11-18T06:32:55+00:00",
-   "source": "Nairametrics",
-   "score": 12,
-   "matched": [
-    "landlord",
-    "landlords",
-    "rent"
-   ],
-   "summary": "The Enugu State House of Assembly has passed a bill seeking to limit landlords to a maximum rent increase of 2% every four years, subject to specified exceptions. The post Enugu Assembly passes bill l"
-  }
- ]
+ "items": []
 }

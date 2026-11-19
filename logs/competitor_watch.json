@@ -1,7 +1,21 @@
 {
- "pulled_at": "2026-11-18T07:49:26+00:00",
+ "pulled_at": "2026-11-19T00:31:00+00:00",
  "days": 14,
  "items": [
+  {
+   "competitor": "Olamide Oyetayo Legal",
+   "kind": "content",
+   "title": "Rent increment in Nigeria: What Tenants and Landlords must know",
+   "link": "https://olamideoyetayolegal.com/rent-increment-in-nigeria-what-tenants-and-landlords-must-know-2/",
+   "published": "2026-11-13T11:44:36+00:00"
+  },
+  {
+   "competitor": "Olamide Oyetayo Legal",
+   "kind": "content",
+   "title": "Leading Law firm in Abuja: Olamide Oyetayo & Co | Dispute Resolution | Commercial law & Property management",
+   "link": "https://olamideoyetayolegal.com/leading-law-firm-in-abuja-olamide-oyetayo-co-dispute-resolution-commercial-law-property-management/",
+   "published": "2026-11-13T11:38:35+00:00"
+  },
   {
    "competitor": "SabiLaw Solutions",
    "kind": "tool",
@@ -10,45 +24,24 @@
    "published": "2026-11-11T19:08:31+00:00"
   },
   {
-   "competitor": "Mushrooms.ng blog",
-   "kind": "content",
-   "title": "7 days notice to quit nigeria",
-   "link": "https://mushrooms.ng/blog/7-days-notice-to-quit-nigeria",
-   "published": "2026-11-05T00:00:00+00:00"
-  },
-  {
-   "competitor": "Mushrooms.ng blog",
-   "kind": "content",
-   "title": "House for rent captions nigeria",
-   "link": "https://mushrooms.ng/blog/house-for-rent-captions-nigeria",
-   "published": "2026-11-05T00:00:00+00:00"
-  },
-  {
-   "competitor": "Mushrooms.ng blog",
-   "kind": "content",
-   "title": "How much can landlord increase rent nigeria",
-   "link": "https://mushrooms.ng/blog/how-much-can-landlord-increase-rent-nigeria",
-   "published": "2026-11-05T00:00:00+00:00"
-  },
-  {
-   "competitor": "Mushrooms.ng blog",
-   "kind": "content",
-   "title": "How to advertise house for rent nigeria",
-   "link": "https://mushrooms.ng/blog/how-to-advertise-house-for-rent-nigeria",
-   "published": "2026-11-05T00:00:00+00:00"
+   "competitor": "Legalnaija templates",
+   "kind": "tool",
+   "title": "Why your firm’s year-end party should leave something on the wall",
+   "link": "https://legalnaija.com/why-your-firms-year-end-party-should-leave-something-on-the-wall/",
+   "published": "2026-11-11T00:10:07+00:00"
   }
  ],
  "sources": [
-  "https://nigeriabuildingcost.ng/sitemap.xml: 411 changed page(s)",
+  "https://nigeriabuildingcost.ng/sitemap.xml: 418 changed page(s)",
   "https://www.wonder.legal/ng/sitemap.xml: 0 changed page(s)",
   "https://diylaw.ng/sitemap.xml: 0 changed page(s)",
   "https://sabilaw.org/feed/: 8 fresh post(s)",
-  "https://legalnaija.com/feed/: unreachable (HTTP Error 415: Unsupported Media Type)",
+  "https://legalnaija.com/feed/: 2 fresh post(s)",
   "https://rently.ng/sitemap.xml: 0 changed page(s)",
   "https://homz.ng/sitemap.xml: 0 changed page(s)",
-  "https://mushrooms.ng/sitemap.xml: 51 changed page(s)",
+  "https://mushrooms.ng/sitemap.xml: 36 changed page(s)",
   "https://lexpraxisng.com/feed/: 2 fresh post(s)",
-  "https://olamideoyetayolegal.com/feed/: unreachable (HTTP Error 415: Unsupported Media Type)",
+  "https://olamideoyetayolegal.com/feed/: 4 fresh post(s)",
   "https://www.youtube.com/feeds/videos.xml?channel_id=UCa158r8OZoEia4z2DhPg2LA: 3 fresh post(s)"
  ],
  "unwatchable": [

@@ -495,5 +495,25 @@
   "tool": "notice-to-quit",
   "tool_routed": false,
   "news_hook": null
+ },
+ {
+  "date": "2026-11-21",
+  "theme": "enugu-rent-increase-checklist-landlord-tenant-rights",
+  "headline": "Enugu landlords: Avoid unlawful rent increases",
+  "post_type": "checklist",
+  "hook_type": "STAKES",
+  "state": "enugu",
+  "fact_ids": [
+   "enugu:increase_challenge:1",
+   "enugu:protections:2",
+   "enugu:increase_challenge:4"
+  ],
+  "recalled": 0,
+  "plate": "enugu building skyline",
+  "short": false,
+  "reader": "okafor",
+  "tool": "rent-review",
+  "tool_routed": false,
+  "news_hook": null
  }
 ]
