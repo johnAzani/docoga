@@ -314,7 +314,9 @@ receipt format Nigeria (Lagos)"), the link carries `?s=ig`, and the card gets al
 items. Google indexes professional accounts' posts since 10 Jul 2025.
 
 **Weekday Shorts + Telegram native video.** `youtube_scheduled.yml` runs every weekday 18:00
-WAT (Mon + Thu added 17 Oct 2026 — the Reels lane narrates the same topic that morning and the
+WAT (since 17 Nov 2026 the Reels lane takes Saturdays and Sundays — the weekdays' Reel comes from
+the 19:00 Shorts lane — and narrates a frame the Page has not carried in 28 days, never the day's
+Short; added 17 Oct 2026, when it was Mon + Thu and narrated the same topic that morning and the
 voice comes back from the shared cache, so the extra Shorts cost the narrator nothing; brain
 `SHORT_DAYS` is Mon–Fri). After every YouTube upload, `tools/telegram_video.py`
 posts the same MP4 to the Telegram channel with `sendVideo` (≤50 MB, caption with the

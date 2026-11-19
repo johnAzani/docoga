@@ -1613,6 +1613,11 @@ def deepdive_problems(ep, facts_by_id):
     desc = str(yt.get("description") or "")
     if not (200 <= len(desc) <= 1200) or "docoga.com.ng" not in desc:
         p.append("youtube.description 250-900 characters and must contain docoga.com.ng")
+    # 19 Nov 2026: the prompt has always asked for it and the validator never checked, so dd9 went
+    # out without the line. A public Deep-Dive that does not say it is not legal advice is the one
+    # omission this business cannot ship.
+    if "not legal advice" not in desc.lower():
+        p.append("youtube.description must carry the line 'General information, not legal advice.'")
     if not (6 <= len(yt.get("tags") or []) <= 20):
         p.append("youtube.tags 8-15")
     narration = " ".join(str(s.get("narration") or "") for s in secs if isinstance(s, dict))

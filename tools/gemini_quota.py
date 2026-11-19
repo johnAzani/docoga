@@ -241,7 +241,11 @@ def status_line(now=None):
 # been published since. "Since" matters: a hand-run publish the next morning
 # settles the debt; the resumer must not add a third Short to the week.
 SHORTS_SLOT = {"weekdays": (1, 4), "utc_hour": 17, "utc_minute": 0}    # youtube_scheduled.yml
-REELS_SLOT = {"weekdays": (0, 3), "utc_hour": 8, "utc_minute": 30}     # facebook_autopost.yml, Mon/Thu
+# facebook_autopost.yml runs this lane on Saturdays and Sundays since 17 Nov 2026 (weekdays belong
+# to the Shorts lane's 19:00 Reel), and only when the Page has a frame outside its 28-day freshness
+# window. The *debt* it can still prove is the two days a week this schedule was built on: Mon/Thu.
+# A weekend stand-down is not an owed Reel.
+REELS_SLOT = {"weekdays": (0, 3), "utc_hour": 8, "utc_minute": 30}
 OWED_LOOKBACK_DAYS = 3
 
 

@@ -413,11 +413,16 @@ def watch(now=None, root=ROOT):
     reel_hit = _between(reels, at - timedelta(minutes=20), at + grace)
     if reel_hit:
         ev.append(_ev("Reel published", True, reel_hit[0].get("url"), reel_hit[0].get("title") or reel_hit[0].get("topic")))
-    reel_day = weekday in (0, 3)          # scripts/facebook_reel_daily.py REEL_WEEKDAYS
-    if reel_day and not reel_hit:
+    # The lane runs every day since 17 Nov 2026 and publishes when the Page still has a frame
+    # outside its 28-day freshness window (scripts/facebook_reel_daily.py REEL_WEEKDAYS, and
+    # reel_script() for the pick). A missing Reel is only a fault on the two days the lane was
+    # built on — Mon/Thu — because every other day may legitimately stand down.
+    reel_day = True
+    reel_owed = weekday in (0, 3)      # the two days the lane was built on: a gap here is a fault
+    if reel_owed and not reel_hit:
         ev.append(_ev("Reel published", False, None, "nothing in the Reels ledger yet"))
-    items.append({"at": at.isoformat().replace("+00:00", "Z"), "lane": "Facebook", "title": "Facebook Page post" + (" + Reel" if reel_day else ""),
-                  "expect": ["the day's card and copy on the Page"] + (["today is a Reel day (Mon/Thu): a voiced Reel on the Page, mirrored to Instagram Reels"] if reel_day else []), "evidence": ev})
+    items.append({"at": at.isoformat().replace("+00:00", "Z"), "lane": "Facebook", "title": "Facebook Page post" + (" + Reel" if reel_hit else ""),
+                  "expect": ["the day's card and copy on the Page"] + (["a voiced Reel on the Page, mirrored to Instagram Reels, when the rotation still has a frame the Page has not carried in 28 days"] if reel_day else []), "evidence": ev})
 
     # 6:00pm Short (weekdays)
     if weekday < 5:

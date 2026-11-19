@@ -582,13 +582,21 @@ if pub_reel:
           "a 3-tuple on one branch unpacks into a ValueError in the caller")
 daily = open(reel_files["decider"], encoding="utf-8").read() if os.path.exists(reel_files["decider"]) else ""
 if daily:
-    check("the reel days never collide with the Shorts days",
-          "REEL_WEEKDAYS = (0, 3)" in daily,
-          "same weekday = same rotation index = the same frame on both platforms")
+    # 17 Nov 2026: the lane went daily ("Ok let's do it"), so the calendar can no longer be
+    # what keeps the frame off both platforms on one day. The frame pick is: the day's Short is
+    # removed from the pool and the walk reads the Page's own ledger, standing down rather than
+    # repeating (fresh.FRESH_DAYS).
+    check("the reel takes the weekend (the Shorts lane has the weekdays) and its frame pick excludes the day's Short",
+          "REEL_WEEKDAYS = (5, 6)" in daily
+          and "short_title" in daily and 'fresh.history("facebook")' in daily,
+          "a weekday morning Reel would duel the 19:00 Shorts-lane Reel; and the same frame on "
+          "both platforms in one day is the repetition the freshness window exists to stop")
+    # The import must live inside the frame pick (17 Nov 2026: `reel_script`), never at module
+    # level: the plan step runs before the renderer's dependencies are installed.
     check("the decision does not import the renderer at module level",
-          "import generate_short_video" in daily.split("def reel_topic")[1][:400]
-          and "import shorts_reel" not in daily.split("def render(")[0]
-          and daily.index("import generate_short_video as words") > daily.index("def reel_topic"),
+          "import generate_short_video as words" in daily.split("def reel_script")[1][:2000]
+          and not re.search(r"(?m)^import generate_short_video", daily)
+          and not re.search(r"(?m)^import shorts_reel", daily),
           "a plan step that cannot import is a skipped lane, in red")
     check("the mode defaults to probe", '"probe"' in daily and "REELS_MODE" in daily)
 wf_reel = open(soc["workflow"], encoding="utf-8").read() if os.path.exists(soc["workflow"]) else ""

@@ -24,7 +24,8 @@ name: DocOga Instagram Auto-Post
 # Reel would need a public MP4 — a 25 MiB static-asset ceiling, a deploy race, and a CDN
 # terms grey area, for a file Meta fetches once. Meta's resumable upload needs no host at all
 # but exists only on the Facebook-Login path, i.e. with the *Page* token the Facebook lane
-# holds. So the Instagram Reel is published by `facebook_autopost.yml` (Mon + Thu) from the
+# holds. So the Instagram Reel is published by the Facebook lanes (weekday Shorts at 19:00, the
+# weekend morning reel at 09:30) from the
 # very same MotionStudio render as the Facebook Reel, right after it, with
 # `tools/ig_publish.py --video-file` and the daily readiness probe `--probe-reels`.
 # `content_type: reel` here therefore points at that lane instead of pretending.
@@ -414,7 +415,7 @@ jobs:
               exit 0
               ;;
             reel)
-              echo "::error title=Reels go out through the Facebook lane::the Instagram Reel is uploaded by facebook_autopost.yml (Mon + Thu, or Actions → DocOga Facebook Auto-Post → Run workflow → mode: reel) from the same render as the Facebook Reel, by Meta's resumable upload with the Page token. This lane's token is on the Instagram-Login host, which has no upload endpoint — docs/INSTAGRAM_THREADS_AUTOMATION.md → Reels."
+              echo "::error title=Reels go out through the Facebook lane::the Instagram Reel is uploaded by facebook_autopost.yml (Saturdays and Sundays, or Actions → DocOga Facebook Auto-Post → Run workflow → mode: reel) from the same render as the Facebook Reel, by Meta's resumable upload with the Page token. This lane's token is on the Instagram-Login host, which has no upload endpoint — docs/INSTAGRAM_THREADS_AUTOMATION.md → Reels."
               exit 5
               ;;
             carousel)
