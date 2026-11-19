@@ -540,5 +540,26 @@
     "series_playlist_id": "PLI14RIO-MmAA",
     "series_item_id": "UExJMTRSSU8tTW1BQS41NkI0NEY2RDEwNTU3Q0M2",
     "commented_at": "2026-11-18T18:20:57+00:00"
+  },
+  {
+    "video_id": "1Z7BHd_xRB0",
+    "kind": "short",
+    "title": "Getting your caution fee back",
+    "date": "2026-11-19",
+    "comment_text": "Full episode (free, 9 minutes): Your Rent Can Reduce Your Tax: The New Federal Law (Deep-Dive 6) — https://www.youtube.com/watch?v=8xiJEqF3B1U\nPart 4 of 5 · Caution fee.\nPart 3: https://youtube.com/shorts/tkkbU8J56vI\nPart 5 tomorrow, 7:00pm.\n\nWhich of these do you already do — and which one have you been skipping? Tell me below 👇\n\nFree receipt, tenancy agreement and notice templates (no sign-up): https://docoga.com.ng/?s=yt",
+    "comment_id": "",
+    "playlist_id": "",
+    "playlist_item_id": "",
+    "planned_at": "2026-11-19T17:15:28+00:00",
+    "notes": [],
+    "series": {
+      "slug": "caution-fee",
+      "name": "Caution fee",
+      "part": 4,
+      "total": 5,
+      "week_start": "2026-11-16"
+    },
+    "series_playlist_id": "",
+    "series_item_id": ""
   }
 ]
