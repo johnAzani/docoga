@@ -462,25 +462,76 @@ class ExitCodeContractTests(unittest.TestCase):
 
 
 class ReelDayRuleTests(unittest.TestCase):
-    """The decision that keeps this lane from spending runner minutes on a skip."""
+    """The decision that keeps this lane from spending runner minutes on a skip — and, since
+    17 Nov 2026, from publishing the same frame as the day's Short."""
 
-    def test_monday_and_thursday_are_the_reel_days(self):
-        self.assertEqual(facebook_reel_daily.REEL_WEEKDAYS, (0, 3))
-        self.assertTrue(facebook_reel_daily.is_reel_day(date(2026, 10, 12)))   # Mon
-        self.assertTrue(facebook_reel_daily.is_reel_day(date(2026, 10, 15)))   # Thu
-
-    def test_the_lane_never_shares_a_day_with_the_shorts_schedule(self):
-        """Tue(1) + Fri(4) belong to `youtube_scheduled.yml`. Same weekday would mean
-        the same rotation index, i.e. the same frame on both platforms on one day,
-        which docs/GROWTH_ENGINE.md §4 forbids for 30 days."""
-        shorts_days = {1, 4}
-        self.assertEqual(set(facebook_reel_daily.REEL_WEEKDAYS) & shorts_days, set())
-
-    def test_a_non_reel_day_stands_down_as_success_without_rendering(self):
-        decided = facebook_reel_daily.plan(date(2026, 10, 13), "on")   # Tue
+    def test_the_lane_takes_the_weekend_because_the_shorts_lane_has_the_weekdays(self):
+        """17 Nov 2026, owner: "Ok let's do it" — the Page goes daily. It was already getting a
+        Reel Monday to Friday: youtube_scheduled.yml republishes every weekday Short to the Page
+        at 19:00 and records it in logs/facebook_reels.json. A morning weekday Reel would either
+        duplicate that post or publish first and make the 19:00 step skip — trading the peak slot
+        for a 09:30 one. So this lane takes the two days nobody covers."""
+        self.assertEqual(facebook_reel_daily.REEL_WEEKDAYS, (5, 6))
+        for day in (date(2026, 11, 21), date(2026, 11, 22)):
+            with self.subTest(day=day):
+                self.assertTrue(facebook_reel_daily.is_reel_day(day))
+        decided = facebook_reel_daily.plan(date(2026, 11, 19), "on")   # a Thursday
         self.assertEqual(decided["reel_today"], "no")
         self.assertEqual(decided["exit"], 0)
-        self.assertIn("not a reel day", decided["reason"])
+        self.assertIn("19:00", decided["reason"])
+        self.assertIn("Saturdays and Sundays", decided["reason"])
+
+    def test_the_reel_never_carries_the_frame_the_days_short_is_carrying(self):
+        """The same words on YouTube and Facebook on one day is what GROWTH_ENGINE §4 forbids;
+        the calendar can no longer express that, so the frame pick has to."""
+        import fresh
+        from generate_short_video import VIDEO_SCRIPTS
+        day = date(2026, 11, 21)          # a Saturday: this lane's own day
+        with patch.object(fresh, "history", lambda platform=None, path=None: {}):
+            reel = facebook_reel_daily.reel_script(day)
+        import generate_short_video as words
+        self.assertNotEqual(reel["title"], words.script_for_date(day)["title"])
+        self.assertIn(reel["title"], [s["title"] for s in VIDEO_SCRIPTS])
+
+    def test_the_walk_reads_the_pages_ledger_not_youtubes(self):
+        import fresh
+        asked = {}
+
+        def history(platform=None, path=None):
+            asked["platform"] = platform
+            return {}
+
+        with patch.object(fresh, "history", history):
+            facebook_reel_daily.reel_script(date(2026, 11, 21))
+        self.assertEqual(asked.get("platform"), "facebook")
+
+    def test_a_frame_the_page_carried_last_week_stays_out_of_the_pool(self):
+        import fresh
+        from datetime import timedelta
+        import generate_short_video as words
+        day = date(2026, 11, 21)
+        skipped = [s for s in words.VIDEO_SCRIPTS
+                   if s["title"] != words.script_for_date(day)["title"]][0]
+        fresh_hist = {fresh.key(skipped["title"]): day - timedelta(days=5)}
+        with patch.object(fresh, "history", lambda platform=None, path=None: fresh_hist):
+            reel = facebook_reel_daily.reel_script(day)
+        self.assertNotEqual(reel["title"], skipped["title"], "carried five days ago on the Page")
+
+    def test_when_every_frame_is_inside_the_window_the_day_stands_down_and_says_why(self):
+        import fresh
+        from datetime import timedelta
+        day = date(2026, 11, 21)
+        everything = {fresh.key(s["title"]): day - timedelta(days=2)
+                      for s in __import__("generate_short_video").VIDEO_SCRIPTS}
+        with patch.object(fresh, "history", lambda platform=None, path=None: everything):
+            decided = facebook_reel_daily.plan(day, "on")
+            self.assertEqual(decided["reel_today"], "no")
+            self.assertEqual(decided["exit"], 0)
+            self.assertIn("freshness window", decided["reason"])
+            self.assertIn("new frames are the fix", decided["reason"])
+            ok, reason, _info = facebook_reel_daily.render(day, "/tmp/_never.mp4")
+            self.assertFalse(ok, "a stale frame must never be rendered")
+            self.assertIn("recycle", reason)
 
     def test_off_is_a_switch_and_says_which_variable_to_turn(self):
         decided = facebook_reel_daily.plan(date(2026, 10, 12), "off")
@@ -512,16 +563,11 @@ class ReelDayRuleTests(unittest.TestCase):
         with patch.dict(os.environ, {}, clear=True):
             self.assertEqual(facebook_reel_daily.mode_from_env(), "probe")
 
-    def test_the_topic_is_the_shared_rotation_not_a_second_calendar(self):
-        import generate_short_video as shorts
-        day = date(2026, 10, 12)
-        self.assertEqual(facebook_reel_daily.reel_topic(day), shorts.script_for_date(day)["title"])
-
     def test_plan_emits_every_output_the_workflow_greps_for(self):
         out = io.StringIO()
         with patch.dict(os.environ, {"GITHUB_OUTPUT": ""}, clear=False), \
                 redirect_stdout(out):
-            code = facebook_reel_daily.main(["--date", "2026-10-12", "--mode", "on"])
+            code = facebook_reel_daily.main(["--date", "2026-10-17", "--mode", "on"])
         self.assertEqual(code, 0)
         text = out.getvalue()
         for key in ("reel_today", "mode", "topic", "title", "run_date"):
@@ -535,14 +581,14 @@ class ReelDayRuleTests(unittest.TestCase):
         Telegram bug in a new costume, so the exit code is asserted through main(),
         not just the helper."""
         with patch.dict(sys.modules, {"shorts_reel": None}):
-            ok, reason, _info = facebook_reel_daily.render(date(2026, 10, 12))
+            ok, reason, _info = facebook_reel_daily.render(date(2026, 10, 17))
             self.assertFalse(ok)
             self.assertIn("could not be imported", reason)
             out = io.StringIO()
             with patch.dict(os.environ, {"GITHUB_OUTPUT": ""}, clear=False), \
                     redirect_stdout(out):
                 code = facebook_reel_daily.main(
-                    ["--date", "2026-10-12", "--mode", "on", "--render"])
+                    ["--date", "2026-10-17", "--mode", "on", "--render"])
         self.assertEqual(code, 3)
         self.assertIn("renderer", out.getvalue())
 
@@ -571,14 +617,14 @@ class ReelDayRuleTests(unittest.TestCase):
         to `probe` — the pipeline would break where it is supposed to be cheapest.
         """
         with patch.dict(sys.modules, {"generate_short_video": None}):
-            decided = facebook_reel_daily.plan(date(2026, 10, 12), "probe")
+            decided = facebook_reel_daily.plan(date(2026, 10, 17), "probe")
             self.assertEqual(decided["reel_today"], "yes")
             self.assertEqual(decided["topic"], "")
             self.assertIn("None in sys.modules", decided["topic_error"])
             out = io.StringIO()
             with patch.dict(os.environ, {"GITHUB_OUTPUT": ""}, clear=False), \
                     redirect_stdout(out):
-                code = facebook_reel_daily.main(["--date", "2026-10-12", "--mode", "probe"])
+                code = facebook_reel_daily.main(["--date", "2026-10-17", "--mode", "probe"])
         self.assertEqual(code, 0)
         self.assertIn("rotation could not be read", out.getvalue())
 

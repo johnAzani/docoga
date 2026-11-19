@@ -285,7 +285,8 @@ Reel is published by `facebook_autopost.yml`, not by the Instagram lane whose to
   (`/debug_token` with the app token), and does the Instagram node answer a publishing read
   (`content_publishing_limit`). It prints `IG_REELS_READY=yes|no`, `IG_REELS_MISSING=…`, and the
   exact fix in one sentence. Not ready = a yellow warning on a green run, never a failure.
-* **Mon + Thu**, after the Facebook Reel is published *and recorded*, the step "Instagram Reel —
+* **Every weekday** (and on weekends, from the morning lane), after the Facebook Reel is
+  published *and recorded*, the step "Instagram Reel —
   the same render, by resumable upload" sends the identical MP4 (`--video-file`) with the day's
   copy as caption, `share_to_feed=true`, and the frame at 1.5 s — the navy title card — as the
   cover (`thumb_offset`). Guards: Instagram's 30-day frame window in `logs/instagram_sent.json`

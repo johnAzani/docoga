@@ -20,7 +20,10 @@ name: Facebook Page Autopost
 #   4. a labelled issue when a run fails, because a red tick in a repo nobody
 #      reads is indistinguishable from silence.
 #
-# A Reels lane rides this same job (Mon + Thu): the three-phase `video_reels`
+# A Reels lane rides this same job — Saturdays and Sundays since 17 Nov 2026 (owner: "Ok let's
+# do it"; it was Mon + Thu, and before that `probe` — publishing nothing — for four weeks). The
+# weekday Reel already comes from `youtube_scheduled.yml` at 19:00, the peak; this lane fills the
+# two days nothing covered. It runs the three-phase `video_reels`
 # protocol, publishing the very file the YouTube lane renders from the same
 # date-seeded rotation, because a plain Page video post only reaches roughly the
 # follower count while a Reel reaches the Reels surface. It runs `on` by default
@@ -120,7 +123,7 @@ env:
   META_GRAPH_VERSION: ${{ vars.META_GRAPH_VERSION || 'v26.0' }}
   # The Reels lane's mode: `on` (default), `probe`, `off`. Owner, 16 Nov 2026:
   # "Do all" — the lane had published nothing since 22 Oct because the default was
-  # `probe`, i.e. it opened a `video_reels` session and abandoned it every Mon/Thu
+  # `probe`, i.e. it opened a `video_reels` session and abandoned it every scheduled day
   # while the platform it reaches is 46M Nigerians and 73% of the country's social
   # traffic. The grant is proven (public Reels on 15, 20 and 22 Oct; the probe has
   # been green since), so `on` is now the default and `FB_REELS=off` is the kill
@@ -373,7 +376,8 @@ jobs:
       # headers) → upload_phase=finish with video_state=PUBLISHED. Implemented in
       # tools/fb_publish.py (post_reel), decided in scripts/facebook_reel_daily.py,
       # published through scripts/post_facebook.py so the guard rules stay in one
-      # file. Mon + Thu, so the same rotation index never lands on the same day as
+      # file. The frame pick (scripts/facebook_reel_daily.py reel_script) keeps the day's Short
+      # out of the pool and reads the Page's own ledger, so the same words never land on both
       # YouTube's Tue/Fri — see scripts/facebook_reel_daily.py.
       - name: Reels — decide (cheap; renders nothing)
         id: reel_plan

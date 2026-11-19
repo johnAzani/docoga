@@ -55,7 +55,7 @@ only to YouTube, TikTok's inbox, Telegram and Threads. Now, in the 6:00pm lane
 
 1. **Facebook Reel — the same Short on the Page**: `scripts/post_facebook.py --reel`
    (three-phase `video_reels` upload) with a caption from `tools/reel_caption.py`; the
-   30-day title ledger `logs/facebook_reels.json` stops a topic repeating (Mon/Thu keep
+   30-day title ledger `logs/facebook_reels.json` stops a topic repeating (the weekend Reel keeps
    their morning Reel — different title, so the Page's same-day guard lets both through).
 2. **Instagram Reel — the same Short on @docoga.ng**: the third door
    (`tools/ig_publish.py --video-url`) fetching the **same 30-hour URL** the Threads
