@@ -1165,8 +1165,11 @@ def brain_iq(now=None, said_path=None, refused_path=None, deepdive_path=None, an
     active, gaps = [], []
     try:
         import brain
-        active = brain.lessons(refused_path=refused_path, deepdive_path=deepdive_path)
-        gaps = brain.shelf_gaps(refused_path=refused_path, deepdive_path=deepdive_path)
+        # `now=now`, not the wall clock: the scorecard is a reading taken at one instant, and a
+        # lesson that falls out of the 30-day window because the Monday run is a day later is a
+        # different scorecard for the same week (19 Nov 2026 — CI went red on a 30-day edge).
+        active = brain.lessons(now=now, refused_path=refused_path, deepdive_path=deepdive_path)
+        gaps = brain.shelf_gaps(now=now, refused_path=refused_path, deepdive_path=deepdive_path)
     except Exception:  # noqa: BLE001
         pass
     last_day, last_title = last_brain_improvement(doc)
