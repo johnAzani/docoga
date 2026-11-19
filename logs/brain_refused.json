@@ -1,5 +1,49 @@
 [
  {
+  "date": "2026-11-20",
+  "at": "2026-11-18T01:38:20+01:00",
+  "short_day": true,
+  "state": "anambra",
+  "problems": [
+   "verifier: legal statement not on the shelf — 'You handed over keys and left the apartment clean, but the landlord keeps dodging your caution fee refund.'",
+   "verifier: legal statement not on the shelf — 'Issue a formal letter of demand stating the exact caution fee paid.'",
+   "verifier: legal statement not on the shelf — 'A dated document sets an official record that casual messages cannot match.'",
+   "verifier: legal statement not on the shelf — 'Include the departure date and confirm the premises were handed over intact.'",
+   "verifier: legal statement not on the shelf — 'Stating that inspection raised no unresolved damage blocks later invented deductions.'",
+   "verifier: legal statement not on the shelf — 'Give a specific deadline of seven days to make the refund into your account.'",
+   "verifier: legal statement not on the shelf — 'A written timeline shows serious intent before taking further action.'"
+  ]
+ },
+ {
+  "date": "2026-11-19",
+  "at": "2026-11-17T01:34:31+01:00",
+  "short_day": true,
+  "state": "lagos",
+  "problems": [
+   "fact id typed into the copy: lagos:notice_extras:4, lagos:notice_ladder:5, lagos:protections:4 — ids live only in `claims`, never in words a reader sees"
+  ]
+ },
+ {
+  "date": "2026-11-18",
+  "at": "2026-11-17T01:33:57+01:00",
+  "short_day": true,
+  "state": "kwara",
+  "problems": [
+   "verifier: legal statement not on the shelf — 'Kwara law no allow you deduct anything from caution fee'",
+   "verifier: legal statement not on the shelf — 'If you collect caution fee for Kwara, know say e get rules for wetin you fit deduct.'",
+   "verifier: legal statement not on the shelf — 'That money na for damages wey pass normal wear and tear.'",
+   "verifier: legal statement not on the shelf — 'Routine repaint? Na your work, not tenant caution fee.'",
+   "verifier: legal statement not on the shelf — 'Oga Landlord, for Kwara, wetin you fit cut from caution fee get rules.'",
+   "verifier: legal statement not on the shelf — 'If e no be damage wey pass normal use, you no fit touch am.'",
+   "verifier: legal statement not on the shelf — 'Oga Landlord, if you deduct from caution fee wrongly, you fit pay double.'",
+   "verifier: legal statement not on the shelf — 'Kwara law get specific rules for wetin you fit remove.'",
+   "verifier: legal statement not on the shelf — 'In Kwara, you only deduct for damage wey pass normal wear and tear.'",
+   "verifier: legal statement not on the shelf — \"No be for routine repaint or maintenance. That one na your work, not tenant's caution fee.\"",
+   "verifier: legal statement not on the shelf — 'Caution fee dey included.'",
+   "verifier: legal statement not on the shelf — 'Any money collected wrongly, tenant fit get am back.'"
+  ]
+ },
+ {
   "date": "2026-11-18",
   "at": "2026-11-16T08:14:33+01:00",
   "short_day": true,
@@ -381,36 +425,6 @@
   "problems": [
    "news_hook is not one of this week's NEWSDESK headlines — a story the papers did not print is not a story",
    "short.title: 1-64 characters"
-  ]
- },
- {
-  "date": "2026-10-27",
-  "at": "2026-10-27T01:35:13+01:00",
-  "short_day": true,
-  "problems": [
-   "news_hook is not one of this week's NEWSDESK headlines — a story the papers did not print is not a story",
-   "short.title: 1-64 characters"
-  ]
- },
- {
-  "date": "2026-10-28",
-  "at": "2026-10-26T06:18:21+01:00",
-  "short_day": true,
-  "problems": [
-   "news_hook is not one of this week's NEWSDESK headlines — a story the papers did not print is not a story"
-  ]
- },
- {
-  "date": "2026-10-27",
-  "at": "2026-10-26T06:15:22+01:00",
-  "short_day": true,
-  "problems": [
-   "verifier: claim [lagos:receipts:2] not supported — The fact 'lagos:receipts:2' only states that the receipt must state 'the date on which the rent was received'. It does not mention names, addresses, ",
-   "verifier: legal statement not on the shelf — 'This receipt must state the names and addresses of both landlord and tenant, property description and location, amount p'",
-   "verifier: legal statement not on the shelf — 'Every valid rent receipt in Lagos must clearly show the full names and addresses of both the landlord and the tenant, id'",
-   "verifier: legal statement not on the shelf — 'The receipt must explicitly state the exact amount of rent you have paid. This prevents any dispute over the sum exchang'",
-   "verifier: legal statement not on the shelf — \"It must specify the period to which the payment relates, such as 'January to December 2027' or 'first quarter of 2027'. \"",
-   "verifier: legal statement not on the shelf — 'The receipt needs to describe the premises and its location, making it clear which property the rent payment is for. (s.'"
   ]
  }
 ]

@@ -1,0 +1,73 @@
+{
+ "version": 1,
+ "status": "approved",
+ "date": "2026-11-21",
+ "generated_at": "2026-11-19T01:33:02+01:00",
+ "theme": "enugu-rent-increase-checklist-landlord-tenant-rights",
+ "post_type": "checklist",
+ "hook_type": "STAKES",
+ "state": "enugu",
+ "claims": [
+  {
+   "text": "In Enugu a rent increase may not exceed 15% of the existing rent, and rent may be reviewed only after every second anniversary of the tenancy — s.3(b) of the Landlord and Tenant (Amendment) Law 2008, which replaced s.109 of Cap. 101.",
+   "fact_id": "enugu:increase_challenge:1"
+  },
+  {
+   "text": "A rent increase that ignores the 2008 section — before the second anniversary, above 15%, or imposed without agreement — is an unlawful increment, and a court will not enforce the increased figure.",
+   "fact_id": "enugu:protections:2"
+  },
+  {
+   "text": "The review is by the parties — a unilateral increase is ineffective.",
+   "fact_id": "enugu:increase_challenge:4"
+  }
+ ],
+ "recalled": [],
+ "post": {
+  "headline": "Enugu landlords: Avoid unlawful rent increases",
+  "lines": [
+   "Mr. Okafor, know your limits when reviewing rent in Enugu.",
+   "An increase may not exceed 15% of current rent.",
+   "This is law, from s.3(b) of the Landlord and Tenant (Amendment) Law 2008.",
+   "You can only review rent after every second anniversary of the tenancy, and it must be by agreement,",
+   "not unilateral. An unlawful increase will not be enforced by court."
+  ],
+  "cta": "Send this to a landlord who wants to 'do it properly'. Follow for the next rule.",
+  "hashtags": [
+   "#DocOga",
+   "#EnuguLandlord",
+   "#RentReview",
+   "#TenantRights"
+  ]
+ },
+ "threads": {
+  "text": "Enugu landlords, listen. Your rent increase cannot exceed 15% of the existing rent, and you can only do it after every two years of tenancy. This is from s.3(b) of the 2008 Amendment Law. If not, court no go gree. What is your biggest challenge with rent reviews?",
+  "hashtags": [
+   "#DocOga",
+   "#Enugu"
+  ],
+  "topic": "Rent Increase Nigeria",
+  "poll": null,
+  "evening": "In Enugu, a rent increase above 15% or before two years is unlawful. Know the law, protect your property. The court will not enforce an illegal rent hike."
+ },
+ "visual": {
+  "kicker": "Know your rights",
+  "layout": "checklist",
+  "big": "",
+  "plate": "enugu building skyline"
+ },
+ "short": null,
+ "why": "This post addresses Mr. Okafor's need to 'do it properly' by informing him of Enugu's specific rent increase cap, fulfilling a checklist day requirement and the STAKES hook for both landlords and tenants.",
+ "tool": "rent-review",
+ "tool_routed": false,
+ "reader": "okafor",
+ "news_hook": null,
+ "quiz": null,
+ "gates": [
+  "citation",
+  "verification",
+  "lint",
+  "repetition",
+  "shape"
+ ],
+ "note": ""
+}

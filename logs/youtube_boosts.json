@@ -504,5 +504,41 @@
     "planned_at": "2026-11-16T17:18:32+00:00",
     "notes": [],
     "commented_at": "2026-11-16T18:20:49+00:00"
+  },
+  {
+    "video_id": "dRvgmPVg8go",
+    "kind": "deepdive",
+    "title": "Rent Increases: Lagos Courts vs. Kano Agreements",
+    "date": "2026-11-18",
+    "comment_text": "Which part surprised you most? Drop your question below — the next episode answers the best ones.\n\nFree receipt, tenancy agreement and notice templates (no sign-up): https://docoga.com.ng/?s=yt",
+    "comment_id": "",
+    "playlist_id": "PLF0LLDbGs8AU",
+    "playlist_item_id": "UExGMExMRGJHczhBVS4xMkVGQjNCMUM1N0RFNEUx",
+    "planned_at": "2026-11-18T10:24:57+00:00",
+    "notes": []
+  },
+  {
+    "video_id": "tkkbU8J56vI",
+    "kind": "short",
+    "title": "Deduct caution fee blindly. Pay twice in court.",
+    "date": "2026-11-18",
+    "comment_text": "Full episode (free, 9 minutes): Your Rent Can Reduce Your Tax: The New Federal Law (Deep-Dive 6) — https://www.youtube.com/watch?v=8xiJEqF3B1U\nPart 3 of 5 · Caution fee.\nPart 4 tomorrow, 7:00pm.\n\nWhich of these do you already do — and which one have you been skipping? Tell me below 👇\n\nFree receipt, tenancy agreement and notice templates (no sign-up): https://docoga.com.ng/?s=yt",
+    "comment_id": "UgzpsznojaTtI-dBcS94AaABAg",
+    "playlist_id": "PLGn3YRk7msT0",
+    "playlist_item_id": "UExHbjNZUms3bXNUMC5ENDU4Q0M4RDExNzM1Mjcy",
+    "planned_at": "2026-11-18T17:17:58+00:00",
+    "notes": [
+      "2026-11-18T18:20:57+00:00: series playlistItems.insert HTTP 409 (SERVICE_UNAVAILABLE)"
+    ],
+    "series": {
+      "slug": "caution-fee",
+      "name": "Caution fee",
+      "part": 3,
+      "total": 5,
+      "week_start": "2026-11-16"
+    },
+    "series_playlist_id": "PLI14RIO-MmAA",
+    "series_item_id": "UExJMTRSSU8tTW1BQS41NkI0NEY2RDEwNTU3Q0M2",
+    "commented_at": "2026-11-18T18:20:57+00:00"
   }
 ]

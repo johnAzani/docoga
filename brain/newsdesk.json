@@ -1,5 +1,5 @@
 {
- "fetched": "2026-11-16T07:02:02+00:00",
+ "fetched": "2026-11-19T07:45:40+00:00",
  "sources": [
   "Punch: 30 stories",
   "Vanguard: 20 stories",
@@ -9,5 +9,18 @@
   "The Guardian Nigeria: unreachable (HTTP Error 403: Forbidden)",
   "Nairametrics: 20 stories"
  ],
- "items": []
+ "items": [
+  {
+   "title": "Ban sign-out ceremonies at all levels of education, say parents, student leaders",
+   "link": "https://www.vanguardngr.com/2026/11/ban-sign-out-ceremonies-at-all-levels-of-education-say-parents-student-leaders/",
+   "published": "2026-11-19T05:57:27+00:00",
+   "source": "Vanguard",
+   "score": 12,
+   "matched": [
+    "rent",
+    "rents"
+   ],
+   "summary": "In May, many parents, guardians and even teachers were left bewildered when the social media was full of videos of some male secondary school students fondling their female counterparts The post Ban s"
+  }
+ ]
 }
