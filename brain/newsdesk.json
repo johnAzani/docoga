@@ -1,26 +1,13 @@
 {
- "fetched": "2026-11-20T00:30:58+00:00",
+ "fetched": "2026-11-20T07:38:06+00:00",
  "sources": [
   "Punch: 30 stories",
   "Vanguard: 20 stories",
-  "BusinessDay: 5 stories",
+  "BusinessDay: unreachable (The read operation timed out)",
   "TheCable: unreachable (HTTP Error 403: Forbidden)",
   "Premium Times: 15 stories",
   "The Guardian Nigeria: unreachable (HTTP Error 403: Forbidden)",
   "Nairametrics: 20 stories"
  ],
- "items": [
-  {
-   "title": "Ban sign-out ceremonies at all levels of education, say parents, student leaders",
-   "link": "https://www.vanguardngr.com/2026/11/ban-sign-out-ceremonies-at-all-levels-of-education-say-parents-student-leaders-2/",
-   "published": "2026-11-19T22:17:26+00:00",
-   "source": "Vanguard",
-   "score": 12,
-   "matched": [
-    "rent",
-    "rents"
-   ],
-   "summary": "By Adesina Wahab In recent years, a fad has taken root in Nigeria’s education system, the practice of signing out of school when students conclude their examinations, even without being sure of what t"
-  }
- ]
+ "items": []
 }
