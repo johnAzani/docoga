@@ -330,13 +330,33 @@ const STAT_TTL_SEC = 400 * 86400; // outlives any dashboard window we would want
 const EXP_INDEX_TTL_SEC = 130 * 86400; // buckets are only interesting around their own date
 const EXP_INDEX_CAP = 300; // max codes remembered per expiry-date
 
+/* Workers KV has no `incr()`. Four counters in this file were written against an API that
+ * does not exist, and every one of them failed inside its own `catch` — so `sold`, `rev`,
+ * `wait`, `bizpaid` and the rest read 0 no matter what actually happened. The dashboard was
+ * truthful about what it could see and blind to the one thing it exists to show: money.
+ * (19 Nov 2026 — found by driving a real charge through the worker; the unit suite missed it
+ * because its KV stub implemented `incr`, an API the platform does not have.)
+ *
+ * Read-modify-write instead. Two writers inside the same millisecond can lose one unit, which
+ * is tolerable for a day counter and is why the code itself never depends on this: `/verify`
+ * and `ref:<id>` are the source of truth for whether a pass exists. */
+async function kvIncr(env, key, amount = 1, opts = {}) {
+  try {
+    const cur = Number(await env.KV.get(key) || "0") || 0;
+    const next = cur + Number(amount);
+    await env.KV.put(key, String(next), opts);
+    return next;
+  } catch (e) {
+    return null;
+  }
+}
+
 async function statBump(env, field, amount = 1) {
   if (STAT_FIELDS.indexOf(field) < 0) return;
   const n = Number(amount);
   if (!isFinite(n) || n === 0) return;
-  try {
-    await env.KV.incr("stat:" + field + ":" + new Date().toISOString().slice(0, 10), n, { expirationTtl: STAT_TTL_SEC });
-  } catch (e) { /* the money path never fails for a counter */ }
+  await kvIncr(env, "stat:" + field + ":" + new Date().toISOString().slice(0, 10), n,
+               { expirationTtl: STAT_TTL_SEC });
 }
 
 /** Remember which codes expire on a given date, so "expiring soon" and
@@ -1083,7 +1103,8 @@ async function handleBusinessUsage(request, env, cors) {
   const band = Number(s.team.docs) || 100;
   let used = Number((await env.KV.get(key)) || "0");
   if (used >= band * 2) return json({ ok: true, used, band, capped: true }); // best-effort meter: stop counting past 2× the band
-  try { used = Number(await env.KV.incr(key, 1, { expirationTtl: 45 * 86400 })) || (used + 1); } catch (e) { used += 1; }
+  const bumped = await kvIncr(env, key, 1, { expirationTtl: 45 * 86400 });
+  used = bumped === null ? used + 1 : bumped;
   return json({ ok: true, used, band, capped: used >= band * 2 });
 }
 async function sweepOneBusinessTeam(env, team, now) {
@@ -1801,7 +1822,7 @@ async function handleAdminLogin(request, env, cors) {
   if (fails >= ADMIN_FAIL_LIMIT)
     return json({ ok: false, error: "too many failed attempts — wait 30 minutes", retryInSec: ADMIN_FAIL_WINDOW }, cors, 429);
   if (!pass || !(await adminEq(pass, env.ADMIN_PASSPHRASE))) {
-    try { await env.KV.incr(fkey, 1, { expirationTtl: ADMIN_FAIL_WINDOW }); } catch (e) {}
+    await kvIncr(env, fkey, 1, { expirationTtl: ADMIN_FAIL_WINDOW });
     return json({ ok: false, error: "wrong passphrase" }, cors, 401);
   }
   try { await env.KV.delete(fkey); } catch (e) {}
@@ -2125,7 +2146,7 @@ async function handleAdminIssue(request, env, cors) {
   if (issued >= ADMIN_ISSUE_CAP) return json({ ok: false, error: "daily issue cap reached (" + ADMIN_ISSUE_CAP + ") — check the ledger before minting more" }, cors, 429);
   const ref = "MANUAL-" + adminHex(crypto.getRandomValues(new Uint8Array(5))).toUpperCase();
   const code = await issueCode(env, { email, ref, source: "manual", days, note, amount });
-  try { await env.KV.incr("adm:issue:" + today, 1, { expirationTtl: 400 * 86400 }); } catch (e) {}
+  await kvIncr(env, "adm:issue:" + today, 1, { expirationTtl: 400 * 86400 });
   let rec = null; try { rec = JSON.parse(await env.KV.get("code:" + code) || "null"); } catch (e) {}
   return json({ ok: true, code, days, amount, exp: rec && rec.exp, mailFailed: !!(rec && rec.mailFailed), mailed: !!email && !(rec && rec.mailFailed) }, cors);
 }

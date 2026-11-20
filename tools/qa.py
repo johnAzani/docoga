@@ -199,6 +199,23 @@ with tempfile.NamedTemporaryFile("w", suffix=".mjs", delete=False) as t:
 r = subprocess.run(["node", "--check", wpath], capture_output=True, text=True)
 os.unlink(wpath)
 check("worker/index.js parses", r.returncode == 0, r.stderr[:80] if r.returncode else "")
+
+# 19 Nov 2026: `statBump()` called `env.KV.incr()`. Workers KV has no such method, the TypeError
+# died inside the function's own catch, and every money counter — sold, rev, wait, bizpaid — read
+# 0 in production no matter what happened. The worker suite missed it because its KV stub
+# implemented `incr`, an API the platform does not have. Both halves are now checked here.
+_wjs = open(os.path.join(ROOT, "worker", "index.js"), encoding="utf-8").read()
+check("worker: no counter calls an API Workers KV does not have",
+      "KV.incr(" not in _wjs and "env.KV.incr" not in _wjs,
+      "KV.incr() throws TypeError and a bare catch hides it — that is how every money counter "
+      "read 0 while codes were still being minted")
+_wt = open(os.path.join(ROOT, "tools", "tests", "workertest.mjs"), encoding="utf-8").read()
+check("worker suite: the KV stub exposes only the real KV surface",
+      "incr:" not in _wt,
+      "a stub that invents incr() tests the mock, not Cloudflare — statBump stayed green while dead")
+check("worker: a paid charge leaves a number the dashboard can read",
+      "stat:sold:" in _wt and "stat:rev:" in _wt,
+      "a sale that mints a code and bumps no counter is a sale the owner cannot see")
 toml = open(f"{WORKER}/wrangler.toml", encoding="utf-8").read()
 check("wrangler.toml KV id is real", "REPLACE_WITH" not in toml)
 

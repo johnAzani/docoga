@@ -9,7 +9,8 @@ function makeEnv(records) {
       get: async k => store.has(k) ? store.get(k) : null,
       put: async (k, v) => { store.set(k, v); },
       delete: async k => { store.delete(k); },
-      incr: async (k, amt = 1) => { const n = Number(store.get(k) || '0') + Number(amt); store.set(k, String(n)); return n; },
+      // No `incr`: Workers KV has no such method, and a stub that invented one hid four
+      // dead counters (statBump among them) from this suite for weeks. 19 Nov 2026.
       list: async ({ prefix = '' }) => ({ keys: [...store.keys()].filter(k => k.startsWith(prefix)).map(name => ({ name })), list_complete: true }),
   }, SITE_URL: 'https://docoga.com.ng', PAYMENT_URL: 'https://flutterwave.com/pay/x', PROVIDER: 'flw' };
 }
@@ -184,11 +185,32 @@ const webhookRecord = JSON.parse(await webhookEnv.KV.get('code:' + webhookCode) 
 ok('valid signed ₦2,000 NGN charge.completed webhook issues a code', r.status === 200 && r.text === 'ok' && /^OGA-/.test(webhookCode || ''), r.status + ' ' + r.text);
 ok('webhook aliases reference, tx_ref and charge id to the same code', webhookCode && (await webhookEnv.KV.get('ref:DOCOGA-TX-2000')) === webhookCode && (await webhookEnv.KV.get('ref:flw-charge-2000')) === webhookCode);
 ok('Flutterwave works without ISSUE_SECRET', !webhookEnv.ISSUE_SECRET && r.status === 200 && !!webhookCode);
+
+// 19 Nov 2026 — the money counters. `statBump()` called `KV.incr()`, which Workers KV does not
+// have; the TypeError died inside a `catch`, so every sale minted a code and left `sold` and
+// `rev` at 0. The dashboard was therefore structurally unable to show money. This check is the
+// one that would have caught it: a charge that issues a pass must leave a number behind.
+const statDay = new Date().toISOString().slice(0, 10);
+const soldToday = Number(await webhookEnv.KV.get('stat:sold:' + statDay) || '0');
+const revToday = Number(await webhookEnv.KV.get('stat:rev:' + statDay) || '0');
+ok('a paid charge bumps the day counters the dashboard reads (sales + revenue)',
+   soldToday === 1 && revToday === 2000, 'sold=' + soldToday + ' rev=' + revToday);
 ok('webhook stores buyer email and asks Brevo to deliver the pass', webhookRecord.email === 'webhook-buyer@example.com' && webhookMailRequests.length === 1 && webhookMailRequests[0].url.includes('api.brevo.com') && webhookMailRequests[0].body.to?.[0]?.email === 'webhook-buyer@example.com' && webhookMailRequests[0].body.textContent.includes('all 10 tools') && webhookMailRequests[0].body.htmlContent.includes('Power of Attorney'));
 r = await hit(webhookEnv, '/flw-webhook', {
   method: 'POST', headers: { 'content-type': 'application/json', 'verif-hash': webhookHash }, body: webhookRaw,
 });
 ok('duplicate webhook is idempotent (same code; no second email)', r.status === 200 && r.text === 'ok' && webhookMailRequests.length === 1 && (await webhookEnv.KV.list({ prefix: 'code:' })).keys.length === 1);
+
+console.log('— POST /tap (the beacon the site fires before it opens the payment link) —');
+const tapEnv = makeEnv({});
+r = await hit(tapEnv, '/tap', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ kind: 'checkout', src: 'fb' }) });
+const tapKeys = (await tapEnv.KV.list({ prefix: 'src:checkout:' })).keys.map(k => k.name);
+let tapRow = {}; try { tapRow = JSON.parse(await tapEnv.KV.get(tapKeys[0]) || '{}'); } catch (e) {}
+ok('a checkout tap is counted under its ISO week, by channel',
+   r.status === 200 && !!r.j && r.j.ok === true && tapKeys.length === 1 && tapRow.facebook === 1,
+   r.status + ' ' + tapKeys.join(',') + ' ' + JSON.stringify(tapRow));
+r = await hit(tapEnv, '/tap', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ kind: 'sale', src: 'fb' }) });
+ok('a sale can never be self-reported — only /verify counts one', r.status === 400, String(r.status));
 
 const rejectedMailEnv = makeEnv({});
 rejectedMailEnv.FLW_WEBHOOK_HASH = webhookHash;
