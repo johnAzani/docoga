@@ -515,5 +515,24 @@
   "tool": "rent-review",
   "tool_routed": false,
   "news_hook": null
+ },
+ {
+  "date": "2026-11-22",
+  "theme": "rivers-rent-in-arrears-starting-rule",
+  "headline": "Did your Rivers tenant pay before or after?",
+  "post_type": "engagement",
+  "hook_type": "QUESTION",
+  "state": "rivers",
+  "fact_ids": [
+   "rivers:rent_in_arrears:1",
+   "rivers:rent_in_arrears:2"
+  ],
+  "recalled": 0,
+  "plate": "keys wooden door",
+  "short": false,
+  "reader": "okafor",
+  "tool": "tenancy-agreement",
+  "tool_routed": false,
+  "news_hook": null
  }
 ]

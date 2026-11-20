@@ -1,0 +1,73 @@
+{
+ "version": 1,
+ "status": "approved",
+ "date": "2026-11-22",
+ "generated_at": "2026-11-20T01:36:27+01:00",
+ "theme": "rivers-rent-in-arrears-starting-rule",
+ "post_type": "engagement",
+ "hook_type": "QUESTION",
+ "state": "rivers",
+ "claims": [
+  {
+   "text": "Under Rivers State law, rent is payable in arrears at the end of the period unless you agreed otherwise.",
+   "fact_id": "rivers:rent_in_arrears:1"
+  },
+  {
+   "text": "In Rivers, unless your agreement says otherwise, paying upfront is a concession you make.",
+   "fact_id": "rivers:rent_in_arrears:2"
+  }
+ ],
+ "recalled": [],
+ "post": {
+  "headline": "Did your Rivers tenant pay before or after?",
+  "lines": [
+   "Many landlords in Port Harcourt expect one or two years of rent upfront before handing over keys.",
+   "Under Rivers State law, rent is payable in arrears at the end of the period unless you agreed otherwise.",
+   "In Rivers, unless your agreement says otherwise, paying upfront is a concession you make.",
+   "Put the exact advance payment terms in a clean written tenancy agreement before money changes hands."
+  ],
+  "cta": "Did you collect your last rent upfront or in arrears? Tell us below.",
+  "hashtags": [
+   "#DocOga",
+   "#RiversState",
+   "#PortHarcourt",
+   "#LandlordRights"
+  ]
+ },
+ "threads": {
+  "text": "Did your Rivers tenant pay upfront or at the end of the year? Section 75(1) of the Landlord and Tenant Law in Rivers sets rent payable in arrears unless an agreement says otherwise. Putting payment terms in writing protects both sides. Did you collect upfront this year?",
+  "hashtags": [
+   "#DocOga",
+   "#PortHarcourt"
+  ],
+  "topic": "Rivers Landlord Rights",
+  "poll": {
+   "option_a": "Upfront in advance",
+   "option_b": "In arrears at the end",
+   "option_c": "Half and half",
+   "option_d": "Still waiting for rent"
+  },
+  "evening": "In Rivers State, rent is payable at the end of the term unless your signed tenancy agreement says otherwise."
+ },
+ "visual": {
+  "kicker": "oya make we talk",
+  "layout": "poster",
+  "big": "",
+  "plate": "keys wooden door"
+ },
+ "short": null,
+ "why": "Sunday engagement question for Rivers State addressing landlord Mr Okafor, asking whether rent was collected upfront or in arrears based on the unique Rivers statutory default, driving comments and replies.",
+ "tool": "tenancy-agreement",
+ "tool_routed": false,
+ "reader": "okafor",
+ "news_hook": null,
+ "quiz": null,
+ "gates": [
+  "citation",
+  "verification",
+  "lint",
+  "repetition",
+  "shape"
+ ],
+ "note": ""
+}
