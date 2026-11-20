@@ -1,19 +1,6 @@
 {
   "history": [
     {
-      "date": "2026-10-28",
-      "video_id": "RSVjMTiA4eM",
-      "title": "Paid without a receipt? That's paying twice (part 3 of 5) #Shorts",
-      "url": "https://docoga-pass.johnazani.workers.dev/m/Pr1ajIOnFeiKyFZw1ykBrBclljwyPr7y.mp4",
-      "name": "Pr1ajIOnFeiKyFZw1ykBrBclljwyPr7y",
-      "bytes": 35016334,
-      "hosted_at": "2026-10-28T17:14:29+00:00",
-      "expires_at": "2026-10-29T23:14:29+00:00",
-      "run_id": "40731528667",
-      "series": "Part 3 of 5 · Rent receipt law",
-      "series_topic": "Rent receipt law"
-    },
-    {
       "date": "2026-10-29",
       "video_id": "XJlXCJjHuw0",
       "title": "Transfer alert to an agent? You could pay twice (part 4 of 5) #Shorts",
@@ -181,19 +168,32 @@
       "run_id": "44572434293",
       "series": "Part 4 of 5 · Caution fee",
       "series_topic": "Caution fee"
+    },
+    {
+      "date": "2026-11-20",
+      "video_id": "rQeHoLrVRIo",
+      "title": "Unreturned caution fee? Issue a demand letter (part 5 of 5) #Shorts",
+      "url": "https://docoga-pass.johnazani.workers.dev/m/ioxhYxvKEU7KcPf7o0A8b3dMdwgwpS3w.mp4",
+      "name": "ioxhYxvKEU7KcPf7o0A8b3dMdwgwpS3w",
+      "bytes": 46937672,
+      "hosted_at": "2026-11-20T17:14:23+00:00",
+      "expires_at": "2026-11-21T23:14:23+00:00",
+      "run_id": "44779021479",
+      "series": "Part 5 of 5 · Caution fee",
+      "series_topic": "Caution fee"
     }
   ],
   "latest": {
-    "date": "2026-11-19",
-    "video_id": "1Z7BHd_xRB0",
-    "title": "Getting your caution fee back (part 4 of 5) #Shorts",
-    "url": "https://docoga-pass.johnazani.workers.dev/m/4C31xJ8dYaXtJRvEf0O6R7zPkTB6DHHp.mp4",
-    "name": "4C31xJ8dYaXtJRvEf0O6R7zPkTB6DHHp",
-    "bytes": 42479592,
-    "hosted_at": "2026-11-19T17:16:32+00:00",
-    "expires_at": "2026-11-20T23:16:32+00:00",
-    "run_id": "44572434293",
-    "series": "Part 4 of 5 · Caution fee",
+    "date": "2026-11-20",
+    "video_id": "rQeHoLrVRIo",
+    "title": "Unreturned caution fee? Issue a demand letter (part 5 of 5) #Shorts",
+    "url": "https://docoga-pass.johnazani.workers.dev/m/ioxhYxvKEU7KcPf7o0A8b3dMdwgwpS3w.mp4",
+    "name": "ioxhYxvKEU7KcPf7o0A8b3dMdwgwpS3w",
+    "bytes": 46937672,
+    "hosted_at": "2026-11-20T17:14:23+00:00",
+    "expires_at": "2026-11-21T23:14:23+00:00",
+    "run_id": "44779021479",
+    "series": "Part 5 of 5 · Caution fee",
     "series_topic": "Caution fee"
   }
 }
