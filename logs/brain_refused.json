@@ -1,6 +1,15 @@
 [
  {
   "date": "2026-11-23",
+  "at": "2026-11-21T08:38:31+01:00",
+  "short_day": true,
+  "state": "kano",
+  "problems": [
+   "a cited post names the section number (e.g. s.5) in its copy"
+  ]
+ },
+ {
+  "date": "2026-11-23",
   "at": "2026-11-21T01:33:42+01:00",
   "short_day": true,
   "state": "kano",
@@ -416,15 +425,6 @@
    "verifier: legal statement not on the shelf — 'It must show the exact amount of rent received and the specific period the payment relates to. This avoids confusion, as'",
    "verifier: legal statement not on the shelf — \"The receipt needs to include a clear description and location of the premises you are renting. This ensures there's no a\"",
    "verifier: legal statement not on the shelf — \"Crucially, it must carry the date on which the rent was received and the landlord's signature to be fully legitimate in \""
-  ]
- },
- {
-  "date": "2026-10-29",
-  "at": "2026-10-27T01:39:54+01:00",
-  "short_day": true,
-  "problems": [
-   "news_hook is not one of this week's NEWSDESK headlines — a story the papers did not print is not a story",
-   "price ₦0 is neither ours nor in a cited fact"
   ]
  }
 ]
