@@ -1,5 +1,5 @@
 {
- "fetched": "2026-11-22T00:31:03+00:00",
+ "fetched": "2026-11-22T07:15:56+00:00",
  "sources": [
   "Punch: 30 stories",
   "Vanguard: 20 stories",
@@ -9,18 +9,5 @@
   "The Guardian Nigeria: unreachable (HTTP Error 403: Forbidden)",
   "Nairametrics: 20 stories"
  ],
- "items": [
-  {
-   "title": "Being one step ahead of an opportunist",
-   "link": "https://www.vanguardngr.com/2026/11/being-one-step-ahead-of-an-opportunist/",
-   "published": "2026-11-21T23:07:49+00:00",
-   "source": "Vanguard",
-   "score": 4,
-   "matched": [
-    "rent",
-    "rents"
-   ],
-   "summary": "By Bunmi Sofola SYLVIA admitted that her parents’ marriage and the stoic way her mum yielded her position as the first wife to a much younger and ambitious woman prepared her for the way she handled h"
-  }
- ]
+ "items": []
 }
