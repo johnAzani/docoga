@@ -1049,6 +1049,49 @@
    "problems": [],
    "healed": [],
    "run_id": ""
+  },
+  {
+   "at": "2026-11-22T01:36:47+01:00",
+   "episode": "dd10",
+   "attempt": 1,
+   "outcome": "refused",
+   "title": "Pending Rent Bills: What's Changing in Lagos and Abuja?",
+   "problems": [
+    "section 8: 80 words; need 120-200",
+    "36-48 beats (got 20)",
+    "section 1 needs at least two beats",
+    "section 7 needs at least two beats",
+    "no emoji or markdown in narration"
+   ],
+   "healed": [
+    "beat 7 dropped: trigger 'selfhelp eviction' not spoken in section 3 after word 89",
+    "beat 11 dropped: trigger 'stricter penalties for selfhelp' not spoken in section 4 after word 64",
+    "beat 14 dropped: trig ['written', 'down', 'in', 'the', 'tenancy'] is not 2-4 words",
+    "beat 15 dropped: trigger 'cannot resort to selfhelp' not spoken in section 5 after word 59",
+    "beat 18 dropped: trigger 'satellite towns included' not spoken in section 6 after word 47",
+    "beat 21 dropped: trig ['existing', 'statutes', 'not', 'on', 'promises'] is not 2-4 words",
+    "beat 23 dropped: trig ['whatsapp', 'forwards', 'or', 'social', 'media'] is not 2-4 words",
+    "beat 28 dropped: trig ['two', 'thousand', 'naira', 'for', '30'] is not 2-4 words"
+   ],
+   "run_id": "44966956480"
+  },
+  {
+   "at": "2026-11-22T01:37:37+01:00",
+   "episode": "dd10",
+   "attempt": 2,
+   "outcome": "written",
+   "title": "Rent Receipts: Lagos's Law vs. Abuja's Practice",
+   "problems": [],
+   "healed": [
+    "beat 5 shot 'official document text' dropped",
+    "beat 5 dropped: trigger 'section 51 of the' not spoken in section 2 after word 0",
+    "beat 23 shot 'man on phone conversation' dropped",
+    "beat 28 sub cut at a word: 'Empower yourself with proper documentation; paper is your'",
+    "beat 29 shot 'person using smartphone' dropped",
+    "beat 32 shot 'free sign on kiosk' dropped",
+    "beat 35 dropped: trigger 'visit docogacomng today' not spoken in section 9 after word 149"
+   ],
+   "run_id": "44966956480"
   }
  ]
 }

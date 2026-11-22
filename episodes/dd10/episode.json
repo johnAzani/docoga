@@ -1,0 +1,552 @@
+{
+ "id": "dd10",
+ "number": 10,
+ "title": "Rent Receipts: Lagos's Law vs. Abuja's Practice",
+ "kicker": "DOCOGA — DEEP-DIVE · EPISODE 10",
+ "disclaimer": "GENERAL INFORMATION · NOT LEGAL ADVICE · RULES VARY BY STATE AND AGREEMENT",
+ "voice": {
+  "_locked": "LOCKED by the owner 14 Oct 2026 — must equal tools/deepdive.py LOCKED_VOICE_*; the engine refuses anything else",
+  "name": "Orus",
+  "instruction": "Narrate this in a natural Nigerian English accent, like a confident Lagos radio presenter:"
+ },
+ "audio": {
+  "_comment": "Sound plan — synthesized by tools/soundkit.py, cued from the beats (python3 tools/deepdive.py dd2 cues). Bed levels are dB(A) relative to the narrator's speech; SFX are dB below the voice peak. Run #1 (-27 raw) was inaudible on phones — these are broadcast-documentary levels.",
+  "bed": true,
+  "bpm": 72,
+  "seed": 7,
+  "bed_gap_db": -8,
+  "bed_speech_db": -16,
+  "sfx_db": -12,
+  "hit_db": -9,
+  "tick_db": -16,
+  "riser_db": -14,
+  "stinger_db": -9,
+  "tail_fade_s": 4
+ },
+ "youtube": {
+  "title": "Rent Receipts: Lagos's Law vs. Abuja's Practice (Deep-Dive 10)",
+  "description": "Paying rent in Nigeria? Your receipt is critical, but laws differ between states. In Lagos, it’s a statutory duty for landlords to issue receipts with specific details, and failure to do so can lead to a fine of ₦100,000. For Abuja tenants, while there’s no direct law mandating receipts, it remains your strongest evidence of payment, essential for proving your case in a dispute. We break down what your receipt must contain in Lagos and why documentation is vital for all tenants, whether for rent, security deposits, or service charges. Don't rely on memory; use paper to protect yourself.\n\nDocOga helps you generate standard Nigerian documents like Rent Receipts, Tenancy Agreements, and Caution Fee Receipts in minutes, right from your phone. Our tools are free to start, and an Oga Pass gives you unlimited access for ₦2,000 a month.\n\nhttps://docoga.com.ng\nGeneral information, not legal advice.",
+  "tags": [
+   "rent receipt",
+   "Lagos tenancy law",
+   "Abuja tenancy law",
+   "tenant rights",
+   "landlord duties",
+   "rent payment",
+   "Nigeria property law",
+   "DocOga",
+   "Nigerian tenants",
+   "rent disputes",
+   "caution fee",
+   "security deposit",
+   "rental agreement",
+   "Nigerian real estate",
+   "Lagos"
+  ]
+ },
+ "cover": {
+  "img": "letter",
+  "kicker": "KNOW YOUR RIGHTS",
+  "line1": "LAGOS",
+  "highlight": "VS.",
+  "label": "ABUJA",
+  "line2": "YOUR RENT RECEIPT:",
+  "line3": "THE LAW & THE PRACTICE",
+  "sub": "Why paper protects you, everywhere."
+ },
+ "sections": [
+  {
+   "n": 1,
+   "title": "The Hook: Your Rent Receipt, Your Proof"
+  },
+  {
+   "n": 2,
+   "title": "Lagos Says: You Must Get a Receipt!"
+  },
+  {
+   "n": 3,
+   "title": "What Your Lagos Receipt Must Show"
+  },
+  {
+   "n": 4,
+   "title": "Abuja's Silence on Rent Receipts"
+  },
+  {
+   "n": 5,
+   "title": "Why Abuja Tenants Still Need That Paper"
+  },
+  {
+   "n": 6,
+   "title": "Beyond Rent: Deposits and Service Charges"
+  },
+  {
+   "n": 7,
+   "title": "The Role of Agents and Written Authority"
+  },
+  {
+   "n": 8,
+   "title": "Paper Beats Memory: Protect Yourself"
+  },
+  {
+   "n": 9,
+   "title": "The Law, and DocOga"
+  }
+ ],
+ "beats": [
+  {
+   "sec": 1,
+   "trig": null,
+   "head": "Paid cash, no receipt?",
+   "sub": "Many tenants pay rent without written proof.",
+   "img": "naira",
+   "shot": "naira banknotes stacked"
+  },
+  {
+   "sec": 1,
+   "trig": [
+    "that",
+    "small",
+    "yet",
+    "mighty"
+   ],
+   "head": "Receipt: Mighty Paper",
+   "sub": "It's more than just paper; it's your peace of mind.",
+   "img": "letter",
+   "shot": "official document paper"
+  },
+  {
+   "sec": 1,
+   "trig": [
+    "major",
+    "headache"
+   ],
+   "head": "Avoid Disputes",
+   "sub": "Lack of documentation turns peace into problems.",
+   "img": "court",
+   "shot": "courtroom interior empty"
+  },
+  {
+   "sec": 2,
+   "trig": null,
+   "head": "Lagos: Receipt Is Law!",
+   "sub": "The law is clear: landlords must issue receipts.",
+   "img": "rooftops",
+   "shot": "lagos rooftops dusk"
+  },
+  {
+   "sec": 2,
+   "trig": [
+    "one",
+    "hundred",
+    "thousand",
+    "naira"
+   ],
+   "head": "₦100,000 Fine",
+   "sub": "Landlords face a fine for failing to issue a receipt.",
+   "img": "naira",
+   "shot": "pile of naira notes"
+  },
+  {
+   "sec": 3,
+   "trig": null,
+   "head": "What Lagos Receipts Need",
+   "sub": "Section 5(2) lists the essential information.",
+   "img": "pen",
+   "shot": "hand writing on paper"
+  },
+  {
+   "sec": 3,
+   "trig": [
+    "date",
+    "on",
+    "which",
+    "the"
+   ],
+   "head": "Date Received",
+   "sub": "The exact payment date must be stated clearly.",
+   "img": "calendar",
+   "shot": "calendar page date"
+  },
+  {
+   "sec": 3,
+   "trig": [
+    "names",
+    "and",
+    "addresses",
+    "of"
+   ],
+   "head": "Names & Addresses",
+   "sub": "Landlord and tenant details are mandatory.",
+   "img": "letter",
+   "shot": "names address document"
+  },
+  {
+   "sec": 3,
+   "trig": [
+    "description",
+    "and",
+    "location",
+    "of"
+   ],
+   "head": "Premises Details",
+   "sub": "Property address and description must be included.",
+   "img": "door",
+   "shot": "wooden door apartment"
+  },
+  {
+   "sec": 3,
+   "trig": [
+    "exact",
+    "amount",
+    "of",
+    "rent"
+   ],
+   "head": "Amount Paid",
+   "sub": "The precise rent figure should be on the receipt.",
+   "img": "naira",
+   "shot": "naira notes table"
+  },
+  {
+   "sec": 3,
+   "trig": [
+    "period",
+    "to",
+    "which",
+    "the"
+   ],
+   "head": "Payment Period",
+   "sub": "State the specific months or year the rent covers.",
+   "img": "calendar",
+   "shot": "calendar with dates"
+  },
+  {
+   "sec": 4,
+   "trig": null,
+   "head": "Abuja: No Receipt Law",
+   "sub": "FCT Act has no specific receipt provision.",
+   "img": "keke",
+   "shot": "abuja city street"
+  },
+  {
+   "sec": 4,
+   "trig": [
+    "genuine",
+    "gap",
+    "in",
+    "the"
+   ],
+   "head": "Legal Gap",
+   "sub": "No direct law mandates receipts in Abuja.",
+   "img": "court",
+   "shot": "empty court room"
+  },
+  {
+   "sec": 4,
+   "trig": [
+    "general",
+    "principles",
+    "of",
+    "evidence"
+   ],
+   "head": "Evidence Rules",
+   "sub": "Receipts rely on general evidence principles, not specific law.",
+   "img": "letter",
+   "shot": "legal document signed"
+  },
+  {
+   "sec": 5,
+   "trig": null,
+   "head": "Abuja Still Needs Receipts",
+   "sub": "Receipts are crucial evidence of payment.",
+   "img": "phone",
+   "shot": "smartphone on table"
+  },
+  {
+   "sec": 5,
+   "trig": [
+    "burden",
+    "of",
+    "proving",
+    "payment"
+   ],
+   "head": "Burden of Proof",
+   "sub": "Tenant proves payment if it's disputed without paper.",
+   "img": "court",
+   "shot": "court scales of justice"
+  },
+  {
+   "sec": 5,
+   "trig": [
+    "date",
+    "amount",
+    "period",
+    "covered"
+   ],
+   "head": "Demand a Receipt",
+   "sub": "Record date, amount, period, and premises; keep it.",
+   "img": "letter",
+   "shot": "receipt paper details"
+  },
+  {
+   "sec": 6,
+   "trig": null,
+   "head": "Deposits & Service Charges",
+   "sub": "Beyond rent, other monies are also regulated.",
+   "img": "naira",
+   "shot": "naira notes scattered"
+  },
+  {
+   "sec": 6,
+   "trig": [
+    "security",
+    "deposits",
+    "charges",
+    "for"
+   ],
+   "head": "Lagos: Separate Receipts",
+   "sub": "Security deposits and service charges need separate receipts.",
+   "img": "letter",
+   "shot": "receipt for payment"
+  },
+  {
+   "sec": 6,
+   "trig": [
+    "written",
+    "account",
+    "at",
+    "least"
+   ],
+   "head": "Six-Monthly Account",
+   "sub": "Lagos landlords must provide disbursement accounts.",
+   "img": "calendar",
+   "shot": "calendar with highlighted days"
+  },
+  {
+   "sec": 6,
+   "trig": [
+    "act",
+    "does",
+    "not",
+    "regulate"
+   ],
+   "head": "Abuja: Contract Reigns",
+   "sub": "Abuja Act doesn't regulate caution fees; it's contractual.",
+   "img": "letter",
+   "shot": "tenancy agreement form"
+  },
+  {
+   "sec": 7,
+   "trig": null,
+   "head": "Agents Need Authority",
+   "sub": "Often, you interact with an agent, not the landlord.",
+   "img": "artisan",
+   "shot": null
+  },
+  {
+   "sec": 7,
+   "trig": [
+    "written",
+    "authority",
+    "from",
+    "the"
+   ],
+   "head": "Abuja: Written Authority",
+   "sub": "Agents need written authority to issue valid notices.",
+   "img": "letter",
+   "shot": "signed authorization document"
+  },
+  {
+   "sec": 7,
+   "trig": [
+    "section",
+    "2",
+    "of",
+    "the"
+   ],
+   "head": "Valid Notices",
+   "sub": "FCT Act, Section 2, defines authorized agents.",
+   "img": "kiosk",
+   "shot": "kiosk with documents"
+  },
+  {
+   "sec": 8,
+   "trig": null,
+   "head": "Paper Beats Memory",
+   "sub": "Written proof is your unshakeable evidence of payment.",
+   "img": "pen",
+   "shot": "pen on notebook"
+  },
+  {
+   "sec": 8,
+   "trig": [
+    "eliminates",
+    "doubt",
+    "prevents",
+    "disputes"
+   ],
+   "head": "Eliminate Doubt",
+   "sub": "Receipts prevent disputes and protect you from problems.",
+   "img": "court",
+   "shot": "court gavel on desk"
+  },
+  {
+   "sec": 8,
+   "trig": [
+    "your",
+    "right",
+    "to",
+    "be"
+   ],
+   "head": "Your Right, Your Shield",
+   "sub": "Empower yourself with proper documentation; paper is your",
+   "img": "letter",
+   "shot": "documents on table"
+  },
+  {
+   "sec": 9,
+   "trig": null,
+   "head": "The Law, and DocOga",
+   "sub": "Understanding receipt rules saves you stress and money.",
+   "img": "phone",
+   "shot": null
+  },
+  {
+   "sec": 9,
+   "trig": [
+    "two",
+    "minutes"
+   ],
+   "head": "Get Documents Fast",
+   "sub": "DocOga helps you generate documents on your phone quickly.",
+   "img": "phone",
+   "shot": "phone generating document"
+  },
+  {
+   "sec": 9,
+   "trig": [
+    "our",
+    "rent",
+    "receipt",
+    "tool"
+   ],
+   "head": "DocOga Tools",
+   "sub": "Use our Rent Receipt, Tenancy Agreement, Caution Fee Receipt.",
+   "img": "letter",
+   "shot": "printed document forms"
+  },
+  {
+   "sec": 9,
+   "trig": [
+    "free",
+    "to",
+    "start"
+   ],
+   "head": "Free to Start",
+   "sub": "All our tools are free to start, no signup, no card.",
+   "img": "kiosk",
+   "shot": null
+  },
+  {
+   "sec": 9,
+   "trig": [
+    "two",
+    "thousand",
+    "naira",
+    "for"
+   ],
+   "head": "Oga Pass ₦2,000",
+   "sub": "Unlimited clean copies for ₦2,000 for 30 days.",
+   "img": "naira",
+   "shot": "naira on table"
+  },
+  {
+   "sec": 9,
+   "trig": [
+    "fifty",
+    "thousand",
+    "naira",
+    "or"
+   ],
+   "head": "Save Lawyer Fees",
+   "sub": "Avoid typical ₦50,000 lawyer fees for tenancy agreements.",
+   "img": "court",
+   "shot": "legal books on shelf"
+  },
+  {
+   "sec": 9,
+   "trig": [
+    "of",
+    "your",
+    "tenancy"
+   ],
+   "head": "DOCOGA",
+   "sub": "docoga.com.ng — link in the description",
+   "img": "celebration",
+   "shot": null,
+   "endcard": true
+  }
+ ],
+ "brain": {
+  "written": "2026-11-22T01:37:37+01:00",
+  "theme": "rent-receipt-lagos-abuja-law",
+  "claims": [
+   {
+    "text": "In Lagos, the law makes issuing a rent receipt a statutory duty and prescribes what must be on it, with Section 5(1) stating that every landlord shall issue a receipt on payment of rent.",
+    "fact_id": "lagos:receipts:1"
+   },
+   {
+    "text": "A landlord in Lagos who fails to issue the receipt is liable on conviction to a fine of ₦100,000, according to Section 5(3).",
+    "fact_id": "lagos:receipts:7"
+   },
+   {
+    "text": "For Lagos, Section 5(2) mandates that the receipt must state the date on which the rent was received.",
+    "fact_id": "lagos:receipts:2"
+   },
+   {
+    "text": "In Lagos, the receipt must also state the names and addresses of both the landlord and the tenant, as per Section 5(2).",
+    "fact_id": "lagos:receipts:3"
+   },
+   {
+    "text": "The description and location of the premises must be included on the receipt in Lagos, according to Section 5(2).",
+    "fact_id": "lagos:receipts:4"
+   },
+   {
+    "text": "Lagos's Section 5(2) requires the receipt to state the amount of rent paid.",
+    "fact_id": "lagos:receipts:5"
+   },
+   {
+    "text": "The period to which the payment relates must also be stated on the receipt in Lagos, as mandated by Section 5(2).",
+    "fact_id": "lagos:receipts:6"
+   },
+   {
+    "text": "In Abuja, the Recovery of Premises Act does not impose a Lagos-style duty to issue a receipt with prescribed contents.",
+    "fact_id": "abuja:receipts:1"
+   },
+   {
+    "text": "For Abuja, a receipt remains the ordinary evidence that rent was paid, and where rent is paid in cash, the burden of proving payment falls on whoever asserts it.",
+    "fact_id": "abuja:receipts:1"
+   },
+   {
+    "text": "In Lagos, the 2011 Law regulates money taken alongside rent such as security deposits, charges for services and facilities, and service charges (Section 10(a)–(c)).",
+    "fact_id": "lagos:caution_fee:1"
+   },
+   {
+    "text": "For these payments in Lagos, the landlord owes the tenant a separate receipt and a six-monthly written account.",
+    "fact_id": "lagos:caution_fee:1"
+   },
+   {
+    "text": "The Act in Abuja does not regulate caution fees, deposits, or agents’ commissions.",
+    "fact_id": "abuja:caution_fee:1"
+   },
+   {
+    "text": "In Abuja, an agent or solicitor needs written authority before issuing a valid notice to quit, as Section 2 defines an “agent” as a person usually employed by the landlord or specially authorised in writing.",
+    "fact_id": "abuja:notice_extras:5"
+   },
+   {
+    "text": "In Lagos, for any of these, your landlord or agent must issue you a separate receipt. And that's not all; you are also entitled to a written account at least every six months, showing how that money w",
+    "fact_id": "lagos:receipts:8",
+    "recalled": true
+   }
+  ]
+ }
+}
