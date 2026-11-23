@@ -1,5 +1,24 @@
 [
  {
+  "date": "2026-11-24",
+  "at": "2026-11-23T09:05:41+01:00",
+  "short_day": true,
+  "state": "abuja",
+  "problems": [
+   "short.title: 1-64 characters"
+  ]
+ },
+ {
+  "date": "2026-11-23",
+  "at": "2026-11-23T09:03:36+01:00",
+  "short_day": true,
+  "state": "kano",
+  "problems": [
+   "a cited post names the section number (e.g. s.5) in its copy",
+   "short.tips[4].say: no link — the end card carries it"
+  ]
+ },
+ {
   "date": "2026-11-25",
   "at": "2026-11-23T01:34:43+01:00",
   "short_day": true,
@@ -393,26 +412,6 @@
   "state": "cross-river",
   "problems": [
    "fact id typed into the copy: cross-river:notice_extras:4, cross-river:notice_ladder:2, cross-river:notice_ladder:4 — ids live only in `claims`, never in words a reader sees"
-  ]
- },
- {
-  "date": "2026-11-06",
-  "at": "2026-11-04T01:31:46+01:00",
-  "short_day": true,
-  "state": "abuja",
-  "problems": [
-   "verifier: legal statement not on the shelf — 'Many tenants pay without updating their paperwork and lose their rights.'",
-   "verifier: legal statement not on the shelf — 'A standard Tenancy Agreement makes sure your renewal goes smooth, no wahala.'",
-   "verifier: legal statement not on the shelf — 'A proper Tenancy Agreement protects both you and your landlord.'"
-  ]
- },
- {
-  "date": "2026-11-04",
-  "at": "2026-11-02T01:35:30+01:00",
-  "short_day": true,
-  "problems": [
-   "a body line is 184 characters; max 110: 'For Lagos, under Section 4(5) of the Ten'",
-   "a body line is 147 characters; max 110: 'Under Section 44(1), to demolish house o'"
   ]
  }
 ]

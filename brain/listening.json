@@ -1,5 +1,5 @@
 {
- "pulled_at": "2026-11-23T00:31:23+00:00",
+ "pulled_at": "2026-11-23T07:59:35+00:00",
  "items": [],
  "answered": [
   {
@@ -47,12 +47,9 @@
    "topic": "notice_ladder"
   }
  ],
- "sources": [],
- "answer_log": [
-  {
-   "at": "2026-11-23T00:36:50+00:00",
-   "outcome": "drafted",
-   "reason": "https://docoga.com.ng/guides/lagos-tenancy-law-understanding-your-notice-period-to-quit"
-  }
+ "sources": [
+  "Nairaland Properties: 62",
+  "Nairaland Family: 61",
+  "Nairaland Politics: 59"
  ]
 }

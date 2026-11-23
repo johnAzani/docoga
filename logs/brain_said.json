@@ -534,5 +534,24 @@
   "tool": "tenancy-agreement",
   "tool_routed": false,
   "news_hook": null
+ },
+ {
+  "date": "2026-11-25",
+  "theme": "cross-river-advance-rent-limit-pidgin",
+  "headline": "Landlord ask Tunde for two years rent upfront for Calabar",
+  "post_type": "pidgin",
+  "hook_type": "STORY",
+  "state": "cross-river",
+  "fact_ids": [
+   "cross-river:advance_rent:1",
+   "cross-river:advance_rent:1"
+  ],
+  "recalled": 0,
+  "plate": "calabar street view",
+  "short": true,
+  "reader": "tunde",
+  "tool": "tenant-rights",
+  "tool_routed": false,
+  "news_hook": null
  }
 ]

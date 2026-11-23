@@ -1,0 +1,101 @@
+{
+ "version": 1,
+ "status": "approved",
+ "date": "2026-11-25",
+ "generated_at": "2026-11-23T09:06:30+01:00",
+ "theme": "cross-river-advance-rent-limit-pidgin",
+ "post_type": "pidgin",
+ "hook_type": "STORY",
+ "state": "cross-river",
+ "claims": [
+  {
+   "text": "For Cross River State, landlord no fit ask individual tenant for pass three months rent upfront.",
+   "fact_id": "cross-river:advance_rent:1"
+  },
+  {
+   "text": "Na only corporate company tenant landlord fit collect up to twelve months advance rent from.",
+   "fact_id": "cross-river:advance_rent:1"
+  }
+ ],
+ "recalled": [],
+ "post": {
+  "headline": "Landlord ask Tunde for two years rent upfront for Calabar",
+  "lines": [
+   "Tunde find flat for Calabar and landlord tell am to pay two full years rent in advance.",
+   "For Cross River State, landlord no fit ask individual tenant for pass three months rent upfront.",
+   "Na only corporate company tenant landlord fit collect up to twelve months advance rent from."
+  ],
+  "cta": "Send this to your friend inside Calabar who dey look for house to rent.",
+  "hashtags": [
+   "#DocOga",
+   "#CrossRiver",
+   "#TenantRights",
+   "#Calabar"
+  ]
+ },
+ "threads": {
+  "text": "Tunde find flat for Calabar and landlord ask for two years rent upfront. For Cross River State, law limit advance rent for individual tenant to three months, while company fit pay up to twelve months. How many months rent your own landlord ask you to pay upfront?",
+  "hashtags": [
+   "#DocOga",
+   "#CrossRiver"
+  ],
+  "topic": "Cross River Tenant Rights",
+  "poll": null,
+  "evening": "Landlord for Cross River no fit demand pass three months rent in advance from individual tenant."
+ },
+ "visual": {
+  "kicker": "Cross River Law",
+  "layout": "poster",
+  "big": "",
+  "plate": "calabar street view"
+ },
+ "short": {
+  "title": "Pay three months advance rent. Not two years.",
+  "hook_sub": "Advance rent limits in Cross River State",
+  "hook_say": "Tunde found a nice apartment in Calabar, but the landlord asked for two whole years of rent upfront before handing over the keys.",
+  "tips": [
+   {
+    "text": "Know the state limit",
+    "sub": "Cross River caps advance rent strictly",
+    "say": "In Cross River State, the law limits how much advance rent a landlord can demand from an individual tenant."
+   },
+   {
+    "text": "Three months for individuals",
+    "sub": "Landlords cannot exceed three months",
+    "say": "An individual tenant cannot be forced to pay more than three months of rent in advance under Cross River law."
+   },
+   {
+    "text": "Twelve months for companies",
+    "sub": "Corporate tenants have different caps",
+    "say": "Only corporate tenants or companies can be asked to pay up to twelve months of advance rent in Cross River."
+   },
+   {
+    "text": "Protect your hard cash",
+    "sub": "Know your rights before paying",
+    "say": "Never clear two years of rent upfront when the state law protects your wallet."
+   }
+  ],
+  "hook_text": "PAY THREE MONTHS ADVANCE RENT.\nNOT TWO YEARS.",
+  "series": {
+   "slug": "agent-and-landlord",
+   "name": "Agent and landlord",
+   "part": 3,
+   "total": 5,
+   "label": "Advance rent limits"
+  }
+ },
+ "why": "Wednesday pidgin explainer for Tunde covering Cross River advance rent rules during payday move season.",
+ "tool": "tenant-rights",
+ "tool_routed": false,
+ "reader": "tunde",
+ "news_hook": null,
+ "quiz": null,
+ "gates": [
+  "citation",
+  "verification",
+  "lint",
+  "repetition",
+  "shape"
+ ],
+ "note": ""
+}
