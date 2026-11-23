@@ -1,51 +1,15 @@
 {
   "_comment": "Video candidates derived from logs/search_console.json — real queries the site already appears for. Ordered by proven demand. Written by tools/yt_search_lane.py; nothing here touches YouTube or episodes/queue.json.",
-  "taken_at": "2026-11-16",
+  "taken_at": "2026-11-23",
   "candidates": [
     {
       "query": "edo state tenancy law",
       "title": "Edo state tenancy law: How many months (2026)",
       "page": "https://docoga.com.ng/notice-to-quit-edo.html",
-      "impressions": 6,
+      "impressions": 4,
       "position": 10.0,
       "near_miss": true,
-      "why": "6 impressions at position 10.0 — Google already believes the page answers this, and no video does"
-    },
-    {
-      "query": "quit notice from landlord to tenant",
-      "title": "Quit notice from landlord to tenant (2026)",
-      "page": "https://docoga.com.ng/notice-to-quit-nigeria",
-      "impressions": 2,
-      "position": 11.0,
-      "near_miss": true,
-      "why": "2 impressions at position 11.0 — Google already believes the page answers this, and no video does"
-    },
-    {
-      "query": "shop tenancy agreement",
-      "title": "Shop tenancy agreement: what a commercial tenancy needs (2026)",
-      "page": "https://docoga.com.ng/shop-tenancy-agreement-nigeria.html",
-      "impressions": 1,
-      "position": 7.0,
-      "near_miss": true,
-      "why": "1 impression at position 7.0 — Google already believes the page answers this, and no video does"
-    },
-    {
-      "query": "how many days does a tenant have to give notice",
-      "title": "How many days does a tenant have to give notice (2026)",
-      "page": "https://docoga.com.ng/tenant-rights-nigeria.html",
-      "impressions": 1,
-      "position": 11.0,
-      "near_miss": true,
-      "why": "1 impression at position 11.0 — Google already believes the page answers this, and no video does"
-    },
-    {
-      "query": "power of attorney",
-      "title": "Power of attorney: from abroad (2026)",
-      "page": "https://docoga.com.ng/power-of-attorney-nigeria.html",
-      "impressions": 1,
-      "position": 2.0,
-      "near_miss": false,
-      "why": "1 impression at position 2.0 — Google already believes the page answers this, and no video does"
+      "why": "4 impressions at position 10.0 — Google already believes the page answers this, and no video does"
     }
   ]
 }
