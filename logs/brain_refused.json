@@ -1,5 +1,35 @@
 [
  {
+  "date": "2026-11-25",
+  "at": "2026-11-23T01:34:43+01:00",
+  "short_day": true,
+  "state": "cross-river",
+  "problems": [
+   "fact id typed into the copy: cross-river:advance_rent:1 — ids live only in `claims`, never in words a reader sees"
+  ]
+ },
+ {
+  "date": "2026-11-24",
+  "at": "2026-11-23T01:32:23+01:00",
+  "short_day": true,
+  "state": "abuja",
+  "problems": [
+   "a cited post names the section number (e.g. s.5) in its copy",
+   "short.title: 1-64 characters"
+  ]
+ },
+ {
+  "date": "2026-11-23",
+  "at": "2026-11-23T01:31:45+01:00",
+  "short_day": true,
+  "state": "kano",
+  "problems": [
+   "the disclaimer is added by the renderer — remove it from the copy",
+   "a cited post names the section number (e.g. s.5) in its copy",
+   "fact id typed into the copy: kano:advance_rent:1, kano:receipts:1, kano:verified_negative:3 — ids live only in `claims`, never in words a reader sees"
+  ]
+ },
+ {
   "date": "2026-11-24",
   "at": "2026-11-22T08:17:05+01:00",
   "short_day": true,
@@ -383,35 +413,6 @@
   "problems": [
    "a body line is 184 characters; max 110: 'For Lagos, under Section 4(5) of the Ten'",
    "a body line is 147 characters; max 110: 'Under Section 44(1), to demolish house o'"
-  ]
- },
- {
-  "date": "2026-11-03",
-  "at": "2026-11-01T07:39:48+01:00",
-  "short_day": true,
-  "problems": [
-   "short.tips[3].text: 1-5 words, <= 30 characters"
-  ]
- },
- {
-  "date": "2026-11-03",
-  "at": "2026-11-01T01:33:01+01:00",
-  "short_day": true,
-  "problems": [
-   "verifier: legal statement not on the shelf — 'A landlord cannot issue one month or verbal notice before Christmas and call it lawful.'",
-   "verifier: legal statement not on the shelf — 'A landlord cannot shorten it by word of mouth before Christmas.'",
-   "verifier: legal statement not on the shelf — 'In Kwara State, yearly tenants need six months notice under the law, not sudden eviction.'"
-  ]
- },
- {
-  "date": "2026-10-29",
-  "at": "2026-10-28T07:06:11+01:00",
-  "short_day": true,
-  "problems": [
-   "a body line is 140 characters; max 110: 'In Rivers, a notice to quit must termina'",
-   "a body line is 142 characters; max 110: \"For a yearly tenant, that's six months (\"",
-   "news_hook is not one of this week's NEWSDESK headlines — a story the papers did not print is not a story",
-   "statistic '20%' is not in a cited fact — DocOga publishes no number it cannot source"
   ]
  }
 ]

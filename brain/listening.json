@@ -1,5 +1,5 @@
 {
- "pulled_at": "2026-11-22T07:16:14+00:00",
+ "pulled_at": "2026-11-23T00:31:23+00:00",
  "items": [],
  "answered": [
   {
@@ -37,7 +37,22 @@
    "kind": "answer_page",
    "state_slug": "kwara",
    "topic": "notice_ladder"
+  },
+  {
+   "date": "2026-11-23",
+   "url": "https://docoga.com.ng/guides/lagos-tenancy-law-understanding-your-notice-period-to-quit",
+   "title": "Lagos Tenancy Law: Understanding Your Notice Period To Quit",
+   "kind": "answer_page",
+   "state_slug": "lagos",
+   "topic": "notice_ladder"
   }
  ],
- "sources": []
+ "sources": [],
+ "answer_log": [
+  {
+   "at": "2026-11-23T00:36:50+00:00",
+   "outcome": "drafted",
+   "reason": "https://docoga.com.ng/guides/lagos-tenancy-law-understanding-your-notice-period-to-quit"
+  }
+ ]
 }

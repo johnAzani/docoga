@@ -1,4 +1,4 @@
-# What the numbers said — written 2026-11-16 by tools/brain.py feedback
+# What the numbers said — written 2026-11-23 by tools/brain.py feedback
 
 ## Scorecard 2026-W47 (taken 2026-11-16 13:58)
 
@@ -85,21 +85,18 @@ Threads engagement by posting hour (WAT): 20:00 → 3.0, 13:00 → 0.86, 7:00 �
 - last brain improvement: 2026-11-12 (4 day(s) ago) — **The brief names the right page, or none.** Read back: the first page brief (the
 
 ### Competitor watch — the field this week (🔒 docs/DOMINANCE.md)
-- last deep research: 2026-11-16 (0 day(s) ago) — **Dive: the sentinel's false alarm, the FCT bill's true stage, and the week's
-- field map verified: 2026-11-07 (9 day(s) ago)
-- field pulled 2026-11-16: 8 item(s) from 4 competitor(s); not watchable at ₦0: @legalfriendng — Real Estate Lawyer (TikTok), @talk360law — KING, ESQ. (TikTok), @theonlybusayoadesanya (TikTok)
-- Mushrooms.ng blog — 7 days notice to quit nigeria; House for rent captions nigeria; How much can landlord increase rent nigeria
+- last deep research: 2026-11-16 (7 day(s) ago) — **Dive: the sentinel's false alarm, the FCT bill's true stage, and the week's
+- field map verified: 2026-11-07 (16 day(s) ago)
+- field pulled 2026-11-23: 5 item(s) from 4 competitor(s); not watchable at ₦0: @legalfriendng — Real Estate Lawyer (TikTok), @talk360law — KING, ESQ. (TikTok), @theonlybusayoadesanya (TikTok)
 - Olamide Oyetayo Legal — Rent increment in Nigeria: What Tenants and Landlords must know; Leading Law firm in Abuja: Olamide Oyetayo & Co | Dispute Resolution |
+- Lexpraxis Solicitors blog — HOW TO RENEW A NITDA LICENSE IN NIGERIA
 - SabiLaw Solutions — City Engineering Nigeria Ltd v. Federal Housing Authority (1997)
 - Legalnaija templates — Why your firm’s year-end party should leave something on the wall
 - ⚔️ collision: Olamide Oyetayo Legal — "Rent increment in Nigeria: What Tenants and Landlords must know" (2026-11-13) ↔ /rent-increase-notice-nigeria (ours, published 2026-11-05) → the brain is told to point there
-- ⚔️ collision: Mushrooms.ng blog — "7 days notice to quit nigeria" (2026-11-05) ↔ /notice-to-quit-nigeria (ours, published 2026-11-12) → the brain is told to point there
-- ⚔️ collision: Mushrooms.ng blog — "How much can landlord increase rent nigeria" (2026-11-05) ↔ /rent-increase-notice-nigeria (ours, published 2026-11-05) → the brain is told to point there
+- ◻ uncovered: Lexpraxis Solicitors blog — "HOW TO RENEW A NITDA LICENSE IN NIGERIA" (2026-11-19) — no DocOga page answers this title; a Growth candidate, not an order
 - ◻ uncovered: Olamide Oyetayo Legal — "Leading Law firm in Abuja: Olamide Oyetayo & Co | Dispute Resolution |" (2026-11-13) — no DocOga page answers this title; a Growth candidate, not an order
 - ◻ uncovered: SabiLaw Solutions — "City Engineering Nigeria Ltd v. Federal Housing Authority (1997)" (2026-11-11) — no DocOga page answers this title; a Growth candidate, not an order
 - ◻ uncovered: Legalnaija templates — "Why your firm’s year-end party should leave something on the wall" (2026-11-11) — no DocOga page answers this title; a Growth candidate, not an order
-- ◻ uncovered: Mushrooms.ng blog — "House for rent captions nigeria" (2026-11-05) — no DocOga page answers this title; a Growth candidate, not an order
-- ◻ uncovered: Mushrooms.ng blog — "How to advertise house for rent nigeria" (2026-11-05) — no DocOga page answers this title; a Growth candidate, not an order
 - rival prices: NigeriaBuildingCost — tenancy agreement generator — ₦4,000, ₦500, as mapped
 - rival prices: DIYLaw — ₦5,000, ₦2,000, ₦3,500, as mapped
 - rival prices: SabiLaw Solutions — ₦3,200, as mapped
@@ -108,17 +105,18 @@ Threads engagement by posting hour (WAT): 20:00 → 3.0, 13:00 → 0.86, 7:00 �
 - watching: "Why your firm’s year-end party should leave something on the wall" — seen 1× (brief at 2)
 - watching: "City Engineering Nigeria Ltd v. Federal Housing Authority (1997)" — seen 1× (brief at 2)
 - watching: "Leading Law firm in Abuja: Olamide Oyetayo & Co | Dispute Resolution |" — seen 1× (brief at 2)
+- watching: "HOW TO RENEW A NITDA LICENSE IN NIGERIA" — seen 1× (brief at 2)
 - declined: "House for rent captions nigeria"; "House for rent captions nigeria"
 
 ### Law watch — are the bills on our pages still bills
-- pulled 2026-11-12: 4 bill(s) watched, 0 passage alert(s)
+- pulled 2026-11-19: 4 bill(s) watched, 8 passage alert(s)
 - Anambra — quiet; stage verified 2026-11-03 (announced by the Assembly 26 March 2026 and the Governor 21 June 2026;)
-- Enugu — quiet; stage verified 2026-11-03 (executive bill announced 26 October 2026; four-week pledge)
+- Enugu — 🔴 PASSAGE REPORTED — re-verify and rewrite the page; stage verified 2026-11-03 (executive bill announced 26 October 2026; four-week pledge); newest: Enugu assembly passes landlord, tenants amendment bill into law
 - Lagos — 🟡 moving; stage verified 2026-11-03 (second reading 10 July 2025; with the House Committee on Housing as at); newest: Lagos Governorship Candidates Disagree Over Rent Control, Housing, Flooding
-- Abuja (FCT) — 🟡 moving; stage verified 2026-11-05 (second reading, House of Representatives, 4 November 2026; next: commi); newest: Reps pass FCT rent regulation bill, propose 12-month advance payment limit
+- Abuja (FCT) — 🟡 moving; stage verified 2026-11-05 (second reading, House of Representatives, 4 November 2026; next: commi); newest: Nigeria’s Rent Bill Seeks to Cap Compulsory Advance Payments at 12 Months as Rep
 
 ### Growth — where the next naira is (🔒 docs/GROWTH.md)
-- last growth dive: 2026-11-16 (0 day(s) ago; limit 7)
+- last growth dive: 2026-11-16 (7 day(s) ago; limit 7)
 - money-page share of Google impressions (2026-10-16 → 2026-11-13): 44% (130 of 294) — target 40% ✅
 - zero-click top spots: none in the pull
 - this week's order: no leak in the pull — grow the footprint: a new intent page from the shelf.
@@ -155,8 +153,8 @@ Threads engagement by posting hour (WAT): 20:00 → 3.0, 13:00 → 0.86, 7:00 �
 - Top longform: 'Tenancy Agreement in Nigeria: The 8 Clauses That Decide Everything' 7 views; 'Caution Fee: The Refund War' 6 views; 'The Rent Receipt: The ₦50 Paper That Wins Cases' 5 views
 
 ## Last 28 days of the brain's own output
-- post types: engagement ×5, checklist ×4, pidgin ×3, promo ×3, story ×3, state_spotlight ×3, educational ×2
-- hooks: STAT ×5, QUESTION ×3, CLAIM ×3, STAKES ×3, CURIOSITY ×3, HOWTO ×3, STORY ×3
-- states: edo ×5, cross-river ×3, anambra ×3, abuja ×3, kano ×2, rivers ×2, kwara ×2, lagos ×2, enugu ×1
+- post types: pidgin ×4, promo ×4, story ×4, checklist ×4, engagement ×4, state_spotlight ×3, educational ×2
+- hooks: STAT ×5, STAKES ×5, QUESTION ×4, CURIOSITY ×3, HOWTO ×3, STORY ×3, CLAIM ×2
+- states: anambra ×4, rivers ×3, abuja ×3, edo ×3, kwara ×3, lagos ×3, kano ×2, cross-river ×2, enugu ×2
 
 Rotate away from the most-used type and hook above; the least-used state is overdue.

@@ -1,0 +1,53 @@
+{
+ "version": 1,
+ "status": "approved",
+ "source": "listening",
+ "kind": "answer_page",
+ "date": "2026-11-23",
+ "theme": "lagos-tenancy-law-understanding-your-notice-period-to-quit",
+ "state": "lagos",
+ "tool": "notice-to-quit",
+ "topic": "notice_ladder",
+ "post": {
+  "headline": "Lagos Tenancy Law: Understanding Your Notice Period To Quit",
+  "lines": [
+   "Many tenants and landlords in Lagos often clash over how much notice to give before someone has to move out. This confusion can lead to unnecessary arguments and stress for everyone involved.",
+   "Here’s how the notice period works in Lagos, depending on how you pay your rent:",
+   "1. If you are a 'tenant at will', meaning you just pay as you use without a fixed agreement, your landlord only needs to give you one week's notice (s.13(1)(a)).",
+   "2. For those who pay rent every month, you are considered a monthly tenant and should get one month's notice (s.13(1)(b)).",
+   "3. If your rent is paid every three months (quarterly), the law says you are entitled to three months' notice (s.13(1)(c)).",
+   "4. Even if you pay every six months (half-yearly), the notice period remains three months (s.13(1)(d)).",
+   "5. For tenants who pay their rent once a year, you are a yearly tenant and must be given six months' notice before you are asked to leave (s.13(1)(e)).",
+   "It is always best to know your tenancy type and count the months properly. Make sure any notice is given in writing to avoid future misunderstandings."
+  ]
+ },
+ "quiz": {
+  "question": "How much notice do I get to quit my Lagos apartment?",
+  "explanation": "The notice period depends on your tenancy type in Lagos. It ranges from one week for a tenant at will (s.13(1)(a)) to six months for a yearly tenant (s.13(1)(e))."
+ },
+ "claims": [
+  {
+   "text": "If you are a 'tenant at will', meaning you just pay as you use without a fixed agreement, your landlord only needs to give you one week's notice (s.13(1)(a)).",
+   "fact_id": "lagos:notice_ladder:1"
+  },
+  {
+   "text": "For those who pay rent every month, you are considered a monthly tenant and should get one month's notice (s.13(1)(b)).",
+   "fact_id": "lagos:notice_ladder:2"
+  },
+  {
+   "text": "If your rent is paid every three months (quarterly), the law says you are entitled to three months' notice (s.13(1)(c)).",
+   "fact_id": "lagos:notice_ladder:3"
+  },
+  {
+   "text": "Even if you pay every six months (half-yearly), the notice period remains three months (s.13(1)(d)).",
+   "fact_id": "lagos:notice_ladder:4"
+  },
+  {
+   "text": "For tenants who pay their rent once a year, you are a yearly tenant and must be given six months' notice before you are asked to leave (s.13(1)(e)).",
+   "fact_id": "lagos:notice_ladder:5"
+  }
+ ],
+ "why": "Many tenants and landlords are often confused about the correct notice period required by law in Lagos.",
+ "asked": "",
+ "url": "https://docoga.com.ng/guides/lagos-tenancy-law-understanding-your-notice-period-to-quit"
+}
