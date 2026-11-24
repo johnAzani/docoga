@@ -1,6 +1,23 @@
 {
- "pulled_at": "2026-11-24T00:31:33+00:00",
- "items": [],
+ "pulled_at": "2026-11-24T10:14:37+00:00",
+ "items": [
+  {
+   "title": "Bangalore's Rental Housing Market: What Makes An Apartment Appealing To Tenants?",
+   "url": "https://www.nairaland.com/8788193/bangalores-rental-housing-market-what",
+   "board": "properties",
+   "source": "Nairaland",
+   "order": 8788193,
+   "score": 7
+  },
+  {
+   "title": "My Landlord Refused To Refund My Remaining",
+   "url": "https://www.nairaland.com/8788031/landlord-refused-refund-remaining",
+   "board": "family",
+   "source": "Nairaland",
+   "order": 8788031,
+   "score": 7
+  }
+ ],
  "answered": [
   {
    "date": "2026-10-30",
@@ -47,5 +64,9 @@
    "topic": "notice_ladder"
   }
  ],
- "sources": []
+ "sources": [
+  "Nairaland Properties: 65",
+  "Nairaland Family: 60",
+  "Nairaland Politics: 59"
+ ]
 }

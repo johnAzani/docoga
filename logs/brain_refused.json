@@ -1,6 +1,27 @@
 [
  {
   "date": "2026-11-26",
+  "at": "2026-11-24T11:19:05+01:00",
+  "short_day": true,
+  "state": "edo",
+  "problems": [
+   "short.tips[4].say: no link — the end card carries it",
+   "fact id typed into the copy: edo:rent_control:1, edo:rent_control:2, edo:security_of_tenancy:1 — ids live only in `claims`, never in words a reader sees"
+  ]
+ },
+ {
+  "date": "2026-11-24",
+  "at": "2026-11-24T11:18:07+01:00",
+  "short_day": true,
+  "state": "abuja",
+  "problems": [
+   "quiz.explanation must carry the section of its fact (no provision)",
+   "a cited post names the section number (e.g. s.5) in its copy",
+   "fact id typed into the copy: abuja:advance_rent:1, abuja:advance_rent:1, abuja:caution_fee:1, abuja:notice_extras:5 — ids live only in `claims`, never in words a reader sees"
+  ]
+ },
+ {
+  "date": "2026-11-26",
   "at": "2026-11-24T01:34:17+01:00",
   "short_day": true,
   "state": "edo",
@@ -392,28 +413,6 @@
   "problems": [
    "a cited post names the section number (e.g. s.5) in its copy",
    "fact id typed into the copy: kwara:notice_extras:3, kwara:notice_ladder:1, kwara:notice_ladder:2 — ids live only in `claims`, never in words a reader sees"
-  ]
- },
- {
-  "date": "2026-11-08",
-  "at": "2026-11-06T01:34:06+01:00",
-  "short_day": false,
-  "state": "edo",
-  "problems": [
-   "fact id typed into the copy: edo:first_six_months:1 — ids live only in `claims`, never in words a reader sees"
-  ]
- },
- {
-  "date": "2026-11-07",
-  "at": "2026-11-06T01:31:36+01:00",
-  "short_day": false,
-  "state": "cross-river",
-  "problems": [
-   "a body line is 134 characters; max 110: '1. Check the notice period: A yearly ten'",
-   "a body line is 160 characters; max 110: '2. Look for Form E: Beyond the notice, y'",
-   "a body line is 172 characters; max 110: '3. Know your rights: The law voids agree'",
-   "a body line is 112 characters; max 110: \"Don't let them rush you out. Make your o\"",
-   "fact id typed into the copy: cross-river:notice_extras:4, cross-river:notice_ladder:1, cross-river:notice_ladder:2 — ids live only in `claims`, never in words a reader sees"
   ]
  }
 ]

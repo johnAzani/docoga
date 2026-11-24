@@ -1,5 +1,5 @@
 {
- "fetched": "2026-11-24T00:31:07+00:00",
+ "fetched": "2026-11-24T10:14:20+00:00",
  "sources": [
   "Punch: 30 stories",
   "Vanguard: 20 stories",
@@ -9,5 +9,18 @@
   "The Guardian Nigeria: unreachable (HTTP Error 403: Forbidden)",
   "Nairametrics: 20 stories"
  ],
- "items": []
+ "items": [
+  {
+   "title": "Education stakeholders seek stronger support systems for teachers, learners",
+   "link": "https://businessday.ng/news/article/education-stakeholders-seek-stronger-support-systems-for-teachers-learners/",
+   "published": "2026-11-24T09:36:08+00:00",
+   "source": "BusinessDay",
+   "score": 4,
+   "matched": [
+    "rent",
+    "rents"
+   ],
+   "summary": "The Busayo Ademuyiwa Foundation (BAF) has convened hundreds of teachers, parents, education professionals and other stakeholders at its second Teachers’ read more Education stakeholders seek stronger "
+  }
+ ]
 }
