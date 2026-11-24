@@ -1,5 +1,28 @@
 [
  {
+  "date": "2026-11-26",
+  "at": "2026-11-24T01:34:17+01:00",
+  "short_day": true,
+  "state": "edo",
+  "problems": [
+   "statistic '40%' is not in a cited fact — DocOga publishes no number it cannot source",
+   "visual.layout must be one of poster, stat, checklist",
+   "short.title: 1-64 characters",
+   "short.tips[4].say: no link — the end card carries it",
+   "fact id typed into the copy: edo:forum:1, edo:premium:1, edo:rent_control:1 — ids live only in `claims`, never in words a reader sees"
+  ]
+ },
+ {
+  "date": "2026-11-24",
+  "at": "2026-11-24T01:33:55+01:00",
+  "short_day": true,
+  "state": "abuja",
+  "problems": [
+   "price ₦100,000 is neither ours nor in a cited fact",
+   "a cited post names the section number (e.g. s.5) in its copy"
+  ]
+ },
+ {
   "date": "2026-11-24",
   "at": "2026-11-23T09:05:41+01:00",
   "short_day": true,
@@ -391,27 +414,6 @@
    "a body line is 172 characters; max 110: '3. Know your rights: The law voids agree'",
    "a body line is 112 characters; max 110: \"Don't let them rush you out. Make your o\"",
    "fact id typed into the copy: cross-river:notice_extras:4, cross-river:notice_ladder:1, cross-river:notice_ladder:2 — ids live only in `claims`, never in words a reader sees"
-  ]
- },
- {
-  "date": "2026-11-07",
-  "at": "2026-11-05T08:13:16+01:00",
-  "short_day": false,
-  "state": "cross-river",
-  "problems": [
-   "the disclaimer is added by the renderer — remove it from the copy",
-   "claim cites unknown fact id ''",
-   "claim cites unknown fact id ''",
-   "fact id typed into the copy: cross-river:notice_extras:1, cross-river:notice_extras:4, cross-river:notice_ladder:4, cross-river:notice_ladder:2 — ids live only in `claims`, never in words a reader see"
-  ]
- },
- {
-  "date": "2026-11-07",
-  "at": "2026-11-05T01:33:37+01:00",
-  "short_day": false,
-  "state": "cross-river",
-  "problems": [
-   "fact id typed into the copy: cross-river:notice_extras:4, cross-river:notice_ladder:2, cross-river:notice_ladder:4 — ids live only in `claims`, never in words a reader sees"
   ]
  }
 ]

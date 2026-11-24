@@ -161,6 +161,59 @@
     }
    ],
    "brief": null
+  },
+  {
+   "id": "land-purchase-document-agreement",
+   "question": "Land purchase documents nigeria agreement receipt deed",
+   "status": "declined",
+   "first_seen": "2026-11-24",
+   "last_seen": "2026-11-24",
+   "sightings": [
+    {
+     "competitor": "NigeriaBuildingCost — tenancy agreement generator",
+     "title": "Land purchase documents nigeria agreement receipt deed",
+     "published": "2026-11-23",
+     "seen": "2026-11-24"
+    },
+    {
+     "competitor": "NigeriaBuildingCost — tenancy agreement generator",
+     "title": "Land sale agreement template nigeria",
+     "published": "2026-11-23",
+     "seen": "2026-11-24"
+    },
+    {
+     "competitor": "NigeriaBuildingCost — tenancy agreement generator",
+     "title": "Land purchase receipt template",
+     "published": "2026-11-23",
+     "seen": "2026-11-24"
+    }
+   ],
+   "brief": {
+    "verdict": "decline",
+    "reason": "Outright land purchase, deeds of assignment, and sale agreements fall under property acquisition and real estate conveyance rather than DocOga's exclusive focus on tenancy, rent, landlords, tenants, agents, or workplace documentation.",
+    "working_title": "Documents Needed for Buying Land and Property in Nigeria",
+    "the_question": "Which legal documents must be executed and exchanged when buying land to prove valid title transfer in Nigeria?",
+    "who_asks": "other",
+    "angle": "Explaining the mandatory transition from a purchase receipt and contract of sale to a deed of assignment with Governor's consent under Nigerian property law.",
+    "verify": [
+     "Land Use Act 1978 section 22 requirement for Governor's consent",
+     "Stamp Duties Act provisions on property conveyance documentation",
+     "Registration of Titles Law or applicable state land registration laws regarding registration of deeds",
+     "Legal Practitioners Act section 22 restrictions on drafting instruments of transfer"
+    ],
+    "tool": "power-of-attorney",
+    "extend_page": "",
+    "shelf": [
+     {
+      "id": "cross-river:rent_book:1",
+      "cite": "s.34",
+      "state": "Cross River"
+     }
+    ],
+    "closest_page": "rent-receipt-format-nigeria"
+   },
+   "drafted_by": "gemini",
+   "briefed_at": "2026-11-24T00:31:23+00:00"
   }
  ]
 }
