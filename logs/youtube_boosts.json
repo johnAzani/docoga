@@ -617,11 +617,13 @@
     "title": "Pay the wrong agent. Lose the flat.",
     "date": "2026-11-24",
     "comment_text": "Full episode (free, 9 minutes): Rent Receipt in Nigeria: The 7 Lines That Win Every Rent Dispute (Deep-Dive 3) — https://www.youtube.com/watch?v=JJhRcCgAxyQ\nPart 2 of 5 · Agent and landlord.\nPart 3 tomorrow, 7:00pm.\n\nWhich of these do you already do — and which one have you been skipping? Tell me below 👇\n\nFree receipt, tenancy agreement and notice templates (no sign-up): https://docoga.com.ng/?s=yt",
-    "comment_id": "",
-    "playlist_id": "",
-    "playlist_item_id": "",
+    "comment_id": "UgyOXP6yLhh4volYfp54AaABAg",
+    "playlist_id": "PLGn3YRk7msT0",
+    "playlist_item_id": "UExHbjNZUms3bXNUMC45NzUwQkI1M0UxNThBMkU0",
     "planned_at": "2026-11-24T17:16:02+00:00",
-    "notes": [],
+    "notes": [
+      "2026-11-24T18:20:54+00:00: series playlistItems.insert HTTP 409 (SERVICE_UNAVAILABLE)"
+    ],
     "series": {
       "slug": "agent-and-landlord",
       "name": "Agent and landlord",
@@ -630,6 +632,7 @@
       "week_start": "2026-11-23"
     },
     "series_playlist_id": "",
-    "series_item_id": ""
+    "series_item_id": "",
+    "commented_at": "2026-11-24T18:20:54+00:00"
   }
 ]
