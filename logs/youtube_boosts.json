@@ -610,5 +610,26 @@
     "planned_at": "2026-11-23T17:16:24+00:00",
     "notes": [],
     "commented_at": "2026-11-23T18:20:51+00:00"
+  },
+  {
+    "video_id": "wFThwwcUjdk",
+    "kind": "short",
+    "title": "Pay the wrong agent. Lose the flat.",
+    "date": "2026-11-24",
+    "comment_text": "Full episode (free, 9 minutes): Rent Receipt in Nigeria: The 7 Lines That Win Every Rent Dispute (Deep-Dive 3) — https://www.youtube.com/watch?v=JJhRcCgAxyQ\nPart 2 of 5 · Agent and landlord.\nPart 3 tomorrow, 7:00pm.\n\nWhich of these do you already do — and which one have you been skipping? Tell me below 👇\n\nFree receipt, tenancy agreement and notice templates (no sign-up): https://docoga.com.ng/?s=yt",
+    "comment_id": "",
+    "playlist_id": "",
+    "playlist_item_id": "",
+    "planned_at": "2026-11-24T17:16:02+00:00",
+    "notes": [],
+    "series": {
+      "slug": "agent-and-landlord",
+      "name": "Agent and landlord",
+      "part": 2,
+      "total": 5,
+      "week_start": "2026-11-23"
+    },
+    "series_playlist_id": "",
+    "series_item_id": ""
   }
 ]
