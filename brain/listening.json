@@ -1,15 +1,6 @@
 {
- "pulled_at": "2026-11-25T00:31:17+00:00",
- "items": [
-  {
-   "title": "My Landlord Refused To Refund My Remaining",
-   "url": "https://www.nairaland.com/8788031/landlord-refused-refund-remaining",
-   "board": "family",
-   "source": "Nairaland",
-   "order": 8788031,
-   "score": 7
-  }
- ],
+ "pulled_at": "2026-11-25T08:58:53+00:00",
+ "items": [],
  "answered": [
   {
    "date": "2026-10-30",
@@ -56,9 +47,5 @@
    "topic": "notice_ladder"
   }
  ],
- "sources": [
-  "Nairaland Properties: 65",
-  "Nairaland Family: 59",
-  "Nairaland Politics: 60"
- ]
+ "sources": []
 }

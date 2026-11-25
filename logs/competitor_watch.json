@@ -1,7 +1,14 @@
 {
- "pulled_at": "2026-11-25T00:30:57+00:00",
+ "pulled_at": "2026-11-25T08:58:39+00:00",
  "days": 14,
  "items": [
+  {
+   "competitor": "NigeriaBuildingCost — tenancy agreement generator",
+   "kind": "tool",
+   "title": "How to recover unpaid rent nigeria landlord notices",
+   "link": "https://nigeriabuildingcost.ng/blog/how-to-recover-unpaid-rent-nigeria-landlord-notices",
+   "published": "2026-11-25T08:00:00+00:00"
+  },
   {
    "competitor": "NigeriaBuildingCost — tenancy agreement generator",
    "kind": "tool",
@@ -22,13 +29,6 @@
    "title": "Rent receipt template nigeria",
    "link": "https://nigeriabuildingcost.ng/sample-downloads/rent-receipt-template-nigeria",
    "published": "2026-11-23T15:16:15+00:00"
-  },
-  {
-   "competitor": "NigeriaBuildingCost — tenancy agreement generator",
-   "kind": "tool",
-   "title": "Land sale agreement template nigeria",
-   "link": "https://nigeriabuildingcost.ng/sample-downloads/land-sale-agreement-template-nigeria",
-   "published": "2026-11-23T15:06:20+00:00"
   },
   {
    "competitor": "Lexpraxis Solicitors blog",
@@ -60,7 +60,7 @@
   }
  ],
  "sources": [
-  "https://nigeriabuildingcost.ng/sitemap.xml: 129 changed page(s)",
+  "https://nigeriabuildingcost.ng/sitemap.xml: 130 changed page(s)",
   "https://www.wonder.legal/ng/sitemap.xml: 0 changed page(s)",
   "https://diylaw.ng/sitemap.xml: 0 changed page(s)",
   "https://sabilaw.org/feed/: 7 fresh post(s)",
