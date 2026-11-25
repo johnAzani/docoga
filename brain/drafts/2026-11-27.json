@@ -1,0 +1,116 @@
+{
+ "version": 1,
+ "status": "approved",
+ "date": "2026-11-27",
+ "generated_at": "2026-11-25T01:37:13+01:00",
+ "theme": "kwara-rent-book-free-tool",
+ "post_type": "promo",
+ "hook_type": "HOWTO",
+ "state": "kwara",
+ "claims": [
+  {
+   "text": "Landlords in Kwara's high density areas must issue a rent book to tenants, in addition to receipts.",
+   "fact_id": "kwara:rent_book:1"
+  },
+  {
+   "text": "The rent book stays with the tenant, and the landlord makes entries when rent is paid.",
+   "fact_id": "kwara:rent_book:2"
+  },
+  {
+   "text": "A Kwara landlord who fails to issue this book is guilty of an offence.",
+   "fact_id": "kwara:rent_book:2"
+  },
+  {
+   "text": "If your landlord fails to issue this prescribed rent book in Kwara, they are committing an offence.",
+   "fact_id": "kwara:rent_book:2",
+   "recalled": true
+  },
+  {
+   "text": "This could leave you vulnerable in a dispute.",
+   "fact_id": "kwara:rent_book:2",
+   "recalled": true
+  }
+ ],
+ "recalled": [],
+ "post": {
+  "headline": "How to get your rent book in Kwara",
+  "lines": [
+   "Tunde, paying rent in Kwara? Landlords in high density areas must issue a rent book, in addition to receipts.",
+   "This book stays with you. The landlord makes entries each time you pay rent.",
+   "If they don't give you one, they are breaking the law, and you could be at risk.",
+   "Get a 'Rent-relief ready' receipt on your phone, free to start, in two minutes."
+  ],
+  "cta": "Send this to someone who just paid rent in Kwara. Follow for the next rule.",
+  "hashtags": [
+   "#DocOga",
+   "#KwaraRent",
+   "#TenantRights",
+   "#RentReceipt"
+  ]
+ },
+ "threads": {
+  "text": "Paying rent in Kwara's high density areas? Your landlord must give you a rent book, plus receipts, and update it every time. If they don't, they are breaking the law. Protect yourself. Is your landlord following this rule?",
+  "hashtags": [
+   "#DocOga",
+   "#Kwara"
+  ],
+  "topic": "Tenant Rights Nigeria",
+  "poll": null,
+  "evening": "Kwara landlords, listen: a rent book is compulsory in high density areas. Issue it, or face a fine. Don't risk it."
+ },
+ "visual": {
+  "kicker": "Know Your Rights",
+  "layout": "poster",
+  "big": "",
+  "plate": "rent receipt table"
+ },
+ "short": {
+  "title": "Kwara tenants: Are you missing your rent book? Get it now.",
+  "hook_sub": "Landlords must issue it",
+  "hook_say": "When you pay rent in Kwara's high-density areas, there’s one document your landlord must give you besides the receipt. If they don't, you could be risking your tenancy.",
+  "tips": [
+   {
+    "text": "Demand your rent book",
+    "sub": "Landlords must provide it",
+    "say": "In Kwara State, landlords in high density areas are legally required to give you a rent book, in addition to your receipt. It’s your right."
+   },
+   {
+    "text": "Landlord keeps it updated",
+    "sub": "Entries made on payment",
+    "say": "This book stays in your custody. Your landlord is responsible for making entries in it every time you make a rent payment. This ensures transparency."
+   },
+   {
+    "text": "No book, big risk",
+    "sub": "Landlord breaks the law",
+    "say": "If your landlord fails to issue this prescribed rent book in Kwara, they are committing an offence. This could leave you vulnerable in a dispute."
+   },
+   {
+    "text": "Get a free receipt",
+    "sub": "Two minutes, on phone",
+    "say": "Protect yourself. Use DocOga to get a 'Rent-relief ready' receipt on your phone in two minutes, free to start. Follow for more rules."
+   }
+  ],
+  "hook_text": "KWARA TENANTS: ARE YOU MISSING YOUR RENT BOOK?\nGET IT NOW.",
+  "series": {
+   "slug": "agent-and-landlord",
+   "name": "Agent and landlord",
+   "part": 5,
+   "total": 5,
+   "label": "When the agent vanishes"
+  }
+ },
+ "why": "This post is a promo for the rent receipt tool, framed as a HOWTO for Tunde, a young tenant in Kwara, addressing the specific Kwara rent book duty and tying it to the payday window and sales goals, while also addressing the orders for follower growth and shares.",
+ "tool": "rent-receipt",
+ "tool_routed": false,
+ "reader": "tunde",
+ "news_hook": null,
+ "quiz": null,
+ "gates": [
+  "citation",
+  "verification",
+  "lint",
+  "repetition",
+  "shape"
+ ],
+ "note": ""
+}

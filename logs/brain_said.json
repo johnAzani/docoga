@@ -553,5 +553,27 @@
   "tool": "tenant-rights",
   "tool_routed": false,
   "news_hook": null
+ },
+ {
+  "date": "2026-11-27",
+  "theme": "kwara-rent-book-free-tool",
+  "headline": "How to get your rent book in Kwara",
+  "post_type": "promo",
+  "hook_type": "HOWTO",
+  "state": "kwara",
+  "fact_ids": [
+   "kwara:rent_book:1",
+   "kwara:rent_book:2",
+   "kwara:rent_book:2",
+   "kwara:rent_book:2",
+   "kwara:rent_book:2"
+  ],
+  "recalled": 0,
+  "plate": "rent receipt table",
+  "short": true,
+  "reader": "tunde",
+  "tool": "rent-receipt",
+  "tool_routed": false,
+  "news_hook": null
  }
 ]

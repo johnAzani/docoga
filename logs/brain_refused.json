@@ -1,6 +1,15 @@
 [
  {
   "date": "2026-11-26",
+  "at": "2026-11-25T01:34:53+01:00",
+  "short_day": true,
+  "state": "edo",
+  "problems": [
+   "fact id typed into the copy: edo:premium:1 — ids live only in `claims`, never in words a reader sees"
+  ]
+ },
+ {
+  "date": "2026-11-26",
   "at": "2026-11-24T11:19:05+01:00",
   "short_day": true,
   "state": "edo",
@@ -403,16 +412,6 @@
    "the disclaimer is added by the renderer — remove it from the copy",
    "a cited post names the section number (e.g. s.5) in its copy",
    "fact id typed into the copy: lagos:notice_extras:1, lagos:notice_extras:4, lagos:notice_ladder:1 — ids live only in `claims`, never in words a reader sees"
-  ]
- },
- {
-  "date": "2026-11-09",
-  "at": "2026-11-07T01:33:22+01:00",
-  "short_day": true,
-  "state": "kwara",
-  "problems": [
-   "a cited post names the section number (e.g. s.5) in its copy",
-   "fact id typed into the copy: kwara:notice_extras:3, kwara:notice_ladder:1, kwara:notice_ladder:2 — ids live only in `claims`, never in words a reader sees"
   ]
  }
 ]
