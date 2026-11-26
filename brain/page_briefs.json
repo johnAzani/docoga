@@ -246,6 +246,81 @@
     }
    ],
    "brief": null
+  },
+  {
+   "id": "avoid-rental-scam-jiji",
+   "question": "Avoid rental scams jiji nigeria",
+   "status": "watching",
+   "first_seen": "2026-11-26",
+   "last_seen": "2026-11-26",
+   "sightings": [
+    {
+     "competitor": "Mushrooms.ng blog",
+     "title": "Avoid rental scams jiji nigeria",
+     "published": "2026-11-26",
+     "seen": "2026-11-26"
+    }
+   ],
+   "brief": null
+  },
+  {
+   "id": "complete-rent-gbagada",
+   "question": "Complete guide renting gbagada 2026",
+   "status": "briefed",
+   "first_seen": "2026-11-26",
+   "last_seen": "2026-11-26",
+   "sightings": [
+    {
+     "competitor": "Mushrooms.ng blog",
+     "title": "Complete guide renting gbagada 2026",
+     "published": "2026-11-26",
+     "seen": "2026-11-26"
+    },
+    {
+     "competitor": "Mushrooms.ng blog",
+     "title": "Complete guide renting magodo 2026",
+     "published": "2026-11-26",
+     "seen": "2026-11-26"
+    }
+   ],
+   "brief": {
+    "verdict": "build",
+    "reason": "The competition has identified a clear need for area-specific rental guides in high-demand Lagos locations, a gap DocOga can fill with a legally robust resource.",
+    "working_title": "Renting in Gbagada and Magodo: Your Legal Guide to Lagos Tenancy Law",
+    "the_question": "What are the specific legal requirements, tenant rights, and landlord obligations when renting a property in Gbagada or Magodo, Lagos?",
+    "who_asks": "tenant",
+    "angle": "DocOga's guide will focus on the exact Lagos State tenancy laws applicable to renting in these areas, ensuring tenants and landlords understand their rights and duties with statutory backing.",
+    "verify": [
+     "Lagos State Tenancy Law, relevant sections",
+     "Lagos State Land Use Charge Law",
+     "Agency fee regulations in Lagos",
+     "Caution fee practices and legality in Lagos",
+     "Stamp Duties Act for tenancy agreements",
+     "Eviction procedures under Lagos Tenancy Law"
+    ],
+    "tool": "tenancy-agreement",
+    "extend_page": "",
+    "shelf": [],
+    "closest_page": ""
+   },
+   "drafted_by": "gemini",
+   "briefed_at": "2026-11-26T08:45:08+00:00"
+  },
+  {
+   "id": "find-flat",
+   "question": "How to find flat lagos",
+   "status": "watching",
+   "first_seen": "2026-11-26",
+   "last_seen": "2026-11-26",
+   "sightings": [
+    {
+     "competitor": "Mushrooms.ng blog",
+     "title": "How to find flat lagos",
+     "published": "2026-11-26",
+     "seen": "2026-11-26"
+    }
+   ],
+   "brief": null
   }
  ]
 }

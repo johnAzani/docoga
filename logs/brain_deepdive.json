@@ -1156,6 +1156,83 @@
     "beat 28 shot \"kiosk with 'free' sign\" dropped"
    ],
    "run_id": "45729231651"
+  },
+  {
+   "at": "2026-11-26T09:48:33+01:00",
+   "episode": "dd11",
+   "attempt": 1,
+   "outcome": "refused",
+   "title": "Cross River vs. Lagos: The States That Control Your Rent (and How)",
+   "problems": [
+    "36-48 beats (got 27)",
+    "claim cites unknown fact id 'docoga:business:what-we-sell'",
+    "claim cites unknown fact id 'docoga:business:what-we-sell'",
+    "claim cites unknown fact id 'docoga:business:what-we-sell'",
+    "claim cites unknown fact id 'docoga:business:what-we-sell'",
+    "claim cites unknown fact id 'docoga:business:what-we-sell'",
+    "claim cites unknown fact id 'docoga:business:what-we-sell'"
+   ],
+   "healed": [
+    "beat 2 dropped: trigger 'egungun be careful' not spoken in section 1 after word 0",
+    "beat 15 dropped: trig ['not', 'more', 'than', '6', 'months'] is not 2-4 words",
+    "beat 16 dropped: trig ['not', 'more', 'than', '1', 'year'] is not 2-4 words",
+    "beat 17 dropped: trigger 'fine of n100000' not spoken in section 5 after word 36",
+    "beat 21 dropped: trig ['does', 'not', 'use', 'the', 'words'] is not 2-4 words",
+    "beat 22 dropped: trig ['separate', 'receipt', 'and', 'a', 'written'] is not 2-4 words",
+    "beat 29 dropped: trig ['not', 'later', 'than', 'two', 'months'] is not 2-4 words",
+    "beat 31 dropped: trigger 'n250000 or 6 months' not spoken in section 8 after word 65",
+    "beat 35 dropped: trigger 'n2000 for 30 days' not spoken in section 9 after word 66",
+    "beat 36 dropped: trigger 'typically charges n50000 or' not spoken in section 9 after word 66"
+   ],
+   "run_id": "45785700034"
+  },
+  {
+   "at": "2026-11-26T09:51:12+01:00",
+   "episode": "dd11",
+   "attempt": 2,
+   "outcome": "refused",
+   "title": "Rent Control & Advance Rent: Cross River vs. Lagos Deep-Dive",
+   "problems": [
+    "36-48 beats (got 24)",
+    "section 5 needs at least two beats",
+    "section 7 needs at least two beats"
+   ],
+   "healed": [
+    "beat 3 plate 'map' → letter",
+    "beat 5 sub cut at a word: 'Disputes handled by formal judicial process.'",
+    "beat 6 sub cut at a word: 'Rents must not exceed Schedule 2 maximums.'",
+    "beat 7 sub cut at a word: 'Covers all residential, except maisonettes.'",
+    "beat 8 sub cut at a word: 'Permanent, semi-permanent, temporary defined.'",
+    "beat 8 dropped: trigger 'law defines its building' not spoken in section 2 after word 74",
+    "beat 11 sub cut at a word: 'Tenant can get back rent paid above legal limit.'",
+    "beat 11 dropped: trig ['you', 'may', 'recover', 'the', 'excess'] is not 2-4 words",
+    "beat 13 sub cut at a word: 'Only three months advance for individual tenants.'",
+    "beat 14 sub cut at a word: 'Companies can pay up to twelve months in advance.'",
+    "beat 14 plate 'office' → letter",
+    "beat 14 dropped: trig ['take', 'a', 'year', 'in', 'advance'] is not 2-4 words"
+   ],
+   "run_id": "45785700034"
+  },
+  {
+   "at": "2026-11-26T09:51:44+01:00",
+   "episode": "dd11",
+   "attempt": 3,
+   "outcome": "refused",
+   "title": "Advance Rent: Cross River's 3-Month Rule vs. Lagos's Cap",
+   "problems": [
+    "section 4: 86 words; need 120-200",
+    "section 5: 84 words; need 120-200",
+    "total narration 877 words; need 1,100-1,800",
+    "36-48 beats (got 29)"
+   ],
+   "healed": [
+    "beat 5 dropped: trigger 'paying yearly the' not spoken in section 2 after word 0",
+    "beat 19 dropped: trigger 'receive any premium' not spoken in section 6 after word 35",
+    "beat 23 shot 'person checking phone' dropped",
+    "beat 25 plate 'receipt' → letter",
+    "beat 27 shot 'person using phone' dropped"
+   ],
+   "run_id": "45785700034"
   }
  ]
 }
