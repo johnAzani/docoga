@@ -575,5 +575,29 @@
   "tool": "rent-receipt",
   "tool_routed": false,
   "news_hook": null
+ },
+ {
+  "date": "2026-11-28",
+  "theme": "lagos-rent-receipt-five-details-checklist",
+  "headline": "A Lagos landlord took payment and offered only an alert",
+  "post_type": "checklist",
+  "hook_type": "STORY",
+  "state": "lagos",
+  "fact_ids": [
+   "lagos:receipts:1",
+   "lagos:receipts:2",
+   "lagos:receipts:7",
+   "lagos:receipts:3",
+   "lagos:receipts:4",
+   "lagos:receipts:5",
+   "lagos:receipts:6"
+  ],
+  "recalled": 4,
+  "plate": "receipt paper pen table",
+  "short": false,
+  "reader": "ngozi",
+  "tool": "rent-receipt",
+  "tool_routed": false,
+  "news_hook": null
  }
 ]

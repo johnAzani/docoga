@@ -1092,6 +1092,70 @@
     "beat 35 dropped: trigger 'visit docogacomng today' not spoken in section 9 after word 149"
    ],
    "run_id": "44966956480"
+  },
+  {
+   "at": "2026-11-26T01:35:20+01:00",
+   "episode": "dd11",
+   "attempt": 1,
+   "outcome": "refused",
+   "title": "Cross River vs. Lagos: Your Rights Against Too Much Rent",
+   "problems": [
+    "36-48 beats (got 24)",
+    "section 8 needs at least two beats",
+    "section 9 needs at least two beats"
+   ],
+   "healed": [
+    "section 2: style word rewritten",
+    "beat 2 dropped: trigger 'is this even right' not spoken in section 1 after word 0",
+    "beat 14 dropped: trig ['tenant', 'may', 'recover', 'the', 'excess'] is not 2-4 words",
+    "beat 16 shot 'person signing document' dropped",
+    "beat 17 plate 'lagos_rooftops_dusk' → letter",
+    "beat 18 sub cut at a word: 'Lagos does not have a statutory percentage cap on rent'",
+    "beat 18 dropped: trig ['does', 'not', 'impose', 'a', 'fixed'] is not 2-4 words",
+    "beat 19 dropped: trig ['landlords', 'have', 'a', 'free', 'hand'] is not 2-4 words",
+    "beat 27 dropped: trig ['any', 'such', 'payment', 'is', 'recoverable'] is not 2-4 words",
+    "beat 28 plate 'receipt' → letter",
+    "beat 28 dropped: trig ['landlord', 'must', 'issue', 'a', 'separate'] is not 2-4 words",
+    "beat 30 plate 'receipt' → letter"
+   ],
+   "run_id": "45729231651"
+  },
+  {
+   "at": "2026-11-26T01:36:02+01:00",
+   "episode": "dd11",
+   "attempt": 2,
+   "outcome": "refused",
+   "title": "Cross River vs. Lagos: Who Controls Your Rent and How?",
+   "problems": [
+    "36-48 beats (got 27)"
+   ],
+   "healed": [
+    "beat 11 shot 'person holding smartphone' dropped",
+    "beat 11 dropped: trigger 'not exceeding three months' not spoken in section 4 after word 0",
+    "beat 12 shot 'busy market crowd' dropped",
+    "beat 12 dropped: trigger 'only three months' not spoken in section 4 after word 0",
+    "beat 16 dropped: trigger 'new or wouldbe tenant' not spoken in section 5 after word 37",
+    "beat 19 dropped: trigger 'one week for weekly' not spoken in section 6 after word 0",
+    "beat 27 dropped: trigger 'includes form p information' not spoken in section 8 after word 0"
+   ],
+   "run_id": "45729231651"
+  },
+  {
+   "at": "2026-11-26T01:38:35+01:00",
+   "episode": "dd11",
+   "attempt": 3,
+   "outcome": "refused",
+   "title": "Cross River's Strict Rent Rules: Your Rights Beyond Lagos",
+   "problems": [
+    "claim cites unknown fact id 'business:tools_free'",
+    "claim cites unknown fact id 'business:oga_pass'",
+    "claim cites unknown fact id 'business:lawyer_anchor'"
+   ],
+   "healed": [
+    "beat 20 dropped: trigger 'landlords prior consent' not spoken in section 7 after word 0",
+    "beat 28 shot \"kiosk with 'free' sign\" dropped"
+   ],
+   "run_id": "45729231651"
   }
  ]
 }

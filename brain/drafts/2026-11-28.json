@@ -1,0 +1,98 @@
+{
+ "version": 1,
+ "status": "approved",
+ "date": "2026-11-28",
+ "generated_at": "2026-11-26T01:34:43+01:00",
+ "theme": "lagos-rent-receipt-five-details-checklist",
+ "post_type": "checklist",
+ "hook_type": "STORY",
+ "state": "lagos",
+ "claims": [
+  {
+   "text": "In Lagos, every landlord must issue a rent receipt upon receiving payment.",
+   "fact_id": "lagos:receipts:1"
+  },
+  {
+   "text": "By Lagos law, a valid rent receipt must state the date rent was received, the names and addresses of both parties, premises description, amount paid, and the rental period.",
+   "fact_id": "lagos:receipts:2"
+  },
+  {
+   "text": "A landlord in Lagos who fails to issue this receipt is liable to a fine of 100,000 Naira.",
+   "fact_id": "lagos:receipts:7"
+  },
+  {
+   "text": "By Lagos law, a valid rent receipt must state the date rent was received, the names and addresses of both parties, premises description, amount paid, and the rental period.",
+   "fact_id": "lagos:receipts:3",
+   "recalled": true
+  },
+  {
+   "text": "By Lagos law, a valid rent receipt must state the date rent was received, the names and addresses of both parties, premises description, amount paid, and the rental period.",
+   "fact_id": "lagos:receipts:4",
+   "recalled": true
+  },
+  {
+   "text": "By Lagos law, a valid rent receipt must state the date rent was received, the names and addresses of both parties, premises description, amount paid, and the rental period.",
+   "fact_id": "lagos:receipts:5",
+   "recalled": true
+  },
+  {
+   "text": "By Lagos law, a valid rent receipt must state the date rent was received, the names and addresses of both parties, premises description, amount paid, and the rental period.",
+   "fact_id": "lagos:receipts:6",
+   "recalled": true
+  }
+ ],
+ "recalled": [
+  "lagos:receipts:3",
+  "lagos:receipts:4",
+  "lagos:receipts:5",
+  "lagos:receipts:6"
+ ],
+ "post": {
+  "headline": "A Lagos landlord took payment and offered only an alert",
+  "lines": [
+   "In Lagos, every landlord must issue a rent receipt upon receiving payment.",
+   "By Lagos law, a valid rent receipt must state the date rent was received,",
+   "the names and addresses of both parties, premises description, amount paid, and the rental period.",
+   "A landlord in Lagos who fails to issue this receipt is liable to a fine of 100,000 Naira.",
+   "Make a proper rent receipt on your phone in two minutes, free to start."
+  ],
+  "cta": "Send this to the friend renewing rent in Lagos this payday.",
+  "hashtags": [
+   "#DocOga",
+   "#LagosTenants",
+   "#RentReceipt",
+   "#NigerianLaw"
+  ]
+ },
+ "threads": {
+  "text": "A Lagos tenant paid rent via transfer, but the landlord refused to issue a written receipt, calling the bank alert enough. In Lagos, the law requires every landlord to issue a receipt showing the date, names, premises, amount, and period covered. Did your last rent payment come with a written receipt?",
+  "hashtags": [
+   "#DocOga",
+   "#Lagos"
+  ],
+  "topic": "Lagos Rent Receipts",
+  "poll": null,
+  "evening": "A bank transfer alert proves money left your account, not what it was for. In Lagos, your rent receipt must name the property, the exact rental period, and both parties."
+ },
+ "visual": {
+  "kicker": "rent receipt checklist",
+  "layout": "checklist",
+  "big": "",
+  "plate": "receipt paper pen table"
+ },
+ "short": null,
+ "why": "Saturday checklist post addressing Ngozi in the payday renewal window using the required STORY hook archetype and Lagos rent receipt shelf facts.",
+ "tool": "rent-receipt",
+ "tool_routed": false,
+ "reader": "ngozi",
+ "news_hook": null,
+ "quiz": null,
+ "gates": [
+  "citation",
+  "verification",
+  "lint",
+  "repetition",
+  "shape"
+ ],
+ "note": ""
+}
