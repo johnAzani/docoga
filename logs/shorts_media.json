@@ -1,19 +1,6 @@
 {
   "history": [
     {
-      "date": "2026-11-04",
-      "video_id": "DBkIeC66i8Q",
-      "title": "Your agreement may be wrong. Lagos law overrides (part 3 of 5) #Shorts",
-      "url": "https://docoga-pass.johnazani.workers.dev/m/4vy_Eh7Zm8Ies6IvKN1v3OILklKZdURL.mp4",
-      "name": "4vy_Eh7Zm8Ies6IvKN1v3OILklKZdURL",
-      "bytes": 29706303,
-      "hosted_at": "2026-11-04T17:13:36+00:00",
-      "expires_at": "2026-11-05T23:13:36+00:00",
-      "run_id": "41873232728",
-      "series": "Part 3 of 5 · Tenancy agreement",
-      "series_topic": "Tenancy agreement"
-    },
-    {
       "date": "2026-11-06",
       "video_id": "VjhYDjCwmtY",
       "title": "Renewing your tenancy? Do it right (part 5 of 5) #Shorts",
@@ -181,19 +168,32 @@
       "run_id": "45660070816",
       "series": "Part 3 of 5 · Agent and landlord",
       "series_topic": "Agent and landlord"
+    },
+    {
+      "date": "2026-11-26",
+      "video_id": "jwkt5eEheH0",
+      "title": "Moving into a rented flat in Nigeria: skip the photos, pay for old damage #Shorts",
+      "url": "https://docoga-pass.johnazani.workers.dev/m/DXz4HAIOpLoPfeWjYImHUOzZLU2s4fPO.mp4",
+      "name": "DXz4HAIOpLoPfeWjYImHUOzZLU2s4fPO",
+      "bytes": 49880705,
+      "hosted_at": "2026-11-26T17:16:15+00:00",
+      "expires_at": "2026-11-27T23:16:15+00:00",
+      "run_id": "45863922444",
+      "series": "",
+      "series_topic": ""
     }
   ],
   "latest": {
-    "date": "2026-11-25",
-    "video_id": "VHIFvOE0bHk",
-    "title": "Pay three months advance rent. Not two years (part 3 of 5) #Shorts",
-    "url": "https://docoga-pass.johnazani.workers.dev/m/0m0ikpqQmtp1Yw-KC0N_XhDHVCFVHtbY.mp4",
-    "name": "0m0ikpqQmtp1Yw-KC0N_XhDHVCFVHtbY",
-    "bytes": 34283900,
-    "hosted_at": "2026-11-25T17:11:41+00:00",
-    "expires_at": "2026-11-26T23:11:41+00:00",
-    "run_id": "45660070816",
-    "series": "Part 3 of 5 · Agent and landlord",
-    "series_topic": "Agent and landlord"
+    "date": "2026-11-26",
+    "video_id": "jwkt5eEheH0",
+    "title": "Moving into a rented flat in Nigeria: skip the photos, pay for old damage #Shorts",
+    "url": "https://docoga-pass.johnazani.workers.dev/m/DXz4HAIOpLoPfeWjYImHUOzZLU2s4fPO.mp4",
+    "name": "DXz4HAIOpLoPfeWjYImHUOzZLU2s4fPO",
+    "bytes": 49880705,
+    "hosted_at": "2026-11-26T17:16:15+00:00",
+    "expires_at": "2026-11-27T23:16:15+00:00",
+    "run_id": "45863922444",
+    "series": "",
+    "series_topic": ""
   }
 }
