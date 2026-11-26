@@ -2,8 +2,8 @@
   "v": 1,
   "alg": "A256GCM",
   "name": "THREADS_TOKEN",
-  "nonce": "007Jrl5xaiWJkzwQ",
-  "ciphertext": "B/TgDeNg9gXtlAkGRfIMZn5oPAQc+//x9DDXYm0cZBDMFwX9lAByNCMRfXlxzY1m07isWvcCUQYbGPG7Z8Uddg0iw5aKHFA2UDjCtPBu4PNks/QLlDK46PTwSwrorllOombwss6BGwpupEcg1cu+SYbn21S2T4esDCPKROs3epfXLmF26TeVlNK+6/wV8WNu/p3EYM5ma4pmAi10H3oZGC8MvkB6/F4mL0sYxhEnWAIoCPlalaBQg3m4SpB0E0HtIkq7b/cGw/8L",
-  "minted_at": "2026-11-26T12:13:11+00:00",
+  "nonce": "1kzA9yXF3NU5TZLw",
+  "ciphertext": "z5neaWJsNuJhdDVhjgYNL1T6iWRinRDNSBSffuNAoxu2KHxbUIcct/qs2wjzL0ILLGfWvcEyXgCRdmuSLKrPJiNE3QCmK+qo7pmdH2SgowBpY8Rw9CVwd1SLE3J4cxk1UCjutk+DdnfKmXiPN9nXVVCGYsmT4RbFUnijOQ1QEw7nyFb6lmJ8YXhpp2ERcLiQYNbOOCaBlaSEdjJ9EOWu2jMGyNvDZ6yhBQCzFbhOCUFYoUGdBrO/jCtjoxER76mI+sdaf+0F/FQLxQ==",
+  "minted_at": "2026-11-26T19:12:54+00:00",
   "expires_at": "2027-01-25T06:23:05+00:00"
 }
