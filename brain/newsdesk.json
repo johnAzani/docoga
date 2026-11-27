@@ -1,5 +1,5 @@
 {
- "fetched": "2026-11-27T00:31:02+00:00",
+ "fetched": "2026-11-27T08:55:18+00:00",
  "sources": [
   "Punch: 30 stories",
   "Vanguard: 20 stories",
@@ -9,5 +9,24 @@
   "The Guardian Nigeria: unreachable (HTTP Error 403: Forbidden)",
   "Nairametrics: 20 stories"
  ],
- "items": []
+ "items": [
+  {
+   "title": "When a policy meant to protect tenants becomes a signal to double rents: The Enugu Tenancy Bill dilemma, By David Okelue Ugwunta",
+   "link": "https://www.premiumtimesng.com/opinion/928221-when-a-policy-meant-to-protect-tenants-becomes-a-signal-to-double-rents-the-enugu-tenancy-bill-dilemma-by-david-okelue-ugwunta.html",
+   "published": "2026-11-27T03:57:32+00:00",
+   "source": "Premium Times",
+   "score": 54,
+   "matched": [
+    "tenant",
+    "tenants",
+    "landlord",
+    "landlords",
+    "tenancy",
+    "rent",
+    "rents",
+    "tenancy bill"
+   ],
+   "summary": "As some landlords seek to double rents in anticipation of a law designed to protect tenants, one question becomes unavoidable: If the House of Assembly passes a law to protect citizens, but its announ"
+  }
+ ]
 }
