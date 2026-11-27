@@ -1,0 +1,565 @@
+{
+ "id": "dd11",
+ "number": 11,
+ "title": "Advance Rent in Lagos and Cross River: Strictest Caps",
+ "kicker": "DOCOGA — DEEP-DIVE · EPISODE 11",
+ "disclaimer": "GENERAL INFORMATION · NOT LEGAL ADVICE · RULES VARY BY STATE AND AGREEMENT",
+ "voice": {
+  "_locked": "LOCKED by the owner 14 Oct 2026 — must equal tools/deepdive.py LOCKED_VOICE_*; the engine refuses anything else",
+  "name": "Orus",
+  "instruction": "Narrate this in a natural Nigerian English accent, like a confident Lagos radio presenter:"
+ },
+ "audio": {
+  "_comment": "Sound plan — synthesized by tools/soundkit.py, cued from the beats (python3 tools/deepdive.py dd2 cues). Bed levels are dB(A) relative to the narrator's speech; SFX are dB below the voice peak. Run #1 (-27 raw) was inaudible on phones — these are broadcast-documentary levels.",
+  "bed": true,
+  "bpm": 72,
+  "seed": 7,
+  "bed_gap_db": -8,
+  "bed_speech_db": -16,
+  "sfx_db": -12,
+  "hit_db": -9,
+  "tick_db": -16,
+  "riser_db": -14,
+  "stinger_db": -9,
+  "tail_fade_s": 4
+ },
+ "youtube": {
+  "title": "Advance Rent in Lagos and Cross River: What the Law Forbids (Deep-Dive 11)",
+  "description": "Can your landlord demand two years of rent upfront? While Lagos caps advance rent at one year for new tenants and six months for sitting monthly tenants, Cross River sets the strictest rule in Nigeria: individuals cannot be asked for more than three months in advance. Learn the exact statutory provisions in Lagos and Cross River, the 60-day court rule, mandatory receipts, and how to claim your 2026 rent tax relief. Build clean agreements and rent receipts in two minutes at https://docoga.com.ng\n\nGeneral information, not legal advice.",
+  "tags": [
+   "DocOga",
+   "advance rent nigeria",
+   "lagos tenancy law",
+   "cross river tenancy law",
+   "calabar rent",
+   "rent receipt lagos",
+   "nigerian tenant rights",
+   "rent tax relief 2026",
+   "rent control court",
+   "advance rent cap"
+  ]
+ },
+ "cover": {
+  "img": "court",
+  "kicker": "KNOW YOUR RIGHTS",
+  "line1": "ADVANCE RENT",
+  "highlight": "CAPS",
+  "label": "STATE LAWS",
+  "line2": "CROSS RIVER VS LAGOS",
+  "line3": "STRICTEST LIMITS IN NIGERIA",
+  "sub": "WHAT THE LAW PERMITS"
+ },
+ "sections": [
+  {
+   "n": 1,
+   "title": "The Hook"
+  },
+  {
+   "n": 2,
+   "title": "The Lagos Advance Rent Rule"
+  },
+  {
+   "n": 3,
+   "title": "The Penalty Both Sides Face in Lagos"
+  },
+  {
+   "n": 4,
+   "title": "Cross River: The Strictest Cap in Nigeria"
+  },
+  {
+   "n": 5,
+   "title": "Where Cross River Applies and What It Excludes"
+  },
+  {
+   "n": 6,
+   "title": "How Cross River Settles Disputes Quickly"
+  },
+  {
+   "n": 7,
+   "title": "The Mandatory Receipt Rule"
+  },
+  {
+   "n": 8,
+   "title": "Claiming Your Rent Relief on Tax"
+  },
+  {
+   "n": 9,
+   "title": "The Law, and DocOga"
+  }
+ ],
+ "beats": [
+  {
+   "sec": 1,
+   "trig": null,
+   "head": "TWO YEARS UPFRONT?",
+   "sub": "Landlords routinely demand two years rent",
+   "img": "door",
+   "shot": "padlocked wooden door"
+  },
+  {
+   "sec": 1,
+   "trig": [
+    "caretaker",
+    "smiles",
+    "hands"
+   ],
+   "head": "HANDWRITTEN NOTE",
+   "sub": "Demanding cash before handing over keys",
+   "img": "letter",
+   "shot": "creased paper note"
+  },
+  {
+   "sec": 1,
+   "trig": [
+    "cross",
+    "river",
+    "has"
+   ],
+   "head": "CROSS RIVER LIMIT",
+   "sub": "The strictest statutory cap in Nigeria",
+   "img": "court",
+   "shot": "law library books"
+  },
+  {
+   "sec": 1,
+   "trig": [
+    "before",
+    "you",
+    "empty"
+   ],
+   "head": "CHECK YOUR STATE",
+   "sub": "Statutory rules differ across state lines",
+   "img": "naira",
+   "shot": "naira banknotes table"
+  },
+  {
+   "sec": 2,
+   "trig": null,
+   "head": "LAGOS TENANCY RULES",
+   "sub": "Clear statutory limits since 2011",
+   "img": "danfo",
+   "shot": "busy lagos road"
+  },
+  {
+   "sec": 2,
+   "trig": [
+    "for",
+    "a",
+    "new"
+   ],
+   "head": "ONE YEAR MAXIMUM",
+   "sub": "New tenants cannot be asked for more",
+   "img": "calendar",
+   "shot": "wall calendar page"
+  },
+  {
+   "sec": 2,
+   "trig": [
+    "in",
+    "lagos",
+    "a",
+    "landlord"
+   ],
+   "head": "SITTING MONTHLY CAP",
+   "sub": "Six months maximum for sitting monthly tenant",
+   "img": "pen",
+   "shot": "fountain pen desk"
+  },
+  {
+   "sec": 2,
+   "trig": [
+    "meanwhile",
+    "a",
+    "sitting"
+   ],
+   "head": "YEARLY TENANT LIMIT",
+   "sub": "Sitting yearly tenant pays one year max",
+   "img": "letter",
+   "shot": "printed tenancy sheet"
+  },
+  {
+   "sec": 3,
+   "trig": null,
+   "head": "BOTH SIDES OFFEND",
+   "sub": "Lagos penalizes both paying and receiving",
+   "img": "court",
+   "shot": "courtroom wooden bench"
+  },
+  {
+   "sec": 3,
+   "trig": [
+    "in",
+    "lagos",
+    "any",
+    "person"
+   ],
+   "head": "N100,000 OR JAIL",
+   "sub": "Fine or three months imprisonment on conviction",
+   "img": "naira",
+   "shot": "stacked currency bundles"
+  },
+  {
+   "sec": 3,
+   "trig": [
+    "the",
+    "law",
+    "was"
+   ],
+   "head": "MARKET DISTORTION",
+   "sub": "Preventing artificial rent spikes",
+   "img": "rooftops",
+   "shot": "residential rooftops dusk"
+  },
+  {
+   "sec": 3,
+   "trig": [
+    "knowing",
+    "this",
+    "changes"
+   ],
+   "head": "NEGOTIATE PROPERLY",
+   "sub": "Refuse unlawful advance demands",
+   "img": "phone",
+   "shot": "smartphone screen display"
+  },
+  {
+   "sec": 4,
+   "trig": null,
+   "head": "CROSS RIVER LAW",
+   "sub": "Tighter advance caps than Lagos",
+   "img": "court",
+   "shot": "scales of justice"
+  },
+  {
+   "sec": 4,
+   "trig": [
+    "in",
+    "cross",
+    "river",
+    "a"
+   ],
+   "head": "THREE MONTHS CAP",
+   "sub": "Individuals pay at most three months advance",
+   "img": "calendar",
+   "shot": "monthly desk planner"
+  },
+  {
+   "sec": 4,
+   "trig": [
+    "a",
+    "landlord",
+    "in",
+    "cross"
+   ],
+   "head": "PERSON VS COMPANY",
+   "sub": "Companies may pay one year, individuals 3 months",
+   "img": "naira",
+   "shot": "naira bills spread"
+  },
+  {
+   "sec": 4,
+   "trig": [
+    "while",
+    "lagos",
+    "allows"
+   ],
+   "head": "ONE SINGLE QUARTER",
+   "sub": "Quarterly payments for Calabar individuals",
+   "img": "pen",
+   "shot": "signing blue paper"
+  },
+  {
+   "sec": 5,
+   "trig": null,
+   "head": "SCOPE OF THE LAW",
+   "sub": "Applies to residential homes state-wide",
+   "img": "rooftops",
+   "shot": "urban housing estate"
+  },
+  {
+   "sec": 5,
+   "trig": [
+    "cross",
+    "river",
+    "law",
+    "applies"
+   ],
+   "head": "MAISONETTE EXCLUDED",
+   "sub": "Luxury two-storey homes sit outside the cap",
+   "img": "door",
+   "shot": "ornate residence gate"
+  },
+  {
+   "sec": 5,
+   "trig": [
+    "the",
+    "law",
+    "divides"
+   ],
+   "head": "SEVEN RENT ZONES",
+   "sub": "State divided into zones for rent control",
+   "img": "letter",
+   "shot": "official gazette sheet"
+  },
+  {
+   "sec": 5,
+   "trig": [
+    "if",
+    "your",
+    "calabar"
+   ],
+   "head": "STANDARD HOMES",
+   "sub": "Flats and rooms fully protected by the cap",
+   "img": "kiosk",
+   "shot": "street corner houses"
+  },
+  {
+   "sec": 6,
+   "trig": null,
+   "head": "SPECIALIZED COURTS",
+   "sub": "Rent control courts replace tribunals",
+   "img": "court",
+   "shot": "magistrate court exterior"
+  },
+  {
+   "sec": 6,
+   "trig": [
+    "cross",
+    "river",
+    "abolished"
+   ],
+   "head": "ZONED RENT COURTS",
+   "sub": "Dedicated judicial zones across Cross River",
+   "img": "court",
+   "shot": "wooden courtroom dock"
+  },
+  {
+   "sec": 6,
+   "trig": [
+    "under",
+    "cross",
+    "river",
+    "law"
+   ],
+   "head": "60-DAY DEADLINE",
+   "sub": "Judgment must be delivered within two months",
+   "img": "calendar",
+   "shot": "calendar with date marker"
+  },
+  {
+   "sec": 7,
+   "trig": null,
+   "head": "PAPER BEATS MEMORY",
+   "sub": "Verbal rent agreements always fail in court",
+   "img": "pen",
+   "shot": "writing signature paper"
+  },
+  {
+   "sec": 7,
+   "trig": [
+    "every",
+    "landlord",
+    "in",
+    "lagos"
+   ],
+   "head": "STATUTORY RECEIPT",
+   "sub": "Landlords are required to issue receipts",
+   "img": "letter",
+   "shot": "official receipt booklet"
+  },
+  {
+   "sec": 7,
+   "trig": [
+    "furthermore",
+    "a",
+    "landlord"
+   ],
+   "head": "N100,000 FINE",
+   "sub": "Penalty for failing to issue a rent receipt",
+   "img": "naira",
+   "shot": "hundred naira notes"
+  },
+  {
+   "sec": 7,
+   "trig": [
+    "never",
+    "leave",
+    "an"
+   ],
+   "head": "INSIST ON PAPER",
+   "sub": "Always demand a signed dated receipt",
+   "img": "door",
+   "shot": "front apartment key"
+  },
+  {
+   "sec": 8,
+   "trig": null,
+   "head": "RENT TAX RELIEF",
+   "sub": "Tax deduction available from 2026",
+   "img": "naira",
+   "shot": "calculator and cash"
+  },
+  {
+   "sec": 8,
+   "trig": [
+    "in",
+    "computing",
+    "taxable"
+   ],
+   "head": "UP TO N500,000",
+   "sub": "Deduct 20 percent of annual rent paid",
+   "img": "calendar",
+   "shot": "tax assessment form"
+  },
+  {
+   "sec": 8,
+   "trig": [
+    "you",
+    "must",
+    "claim"
+   ],
+   "head": "PROOF IS REQUIRED",
+   "sub": "Valid receipt and tenancy agreement needed",
+   "img": "letter",
+   "shot": "stamped tax paperwork"
+  },
+  {
+   "sec": 8,
+   "trig": [
+    "proper",
+    "paperwork",
+    "turns"
+   ],
+   "head": "REAL TAX SAVINGS",
+   "sub": "Protecting your take-home pay at payday",
+   "img": "celebration",
+   "shot": "smiling market stall"
+  },
+  {
+   "sec": 9,
+   "trig": null,
+   "head": "YOU HAVE THE RIGHT",
+   "sub": "Know your rights under state statutes",
+   "img": "phone",
+   "shot": "hand holding smartphone"
+  },
+  {
+   "sec": 9,
+   "trig": [
+    "at",
+    "docoga",
+    "you"
+   ],
+   "head": "TWO-MINUTE ENGINE",
+   "sub": "Create valid legal documents on your phone",
+   "img": "pen",
+   "shot": "digital document screen"
+  },
+  {
+   "sec": 9,
+   "trig": [
+    "all",
+    "our",
+    "legal"
+   ],
+   "head": "FREE TO START",
+   "sub": "No credit card and no sign-up barrier",
+   "img": "letter",
+   "shot": "clean paper template"
+  },
+  {
+   "sec": 9,
+   "trig": [
+    "if",
+    "you",
+    "manage"
+   ],
+   "head": "OGA PASS N2,000",
+   "sub": "Thirty days unlimited clean downloads",
+   "img": "market",
+   "shot": "busy market street"
+  },
+  {
+   "sec": 9,
+   "trig": [
+    "naira",
+    "you",
+    "pay"
+   ],
+   "head": "DOCOGA",
+   "sub": "docoga.com.ng — link in the description",
+   "img": "celebration",
+   "shot": null,
+   "endcard": true
+  }
+ ],
+ "brain": {
+  "written": "2026-11-27T01:38:59+01:00",
+  "theme": "advance-rent-cross-river-lagos",
+  "claims": [
+   {
+    "text": "In Cross River, a landlord may demand and receive the prescribed rent in advance for a period not exceeding three months from tenants who are individuals, and twelve months from tenants other than individuals.",
+    "fact_id": "cross-river:advance_rent:1"
+   },
+   {
+    "text": "A landlord in Cross River may lawfully take a year in advance from a company, but only three months from a person.",
+    "fact_id": "cross-river:advance_rent:2"
+   },
+   {
+    "text": "In Lagos, a landlord cannot demand or receive more than six months advance rent from a sitting monthly tenant.",
+    "fact_id": "lagos:advance_rent:2"
+   },
+   {
+    "text": "A sitting yearly tenant in Lagos cannot be asked for more than one year of rent in advance.",
+    "fact_id": "lagos:advance_rent:3"
+   },
+   {
+    "text": "For a new or would-be tenant in Lagos, a landlord cannot demand or receive more than one year of rent in advance.",
+    "fact_id": "lagos:advance_rent:4"
+   },
+   {
+    "text": "In Lagos, any person who receives or pays rent in excess commits an offence and is liable on conviction to a fine of one hundred thousand naira or three months imprisonment.",
+    "fact_id": "lagos:advance_rent:5"
+   },
+   {
+    "text": "Every landlord in Lagos shall issue a receipt on payment of rent.",
+    "fact_id": "lagos:receipts:1"
+   },
+   {
+    "text": "A landlord in Lagos who fails to issue a rent receipt is liable on conviction to a fine of one hundred thousand naira.",
+    "fact_id": "lagos:receipts:7"
+   },
+   {
+    "text": "Cross River abolished Rent Tribunals and replaced them with courts where the Governor divides the State into zones and establishes Rent Control Courts.",
+    "fact_id": "cross-river:forum:1"
+   },
+   {
+    "text": "Under Cross River law, judgment must be delivered not later than two months from the date of service of the hearing notices.",
+    "fact_id": "cross-river:protections:4"
+   },
+   {
+    "text": "Cross River law applies to all residential accommodation throughout the State except maisonettes.",
+    "fact_id": "cross-river:application:1"
+   },
+   {
+    "text": "In computing taxable income from 2026, a rent relief of twenty percent of annual rent paid up to a maximum of five hundred thousand naira is deducted.",
+    "fact_id": "nigeria:rent_relief:1"
+   },
+   {
+    "text": "The statute defines a maisonette as a two-storeyed permanent building designed for single-family occupation with living rooms downstairs and bedrooms upstairs, fitted with luxury finishes and an exclu",
+    "fact_id": "cross-river:application:2",
+    "recalled": true
+   },
+   {
+    "text": "The law divides the entire state into seven distinct zones to fix maximum rents.",
+    "fact_id": "cross-river:application:1",
+    "recalled": true
+   },
+   {
+    "text": "That receipt must state the exact dates, the premises, the names of both parties, and the precise sum paid.",
+    "fact_id": "lagos:receipts:1",
+    "recalled": true
+   }
+  ]
+ }
+}

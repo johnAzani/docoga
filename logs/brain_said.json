@@ -599,5 +599,24 @@
   "tool": "rent-receipt",
   "tool_routed": false,
   "news_hook": null
+ },
+ {
+  "date": "2026-11-29",
+  "theme": "anambra-alternative-accommodation-rule",
+  "headline": "Anambra court will not eject a tenant without this proof",
+  "post_type": "engagement",
+  "hook_type": "CLAIM",
+  "state": "anambra",
+  "fact_ids": [
+   "anambra:alternative_accommodation:1",
+   "anambra:protections:1"
+  ],
+  "recalled": 0,
+  "plate": "court building exterior",
+  "short": false,
+  "reader": "okafor",
+  "tool": "notice-to-quit",
+  "tool_routed": false,
+  "news_hook": null
  }
 ]

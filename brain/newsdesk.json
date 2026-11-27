@@ -1,5 +1,5 @@
 {
- "fetched": "2026-11-26T08:44:48+00:00",
+ "fetched": "2026-11-27T00:31:02+00:00",
  "sources": [
   "Punch: 30 stories",
   "Vanguard: 20 stories",
@@ -9,20 +9,5 @@
   "The Guardian Nigeria: unreachable (HTTP Error 403: Forbidden)",
   "Nairametrics: 20 stories"
  ],
- "items": [
-  {
-   "title": "Kano moves to regulate property market as rising rents squeeze tenants",
-   "link": "https://nairametrics.com/2026/11/25/kano-moves-to-regulate-property-market-as-rising-rents-squeeze-tenants/",
-   "published": "2026-11-25T16:22:35+00:00",
-   "source": "Nairametrics",
-   "score": 30,
-   "matched": [
-    "tenant",
-    "tenants",
-    "rent",
-    "rents"
-   ],
-   "summary": "The Kano State Government is seeking approval from Governor Abba Kabir-Yusuf to establish a Real Estate Regulatory Agency to check excessive rent charges and regulate activities in the state's propert"
-  }
- ]
+ "items": []
 }

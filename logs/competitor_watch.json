@@ -1,7 +1,14 @@
 {
- "pulled_at": "2026-11-26T08:44:49+00:00",
+ "pulled_at": "2026-11-27T00:31:02+00:00",
  "days": 14,
  "items": [
+  {
+   "competitor": "Lexpraxis Solicitors blog",
+   "kind": "content",
+   "title": "HOW TO OBTAIN A MONEY LENDERS LICENSE IN ABUJA",
+   "link": "https://lexpraxisng.com/how-to-obtain-a-money-lenders-license-in-abuja/",
+   "published": "2026-11-26T09:00:00+00:00"
+  },
   {
    "competitor": "NigeriaBuildingCost — tenancy agreement generator",
    "kind": "tool",
@@ -81,15 +88,15 @@
   }
  ],
  "sources": [
-  "https://nigeriabuildingcost.ng/sitemap.xml: 128 changed page(s)",
+  "https://nigeriabuildingcost.ng/sitemap.xml: 130 changed page(s)",
   "https://www.wonder.legal/ng/sitemap.xml: 0 changed page(s)",
   "https://diylaw.ng/sitemap.xml: 0 changed page(s)",
-  "https://sabilaw.org/feed/: 2 fresh post(s)",
+  "https://sabilaw.org/feed/: 3 fresh post(s)",
   "https://legalnaija.com/feed/: 0 fresh post(s)",
   "https://rently.ng/sitemap.xml: 0 changed page(s)",
   "https://homz.ng/sitemap.xml: 0 changed page(s)",
   "https://mushrooms.ng/sitemap.xml: 8 changed page(s)",
-  "https://lexpraxisng.com/feed/: 2 fresh post(s)",
+  "https://lexpraxisng.com/feed/: 3 fresh post(s)",
   "https://olamideoyetayolegal.com/feed/: 4 fresh post(s)",
   "https://www.youtube.com/feeds/videos.xml?channel_id=UCa158r8OZoEia4z2DhPg2LA: 3 fresh post(s)"
  ],

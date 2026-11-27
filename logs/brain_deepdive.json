@@ -1233,6 +1233,18 @@
     "beat 27 shot 'person using phone' dropped"
    ],
    "run_id": "45785700034"
+  },
+  {
+   "at": "2026-11-27T01:39:00+01:00",
+   "episode": "dd11",
+   "attempt": 1,
+   "outcome": "written",
+   "title": "Advance Rent in Lagos and Cross River: Strictest Caps",
+   "problems": [],
+   "healed": [
+    "beat 24 dropped: trigger 'that sixtyday clock' not spoken in section 6 after word 84"
+   ],
+   "run_id": "45917116861"
   }
  ]
 }

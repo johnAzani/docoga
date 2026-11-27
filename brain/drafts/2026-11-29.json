@@ -1,0 +1,72 @@
+{
+ "version": 1,
+ "status": "approved",
+ "date": "2026-11-29",
+ "generated_at": "2026-11-27T01:37:06+01:00",
+ "theme": "anambra-alternative-accommodation-rule",
+ "post_type": "engagement",
+ "hook_type": "CLAIM",
+ "state": "anambra",
+ "claims": [
+  {
+   "text": "In Anambra State, no court makes an order for possession unless satisfied that suitable alternative accommodation is available for the tenant.",
+   "fact_id": "anambra:alternative_accommodation:1"
+  },
+  {
+   "text": "A landlord may not resort to self-help, as unlawful eviction is actionable in damages.",
+   "fact_id": "anambra:protections:1"
+  }
+ ],
+ "recalled": [],
+ "post": {
+  "headline": "Anambra court will not eject a tenant without this proof",
+  "lines": [
+   "In Anambra State, no court makes an order for possession unless satisfied that suitable alternative",
+   "accommodation is available for the tenant.",
+   "A landlord may not resort to self-help, as unlawful eviction is actionable in damages.",
+   "Proper court process protects both sides when recovering possession of premises."
+  ],
+  "cta": "Have you ever faced this in Anambra? Tell us below.",
+  "hashtags": [
+   "#DocOga",
+   "#AnambraState",
+   "#NigerianLandlords"
+  ]
+ },
+ "threads": {
+  "text": "In Anambra State, a court will not make an order to eject a tenant unless satisfied that suitable alternative accommodation is available. Landlords cannot resort to self-help. Did your landlord follow proper court process?",
+  "hashtags": [
+   "#DocOga",
+   "#TenantRights"
+  ],
+  "topic": "Anambra Rent Rules",
+  "poll": {
+   "option_a": "Yes, proper notice",
+   "option_b": "No, lock changed",
+   "option_c": "Still in court",
+   "option_d": "Settled peacefully"
+  },
+  "evening": "Self-help lockouts fail in court. Proper notice is the only valid way to recover property in Anambra."
+ },
+ "visual": {
+  "kicker": "Anambra rule",
+  "layout": "poster",
+  "big": "",
+  "plate": "court building exterior"
+ },
+ "short": null,
+ "why": "Sunday engagement post on Anambra alternative accommodation rule to drive comments and engagement among landlords like Mr Okafor.",
+ "tool": "notice-to-quit",
+ "tool_routed": false,
+ "reader": "okafor",
+ "news_hook": null,
+ "quiz": null,
+ "gates": [
+  "citation",
+  "verification",
+  "lint",
+  "repetition",
+  "shape"
+ ],
+ "note": ""
+}
