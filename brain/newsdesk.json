@@ -1,5 +1,5 @@
 {
- "fetched": "2026-11-27T08:55:18+00:00",
+ "fetched": "2026-11-28T00:31:05+00:00",
  "sources": [
   "Punch: 30 stories",
   "Vanguard: 20 stories",
@@ -11,22 +11,28 @@
  ],
  "items": [
   {
-   "title": "When a policy meant to protect tenants becomes a signal to double rents: The Enugu Tenancy Bill dilemma, By David Okelue Ugwunta",
-   "link": "https://www.premiumtimesng.com/opinion/928221-when-a-policy-meant-to-protect-tenants-becomes-a-signal-to-double-rents-the-enugu-tenancy-bill-dilemma-by-david-okelue-ugwunta.html",
-   "published": "2026-11-27T03:57:32+00:00",
-   "source": "Premium Times",
-   "score": 54,
+   "title": "Lagos halts truck movement in Magodo",
+   "link": "https://punchng.com/lagos-halts-truck-movement-in-magodo/?utm_source=rss.punchng.com&utm_medium=web",
+   "published": "2026-11-28T00:18:12+00:00",
+   "source": "Punch",
+   "score": 6,
    "matched": [
-    "tenant",
-    "tenants",
     "landlord",
-    "landlords",
-    "tenancy",
-    "rent",
-    "rents",
-    "tenancy bill"
+    "landlords"
    ],
-   "summary": "As some landlords seek to double rents in anticipation of a law designed to protect tenants, one question becomes unavoidable: If the House of Assembly passes a law to protect citizens, but its announ"
+   "summary": "Lagos government suspends truck movement in Magodo Estate for one week over a land access dispute between residents and the Shangisa Landlords Association. Read More: https://punchng.com/lagos-halts-t"
+  },
+  {
+   "title": "I battled suicidal thoughts in silence after sexual assault – Dieko Afolayan",
+   "link": "https://punchng.com/i-battled-suicidal-thoughts-in-silence-after-sexual-assault-dieko-afolayan/?utm_source=rss.punchng.com&utm_medium=web",
+   "published": "2026-11-28T00:18:42+00:00",
+   "source": "Punch",
+   "score": 4,
+   "matched": [
+    "rent",
+    "rents"
+   ],
+   "summary": "Dieko Afolayan, son of Kunle Afolayan, speaks on battling suicidal thoughts after sexual assault, trust, healing and why parents must listen to children. Read More: https://punchng.com/i-battled-suici"
   }
  ]
 }

@@ -1,23 +1,6 @@
 {
- "pulled_at": "2026-11-27T08:55:35+00:00",
- "items": [
-  {
-   "title": "\"Your Landlord Has Every Right To Tell You Not To Bring Babe Home\" – Lawyer",
-   "url": "https://www.nairaland.com/8789579/landlord-every-right-tell-not",
-   "board": "properties",
-   "source": "Nairaland",
-   "order": 8789579,
-   "score": 8
-  },
-  {
-   "title": "My Landlord Refused To Refund My Remaining",
-   "url": "https://www.nairaland.com/8788031/landlord-refused-refund-remaining",
-   "board": "family",
-   "source": "Nairaland",
-   "order": 8788031,
-   "score": 7
-  }
- ],
+ "pulled_at": "2026-11-28T00:31:24+00:00",
+ "items": [],
  "answered": [
   {
    "date": "2026-10-30",
@@ -64,9 +47,5 @@
    "topic": "notice_ladder"
   }
  ],
- "sources": [
-  "Nairaland Properties: 66",
-  "Nairaland Family: 60",
-  "Nairaland Politics: 60"
- ]
+ "sources": []
 }
