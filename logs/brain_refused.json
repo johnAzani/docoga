@@ -1,6 +1,20 @@
 [
  {
   "date": "2026-11-30",
+  "at": "2026-11-28T09:19:48+01:00",
+  "short_day": true,
+  "state": "enugu",
+  "problems": [
+   "a body line is 231 characters; max 110: 'Tunde, if your landlord in Enugu demands'",
+   "a body line is 148 characters; max 110: 'This review must be by agreement, not un'",
+   "statistic '50%' is not in a cited fact — DocOga publishes no number it cannot source",
+   "a cited post names the section number (e.g. s.5) in its copy",
+   "short.title: 1-64 characters",
+   "fact id typed into the copy: enugu:increase_challenge:1, enugu:increase_challenge:4, enugu:protections:2 — ids live only in `claims`, never in words a reader sees"
+  ]
+ },
+ {
+  "date": "2026-11-30",
   "at": "2026-11-28T01:33:55+01:00",
   "short_day": true,
   "state": "enugu",
@@ -395,15 +409,6 @@
    "a body line is 149 characters; max 110: 'In Enugu, a landlord may not resort to s'",
    "a body line is 183 characters; max 110: 'Even after a valid quit notice, your lan'",
    "short.tips[4].say: no link — the end card carries it"
-  ]
- },
- {
-  "date": "2026-11-12",
-  "at": "2026-11-10T01:38:16+01:00",
-  "short_day": true,
-  "state": "enugu",
-  "problems": [
-   "fact id typed into the copy: enugu:notice_extras:6, enugu:notice_extras:7, enugu:protections:1 — ids live only in `claims`, never in words a reader sees"
   ]
  }
 ]
